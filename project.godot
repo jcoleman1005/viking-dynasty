@@ -11,8 +11,13 @@ config_version=5
 [application]
 
 config/name="Viking Dynasty"
+run/main_scene="uid://caqoqfrq0wwlq"
 config/features=PackedStringArray("4.5", "GL Compatibility")
-config/icon="res://icon.svg"
+
+[autoload]
+
+EventBus="*res://autoload/EventBus.gd"
+SettlementManager="*res://autoload/SettlementManager.tscn"
 
 [rendering]
 

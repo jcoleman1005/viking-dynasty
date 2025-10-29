@@ -1,0 +1,19 @@
+[gd_scene load_steps=4 format=3 uid="uid://cpe46srqjmdh6"]
+
+[ext_resource type="Texture2D" uid="uid://c6v2d1q8q7e3j" path="res://placeholder_tile.tres" id="1_a64e3"]
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_vwpxa"]
+texture = ExtResource("1_a64e3")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSet" id="TileSet_m5xuc"]
+tile_size = Vector2i(32, 32)
+sources/0 = SubResource("TileSetAtlasSource_vwpxa")
+
+[node name="DefensiveMicro" type="Node2D"]
+
+[node name="TileMap" type="TileMap" parent="."]
+tile_set = SubResource("TileSet_m5xuc")
+format = 2
+layer_0/tile_data = PackedInt32Array(0, 0, 0, 1, 0, 0, 2, 0, 0, 3, 0, 0, 65539, 0, 0, 131075, 0, 0, 131074, 0, 0, 65538, 0, 0, 65537, 0, 0, 65536, 0, 0, 131072, 0, 0, 131073, 0, 0)
