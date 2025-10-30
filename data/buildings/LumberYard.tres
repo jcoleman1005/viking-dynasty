@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="EconomicBuildingData" load_steps=3 format=3 uid="uid://drx4sih8numo1"]
+
+[ext_resource type="Script" uid="uid://d33smw07vm6y4" path="res://data/buildings/EconomicBuildingData.gd" id="1_abcde"]
+[ext_resource type="PackedScene" uid="uid://cws6xle5x52g4" path="res://scenes/buildings/Base_Building.tscn" id="2_fghij"]
+
+[resource]
+script = ExtResource("1_abcde")
+display_name = "Lumber Yard"
+scene_to_spawn = ExtResource("2_fghij")
+build_cost = {
+"wood": 50
+}
+max_health = 75
+grid_size = Vector2i(2, 2)

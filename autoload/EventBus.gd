@@ -6,10 +6,13 @@
 
 extends Node
 
-# Emitted by the UI, listened for by the SettlementManager.
+# --- Build System Signals ---
 signal build_request_made(building_data: BuildingData, grid_position: Vector2i)
 
-# --- ADDED ---
-# Emitted by the SettlementManager when a wall is placed.
-# Listened for by any unit's FSM to trigger a re-path.
+# --- Pathfinding Signals ---
 signal pathfinding_grid_updated(grid_position: Vector2i)
+
+# --- Treasury & Economy Signals (Phase 2) ---
+signal treasury_updated(new_treasury: Dictionary)
+signal purchase_successful(item_name: String)
+signal purchase_failed(reason: String)

@@ -1,0 +1,31 @@
+[gd_scene load_steps=2 format=3 uid="uid://dqh0xu88khxct"]
+
+[ext_resource type="Script" uid="uid://pi8qvm18eita" path="res://ui/WelcomeHomePopup.gd" id="1_3kn8e"]
+
+[node name="Main" type="PanelContainer"]
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -2.0
+offset_top = -15.5
+offset_right = 2.0
+offset_bottom = 15.5
+size_flags_horizontal = 4
+size_flags_vertical = 4
+script = ExtResource("1_3kn8e")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="PayoutLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Welcome home! ..."
+
+[node name="CollectButton" type="Button" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Collect"
