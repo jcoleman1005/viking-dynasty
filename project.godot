@@ -19,6 +19,10 @@ config/features=PackedStringArray("4.5", "GL Compatibility")
 EventBus="*res://autoload/EventBus.gd"
 SettlementManager="*res://autoload/SettlementManager.tscn"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/GodotAiSuite/plugin.cfg")
+
 [rendering]
 
 renderer/rendering_method="gl_compatibility"

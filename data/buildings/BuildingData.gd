@@ -1,8 +1,8 @@
 # res://data/buildings/BuildingData.gd
 #
 # Defines the core data for any building in the game.
-# This resource is used by Base_Building.tscn to configure instances.
-# GDD Ref: 7.C.1.a
+#
+# --- MODIFIED: Added 'class_name BuildingData' ---
 
 class_name BuildingData
 extends Resource
@@ -23,17 +23,14 @@ extends Resource
 @export var max_health: int = 100
 
 ## If true, this building blocks enemy pathfinding.
-## GDD Ref:
 @export var blocks_pathfinding: bool = true
 
 ## The size of the building on the AStarGrid2D.
-## GDD Ref:
 @export var grid_size: Vector2i = Vector2i.ONE
 
 
 @export_group("Defensive Stats")
 ## If true, this building can attack enemies (e.g., Watchtower).
-## GDD Ref:
 @export var is_defensive_structure: bool = false
 
 ## Damage dealt per attack (if defensive).

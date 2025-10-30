@@ -5,4 +5,5 @@
 [resource]
 script = ExtResource("1_tcvvg")
 display_name = "Viking Raider"
+attack_range = 50.0
 metadata/_custom_type_script = "uid://cq155t20ujb2j"

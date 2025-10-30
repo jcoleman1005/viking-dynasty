@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="BuildingData" load_steps=3 format=3 uid="uid://b2356vlfukf14"]
 
 [ext_resource type="Script" uid="uid://js4bbqgeyd6c" path="res://data/buildings/BuildingData.gd" id="1_t76rl"]
-[ext_resource type="PackedScene" uid="uid://cws6xle5x52g4" path="res://data/buildings/Base_Building.tscn" id="1_vluf5"]
+[ext_resource type="PackedScene" uid="uid://cws6xle5x52g4" path="res://scenes/buildings/Base_Building.tscn" id="1_vluf5"]
 
 [resource]
 script = ExtResource("1_t76rl")
