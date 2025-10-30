@@ -67,6 +67,8 @@ func deposit_loot(loot: Dictionary) -> void:
 	if not current_settlement: return
 	for resource_type in loot:
 		if current_settlement.treasury.has(resource_type):
+			# Payouts should respect the storage cap of the building that generated them,
+			# but the main treasury can be considered unlimited for now.
 			current_settlement.treasury[resource_type] += loot[resource_type]
 		else:
 			current_settlement.treasury[resource_type] = loot[resource_type]
@@ -92,13 +94,9 @@ func attempt_purchase(item_cost: Dictionary) -> bool:
 	print("Purchase successful. New treasury: %s" % current_settlement.treasury)
 	return true
 
-func calculate_chunk_payout() -> Dictionary:
-	if not current_settlement or current_settlement.last_visited_timestamp == 0:
+func calculate_payout() -> Dictionary:
+	if not current_settlement:
 		return {}
-
-	var current_time: int = Time.get_unix_time_from_system()
-	var elapsed_seconds: int = current_time - current_settlement.last_visited_timestamp
-	var elapsed_hours: float = float(elapsed_seconds) / 3600.0
 
 	var total_payout: Dictionary = {}
 
@@ -107,25 +105,17 @@ func calculate_chunk_payout() -> Dictionary:
 		if building_data is EconomicBuildingData:
 			var eco_data: EconomicBuildingData = building_data
 			var resource_type: String = eco_data.resource_type
-			var generated_amount: int = floor(eco_data.accumulation_rate_per_hour * elapsed_hours)
-			var capped_amount: int = min(generated_amount, eco_data.storage_cap)
-
+			
 			if not total_payout.has(resource_type):
 				total_payout[resource_type] = 0
-			total_payout[resource_type] += capped_amount
-	
-	if not total_payout.is_empty():
-		print("Calculated chunk payout: %s" % total_payout)
-	return total_payout
+			
+			# The payout is now a simple, fixed amount per building.
+			# The storage_cap is now effectively the treasury cap, handled in deposit_loot.
+			total_payout[resource_type] += eco_data.fixed_payout_amount
 
-func save_timestamp() -> void:
-	if not current_settlement: return
-	current_settlement.last_visited_timestamp = Time.get_unix_time_from_system()
-	print("Timestamp saved: %d" % current_settlement.last_visited_timestamp)
-	if current_settlement.resource_path and not current_settlement.resource_path.is_empty():
-		ResourceSaver.save(current_settlement, current_settlement.resource_path)
-	else:
-		push_warning("SettlementData has no resource_path, cannot save timestamp.")
+	if not total_payout.is_empty():
+		print("Calculated fixed payout: %s" % total_payout)
+	return total_payout
 
 func get_astar_path(start_pos: Vector2, end_pos: Vector2) -> PackedVector2Array:
 	if not astar_grid:
@@ -148,13 +138,3 @@ func save_settlement() -> void:
 			push_error("Failed to save settlement data to path: %s. Error code: %s" % [current_settlement.resource_path, error])
 	else:
 		push_warning("SettlementData has no resource_path, cannot save settlement.")
-
-func force_set_timestamp(seconds_ago: int) -> void:
-	if not current_settlement:
-		push_error("Cannot force set timestamp, current settlement is null.")
-		return
-	
-	var new_timestamp = Time.get_unix_time_from_system() - seconds_ago
-	current_settlement.last_visited_timestamp = new_timestamp
-	print("DEBUG: Forcing timestamp to %d seconds ago (%d)" % [seconds_ago, new_timestamp])
-	save_settlement() # Save the change immediately

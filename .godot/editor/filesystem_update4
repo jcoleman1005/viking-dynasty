@@ -1,10 +1,2 @@
-res://ui/StorefrontUI.gd
-res://autoload/SettlementManager.gd
-res://ui/Storefront_UI.tscn
-res://placeholder_tile.tres
-res://data/buildings/LumberYard.tres
-res://ui/WelcomeHomePopup.gd
-res://scripts/buildings/SettlementBridge.gd
-res://ui/WelcomeHome_Popup.tscn
-res://data/settlements/home_base.tres
 res://scenes/levels/SettlementBridge.tscn
+res://placeholder_tile.tres

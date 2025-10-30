@@ -13,9 +13,9 @@ You will be provided with a comprehensive dump of the Godot project context, str
 ---
 ### **2. GDD**
 
- Viking Dynasty GDD v1.72
+GDD v1.74
+Viking Dynasty
 1. High-Level Concept & Vision
-(Unchanged from v1.62)
 Viking Dynasty is a strategy game that blends the dynastic ambition and grand strategy of Crusader Kings with the tactical, real-time battles of Age of Empires II.
 Players will manage a Viking dynasty, not just a single character. They will forge alliances, declare wars, and manage their growing family on a strategic world map (the Macro layer). When battles occur or raids are launched, the game will transition into a real-time strategy mission (the Micro layer). The bridge between these two layers is the player's persistent, grid-based Settlement, which they will build, upgrade, and defend.
 The core tension is balancing the long-term needs of your dynasty (geopolitics, heirs) with the immediate, visceral needs of combat (resources, unit control), all while protecting your home from rival Jarls.
@@ -23,7 +23,6 @@ Target Audience: Players who enjoy deep strategic systems (e.g., Paradox titles)
 Genre: Grand Strategy / Real-Time Strategy (RTS) Hybrid.
 Theme: Viking Age, focusing on the grit, ambition, and legacy of a Norse dynasty.
 2. Core Gameplay Loop: The Three Layers
-(Unchanged from v1.62)
 The gameplay is built on three interconnected layers: the Macro (Dynasty), the Micro (RTS), and the Bridge (Settlement).
 2.A. The Macro (Dynasty Layer)
 This is the "Crusader Kings" layer. It is the top-level grand strategy map of Scandinavia and beyond.
@@ -41,21 +40,19 @@ Gameplay: Grid-based city-builder (e.g., RimWorld, Stronghold).
 Player Actions: Placing buildings, upgrading structures, assigning workers, and managing resources.
 Consequence: The layout of your Settlement becomes the map for all defensive "Micro" missions. A well-designed base provides a massive tactical advantage.
 3. Key Features
-(Unchanged from v1.62) (This section will be expanded as we implement Phases 2-4)
+(This section will be expanded as we implement Phases 3-4)
 4. Technical Stack & Philosophy
-(Unchanged from v1.62)
 Engine: Godot 4.4
 Scripting: GDScript
 Architecture:
 Data-Driven: All game stats (unit HP, building cost, etc.) must be custom Resource files (.tres) to empower design and balancing without code changes.
-Singleton (Autoload) Managers: Global systems (SettlementManager, EventBus) are implemented as Autoloads for easy access and clear separation of concerns.
+Singleton (Autoload) Managers: Global systems (EventBus, SettlementManager) are implemented as Autoloads for easy access and clear separation of concerns.
 Event Bus: All communication between major, decoupled systems (e.g., UI, AI, Game Loop) must go through the EventBus singleton. No direct references.
 Finite State Machines (FSMs): All entities with 3+ states (like AI units) must use an FSM.
 5. Art Style & Mood
-(Unchanged from v1.62) (Placeholder section for future development)
+(Placeholder section for future development)
 6. Core Entities & Data Structures
 6.A. Overview
-(Unchanged from v1.62)
 All game entities are defined by a Resource script (.gd) and then implemented as one or more .tres files.
 6.B. BuildingData.gd (AMENDED)
 Defines the stats for all static structures in the game.
@@ -66,7 +63,7 @@ Key Properties:
 @export var display_name: String  (e.g., "Stone Wall")
 @export var scene_to_spawn: PackedScene  (The .tscn file to instance)
 @export var icon: Texture2D  (For the build menu)
-@export var build_cost: int
+@export var build_cost: Dictionary  (e.g., {"stone": 25})
 @export var max_health: int
 @export var blocks_pathfinding: bool  (If true, updates the A* grid)
 @export var grid_size: Vector2i  (Size in grid cells)
@@ -75,7 +72,6 @@ Key Properties:
 @export var attack_damage: int
 @export var attack_range: float
 @export var attack_speed: float
-
 
 6.C. UnitData.gd (AMENDED)
 Defines the stats for all mobile units in the game.
@@ -86,7 +82,7 @@ Key Properties:
 @export var display_name: String  (e.g., "Viking Raider")
 @export var scene_to_spawn: PackedScene
 @export var icon: Texture2D  (For the training menu)
-@export var spawn_cost: int
+@export var spawn_cost: Dictionary (e.g., {"food": 50, "gold": 20})
 @export_group("Combat Stats")
 @export var max_health: int
 @export var move_speed: float
@@ -94,82 +90,105 @@ Key Properties:
 @export var attack_range: float
 @export var attack_speed: float
 
+6.D. EconomicBuildingData.gd (NEW)
+Extends BuildingData with properties for resource generation.
+Path: res://data/buildings/EconomicBuildingData.gd
+Extends: BuildingData
+class_name EconomicBuildingData
+Key Properties:
+@export_group("Economic Stats")
+## The type of resource this building generates (e.g., "wood", "food", "gold").
+@export var resource_type: String = "wood"
 
-7. The "Defense-First" MVP
-7.A. MVP Goals
-(Unchanged from v1.62)
-The only goal of this MVP is to prove the "Sacked" loop. This is a technical, defense-first prototype.
-MVP Success Criteria: "A pre-spawned enemy unit must successfully navigate a player-built settlement, pathfind around the player's 'Wall', destroy the 'Great Hall', and trigger a 'Sacked' game-over state."
-7.B. Feature Set
-(Unchanged from v1.62) (This is the minimal feature set required to achieve the MVP goal)
+
+## The fixed amount of resources generated after each successful attack.
+@export var fixed_payout_amount: int = 10
+
+
+## The maximum amount of the resource that can be stored before collection.
+@export var storage_cap: int = 100
+
+6.E. SettlementData.gd (NEW)
+A Resource file that holds all persistent data for a single settlement. This allows for scalability (e.g., multiple colonies).
+Path: res://data/settlements/SettlementData.gd
+Extends: Resource
+class_name SettlementData
+Key Properties:
+## Stores current "Loot" resources (e.g., {"gold": 1000, "wood": 500})
+@export var treasury: Dictionary
+
+
+## Stores all placed buildings for persistence.
+## Array of Dictionaries: [{"resource_path": "res://...", "grid_position": Vector2i(x, y)}]
+@export var placed_buildings: Array[Dictionary]
+
+7. Core Implemented Systems
+This section describes the major gameplay loops and architectural patterns that are currently implemented and functional in the game.
+7.A. "Sacked" Loop (Defense-First)
+The "Defense-First" MVP loop is complete and functional.
 Systems: SettlementManager, AStarGrid2D Pathfinding, EventBus, FSM.
-Buildings (Data): "Great Hall" (Objective), "Stone Wall" (Obstacle).
-Units (Data): "Viking Raider" (Enemy).
-Scenes: SettlementBridge.tscn (The "Conductor" scene), DefensiveMicro.tscn (The "World" scene), Base_Building.tscn, Base_Unit.tscn.
 Core Loop:
-Game starts in SettlementBridge.tscn.
-SettlementBridge.gd spawns the Great Hall and the Raider.
-Player can click to place "Stone Wall" obstacles.
-Raider AI paths around walls to the Great Hall.
+SettlementBridge.gd loads home_base.tres (a SettlementData resource).
+SettlementManager.load_settlement() reads this data, instantiates the "Great Hall" and any other saved buildings, and configures the AStarGrid2D.
+Player can place "Stone Wall" obstacles.
+Player clicks "Start Attack," which spawns an enemy "Viking Raider".
+Raider AI (UnitFSM) paths around walls to the Great Hall.
 Raider attacks and destroys the Hall.
-Hall's destruction triggers a "SACKED" message on the UI.
-7.C. Core Architecture (Phase 2 Specification)
-This section defines the target architecture for the Phase 2 economic systems. This design refactors the Phase 1 SettlementManager to support scalability and the new data requirements.
-The monolithic SettlementManager will be split into two distinct parts:
-Persistent Data Resource (SettlementData.gd): This new Resource script will hold all persistent settlement data, including:
-treasury (Dictionary)
-placed_buildings (Array)
-last_visited_timestamp (int) A .tres file (e.g., home_base.tres) will represent a unique, persistent settlement.
-Singleton Manager (SettlementManager.gd): The Autoload will be refactored into a runtime manager. Its new responsibilities are to:
-Load a SettlementData resource on demand.
-Manage the AStarGrid2D and pathfinding.
-Process runtime requests (e.g., attempt_purchase, calculate_chunk_payout).
-It will no longer hold any persistent data itself.
-Data-Driven: BuildingData.gd and UnitData.gd will be expanded by EconomicBuildingData.gd.
-AI: UnitFSM.gd and EventBus signals remain the core of unit AI.
-8. Post-MVP Roadmap
-Phase 2: The "Reinvestment" Economy (The 'Bridge')
-Overview
-This phase implements the core economic engine of the "Bridge" (Settlement) layer. This is not a traditional passive-income RTS economy (like Age of Empires).
-The design is a hybrid "Raid-and-Spend" model. This keeps the player's focus on the active, core fantasy of Viking raiding, while supplementing it with strategic, long-term investments in their home base.
-Pillar 1: The 'Treasury' & 'Storefront'
-This pillar involves tracking player resources (Gold, Wood, Stone, etc.) in a persistent Treasury and creating a 'Storefront' UI where those resources can be spent on new buildings and units.
-Build Cost Data Structure To support the multi-resource "Raid-and-Spend" economy, all buildable items, units, and upgrades will have their costs defined as a Dictionary data structure. This allows any item to cost one or more resource types.
-Example (Defensive):
-Stone Wall Cost: {"stone": 25}
-Example (Economic):
-Lumber Yard Cost: {"wood": 50, "gold": 10}
-Example (Unit):
-Viking Raider Cost: {"food": 50, "gold": 20}
-
-
-Pillar 2: The 'Active' Loop (Raiding for Loot)
-This is the primary source of all income in the game.
-Concept: This system is the "generator" for the entire economy. It directly connects to the Phase 3 (Offensive Raids) RTS loop.
-Function: Upon successfully completing an "Offensive Raid" mission, the player will be awarded a lump sum of Loot based on their performance. When the player returns to the "Bridge" scene, this loot is deposited directly into the "Treasury."
-Pillar 3: The 'Reinvestment' Loop (Investing for Growth)
-This is the secondary economic loop, providing strategic depth and a long-term progression path.
-Concept: Players can spend loot from the Treasury to build or upgrade "Economic Buildings" (e.g., Farm Upgrade, Trading Post, Lumber Yard). This represents a long-term investment in the settlement's infrastructure.
-Function (The "Chunk" Payout): These buildings do not generate resources passively in real-time. Instead, they accumulate a "chunk" of their given resource while the player is away (e.g., on a raid or offline).
-Payout Mechanism: Upon returning to the "Bridge" scene, a function will calculate the total accumulated resources from all economic buildings (up to a defined 'storage cap' for each) and present it to the player as a "Welcome Home" reward. This simulates the "harvest" or "trade profits" that occurred during their absence. The player must click the "Collect" button on the modal. This action will deposit the resources into the Treasury and update the UI, providing a tangible, player-driven feedback loop for their investment.
-Strategic Layer: This creates the central economic choice for the player:
-Spend Loot: On immediate military power (e.t., better troops for the next raid).
+Hall's building_destroyed signal is caught by SettlementBridge.gd.
+UI shows "SACKED" message and a RestartButton.
+7.B. Core Architecture (Refactored)
+This section defines the current architecture after the Phase 2 refactor, which supports the economy and future scalability. The monolithic SettlementManager has been split.
+Persistent Data Resource (SettlementData.gd)
+This is a Resource script (.gd) that holds all persistent data for one settlement.
+A .tres file (e.g., home_base.tres) represents a unique, saveable settlement.
+It is responsible for storing:
+treasury: Dictionary (e.g., {"gold": 1000, "wood": 10})
+placed_buildings: Array[Dictionary]
+Singleton Runtime Manager (SettlementManager.gd)
+This is the Autoload singleton. It is a runtime manager and holds no persistent data itself.
+Responsibilities:
+Load/Save: Loads a SettlementData resource (e.g., load_settlement(home_base_data)) and saves it (save_settlement()).
+Pathfinding: Manages the global AStarGrid2D and provides get_astar_path().
+Runtime Logic: Processes runtime requests (e.g., attempt_purchase, calculate_payout).
+Scene Management: Holds the BuildingContainer node to parent all instanced buildings.
+Conductor Scene (SettlementBridge.gd)
+This is the main "Conductor" scene.
+Responsibilities:
+Telling SettlementManager which settlement to load.
+Managing the UI layer (Storefront, Payout Popup).
+Spawning units (both enemy Raiders for defense and player units for offense).
+Connecting signals (e.g., great_hall.building_destroyed).
+7.C. "Reinvestment" Economy (Phase 2)
+This implements the core "Raid-and-Spend" economic engine.
+Pillar 1: The 'Treasury' & 'Storefront' (Implemented)
+Treasury: The treasury Dictionary in SettlementData.gd tracks all "Loot" resources (Gold, Wood, Stone, etc.).
+Storefront: Storefront_UI.tscn allows the player to spend Treasury resources.
+Build Cost: All buildable items (buildings, units) have their cost defined as a Dictionary in their data resource (e.g., build_cost = {"stone": 25} or spawn_cost = {"food": 50, "gold": 10}). SettlementManager.attempt_purchase() handles this logic.
+Pillar 2: The 'Active' Loop (Raiding for Loot) (Partial)
+Concept: This is the primary income generator, designed to connect to the Phase 3 (Offensive Raids) loop.
+Function: Upon completing an "Offensive Raid" (Phase 3), the player will be awarded a lump sum of Loot. For now, this is simulated with a debug key.
+Pillar 3: The 'Reinvestment' Loop (Implemented)
+Concept: This is the secondary economic loop. Players spend loot on "Economic Buildings" (e.g., LumberYard.tres) as a long-term investment.
+Function (The "Fixed" Payout): These buildings do not generate resources passively over time. Instead, they provide a fixed, lump-sum resource payout after each attack mission. This "one attack = one payout" model respects the player's effort and is highly predictable.
+Payout Mechanism:
+The player returns to the SettlementBridge scene (simulating a return from a raid).
+SettlementBridge.gd calls SettlementManager.calculate_payout().
+This function iterates all EconomicBuildingData buildings owned by the player and sums their fixed_payout_amount property.
+The total payout is displayed on the WelcomeHome_Popup.tscn.
+The player must click "Collect" to deposit the resources into the Treasury, providing a tangible feedback loop.
+Strategic Layer: This creates the central economic choice:
+Spend Loot: On immediate military power (e.g., better troops for the next raid).
 Invest Loot: On economic buildings for long-term, compounding resource growth.
-Pillar 4: Core Architectural Refactor (To Support Colonization)
-To support the long-term vision of founding new colonies (as discussed in Section 7.C), the SettlementManager Singleton must be refactored before this phase is implemented.
-Task: The SettlementManager AutoLoad will be replaced by a Resource-based system.
-New Structure:
-Create a new custom Resource named SettlementData.gd.
-This script will hold all data for a single settlement: its settlement_grid, building_status, treasury, and economic_building_levels.
-Benefit: The "Home Base" (home_base.tres) and any future "Colonies" (colony_1.tres) will simply be different resource files loaded by the same SettlementBridge.tscn scene. This makes expansion infinitely scalable.
-Phase 3: The "Offensive Raid" Mission Type
+8. Development Roadmap
+This section outlines the next major phases of development, building upon the implemented systems.
+8.A. Phase 3: The "Offensive Raid" Mission Type (Next)
 Goal: To implement the player-driven "Micro" RTS loop.
 Key Features:
-Player Unit Spawning: Logic to spend resources to spawn player-controlled units.
+Player Unit Spawning: Logic in the Storefront UI to spend Treasury resources (spawn_cost) to train player-controlled units.
 Basic Unit Control: A simple "RTS-style" control script (select units, right-click to move/attack).
-"Offensive Raid" Mission Loader: A system to load an "enemy" settlement map and spawn pre-defined enemy units.
-Why second? This re-uses all the combat and A* tech from the MVP but gives the player agency. It directly connects the economy (Phase 2) to combat (Phase 3).
-Phase 4: Integrate the "Macro" (The Dynasty Layer)
+"Offensive Raid" Mission Loader: A system to load an "enemy" settlement map (a different SettlementData.tres file) and spawn pre-defined enemy units.
+Why next? This re-uses all combat/A* tech, gives the player agency, and fully connects the "Active Loop" (Pillar 2) by providing the "Loot" that powers the entire economy.
+8.B. Phase 4: Integrate the "Macro" (The Dynasty Layer) (Future)
 Goal: To build the "Crusader Kings" DNA that connects all the loops into a single, compelling narrative.
 Key Features:
 Dynasty & Trait System: Implement the family tree, character inheritance, and traits.
@@ -177,66 +196,42 @@ Geopolitical Map: Build the high-level map where the player interacts with other
 Event Triggers: A rival Jarl declaring war (Macro) will trigger the "Sacked" defensive loop (Micro). The player deciding to attack (Macro) will trigger the "Offensive Raid" loop (Micro).
 Why last? This system provides the ultimate context, but it relies on the other two pillars (Economy and Combat) to have meaningful consequences.
 
+
+
 ---
 ### **3. DevLog**
 
-Devlog: "Defense-First" MVP is Complete!
-We've successfully completed our "Defense-First" MVP. The goal was to prove our core "Micro-to-Bridge" loop by building a playable, grid-based defensive battle. We can confirm that all 5 implementation tasks are now functional and integrated.
+Devlog Update: Pivoting to a More Robust Economic Loop
 
-Here's a breakdown of our progress:
+This week saw a major refinement to our core economic loop. After prototyping an initial time-based system, we made a key strategic decision to pivot to a simpler, more predictable, and more balanced fixed-payout model. This new system feels more satisfying for the player and provides a much stronger foundation for future development.
 
-✅ Task 1: Data Foundations Built
+Key Insight: From Time-Based to Action-Based Rewards
+*   Initial Prototype: We successfully implemented a full, time-based resource generation system. This prototype was crucial for testing our data persistence and UI flow.
+*   Design Realization: Through testing, we identified that time-based rewards, while realistic, could feel unpredictable and create balancing challenges. It also less directly rewarded the player's core action of completing an attack.
+*   💡 The Pivot (Design Choice): We made the call to switch to a fixed-payout system. This decision ties the reward directly to the gameplay loop: one attack equals one payout. This model is more "gamey," respects the player's effort, and gives them a clear understanding of the value of their economic buildings.
 
-We successfully defined our core data structures, BuildingData.gd and UnitData.gd.
+---
 
-This allows us to create new units and buildings (like the "Stone Wall" and "Great Hall") entirely as .tres resource files, with no new code required.
+Core Achievements & Current Features
 
-✅ Task 2: Core Grid & Manager Implemented
+*   ✅ Rock-Solid Persistence
+*   Player purchases of economic buildings like the Lumber Yard are saved instantly and permanently to a .tres resource file. What you build stays built.
 
-The SettlementManager singleton is live. It now successfully creates, configures, and manages the AStarGrid2D pathfinding object.
+*   ✅ Predictable, Fixed Payouts
+*   A new fixedpayoutamount property has been added to all economic buildings.
+*   Returning to the settlement after an attack now triggers a clean calculate_payout() function.
 
-It handles all building placement logic, correctly marking tiles as "solid" on the grid.
+*   ✅ Simple & Scalable Logic
+*   The payout is now a simple sum of the fixedpayoutamount from all owned economic buildings.
+*   Example: Owning two Lumber Yards (at 10 Wood each) results in a guaranteed "Wood: 20" payout after every attack.
 
-✅ Task 3: Test Scene Operational
+*   ✅ Full UI Integration
+*   The "Welcome Home" popup correctly displays the calculated fixed payout.
+*   The "Collect" button works perfectly, transferring the generated resources to the player's main treasury and updating the UI.
 
-Our main SettlementBridge.tscn is fully functional as the MVP's "conductor."
-
-It successfully spawns the level, instances the UI, and captures player input to test our building logic.
-
-✅ Task 4: Reactive AI & Pathfinding Complete
-
-We have a working BaseUnit with a Finite State Machine (FSM) that correctly manages IDLE, MOVE, and ATTACK states.
-
-The AI successfully requests paths from the SettlementManager.
-
-Crucially, the AI is now reactive. Thanks to our EventBus integration, units listening for the pathfinding_grid_updated signal will automatically re-calculate their path when the player builds a new wall.
-
-✅ Task 5: Full "Sacked" Loop Complete!
-
-This is the final win that connects everything. The SettlementBridge now:
-
-Spawns the Great Hall.
-
-Spawns a Raider and tells it to attack the Hall.
-
-The Raider paths to a walkable tile above the Hall (solving our "stuck" bug).
-
-It successfully enters the ATTACK state and deals damage until the Hall is destroyed.
-
-The Hall's building_destroyed signal is caught, triggering the "YOU HAVE BEEN SACKED" UI state and ending the combat.
-
-⚠️ Key Challenges & Amendments
-A core part of this MVP was "retiring risk," and we solved several major technical hurdles:
-
-GDD Amendment (StaticBody2D): We proved the GDD's Area2D spec for buildings was incorrect for our goals. We've amended the GDD to use StaticBody2D, which correctly provides the physical collision needed for pathfinding.
-
-AI Range & "Jank": We fixed a bug where the AI's "attack range" was too short, causing it to "re-engage" and get stuck. By increasing the range in the Unit_Raider.tres file, we've confirmed the AI can now complete its attack cycle.
-
-Singleton vs. class_name: We debugged and resolved the core engine conflict between Autoload singletons (like EventBus and SettlementManager) and custom resource scripts (like BuildingData).
-
-In short: The foundation is built and it is solid.
-
-This officially concludes our work on the MVP implementation plan. We are now ready to move on to the post-MVP roadmap.
+*   ✅ Streamlined & Cleaned Codebase
+*   As a result of the pivot, the entire economic codebase has been simplified.
+*   All complex timestamp-tracking logic, variables, and debug functions have been completely removed, making the system much easier to maintain and expand upon.
 
 ---
 ### **4. Project Context**
@@ -257,7 +252,7 @@ config_version=5
 [application]
 
 config/name="Viking Dynasty"
-run/main_scene="uid://cpkd7lvdwsydo"
+run/main_scene="uid://c53k15q2w8c1a"
 config/features=PackedStringArray("4.5", "GL Compatibility")
 
 [autoload]
@@ -268,6 +263,10 @@ SettlementManager="*res://autoload/SettlementManager.tscn"
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/GodotAiSuite/plugin.cfg")
+
+[input]
+
+debug_time_travel="{\"deadzone\": 0.5, \"events\": [{\"physical_keycode\": 84, \"type\": \"key\"}]}"
 --- END OF PROJECT SETTINGS ---
 
 #### **4.2. Resource Files**
@@ -295,10 +294,12 @@ noise = SubResource("FastNoiseLite_cemhj")
 script = ExtResource("1_i2pmy")
 display_name = "Great Hall"
 scene_to_spawn = ExtResource("2_hptna")
-build_cost = 500
+build_cost = {
+"gold": 100,
+"wood": 250
+}
 max_health = 50
 grid_size = Vector2i(3, 2)
-metadata/_custom_type_script = "uid://js4bbqgeyd6c"
 
 --- RESOURCE: res://data/buildings/Bldg_Wall.tres ---
 [gd_resource type="Resource" script_class="BuildingData" load_steps=3 format=3 uid="uid://b2356vlfukf14"]
@@ -310,10 +311,88 @@ metadata/_custom_type_script = "uid://js4bbqgeyd6c"
 script = ExtResource("1_t76rl")
 display_name = "Stone Wall"
 scene_to_spawn = ExtResource("1_vluf5")
+build_cost = {
+"stone": 25
+}
 attack_damage = 0
 attack_range = 0.0
 attack_speed = 0.0
-metadata/_custom_type_script = "uid://js4bbqgeyd6c"
+
+--- RESOURCE: res://data/buildings/LumberYard.tres ---
+[gd_resource type="Resource" script_class="EconomicBuildingData" load_steps=3 format=3 uid="uid://drx4sih8numo1"]
+
+[ext_resource type="Script" uid="uid://d33smw07vm6y4" path="res://data/buildings/EconomicBuildingData.gd" id="1_abcde"]
+[ext_resource type="PackedScene" uid="uid://cws6xle5x52g4" path="res://scenes/buildings/Base_Building.tscn" id="2_fghij"]
+
+[resource]
+script = ExtResource("1_abcde")
+display_name = "Lumber Yard"
+scene_to_spawn = ExtResource("2_fghij")
+build_cost = {
+"wood": 50
+}
+max_health = 75
+grid_size = Vector2i(2, 2)
+
+--- RESOURCE: res://data/settlements/home_base.tres ---
+[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://c614q14udkh33"]
+
+[ext_resource type="Script" uid="uid://hlb8s5g0yp6k" path="res://data/settlements/SettlementData.gd" id="1_abcde"]
+
+[resource]
+script = ExtResource("1_abcde")
+treasury = {
+"food": 325,
+"gold": 1000,
+"stone": 700,
+"wood": 10
+}
+placed_buildings = Array[Dictionary]([{
+"grid_position": Vector2i(25, 15),
+"resource_path": "res://data/buildings/Bldg_GreatHall.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}])
 
 --- RESOURCE: res://data/units/Unit_Raider.tres ---
 [gd_resource type="Resource" script_class="UnitData" load_steps=2 format=3 uid="uid://brnbvjwnoyh3j"]
@@ -388,6 +467,67 @@ SettlementBridge (Node)
 >   > offset_right = 328.0
 >   > offset_bottom = 39.0
 >   > text = "Click to build a Wall. Defend the Great Hall!"
+>   Storefront_UI (Control)
+>     script: res://ui/StorefrontUI.gd
+>     scene: res://ui/Storefront_UI.tscn
+>     PanelContainer (PanelContainer)
+>     > layout_mode = 1
+>     > anchors_preset = -1
+>     > offset_right = 400.0
+>     > offset_bottom = 100.0
+>       MarginContainer (MarginContainer)
+>       > layout_mode = 2
+>         VBoxContainer (VBoxContainer)
+>         > layout_mode = 2
+>           TreasuryDisplay (HBoxContainer)
+>           > layout_mode = 2
+>             GoldLabel (Label)
+>             > layout_mode = 2
+>             > text = "Gold: 0"
+>             WoodLabel (Label)
+>             > layout_mode = 2
+>             > text = "Wood: 0"
+>             FoodLabel (Label)
+>             > layout_mode = 2
+>             > text = "Food: 0"
+>             StoneLabel (Label)
+>             > layout_mode = 2
+>             > text = "Stone: 0"
+>           BuildButtons (HBoxContainer)
+>           > layout_mode = 2
+>             BuyWallButton (Button)
+>             > layout_mode = 2
+>             > text = "Buy Wall (25 Stone)"
+>             BuyLumberYardButton (Button)
+>             > layout_mode = 2
+>             > text = "Buy Lumber Yard (50 Wood)"
+>             @Button@30913 (Button)
+>             > layout_mode = 2
+>             @Button@31566 (Button)
+>             > layout_mode = 2
+>   RestartButton (Button)
+>   > visible = false
+>   > anchors_preset = -1
+>   > anchor_left = 0.5
+>   > anchor_top = 0.5
+>   > anchor_right = 0.5
+>   > anchor_bottom = 0.5
+>   > offset_left = -84.0
+>   > offset_top = -15.5
+>   > offset_right = 84.0
+>   > offset_bottom = 15.5
+>   > grow_horizontal = 2
+>   > grow_vertical = 2
+>   > text = "Return to Settlement"
+>   StartAttackButton (Button)
+>   > anchors_preset = -1
+>   > anchor_left = 1.0
+>   > anchor_right = 1.0
+>   > offset_left = -110.0
+>   > offset_right = -10.0
+>   > offset_bottom = 31.0
+>   > grow_horizontal = 0
+>   > text = "Start Attack"
 
 --- SCENE: res://scenes/units/Base_Unit.tscn ---
 Base_Unit (CharacterBody2D)
@@ -409,6 +549,71 @@ VikingRaider (CharacterBody2D)
 > CollisionShape2D (CollisionShape2D)
 > > shape = res://scenes/units/Base_Unit.tscn::RectangleShape2D_n6s0a
 > AttackTimer (Timer)
+
+--- SCENE: res://ui/Storefront_UI.tscn ---
+Main (Control)
+> script: res://ui/StorefrontUI.gd
+> scene: res://ui/Storefront_UI.tscn
+> PanelContainer (PanelContainer)
+> > layout_mode = 1
+> > anchors_preset = -1
+> > offset_right = 400.0
+> > offset_bottom = 100.0
+>   MarginContainer (MarginContainer)
+>   > layout_mode = 2
+>     VBoxContainer (VBoxContainer)
+>     > layout_mode = 2
+>       TreasuryDisplay (HBoxContainer)
+>       > layout_mode = 2
+>         GoldLabel (Label)
+>         > layout_mode = 2
+>         > text = "Gold: 0"
+>         WoodLabel (Label)
+>         > layout_mode = 2
+>         > text = "Wood: 0"
+>         FoodLabel (Label)
+>         > layout_mode = 2
+>         > text = "Food: 0"
+>         StoneLabel (Label)
+>         > layout_mode = 2
+>         > text = "Stone: 0"
+>       BuildButtons (HBoxContainer)
+>       > layout_mode = 2
+>         BuyWallButton (Button)
+>         > layout_mode = 2
+>         > text = "Buy Wall (25 Stone)"
+>         BuyLumberYardButton (Button)
+>         > layout_mode = 2
+>         > text = "Buy Lumber Yard (50 Wood)"
+>         @Button@30913 (Button)
+>         > layout_mode = 2
+>         @Button@31566 (Button)
+>         > layout_mode = 2
+
+--- SCENE: res://ui/WelcomeHome_Popup.tscn ---
+Main (PanelContainer)
+> script: res://ui/WelcomeHomePopup.gd
+> scene: res://ui/WelcomeHome_Popup.tscn
+> anchor_left = 0.5
+> anchor_top = 0.5
+> anchor_right = 0.5
+> anchor_bottom = 0.5
+> offset_left = -2.0
+> offset_top = -15.5
+> offset_right = 2.0
+> offset_bottom = 15.5
+> size_flags_horizontal = 4
+> size_flags_vertical = 4
+> MarginContainer (MarginContainer)
+> > layout_mode = 2
+>   VBoxContainer (VBoxContainer)
+>   > layout_mode = 2
+>     PayoutLabel (Label)
+>     > layout_mode = 2
+>     > text = "Welcome home! ..."
+>     CollectButton (Button)
+>     > layout_mode = 2
+>     > text = "Collect"
 --- END OF SCENE STRUCTURES ---
 
 #### **4.4. Codebase**
@@ -423,22 +628,23 @@ VikingRaider (CharacterBody2D)
 
 extends Node
 
-# Emitted by the UI, listened for by the SettlementManager.
+# --- Build System Signals ---
 signal build_request_made(building_data: BuildingData, grid_position: Vector2i)
 
-# --- ADDED ---
-# Emitted by the SettlementManager when a wall is placed.
-# Listened for by any unit's FSM to trigger a re-path.
+# --- Pathfinding Signals ---
 signal pathfinding_grid_updated(grid_position: Vector2i)
+
+# --- Treasury & Economy Signals (Phase 2) ---
+signal treasury_updated(new_treasury: Dictionary)
+signal purchase_successful(item_name: String)
+signal purchase_failed(reason: String)
 
 --- SCRIPT: res://autoload/SettlementManager.gd ---
 # res://autoload/SettlementManager.gd
-#
-# --- MODIFIED: Added GDD-required function 'update_building_status' ---
-
 
 extends Node
 
+var current_settlement: SettlementData
 var astar_grid: AStarGrid2D
 @onready var building_container: Node2D = $BuildingContainer
 
@@ -446,30 +652,42 @@ const TILE_SIZE: int = 32
 const GRID_WIDTH: int = 50
 const GRID_HEIGHT: int = 30
 
-func _ready() -> void:
-	astar_grid = AStarGrid2D.new()
-	EventBus.build_request_made.connect(place_building, CONNECT_DEFERRED)
-	_initialize_grid()
-
-func _exit_tree() -> void:
-	if EventBus.is_connected("build_request_made", place_building):
-		EventBus.build_request_made.disconnect(place_building)
-
 func _initialize_grid() -> void:
-	print("Initializing Settlement Grid...")
+	astar_grid = AStarGrid2D.new()
 	var playable_rect := Rect2i(0, 0, GRID_WIDTH, GRID_HEIGHT)
 	astar_grid.region = playable_rect
 	astar_grid.cell_size = Vector2(TILE_SIZE, TILE_SIZE)
 	astar_grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_NEVER
 	astar_grid.update()
-	print("Settlement Grid Initialized: %d x %d" % [GRID_WIDTH, GRID_HEIGHT])
+	print("Settlement Grid Initialized.")
 
-func place_building(building_data: BuildingData, grid_position: Vector2i) -> void:
-	if not building_data or not building_data.scene_to_spawn:
-		push_error("Build request failed: BuildingData or scene_to_spawn is null.")
+func load_settlement(data: SettlementData) -> void:
+	if not data:
+		push_error("SettlementManager: load_settlement called with null data.")
 		return
 	
-	print("Placing '%s' at grid position %s" % [building_data.display_name, grid_position])
+	current_settlement = data
+	_initialize_grid()
+	
+	for child in building_container.get_children():
+		child.queue_free()
+
+	for building_entry in current_settlement.placed_buildings:
+		var building_res_path: String = building_entry["resource_path"]
+		var grid_pos: Vector2i = building_entry["grid_position"]
+		
+		var building_data: BuildingData = load(building_res_path)
+		if building_data:
+			place_building(building_data, grid_pos)
+		else:
+			push_error("Failed to load building resource from path: %s" % building_res_path)
+	
+	print("Settlement loaded with %d buildings." % building_container.get_child_count())
+
+func place_building(building_data: BuildingData, grid_position: Vector2i) -> BaseBuilding:
+	if not building_data or not building_data.scene_to_spawn:
+		push_error("Build request failed: BuildingData or scene_to_spawn is null.")
+		return null
 	
 	var new_building: BaseBuilding = building_data.scene_to_spawn.instantiate()
 	new_building.data = building_data
@@ -481,30 +699,87 @@ func place_building(building_data: BuildingData, grid_position: Vector2i) -> voi
 	building_container.add_child(new_building)
 	
 	if building_data.blocks_pathfinding:
-		# TODO: This should loop over the building's grid_size
 		astar_grid.set_point_solid(grid_position, true)
 		astar_grid.update()
-		print("Updated A* grid. Point %s is now solid." % grid_position)
 		EventBus.pathfinding_grid_updated.emit(grid_position)
+		
+	return new_building
 
-# --- ADDED ---
-# As required by GDD
-func update_building_status(grid_position: Vector2i, new_status: String) -> void:
-	"""
-	Updates the status of a building in the settlement grid.
-	This is the hook for the 'Macro' layer's save data.
-	"""
-	# For now, we just print. In the future, this would
-	# update a dictionary or save file.
-	print("SETTLEMENT_MANAGER: Building at %s status set to '%s'" % [grid_position, new_status])
+func deposit_loot(loot: Dictionary) -> void:
+	if not current_settlement: return
+	for resource_type in loot:
+		if current_settlement.treasury.has(resource_type):
+			# Payouts should respect the storage cap of the building that generated them,
+			# but the main treasury can be considered unlimited for now.
+			current_settlement.treasury[resource_type] += loot[resource_type]
+		else:
+			current_settlement.treasury[resource_type] = loot[resource_type]
+	EventBus.treasury_updated.emit(current_settlement.treasury)
+	print("Loot deposited. New treasury: %s" % current_settlement.treasury)
 
+func attempt_purchase(item_cost: Dictionary) -> bool:
+	if not current_settlement: return false
+	
+	for resource_type in item_cost:
+		if not current_settlement.treasury.has(resource_type) or \
+		current_settlement.treasury[resource_type] < item_cost[resource_type]:
+			var reason = "Insufficient %s" % resource_type
+			print("Purchase failed. %s." % reason)
+			EventBus.purchase_failed.emit(reason)
+			return false
+			
+	for resource_type in item_cost:
+		current_settlement.treasury[resource_type] -= item_cost[resource_type]
+	
+	EventBus.treasury_updated.emit(current_settlement.treasury)
+	EventBus.purchase_successful.emit("Unnamed Item") # Placeholder
+	print("Purchase successful. New treasury: %s" % current_settlement.treasury)
+	return true
+
+func calculate_payout() -> Dictionary:
+	if not current_settlement:
+		return {}
+
+	var total_payout: Dictionary = {}
+
+	for building_entry in current_settlement.placed_buildings:
+		var building_data: BuildingData = load(building_entry["resource_path"])
+		if building_data is EconomicBuildingData:
+			var eco_data: EconomicBuildingData = building_data
+			var resource_type: String = eco_data.resource_type
+			
+			if not total_payout.has(resource_type):
+				total_payout[resource_type] = 0
+			
+			# The payout is now a simple, fixed amount per building.
+			# The storage_cap is now effectively the treasury cap, handled in deposit_loot.
+			total_payout[resource_type] += eco_data.fixed_payout_amount
+
+	if not total_payout.is_empty():
+		print("Calculated fixed payout: %s" % total_payout)
+	return total_payout
 
 func get_astar_path(start_pos: Vector2, end_pos: Vector2) -> PackedVector2Array:
+	if not astar_grid:
+		push_error("AStarGrid is not initialized!")
+		return PackedVector2Array()
 	var start_id: Vector2i = Vector2i(start_pos / astar_grid.cell_size)
 	var end_id: Vector2i = Vector2i(end_pos / astar_grid.cell_size)
+	return astar_grid.get_point_path(start_id, end_id)
+
+func save_settlement() -> void:
+	if not current_settlement:
+		push_error("Attempted to save a null settlement.")
+		return
 	
-	var world_path: PackedVector2Array = astar_grid.get_point_path(start_id, end_id)
-	return world_path
+	if current_settlement.resource_path and not current_settlement.resource_path.is_empty():
+		var error = ResourceSaver.save(current_settlement, current_settlement.resource_path)
+		if error == OK:
+			print("Settlement data saved successfully to: %s" % current_settlement.resource_path)
+		else:
+			push_error("Failed to save settlement data to path: %s. Error code: %s" % [current_settlement.resource_path, error])
+	else:
+		push_warning("SettlementData has no resource_path, cannot save settlement.")
 
 --- SCRIPT: res://data/buildings/Base_Building.gd ---
 # res://scenes/buildings/Base_Building.gd
@@ -565,7 +840,7 @@ extends Resource
 @export var icon: Texture2D
 
 ## The cost in 'Resources' (e.g., wood, gold) to build this.
-@export var build_cost: int = 10
+@export var build_cost: Dictionary
 
 ## The building's maximum hit points.
 @export var max_health: int = 100
@@ -589,6 +864,31 @@ extends Resource
 
 ## Attacks per second (if defensive).
 @export var attack_speed: float = 1.0
+
+--- SCRIPT: res://data/buildings/EconomicBuildingData.gd ---
+# res://data/buildings/EconomicBuildingData.gd
+extends BuildingData
+class_name EconomicBuildingData
+
+@export_group("Economic Stats")
+## The type of resource this building generates (e.g., "wood", "food", "gold").
+@export var resource_type: String = "wood"
+
+## The fixed amount of resources generated after each successful attack.
+@export var fixed_payout_amount: int = 10
+
+## The maximum amount of the resource that can be stored before collection.
+@export var storage_cap: int = 100
+
+--- SCRIPT: res://data/settlements/SettlementData.gd ---
+extends Resource
+class_name SettlementData
+
+@export var treasury: Dictionary = {"gold": 0, "wood": 0, "food": 0, "stone": 0}
+
+# Stores building data and position. Structure:
+# {"resource_path": "res://...", "grid_position": Vector2i(x, y)}
+@export var placed_buildings: Array[Dictionary] = []
 
 --- SCRIPT: res://data/units/UnitData.gd ---
 # res://data/units/UnitData.gd
@@ -775,59 +1075,90 @@ func _on_attack_timer_timeout() -> void:
 
 --- SCRIPT: res://scripts/buildings/SettlementBridge.gd ---
 # res://scripts/buildings/SettlementBridge.gd
-#
-# This is the "main" script for the settlement defense scene.
-#
-# --- THIS IS THE CORRECT SCRIPT FOR THE TASK 5 "SACKED" LOOP ---
 
 extends Node
 
-# --- Preloaded Test Assets ---
+# --- Preloaded Assets ---
 var test_building_data: BuildingData = preload("res://data/buildings/Bldg_Wall.tres")
 var raider_scene: PackedScene = preload("res://scenes/units/VikingRaider.tscn")
-var hall_data: BuildingData = preload("res://data/buildings/Bldg_GreatHall.tres")
+var home_base_data: SettlementData = preload("res://data/settlements/home_base.tres")
+var welcome_popup_scene: PackedScene = preload("res://ui/WelcomeHome_Popup.tscn")
 
 # --- Scene Node References ---
-@onready var defensive_micro: Node2D = $DefensiveMicro
 @onready var unit_container: Node2D = $UnitContainer
-@onready var label: Label = $UI/Label
+@onready var ui_layer: CanvasLayer = $UI
+@onready var restart_button: Button = $UI/RestartButton
+@onready var start_attack_button: Button = $UI/StartAttackButton
+@onready var storefront_ui: Control = $UI/Storefront_UI
+var welcome_popup: PanelContainer
 
 # --- State Variables ---
 var great_hall_instance: BaseBuilding = null
 var game_is_over: bool = false
-
-# --- Provisional Spawn Points ---
-const HALL_GRID_POS: Vector2i = Vector2i(25, 15)
 const RAIDER_SPAWN_POS: Vector2 = Vector2(50, 50)
 
 
 func _ready() -> void:
-	_spawn_great_hall()
-	_spawn_raider_for_test()
+	# --- Setup ---
+	SettlementManager.load_settlement(home_base_data)
+	_find_and_setup_great_hall()
+	_instance_ui()
+	
+	# --- Connect Signals ---
+	restart_button.pressed.connect(_on_restart_pressed)
+	start_attack_button.pressed.connect(_on_start_attack_pressed)
 
-func _spawn_great_hall() -> void:
-	"""
-	Spawns the Great Hall and connects to its destruction signal.
-	"""
-	if not hall_data:
-		push_error("Great Hall data not found!")
+	# --- Payout Logic ---
+	# This now happens when the scene loads, simulating the return from an attack.
+	var payout = SettlementManager.calculate_payout()
+	if not payout.is_empty():
+		welcome_popup.display_payout(payout)
+		start_attack_button.disabled = true # Disable combat until payout is collected
+		storefront_ui.hide()
+
+
+func _input(event: InputEvent) -> void:
+	# This runs BEFORE GUI input, so we can consume it.
+	if event.is_action_pressed("ui_accept"):
+		if game_is_over or welcome_popup.visible:
+			return # Don't grant loot if game over screen or popup is visible
+		
+		var sample_loot = {"gold": 100, "wood": 50, "food": 25, "stone": 75}
+		print("DEBUG: Granting sample loot via key press.")
+		SettlementManager.deposit_loot(sample_loot)
+		get_viewport().set_input_as_handled() # CRITICAL: Stop event from reaching buttons
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	# This runs AFTER GUI input, so it's safe for non-UI actions like placing buildings.
+	if game_is_over or welcome_popup.visible:
 		return
 		
-	# Use the SettlementManager to place the hall
-	SettlementManager.place_building(hall_data, HALL_GRID_POS)
-	
-	# The manager just placed it, so we can get it from the container.
-	# We get the last child added.
-	great_hall_instance = SettlementManager.building_container.get_child(
-		SettlementManager.building_container.get_child_count() - 1
-	)
-	
-	# --- This is the GDD's "connect" logic ---
-	if great_hall_instance:
-		great_hall_instance.building_destroyed.connect(_on_great_hall_destroyed)
-		print("Great Hall spawned. Listening for its destruction.")
-	else:
-		push_error("Failed to get Great Hall instance after spawn.")
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.is_pressed():
+		var mouse_pos: Vector2 = get_viewport().get_mouse_position()
+		var grid_pos: Vector2i = Vector2i(mouse_pos / SettlementManager.astar_grid.cell_size)
+		SettlementManager.place_building(test_building_data, grid_pos)
+		get_viewport().set_input_as_handled()
+
+func _instance_ui() -> void:
+	welcome_popup = welcome_popup_scene.instantiate()
+	ui_layer.add_child(welcome_popup)
+	welcome_popup.collect_button_pressed.connect(_on_payout_collected)
+
+func _on_payout_collected(payout: Dictionary) -> void:
+	SettlementManager.deposit_loot(payout)
+	start_attack_button.disabled = false # Re-enable combat
+	storefront_ui.show()
+
+func _find_and_setup_great_hall() -> void:
+	for building in SettlementManager.building_container.get_children():
+		if building is BaseBuilding and building.data.display_name == "Great Hall":
+			great_hall_instance = building
+			great_hall_instance.building_destroyed.connect(_on_great_hall_destroyed)
+			print("Great Hall found and connected.")
+			return
+	push_error("SettlementBridge: Could not find Great Hall instance after loading settlement.")
+
 
 func _spawn_raider_for_test() -> void:
 	if not great_hall_instance:
@@ -835,61 +1166,33 @@ func _spawn_raider_for_test() -> void:
 		return
 		
 	var raider_instance: BaseUnit = raider_scene.instantiate()
-	
-	# Add unit to the UnitContainer
 	unit_container.add_child(raider_instance)
-	
-	# Set position *after* adding to scene
 	raider_instance.global_position = RAIDER_SPAWN_POS
-	
-	# --- THIS IS THE FIX ---
-	# Tell the raider what to attack
 	raider_instance.set_attack_target(great_hall_instance)
 
-# --- Main "Sacked" Loop Logic ---
 
-func _on_great_hall_destroyed(building: BaseBuilding) -> void:
-	"""
-	This is the "Sacked" state. It's called when the Hall's
-	'building_destroyed' signal is emitted.
-	"""
+func _on_great_hall_destroyed(_building: BaseBuilding) -> void:
 	print("GAME OVER: The Great Hall has been destroyed!")
 	game_is_over = true
-	
-	# 1. Update the UI
+	var label : Label = $UI/Label
 	label.text = "YOU HAVE BEEN SACKED."
-	
-	# 2. Update the SettlementManager as per GDD
-	SettlementManager.update_building_status(HALL_GRID_POS, "Destroyed")
-	
-	# 3. End the "battle"
+	restart_button.show()
 	_destroy_all_enemies()
 
 func _destroy_all_enemies() -> void:
-	"""
-	Cleans up all active enemy units.
-	"""
 	for enemy in unit_container.get_children():
 		enemy.queue_free()
 	print("All surviving enemies have been removed.")
 
-# --- Player Input (for placing walls) ---
+func _on_restart_pressed() -> void:
+	get_tree().reload_current_scene()
 
-func _unhandled_input(event: InputEvent) -> void:
-	# Don't allow building if game is over
-	if game_is_over:
-		return
-		
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.is_pressed():
-		
-		if not test_building_data:
-			return
-
-		var mouse_pos: Vector2 = get_viewport().get_mouse_position()
-		var grid_pos: Vector2i = Vector2i(mouse_pos / SettlementManager.astar_grid.cell_size)
-		
-		EventBus.build_request_made.emit(test_building_data, grid_pos)
-		get_viewport().set_input_as_handled()
+func _on_start_attack_pressed() -> void:
+	print("Start Attack button pressed. Spawning raider.")
+	# Timestamps are no longer needed for a fixed-payout system.
+	_spawn_raider_for_test()
+	start_attack_button.hide()
+	storefront_ui.hide()
 
 --- SCRIPT: res://scripts/units/Base_Unit.gd ---
 # res://scenes/units/Base_Unit.gd
@@ -975,6 +1278,95 @@ func set_attack_target(target: BaseBuilding) -> void:
 	# Start the FSM
 	fsm.change_state(UnitFSM.State.MOVE)
 	print("Viking Raider initialized and moving to target: %s" % target.data.display_name)
+
+--- SCRIPT: res://ui/StorefrontUI.gd ---
+# res://ui/StorefrontUI.gd
+extends Control
+
+# --- Node References ---
+@onready var gold_label: Label = $PanelContainer/MarginContainer/VBoxContainer/TreasuryDisplay/GoldLabel
+@onready var wood_label: Label = $PanelContainer/MarginContainer/VBoxContainer/TreasuryDisplay/WoodLabel
+@onready var food_label: Label = $PanelContainer/MarginContainer/VBoxContainer/TreasuryDisplay/FoodLabel
+@onready var stone_label: Label = $PanelContainer/MarginContainer/VBoxContainer/TreasuryDisplay/StoneLabel
+@onready var buy_wall_button: Button = $PanelContainer/MarginContainer/VBoxContainer/BuildButtons/BuyWallButton
+@onready var buy_lumber_yard_button: Button = $PanelContainer/MarginContainer/VBoxContainer/BuildButtons/BuyLumberYardButton
+
+# --- Data ---
+var wall_data: BuildingData = preload("res://data/buildings/Bldg_Wall.tres")
+var lumber_yard_data: BuildingData = preload("res://data/buildings/LumberYard.tres")
+
+
+func _ready() -> void:
+	EventBus.treasury_updated.connect(_update_treasury_display)
+	
+	if SettlementManager.current_settlement:
+		_update_treasury_display(SettlementManager.current_settlement.treasury)
+	else:
+		_update_treasury_display({"gold": 0, "wood": 0, "food": 0, "stone": 0})
+
+	buy_wall_button.pressed.connect(_on_buy_button_pressed.bind(wall_data))
+	buy_lumber_yard_button.pressed.connect(_on_buy_button_pressed.bind(lumber_yard_data))
+
+
+func _update_treasury_display(new_treasury: Dictionary) -> void:
+	gold_label.text = "Gold: %d" % new_treasury.get("gold", 0)
+	wood_label.text = "Wood: %d" % new_treasury.get("wood", 0)
+	food_label.text = "Food: %d" % new_treasury.get("food", 0)
+	stone_label.text = "Stone: %d" % new_treasury.get("stone", 0)
+
+func _on_buy_button_pressed(item_data: BuildingData) -> void:
+	if not item_data:
+		return
+	
+	print("UI attempting to purchase '%s'." % item_data.display_name)
+	var purchase_successful: bool = SettlementManager.attempt_purchase(item_data.build_cost)
+	
+	if purchase_successful:
+		print("UI received purchase confirmation for '%s'." % item_data.display_name)
+		var test_grid_pos = Vector2i(10, 15) # TODO: Replace with player input
+		var new_building = SettlementManager.place_building(item_data, test_grid_pos)
+		
+		if new_building and SettlementManager.current_settlement:
+			var building_entry = {
+				"resource_path": item_data.resource_path,
+				"grid_position": test_grid_pos
+			}
+			SettlementManager.current_settlement.placed_buildings.append(building_entry)
+			print("Added %s to persistent settlement data." % item_data.display_name)
+			SettlementManager.save_settlement()
+	else:
+		print("UI received purchase failure for '%s'." % item_data.display_name)
+
+--- SCRIPT: res://ui/WelcomeHomePopup.gd ---
+# res://ui/WelcomeHomePopup.gd
+extends PanelContainer
+
+signal collect_button_pressed(payout: Dictionary)
+
+@onready var payout_label: Label = $MarginContainer/VBoxContainer/PayoutLabel
+@onready var collect_button: Button = $MarginContainer/VBoxContainer/CollectButton
+
+var _current_payout: Dictionary = {}
+
+func _ready() -> void:
+	collect_button.pressed.connect(_on_collect_pressed)
+	hide()
+
+func display_payout(payout: Dictionary) -> void:
+	if payout.is_empty():
+		return
+
+	_current_payout = payout
+	var payout_text: String = "Welcome home!\n\nResources gathered:\n"
+	for resource_type in payout:
+		payout_text += "- %s: %d\n" % [resource_type.capitalize(), payout[resource_type]]
+	
+	payout_label.text = payout_text
+	show()
+
+func _on_collect_pressed() -> void:
+	collect_button_pressed.emit(_current_payout)
+	hide()
 --- END OF CODEBASE ---
 
 ---

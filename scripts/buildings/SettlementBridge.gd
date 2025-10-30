@@ -33,30 +33,13 @@ func _ready() -> void:
 	start_attack_button.pressed.connect(_on_start_attack_pressed)
 
 	# --- Payout Logic ---
-	var payout = SettlementManager.calculate_chunk_payout()
+	# This now happens when the scene loads, simulating the return from an attack.
+	var payout = SettlementManager.calculate_payout()
 	if not payout.is_empty():
 		welcome_popup.display_payout(payout)
 		start_attack_button.disabled = true # Disable combat until payout is collected
 		storefront_ui.hide()
 
-
-func _notification(what: int) -> void:
-	if what == NOTIFICATION_WM_CLOSE_REQUEST or what == NOTIFICATION_APPLICATION_PAUSED:
-		SettlementManager.save_timestamp()
-
-func _process(_delta: float) -> void:
-	# Using _process as a more robust way to catch debug input
-	if Input.is_action_just_pressed("debug_time_travel"):
-		if game_is_over or welcome_popup.visible:
-			return
-		
-		# Test Case 1: 1 hour ago
-		SettlementManager.force_set_timestamp(3600) 
-		# Test Case 2: 24 hours ago (uncomment to test cap)
-		# SettlementManager.force_set_timestamp(86400)
-		
-		print("DEBUG: Time travel key pressed. Timestamp forced. Reload scene now.")
-		get_viewport().set_input_as_handled() # Consume to be safe
 
 func _input(event: InputEvent) -> void:
 	# This runs BEFORE GUI input, so we can consume it.
@@ -130,7 +113,7 @@ func _on_restart_pressed() -> void:
 
 func _on_start_attack_pressed() -> void:
 	print("Start Attack button pressed. Spawning raider.")
-	SettlementManager.save_timestamp()
+	# Timestamps are no longer needed for a fixed-payout system.
 	_spawn_raider_for_test()
 	start_attack_button.hide()
 	storefront_ui.hide()

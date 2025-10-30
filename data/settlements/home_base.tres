@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://c614q14udkh33"]
 
-[ext_resource type="Script" path="res://data/settlements/SettlementData.gd" id="1_abcde"]
+[ext_resource type="Script" uid="uid://hlb8s5g0yp6k" path="res://data/settlements/SettlementData.gd" id="1_abcde"]
 
 [resource]
 script = ExtResource("1_abcde")
@@ -10,7 +10,6 @@ treasury = {
 "stone": 700,
 "wood": 10
 }
-last_visited_timestamp = 1761837467
 placed_buildings = Array[Dictionary]([{
 "grid_position": Vector2i(25, 15),
 "resource_path": "res://data/buildings/Bldg_GreatHall.tres"
