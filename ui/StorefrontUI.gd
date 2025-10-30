@@ -6,27 +6,25 @@ extends Control
 @onready var wood_label: Label = $PanelContainer/MarginContainer/VBoxContainer/TreasuryDisplay/WoodLabel
 @onready var food_label: Label = $PanelContainer/MarginContainer/VBoxContainer/TreasuryDisplay/FoodLabel
 @onready var stone_label: Label = $PanelContainer/MarginContainer/VBoxContainer/TreasuryDisplay/StoneLabel
+@onready var buy_wall_button: Button = $PanelContainer/MarginContainer/VBoxContainer/BuildButtons/BuyWallButton
+@onready var buy_lumber_yard_button: Button = $PanelContainer/MarginContainer/VBoxContainer/BuildButtons/BuyLumberYardButton
 
-# --- Test Data ---
-# In a real implementation, this would be populated by reading from a directory of .tres files
+# --- Data ---
 var wall_data: BuildingData = preload("res://data/buildings/Bldg_Wall.tres")
+var lumber_yard_data: BuildingData = preload("res://data/buildings/LumberYard.tres")
+
 
 func _ready() -> void:
 	EventBus.treasury_updated.connect(_update_treasury_display)
 	
-	# Set initial state from the manager's loaded data
 	if SettlementManager.current_settlement:
 		_update_treasury_display(SettlementManager.current_settlement.treasury)
 	else:
-		# Fallback if UI loads before manager is ready
 		_update_treasury_display({"gold": 0, "wood": 0, "food": 0, "stone": 0})
 
-	# --- Connect Test Button ---
-	# This connects the "Buy Wall" button's pressed signal to our purchase function
-	# We pass the wall_data resource as an argument when connecting.
-	$PanelContainer/MarginContainer/VBoxContainer/BuildButtons/BuyWallButton.pressed.connect(
-		_on_buy_button_pressed.bind(wall_data)
-	)
+	buy_wall_button.pressed.connect(_on_buy_button_pressed.bind(wall_data))
+	buy_lumber_yard_button.pressed.connect(_on_buy_button_pressed.bind(lumber_yard_data))
+
 
 func _update_treasury_display(new_treasury: Dictionary) -> void:
 	gold_label.text = "Gold: %d" % new_treasury.get("gold", 0)
@@ -43,6 +41,16 @@ func _on_buy_button_pressed(item_data: BuildingData) -> void:
 	
 	if purchase_successful:
 		print("UI received purchase confirmation for '%s'." % item_data.display_name)
-		# In a real game, this would now enter a "placement mode"
+		var test_grid_pos = Vector2i(10, 15) # TODO: Replace with player input
+		var new_building = SettlementManager.place_building(item_data, test_grid_pos)
+		
+		if new_building and SettlementManager.current_settlement:
+			var building_entry = {
+				"resource_path": item_data.resource_path,
+				"grid_position": test_grid_pos
+			}
+			SettlementManager.current_settlement.placed_buildings.append(building_entry)
+			print("Added %s to persistent settlement data." % item_data.display_name)
+			SettlementManager.save_settlement()
 	else:
 		print("UI received purchase failure for '%s'." % item_data.display_name)

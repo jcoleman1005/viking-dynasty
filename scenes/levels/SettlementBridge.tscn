@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://c53k15q2w8c1a"]
+[gd_scene load_steps=4 format=3 uid="uid://c53k15q2w8c1a"]
 
 [ext_resource type="PackedScene" uid="uid://cpe46srqjmdh6" path="res://scenes/levels/DefensiveMicro.tscn" id="1_a26h3"]
 [ext_resource type="Script" uid="uid://dafjxa85ci2rx" path="res://scripts/buildings/SettlementBridge.gd" id="2_c48a7"]
+[ext_resource type="PackedScene" uid="uid://btovbm7r6nern" path="res://ui/Storefront_UI.tscn" id="3_vj45l"]
 
 [node name="SettlementBridge" type="Node"]
 script = ExtResource("2_c48a7")
@@ -19,3 +20,30 @@ offset_top = 16.0
 offset_right = 328.0
 offset_bottom = 39.0
 text = "Click to build a Wall. Defend the Great Hall!"
+
+[node name="Storefront_UI" parent="UI" instance=ExtResource("3_vj45l")]
+
+[node name="RestartButton" type="Button" parent="UI"]
+visible = false
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -84.0
+offset_top = -15.5
+offset_right = 84.0
+offset_bottom = 15.5
+grow_horizontal = 2
+grow_vertical = 2
+text = "Return to Settlement"
+
+[node name="StartAttackButton" type="Button" parent="UI"]
+anchors_preset = -1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -110.0
+offset_right = -10.0
+offset_bottom = 31.0
+grow_horizontal = 0
+text = "Start Attack"

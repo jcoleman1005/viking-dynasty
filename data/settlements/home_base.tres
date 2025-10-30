@@ -5,13 +5,55 @@
 [resource]
 script = ExtResource("1_abcde")
 treasury = {
-"food": 100,
-"gold": 100,
-"stone": 100,
-"wood": 100
+"food": 325,
+"gold": 1000,
+"stone": 700,
+"wood": 10
 }
-last_visited_timestamp = 1761833705
+last_visited_timestamp = 1761837467
 placed_buildings = Array[Dictionary]([{
 "grid_position": Vector2i(25, 15),
 "resource_path": "res://data/buildings/Bldg_GreatHall.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
 }])

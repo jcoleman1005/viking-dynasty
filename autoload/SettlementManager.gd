@@ -70,7 +70,7 @@ func deposit_loot(loot: Dictionary) -> void:
 			current_settlement.treasury[resource_type] += loot[resource_type]
 		else:
 			current_settlement.treasury[resource_type] = loot[resource_type]
-	EventBus.emit_signal("treasury_updated", current_settlement.treasury)
+	EventBus.treasury_updated.emit(current_settlement.treasury)
 	print("Loot deposited. New treasury: %s" % current_settlement.treasury)
 
 func attempt_purchase(item_cost: Dictionary) -> bool:
@@ -79,24 +79,18 @@ func attempt_purchase(item_cost: Dictionary) -> bool:
 	for resource_type in item_cost:
 		if not current_settlement.treasury.has(resource_type) or \
 		current_settlement.treasury[resource_type] < item_cost[resource_type]:
-			print("Purchase failed. Insufficient %s." % resource_type)
-			EventBus.emit_signal("purchase_failed", "Insufficient %s" % resource_type)
+			var reason = "Insufficient %s" % resource_type
+			print("Purchase failed. %s." % reason)
+			EventBus.purchase_failed.emit(reason)
 			return false
 			
 	for resource_type in item_cost:
 		current_settlement.treasury[resource_type] -= item_cost[resource_type]
 	
-	EventBus.emit_signal("treasury_updated", current_settlement.treasury)
-	EventBus.emit_signal("purchase_successful") # Can pass item name later
+	EventBus.treasury_updated.emit(current_settlement.treasury)
+	EventBus.purchase_successful.emit("Unnamed Item") # Placeholder
 	print("Purchase successful. New treasury: %s" % current_settlement.treasury)
 	return true
-
-func calculate_chunk_payout() -> Dictionary:
-	# This function will be fully implemented in Task 6.
-	# It is temporarily disabled to prevent dependency errors, as it relies on
-	# EconomicBuildingData, which is not created until Task 4.
-	if not current_settlement or current_settlement.last_visited_timestamp == 0:
-		return {}
 
 func calculate_chunk_payout() -> Dictionary:
 	if not current_settlement or current_settlement.last_visited_timestamp == 0:
@@ -123,8 +117,15 @@ func calculate_chunk_payout() -> Dictionary:
 	if not total_payout.is_empty():
 		print("Calculated chunk payout: %s" % total_payout)
 	return total_payout
-		push_warning("SettlementData has no resource_path, cannot save timestamp.")
 
+func save_timestamp() -> void:
+	if not current_settlement: return
+	current_settlement.last_visited_timestamp = Time.get_unix_time_from_system()
+	print("Timestamp saved: %d" % current_settlement.last_visited_timestamp)
+	if current_settlement.resource_path and not current_settlement.resource_path.is_empty():
+		ResourceSaver.save(current_settlement, current_settlement.resource_path)
+	else:
+		push_warning("SettlementData has no resource_path, cannot save timestamp.")
 
 func get_astar_path(start_pos: Vector2, end_pos: Vector2) -> PackedVector2Array:
 	if not astar_grid:
@@ -133,3 +134,27 @@ func get_astar_path(start_pos: Vector2, end_pos: Vector2) -> PackedVector2Array:
 	var start_id: Vector2i = Vector2i(start_pos / astar_grid.cell_size)
 	var end_id: Vector2i = Vector2i(end_pos / astar_grid.cell_size)
 	return astar_grid.get_point_path(start_id, end_id)
+
+func save_settlement() -> void:
+	if not current_settlement:
+		push_error("Attempted to save a null settlement.")
+		return
+	
+	if current_settlement.resource_path and not current_settlement.resource_path.is_empty():
+		var error = ResourceSaver.save(current_settlement, current_settlement.resource_path)
+		if error == OK:
+			print("Settlement data saved successfully to: %s" % current_settlement.resource_path)
+		else:
+			push_error("Failed to save settlement data to path: %s. Error code: %s" % [current_settlement.resource_path, error])
+	else:
+		push_warning("SettlementData has no resource_path, cannot save settlement.")
+
+func force_set_timestamp(seconds_ago: int) -> void:
+	if not current_settlement:
+		push_error("Cannot force set timestamp, current settlement is null.")
+		return
+	
+	var new_timestamp = Time.get_unix_time_from_system() - seconds_ago
+	current_settlement.last_visited_timestamp = new_timestamp
+	print("DEBUG: Forcing timestamp to %d seconds ago (%d)" % [seconds_ago, new_timestamp])
+	save_settlement() # Save the change immediately
