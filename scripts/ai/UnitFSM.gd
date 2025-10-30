@@ -1,6 +1,6 @@
 # res://scripts/ai/UnitFSM.gd
 #
-# --- MODIFIED: Implemented full ATTACK state logic ---
+# --- MODIFIED: _move_state now checks for attack range ---
 
 class_name UnitFSM
 
@@ -77,18 +77,27 @@ func update(delta: float) -> void:
 # --- State Logic Functions ---
 
 func _idle_state(_delta: float) -> void:
-	# In a full game, would look for a new target
 	pass
 
 func _move_state(delta: float) -> void:
+	# --- THIS IS THE FIX ---
+	# First, check if we are in attack range of our target.
+	# This is more important than finishing the path.
+	if is_instance_valid(target_node) and \
+	unit.global_position.distance_to(target_node.global_position) < unit.data.attack_range:
+		print("Raider in range, switching to ATTACK.")
+		change_state(State.ATTACK)
+		return
+	# --- END FIX ---
+	
+	# If we're not in range, check if our path is empty
 	if path.is_empty():
-		# Path is done, check if we're at the target
-		if target_node and is_instance_valid(target_node):
-			change_state(State.ATTACK)
-		else:
-			change_state(State.IDLE)
+		# Path is done, but we're still not in range?
+		print("Raider path ended, but not in range. Idling.")
+		change_state(State.IDLE)
 		return
 	
+	# Path is not empty and we're not in range, so keep moving
 	var next_waypoint: Vector2 = path[0]
 	var direction: Vector2 = (next_waypoint - unit.global_position).normalized()
 	var velocity: Vector2 = direction * unit.data.move_speed
@@ -100,25 +109,24 @@ func _move_state(delta: float) -> void:
 	if unit.global_position.distance_to(next_waypoint) < arrival_radius:
 		path.pop_front()
 		
-	# Check if we've arrived at the final target
-	if path.is_empty():
-		if target_node:
-			change_state(State.ATTACK)
-		else:
-			change_state(State.IDLE)
+		# If that was the last waypoint, check for target
+		if path.is_empty():
+			if is_instance_valid(target_node) and \
+			unit.global_position.distance_to(target_node.global_position) < unit.data.attack_range:
+				change_state(State.ATTACK)
+			else:
+				change_state(State.IDLE)
 		
 func _attack_state(_delta: float) -> void:
-	# Check if target is still valid
 	if not is_instance_valid(target_node):
 		print("%s target destroyed. Returning to IDLE." % unit.data.display_name)
 		change_state(State.IDLE)
 		return
 	
-	# Check if target moved out of range (e.g., for moving targets)
-	# For a building, this is less important, but good practice.
+	# Check if target moved out of range
 	if unit.global_position.distance_to(target_node.global_position) > unit.data.attack_range + 16:
 		print("%s target moved out of range. Re-engaging." % unit.data.display_name)
-		target_position = target_node.global_position
+		target_position = target_position 
 		change_state(State.MOVE)
 
 # --- Signal Callback ---
@@ -131,5 +139,4 @@ func _on_attack_timer_timeout() -> void:
 		print("%s attacks %s!" % [unit.data.display_name, target_node.data.display_name])
 		target_node.take_damage(unit.data.attack_damage)
 	else:
-		# Target was destroyed by something else
 		change_state(State.IDLE)
