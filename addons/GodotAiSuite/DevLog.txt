@@ -1,57 +1,31 @@
-Devlog: "Defense-First" MVP is Complete!
-We've successfully completed our "Defense-First" MVP. The goal was to prove our core "Micro-to-Bridge" loop by building a playable, grid-based defensive battle. We can confirm that all 5 implementation tasks are now functional and integrated.
+Devlog Update: Pivoting to a More Robust Economic Loop
 
-Here's a breakdown of our progress:
+This week saw a major refinement to our core economic loop. After prototyping an initial time-based system, we made a key strategic decision to pivot to a simpler, more predictable, and more balanced fixed-payout model. This new system feels more satisfying for the player and provides a much stronger foundation for future development.
 
-✅ Task 1: Data Foundations Built
+Key Insight: From Time-Based to Action-Based Rewards
+*   Initial Prototype: We successfully implemented a full, time-based resource generation system. This prototype was crucial for testing our data persistence and UI flow.
+*   Design Realization: Through testing, we identified that time-based rewards, while realistic, could feel unpredictable and create balancing challenges. It also less directly rewarded the player's core action of completing an attack.
+*   💡 The Pivot (Design Choice): We made the call to switch to a fixed-payout system. This decision ties the reward directly to the gameplay loop: one attack equals one payout. This model is more "gamey," respects the player's effort, and gives them a clear understanding of the value of their economic buildings.
 
-We successfully defined our core data structures, BuildingData.gd and UnitData.gd.
+---
 
-This allows us to create new units and buildings (like the "Stone Wall" and "Great Hall") entirely as .tres resource files, with no new code required.
+Core Achievements & Current Features
 
-✅ Task 2: Core Grid & Manager Implemented
+*   ✅ Rock-Solid Persistence
+*   Player purchases of economic buildings like the Lumber Yard are saved instantly and permanently to a .tres resource file. What you build stays built.
 
-The SettlementManager singleton is live. It now successfully creates, configures, and manages the AStarGrid2D pathfinding object.
+*   ✅ Predictable, Fixed Payouts
+*   A new fixedpayoutamount property has been added to all economic buildings.
+*   Returning to the settlement after an attack now triggers a clean calculate_payout() function.
 
-It handles all building placement logic, correctly marking tiles as "solid" on the grid.
+*   ✅ Simple & Scalable Logic
+*   The payout is now a simple sum of the fixedpayoutamount from all owned economic buildings.
+*   Example: Owning two Lumber Yards (at 10 Wood each) results in a guaranteed "Wood: 20" payout after every attack.
 
-✅ Task 3: Test Scene Operational
+*   ✅ Full UI Integration
+*   The "Welcome Home" popup correctly displays the calculated fixed payout.
+*   The "Collect" button works perfectly, transferring the generated resources to the player's main treasury and updating the UI.
 
-Our main SettlementBridge.tscn is fully functional as the MVP's "conductor."
-
-It successfully spawns the level, instances the UI, and captures player input to test our building logic.
-
-✅ Task 4: Reactive AI & Pathfinding Complete
-
-We have a working BaseUnit with a Finite State Machine (FSM) that correctly manages IDLE, MOVE, and ATTACK states.
-
-The AI successfully requests paths from the SettlementManager.
-
-Crucially, the AI is now reactive. Thanks to our EventBus integration, units listening for the pathfinding_grid_updated signal will automatically re-calculate their path when the player builds a new wall.
-
-✅ Task 5: Full "Sacked" Loop Complete!
-
-This is the final win that connects everything. The SettlementBridge now:
-
-Spawns the Great Hall.
-
-Spawns a Raider and tells it to attack the Hall.
-
-The Raider paths to a walkable tile above the Hall (solving our "stuck" bug).
-
-It successfully enters the ATTACK state and deals damage until the Hall is destroyed.
-
-The Hall's building_destroyed signal is caught, triggering the "YOU HAVE BEEN SACKED" UI state and ending the combat.
-
-⚠️ Key Challenges & Amendments
-A core part of this MVP was "retiring risk," and we solved several major technical hurdles:
-
-GDD Amendment (StaticBody2D): We proved the GDD's Area2D spec for buildings was incorrect for our goals. We've amended the GDD to use StaticBody2D, which correctly provides the physical collision needed for pathfinding.
-
-AI Range & "Jank": We fixed a bug where the AI's "attack range" was too short, causing it to "re-engage" and get stuck. By increasing the range in the Unit_Raider.tres file, we've confirmed the AI can now complete its attack cycle.
-
-Singleton vs. class_name: We debugged and resolved the core engine conflict between Autoload singletons (like EventBus and SettlementManager) and custom resource scripts (like BuildingData).
-
-In short: The foundation is built and it is solid.
-
-This officially concludes our work on the MVP implementation plan. We are now ready to move on to the post-MVP roadmap.
+*   ✅ Streamlined & Cleaned Codebase
+*   As a result of the pivot, the entire economic codebase has been simplified.
+*   All complex timestamp-tracking logic, variables, and debug functions have been completely removed, making the system much easier to maintain and expand upon.

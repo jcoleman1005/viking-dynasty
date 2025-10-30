@@ -17,7 +17,7 @@ extends Resource
 @export var icon: Texture2D
 
 ## The cost in 'Resources' to train this unit.
-@export var spawn_cost: int = 25
+@export var spawn_cost: Dictionary = {"food": 25}
 
 
 @export_group("Combat Stats")

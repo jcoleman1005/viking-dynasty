@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Viking Dynasty"
-run/main_scene="uid://caqoqfrq0wwlq"
+run/main_scene="uid://c53k15q2w8c1a"
 config/features=PackedStringArray("4.5", "GL Compatibility")
 
 [autoload]
@@ -23,7 +23,6 @@ SettlementManager="*res://autoload/SettlementManager.tscn"
 
 enabled=PackedStringArray("res://addons/GodotAiSuite/plugin.cfg")
 
-[rendering]
+[input]
 
-renderer/rendering_method="gl_compatibility"
-renderer/rendering_method.mobile="gl_compatibility"
+debug_time_travel="{\"deadzone\": 0.5, \"events\": [{\"physical_keycode\": 84, \"type\": \"key\"}]}"
