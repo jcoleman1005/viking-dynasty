@@ -1,42 +1,116 @@
-# res://scenes/levels/SettlementBridge.gd
+# res://scripts/buildings/SettlementBridge.gd
 #
-# Main script for the settlement defense scene, now including unit spawning.
+# This is the "main" script for the settlement defense scene.
 #
-# --- MODIFIED: Added raider spawning logic ---
+# --- THIS IS THE CORRECT SCRIPT FOR THE TASK 5 "SACKED" LOOP ---
 
 extends Node
 
-# Pre-load resources needed for testing
+# --- Preloaded Test Assets ---
 var test_building_data: BuildingData = preload("res://data/buildings/Bldg_Wall.tres")
 var raider_scene: PackedScene = preload("res://scenes/units/VikingRaider.tscn")
+var hall_data: BuildingData = preload("res://data/buildings/Bldg_GreatHall.tres")
 
-@onready var defensive_micro: Node2D = $DefensiveMicro # Reference to the level instance
+# --- Scene Node References ---
+@onready var defensive_micro: Node2D = $DefensiveMicro
+@onready var unit_container: Node2D = $UnitContainer
+@onready var label: Label = $UI/Label
+
+# --- State Variables ---
+var great_hall_instance: BaseBuilding = null
+var game_is_over: bool = false
+
+# --- Provisional Spawn Points ---
+const HALL_GRID_POS: Vector2i = Vector2i(25, 15)
+const RAIDER_SPAWN_POS: Vector2 = Vector2(50, 50)
+
 
 func _ready() -> void:
-	spawn_raider_for_test()
+	_spawn_great_hall()
+	_spawn_raider_for_test()
 
-func spawn_raider_for_test() -> void:
-	# Spawn the raider near the top-left corner
-	var raider_instance = raider_scene.instantiate()
-	raider_instance.global_position = Vector2(50, 50) 
+func _spawn_great_hall() -> void:
+	"""
+	Spawns the Great Hall and connects to its destruction signal.
+	"""
+	if not hall_data:
+		push_error("Great Hall data not found!")
+		return
+		
+	# Use the SettlementManager to place the hall
+	SettlementManager.place_building(hall_data, HALL_GRID_POS)
 	
-	# Add the unit instance to the DefensiveMicro scene instance
-	# This keeps the world logic encapsulated in the level scene
-	defensive_micro.add_child(raider_instance)
-	print("TEST: Spawned Viking Raider at (50, 50).")
+	# The manager just placed it, so we can get it from the container.
+	# We get the last child added.
+	great_hall_instance = SettlementManager.building_container.get_child(
+		SettlementManager.building_container.get_child_count() - 1
+	)
+	
+	# --- This is the GDD's "connect" logic ---
+	if great_hall_instance:
+		great_hall_instance.building_destroyed.connect(_on_great_hall_destroyed)
+		print("Great Hall spawned. Listening for its destruction.")
+	else:
+		push_error("Failed to get Great Hall instance after spawn.")
+
+func _spawn_raider_for_test() -> void:
+	if not great_hall_instance:
+		push_error("Cannot spawn raider: Great Hall does not exist.")
+		return
+		
+	var raider_instance: BaseUnit = raider_scene.instantiate()
+	
+	# Add unit to the UnitContainer
+	unit_container.add_child(raider_instance)
+	
+	# Set position *after* adding to scene
+	raider_instance.global_position = RAIDER_SPAWN_POS
+	
+	# --- THIS IS THE FIX ---
+	# Tell the raider what to attack
+	raider_instance.set_attack_target(great_hall_instance)
+
+# --- Main "Sacked" Loop Logic ---
+
+func _on_great_hall_destroyed(building: BaseBuilding) -> void:
+	"""
+	This is the "Sacked" state. It's called when the Hall's
+	'building_destroyed' signal is emitted.
+	"""
+	print("GAME OVER: The Great Hall has been destroyed!")
+	game_is_over = true
+	
+	# 1. Update the UI
+	label.text = "YOU HAVE BEEN SACKED."
+	
+	# 2. Update the SettlementManager as per GDD
+	SettlementManager.update_building_status(HALL_GRID_POS, "Destroyed")
+	
+	# 3. End the "battle"
+	_destroy_all_enemies()
+
+func _destroy_all_enemies() -> void:
+	"""
+	Cleans up all active enemy units.
+	"""
+	for enemy in unit_container.get_children():
+		enemy.queue_free()
+	print("All surviving enemies have been removed.")
+
+# --- Player Input (for placing walls) ---
 
 func _unhandled_input(event: InputEvent) -> void:
-	# Left-click building placement test (from Task 3)
+	# Don't allow building if game is over
+	if game_is_over:
+		return
+		
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.is_pressed():
 		
 		if not test_building_data:
-			push_error("Test data 'Bldg_Wall.tres' not found or invalid.")
 			return
 
 		var mouse_pos: Vector2 = get_viewport().get_mouse_position()
 		var grid_pos: Vector2i = Vector2i(mouse_pos / SettlementManager.astar_grid.cell_size)
 		
-		# Emit the signal to place the wall
 		EventBus.build_request_made.emit(test_building_data, grid_pos)
-		
 		get_viewport().set_input_as_handled()

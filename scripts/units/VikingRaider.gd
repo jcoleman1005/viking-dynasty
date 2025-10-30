@@ -1,21 +1,29 @@
-# res://scenes/units/VikingRaider.gd
+# res://scripts/units/VikingRaider.gd
 #
 # Concrete implementation of the Viking Raider enemy unit.
-# It starts by immediately trying to move to a fixed target.
+#
+# --- MODIFIED: Target position is now adjacent to the Hall ---
 
 extends BaseUnit
 
-# --- PROVISIONAL DEFAULT ---
-# This is a temporary, hard-coded target for testing Task 4.
-# The GDD specifies the Great Hall as the target, so we'll use a 
-# placeholder position in the center of our 50x30 grid.
-const TEST_TARGET_POSITION: Vector2 = Vector2(25 * 32, 15 * 32) # (800, 480)
+# This function is called by the 'SettlementBridge' spawner
+func set_attack_target(target: BaseBuilding) -> void:
+	"""
+	Gives the Raider its one and only goal.
+	"""
+	if not fsm or not is_instance_valid(target):
+		push_warning("Raider FSM or target is not valid.")
+		return
 
-func _ready() -> void:
-	super._ready()
+	# Set the node (for attacking)
+	fsm.target_node = target
 	
-	# Assign the target and immediately start the movement FSM
-	if fsm:
-		fsm.target_position = TEST_TARGET_POSITION
-		fsm.change_state(UnitFSM.State.MOVE)
-		print("Viking Raider initialized and moving to target: %s" % TEST_TARGET_POSITION)
+	# --- THIS IS THE FIX ---
+	# Set the position (for moving) to be one tile *below*
+	# the Hall's center. This is a walkable tile, so
+	# pathfinding will succeed.
+	fsm.target_position = target.global_position + Vector2(0, 32)
+	
+	# Start the FSM
+	fsm.change_state(UnitFSM.State.MOVE)
+	print("Viking Raider initialized and moving to target: %s" % target.data.display_name)

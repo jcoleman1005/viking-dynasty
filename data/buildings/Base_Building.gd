@@ -1,17 +1,15 @@
 # res://scenes/buildings/Base_Building.gd
 #
-# Base script for all buildings in the game.
-# It holds a reference to its BuildingData resource and applies
-# those stats on _ready().
-# GDD Ref: 7.C.2.c
+# --- MODIFIED: Added 'building_destroyed' signal ---
 
 class_name BaseBuilding
 extends StaticBody2D
 
-## Assign the BuildingData resource (e.g., Bldg_Wall.tres) here.
-@export var data: BuildingData
+## This signal is emitted when health reaches zero.
+## GDD Ref:
+signal building_destroyed(building: BaseBuilding)
 
-## The current health of the building.
+@export var data: BuildingData
 var current_health: int = 100
 
 func _ready() -> void:
@@ -19,15 +17,7 @@ func _ready() -> void:
 		push_warning("BaseBuilding scene is missing its BuildingData resource.")
 		return
 	
-	# Apply stats from the data resource.
 	current_health = data.max_health
-	
-	# Future logic will go here, e.g., setting up the Sprite2D
-	# based on the data.icon, or setting the CollisionShape2D
-	# based on the data.grid_size.
-	
-	# We will connect signals for taking damage here in code
-	# once the relevant systems (like Combat) exist.
 
 func take_damage(amount: int) -> void:
 	current_health = max(0, current_health - amount)
@@ -38,7 +28,10 @@ func take_damage(amount: int) -> void:
 
 func die() -> void:
 	print("%s has been destroyed." % data.display_name)
-	# In the future, we will emit a signal here, e.g.,
-	# EventBus.building_destroyed.emit(self)
-	# and then queue_free().
+	
+	# --- ADDED ---
+	# Emit the signal *before* queue_free() so listeners
+	# can react before the node is deleted.
+	building_destroyed.emit(self)
+	
 	queue_free()

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="BuildingData" load_steps=3 format=3 uid="uid://bs1e1mgqnldwq"]
+
+[ext_resource type="Script" uid="uid://js4bbqgeyd6c" path="res://data/buildings/BuildingData.gd" id="1_i2pmy"]
+[ext_resource type="PackedScene" uid="uid://cws6xle5x52g4" path="res://scenes/buildings/Base_Building.tscn" id="2_hptna"]
+
+[resource]
+script = ExtResource("1_i2pmy")
+display_name = "Great Hall"
+scene_to_spawn = ExtResource("2_hptna")
+build_cost = 500
+max_health = 50
+grid_size = Vector2i(3, 2)
+metadata/_custom_type_script = "uid://js4bbqgeyd6c"

@@ -1,8 +1,6 @@
 # res://autoload/SettlementManager.gd
 #
-# Manages the AStarGrid2D object and all building placement.
-#
-# --- MODIFIED: Emits 'pathfinding_grid_updated' on build ---
+# --- MODIFIED: Added GDD-required function 'update_building_status' ---
 
 
 extends Node
@@ -36,9 +34,7 @@ func place_building(building_data: BuildingData, grid_position: Vector2i) -> voi
 	if not building_data or not building_data.scene_to_spawn:
 		push_error("Build request failed: BuildingData or scene_to_spawn is null.")
 		return
-
-	# TODO: Add validation checks here (is_occupied, has_resources, etc.)
-
+	
 	print("Placing '%s' at grid position %s" % [building_data.display_name, grid_position])
 	
 	var new_building: BaseBuilding = building_data.scene_to_spawn.instantiate()
@@ -51,13 +47,22 @@ func place_building(building_data: BuildingData, grid_position: Vector2i) -> voi
 	building_container.add_child(new_building)
 	
 	if building_data.blocks_pathfinding:
+		# TODO: This should loop over the building's grid_size
 		astar_grid.set_point_solid(grid_position, true)
 		astar_grid.update()
 		print("Updated A* grid. Point %s is now solid." % grid_position)
-		
-		# --- ADDED ---
-		# Tell all listening units that the grid has changed.
 		EventBus.pathfinding_grid_updated.emit(grid_position)
+
+# --- ADDED ---
+# As required by GDD
+func update_building_status(grid_position: Vector2i, new_status: String) -> void:
+	"""
+	Updates the status of a building in the settlement grid.
+	This is the hook for the 'Macro' layer's save data.
+	"""
+	# For now, we just print. In the future, this would
+	# update a dictionary or save file.
+	print("SETTLEMENT_MANAGER: Building at %s status set to '%s'" % [grid_position, new_status])
 
 
 func get_astar_path(start_pos: Vector2, end_pos: Vector2) -> PackedVector2Array:
