@@ -1,0 +1,656 @@
+### **1. Project Context Specification**
+
+You will be provided with a comprehensive dump of the Godot project context, structured as follows. You must parse, understand, and use this context to inform all your responses.
+
+*   **`2. Project Context`**: The technical project dump, including:
+    *   `2.1. Project Settings`
+    *   `2.2. Resource Files`
+    *   `2.3. Scene Structures`
+    *   `2.4. Codebase`
+
+---
+### **2. Project Context**
+
+#### **2.1. Project Settings**
+
+--- START OF PROJECT SETTINGS ---
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="Viking Dynasty"
+run/main_scene="uid://caqoqfrq0wwlq"
+config/features=PackedStringArray("4.5", "GL Compatibility")
+
+[autoload]
+
+EventBus="*res://autoload/EventBus.gd"
+SettlementManager="*res://autoload/SettlementManager.tscn"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/GodotAiSuite/plugin.cfg")
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+--- END OF PROJECT SETTINGS ---
+
+#### **2.2. Resource Files**
+
+--- START OF RESOURCE FILES ---
+--- RESOURCE: res://data/buildings/Bldg_Wall.tres ---
+[gd_resource type="Resource" script_class="BuildingData" load_steps=3 format=3 uid="uid://b2356vlfukf14"]
+
+[ext_resource type="Script" uid="uid://js4bbqgeyd6c" path="res://data/buildings/BuildingData.gd" id="1_t76rl"]
+[ext_resource type="PackedScene" uid="uid://cws6xle5x52g4" path="res://scenes/buildings/Base_Building.tscn" id="1_vluf5"]
+
+[resource]
+script = ExtResource("1_t76rl")
+display_name = "Stone Wall"
+scene_to_spawn = ExtResource("1_vluf5")
+attack_damage = 0
+attack_range = 0.0
+attack_speed = 0.0
+metadata/_custom_type_script = "uid://js4bbqgeyd6c"
+
+--- RESOURCE: res://data/units/Unit_Raider.tres ---
+[gd_resource type="Resource" script_class="UnitData" load_steps=2 format=3 uid="uid://brnbvjwnoyh3j"]
+
+[ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="1_tcvvg"]
+
+[resource]
+script = ExtResource("1_tcvvg")
+display_name = "Viking Raider"
+metadata/_custom_type_script = "uid://cq155t20ujb2j"
+
+--- RESOURCE: res://placeholder_tile.tres ---
+[gd_resource type="NoiseTexture2D" load_steps=2 format=3 uid="uid://c6v2d1q8q7e3j"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_cemhj"]
+noise_type = 2
+
+[resource]
+width = 32
+height = 32
+noise = SubResource("FastNoiseLite_cemhj")
+--- END OF RESOURCE FILES ---
+
+#### **2.3. Scene Structures**
+
+--- START OF SCENE STRUCTURES ---
+--- SCENE: res://autoload/SettlementManager.tscn ---
+SettlementManager (Node)
+> script: res://autoload/SettlementManager.gd
+> scene: res://autoload/SettlementManager.tscn
+> BuildingContainer (Node2D)
+
+--- SCENE: res://main_test.tscn ---
+Main Test (Node2D)
+> scene: res://main_test.tscn
+
+--- SCENE: res://scenes/buildings/Base_Building.tscn ---
+Base_Building (StaticBody2D)
+> scene: res://scenes/buildings/Base_Building.tscn
+> Sprite2D (Sprite2D)
+> > texture = res://placeholder_tile.tres
+> CollisionShape2D (CollisionShape2D)
+> > shape = res://scenes/buildings/Base_Building.tscn::RectangleShape2D_b5w0v
+
+--- SCENE: res://scenes/levels/DefensiveMicro.tscn ---
+DefensiveMicro (Node2D)
+> scene: res://scenes/levels/DefensiveMicro.tscn
+> TileMap (TileMap)
+> > tile_set = res://scenes/levels/DefensiveMicro.tscn::TileSet_m5xuc
+
+--- SCENE: res://scenes/levels/SettlementBridge.tscn ---
+SettlementBridge (Node)
+> script: res://scripts/buildings/SettlementBridge.gd
+> scene: res://scenes/levels/SettlementBridge.tscn
+> DefensiveMicro (Node2D)
+>   scene: res://scenes/levels/DefensiveMicro.tscn
+>   TileMap (TileMap)
+>   > tile_set = res://scenes/levels/DefensiveMicro.tscn::TileSet_m5xuc
+> UI (CanvasLayer)
+>   Label (Label)
+>   > offset_left = 19.0
+>   > offset_top = 16.0
+>   > offset_right = 267.0
+>   > offset_bottom = 39.0
+>   > text = "Click to build a Wall. (TEST)"
+
+--- SCENE: res://scenes/units/Base_Unit.tscn ---
+Base_Unit (CharacterBody2D)
+> script: res://scripts/units/Base_Unit.gd
+> scene: res://scenes/units/Base_Unit.tscn
+> Sprite2D (Sprite2D)
+> > texture = res://placeholder_tile.tres
+> CollisionShape2D (CollisionShape2D)
+> > shape = res://scenes/units/Base_Unit.tscn::RectangleShape2D_n6s0a
+
+--- SCENE: res://scenes/units/VikingRaider.tscn ---
+VikingRaider (CharacterBody2D)
+> script: res://scripts/units/VikingRaider.gd
+> scene: res://scenes/units/VikingRaider.tscn
+> data = res://data/units/Unit_Raider.tres
+> Sprite2D (Sprite2D)
+> > texture = res://placeholder_tile.tres
+> CollisionShape2D (CollisionShape2D)
+> > shape = res://scenes/units/Base_Unit.tscn::RectangleShape2D_n6s0a
+--- END OF SCENE STRUCTURES ---
+
+#### **2.4. Codebase**
+
+--- START OF CODEBASE ---
+--- SCRIPT: res://autoload/EventBus.gd ---
+# res://autoload/EventBus.gd
+#
+# A global Singleton (Autoload) that acts as a central "switchboard"
+# for decoupled signal communication between major systems.
+#
+# Systems can emit signals on this bus, and other systems can
+# listen for them, without ever needing a direct reference to each other.
+extends Node
+
+# This signal will be emitted by the UI (Build Menu)
+# and listened for by the SettlementManager.
+# GDD Ref:
+signal build_request_made(building_data: BuildingData, grid_position: Vector2i)
+
+# We will add many more signals here, for example:
+# signal unit_spawn_requested(unit_data: UnitData)
+# signal unit_killed(unit: BaseUnit)
+# signal building_destroyed(building: BaseBuilding)
+# signal wave_started(wave_number: int)
+
+--- SCRIPT: res://autoload/SettlementManager.gd ---
+# res://autoload/SettlementManager.gd
+#
+# A global Singleton (Autoload) responsible for managing the
+# "Settlement" or "Defensive" layer of the game.
+#
+# Its primary jobs are:
+# 1. Managing the AStarGrid2D for pathfinding.
+# 2. Handling the placement (instancing) of buildings.
+#
+# GDD Ref: 7.C.2
+
+
+extends Node
+
+# This is no longer an @onready var. It's now just a
+# class variable that will hold our AStarGrid2D *object*.
+var astar_grid: AStarGrid2D
+
+# This node is still in the scene, so @onready is correct.
+@onready var building_container: Node2D = $BuildingContainer
+
+# Grid constants, as specified in the GDD
+const TILE_SIZE: int = 32 # 32x32 pixel tiles
+const GRID_WIDTH: int = 50 # 50 tiles wide
+const GRID_HEIGHT: int = 30 # 30 tiles high
+
+func _ready() -> void:
+	# Here we create the AStarGrid2D object in code.
+	astar_grid = AStarGrid2D.new()
+	
+	# Connect to the global signal.
+	EventBus.build_request_made.connect(place_building, CONNECT_DEFERRED)
+	
+	_initialize_grid()
+
+func _exit_tree() -> void:
+	# Always disconnect signals on exit to prevent errors.
+	if EventBus.is_connected("build_request_made", place_building):
+		EventBus.build_request_made.disconnect(place_building)
+
+
+# GDD Ref: 7.C.2.a
+func _initialize_grid() -> void:
+	"""
+	Sets up the AStarGrid2D with the GDD's specified properties.
+	"""
+	print("Initializing Settlement Grid...")
+	
+	# 1. Define the playable area
+	var playable_rect := Rect2i(0, 0, GRID_WIDTH, GRID_HEIGHT)
+	astar_grid.region = playable_rect
+	
+	# 2. Set grid properties
+	astar_grid.cell_size = Vector2(TILE_SIZE, TILE_SIZE)
+	astar_grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_NEVER # No diagonal movement
+	
+	# 3. This calculates all the grid points.
+	astar_grid.update()
+	print("Settlement Grid Initialized: %d x %d" % [GRID_WIDTH, GRID_HEIGHT])
+
+
+# GDD Ref: 7.C.2.b
+func place_building(building_data: BuildingData, grid_position: Vector2i) -> void:
+	"""
+	Handles a request to place a building on the grid.
+	"""
+	if not building_data or not building_data.scene_to_spawn:
+		push_error("Build request failed: BuildingData or scene_to_spawn is null.")
+		return
+
+	# TODO: Check if position is valid (e.g., inside grid, not occupied)
+	# TODO: Check if player has enough resources
+
+	print("Placing '%s' at grid position %s" % [building_data.display_name, grid_position])
+	
+	# Instantiate the building scene
+	var new_building: BaseBuilding = building_data.scene_to_spawn.instantiate()
+	
+	# Set its data resource
+	new_building.data = building_data
+	
+	# We must manually convert the 'grid_position' (Vector2i)
+	# to a 'Vector2' before multiplying by 'cell_size' (Vector2).
+	var world_pos_top_left: Vector2 = Vector2(grid_position) * astar_grid.cell_size
+	var half_cell_offset: Vector2 = astar_grid.cell_size / 2.0
+	new_building.global_position = world_pos_top_left + half_cell_offset
+	
+	# Add it to the building container
+	building_container.add_child(new_building)
+	
+	# If the building blocks pathfinding, update the A* grid
+	if building_data.blocks_pathfinding:
+		astar_grid.set_point_solid(grid_position, true)
+		astar_grid.update()
+		print("Updated A* grid. Point %s is now solid." % grid_position)
+
+
+func get_astar_path(start_pos: Vector2, end_pos: Vector2) -> PackedVector2Array:
+	"""
+	Public function for other systems (like AI) to get a path.
+	Converts world positions to grid IDs and returns a path.
+	"""
+	# Convert world coordinates (pixels) to grid coordinates (cells)
+	var start_id: Vector2i = Vector2i(start_pos / astar_grid.cell_size)
+	var end_id: Vector2i = Vector2i(end_pos / astar_grid.cell_size)
+	
+	# --- MODIFIED ---
+	# We will use get_point_path() instead of get_id_path().
+	# This directly returns a PackedVector2Array of world-space
+	# coordinates, which is simpler and avoids the type error.
+	var world_path: PackedVector2Array = astar_grid.get_point_path(start_id, end_id)
+		
+	return world_path
+
+--- SCRIPT: res://data/buildings/Base_Building.gd ---
+# res://scenes/buildings/Base_Building.gd
+#
+# Base script for all buildings in the game.
+# It holds a reference to its BuildingData resource and applies
+# those stats on _ready().
+# GDD Ref: 7.C.2.c
+
+class_name BaseBuilding
+extends StaticBody2D
+
+## Assign the BuildingData resource (e.g., Bldg_Wall.tres) here.
+@export var data: BuildingData
+
+## The current health of the building.
+var current_health: int = 100
+
+func _ready() -> void:
+	if not data:
+		push_warning("BaseBuilding scene is missing its BuildingData resource.")
+		return
+	
+	# Apply stats from the data resource.
+	current_health = data.max_health
+	
+	# Future logic will go here, e.g., setting up the Sprite2D
+	# based on the data.icon, or setting the CollisionShape2D
+	# based on the data.grid_size.
+	
+	# We will connect signals for taking damage here in code
+	# once the relevant systems (like Combat) exist.
+
+func take_damage(amount: int) -> void:
+	current_health = max(0, current_health - amount)
+	print("%s took %d damage, %d HP remaining." % [data.display_name, amount, current_health])
+	
+	if current_health == 0:
+		die()
+
+func die() -> void:
+	print("%s has been destroyed." % data.display_name)
+	# In the future, we will emit a signal here, e.g.,
+	# EventBus.building_destroyed.emit(self)
+	# and then queue_free().
+	queue_free()
+
+--- SCRIPT: res://data/buildings/BuildingData.gd ---
+# res://data/buildings/BuildingData.gd
+#
+# Defines the core data for any building in the game.
+# This resource is used by Base_Building.tscn to configure instances.
+# GDD Ref: 7.C.1.a
+
+class_name BuildingData
+extends Resource
+
+## The name displayed in the UI (e.g., "Stone Wall", "Watchtower").
+@export var display_name: String = "New Building"
+
+## The scene that will be instanced when this building is placed.
+@export var scene_to_spawn: PackedScene
+
+## The icon shown in the build menu.
+@export var icon: Texture2D
+
+## The cost in 'Resources' (e.g., wood, gold) to build this.
+@export var build_cost: int = 10
+
+## The building's maximum hit points.
+@export var max_health: int = 100
+
+## If true, this building blocks enemy pathfinding.
+## GDD Ref:
+@export var blocks_pathfinding: bool = true
+
+## The size of the building on the AStarGrid2D.
+## GDD Ref:
+@export var grid_size: Vector2i = Vector2i.ONE
+
+
+@export_group("Defensive Stats")
+## If true, this building can attack enemies (e.g., Watchtower).
+## GDD Ref:
+@export var is_defensive_structure: bool = false
+
+## Damage dealt per attack (if defensive).
+@export var attack_damage: int = 5
+
+## Range in pixels (if defensive).
+@export var attack_range: float = 200.0
+
+## Attacks per second (if defensive).
+@export var attack_speed: float = 1.0
+
+--- SCRIPT: res://data/units/UnitData.gd ---
+# res://data/units/UnitData.gd
+#
+# Defines the core data for any unit in the game.
+# This resource is used by Base_Unit.tscn to configure instances.
+# GDD Ref: 7.C.1.b
+
+class_name UnitData
+extends Resource
+
+## The name displayed in the UI (e.g., "Viking Raider").
+@export var display_name: String = "New Unit"
+
+## The scene that will be instanced when this unit is spawned.
+@export var scene_to_spawn: PackedScene
+
+## The icon shown in the training menu.
+@export var icon: Texture2D
+
+## The cost in 'Resources' to train this unit.
+@export var spawn_cost: int = 25
+
+
+@export_group("Combat Stats")
+## The unit's maximum hit points.
+@export var max_health: int = 50
+
+## Movement speed in pixels per second.
+@export var move_speed: float = 75.0
+
+## Damage dealt per attack.
+@export var attack_damage: int = 8
+
+## Range in pixels. (e.g., 10 for melee, 300 for archer).
+@export var attack_range: float = 10.0
+
+## Attacks per second.
+@export var attack_speed: float = 1.2
+
+--- SCRIPT: res://scripts/ai/UnitFSM.gd ---
+# res://scripts/ai/UnitFSM.gd
+#
+# Finite State Machine for our BaseUnit, managing states
+# like Idle, Move, and Attack.
+class_name UnitFSM
+
+# --- FSM States (use integers for efficiency) ---
+enum State {
+	IDLE,
+	MOVE,
+	ATTACK
+}
+
+# The unit that this FSM controls. Must be set on creation.
+var unit: BaseUnit
+
+var current_state: State = State.IDLE
+var target_position: Vector2 = Vector2.ZERO
+
+# --- MODIFIED ---
+# Changed from 'PackedVector2Array' to 'Array' to allow
+# us to use the .pop_front() method.
+var path: Array = []
+
+func _init(p_unit: BaseUnit) -> void:
+	unit = p_unit
+
+func change_state(new_state: State) -> void:
+	if current_state == new_state:
+		return
+	
+	_exit_state(current_state)
+	current_state = new_state
+	_enter_state(current_state)
+
+func _enter_state(state: State) -> void:
+	match state:
+		State.MOVE:
+			# Request a new A* path from the global SettlementManager
+			# Godot will auto-convert the returned PackedVector2Array into an Array.
+			path = SettlementManager.get_astar_path(unit.global_position, target_position)
+			if path.is_empty():
+				print("Raider at %s failed to find a path to %s." % [unit.global_position, target_position])
+				change_state(State.IDLE)
+		State.ATTACK:
+			# For now, just a print statement. Combat logic goes here later.
+			print("Raider entering ATTACK state.")
+		_:
+			pass
+
+func _exit_state(state: State) -> void:
+	match state:
+		State.MOVE:
+			path.clear()
+		_:
+			pass
+
+func update(delta: float) -> void:
+	# This function is called every physics frame by the unit.
+	match current_state:
+		State.IDLE:
+			_idle_state(delta)
+		State.MOVE:
+			_move_state(delta)
+		State.ATTACK:
+			_attack_state(delta)
+
+# --- State Logic Functions ---
+
+func _idle_state(_delta: float) -> void:
+	# Nothing happens in Idle yet, but we could add:
+	# - Looking for new targets
+	# - Waiting for orders
+	pass
+
+func _move_state(delta: float) -> void:
+	if path.is_empty():
+		change_state(State.IDLE)
+		return
+	
+	# The next waypoint to move toward
+	var next_waypoint: Vector2 = path[0]
+	
+	# Calculate direction and movement speed
+	var direction: Vector2 = (next_waypoint - unit.global_position).normalized()
+	var velocity: Vector2 = direction * unit.data.move_speed
+	
+	# Move the unit
+	unit.velocity = velocity
+	unit.move_and_slide()
+	
+	# If we are close enough to the waypoint, move to the next point in the path
+	var arrival_radius: float = 8.0 
+	if unit.global_position.distance_to(next_waypoint) < arrival_radius:
+		# This line will now work correctly.
+		path.pop_front()
+		
+	# Check if we've arrived at the final target
+	if path.is_empty():
+		# This is where we would transition to ATTACK or IDLE
+		change_state(State.IDLE)
+		
+
+func _attack_state(_delta: float) -> void:
+	# Future logic: check range, swing weapon, apply damage.
+	pass
+
+--- SCRIPT: res://scripts/buildings/SettlementBridge.gd ---
+# res://scenes/levels/SettlementBridge.gd
+#
+# Main script for the settlement defense scene, now including unit spawning.
+#
+# --- MODIFIED: Added raider spawning logic ---
+
+extends Node
+
+# Pre-load resources needed for testing
+var test_building_data: BuildingData = preload("res://data/buildings/Bldg_Wall.tres")
+var raider_scene: PackedScene = preload("res://scenes/units/VikingRaider.tscn")
+
+@onready var defensive_micro: Node2D = $DefensiveMicro # Reference to the level instance
+
+func _ready() -> void:
+	spawn_raider_for_test()
+
+func spawn_raider_for_test() -> void:
+	# Spawn the raider near the top-left corner
+	var raider_instance = raider_scene.instantiate()
+	raider_instance.global_position = Vector2(50, 50) 
+	
+	# Add the unit instance to the DefensiveMicro scene instance
+	# This keeps the world logic encapsulated in the level scene
+	defensive_micro.add_child(raider_instance)
+	print("TEST: Spawned Viking Raider at (50, 50).")
+
+func _unhandled_input(event: InputEvent) -> void:
+	# Left-click building placement test (from Task 3)
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.is_pressed():
+		
+		if not test_building_data:
+			push_error("Test data 'Bldg_Wall.tres' not found or invalid.")
+			return
+
+		var mouse_pos: Vector2 = get_viewport().get_mouse_position()
+		var grid_pos: Vector2i = Vector2i(mouse_pos / SettlementManager.astar_grid.cell_size)
+		
+		# Emit the signal to place the wall
+		EventBus.build_request_made.emit(test_building_data, grid_pos)
+		
+		get_viewport().set_input_as_handled()
+
+--- SCRIPT: res://scripts/units/Base_Unit.gd ---
+# res://scenes/units/Base_Unit.gd
+#
+# Base script for all units in the game.
+# It holds a reference to its UnitData resource and applies stats.
+#
+# --- MODIFIED: Added FSM setup and process loop ---
+
+class_name BaseUnit
+extends CharacterBody2D
+
+## Assign the UnitData resource (e.g., Unit_Raider.tres) here.
+@export var data: UnitData
+
+## The unit's Finite State Machine
+var fsm: UnitFSM
+
+## The current health of the unit.
+var current_health: int = 50
+
+func _ready() -> void:
+	if not data:
+		push_warning("BaseUnit scene is missing its UnitData resource.")
+		return
+	
+	# Apply stats from the data resource.
+	current_health = data.max_health
+	
+	# Initialize the FSM, passing a reference to this unit
+	fsm = UnitFSM.new(self)
+
+
+func _physics_process(delta: float) -> void:
+	# Drive the FSM every physics frame
+	if fsm:
+		fsm.update(delta)
+	
+	# Clear velocity if FSM didn't set it (e.g., IDLE or no FSM)
+	if fsm.current_state != UnitFSM.State.MOVE:
+		velocity = Vector2.ZERO
+		move_and_slide() # Still call slide for collision detection
+
+
+func take_damage(amount: int) -> void:
+	current_health = max(0, current_health - amount)
+	print("%s took %d damage, %d HP remaining." % [data.display_name, amount, current_health])
+	
+	if current_health == 0:
+		die()
+
+func die() -> void:
+	print("%s has been killed." % data.display_name)
+	# In the future, we will emit a signal here, e.g.,
+	# EventBus.unit_killed.emit(self)
+	# and then queue_free().
+	queue_free()
+
+--- SCRIPT: res://scripts/units/VikingRaider.gd ---
+# res://scenes/units/VikingRaider.gd
+#
+# Concrete implementation of the Viking Raider enemy unit.
+# It starts by immediately trying to move to a fixed target.
+
+extends BaseUnit
+
+# --- PROVISIONAL DEFAULT ---
+# This is a temporary, hard-coded target for testing Task 4.
+# The GDD specifies the Great Hall as the target, so we'll use a 
+# placeholder position in the center of our 50x30 grid.
+const TEST_TARGET_POSITION: Vector2 = Vector2(25 * 32, 15 * 32) # (800, 480)
+
+func _ready() -> void:
+	super._ready()
+	
+	# Assign the target and immediately start the movement FSM
+	if fsm:
+		fsm.target_position = TEST_TARGET_POSITION
+		fsm.change_state(UnitFSM.State.MOVE)
+		print("Viking Raider initialized and moving to target: %s" % TEST_TARGET_POSITION)
+--- END OF CODEBASE ---
+
+---

@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://caqoqfrq0wwlq"]
 
 [ext_resource type="PackedScene" uid="uid://cpe46srqjmdh6" path="res://scenes/levels/DefensiveMicro.tscn" id="1_a26h3"]
-[ext_resource type="Script" uid="uid://dafjxa85ci2rx" path="res://scenes/levels/SettlementBridge.gd" id="1_b8gf1"]
+[ext_resource type="Script" uid="uid://dafjxa85ci2rx" path="res://scripts/buildings/SettlementBridge.gd" id="1_b8gf1"]
 
 [node name="SettlementBridge" type="Node"]
 script = ExtResource("1_b8gf1")

@@ -1,8 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://cws6xle5x52g4"]
-
-[ext_resource type="Script" uid="uid://cg3trkklgwoio" path="res://data/buildings/Base_Building.gd" id="1_5xokj"]
-
-[node name="Base_Building" type="StaticBody2D"]
-script = ExtResource("1_5xokj")
-
-[node name="Sprite2D" type="Sprite2D" parent="."]

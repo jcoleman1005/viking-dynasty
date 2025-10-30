@@ -1,0 +1,127 @@
+Viking Dynasty
+
+(Version 1.5 - The Three-Layer Refactor)
+
+1. High-Level Concept & Vision
+
+Viking Dynasty is a strategy game that blends the dynastic ambition and grand strategy of Crusader Kings with the tactical, real-time battles of Age of Empires II.
+Players will manage a Viking dynasty, not just a single character. They will forge alliances, declare wars, and manage their growing family on a strategic world map (the Macro layer). When battles occur or raids are launched, the game will seamlessly transition into a real-time strategy mission (the Micro layer). The bridge between these two layers is the player's persistent, grid-based Settlement, which they will build, upgrade, and defend.
+The core tension is balancing the long-term needs of your dynasty (geopolitics, heirs) with the immediate, visceral needs of combat (resources, unit control), all while protecting your home from rival Jarls.
+Target Audience: Players who enjoy deep strategic systems (e.g., Paradox titles) but also crave tactical, skill-based RTS combat (e.g., Age of Empires, Company of Heroes).
+Genre: Grand Strategy / Real-Time Strategy (RTS) Hybrid.
+Theme: Viking Age, focusing on the grit, ambition, and legacy of a Norse dynasty. The aesthetic will be a balance between historical grounding and saga-inspired heroism.
+
+2. Core Gameplay Loop: The Three Layers
+
+The gameplay is built on three interconnected layers: the Macro (Dynasty), the Micro (RTS), and the Bridge (Settlement). The player's actions in one layer directly impact the others.
+Layer 1: The Macro (Dynasty & Geopolitics): The high-level, persistent strategic map where the player manages their dynasty over generations.
+Layer 2: The Micro (Real-Time Strategy): The moment-to-moment, skill-based layer where battles and raids are resolved in objective-based scenarios.
+Layer 3: The Bridge (Settlement Management): The crucial "hub" that connects the other two layers. It is the player's persistent, grid-based home base, which they build, upgrade, and must defend.
+
+3. The Bridge: Settlement & The "Sacked" Loop
+
+This layer is the player's persistent home base and the engine of the game loop. It is a grid-based, buildable fort that connects all player actions.
+A. The Loop
+(Unchanged from v1.5)
+B. The "Sacked, Not Destroyed" Mechanic
+This is the core defensive loop that makes the Settlement meaningful.
+The Trigger (Macro): A rival Jarl on the Macro map successfully moves an army to the player's Settlement and begins a Siege.
+The Event (Micro): This action immediately triggers a Defensive RTS Battle. The map for this battle is the player's home Settlement, exactly as they have built and upgraded it. All their defensive choices (walls, towers, chokepoints) are put to the test.
+The Consequence (Bridge & Macro):
+If the Player Wins: The enemy is repelled. The Jarl gains significant Renown, and the rival leader may be captured.
+If the Player Loses: It is not "Game Over." The holding is "Sacked."
+Resource Loss: The player loses a large percentage of their stored resources.
+Building Damage: Several buildings are "Damaged" and must be repaired.
+Dynasty Harm: A family member (spouse, heir) may be captured, triggering a new "Rescue" (Micro) or "Ransom" (Macro) objective.
+[NEW] Design Note (Handling Consequences): To ensure consequences have weight, the game will feature two modes, with "Ironman" as the default.
+Ironman Mode (Default): The game uses a single save file and auto-saves after critical outcomes (e.g., after a "Sacked" battle is resolved), forcing the player to live with the consequences.
+Standard Mode: Players can save and load freely, allowing for a more relaxed, experimental playstyle.
+
+
+
+4. The Macro Layer: Dynasty & Geopolitics
+
+This is the high-level "grand strategy" layer, managing the Jarl, their family, and their rivals.
+A. Dynasty: The Heir Pool
+The player's Dynasty consists of 1 Jarl (Leader) and 3 Heir Pool Members.
+Raid Commanders (The Jarl's Authority): This is a critical strategic choice:
+Jarl-Led Raids: The Jarl is the only one who can lead Conquest Raids (to capture enemy Jarls) and gain Renown. This is the primary path to victory, but it risks inflicting Stress.
+Heir-Led Raids: Heirs lead Resource Raids. This is the primary way to acquire Gold and Thralls to build the Settlement, but they do not generate Renown or conquer territory.
+Succession: When the Jarl dies (e.g., old age, plot event), the player chooses one of the 3 Heir Pool members to become the new Jarl.
+B. Jarl Stress & Trait Replacement
+This system manages the consequences of failure. Leaders cannot be killed on a raid; the primary risk is mental.
+Mechanic: A 0-100 Stress variable.
+Input: Stress increases based on the Raid Outcome (e.g., Failure = +30 Stress). Only the raid leader (Jarl or Heir) suffers Stress.
+Consequence (Trait Replacement): If Stress exceeds 70, the Jarl has a breakdown. Their existing Negative Trait is REPLACED by a new, different Negative Trait.
+Restoration (The Rite of Blot): A high-cost action at the Settlement (e.g., in a "Hof" building) that resets Stress to 0 and has a small chance to remove a Negative Trait.
+C. Geopolitics (The Fylki Conflict)
+The primary strategic challenge is managing the 3-5 starting Rival Fylki on the Macro map.
+Rival Jarl Profiles: Each rival has a unique profile.
+| Jarl (Tribe) | Key Trait | Levy Strength | Max Loot Potential | Alliance Cost (Per Status Level) |
+|---|---|---|---|---|
+| Olaf the Aggressor | Warlike | High | High (125 Loot) | 200 Renown |
+| Sven the Greedy | Greedy | Medium | Medium (75 Loot) | 150 Gold |
+| Harald the Craven | Cowardly | Low | Low (40 Loot) | 10 Thralls |
+Conquest Loop: The Captured Jarl:
+Trigger: Can only be triggered by a Jarl-led "Conquest Raid" (Micro mission) against a Rival Fylki Capital.
+Outcomes: When the rival Jarl is captured, the player chooses their fate: Execute (high Renown, but spawns two new "Warlord" enemies), Ransom (high Gold), or Vassalize (forced alliance, but risks revolt).
+
+5. The Micro Layer: Tactical RTS Combat
+
+This is the "Smash and Grab" RTS layer where raids and defenses are resolved.
+A. "Smash and Grab" Raid Mechanics
+(Unchanged from v1.5)
+B. The 3-Vector Challenge Framework
+(Unchanged from v1.5)
+C. [NEW] Combat Model (The "Visual Cheat")
+Our combat model uses a hybrid system (detailed in 6.A) to ensure high performance. The interaction between individual "Specialists" and multi-man "Squads" is critical.
+Mechanical Interaction: A "Squad" is a single object in the code. It has one HP bar and one AI "brain."
+Visual Representation: The Squad's HP is tied to its visual model count. (e.g., 100 HP = 10 models). When the Squad takes damage, its HP drops, and a visual model is removed (plays a death animation).
+"Brawl" Formation: When a Squad (one object) engages a Specialist (one object) in melee:
+The Squad's "marching" formation visually "breaks."
+The visual models instantly snap to a pre-set, chaotic "brawl" formation that "surrounds" the target.
+This looks like a 10-on-1 fight but remains a 1-on-1 calculation mechanically, preserving performance.
+
+6. Technical & Visual Design
+
+A. Technical Pillars
+1. Settlement System: Grid-Based A* Pathfinding
+Rationale: This is the only way to make the "Sacked, Not Destroyed" defensive battle meaningful. The player's exact building placement must have a 1-to-1 impact on the defensive RTS map.
+[UPDATED] Implementation: This system will not use runtime NavMesh generation, which is slow and complex. Instead, it will use Grid-Based A* Pathfinding (inspired by RimWorld and They Are Billions).
+The 2D Settlement grid is the pathfinding map. Placing a building simply marks its corresponding tiles as "unwalkable."
+This is an instant, low-cost calculation, allowing the defensive map to load immediately.
+2. RTS Combat: Hybrid Squad/Specialist Model
+Squads (The Army): Core military units (Axemen, Archers, Shieldbearers) are recruited as squads (e.g., 1 "Axeman Squad" = 5-10 individual soldiers).
+Specialists (The Individuals): Unique, single units that serve a precise function (e.g., Jarl, Heirs, Thralls).
+[UPDATED] Implementation: The "Squad" is a single code object. It uses one pathfinding calculation. The individual models are visual "puppets" with a fixed offset from the squad leader. When melee is initiated, these models will snap to a pre-defined "brawl" formation (see 5.C) to create the visual of a surround without the performance cost of multiple pathfinding calculations.
+
+B. Visual & Architectural Design
+Visuals: Low-fidelity 2.5D graphics (a la Age of Empires II) for the RTS phase.
+UI: A "Saga Tapestry" theme (wood-grain, carved borders) for all Macro and Settlement (Bridge) menus.
+Architecture (Godot):
+Data-Driven Design: All stats, costs, and modifiers MUST be stored in custom Resource files (.tres).
+Core Singletons: GameStateManager, DynastyManager (handles Jarls, Heirs, Stress), SettlementManager (handles the persistent grid).
+Data Separation:
+| Resource Script (/resources/custom_types) | Data Files (/resources/data) | Purpose |
+|---|---|---|
+| JarlTrait.gd | Trait_Brave.tres, etc. | Defines trait modifiers. |
+| FylkiProfile.gd | Fylki_Olaf.tres, etc. | Defines rival Jarl data and their raid mission vectors. |
+| BuildingData.gd | Bldg_Barracks.tres, etc. | Defines building costs, unlocks, and Macro-layer bonuses. |
+| UnitData.gd | Unit_AxemanSquad.tres, etc. | Defines unit/squad stats, costs, and abilities. |
+
+7. MVP & Future Scope
+A. Minimum Viable Product (MVP) - "Defense First" Prototype
+Priority: The MVP must validate the single highest-risk technical challenge: the custom-built defensive battle loop. All other features (offensive raids, dynasty, full economy) are secondary.
+The MVP "Defense Loop":
+Bridge (Build): The player can place a "Wall" and a "Great Hall" on the persistent settlement grid.
+Macro (Trigger): The developer can trigger a test "Sacked" attack via a debug button.
+Micro (Defense): The game instantly loads the custom grid as an RTS map. One enemy "Specialist" unit spawns.
+Micro (Pathfinding): The enemy unit successfully uses A* pathfinding to navigate around the player's "Wall" and attack the "Great Hall."
+Bridge (Consequence): After the "Great Hall" is destroyed, the battle ends. The player returns to the Settlement (Bridge) layer and sees that the "Great Hall" now has a "Damaged" status.
+Success Criteria: This loop is fast, bug-free, and proves the "Grid-based A*" and "Sacked" mechanics are feasible. Only after this is complete will development proceed to offensive raids, unit recruitment, and the full economy.
+
+
+B. Future Scope (Next Priorities)
+Flesh out the Dynasty & Trait System (inheritance, education).
+Define the full RTS Unit Roster (squads and specialists).
+Design the full Technology & Building Tree for the Settlement.

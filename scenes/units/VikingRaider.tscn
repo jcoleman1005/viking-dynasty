@@ -1,0 +1,9 @@
+[gd_scene load_steps=4 format=3 uid="uid://dsv0s4yq8c8m5"]
+
+[ext_resource type="PackedScene" uid="uid://bky4c6y8fkk8g" path="res://scenes/units/Base_Unit.tscn" id="1_3e0gq"]
+[ext_resource type="Script" uid="uid://cavpq2rrgln2v" path="res://scripts/units/VikingRaider.gd" id="2_i4fbs"]
+[ext_resource type="Resource" uid="uid://brnbvjwnoyh3j" path="res://data/units/Unit_Raider.tres" id="3_x0aqw"]
+
+[node name="VikingRaider" instance=ExtResource("1_3e0gq")]
+script = ExtResource("2_i4fbs")
+data = ExtResource("3_x0aqw")
