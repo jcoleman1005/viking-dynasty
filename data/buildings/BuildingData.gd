@@ -17,7 +17,7 @@ extends Resource
 @export var icon: Texture2D
 
 ## The cost in 'Resources' (e.g., wood, gold) to build this.
-@export var build_cost: int = 10
+@export var build_cost: Dictionary
 
 ## The building's maximum hit points.
 @export var max_health: int = 100

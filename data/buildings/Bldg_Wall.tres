@@ -7,7 +7,9 @@
 script = ExtResource("1_t76rl")
 display_name = "Stone Wall"
 scene_to_spawn = ExtResource("1_vluf5")
+build_cost = {
+"stone": 25
+}
 attack_damage = 0
 attack_range = 0.0
 attack_speed = 0.0
-metadata/_custom_type_script = "uid://js4bbqgeyd6c"

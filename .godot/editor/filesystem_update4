@@ -1,0 +1,15 @@
+res://scenes/levels/SettlementBridge.tscn
+res://placeholder_tile.tres
+res://addons/GodotAiSuite/GDD.txt
+res://addons/GodotAiSuite/Masterprompt.txt
+res://data/buildings/BuildingData.gd
+res://data/buildings/Bldg_Wall.tres
+res://data/buildings/Bldg_GreatHall.tres
+res://autoload/SettlementManager.gd
+res://scripts/buildings/SettlementBridge.gd
+res://data/settlements/SettlementData.gd
+res://data/settlements/home_base.tres
+res://autoload/EventBus.gd
+res://ui/StorefrontUI.gd
+res://ui/Storefront_UI.tscn
+res://data/buildings/EconomicBuildingData.gd

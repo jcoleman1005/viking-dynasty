@@ -1,5 +1,4 @@
-GDD v1.7 (MVP Complete)
-Viking Dynasty
+ Viking Dynasty GDD v1.72
 1. High-Level Concept & Vision
 (Unchanged from v1.62)
 Viking Dynasty is a strategy game that blends the dynastic ambition and grand strategy of Crusader Kings with the tactical, real-time battles of Age of Empires II.
@@ -11,15 +10,18 @@ Theme: Viking Age, focusing on the grit, ambition, and legacy of a Norse dynasty
 2. Core Gameplay Loop: The Three Layers
 (Unchanged from v1.62)
 The gameplay is built on three interconnected layers: the Macro (Dynasty), the Micro (RTS), and the Bridge (Settlement).
-2.A. The Macro (Dynasty Layer) This is the "Crusader Kings" layer. It is the top-level grand strategy map of Scandinavia and beyond.
+2.A. The Macro (Dynasty Layer)
+This is the "Crusader Kings" layer. It is the top-level grand strategy map of Scandinavia and beyond.
 Gameplay: Turn-based or pausable real-time.
 Player Actions: Managing family and heirs, diplomacy with AI Jarls, managing traits and succession, triggering events, and directing armies on a geopolitical map.
 Consequence: Declaring war on a rival Jarl (Macro) triggers an offensive "Micro" mission. A rival attacking the player triggers a defensive "Micro" mission.
-2.B. The Micro (RTS Layer) This is the "Age of Empires" layer. It is the real-time, grid-based combat mission.
+2.B. The Micro (RTS Layer)
+This is the "Age of Empires" layer. It is the real-time, grid-based combat mission.
 Gameplay: Real-time strategy.
 Player Actions: Commanding units, using special abilities, and achieving mission objectives (e.g., "Destroy the enemy's Great Hall," "Survive for 10 minutes").
 Consequence: Winning a battle (Micro) results in loot and prestige (Macro). Losing a defensive battle (Micro) results in your Settlement being "Sacked" (Bridge).
-2.C. The Bridge (Settlement Layer) This is the player's persistent home base, which connects the two layers.
+2.C. The Bridge (Settlement Layer)
+This is the player's persistent home base, which connects the two layers.
 Gameplay: Grid-based city-builder (e.g., RimWorld, Stronghold).
 Player Actions: Placing buildings, upgrading structures, assigning workers, and managing resources.
 Consequence: The layout of your Settlement becomes the map for all defensive "Micro" missions. A well-designed base provides a massive tactical advantage.
@@ -37,32 +39,38 @@ Finite State Machines (FSMs): All entities with 3+ states (like AI units) must u
 5. Art Style & Mood
 (Unchanged from v1.62) (Placeholder section for future development)
 6. Core Entities & Data Structures
-6.A. Overview (Unchanged from v1.62) All game entities are defined by a Resource script (.gd) and then implemented as one or more .tres files.
-6.B. BuildingData.gd (AMENDED) Defines the stats for all static structures in the game.
+6.A. Overview
+(Unchanged from v1.62)
+All game entities are defined by a Resource script (.gd) and then implemented as one or more .tres files.
+6.B. BuildingData.gd (AMENDED)
+Defines the stats for all static structures in the game.
 Path: res://data/buildings/BuildingData.gd
 Extends: Resource
 class_name BuildingData
 Key Properties:
-@export var display_name: String (e.g., "Stone Wall")
-@export var scene_to_spawn: PackedScene (The .tscn file to instance)
-@export var icon: Texture2D (For the build menu)
+@export var display_name: String  (e.g., "Stone Wall")
+@export var scene_to_spawn: PackedScene  (The .tscn file to instance)
+@export var icon: Texture2D  (For the build menu)
 @export var build_cost: int
 @export var max_health: int
-@export var blocks_pathfinding: bool (If true, updates the A* grid)
-@export var grid_size: Vector2i (Size in grid cells)
+@export var blocks_pathfinding: bool  (If true, updates the A* grid)
+@export var grid_size: Vector2i  (Size in grid cells)
 @export_group("Defensive Stats")
 @export var is_defensive_structure: bool
 @export var attack_damage: int
 @export var attack_range: float
 @export var attack_speed: float
-6.C. UnitData.gd (AMENDED) Defines the stats for all mobile units in the game.
+
+
+6.C. UnitData.gd (AMENDED)
+Defines the stats for all mobile units in the game.
 Path: res://data/units/UnitData.gd
 Extends: Resource
 class_name UnitData
 Key Properties:
-@export var display_name: String (e.g., "Viking Raider")
+@export var display_name: String  (e.g., "Viking Raider")
 @export var scene_to_spawn: PackedScene
-@export var icon: Texture2D (For the training menu)
+@export var icon: Texture2D  (For the training menu)
 @export var spawn_cost: int
 @export_group("Combat Stats")
 @export var max_health: int
@@ -70,10 +78,15 @@ Key Properties:
 @export var attack_damage: int
 @export var attack_range: float
 @export var attack_speed: float
+
+
 7. The "Defense-First" MVP
-7.A. MVP Goals (Unchanged from v1.62) The only goal of this MVP is to prove the "Sacked" loop. This is a technical, defense-first prototype.
+7.A. MVP Goals
+(Unchanged from v1.62)
+The only goal of this MVP is to prove the "Sacked" loop. This is a technical, defense-first prototype.
 MVP Success Criteria: "A pre-spawned enemy unit must successfully navigate a player-built settlement, pathfind around the player's 'Wall', destroy the 'Great Hall', and trigger a 'Sacked' game-over state."
-7.B. Feature Set (Unchanged from v1.62) (This is the minimal feature set required to achieve the MVP goal)
+7.B. Feature Set
+(Unchanged from v1.62) (This is the minimal feature set required to achieve the MVP goal)
 Systems: SettlementManager, AStarGrid2D Pathfinding, EventBus, FSM.
 Buildings (Data): "Great Hall" (Objective), "Stone Wall" (Obstacle).
 Units (Data): "Viking Raider" (Enemy).
@@ -85,44 +98,55 @@ Player can click to place "Stone Wall" obstacles.
 Raider AI paths around walls to the Great Hall.
 Raider attacks and destroys the Hall.
 Hall's destruction triggers a "SACKED" message on the UI.
-7.C. MVP Implementation Report (AMENDED)
-This section details the final, working architecture of the completed MVP, superseding the original implementation plan.
-Task 1: Core Data Definitions (Complete)
-BuildingData.gd and UnitData.gd were created as specified in Section 6.B and 6.C.
-Sample .tres files (Bldg_Wall.tres, Bldg_GreatHall.tres, Unit_Raider.tres) were created and are used to drive all game logic.
-Task 2: Settlement System (Complete)
-SettlementManager.tscn and SettlementManager.gd were created and added to Autoload.
-Amendment: The AStarGrid2D was discovered to be a code-only object, not a node. Its management has been moved inside the SettlementManager singleton, which is a more robust solution.
-The SettlementManager now correctly manages a building_container node to hold all instanced buildings and provides a global get_astar_path() function for all AI.
-Task 3: Defensive Scene (Complete & Amended)
-Amendment: The GDD's original plan for a GameStateManager and complex scene-switching was deemed too high-risk for the MVP.
-A simpler "Conductor" pattern was implemented. SettlementBridge.tscn is our main scene. It instances DefensiveMicro.tscn (the "world") and UnitContainer as children.
-SettlementBridge.gd now acts as the "conductor," managing the spawning of the Hall/Raider and listening for the "Sacked" loop-ending signal.
-Task 4: A* Pathfinding & Unit AI (Complete)
-Base_Unit.tscn was created as a CharacterBody2D with an attached UnitFSM.gd script.
-VikingRaider.tscn was created as an Inherited Scene from Base_Unit.
-Amendment (Reactive AI): A simple "move-to" AI was insufficient. A reactive AI was implemented. SettlementManager now emits EventBus.pathfinding_grid_updated when a wall is built. Base_Unit.gd listens for this signal and calls fsm.recalculate_path(), allowing it to pathfind around new obstacles in real-time.
-Amendment (AI Target): The AI was updated to target a walkable tile adjacent to the Great Hall, solving a bug where it would try to pathfind onto a "solid" (unpassable) grid cell and fail.
-Amendment (AI Attack): The FSM was updated to switch from MOVE to ATTACK as soon as it is within attack_range of its target, rather than waiting to finish its path. This solved a bug where it would get stuck on the Hall's collision shape.
-Task 5: The "Sacked" Loop (Complete)
-Base_Building.tscn was created as a StaticBody2D (not Area2D) with a CollisionShape2D. This was the critical amendment required to make pathfinding work.
-Base_Building.gd was implemented with a take_damage function and a building_destroyed signal.
-The full loop is confirmed functional:
-SettlementBridge.gd spawns the Hall and Raider.
-It calls raider.set_attack_target(hall).
-The Raider moves to the Hall, enters the ATTACK state, and deals damage based on its Unit_Raider.tres data.
-The Hall's health reaches zero and it emits building_destroyed.
-SettlementBridge.gd catches this signal, calls _on_great_hall_destroyed, and updates the UI to "YOU HAVE BEEN SACKED."
+7.C. Core Architecture (Phase 2 Specification)
+This section defines the target architecture for the Phase 2 economic systems. This design refactors the Phase 1 SettlementManager to support scalability and the new data requirements.
+The monolithic SettlementManager will be split into two distinct parts:
+Persistent Data Resource (SettlementData.gd): This new Resource script will hold all persistent settlement data, including:
+treasury (Dictionary)
+placed_buildings (Array)
+last_visited_timestamp (int) A .tres file (e.g., home_base.tres) will represent a unique, persistent settlement.
+Singleton Manager (SettlementManager.gd): The Autoload will be refactored into a runtime manager. Its new responsibilities are to:
+Load a SettlementData resource on demand.
+Manage the AStarGrid2D and pathfinding.
+Process runtime requests (e.g., attempt_purchase, calculate_chunk_payout).
+It will no longer hold any persistent data itself.
+Data-Driven: BuildingData.gd and UnitData.gd will be expanded by EconomicBuildingData.gd.
+AI: UnitFSM.gd and EventBus signals remain the core of unit AI.
 8. Post-MVP Roadmap
-(Unchanged from v1.62. This is our next set of tasks.)
-Phase 2: Integrate the "Bridge" (The Economy Layer)
-Goal: To build the economic simulation that makes the Settlement feel alive and provides the resources needed for Phase 3.
-Key Features:
-Resource Collectors: Implement ResourceCollector (e.g., Lumber Mill) and ResourceDepot (e.g., Tree) entities.
-"Worker" Units: Create a basic "Worker" unit AI (FSM states: Idle, MoveToResource, Gather, ReturnToTownHall).
-Global Economy: A new EconomyManager singleton to track global resources (Wood, Food, Gold).
-Build Menu: A simple UI for spending resources to place buildings.
-Why first? This layer provides the means for all other player actions. You cannot build an army (Phase 3) without an economy.
+Phase 2: The "Reinvestment" Economy (The 'Bridge')
+Overview
+This phase implements the core economic engine of the "Bridge" (Settlement) layer. This is not a traditional passive-income RTS economy (like Age of Empires).
+The design is a hybrid "Raid-and-Spend" model. This keeps the player's focus on the active, core fantasy of Viking raiding, while supplementing it with strategic, long-term investments in their home base.
+Pillar 1: The 'Treasury' & 'Storefront'
+This pillar involves tracking player resources (Gold, Wood, Stone, etc.) in a persistent Treasury and creating a 'Storefront' UI where those resources can be spent on new buildings and units.
+Build Cost Data Structure To support the multi-resource "Raid-and-Spend" economy, all buildable items, units, and upgrades will have their costs defined as a Dictionary data structure. This allows any item to cost one or more resource types.
+Example (Defensive):
+Stone Wall Cost: {"stone": 25}
+Example (Economic):
+Lumber Yard Cost: {"wood": 50, "gold": 10}
+Example (Unit):
+Viking Raider Cost: {"food": 50, "gold": 20}
+
+
+Pillar 2: The 'Active' Loop (Raiding for Loot)
+This is the primary source of all income in the game.
+Concept: This system is the "generator" for the entire economy. It directly connects to the Phase 3 (Offensive Raids) RTS loop.
+Function: Upon successfully completing an "Offensive Raid" mission, the player will be awarded a lump sum of Loot based on their performance. When the player returns to the "Bridge" scene, this loot is deposited directly into the "Treasury."
+Pillar 3: The 'Reinvestment' Loop (Investing for Growth)
+This is the secondary economic loop, providing strategic depth and a long-term progression path.
+Concept: Players can spend loot from the Treasury to build or upgrade "Economic Buildings" (e.g., Farm Upgrade, Trading Post, Lumber Yard). This represents a long-term investment in the settlement's infrastructure.
+Function (The "Chunk" Payout): These buildings do not generate resources passively in real-time. Instead, they accumulate a "chunk" of their given resource while the player is away (e.g., on a raid or offline).
+Payout Mechanism: Upon returning to the "Bridge" scene, a function will calculate the total accumulated resources from all economic buildings (up to a defined 'storage cap' for each) and present it to the player as a "Welcome Home" reward. This simulates the "harvest" or "trade profits" that occurred during their absence. The player must click the "Collect" button on the modal. This action will deposit the resources into the Treasury and update the UI, providing a tangible, player-driven feedback loop for their investment.
+Strategic Layer: This creates the central economic choice for the player:
+Spend Loot: On immediate military power (e.t., better troops for the next raid).
+Invest Loot: On economic buildings for long-term, compounding resource growth.
+Pillar 4: Core Architectural Refactor (To Support Colonization)
+To support the long-term vision of founding new colonies (as discussed in Section 7.C), the SettlementManager Singleton must be refactored before this phase is implemented.
+Task: The SettlementManager AutoLoad will be replaced by a Resource-based system.
+New Structure:
+Create a new custom Resource named SettlementData.gd.
+This script will hold all data for a single settlement: its settlement_grid, building_status, treasury, and economic_building_levels.
+Benefit: The "Home Base" (home_base.tres) and any future "Colonies" (colony_1.tres) will simply be different resource files loaded by the same SettlementBridge.tscn scene. This makes expansion infinitely scalable.
 Phase 3: The "Offensive Raid" Mission Type
 Goal: To implement the player-driven "Micro" RTS loop.
 Key Features:
@@ -137,5 +161,3 @@ Dynasty & Trait System: Implement the family tree, character inheritance, and tr
 Geopolitical Map: Build the high-level map where the player interacts with other AI Jarls.
 Event Triggers: A rival Jarl declaring war (Macro) will trigger the "Sacked" defensive loop (Micro). The player deciding to attack (Macro) will trigger the "Offensive Raid" loop (Micro).
 Why last? This system provides the ultimate context, but it relies on the other two pillars (Economy and Combat) to have meaningful consequences.
-
-

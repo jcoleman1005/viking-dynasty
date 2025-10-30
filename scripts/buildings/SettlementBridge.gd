@@ -1,18 +1,13 @@
 # res://scripts/buildings/SettlementBridge.gd
-#
-# This is the "main" script for the settlement defense scene.
-#
-# --- THIS IS THE CORRECT SCRIPT FOR THE TASK 5 "SACKED" LOOP ---
 
 extends Node
 
 # --- Preloaded Test Assets ---
 var test_building_data: BuildingData = preload("res://data/buildings/Bldg_Wall.tres")
 var raider_scene: PackedScene = preload("res://scenes/units/VikingRaider.tscn")
-var hall_data: BuildingData = preload("res://data/buildings/Bldg_GreatHall.tres")
+var home_base_data: SettlementData = preload("res://data/settlements/home_base.tres")
 
 # --- Scene Node References ---
-@onready var defensive_micro: Node2D = $DefensiveMicro
 @onready var unit_container: Node2D = $UnitContainer
 @onready var label: Label = $UI/Label
 
@@ -21,37 +16,44 @@ var great_hall_instance: BaseBuilding = null
 var game_is_over: bool = false
 
 # --- Provisional Spawn Points ---
-const HALL_GRID_POS: Vector2i = Vector2i(25, 15)
 const RAIDER_SPAWN_POS: Vector2 = Vector2(50, 50)
 
 
 func _ready() -> void:
-	_spawn_great_hall()
+	# Load the settlement from the resource file
+	SettlementManager.load_settlement(home_base_data)
+	
+	# After loading, find the Great Hall to connect signals and for the AI to target
+	_find_and_setup_great_hall()
+	
+	# The rest of the MVP logic remains
 	_spawn_raider_for_test()
 
-func _spawn_great_hall() -> void:
-	"""
-	Spawns the Great Hall and connects to its destruction signal.
-	"""
-	if not hall_data:
-		push_error("Great Hall data not found!")
-		return
-		
-	# Use the SettlementManager to place the hall
-	SettlementManager.place_building(hall_data, HALL_GRID_POS)
+	# Placeholder for payout logic from Task 6
+	var payout = SettlementManager.calculate_chunk_payout()
+	if not payout.is_empty():
+		# This is where the "Welcome Home" popup would be triggered.
+		# For now, just print.
+		print("Payout calculated on load: %s" % payout)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST or what == NOTIFICATION_APPLICATION_PAUSED:
+		SettlementManager.save_timestamp()
+
+func _find_and_setup_great_hall() -> void:
+	# Find the Great Hall instance, which was spawned by the SettlementManager
+	for building in SettlementManager.building_container.get_children():
+		if building is BaseBuilding and building.data.display_name == "Great Hall":
+			great_hall_instance = building
+			break
 	
-	# The manager just placed it, so we can get it from the container.
-	# We get the last child added.
-	great_hall_instance = SettlementManager.building_container.get_child(
-		SettlementManager.building_container.get_child_count() - 1
-	)
-	
-	# --- This is the GDD's "connect" logic ---
 	if great_hall_instance:
 		great_hall_instance.building_destroyed.connect(_on_great_hall_destroyed)
-		print("Great Hall spawned. Listening for its destruction.")
+		print("Great Hall found and connected.")
 	else:
-		push_error("Failed to get Great Hall instance after spawn.")
+		push_error("SettlementBridge: Could not find Great Hall instance after loading settlement.")
+
 
 func _spawn_raider_for_test() -> void:
 	if not great_hall_instance:
@@ -59,58 +61,35 @@ func _spawn_raider_for_test() -> void:
 		return
 		
 	var raider_instance: BaseUnit = raider_scene.instantiate()
-	
-	# Add unit to the UnitContainer
 	unit_container.add_child(raider_instance)
-	
-	# Set position *after* adding to scene
 	raider_instance.global_position = RAIDER_SPAWN_POS
-	
-	# --- THIS IS THE FIX ---
-	# Tell the raider what to attack
 	raider_instance.set_attack_target(great_hall_instance)
 
-# --- Main "Sacked" Loop Logic ---
 
-func _on_great_hall_destroyed(building: BaseBuilding) -> void:
-	"""
-	This is the "Sacked" state. It's called when the Hall's
-	'building_destroyed' signal is emitted.
-	"""
+func _on_great_hall_destroyed(_building: BaseBuilding) -> void:
 	print("GAME OVER: The Great Hall has been destroyed!")
 	game_is_over = true
-	
-	# 1. Update the UI
 	label.text = "YOU HAVE BEEN SACKED."
-	
-	# 2. Update the SettlementManager as per GDD
-	SettlementManager.update_building_status(HALL_GRID_POS, "Destroyed")
-	
-	# 3. End the "battle"
 	_destroy_all_enemies()
 
 func _destroy_all_enemies() -> void:
-	"""
-	Cleans up all active enemy units.
-	"""
 	for enemy in unit_container.get_children():
 		enemy.queue_free()
 	print("All surviving enemies have been removed.")
 
-# --- Player Input (for placing walls) ---
 
 func _unhandled_input(event: InputEvent) -> void:
-	# Don't allow building if game is over
 	if game_is_over:
 		return
 		
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.is_pressed():
-		
 		if not test_building_data:
 			return
 
+		# NOTE: This part will need to be updated in Task 3 to use the new purchase flow
+		# For now, it bypasses the treasury for testing purposes.
 		var mouse_pos: Vector2 = get_viewport().get_mouse_position()
 		var grid_pos: Vector2i = Vector2i(mouse_pos / SettlementManager.astar_grid.cell_size)
+		SettlementManager.place_building(test_building_data, grid_pos)
 		
-		EventBus.build_request_made.emit(test_building_data, grid_pos)
 		get_viewport().set_input_as_handled()
