@@ -125,6 +125,35 @@ func get_astar_path(start_pos: Vector2, end_pos: Vector2) -> PackedVector2Array:
 	var end_id: Vector2i = Vector2i(end_pos / astar_grid.cell_size)
 	return astar_grid.get_point_path(start_id, end_id)
 
+func recruit_unit(unit_data: UnitData) -> void:
+	"""Add a unit to the garrison"""
+	if not current_settlement:
+		push_error("Cannot recruit unit: no current settlement")
+		return
+	
+	if not unit_data:
+		push_error("Cannot recruit: UnitData is null")
+		return
+	
+	var unit_path: String = unit_data.resource_path
+	if unit_path.is_empty():
+		push_error("Cannot recruit: UnitData has no resource_path")
+		return
+	
+	# Increment the count for this unit type
+	if current_settlement.garrisoned_units.has(unit_path):
+		current_settlement.garrisoned_units[unit_path] += 1
+	else:
+		current_settlement.garrisoned_units[unit_path] = 1
+	
+	print("Recruited %s. Garrison count: %d" % [unit_data.display_name, current_settlement.garrisoned_units[unit_path]])
+	
+	# Save the updated settlement
+	save_settlement()
+	
+	# Emit event for UI updates
+	EventBus.purchase_successful.emit(unit_data.display_name)
+
 func save_settlement() -> void:
 	if not current_settlement:
 		push_error("Attempted to save a null settlement.")

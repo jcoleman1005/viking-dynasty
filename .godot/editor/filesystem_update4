@@ -1,2 +1,9 @@
-res://scenes/levels/SettlementBridge.tscn
+res://scenes/world_map/WorldMap_Stub.tscn
 res://placeholder_tile.tres
+res://player/RTSController.gd
+res://ui/StorefrontUI.gd
+res://scripts/ai/UnitFSM.gd
+res://scenes/world_map/WorldMap_Stub.gd
+res://scenes/levels/DefensiveMicro.tscn
+res://scenes/missions/RaidMission.gd
+res://data/settlements/monastery_base.tres

@@ -1,0 +1,20 @@
+[gd_scene load_steps=2 format=3 uid="uid://prjaf886ctj3"]
+
+[ext_resource type="Script" uid="uid://bqca4a5qwo3nm" path="res://scenes/world_map/WorldMap_Stub.gd" id="1_gdfdq"]
+
+[node name="Main" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_gdfdq")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 0
+color = Color(0, 0, 0, 1)
+
+[node name="RaidButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = -100.0
+offset_top = -25.0
+offset_right = 100.0
+offset_bottom = 25.0
+text = "Raid: Nearby Monastery"

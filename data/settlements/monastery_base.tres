@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://okf2novkg804"]
+
+[ext_resource type="Script" uid="uid://hlb8s5g0yp6k" path="res://data/settlements/SettlementData.gd" id="1_abcde"]
+
+[resource]
+script = ExtResource("1_abcde")
+treasury = {
+"food": 100,
+"gold": 300,
+"stone": 50,
+"wood": 150
+}
+placed_buildings = Array[Dictionary]([{
+"grid_position": Vector2i(25, 15),
+"resource_path": "res://data/buildings/Bldg_GreatHall.tres"
+}, {
+"grid_position": Vector2i(24, 14),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(26, 14),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(24, 16),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(26, 16),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}])

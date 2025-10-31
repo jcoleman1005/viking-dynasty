@@ -30,14 +30,14 @@ func _exit_tree() -> void:
 		EventBus.pathfinding_grid_updated.disconnect(_on_grid_updated)
 
 func _on_grid_updated(_grid_pos: Vector2i) -> void:
-	if fsm and fsm.current_state == UnitFSM.State.MOVE:
-		fsm.recalculate_path()
+	if fsm and fsm.current_state == UnitFSM.State.MOVING:
+		fsm._recalculate_path()
 
 func _physics_process(delta: float) -> void:
 	if fsm:
 		fsm.update(delta)
 	
-	if not fsm or fsm.current_state != UnitFSM.State.MOVE:
+	if not fsm or fsm.current_state != UnitFSM.State.MOVING:
 		velocity = Vector2.ZERO
 		move_and_slide()
 
@@ -50,3 +50,29 @@ func take_damage(amount: int) -> void:
 func die() -> void:
 	print("%s has been killed." % data.display_name)
 	queue_free()
+
+# --- RTS Command Interface ---
+
+func command_move_to(target_pos: Vector2) -> void:
+	"""Command this unit to move to a position"""
+	if fsm:
+		fsm.command_move_to(target_pos)
+
+func command_attack(target: Node2D) -> void:
+	"""Command this unit to attack a target"""
+	if fsm:
+		fsm.command_attack(target)
+
+# --- Selection System ---
+
+var is_selected: bool = false
+
+func set_selected(selected: bool) -> void:
+	"""Set the unit's selection state"""
+	is_selected = selected
+	# Visual feedback for selection could be added here
+	# For example: change sprite color, add selection ring, etc.
+	if is_selected:
+		print("%s selected" % data.display_name)
+	else:
+		print("%s deselected" % data.display_name)
