@@ -2,7 +2,7 @@
 # RTS input controller for Phase 3
 # GDD Ref: Phase 3 Task 5
 
-extends Node
+extends Node2D
 
 # Selection System
 var selected_units: Array[Node2D] = []
@@ -71,24 +71,40 @@ func _update_selection_box(current_pos: Vector2) -> void:
 func _single_select(screen_pos: Vector2) -> void:
 	# Select a single unit at the click position
 	var world_pos = _screen_to_world(screen_pos)
-	var space_state = get_world_2d().direct_space_state
-	
-	# Create a small area query around the click point
-	var query = PhysicsPointQueryParameters2D.new()
-	query.position = world_pos
-	query.collision_mask = 1 # Assuming units are on layer 1
-	
-	var results = space_state.intersect_point(query, 1)
 	
 	# Clear previous selection
 	_clear_selection()
 	
-	# Check if we clicked on a unit
+	# Method 1: Try physics query first
+	var space_state = get_world_2d().direct_space_state
+	var query = PhysicsPointQueryParameters2D.new()
+	query.position = world_pos
+	query.collision_mask = 1 # Units should be on layer 1
+	
+	var results = space_state.intersect_point(query, 1)
+	
 	for result in results:
 		var body = result["collider"]
 		if _is_player_unit(body):
 			_add_to_selection(body)
-			break
+			return
+	
+	# Method 2: Fallback - Check all player units for proximity (in case physics fails)
+	var all_units = get_tree().get_nodes_in_group("player_units")
+	
+	var closest_unit: Node2D = null
+	var closest_distance: float = 50.0  # Max click distance in pixels
+	
+	for unit in all_units:
+		if unit is Node2D:
+			var distance = unit.global_position.distance_to(world_pos)
+			if distance < closest_distance and _is_player_unit(unit):
+				closest_distance = distance
+				closest_unit = unit
+	
+	# Select the closest unit if found
+	if closest_unit:
+		_add_to_selection(closest_unit)
 
 func _complete_box_selection() -> void:
 	# Complete box selection and select all units in the box
@@ -179,12 +195,10 @@ func _add_to_selection(unit: Node2D) -> void:
 			unit.set_selected(true)
 		print("Added %s to selection. Total selected: %d" % [unit.name, selected_units.size()])
 
-func _screen_to_world(screen_pos: Vector2) -> Vector2:
+func _screen_to_world(_screen_pos: Vector2) -> Vector2:
 	# Convert screen position to world position
-	if camera:
-		return camera.get_global_mouse_position()
-	else:
-		return get_global_mouse_position()
+	# Use the actual mouse position in world coordinates
+	return get_global_mouse_position()
 
 func _screen_rect_to_world(screen_rect: Rect2) -> Rect2:
 	# Convert screen rectangle to world rectangle

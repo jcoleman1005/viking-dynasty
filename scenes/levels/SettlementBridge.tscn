@@ -47,3 +47,11 @@ offset_right = -10.0
 offset_bottom = 31.0
 grow_horizontal = 0
 text = "Start Attack"
+
+[node name="StartRaidButton" type="Button" parent="UI"]
+anchors_preset = -1
+offset_left = 200.0
+offset_top = 20.0
+offset_right = 350.0
+offset_bottom = 60.0
+text = "Start Raid Mission"

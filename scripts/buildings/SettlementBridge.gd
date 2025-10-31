@@ -13,6 +13,7 @@ var welcome_popup_scene: PackedScene = preload("res://ui/WelcomeHome_Popup.tscn"
 @onready var ui_layer: CanvasLayer = $UI
 @onready var restart_button: Button = $UI/RestartButton
 @onready var start_attack_button: Button = $UI/StartAttackButton
+@onready var start_raid_button: Button = $UI/StartRaidButton
 @onready var storefront_ui: Control = $UI/Storefront_UI
 var welcome_popup: PanelContainer
 
@@ -31,6 +32,7 @@ func _ready() -> void:
 	# --- Connect Signals ---
 	restart_button.pressed.connect(_on_restart_pressed)
 	start_attack_button.pressed.connect(_on_start_attack_pressed)
+	start_raid_button.pressed.connect(_on_start_raid_pressed)
 
 	# --- Payout Logic ---
 	# This now happens when the scene loads, simulating the return from an attack.
@@ -117,3 +119,26 @@ func _on_start_attack_pressed() -> void:
 	_spawn_raider_for_test()
 	start_attack_button.hide()
 	storefront_ui.hide()
+
+func _on_start_raid_pressed() -> void:
+	"""Start a raid mission - ensures settlement persists and transitions properly"""
+	print("Starting raid mission...")
+	
+	# Validate that we have a settlement loaded
+	if not SettlementManager.current_settlement:
+		push_error("Cannot start raid: No settlement loaded")
+		return
+	
+	# Ensure we have some units in the garrison for the raid
+	if SettlementManager.current_settlement.garrisoned_units.is_empty():
+		print("Warning: No units in garrison. Adding test unit for raid.")
+		# Add a test unit so the raid can proceed
+		var test_unit_path = "res://data/units/VikingRaider.tres"
+		SettlementManager.current_settlement.garrisoned_units[test_unit_path] = 2
+		SettlementManager.save_settlement()
+	
+	print("Settlement loaded with garrison: %s" % SettlementManager.current_settlement.garrisoned_units)
+	
+	# Transition to the raid mission scene
+	# The SettlementManager (autoload) will persist the current_settlement across scenes
+	get_tree().change_scene_to_file("res://scenes/missions/RaidMission.tscn")

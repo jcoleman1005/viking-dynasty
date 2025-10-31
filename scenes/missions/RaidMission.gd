@@ -77,9 +77,12 @@ func _load_enemy_base() -> void:
 func _spawn_player_garrison() -> void:
 	"""Spawn player units from the garrison"""
 	print("Spawning player garrison...")
+	print("SettlementManager status: %s" % SettlementManager.get_settlement_status())
 	
 	if not SettlementManager.current_settlement:
 		push_error("No current settlement found")
+		push_error("This usually means the raid was started without going through SettlementBridge")
+		push_error("Expected flow: SettlementBridge -> Start Raid -> RaidMission")
 		return
 	
 	var garrison = SettlementManager.current_settlement.garrisoned_units
@@ -87,7 +90,7 @@ func _spawn_player_garrison() -> void:
 		print("No units in garrison to spawn")
 		return
 	
-	var spawn_offset: Vector2 = Vector2.ZERO
+	var _spawn_offset: Vector2 = Vector2.ZERO  # Future use for formation spacing
 	var units_per_row: int = 5
 	var current_row: int = 0
 	var current_col: int = 0

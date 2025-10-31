@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3 uid="uid://d3ifdm0rvd5kl"]
+
+[ext_resource type="Script" uid="uid://dmv3ux2mvhgjq" path="res://scenes/missions/RaidMission.gd" id="1_qt4qp"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_qt4qp")
+
+[node name="PlayerStartPosition" type="Marker2D" parent="."]
+position = Vector2(100, 400)

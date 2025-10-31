@@ -25,6 +25,8 @@ func load_settlement(data: SettlementData) -> void:
 		return
 	
 	current_settlement = data
+	print("SettlementManager: Settlement loaded - %s" % current_settlement.resource_path)
+	print("SettlementManager: Garrison units: %s" % current_settlement.garrisoned_units)
 	_initialize_grid()
 	
 	for child in building_container.get_children():
@@ -167,3 +169,22 @@ func save_settlement() -> void:
 			push_error("Failed to save settlement data to path: %s. Error code: %s" % [current_settlement.resource_path, error])
 	else:
 		push_warning("SettlementData has no resource_path, cannot save settlement.")
+
+func has_current_settlement() -> bool:
+	"""Check if there's a valid current settlement loaded"""
+	return current_settlement != null
+
+func get_settlement_status() -> String:
+	"""Get debug information about the current settlement"""
+	if not current_settlement:
+		return "No settlement loaded"
+	
+	var garrison_count = 0
+	for unit_path in current_settlement.garrisoned_units:
+		garrison_count += current_settlement.garrisoned_units[unit_path]
+	
+	return "Settlement: %s | Buildings: %d | Garrison units: %d" % [
+		current_settlement.resource_path.get_file(),
+		current_settlement.placed_buildings.size(),
+		garrison_count
+	]
