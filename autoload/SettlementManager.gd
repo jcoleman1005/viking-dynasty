@@ -95,4 +95,3 @@ func recruit_unit(unit_data: UnitData) -> void:
 	
 	print("Recruited %s. Current garrison: %s" % [unit_data.display_name, current_settlement.garrisoned_units])
 	save_settlement()
->>>>>>> Stashed changes

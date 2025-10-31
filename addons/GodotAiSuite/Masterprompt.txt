@@ -16,14 +16,10 @@ You will be provided with a comprehensive dump of the Godot project context, str
     *   `4.2. Resource Files`
     *   `4.3. Scene Structures`
     *   `4.4. Codebase`
->>>>>>> Stashed changes
 
 ---
-### **2. Project Context**
+### **2. GDD**
 
-<<<<<<< Updated upstream
-#### **2.1. Project Settings**
-=======
 
 GDD v1.74
 Viking Dynasty
@@ -395,7 +391,6 @@ placed_buildings = Array[Dictionary]([{
 garrisoned_units = {
 "res://data/units/Unit_Raider.tres": 10
 }
->>>>>>> Stashed changes
 
 --- RESOURCE: res://data/units/Unit_Raider.tres ---
 [gd_resource type="Resource" script_class="UnitData" load_steps=2 format=3 uid="uid://brnbvjwnoyh3j"]
@@ -531,7 +526,6 @@ SettlementBridge (Node)
 >   > offset_bottom = 31.0
 >   > grow_horizontal = 0
 >   > text = "Start Attack"
->>>>>>> Stashed changes
 
 --- SCENE: res://scenes/test_scenes/RTS_Test.tscn ---
 RTS_Test (Node2D)
@@ -639,8 +633,6 @@ VikingRaider (CharacterBody2D)
 > CollisionShape2D (CollisionShape2D)
 > > shape = res://scenes/units/Base_Unit.tscn::RectangleShape2D_n6s0a
 > AttackTimer (Timer)
-<<<<<<< Updated upstream
-=======
 > UnitFSM (Node)
 >   script: res://scripts/ai/UnitFSM.gd
 > NavigationAgent2D (NavigationAgent2D)
@@ -791,25 +783,84 @@ func place_building(building_data: BuildingData, grid_position: Vector2i) -> voi
 		astar_grid.update()
 		print("Updated A* grid. Point %s is now solid." % grid_position)
 		EventBus.pathfinding_grid_updated.emit(grid_position)
+		
+	return new_building
 
-# --- ADDED ---
-# As required by GDD
-func update_building_status(grid_position: Vector2i, new_status: String) -> void:
-	"""
-	Updates the status of a building in the settlement grid.
-	This is the hook for the 'Macro' layer's save data.
-	"""
-	# For now, we just print. In the future, this would
-	# update a dictionary or save file.
-	print("SETTLEMENT_MANAGER: Building at %s status set to '%s'" % [grid_position, new_status])
+func deposit_loot(loot: Dictionary) -> void:
+	if not current_settlement: return
+	for resource_type in loot:
+		if current_settlement.treasury.has(resource_type):
+			# Payouts should respect the storage cap of the building that generated them,
+			# but the main treasury can be considered unlimited for now.
+			current_settlement.treasury[resource_type] += loot[resource_type]
+		else:
+			current_settlement.treasury[resource_type] = loot[resource_type]
+	EventBus.treasury_updated.emit(current_settlement.treasury)
+	print("Loot deposited. New treasury: %s" % current_settlement.treasury)
 
+func attempt_purchase(item_cost: Dictionary) -> bool:
+	if not current_settlement: return false
+	
+	for resource_type in item_cost:
+		if not current_settlement.treasury.has(resource_type) or \
+		current_settlement.treasury[resource_type] < item_cost[resource_type]:
+			var reason = "Insufficient %s" % resource_type
+			print("Purchase failed. %s." % reason)
+			EventBus.purchase_failed.emit(reason)
+			return false
+			
+	for resource_type in item_cost:
+		current_settlement.treasury[resource_type] -= item_cost[resource_type]
+	
+	EventBus.treasury_updated.emit(current_settlement.treasury)
+	EventBus.purchase_successful.emit("Unnamed Item") # Placeholder
+	print("Purchase successful. New treasury: %s" % current_settlement.treasury)
+	return true
+
+func calculate_payout() -> Dictionary:
+	if not current_settlement:
+		return {}
+
+	var total_payout: Dictionary = {}
+
+	for building_entry in current_settlement.placed_buildings:
+		var building_data: BuildingData = load(building_entry["resource_path"])
+		if building_data is EconomicBuildingData:
+			var eco_data: EconomicBuildingData = building_data
+			var resource_type: String = eco_data.resource_type
+			
+			if not total_payout.has(resource_type):
+				total_payout[resource_type] = 0
+			
+			# The payout is now a simple, fixed amount per building.
+			# The storage_cap is now effectively the treasury cap, handled in deposit_loot.
+			total_payout[resource_type] += eco_data.fixed_payout_amount
+
+	if not total_payout.is_empty():
+		print("Calculated fixed payout: %s" % total_payout)
+	return total_payout
 
 func get_astar_path(start_pos: Vector2, end_pos: Vector2) -> PackedVector2Array:
+	if not astar_grid:
+		push_error("AStarGrid is not initialized!")
+		return PackedVector2Array()
 	var start_id: Vector2i = Vector2i(start_pos / astar_grid.cell_size)
 	var end_id: Vector2i = Vector2i(end_pos / astar_grid.cell_size)
+	return astar_grid.get_point_path(start_id, end_id)
+
+func save_settlement() -> void:
+	if not current_settlement:
+		push_error("Cannot recruit unit, no current settlement.")
+		return
+
+	var unit_path: String = unit_data.resource_path
+	if current_settlement.garrisoned_units.has(unit_path):
+		current_settlement.garrisoned_units[unit_path] += 1
+	else:
+		current_settlement.garrisoned_units[unit_path] = 1
 	
-	var world_path: PackedVector2Array = astar_grid.get_point_path(start_id, end_id)
-	return world_path
+	print("Recruited %s. Current garrison: %s" % [unit_data.display_name, current_settlement.garrisoned_units])
+	save_settlement()
 
 func recruit_unit(unit_data: UnitData) -> void:
 	if not current_settlement:
@@ -940,7 +991,6 @@ class_name SettlementData
 # Example: {"res://data/units/Axeman.tres": 3, "res://data/units/Archer.tres": 10}
 @export var garrisoned_units: Dictionary = {}
 
->>>>>>> Stashed changes
 --- SCRIPT: res://data/units/UnitData.gd ---
 # res://data/units/UnitData.gd
 #
@@ -982,12 +1032,6 @@ extends Resource
 
 --- SCRIPT: res://scripts/ai/UnitFSM.gd ---
 # res://scripts/ai/UnitFSM.gd
-<<<<<<< Updated upstream
-#
-# --- MODIFIED: Implemented full ATTACK state logic ---
-
-=======
->>>>>>> Stashed changes
 class_name UnitFSM
 extends Node
 
@@ -1073,51 +1117,6 @@ func _change_state(new_state: State) -> void:
 # --- State Implementations ---
 
 func _idle_state(_delta: float) -> void:
-<<<<<<< Updated upstream
-	# In a full game, would look for a new target
-	pass
-
-func _move_state(delta: float) -> void:
-	if path.is_empty():
-		# Path is done, check if we're at the target
-		if target_node and is_instance_valid(target_node):
-			change_state(State.ATTACK)
-		else:
-			change_state(State.IDLE)
-		return
-	
-	var next_waypoint: Vector2 = path[0]
-	var direction: Vector2 = (next_waypoint - unit.global_position).normalized()
-	var velocity: Vector2 = direction * unit.data.move_speed
-	
-	unit.velocity = velocity
-	unit.move_and_slide()
-	
-	var arrival_radius: float = 8.0 
-	if unit.global_position.distance_to(next_waypoint) < arrival_radius:
-		path.pop_front()
-		
-	# Check if we've arrived at the final target
-	if path.is_empty():
-		if target_node:
-			change_state(State.ATTACK)
-		else:
-			change_state(State.IDLE)
-		
-func _attack_state(_delta: float) -> void:
-	# Check if target is still valid
-	if not is_instance_valid(target_node):
-		print("%s target destroyed. Returning to IDLE." % unit.data.display_name)
-		change_state(State.IDLE)
-		return
-	
-	# Check if target moved out of range (e.g., for moving targets)
-	# For a building, this is less important, but good practice.
-	if unit.global_position.distance_to(target_node.global_position) > unit.data.attack_range + 16:
-		print("%s target moved out of range. Re-engaging." % unit.data.display_name)
-		target_position = target_node.global_position
-		change_state(State.MOVE)
-=======
 	unit.velocity = Vector2.ZERO
 	unit.move_and_slide()
 
@@ -1152,22 +1151,9 @@ func _attacking_state(_delta: float) -> void:
 		# Target moved out of range, chase it
 		command_attack(target_unit) 
 		return
->>>>>>> Stashed changes
 
 # --- Helper Functions ---
 
-<<<<<<< Updated upstream
-func _on_attack_timer_timeout() -> void:
-	"""
-	This is called every time the AttackTimer finishes.
-	"""
-	if is_instance_valid(target_node):
-		print("%s attacks %s!" % [unit.data.display_name, target_node.data.display_name])
-		target_node.take_damage(unit.data.attack_damage)
-	else:
-		# Target was destroyed by something else
-		change_state(State.IDLE)
-=======
 func _perform_attack() -> void:
 	if not is_instance_valid(target_unit):
 		_change_state(State.IDLE)
@@ -1192,7 +1178,6 @@ func _on_aggro_area_body_entered(body: Node2D) -> void:
 		if body != unit and "data" in body: # A simple check for something attackable
 			print("%s is attacked while moving, retaliating against %s" % [unit.data.display_name, body.data.display_name])
 			command_attack(body)
->>>>>>> Stashed changes
 
 --- SCRIPT: res://scripts/buildings/SettlementBridge.gd ---
 # res://scripts/buildings/SettlementBridge.gd
@@ -1243,6 +1228,60 @@ func _unhandled_input(event: InputEvent) -> void:
 		EventBus.build_request_made.emit(test_building_data, grid_pos)
 		
 		get_viewport().set_input_as_handled()
+
+func _instance_ui() -> void:
+	welcome_popup = welcome_popup_scene.instantiate()
+	ui_layer.add_child(welcome_popup)
+	welcome_popup.collect_button_pressed.connect(_on_payout_collected)
+
+func _on_payout_collected(payout: Dictionary) -> void:
+	SettlementManager.deposit_loot(payout)
+	start_attack_button.disabled = false # Re-enable combat
+	storefront_ui.show()
+
+func _find_and_setup_great_hall() -> void:
+	for building in SettlementManager.building_container.get_children():
+		if building is BaseBuilding and building.data.display_name == "Great Hall":
+			great_hall_instance = building
+			great_hall_instance.building_destroyed.connect(_on_great_hall_destroyed)
+			print("Great Hall found and connected.")
+			return
+	push_error("SettlementBridge: Could not find Great Hall instance after loading settlement.")
+
+
+func _spawn_raider_for_test() -> void:
+	if not great_hall_instance:
+		push_error("Cannot spawn raider: Great Hall does not exist.")
+		return
+		
+	var raider_instance: BaseUnit = raider_scene.instantiate()
+	unit_container.add_child(raider_instance)
+	raider_instance.global_position = RAIDER_SPAWN_POS
+	raider_instance.set_attack_target(great_hall_instance)
+
+
+func _on_great_hall_destroyed(_building: BaseBuilding) -> void:
+	print("GAME OVER: The Great Hall has been destroyed!")
+	game_is_over = true
+	var label : Label = $UI/Label
+	label.text = "YOU HAVE BEEN SACKED."
+	restart_button.show()
+	_destroy_all_enemies()
+
+func _destroy_all_enemies() -> void:
+	for enemy in unit_container.get_children():
+		enemy.queue_free()
+	print("All surviving enemies have been removed.")
+
+func _on_restart_pressed() -> void:
+	get_tree().reload_current_scene()
+
+func _on_start_attack_pressed() -> void:
+	print("Start Attack button pressed. Spawning raider.")
+	# Timestamps are no longer needed for a fixed-payout system.
+	_spawn_raider_for_test()
+	start_attack_button.hide()
+	storefront_ui.hide()
 
 --- SCRIPT: res://scripts/player/RTSController.gd ---
 # res://scripts/player/RTSController.gd

@@ -1,9 +1,1 @@
-res://scenes/levels/DefensiveMicro.tscn
 res://placeholder_tile.tres
-res://scripts/units/Base_Unit.gd
-res://scripts/units/VikingRaider.gd
-res://data/settlements/home_base.tres
-res://scenes/test_scenes/RTS_Test.tscn
-res://scripts/player/RTSController.gd
-res://scenes/units/Base_Unit.tscn
-res://scripts/ai/UnitFSM.gd
