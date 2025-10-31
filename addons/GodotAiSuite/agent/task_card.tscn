@@ -1,0 +1,57 @@
+[gd_scene load_steps=2 format=3 uid="uid://cmdk717q8g26w"]
+
+[ext_resource type="Script" path="res://addons/GodotAiSuite/agent/task_card.gd" id="1_l5d2p"]
+
+[node name="TaskCard" type="PanelContainer"]
+script = ExtResource("1_l5d2p")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="VBox" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Header" type="HBoxContainer" parent="MarginContainer/VBox"]
+layout_mode = 2
+
+[node name="Icon" type="TextureRect" parent="MarginContainer/VBox/Header"]
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Title" type="Label" parent="MarginContainer/VBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+vertical_alignment = 1
+
+[node name="Buttons" type="HBoxContainer" parent="MarginContainer/VBox/Header"]
+layout_mode = 2
+
+[node name="Explanation" type="Label" parent="MarginContainer/VBox"]
+layout_mode = 2
+autowrap_mode = 3
+
+[node name="ContentContainer" type="VBoxContainer" parent="MarginContainer/VBox"]
+layout_mode = 2
+
+[node name="FeedbackPanel" type="PanelContainer" parent="MarginContainer/VBox"]
+visible = false
+layout_mode = 2
+
+[node name="FeedbackMargin" type="MarginContainer" parent="MarginContainer/VBox/FeedbackPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 4
+
+[node name="FeedbackLabel" type="RichTextLabel" parent="MarginContainer/VBox/FeedbackPanel/FeedbackMargin"]
+layout_mode = 2
+bbcode_enabled = true
+fit_content = true

@@ -69,5 +69,30 @@ func get_astar_path(start_pos: Vector2, end_pos: Vector2) -> PackedVector2Array:
 	var start_id: Vector2i = Vector2i(start_pos / astar_grid.cell_size)
 	var end_id: Vector2i = Vector2i(end_pos / astar_grid.cell_size)
 	
+<<<<<<< Updated upstream
 	var world_path: PackedVector2Array = astar_grid.get_point_path(start_id, end_id)
 	return world_path
+=======
+	if current_settlement.resource_path and not current_settlement.resource_path.is_empty():
+		var error = ResourceSaver.save(current_settlement, current_settlement.resource_path)
+		if error == OK:
+			print("Settlement data saved successfully to: %s" % current_settlement.resource_path)
+		else:
+			push_error("Failed to save settlement data to path: %s. Error code: %s" % [current_settlement.resource_path, error])
+	else:
+		push_warning("SettlementData has no resource_path, cannot save settlement.")
+
+func recruit_unit(unit_data: UnitData) -> void:
+	if not current_settlement:
+		push_error("Cannot recruit unit, no current settlement.")
+		return
+
+	var unit_path: String = unit_data.resource_path
+	if current_settlement.garrisoned_units.has(unit_path):
+		current_settlement.garrisoned_units[unit_path] += 1
+	else:
+		current_settlement.garrisoned_units[unit_path] = 1
+	
+	print("Recruited %s. Current garrison: %s" % [unit_data.display_name, current_settlement.garrisoned_units])
+	save_settlement()
+>>>>>>> Stashed changes

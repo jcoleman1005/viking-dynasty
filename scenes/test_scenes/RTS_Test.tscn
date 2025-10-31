@@ -1,0 +1,71 @@
+[gd_scene load_steps=8 format=3 uid="uid://c0ys0dimdl0pk"]
+
+[ext_resource type="Script" uid="uid://bl4vfrevo2drg" path="res://scripts/player/RTSController.gd" id="1_516m3"]
+[ext_resource type="Shape2D" uid="uid://dxcqms84mhdwg" path="res://resources/rectangleshape2d_2382212.tres" id="2_eoagt"]
+[ext_resource type="PackedScene" uid="uid://dsv0s4yq8c8m5" path="res://scenes/units/VikingRaider.tscn" id="3_j15a2"]
+[ext_resource type="Script" uid="uid://cavpq2rrgln2v" path="res://scripts/units/VikingRaider.gd" id="4_y8ywx"]
+[ext_resource type="Resource" uid="uid://brnbvjwnoyh3j" path="res://data/units/Unit_Raider.tres" id="5_xmqm2"]
+[ext_resource type="Texture2D" uid="uid://c6v2d1q8q7e3j" path="res://placeholder_tile.tres" id="6_2tkh8"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_n6s0a"]
+size = Vector2(16, 16)
+
+[node name="RTS_Test" type="Node2D"]
+
+[node name="Camera2D" type="Camera2D" parent="."]
+
+[node name="Ground" type="StaticBody2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
+shape = ExtResource("2_eoagt")
+
+[node name="Axeman" type="CharacterBody2D" parent="." instance=ExtResource("3_j15a2")]
+script = ExtResource("4_y8ywx")
+data = ExtResource("5_xmqm2")
+
+[node name="Sprite2D" type="Sprite2D" parent="Axeman"]
+texture = ExtResource("6_2tkh8")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Axeman"]
+shape = SubResource("RectangleShape2D_n6s0a")
+
+[node name="AttackTimer" type="Timer" parent="Axeman"]
+
+[node name="Axeman2" type="CharacterBody2D" parent="." instance=ExtResource("3_j15a2")]
+script = ExtResource("4_y8ywx")
+data = ExtResource("5_xmqm2")
+
+[node name="Sprite2D" type="Sprite2D" parent="Axeman2"]
+texture = ExtResource("6_2tkh8")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Axeman2"]
+shape = SubResource("RectangleShape2D_n6s0a")
+
+[node name="AttackTimer" type="Timer" parent="Axeman2"]
+
+[node name="Axeman3" type="CharacterBody2D" parent="." instance=ExtResource("3_j15a2")]
+script = ExtResource("4_y8ywx")
+data = ExtResource("5_xmqm2")
+
+[node name="Sprite2D" type="Sprite2D" parent="Axeman3"]
+texture = ExtResource("6_2tkh8")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Axeman3"]
+shape = SubResource("RectangleShape2D_n6s0a")
+
+[node name="AttackTimer" type="Timer" parent="Axeman3"]
+
+[node name="Axeman4" type="CharacterBody2D" parent="." instance=ExtResource("3_j15a2")]
+script = ExtResource("4_y8ywx")
+data = ExtResource("5_xmqm2")
+
+[node name="Sprite2D" type="Sprite2D" parent="Axeman4"]
+texture = ExtResource("6_2tkh8")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Axeman4"]
+shape = SubResource("RectangleShape2D_n6s0a")
+
+[node name="AttackTimer" type="Timer" parent="Axeman4"]
+
+[node name="RTSController" type="Node2D" parent="."]
+script = ExtResource("1_516m3")

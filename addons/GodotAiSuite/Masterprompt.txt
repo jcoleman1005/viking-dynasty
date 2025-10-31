@@ -2,16 +2,253 @@
 
 You will be provided with a comprehensive dump of the Godot project context, structured as follows. You must parse, understand, and use this context to inform all your responses.
 
+<<<<<<< Updated upstream
 *   **`2. Project Context`**: The technical project dump, including:
     *   `2.1. Project Settings`
     *   `2.2. Resource Files`
     *   `2.3. Scene Structures`
     *   `2.4. Codebase`
+=======
+*   **`2. GDD`**: The Game Design Document.
+*   **`3. DevLog`**: A log of implemented features and changes.
+*   **`4. Project Context`**: The technical project dump, including:
+    *   `4.1. Project Settings`
+    *   `4.2. Resource Files`
+    *   `4.3. Scene Structures`
+    *   `4.4. Codebase`
+>>>>>>> Stashed changes
 
 ---
 ### **2. Project Context**
 
+<<<<<<< Updated upstream
 #### **2.1. Project Settings**
+=======
+
+GDD v1.74
+Viking Dynasty
+1. High-Level Concept & Vision
+>>>>>>> 98955467f04381f5e9be3052181006a1442a51a0
+Viking Dynasty is a strategy game that blends the dynastic ambition and grand strategy of Crusader Kings with the tactical, real-time battles of Age of Empires II.
+Players will manage a Viking dynasty, not just a single character. They will forge alliances, declare wars, and manage their growing family on a strategic world map (the Macro layer). When battles occur or raids are launched, the game will transition into a real-time strategy mission (the Micro layer). The bridge between these two layers is the player's persistent, grid-based Settlement, which they will build, upgrade, and defend.
+The core tension is balancing the long-term needs of your dynasty (geopolitics, heirs) with the immediate, visceral needs of combat (resources, unit control), all while protecting your home from rival Jarls.
+Target Audience: Players who enjoy deep strategic systems (e.g., Paradox titles) but also crave tactical, skill-based RTS combat (e.g., Age of Empires, Company of Heroes).
+Genre: Grand Strategy / Real-Time Strategy (RTS) Hybrid.
+Theme: Viking Age, focusing on the grit, ambition, and legacy of a Norse dynasty.
+2. Core Gameplay Loop: The Three Layers
+The gameplay is built on three interconnected layers: the Macro (Dynasty), the Micro (RTS), and the Bridge (Settlement).
+2.A. The Macro (Dynasty Layer)
+This is the "Crusader Kings" layer. It is the top-level grand strategy map of Scandinavia and beyond.
+Gameplay: Turn-based or pausable real-time.
+Player Actions: Managing family and heirs, diplomacy with AI Jarls, managing traits and succession, triggering events, and directing armies on a geopolitical map.
+Consequence: Declaring war on a rival Jarl (Macro) triggers an offensive "Micro" mission. A rival attacking the player triggers a defensive "Micro" mission.
+2.B. The Micro (RTS Layer)
+This is the "Age of Empires" layer. It is the real-time, grid-based combat mission.
+Gameplay: Real-time strategy.
+Player Actions: Commanding units, using special abilities, and achieving mission objectives (e.g., "Destroy the enemy's Great Hall," "Survive for 10 minutes").
+Consequence: Winning a battle (Micro) results in loot and prestige (Macro). Losing a defensive battle (Micro) results in your Settlement being "Sacked" (Bridge).
+2.C. The Bridge (Settlement Layer)
+This is the player's persistent home base, which connects the two layers.
+Gameplay: Grid-based city-builder (e.g., RimWorld, Stronghold).
+Player Actions: Placing buildings, upgrading structures, assigning workers, and managing resources.
+Consequence: The layout of your Settlement becomes the map for all defensive "Micro" missions. A well-designed base provides a massive tactical advantage.
+3. Key Features
+(This section will be expanded as we implement Phases 3-4)
+4. Technical Stack & Philosophy
+Engine: Godot 4.4
+Scripting: GDScript
+Architecture:
+Data-Driven: All game stats (unit HP, building cost, etc.) must be custom Resource files (.tres) to empower design and balancing without code changes.
+Singleton (Autoload) Managers: Global systems (EventBus, SettlementManager) are implemented as Autoloads for easy access and clear separation of concerns.
+Event Bus: All communication between major, decoupled systems (e.g., UI, AI, Game Loop) must go through the EventBus singleton. No direct references.
+Finite State Machines (FSMs): All entities with 3+ states (like AI units) must use an FSM.
+5. Art Style & Mood
+(Placeholder section for future development)
+6. Core Entities & Data Structures
+6.A. Overview
+All game entities are defined by a Resource script (.gd) and then implemented as one or more .tres files.
+6.B. BuildingData.gd (AMENDED)
+Defines the stats for all static structures in the game.
+Path: res://data/buildings/BuildingData.gd
+Extends: Resource
+class_name BuildingData
+Key Properties:
+@export var display_name: String  (e.g., "Stone Wall")
+@export var scene_to_spawn: PackedScene  (The .tscn file to instance)
+@export var icon: Texture2D  (For the build menu)
+@export var build_cost: Dictionary  (e.g., {"stone": 25})
+@export var max_health: int
+@export var blocks_pathfinding: bool  (If true, updates the A* grid)
+@export var grid_size: Vector2i  (Size in grid cells)
+@export_group("Defensive Stats")
+@export var is_defensive_structure: bool
+@export var attack_damage: int
+@export var attack_range: float
+@export var attack_speed: float
+
+6.C. UnitData.gd (AMENDED)
+Defines the stats for all mobile units in the game.
+Path: res://data/units/UnitData.gd
+Extends: Resource
+class_name UnitData
+Key Properties:
+@export var display_name: String  (e.g., "Viking Raider")
+@export var scene_to_spawn: PackedScene
+@export var icon: Texture2D  (For the training menu)
+@export var spawn_cost: Dictionary (e.g., {"food": 50, "gold": 20})
+@export_group("Combat Stats")
+@export var max_health: int
+@export var move_speed: float
+@export var attack_damage: int
+@export var attack_range: float
+@export var attack_speed: float
+
+6.D. EconomicBuildingData.gd (NEW)
+Extends BuildingData with properties for resource generation.
+Path: res://data/buildings/EconomicBuildingData.gd
+Extends: BuildingData
+class_name EconomicBuildingData
+Key Properties:
+@export_group("Economic Stats")
+## The type of resource this building generates (e.g., "wood", "food", "gold").
+@export var resource_type: String = "wood"
+
+
+## The fixed amount of resources generated after each successful attack.
+@export var fixed_payout_amount: int = 10
+
+
+## The maximum amount of the resource that can be stored before collection.
+@export var storage_cap: int = 100
+
+6.E. SettlementData.gd (NEW)
+A Resource file that holds all persistent data for a single settlement. This allows for scalability (e.g., multiple colonies).
+Path: res://data/settlements/SettlementData.gd
+Extends: Resource
+class_name SettlementData
+Key Properties:
+## Stores current "Loot" resources (e.g., {"gold": 1000, "wood": 500})
+@export var treasury: Dictionary
+
+
+## Stores all placed buildings for persistence.
+## Array of Dictionaries: [{"resource_path": "res://...", "grid_position": Vector2i(x, y)}]
+@export var placed_buildings: Array[Dictionary]
+
+7. Core Implemented Systems
+This section describes the major gameplay loops and architectural patterns that are currently implemented and functional in the game.
+7.A. "Sacked" Loop (Defense-First)
+The "Defense-First" MVP loop is complete and functional.
+Systems: SettlementManager, AStarGrid2D Pathfinding, EventBus, FSM.
+Core Loop:
+SettlementBridge.gd loads home_base.tres (a SettlementData resource).
+SettlementManager.load_settlement() reads this data, instantiates the "Great Hall" and any other saved buildings, and configures the AStarGrid2D.
+Player can place "Stone Wall" obstacles.
+Player clicks "Start Attack," which spawns an enemy "Viking Raider".
+Raider AI (UnitFSM) paths around walls to the Great Hall.
+Raider attacks and destroys the Hall.
+Hall's building_destroyed signal is caught by SettlementBridge.gd.
+UI shows "SACKED" message and a RestartButton.
+7.B. Core Architecture (Refactored)
+This section defines the current architecture after the Phase 2 refactor, which supports the economy and future scalability. The monolithic SettlementManager has been split.
+Persistent Data Resource (SettlementData.gd)
+This is a Resource script (.gd) that holds all persistent data for one settlement.
+A .tres file (e.g., home_base.tres) represents a unique, saveable settlement.
+It is responsible for storing:
+treasury: Dictionary (e.g., {"gold": 1000, "wood": 10})
+placed_buildings: Array[Dictionary]
+Singleton Runtime Manager (SettlementManager.gd)
+This is the Autoload singleton. It is a runtime manager and holds no persistent data itself.
+Responsibilities:
+Load/Save: Loads a SettlementData resource (e.g., load_settlement(home_base_data)) and saves it (save_settlement()).
+Pathfinding: Manages the global AStarGrid2D and provides get_astar_path().
+Runtime Logic: Processes runtime requests (e.g., attempt_purchase, calculate_payout).
+Scene Management: Holds the BuildingContainer node to parent all instanced buildings.
+Conductor Scene (SettlementBridge.gd)
+This is the main "Conductor" scene.
+Responsibilities:
+Telling SettlementManager which settlement to load.
+Managing the UI layer (Storefront, Payout Popup).
+Spawning units (both enemy Raiders for defense and player units for offense).
+Connecting signals (e.g., great_hall.building_destroyed).
+7.C. "Reinvestment" Economy (Phase 2)
+This implements the core "Raid-and-Spend" economic engine.
+Pillar 1: The 'Treasury' & 'Storefront' (Implemented)
+Treasury: The treasury Dictionary in SettlementData.gd tracks all "Loot" resources (Gold, Wood, Stone, etc.).
+Storefront: Storefront_UI.tscn allows the player to spend Treasury resources.
+Build Cost: All buildable items (buildings, units) have their cost defined as a Dictionary in their data resource (e.g., build_cost = {"stone": 25} or spawn_cost = {"food": 50, "gold": 10}). SettlementManager.attempt_purchase() handles this logic.
+Pillar 2: The 'Active' Loop (Raiding for Loot) (Partial)
+Concept: This is the primary income generator, designed to connect to the Phase 3 (Offensive Raids) loop.
+Function: Upon completing an "Offensive Raid" (Phase 3), the player will be awarded a lump sum of Loot. For now, this is simulated with a debug key.
+Pillar 3: The 'Reinvestment' Loop (Implemented)
+Concept: This is the secondary economic loop. Players spend loot on "Economic Buildings" (e.g., LumberYard.tres) as a long-term investment.
+Function (The "Fixed" Payout): These buildings do not generate resources passively over time. Instead, they provide a fixed, lump-sum resource payout after each attack mission. This "one attack = one payout" model respects the player's effort and is highly predictable.
+Payout Mechanism:
+The player returns to the SettlementBridge scene (simulating a return from a raid).
+SettlementBridge.gd calls SettlementManager.calculate_payout().
+This function iterates all EconomicBuildingData buildings owned by the player and sums their fixed_payout_amount property.
+The total payout is displayed on the WelcomeHome_Popup.tscn.
+The player must click "Collect" to deposit the resources into the Treasury, providing a tangible feedback loop.
+Strategic Layer: This creates the central economic choice:
+Spend Loot: On immediate military power (e.g., better troops for the next raid).
+Invest Loot: On economic buildings for long-term, compounding resource growth.
+8. Development Roadmap
+This section outlines the next major phases of development, building upon the implemented systems.
+8.A. Phase 3: The "Offensive Raid" Mission Type (Next)
+Goal: To implement the player-driven "Micro" RTS loop.
+Key Features:
+Player Unit Spawning: Logic in the Storefront UI to spend Treasury resources (spawn_cost) to train player-controlled units.
+Basic Unit Control: A simple "RTS-style" control script (select units, right-click to move/attack).
+"Offensive Raid" Mission Loader: A system to load an "enemy" settlement map (a different SettlementData.tres file) and spawn pre-defined enemy units.
+Why next? This re-uses all combat/A* tech, gives the player agency, and fully connects the "Active Loop" (Pillar 2) by providing the "Loot" that powers the entire economy.
+8.B. Phase 4: Integrate the "Macro" (The Dynasty Layer) (Future)
+Goal: To build the "Crusader Kings" DNA that connects all the loops into a single, compelling narrative.
+Key Features:
+Dynasty & Trait System: Implement the family tree, character inheritance, and traits.
+Geopolitical Map: Build the high-level map where the player interacts with other AI Jarls.
+Event Triggers: A rival Jarl declaring war (Macro) will trigger the "Sacked" defensive loop (Micro). The player deciding to attack (Macro) will trigger the "Offensive Raid" loop (Micro).
+Why last? This system provides the ultimate context, but it relies on the other two pillars (Economy and Combat) to have meaningful consequences.
+
+---
+### **3. DevLog**
+
+Devlog Update: Pivoting to a More Robust Economic Loop
+
+This week saw a major refinement to our core economic loop. After prototyping an initial time-based system, we made a key strategic decision to pivot to a simpler, more predictable, and more balanced fixed-payout model. This new system feels more satisfying for the player and provides a much stronger foundation for future development.
+
+Key Insight: From Time-Based to Action-Based Rewards
+*   Initial Prototype: We successfully implemented a full, time-based resource generation system. This prototype was crucial for testing our data persistence and UI flow.
+*   Design Realization: Through testing, we identified that time-based rewards, while realistic, could feel unpredictable and create balancing challenges. It also less directly rewarded the player's core action of completing an attack.
+*   💡 The Pivot (Design Choice): We made the call to switch to a fixed-payout system. This decision ties the reward directly to the gameplay loop: one attack equals one payout. This model is more "gamey," respects the player's effort, and gives them a clear understanding of the value of their economic buildings.
+
+---
+
+Core Achievements & Current Features
+
+*   ✅ Rock-Solid Persistence
+*   Player purchases of economic buildings like the Lumber Yard are saved instantly and permanently to a .tres resource file. What you build stays built.
+
+*   ✅ Predictable, Fixed Payouts
+*   A new fixedpayoutamount property has been added to all economic buildings.
+*   Returning to the settlement after an attack now triggers a clean calculate_payout() function.
+
+*   ✅ Simple & Scalable Logic
+*   The payout is now a simple sum of the fixedpayoutamount from all owned economic buildings.
+*   Example: Owning two Lumber Yards (at 10 Wood each) results in a guaranteed "Wood: 20" payout after every attack.
+
+*   ✅ Full UI Integration
+*   The "Welcome Home" popup correctly displays the calculated fixed payout.
+*   The "Collect" button works perfectly, transferring the generated resources to the player's main treasury and updating the UI.
+
+*   ✅ Streamlined & Cleaned Codebase
+*   As a result of the pivot, the entire economic codebase has been simplified.
+*   All complex timestamp-tracking logic, variables, and debug functions have been completely removed, making the system much easier to maintain and expand upon.
+
+---
+### **4. Project Context**
+
+#### **4.1. Project Settings**
+>>>>>>> Stashed changes
 
 --- START OF PROJECT SETTINGS ---
 ; Engine configuration file.
@@ -76,7 +313,89 @@ scene_to_spawn = ExtResource("1_vluf5")
 attack_damage = 0
 attack_range = 0.0
 attack_speed = 0.0
+<<<<<<< Updated upstream
 metadata/_custom_type_script = "uid://js4bbqgeyd6c"
+=======
+
+--- RESOURCE: res://data/buildings/LumberYard.tres ---
+[gd_resource type="Resource" script_class="EconomicBuildingData" load_steps=3 format=3 uid="uid://drx4sih8numo1"]
+
+[ext_resource type="Script" uid="uid://d33smw07vm6y4" path="res://data/buildings/EconomicBuildingData.gd" id="1_abcde"]
+[ext_resource type="PackedScene" uid="uid://cws6xle5x52g4" path="res://scenes/buildings/Base_Building.tscn" id="2_fghij"]
+
+[resource]
+script = ExtResource("1_abcde")
+display_name = "Lumber Yard"
+scene_to_spawn = ExtResource("2_fghij")
+build_cost = {
+"wood": 50
+}
+max_health = 75
+grid_size = Vector2i(2, 2)
+
+--- RESOURCE: res://data/settlements/home_base.tres ---
+[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://cbkhsws4au4if"]
+
+[ext_resource type="Script" uid="uid://hlb8s5g0yp6k" path="res://data/settlements/SettlementData.gd" id="1_abcde"]
+
+[resource]
+script = ExtResource("1_abcde")
+treasury = {
+"food": 75,
+"gold": 1000,
+"stone": 700,
+"wood": 230
+}
+placed_buildings = Array[Dictionary]([{
+"grid_position": Vector2i(25, 15),
+"resource_path": "res://data/buildings/Bldg_GreatHall.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}])
+garrisoned_units = {
+"res://data/units/Unit_Raider.tres": 10
+}
+>>>>>>> Stashed changes
 
 --- RESOURCE: res://data/units/Unit_Raider.tres ---
 [gd_resource type="Resource" script_class="UnitData" load_steps=2 format=3 uid="uid://brnbvjwnoyh3j"]
@@ -99,6 +418,11 @@ frequency = 0.1153
 width = 32
 height = 32
 noise = SubResource("FastNoiseLite_cemhj")
+
+--- RESOURCE: res://resources/rectangleshape2d_2382212.tres ---
+[gd_resource type="RectangleShape2D" format=3 uid="uid://dxcqms84mhdwg"]
+
+[resource]
 --- END OF RESOURCE FILES ---
 
 #### **2.3. Scene Structures**
@@ -145,6 +469,151 @@ SettlementBridge (Node)
 >   > offset_right = 328.0
 >   > offset_bottom = 39.0
 >   > text = "Click to build a Wall. Defend the Great Hall!"
+<<<<<<< Updated upstream
+=======
+>   Storefront_UI (Control)
+>     script: res://ui/StorefrontUI.gd
+>     scene: res://ui/Storefront_UI.tscn
+>     PanelContainer (PanelContainer)
+>     > layout_mode = 1
+>     > anchors_preset = -1
+>     > offset_right = 400.0
+>     > offset_bottom = 100.0
+>       MarginContainer (MarginContainer)
+>       > layout_mode = 2
+>         TabContainer (TabContainer)
+>         > layout_mode = 2
+>         > current_tab = 0
+>           Build (VBoxContainer)
+>           > visible = false
+>           > layout_mode = 2
+>             TreasuryDisplay (HBoxContainer)
+>             > layout_mode = 2
+>               GoldLabel (Label)
+>               > layout_mode = 2
+>               WoodLabel (Label)
+>               > layout_mode = 2
+>               FoodLabel (Label)
+>               > layout_mode = 2
+>               StoneLabel (Label)
+>               > layout_mode = 2
+>             BuildButtons (HBoxContainer)
+>             > layout_mode = 2
+>               BuyWallButton (Button)
+>               > layout_mode = 2
+>               > text = "Buy Wall"
+>               BuyLumberYardButton (Button)
+>               > layout_mode = 2
+>               > text = "Buy Lumber Yard"
+>           Recruit (VBoxContainer)
+>           > visible = false
+>           > layout_mode = 2
+>   RestartButton (Button)
+>   > visible = false
+>   > anchors_preset = -1
+>   > anchor_left = 0.5
+>   > anchor_top = 0.5
+>   > anchor_right = 0.5
+>   > anchor_bottom = 0.5
+>   > offset_left = -84.0
+>   > offset_top = -15.5
+>   > offset_right = 84.0
+>   > offset_bottom = 15.5
+>   > grow_horizontal = 2
+>   > grow_vertical = 2
+>   > text = "Return to Settlement"
+>   StartAttackButton (Button)
+>   > anchors_preset = -1
+>   > anchor_left = 1.0
+>   > anchor_right = 1.0
+>   > offset_left = -110.0
+>   > offset_right = -10.0
+>   > offset_bottom = 31.0
+>   > grow_horizontal = 0
+>   > text = "Start Attack"
+>>>>>>> Stashed changes
+
+--- SCENE: res://scenes/test_scenes/RTS_Test.tscn ---
+RTS_Test (Node2D)
+> scene: res://scenes/test_scenes/RTS_Test.tscn
+> Camera2D (Camera2D)
+> Ground (StaticBody2D)
+>   CollisionShape2D (CollisionShape2D)
+>   > shape = res://resources/rectangleshape2d_2382212.tres
+> Axeman (CharacterBody2D)
+>   script: res://scripts/units/VikingRaider.gd
+>   scene: res://scenes/units/VikingRaider.tscn
+> > data = res://data/units/Unit_Raider.tres
+>   Sprite2D (Sprite2D)
+>   > texture = res://placeholder_tile.tres
+>   CollisionShape2D (CollisionShape2D)
+>   > shape = res://scenes/units/Base_Unit.tscn::RectangleShape2D_n6s0a
+>   AttackTimer (Timer)
+>   UnitFSM (Node)
+>     script: res://scripts/ai/UnitFSM.gd
+>   NavigationAgent2D (NavigationAgent2D)
+>   @NavigationAgent2D@31641 (NavigationAgent2D)
+>   Sprite2D2 (Sprite2D)
+>   > texture = res://placeholder_tile.tres
+>   CollisionShape2D2 (CollisionShape2D)
+>   > shape = res://scenes/test_scenes/RTS_Test.tscn::RectangleShape2D_n6s0a
+>   AttackTimer2 (Timer)
+> Axeman2 (CharacterBody2D)
+>   script: res://scripts/units/VikingRaider.gd
+>   scene: res://scenes/units/VikingRaider.tscn
+> > data = res://data/units/Unit_Raider.tres
+>   Sprite2D (Sprite2D)
+>   > texture = res://placeholder_tile.tres
+>   CollisionShape2D (CollisionShape2D)
+>   > shape = res://scenes/units/Base_Unit.tscn::RectangleShape2D_n6s0a
+>   AttackTimer (Timer)
+>   UnitFSM (Node)
+>     script: res://scripts/ai/UnitFSM.gd
+>   NavigationAgent2D (NavigationAgent2D)
+>   @NavigationAgent2D@31641 (NavigationAgent2D)
+>   Sprite2D2 (Sprite2D)
+>   > texture = res://placeholder_tile.tres
+>   CollisionShape2D2 (CollisionShape2D)
+>   > shape = res://scenes/test_scenes/RTS_Test.tscn::RectangleShape2D_n6s0a
+>   AttackTimer2 (Timer)
+> Axeman3 (CharacterBody2D)
+>   script: res://scripts/units/VikingRaider.gd
+>   scene: res://scenes/units/VikingRaider.tscn
+> > data = res://data/units/Unit_Raider.tres
+>   Sprite2D (Sprite2D)
+>   > texture = res://placeholder_tile.tres
+>   CollisionShape2D (CollisionShape2D)
+>   > shape = res://scenes/units/Base_Unit.tscn::RectangleShape2D_n6s0a
+>   AttackTimer (Timer)
+>   UnitFSM (Node)
+>     script: res://scripts/ai/UnitFSM.gd
+>   NavigationAgent2D (NavigationAgent2D)
+>   @NavigationAgent2D@31641 (NavigationAgent2D)
+>   Sprite2D2 (Sprite2D)
+>   > texture = res://placeholder_tile.tres
+>   CollisionShape2D2 (CollisionShape2D)
+>   > shape = res://scenes/test_scenes/RTS_Test.tscn::RectangleShape2D_n6s0a
+>   AttackTimer2 (Timer)
+> Axeman4 (CharacterBody2D)
+>   script: res://scripts/units/VikingRaider.gd
+>   scene: res://scenes/units/VikingRaider.tscn
+> > data = res://data/units/Unit_Raider.tres
+>   Sprite2D (Sprite2D)
+>   > texture = res://placeholder_tile.tres
+>   CollisionShape2D (CollisionShape2D)
+>   > shape = res://scenes/units/Base_Unit.tscn::RectangleShape2D_n6s0a
+>   AttackTimer (Timer)
+>   UnitFSM (Node)
+>     script: res://scripts/ai/UnitFSM.gd
+>   NavigationAgent2D (NavigationAgent2D)
+>   @NavigationAgent2D@31641 (NavigationAgent2D)
+>   Sprite2D2 (Sprite2D)
+>   > texture = res://placeholder_tile.tres
+>   CollisionShape2D2 (CollisionShape2D)
+>   > shape = res://scenes/test_scenes/RTS_Test.tscn::RectangleShape2D_n6s0a
+>   AttackTimer2 (Timer)
+> RTSController (Node2D)
+>   script: res://scripts/player/RTSController.gd
 
 --- SCENE: res://scenes/units/Base_Unit.tscn ---
 Base_Unit (CharacterBody2D)
@@ -155,6 +624,10 @@ Base_Unit (CharacterBody2D)
 > CollisionShape2D (CollisionShape2D)
 > > shape = res://scenes/units/Base_Unit.tscn::RectangleShape2D_n6s0a
 > AttackTimer (Timer)
+> UnitFSM (Node)
+>   script: res://scripts/ai/UnitFSM.gd
+> NavigationAgent2D (NavigationAgent2D)
+> @NavigationAgent2D@31641 (NavigationAgent2D)
 
 --- SCENE: res://scenes/units/VikingRaider.tscn ---
 VikingRaider (CharacterBody2D)
@@ -166,6 +639,81 @@ VikingRaider (CharacterBody2D)
 > CollisionShape2D (CollisionShape2D)
 > > shape = res://scenes/units/Base_Unit.tscn::RectangleShape2D_n6s0a
 > AttackTimer (Timer)
+<<<<<<< Updated upstream
+=======
+> UnitFSM (Node)
+>   script: res://scripts/ai/UnitFSM.gd
+> NavigationAgent2D (NavigationAgent2D)
+> @NavigationAgent2D@31641 (NavigationAgent2D)
+
+--- SCENE: res://scenes/world_map/WorldMap_Stub.tscn ---
+Main (Control)
+> scene: res://scenes/world_map/WorldMap_Stub.tscn
+
+--- SCENE: res://ui/Storefront_UI.tscn ---
+Main (Control)
+> script: res://ui/StorefrontUI.gd
+> scene: res://ui/Storefront_UI.tscn
+> PanelContainer (PanelContainer)
+> > layout_mode = 1
+> > anchors_preset = -1
+> > offset_right = 400.0
+> > offset_bottom = 100.0
+>   MarginContainer (MarginContainer)
+>   > layout_mode = 2
+>     TabContainer (TabContainer)
+>     > layout_mode = 2
+>     > current_tab = 0
+>       Build (VBoxContainer)
+>       > visible = false
+>       > layout_mode = 2
+>         TreasuryDisplay (HBoxContainer)
+>         > layout_mode = 2
+>           GoldLabel (Label)
+>           > layout_mode = 2
+>           WoodLabel (Label)
+>           > layout_mode = 2
+>           FoodLabel (Label)
+>           > layout_mode = 2
+>           StoneLabel (Label)
+>           > layout_mode = 2
+>         BuildButtons (HBoxContainer)
+>         > layout_mode = 2
+>           BuyWallButton (Button)
+>           > layout_mode = 2
+>           > text = "Buy Wall"
+>           BuyLumberYardButton (Button)
+>           > layout_mode = 2
+>           > text = "Buy Lumber Yard"
+>       Recruit (VBoxContainer)
+>       > visible = false
+>       > layout_mode = 2
+
+--- SCENE: res://ui/WelcomeHome_Popup.tscn ---
+Main (PanelContainer)
+> script: res://ui/WelcomeHomePopup.gd
+> scene: res://ui/WelcomeHome_Popup.tscn
+> anchor_left = 0.5
+> anchor_top = 0.5
+> anchor_right = 0.5
+> anchor_bottom = 0.5
+> offset_left = -2.0
+> offset_top = -15.5
+> offset_right = 2.0
+> offset_bottom = 15.5
+> size_flags_horizontal = 4
+> size_flags_vertical = 4
+> MarginContainer (MarginContainer)
+> > layout_mode = 2
+>   VBoxContainer (VBoxContainer)
+>   > layout_mode = 2
+>     PayoutLabel (Label)
+>     > layout_mode = 2
+>     > text = "Welcome home! ..."
+>     CollectButton (Button)
+>     > layout_mode = 2
+>     > text = "Collect"
+>>>>>>> Stashed changes
 --- END OF SCENE STRUCTURES ---
 
 #### **2.4. Codebase**
@@ -263,6 +811,20 @@ func get_astar_path(start_pos: Vector2, end_pos: Vector2) -> PackedVector2Array:
 	var world_path: PackedVector2Array = astar_grid.get_point_path(start_id, end_id)
 	return world_path
 
+func recruit_unit(unit_data: UnitData) -> void:
+	if not current_settlement:
+		push_error("Cannot recruit unit, no current settlement.")
+		return
+
+	var unit_path: String = unit_data.resource_path
+	if current_settlement.garrisoned_units.has(unit_path):
+		current_settlement.garrisoned_units[unit_path] += 1
+	else:
+		current_settlement.garrisoned_units[unit_path] = 1
+	
+	print("Recruited %s. Current garrison: %s" % [unit_data.display_name, current_settlement.garrisoned_units])
+	save_settlement()
+
 --- SCRIPT: res://data/buildings/Base_Building.gd ---
 # res://scenes/buildings/Base_Building.gd
 #
@@ -347,6 +909,38 @@ extends Resource
 ## Attacks per second (if defensive).
 @export var attack_speed: float = 1.0
 
+<<<<<<< Updated upstream
+=======
+--- SCRIPT: res://data/buildings/EconomicBuildingData.gd ---
+# res://data/buildings/EconomicBuildingData.gd
+extends BuildingData
+class_name EconomicBuildingData
+
+@export_group("Economic Stats")
+## The type of resource this building generates (e.g., "wood", "food", "gold").
+@export var resource_type: String = "wood"
+
+## The fixed amount of resources generated after each successful attack.
+@export var fixed_payout_amount: int = 10
+
+## The maximum amount of the resource that can be stored before collection.
+@export var storage_cap: int = 100
+
+--- SCRIPT: res://data/settlements/SettlementData.gd ---
+extends Resource
+class_name SettlementData
+
+@export var treasury: Dictionary = {"gold": 0, "wood": 0, "food": 0, "stone": 0}
+
+# Stores building data and position. Structure:
+# {"resource_path": "res://...", "grid_position": Vector2i(x, y)}
+@export var placed_buildings: Array[Dictionary] = []
+
+# Stores unit type (path) and count (int)
+# Example: {"res://data/units/Axeman.tres": 3, "res://data/units/Archer.tres": 10}
+@export var garrisoned_units: Dictionary = {}
+
+>>>>>>> Stashed changes
 --- SCRIPT: res://data/units/UnitData.gd ---
 # res://data/units/UnitData.gd
 #
@@ -367,7 +961,7 @@ extends Resource
 @export var icon: Texture2D
 
 ## The cost in 'Resources' to train this unit.
-@export var spawn_cost: int = 25
+@export var spawn_cost: Dictionary = {"food": 25}
 
 
 @export_group("Combat Stats")
@@ -388,84 +982,98 @@ extends Resource
 
 --- SCRIPT: res://scripts/ai/UnitFSM.gd ---
 # res://scripts/ai/UnitFSM.gd
+<<<<<<< Updated upstream
 #
 # --- MODIFIED: Implemented full ATTACK state logic ---
 
+=======
+>>>>>>> Stashed changes
 class_name UnitFSM
+extends Node
 
-enum State { IDLE, MOVE, ATTACK }
+# States for the Finite State Machine
+enum State { IDLE, MOVING, ATTACKING }
 
-# Unit References
-var unit: BaseUnit
-var attack_timer: Timer
+# --- References ---
+var unit: CharacterBody2D
+@onready var navigation_agent: NavigationAgent2D = get_parent().get_node("NavigationAgent2D")
+@onready var attack_cooldown: Timer = get_parent().get_node("AttackTimer")
 
-# State Data
+# --- State ---
 var current_state: State = State.IDLE
-var path: Array = []
+var target_unit: Node2D = null
 
-# Target Data
-var target_position: Vector2 = Vector2.ZERO
-var target_node: BaseBuilding = null # The building we want to attack
-
-func _init(p_unit: BaseUnit, p_timer: Timer) -> void:
-	unit = p_unit
-	attack_timer = p_timer
+func _ready() -> void:
 	
-	# Connect the timer's timeout signal to our attack function
-	attack_timer.timeout.connect(_on_attack_timer_timeout)
-
-func change_state(new_state: State) -> void:
-	if current_state == new_state:
+	# Ensure the parent is a CharacterBody2D and has the required nodes
+	if not get_parent() is CharacterBody2D:
+		push_error("UnitFSM must be a child of a CharacterBody2D.")
+		queue_free()
 		return
+	unit = get_parent()
+	attack_cooldown.timeout.connect(_on_attack_cooldown_timeout)
+
+
+# --- Public Command API ---
+
+func command_move_to(target_position: Vector2) -> void:
 	
-	_exit_state(current_state)
-	current_state = new_state
-	_enter_state(current_state)
+	"""Public function to issue a move command."""
+	target_unit = null # Clear any attack target
+	navigation_agent.target_position = target_position
+	_change_state(State.MOVING)
 
-func _enter_state(state: State) -> void:
-	match state:
-		State.MOVE:
-			recalculate_path()
-		
-		State.ATTACK:
-			print("%s entering ATTACK state." % unit.data.display_name)
-			# Set timer wait time based on unit's attack speed
-			attack_timer.wait_time = 1.0 / unit.data.attack_speed
-			attack_timer.start()
-			# Attack immediately on entering state
-			_on_attack_timer_timeout()
+func command_attack(p_target_unit: Node2D) -> void:
+	
+	"""Public function to issue an attack command."""
+	if not is_instance_valid(p_target_unit):
+		return
+	target_unit = p_target_unit
+	# Move towards the target, the FSM will handle transitioning to ATTACKING when in range.
+	navigation_agent.target_position = target_unit.global_position
+	_change_state(State.MOVING)
 
-func _exit_state(state: State) -> void:
-	match state:
-		State.MOVE:
-			path.clear()
-		State.ATTACK:
-			attack_timer.stop()
 
-func recalculate_path() -> void:
-	path = SettlementManager.get_astar_path(unit.global_position, target_position)
-	if path.is_empty():
-		print("Raider at %s failed to find a path to %s." % [unit.global_position, target_position])
-		# If we can't find a path, check if we're already at the target
-		if unit.global_position.distance_to(target_position) < (unit.data.attack_range + 16):
-			change_state(State.ATTACK)
-		else:
-			change_state(State.IDLE)
-	else:
-		print("Raider found new path. Waypoints: %d" % path.size())
+# --- State Machine Logic ---
 
-func update(delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	match current_state:
 		State.IDLE:
 			_idle_state(delta)
-		State.MOVE:
-			_move_state(delta)
-		State.ATTACK:
-			_attack_state(delta)
+		State.MOVING:
+			_moving_state(delta)
+		State.ATTACKING:
+			_attacking_state(delta)
 
-# --- State Logic Functions ---
+func _change_state(new_state: State) -> void:
+	
+	if current_state == new_state:
+		return
+
+	# Exit current state
+	match current_state:
+		State.ATTACKING:
+			attack_cooldown.stop()
+
+	current_state = new_state
+
+	# Enter new state
+	match new_state:
+		State.IDLE:
+			unit.velocity = Vector2.ZERO
+			navigation_agent.target_position = unit.global_position
+		State.MOVING:
+			pass # Target is already set by the command function
+		State.ATTACKING:
+			unit.velocity = Vector2.ZERO
+			attack_cooldown.start()
+			_perform_attack() # Attack immediately upon entering state
+
+
+# --- State Implementations ---
 
 func _idle_state(_delta: float) -> void:
+<<<<<<< Updated upstream
 	# In a full game, would look for a new target
 	pass
 
@@ -509,9 +1117,46 @@ func _attack_state(_delta: float) -> void:
 		print("%s target moved out of range. Re-engaging." % unit.data.display_name)
 		target_position = target_node.global_position
 		change_state(State.MOVE)
+=======
+	unit.velocity = Vector2.ZERO
+	unit.move_and_slide()
 
-# --- Signal Callback ---
+func _moving_state(_delta: float) -> void:
+	if navigation_agent.is_navigation_finished():
+		_change_state(State.IDLE)
+		return
 
+	# If we have an attack target, check if we are in range
+	if is_instance_valid(target_unit):
+		if unit.global_position.distance_to(target_unit.global_position) <= unit.data.attack_range:
+			_change_state(State.ATTACKING)
+			return
+		else:
+			# Update target position in case it moved
+			navigation_agent.target_position = target_unit.global_position
+
+	var next_path_position: Vector2 = navigation_agent.get_next_path_position()
+	var new_velocity: Vector2 = (next_path_position - unit.global_position).normalized() * unit.data.move_speed
+	unit.velocity = new_velocity
+	unit.move_and_slide()
+
+func _attacking_state(_delta: float) -> void:
+	unit.velocity = Vector2.ZERO
+	unit.move_and_slide()
+	# Check if target is still valid and in range
+	if not is_instance_valid(target_unit):
+		_change_state(State.IDLE)
+		return
+	
+	if unit.global_position.distance_to(target_unit.global_position) > unit.data.attack_range:
+		# Target moved out of range, chase it
+		command_attack(target_unit) 
+		return
+>>>>>>> Stashed changes
+
+# --- Helper Functions ---
+
+<<<<<<< Updated upstream
 func _on_attack_timer_timeout() -> void:
 	"""
 	This is called every time the AttackTimer finishes.
@@ -522,6 +1167,32 @@ func _on_attack_timer_timeout() -> void:
 	else:
 		# Target was destroyed by something else
 		change_state(State.IDLE)
+=======
+func _perform_attack() -> void:
+	if not is_instance_valid(target_unit):
+		_change_state(State.IDLE)
+		return
+
+	if "take_damage" in target_unit:
+		print("%s attacks %s!" % [unit.data.display_name, target_unit.data.display_name])
+		target_unit.take_damage(unit.data.attack_damage)
+
+func _on_attack_cooldown_timeout() -> void:
+	"""Called by the Timer to perform an attack."""
+	if current_state == State.ATTACKING:
+		_perform_attack()
+
+# --- Defensive Stance Logic ---
+# This requires the unit to have an Area2D node named "AggroArea"
+# with a signal "body_entered" connected to this function.
+func _on_aggro_area_body_entered(body: Node2D) -> void:
+	# Only react if currently moving and not already targeting something
+	if current_state == State.MOVING and not is_instance_valid(target_unit):
+		# TODO: Add faction check to ensure it's an enemy
+		if body != unit and "data" in body: # A simple check for something attackable
+			print("%s is attacked while moving, retaliating against %s" % [unit.data.display_name, body.data.display_name])
+			command_attack(body)
+>>>>>>> Stashed changes
 
 --- SCRIPT: res://scripts/buildings/SettlementBridge.gd ---
 # res://scripts/buildings/SettlementBridge.gd
@@ -573,6 +1244,138 @@ func _unhandled_input(event: InputEvent) -> void:
 		
 		get_viewport().set_input_as_handled()
 
+--- SCRIPT: res://scripts/player/RTSController.gd ---
+# res://scripts/player/RTSController.gd
+extends Node2D
+
+# --- Properties ---
+var selected_units: Array[Node2D] = []
+var selection_box_start: Vector2 = Vector2.ZERO
+var is_dragging: bool = false
+var selection_box: Rect2
+
+# We need a reference to the camera to convert screen to world coordinates
+@onready var camera: Camera2D = get_viewport().get_camera_2d()
+
+func _unhandled_input(event: InputEvent) -> void:
+	# --- Left Mouse Button for Selection ---
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.is_pressed():
+			# Start dragging for box selection
+			is_dragging = true
+			selection_box_start = get_global_mouse_position()
+			selection_box = Rect2(selection_box_start, Vector2.ZERO)
+		elif is_dragging:
+			# End dragging
+			is_dragging = false
+			_perform_box_selection()
+			# Force a redraw to clear the box
+			queue_redraw()
+
+	# --- Mouse Motion for Dragging ---
+	if event is InputEventMouseMotion and is_dragging:
+		var current_mouse_pos = get_global_mouse_position()
+		selection_box = Rect2(selection_box_start, current_mouse_pos - selection_box_start).abs()
+		# Force a redraw to show the box
+		queue_redraw()
+
+	# --- Right Mouse Button for Commands ---
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.is_pressed():
+		if not selected_units.is_empty():
+			_process_smart_command(get_global_mouse_position())
+
+func _draw() -> void:
+	"""Draws the selection box rectangle on screen."""
+	if is_dragging:
+		draw_rect(selection_box, Color(0.0, 1.0, 0.0, 0.2), true) # Filled
+		draw_rect(selection_box, Color(0.0, 1.0, 0.0, 0.8), false, 2.0) # Border
+
+func _perform_box_selection() -> void:
+	
+	# Clear previous selection unless holding Shift (future feature)
+	_clear_selection()
+
+	var space_state = get_world_2d().direct_space_state
+	var query = PhysicsShapeQueryParameters2D.new()
+	var box_shape := RectangleShape2D.new()
+	box_shape.size = selection_box.size
+	query.shape = box_shape
+	query.transform = Transform2D(0, selection_box.get_center())
+	query.collide_with_bodies = true
+	query.collision_mask = 1 # Explicitly check layer 1
+
+
+	var intersecting_bodies = space_state.intersect_shape(query)
+	
+	for body_dict in intersecting_bodies:
+		var body = body_dict.get("collider")
+		if body and body.is_in_group("selectable_units"):
+			_add_to_selection(body)
+			
+	# Fallback for single click if the box is very small
+	if selection_box.get_area() < 100 and intersecting_bodies.is_empty():
+		_perform_single_click_selection(selection_box_start)
+
+
+func _perform_single_click_selection(click_position: Vector2) -> void:
+	_clear_selection()
+	var space_state = get_world_2d().direct_space_state
+	var query = PhysicsPointQueryParameters2D.new()
+	query.position = click_position
+	query.collide_with_bodies = true
+	
+	var result = space_state.intersect_point(query, 1)
+	if not result.is_empty():
+		var body = result[0].get("collider")
+		if body and body.is_in_group("selectable_units"):
+			_add_to_selection(body)
+
+func _process_smart_command(click_position: Vector2) -> void:
+	var space_state = get_world_2d().direct_space_state
+	var query = PhysicsPointQueryParameters2D.new()
+	query.position = click_position
+	query.collide_with_bodies = true
+	# TODO: Define collision layers for enemies
+	# query.collision_mask = ENEMY_LAYER 
+	
+	var result = space_state.intersect_point(query, 1)
+
+	var target_enemy: Node2D = null
+	if not result.is_empty():
+		var body = result[0].get("collider")
+		# TODO: Add faction check
+		if body and body.is_in_group("attackable"):
+			target_enemy = body
+
+	# Issue commands
+	
+	for unit in selected_units:
+		if not is_instance_valid(unit):
+			continue
+			
+		if "fsm" in unit and is_instance_valid(unit.fsm):
+			if is_instance_valid(target_enemy):
+				# Attack Command
+				unit.fsm.command_attack(target_enemy)
+			else:
+				# Move Command
+				unit.fsm.command_move_to(click_position)
+
+# --- Selection Management ---
+
+func _add_to_selection(unit: Node2D) -> void:
+	
+	if not unit in selected_units:
+		selected_units.append(unit)
+		if "selection_indicator" in unit:
+			unit.selection_indicator.show()
+
+func _clear_selection() -> void:
+	for unit in selected_units:
+		if is_instance_valid(unit) and "selection_indicator" in unit:
+			unit.selection_indicator.hide()
+	selected_units.clear()
+
 --- SCRIPT: res://scripts/units/Base_Unit.gd ---
 # res://scenes/units/Base_Unit.gd
 #
@@ -582,7 +1385,7 @@ class_name BaseUnit
 extends CharacterBody2D
 
 @export var data: UnitData
-var fsm: UnitFSM
+@onready var fsm: UnitFSM = $UnitFSM
 var current_health: int = 50
 
 # --- ADDED ---
@@ -594,10 +1397,8 @@ func _ready() -> void:
 		return
 	
 	current_health = data.max_health
-	
-	# --- MODIFIED ---
-	# Pass the timer reference to the FSM
-	fsm = UnitFSM.new(self, attack_timer)
+	# FSM is now retrieved via @onready
+
 	
 	EventBus.pathfinding_grid_updated.connect(_on_grid_updated)
 
@@ -606,16 +1407,10 @@ func _exit_tree() -> void:
 		EventBus.pathfinding_grid_updated.disconnect(_on_grid_updated)
 
 func _on_grid_updated(_grid_pos: Vector2i) -> void:
-	if fsm and fsm.current_state == UnitFSM.State.MOVE:
+	if fsm and fsm.current_state == UnitFSM.State.MOVING:
 		fsm.recalculate_path()
 
-func _physics_process(delta: float) -> void:
-	if fsm:
-		fsm.update(delta)
-	
-	if not fsm or fsm.current_state != UnitFSM.State.MOVE:
-		velocity = Vector2.ZERO
-		move_and_slide()
+
 
 func take_damage(amount: int) -> void:
 	current_health = max(0, current_health - amount)
@@ -650,8 +1445,139 @@ func set_attack_target(target: BaseBuilding) -> void:
 	fsm.target_position = target.global_position
 	
 	# Start the FSM
-	fsm.change_state(UnitFSM.State.MOVE)
+	fsm.change_state(UnitFSM.State.MOVING)
 	print("Viking Raider initialized and moving to target: %s" % target.data.display_name)
+<<<<<<< Updated upstream
+=======
+
+--- SCRIPT: res://ui/StorefrontUI.gd ---
+# res://ui/StorefrontUI.gd
+extends Control
+
+# --- Constants ---
+const UNIT_DATA_PATH = "res://data/units"
+
+# --- Node References ---
+@onready var gold_label: Label = $PanelContainer/MarginContainer/TabContainer/Build/TreasuryDisplay/GoldLabel
+@onready var wood_label: Label = $PanelContainer/MarginContainer/TabContainer/Build/TreasuryDisplay/WoodLabel
+@onready var food_label: Label = $PanelContainer/MarginContainer/TabContainer/Build/TreasuryDisplay/FoodLabel
+@onready var stone_label: Label = $PanelContainer/MarginContainer/TabContainer/Build/TreasuryDisplay/StoneLabel
+@onready var buy_wall_button: Button = $PanelContainer/MarginContainer/TabContainer/Build/BuildButtons/BuyWallButton
+@onready var buy_lumber_yard_button: Button = $PanelContainer/MarginContainer/TabContainer/Build/BuildButtons/BuyLumberYardButton
+@onready var recruit_tab: VBoxContainer = $PanelContainer/MarginContainer/TabContainer/Recruit
+
+# --- Data ---
+var wall_data: BuildingData = preload("res://data/buildings/Bldg_Wall.tres")
+var lumber_yard_data: BuildingData = preload("res://data/buildings/LumberYard.tres")
+
+
+func _ready() -> void:
+	EventBus.treasury_updated.connect(_update_treasury_display)
+	
+	if SettlementManager.current_settlement:
+		_update_treasury_display(SettlementManager.current_settlement.treasury)
+	else:
+		_update_treasury_display({"gold": 0, "wood": 0, "food": 0, "stone": 0})
+
+	buy_wall_button.pressed.connect(_on_buy_button_pressed.bind(wall_data))
+	buy_lumber_yard_button.pressed.connect(_on_buy_button_pressed.bind(lumber_yard_data))
+	
+	_create_recruit_buttons()
+
+
+func _update_treasury_display(new_treasury: Dictionary) -> void:
+	gold_label.text = "Gold: %d" % new_treasury.get("gold", 0)
+	wood_label.text = "Wood: %d" % new_treasury.get("wood", 0)
+	food_label.text = "Food: %d" % new_treasury.get("food", 0)
+	stone_label.text = "Stone: %d" % new_treasury.get("stone", 0)
+
+func _on_buy_button_pressed(item_data: BuildingData) -> void:
+	if not item_data:
+		return
+	
+	print("UI attempting to purchase '%s'." % item_data.display_name)
+	var purchase_successful: bool = SettlementManager.attempt_purchase(item_data.build_cost)
+	
+	if purchase_successful:
+		print("UI received purchase confirmation for '%s'." % item_data.display_name)
+		var test_grid_pos = Vector2i(10, 15) # TODO: Replace with player input
+		var new_building = SettlementManager.place_building(item_data, test_grid_pos)
+		
+		if new_building and SettlementManager.current_settlement:
+			var building_entry = {
+				"resource_path": item_data.resource_path,
+				"grid_position": test_grid_pos
+			}
+			SettlementManager.current_settlement.placed_buildings.append(building_entry)
+			print("Added %s to persistent settlement data." % item_data.display_name)
+			SettlementManager.save_settlement()
+	else:
+		print("UI received purchase failure for '%s'." % item_data.display_name)
+
+func _create_recruit_buttons() -> void:
+	var dir = DirAccess.open(UNIT_DATA_PATH)
+	if dir:
+		dir.list_dir_begin()
+		var file_name = dir.get_next()
+		while file_name != "":
+			if not dir.current_is_dir() and file_name.ends_with(".tres"):
+				var unit_data: UnitData = load(UNIT_DATA_PATH.path_join(file_name))
+				if unit_data:
+					var button := Button.new()
+					var cost_string : String
+					for key in unit_data.spawn_cost:
+						cost_string += "%s: %s " % [key, unit_data.spawn_cost[key]]
+					button.text = "%s (%s)" % [unit_data.display_name, cost_string]
+					button.pressed.connect(_on_recruit_button_pressed.bind(unit_data))
+					recruit_tab.add_child(button)
+			file_name = dir.get_next()
+	else:
+		printerr("Could not open directory: " + UNIT_DATA_PATH)
+
+func _on_recruit_button_pressed(unit_data: UnitData) -> void:
+	if not unit_data:
+		return
+
+	print("UI attempting to recruit '%s'." % unit_data.display_name)
+	var purchase_successful: bool = SettlementManager.attempt_purchase(unit_data.spawn_cost)
+	
+	if purchase_successful:
+		print("UI received purchase confirmation for '%s'." % unit_data.display_name)
+		SettlementManager.recruit_unit(unit_data)
+	else:
+		print("UI received purchase failure for '%s'." % unit_data.display_name)
+
+--- SCRIPT: res://ui/WelcomeHomePopup.gd ---
+# res://ui/WelcomeHomePopup.gd
+extends PanelContainer
+
+signal collect_button_pressed(payout: Dictionary)
+
+@onready var payout_label: Label = $MarginContainer/VBoxContainer/PayoutLabel
+@onready var collect_button: Button = $MarginContainer/VBoxContainer/CollectButton
+
+var _current_payout: Dictionary = {}
+
+func _ready() -> void:
+	collect_button.pressed.connect(_on_collect_pressed)
+	hide()
+
+func display_payout(payout: Dictionary) -> void:
+	if payout.is_empty():
+		return
+
+	_current_payout = payout
+	var payout_text: String = "Welcome home!\n\nResources gathered:\n"
+	for resource_type in payout:
+		payout_text += "- %s: %d\n" % [resource_type.capitalize(), payout[resource_type]]
+	
+	payout_label.text = payout_text
+	show()
+
+func _on_collect_pressed() -> void:
+	collect_button_pressed.emit(_current_payout)
+	hide()
+>>>>>>> Stashed changes
 --- END OF CODEBASE ---
 
 ---

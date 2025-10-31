@@ -1,0 +1,133 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/GodotAiSuite/agent/diff_view.gd" id="1_1d5t3"]
+
+[node name="DiffView" type="PanelContainer"]
+custom_minimum_size = Vector2(0, 500)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_1d5t3")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="HeaderHBox" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="LeftHeader" type="VBoxContainer" parent="MarginContainer/VBoxContainer/HeaderHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/HeaderHBox/LeftHeader"]
+layout_mode = 2
+text = "Old Version"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/VBoxContainer/HeaderHBox/LeftHeader"]
+layout_mode = 2
+
+[node name="RightHeader" type="VBoxContainer" parent="MarginContainer/VBoxContainer/HeaderHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label2" type="Label" parent="MarginContainer/VBoxContainer/HeaderHBox/RightHeader"]
+layout_mode = 2
+text = "New Version"
+horizontal_alignment = 1
+
+[node name="HSeparator2" type="HSeparator" parent="MarginContainer/VBoxContainer/HeaderHBox/RightHeader"]
+layout_mode = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="LeftPanel" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CodeContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/LeftPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="LineNumbersLeft" type="RichTextLabel" parent="MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/LeftPanel/CodeContainer"]
+custom_minimum_size = Vector2(40, 0)
+layout_mode = 2
+theme_override_colors/default_color = Color(0.5, 0.5, 0.5, 1)
+bbcode_enabled = true
+text = "1"
+fit_content = true
+scroll_active = false
+autowrap_mode = 0
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/LeftPanel/CodeContainer"]
+layout_mode = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/LeftPanel/CodeContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 0
+
+[node name="CodeLeft" type="RichTextLabel" parent="MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/LeftPanel/CodeContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 2
+bbcode_enabled = true
+text = "  "
+fit_content = true
+scroll_active = false
+selection_enabled = true
+
+[node name="RightPanel" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CodeContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/RightPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="LineNumbersRight" type="RichTextLabel" parent="MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/RightPanel/CodeContainer"]
+custom_minimum_size = Vector2(40, 0)
+layout_mode = 2
+theme_override_colors/default_color = Color(0.5, 0.5, 0.5, 1)
+bbcode_enabled = true
+text = "1"
+fit_content = true
+scroll_active = false
+autowrap_mode = 0
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/RightPanel/CodeContainer"]
+layout_mode = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/RightPanel/CodeContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 0
+
+[node name="CodeRight" type="RichTextLabel" parent="MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/RightPanel/CodeContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 2
+bbcode_enabled = true
+text = "  "
+fit_content = true
+scroll_active = false
+selection_enabled = true

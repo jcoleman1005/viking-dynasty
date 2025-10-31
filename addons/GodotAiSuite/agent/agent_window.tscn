@@ -1,0 +1,78 @@
+[gd_scene load_steps=2 format=3 uid="uid://dnguporvjtmpa"]
+
+[ext_resource type="Script" uid="uid://rfghy5rd8r8h" path="res://addons/GodotAiSuite/agent/agent_window.gd" id="1_ruo50"]
+
+[node name="AgentWindow" type="Window"]
+mode = 2
+title = "AI Agent"
+size = Vector2i(300, 300)
+visible = false
+min_size = Vector2i(300, 300)
+script = ExtResource("1_ruo50")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="MainVBox" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="Separator1" type="HSeparator" parent="MarginContainer/MainVBox"]
+layout_mode = 2
+
+[node name="ExecutionPlanLabel" type="Label" parent="MarginContainer/MainVBox"]
+visible = false
+layout_mode = 2
+text = "Execution Plan:"
+
+[node name="ExecutionPlanScroll" type="ScrollContainer" parent="MarginContainer/MainVBox"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ScrollContentContainer" type="VBoxContainer" parent="MarginContainer/MainVBox/ExecutionPlanScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ExecutionPlanContainer" type="VBoxContainer" parent="MarginContainer/MainVBox/ExecutionPlanScroll/ScrollContentContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="AcceptAllHBox" type="HBoxContainer" parent="MarginContainer/MainVBox/ExecutionPlanScroll/ScrollContentContainer"]
+visible = false
+layout_mode = 2
+
+[node name="AcceptAllButton" type="Button" parent="MarginContainer/MainVBox/ExecutionPlanScroll/ScrollContentContainer/AcceptAllHBox"]
+layout_mode = 2
+text = "Accept All Automated Tasks"
+
+[node name="CommitSeparator" type="HSeparator" parent="MarginContainer/MainVBox"]
+visible = false
+layout_mode = 2
+
+[node name="CommitHBox" type="HBoxContainer" parent="MarginContainer/MainVBox"]
+visible = false
+layout_mode = 2
+alignment = 2
+
+[node name="Label" type="Label" parent="MarginContainer/MainVBox/CommitHBox"]
+layout_mode = 2
+text = "Git Commit Message:"
+vertical_alignment = 1
+
+[node name="CommitLineEdit" type="LineEdit" parent="MarginContainer/MainVBox/CommitHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CommitCopyButton" type="Button" parent="MarginContainer/MainVBox/CommitHBox"]
+layout_mode = 2
+text = "Copy"

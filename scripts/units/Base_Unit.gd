@@ -6,7 +6,7 @@ class_name BaseUnit
 extends CharacterBody2D
 
 @export var data: UnitData
-var fsm: UnitFSM
+@onready var fsm: UnitFSM = $UnitFSM
 var current_health: int = 50
 
 # --- ADDED ---
@@ -18,10 +18,8 @@ func _ready() -> void:
 		return
 	
 	current_health = data.max_health
-	
-	# --- MODIFIED ---
-	# Pass the timer reference to the FSM
-	fsm = UnitFSM.new(self, attack_timer)
+	# FSM is now retrieved via @onready
+
 	
 	EventBus.pathfinding_grid_updated.connect(_on_grid_updated)
 
@@ -30,16 +28,10 @@ func _exit_tree() -> void:
 		EventBus.pathfinding_grid_updated.disconnect(_on_grid_updated)
 
 func _on_grid_updated(_grid_pos: Vector2i) -> void:
-	if fsm and fsm.current_state == UnitFSM.State.MOVE:
+	if fsm and fsm.current_state == UnitFSM.State.MOVING:
 		fsm.recalculate_path()
 
-func _physics_process(delta: float) -> void:
-	if fsm:
-		fsm.update(delta)
-	
-	if not fsm or fsm.current_state != UnitFSM.State.MOVE:
-		velocity = Vector2.ZERO
-		move_and_slide()
+
 
 func take_damage(amount: int) -> void:
 	current_health = max(0, current_health - amount)

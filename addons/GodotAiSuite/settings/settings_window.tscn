@@ -1,0 +1,296 @@
+[gd_scene load_steps=3 format=3 uid="uid://b1nqvjxq4k7x8"]
+
+[ext_resource type="Script" uid="uid://cy0lje712bumw" path="res://addons/GodotAiSuite/settings/settings_window.gd" id="1_l5d2p"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_g7vxu"]
+bg_color = Color(0.121569, 0.121569, 0.121569, 0.8)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[node name="SettingsWindow" type="AcceptDialog"]
+title = "Godot AI Suite Settings"
+initial_position = 2
+size = Vector2i(700, 600)
+ok_button_text = "Close"
+script = ExtResource("1_l5d2p")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 692.0
+offset_bottom = 458.0
+
+[node name="TabContainer" type="TabContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+current_tab = 0
+
+[node name="MasterpromptSettings" type="Control" parent="VBoxContainer/TabContainer"]
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/TabContainer/MasterpromptSettings"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="SubTabContainer" type="TabContainer" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+current_tab = 0
+
+[node name="General" type="Control" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer/SubTabContainer"]
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer/SubTabContainer/General"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer/SubTabContainer/General/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="IncludeSystemPromptButton" type="CheckButton" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer/SubTabContainer/General/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Include System Prompt"
+
+[node name="HSeparator" type="HSeparator" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer/SubTabContainer/General/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="IncludeGDDButton" type="CheckButton" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer/SubTabContainer/General/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Include GDD"
+
+[node name="IncludeDevlogButton" type="CheckButton" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer/SubTabContainer/General/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Include Devlog"
+
+[node name="HSeparator2" type="HSeparator" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer/SubTabContainer/General/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="IncludeProjectSettingsButton" type="CheckButton" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer/SubTabContainer/General/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Include Project Settings"
+
+[node name="IncludeAssetsButton" type="CheckButton" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer/SubTabContainer/General/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Include Assets"
+
+[node name="IncludeResourcesButton" type="CheckButton" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer/SubTabContainer/General/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Include Resources"
+
+[node name="IncludeScenesButton" type="CheckButton" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer/SubTabContainer/General/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Include Scenes"
+
+[node name="IncludeCodeButton" type="CheckButton" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer/SubTabContainer/General/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Include Code"
+
+[node name="SelectScenes" type="Control" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer/SubTabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer/SubTabContainer/SelectScenes"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer/SubTabContainer/SelectScenes/MarginContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer/SubTabContainer/SelectScenes/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="SelectAllButton" type="Button" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer/SubTabContainer/SelectScenes/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Include All"
+
+[node name="SelectNoneButton" type="Button" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer/SubTabContainer/SelectScenes/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Exclude All"
+
+[node name="SearchBar" type="LineEdit" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer/SubTabContainer/SelectScenes/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Filter files..."
+clear_button_enabled = true
+
+[node name="SceneTree" type="Tree" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer/SubTabContainer/SelectScenes/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+hide_root = true
+
+[node name="SelectScripts" type="Control" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer/SubTabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer/SubTabContainer/SelectScripts"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer/SubTabContainer/SelectScripts/MarginContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer/SubTabContainer/SelectScripts/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="SelectAllButton" type="Button" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer/SubTabContainer/SelectScripts/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Include All"
+
+[node name="SelectNoneButton" type="Button" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer/SubTabContainer/SelectScripts/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Exclude All"
+
+[node name="SearchBar" type="LineEdit" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer/SubTabContainer/SelectScripts/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Filter files..."
+clear_button_enabled = true
+
+[node name="ScriptTree" type="Tree" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer/SubTabContainer/SelectScripts/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+hide_root = true
+
+[node name="HSeparator" type="HSeparator" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="TotalTokensLabel" type="Label" parent="VBoxContainer/TabContainer/MasterpromptSettings/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Estimated Masterprompt Tokens: ~0"
+horizontal_alignment = 2
+
+[node name="API" type="Control" parent="VBoxContainer/TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/TabContainer/API"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/TabContainer/API/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="VBoxContainer/TabContainer/API/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "API Key Environment Variable Name:"
+
+[node name="ApiKeyEnvVarInput" type="LineEdit" parent="VBoxContainer/TabContainer/API/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "GOOGLE_GEMINI_API_KEY"
+
+[node name="Label2" type="Label" parent="VBoxContainer/TabContainer/API/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "API Base URL:"
+
+[node name="ApiUrlInput" type="LineEdit" parent="VBoxContainer/TabContainer/API/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "https://generativelanguage.googleapis.com/v1beta/models/"
+
+[node name="Label3" type="Label" parent="VBoxContainer/TabContainer/API/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Model Name:"
+
+[node name="ModelNameInput" type="LineEdit" parent="VBoxContainer/TabContainer/API/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "gemini-1.5-pro-latest"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/TabContainer/API/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label4" type="Label" parent="VBoxContainer/TabContainer/API/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Temperature:"
+
+[node name="TemperatureSpinBox" type="SpinBox" parent="VBoxContainer/TabContainer/API/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+max_value = 2.0
+step = 0.1
+value = 1.0
+
+[node name="Label5" type="Label" parent="VBoxContainer/TabContainer/API/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Max Tokens:"
+
+[node name="MaxTokensSpinBox" type="SpinBox" parent="VBoxContainer/TabContainer/API/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+max_value = 8192.0
+step = 256.0
+value = 4096.0
+allow_greater = true
+
+[node name="ComingSoonOverlay" type="Panel" parent="VBoxContainer/TabContainer/API"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_g7vxu")
+
+[node name="Label" type="Label" parent="VBoxContainer/TabContainer/API/ComingSoonOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 24
+text = "Coming soon..."
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="VBoxContainer"]
+layout_mode = 2

@@ -1,142 +1,147 @@
 # res://scripts/ai/UnitFSM.gd
-#
-# --- MODIFIED: _move_state now checks for attack range ---
-
 class_name UnitFSM
+extends Node
 
-enum State { IDLE, MOVE, ATTACK }
+# States for the Finite State Machine
+enum State { IDLE, MOVING, ATTACKING }
 
-# Unit References
-var unit: BaseUnit
-var attack_timer: Timer
+# --- References ---
+var unit: CharacterBody2D
+@onready var navigation_agent: NavigationAgent2D = get_parent().get_node("NavigationAgent2D")
+@onready var attack_cooldown: Timer = get_parent().get_node("AttackTimer")
 
-# State Data
+# --- State ---
 var current_state: State = State.IDLE
-var path: Array = []
+var target_unit: Node2D = null
 
-# Target Data
-var target_position: Vector2 = Vector2.ZERO
-var target_node: BaseBuilding = null # The building we want to attack
-
-func _init(p_unit: BaseUnit, p_timer: Timer) -> void:
-	unit = p_unit
-	attack_timer = p_timer
+func _ready() -> void:
 	
-	# Connect the timer's timeout signal to our attack function
-	attack_timer.timeout.connect(_on_attack_timer_timeout)
-
-func change_state(new_state: State) -> void:
-	if current_state == new_state:
+	# Ensure the parent is a CharacterBody2D and has the required nodes
+	if not get_parent() is CharacterBody2D:
+		push_error("UnitFSM must be a child of a CharacterBody2D.")
+		queue_free()
 		return
+	unit = get_parent()
+	attack_cooldown.timeout.connect(_on_attack_cooldown_timeout)
+
+
+# --- Public Command API ---
+
+func command_move_to(target_position: Vector2) -> void:
 	
-	_exit_state(current_state)
-	current_state = new_state
-	_enter_state(current_state)
+	"""Public function to issue a move command."""
+	target_unit = null # Clear any attack target
+	navigation_agent.target_position = target_position
+	_change_state(State.MOVING)
 
-func _enter_state(state: State) -> void:
-	match state:
-		State.MOVE:
-			recalculate_path()
-		
-		State.ATTACK:
-			print("%s entering ATTACK state." % unit.data.display_name)
-			# Set timer wait time based on unit's attack speed
-			attack_timer.wait_time = 1.0 / unit.data.attack_speed
-			attack_timer.start()
-			# Attack immediately on entering state
-			_on_attack_timer_timeout()
+func command_attack(p_target_unit: Node2D) -> void:
+	
+	"""Public function to issue an attack command."""
+	if not is_instance_valid(p_target_unit):
+		return
+	target_unit = p_target_unit
+	# Move towards the target, the FSM will handle transitioning to ATTACKING when in range.
+	navigation_agent.target_position = target_unit.global_position
+	_change_state(State.MOVING)
 
-func _exit_state(state: State) -> void:
-	match state:
-		State.MOVE:
-			path.clear()
-		State.ATTACK:
-			attack_timer.stop()
 
-func recalculate_path() -> void:
-	path = SettlementManager.get_astar_path(unit.global_position, target_position)
-	if path.is_empty():
-		print("Raider at %s failed to find a path to %s." % [unit.global_position, target_position])
-		# If we can't find a path, check if we're already at the target
-		if unit.global_position.distance_to(target_position) < (unit.data.attack_range + 16):
-			change_state(State.ATTACK)
-		else:
-			change_state(State.IDLE)
-	else:
-		print("Raider found new path. Waypoints: %d" % path.size())
+# --- State Machine Logic ---
 
-func update(delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	match current_state:
 		State.IDLE:
 			_idle_state(delta)
-		State.MOVE:
-			_move_state(delta)
-		State.ATTACK:
-			_attack_state(delta)
+		State.MOVING:
+			_moving_state(delta)
+		State.ATTACKING:
+			_attacking_state(delta)
 
-# --- State Logic Functions ---
+func _change_state(new_state: State) -> void:
+	
+	if current_state == new_state:
+		return
+
+	# Exit current state
+	match current_state:
+		State.ATTACKING:
+			attack_cooldown.stop()
+
+	current_state = new_state
+
+	# Enter new state
+	match new_state:
+		State.IDLE:
+			unit.velocity = Vector2.ZERO
+			navigation_agent.target_position = unit.global_position
+		State.MOVING:
+			pass # Target is already set by the command function
+		State.ATTACKING:
+			unit.velocity = Vector2.ZERO
+			attack_cooldown.start()
+			_perform_attack() # Attack immediately upon entering state
+
+
+# --- State Implementations ---
 
 func _idle_state(_delta: float) -> void:
-	pass
-
-func _move_state(delta: float) -> void:
-	# --- THIS IS THE FIX ---
-	# First, check if we are in attack range of our target.
-	# This is more important than finishing the path.
-	if is_instance_valid(target_node) and \
-	unit.global_position.distance_to(target_node.global_position) < unit.data.attack_range:
-		print("Raider in range, switching to ATTACK.")
-		change_state(State.ATTACK)
-		return
-	# --- END FIX ---
-	
-	# If we're not in range, check if our path is empty
-	if path.is_empty():
-		# Path is done, but we're still not in range?
-		print("Raider path ended, but not in range. Idling.")
-		change_state(State.IDLE)
-		return
-	
-	# Path is not empty and we're not in range, so keep moving
-	var next_waypoint: Vector2 = path[0]
-	var direction: Vector2 = (next_waypoint - unit.global_position).normalized()
-	var velocity: Vector2 = direction * unit.data.move_speed
-	
-	unit.velocity = velocity
+	unit.velocity = Vector2.ZERO
 	unit.move_and_slide()
-	
-	var arrival_radius: float = 8.0 
-	if unit.global_position.distance_to(next_waypoint) < arrival_radius:
-		path.pop_front()
-		
-		# If that was the last waypoint, check for target
-		if path.is_empty():
-			if is_instance_valid(target_node) and \
-			unit.global_position.distance_to(target_node.global_position) < unit.data.attack_range:
-				change_state(State.ATTACK)
-			else:
-				change_state(State.IDLE)
-		
-func _attack_state(_delta: float) -> void:
-	if not is_instance_valid(target_node):
-		print("%s target destroyed. Returning to IDLE." % unit.data.display_name)
-		change_state(State.IDLE)
+
+func _moving_state(_delta: float) -> void:
+	if navigation_agent.is_navigation_finished():
+		_change_state(State.IDLE)
+		return
+
+	# If we have an attack target, check if we are in range
+	if is_instance_valid(target_unit):
+		if unit.global_position.distance_to(target_unit.global_position) <= unit.data.attack_range:
+			_change_state(State.ATTACKING)
+			return
+		else:
+			# Update target position in case it moved
+			navigation_agent.target_position = target_unit.global_position
+
+	var next_path_position: Vector2 = navigation_agent.get_next_path_position()
+	var new_velocity: Vector2 = (next_path_position - unit.global_position).normalized() * unit.data.move_speed
+	unit.velocity = new_velocity
+	unit.move_and_slide()
+
+func _attacking_state(_delta: float) -> void:
+	unit.velocity = Vector2.ZERO
+	unit.move_and_slide()
+	# Check if target is still valid and in range
+	if not is_instance_valid(target_unit):
+		_change_state(State.IDLE)
 		return
 	
-	# Check if target moved out of range
-	if unit.global_position.distance_to(target_node.global_position) > unit.data.attack_range + 16:
-		print("%s target moved out of range. Re-engaging." % unit.data.display_name)
-		target_position = target_position 
-		change_state(State.MOVE)
+	if unit.global_position.distance_to(target_unit.global_position) > unit.data.attack_range:
+		# Target moved out of range, chase it
+		command_attack(target_unit) 
+		return
 
-# --- Signal Callback ---
+# --- Helper Functions ---
 
-func _on_attack_timer_timeout() -> void:
-	"""
-	This is called every time the AttackTimer finishes.
-	"""
-	if is_instance_valid(target_node):
-		print("%s attacks %s!" % [unit.data.display_name, target_node.data.display_name])
-		target_node.take_damage(unit.data.attack_damage)
-	else:
-		change_state(State.IDLE)
+func _perform_attack() -> void:
+	if not is_instance_valid(target_unit):
+		_change_state(State.IDLE)
+		return
+
+	if "take_damage" in target_unit:
+		print("%s attacks %s!" % [unit.data.display_name, target_unit.data.display_name])
+		target_unit.take_damage(unit.data.attack_damage)
+
+func _on_attack_cooldown_timeout() -> void:
+	"""Called by the Timer to perform an attack."""
+	if current_state == State.ATTACKING:
+		_perform_attack()
+
+# --- Defensive Stance Logic ---
+# This requires the unit to have an Area2D node named "AggroArea"
+# with a signal "body_entered" connected to this function.
+func _on_aggro_area_body_entered(body: Node2D) -> void:
+	# Only react if currently moving and not already targeting something
+	if current_state == State.MOVING and not is_instance_valid(target_unit):
+		# TODO: Add faction check to ensure it's an enemy
+		if body != unit and "data" in body: # A simple check for something attackable
+			print("%s is attacked while moving, retaliating against %s" % [unit.data.display_name, body.data.display_name])
+			command_attack(body)
