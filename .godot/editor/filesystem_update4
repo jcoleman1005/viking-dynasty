@@ -3,3 +3,7 @@ res://player/RTSController.gd
 res://scripts/units/Base_Unit.gd
 res://scenes/missions/RaidMission.gd
 res://scripts/formations/SquadFormation.gd
+res://data/units/Viking_Raider_Fixed.tres
+res://scripts/ai/UnitFSM.gd
+res://scenes/missions/RaidMission.tscn
+res://placeholder_tile.tres

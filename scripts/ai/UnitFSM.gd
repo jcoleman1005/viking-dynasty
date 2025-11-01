@@ -88,6 +88,8 @@ func command_move_to(target_pos: Vector2) -> void:
 
 func command_attack(target: Node2D) -> void:
 	"""Command the unit to attack a specific target"""
+	print("DEBUG: %s received attack command on target: %s" % [unit.data.display_name, target.name])
+	
 	if not is_instance_valid(target):
 		print("Cannot attack invalid target")
 		return
@@ -97,9 +99,13 @@ func command_attack(target: Node2D) -> void:
 	
 	# Check if we're already in range
 	var distance: float = unit.global_position.distance_to(target.global_position)
+	print("DEBUG: Current distance to target: %s, attack range: %s" % [distance, unit.data.attack_range])
+	
 	if distance <= unit.data.attack_range:
+		print("DEBUG: Target in range, transitioning to ATTACKING")
 		change_state(State.ATTACKING)
 	else:
+		print("DEBUG: Target out of range, transitioning to MOVING")
 		change_state(State.MOVING)
 
 # --- State Machine Update ---
@@ -174,6 +180,9 @@ func _move_state(delta: float) -> void:
 				change_state(State.IDLE)
 
 func _attack_state(_delta: float) -> void:
+	# Debug output for attack state
+	print("DEBUG: %s in ATTACKING state - timer running: %s" % [unit.data.display_name, not attack_timer.is_stopped()])
+	
 	# Check if target is still valid
 	if not is_instance_valid(target_unit):
 		print("%s target destroyed or invalid. Returning to IDLE." % unit.data.display_name)
@@ -182,6 +191,8 @@ func _attack_state(_delta: float) -> void:
 	
 	# Check if target moved out of range
 	var distance_to_target: float = unit.global_position.distance_to(target_unit.global_position)
+	print("DEBUG: Distance to target: %s, Attack range: %s" % [distance_to_target, unit.data.attack_range])
+	
 	if distance_to_target > unit.data.attack_range + 16: # Small buffer to avoid oscillation
 		print("%s target moved out of range. Re-engaging." % unit.data.display_name)
 		target_position = target_unit.global_position
