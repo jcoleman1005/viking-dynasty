@@ -133,7 +133,7 @@ func _on_start_raid_pressed() -> void:
 	if SettlementManager.current_settlement.garrisoned_units.is_empty():
 		print("Warning: No units in garrison. Adding test unit for raid.")
 		# Add a test unit so the raid can proceed
-		var test_unit_path = "res://data/units/VikingRaider.tres"
+		var test_unit_path = "res://data/units/Unit_Raider.tres"
 		SettlementManager.current_settlement.garrisoned_units[test_unit_path] = 2
 		SettlementManager.save_settlement()
 	

@@ -70,9 +70,27 @@ var is_selected: bool = false
 func set_selected(selected: bool) -> void:
 	"""Set the unit's selection state"""
 	is_selected = selected
-	# Visual feedback for selection could be added here
-	# For example: change sprite color, add selection ring, etc.
+	
 	if is_selected:
+		_show_selection_indicator()
 		print("%s selected" % data.display_name)
 	else:
+		_hide_selection_indicator()
 		print("%s deselected" % data.display_name)
+
+func _show_selection_indicator() -> void:
+	"""Show visual selection indicator"""
+	queue_redraw()
+
+func _hide_selection_indicator() -> void:
+	"""Hide visual selection indicator"""
+	queue_redraw()
+
+func _draw() -> void:
+	"""Draw unit-specific visuals"""
+	if is_selected:
+		# Draw selection circle around the unit
+		var radius = 25.0
+		var color = Color.YELLOW
+		color.a = 0.8
+		draw_circle(Vector2.ZERO, radius, color, false, 3.0)

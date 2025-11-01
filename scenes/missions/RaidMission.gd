@@ -76,13 +76,15 @@ func _load_enemy_base() -> void:
 
 func _spawn_player_garrison() -> void:
 	"""Spawn player units from the garrison"""
-	print("Spawning player garrison...")
+	print("=== SPAWNING PLAYER GARRISON ===")
 	print("SettlementManager status: %s" % SettlementManager.get_settlement_status())
+	print("Current settlement exists: %s" % (SettlementManager.current_settlement != null))
+	if SettlementManager.current_settlement:
+		print("Garrison data: %s" % SettlementManager.current_settlement.garrisoned_units)
 	
 	if not SettlementManager.current_settlement:
-		push_error("No current settlement found")
-		push_error("This usually means the raid was started without going through SettlementBridge")
-		push_error("Expected flow: SettlementBridge -> Start Raid -> RaidMission")
+		print("No current settlement found - spawning test units for demo")
+		_spawn_test_units()
 		return
 	
 	var garrison = SettlementManager.current_settlement.garrisoned_units
@@ -133,6 +135,106 @@ func _spawn_player_garrison() -> void:
 			if current_col >= units_per_row:
 				current_col = 0
 				current_row += 1
+
+func _spawn_test_units() -> void:
+	"""Spawn test units for demonstration when no settlement is available"""
+	print("Spawning test units for box selection demo...")
+	
+	# Create basic unit scene manually for testing
+	var units_per_row: int = 3
+	var current_row: int = 0
+	var current_col: int = 0
+	
+	# Spawn 6 test units in formation
+	for i in range(6):
+		var test_unit = CharacterBody2D.new()
+		test_unit.name = "TestUnit_" + str(i)
+		
+		# Add a visual sprite (simple colored square)
+		var sprite = ColorRect.new()
+		sprite.size = Vector2(20, 20)
+		sprite.color = Color.BLUE
+		sprite.position = Vector2(-10, -10)  # Center the square
+		test_unit.add_child(sprite)
+		
+		# Add collision shape for physics detection
+		var collision = CollisionShape2D.new()
+		var shape = RectangleShape2D.new()
+		shape.size = Vector2(20, 20)
+		collision.shape = shape
+		test_unit.add_child(collision)
+		
+		# Calculate spawn position in formation
+		var spawn_pos: Vector2 = player_spawn_pos.global_position
+		spawn_pos.x += current_col * 60  # 60 pixels apart horizontally
+		spawn_pos.y += current_row * 60  # 60 pixels apart vertically
+		test_unit.global_position = spawn_pos
+		
+		# Add to player group for RTS selection
+		test_unit.add_to_group("player_units")
+		
+		# Add basic selection and movement functionality 
+		var script_source = """
+extends CharacterBody2D
+
+var is_selected: bool = false
+var target_position: Vector2 = Vector2.ZERO
+var move_speed: float = 100.0
+var is_moving: bool = false
+
+func set_selected(selected: bool) -> void:
+	is_selected = selected
+	queue_redraw()
+	print('%s %s' % [name, 'selected' if selected else 'deselected'])
+
+func _draw() -> void:
+	if is_selected:
+		var radius = 15.0
+		var color = Color.YELLOW
+		color.a = 0.8
+		draw_circle(Vector2.ZERO, radius, color, false, 2.0)
+
+func command_move_to(target_pos: Vector2) -> void:
+	target_position = target_pos
+	is_moving = true
+	print('%s moving to %s' % [name, target_pos])
+
+func command_attack(target: Node2D) -> void:
+	print('%s received attack command on %s' % [name, target.name])
+
+func set_target_position(pos: Vector2) -> void:
+	target_position = pos
+	is_moving = true
+
+func _physics_process(delta: float) -> void:
+	if is_moving and target_position != Vector2.ZERO:
+		var direction = (target_position - global_position).normalized()
+		var distance = global_position.distance_to(target_position)
+		
+		if distance < 5.0:
+			is_moving = false
+			velocity = Vector2.ZERO
+		else:
+			velocity = direction * move_speed
+		
+		move_and_slide()
+"""
+		var temp_script = GDScript.new()
+		temp_script.source_code = script_source
+		temp_script.reload()
+		test_unit.set_script(temp_script)
+		
+		# Add to scene and track
+		add_child(test_unit)
+		player_units.append(test_unit)
+		
+		print("Spawned test unit: %s at %s" % [test_unit.name, spawn_pos])
+		
+		# Update formation position
+		current_col += 1
+		if current_col >= units_per_row:
+			current_col = 0
+			current_row += 1
 
 func _setup_rts_controller() -> void:
 	"""Create and setup the RTS controller"""

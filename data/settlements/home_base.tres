@@ -1,14 +1,14 @@
-[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://c1e4vac5rjkf4"]
+[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3]
 
-[ext_resource type="Script" uid="uid://hlb8s5g0yp6k" path="res://data/settlements/SettlementData.gd" id="1_abcde"]
+[ext_resource type="Script" path="res://data/settlements/SettlementData.gd" id="1_abcde"]
 
 [resource]
 script = ExtResource("1_abcde")
 treasury = {
-"food": 200,
+"food": 25,
 "gold": 1000,
 "stone": 700,
-"wood": 230
+"wood": 560
 }
 placed_buildings = Array[Dictionary]([{
 "grid_position": Vector2i(25, 15),
@@ -57,5 +57,5 @@ placed_buildings = Array[Dictionary]([{
 "resource_path": "res://data/buildings/LumberYard.tres"
 }])
 garrisoned_units = {
-"res://data/units/Unit_Raider.tres": 5
+"res://data/units/Unit_Raider.tres": 12
 }
