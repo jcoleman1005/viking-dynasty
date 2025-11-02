@@ -11,12 +11,15 @@ extends Control
 @onready var recruit_buttons_container: VBoxContainer = $PanelContainer/MarginContainer/TabContainer/RecruitTab/RecruitButtons
 @onready var garrison_list_container: VBoxContainer = $PanelContainer/MarginContainer/TabContainer/RecruitTab/GarrisonList
 
-# --- Data ---
+# --- Exported Data ---
+@export var available_buildings: Array[BuildingData] = []
+@export var available_units: Array[UnitData] = []
+@export var default_treasury_display: Dictionary = {"gold": 0, "wood": 0, "food": 0, "stone": 0}
+@export var auto_load_units_from_directory: bool = true
+
+# Legacy data (kept for fallback)
 var wall_data: BuildingData = preload("res://data/buildings/Bldg_Wall.tres")
 var lumber_yard_data: BuildingData = preload("res://data/buildings/LumberYard.tres")
-
-# Array to store all available unit data
-var available_units: Array[UnitData] = []
 
 func _ready() -> void:
 	EventBus.treasury_updated.connect(_update_treasury_display)
@@ -25,7 +28,7 @@ func _ready() -> void:
 	if SettlementManager.current_settlement:
 		_update_treasury_display(SettlementManager.current_settlement.treasury)
 	else:
-		_update_treasury_display({"gold": 0, "wood": 0, "food": 0, "stone": 0})
+		_update_treasury_display(default_treasury_display)
 
 	buy_wall_button.pressed.connect(_on_buy_button_pressed.bind(wall_data))
 	buy_lumber_yard_button.pressed.connect(_on_buy_button_pressed.bind(lumber_yard_data))

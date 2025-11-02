@@ -10,14 +10,16 @@ const TILE_SIZE: int = 32
 const GRID_WIDTH: int = 50
 const GRID_HEIGHT: int = 30
 
-func _initialize_grid() -> void:
+func _ready() -> void:
+	# Initialize the grid as soon as the manager is ready.
+	# This ensures astar_grid is never null after this point.
 	astar_grid = AStarGrid2D.new()
 	var playable_rect := Rect2i(0, 0, GRID_WIDTH, GRID_HEIGHT)
 	astar_grid.region = playable_rect
 	astar_grid.cell_size = Vector2(TILE_SIZE, TILE_SIZE)
 	astar_grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_NEVER
 	astar_grid.update()
-	print("Settlement Grid Initialized.")
+	print("Settlement Grid Initialized on ready.")
 
 func load_settlement(data: SettlementData) -> void:
 	if not data:
@@ -27,7 +29,9 @@ func load_settlement(data: SettlementData) -> void:
 	current_settlement = data
 	print("SettlementManager: Settlement loaded - %s" % current_settlement.resource_path)
 	print("SettlementManager: Garrison units: %s" % current_settlement.garrisoned_units)
-	_initialize_grid()
+	
+	# The grid already exists. Clear its state before loading new buildings.
+	astar_grid.clear()
 	
 	for child in building_container.get_children():
 		child.queue_free()
@@ -42,7 +46,10 @@ func load_settlement(data: SettlementData) -> void:
 		else:
 			push_error("Failed to load building resource from path: %s" % building_res_path)
 	
+	# Update the grid once after all new solid points have been set
+	astar_grid.update()
 	print("Settlement loaded with %d buildings." % building_container.get_child_count())
+
 
 func place_building(building_data: BuildingData, grid_position: Vector2i) -> BaseBuilding:
 	if not building_data or not building_data.scene_to_spawn:
@@ -76,6 +83,7 @@ func deposit_resources(loot: Dictionary) -> void:
 			current_settlement.treasury[resource_type] = loot[resource_type]
 	EventBus.treasury_updated.emit(current_settlement.treasury)
 	print("Loot deposited. New treasury: %s" % current_settlement.treasury)
+	save_settlement()
 
 func attempt_purchase(item_cost: Dictionary) -> bool:
 	if not current_settlement: return false

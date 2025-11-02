@@ -4,8 +4,13 @@
 
 extends Node2D
 
-# Enemy base configuration
+# --- Exported Mission Configuration ---
 @export var enemy_base_data: SettlementData
+@export var default_enemy_base_path: String = "res://data/settlements/monastery_base.tres"
+@export var victory_bonus_loot: Dictionary = {"gold": 200}
+@export var player_spawn_formation: Dictionary = {"units_per_row": 5, "spacing": 40}
+@export var mission_difficulty: float = 1.0
+@export var allow_retreat: bool = true
 
 # Node references
 @onready var player_spawn_pos: Marker2D = $PlayerStartPosition
@@ -278,38 +283,92 @@ func _setup_win_loss_conditions() -> void:
 
 func _check_loss_condition() -> void:
 	"""Check if all player units are destroyed (loss condition)"""
-	# Check every 2 seconds
-	await get_tree().create_timer(2.0).timeout
+	# Check every 1 second for responsive feedback
+	await get_tree().create_timer(1.0).timeout
 	
 	# Count remaining player units
 	var remaining_units = 0
 	for unit in player_units:
-		if is_instance_valid(unit):
+		if is_instance_valid(unit) and not unit.is_queued_for_deletion():
 			remaining_units += 1
 	
 	# Update the array to remove invalid units
-	player_units = player_units.filter(func(unit): return is_instance_valid(unit))
+	player_units = player_units.filter(func(unit): return is_instance_valid(unit) and not unit.is_queued_for_deletion())
+	
+	print("Loss check: %d units remaining" % remaining_units)
 	
 	if remaining_units == 0:
 		_on_mission_failed()
 		return
 	
-	# Continue checking if mission is still active
-	if not enemy_hall or is_instance_valid(enemy_hall):
+	# Continue checking if mission is still active (enemy hall still exists)
+	if is_instance_valid(enemy_hall):
 		_check_loss_condition()
+	else:
+		print("Loss condition checking stopped - enemy hall destroyed or mission ended")
 
 func _on_mission_failed() -> void:
 	"""Called when all player units are destroyed"""
 	print("Mission Failed! All units destroyed.")
 	
-	# Show failure message (could be a popup in the future)
-	print("Returning to settlement with no loot...")
+	# Show failure message UI
+	_show_failure_message()
 	
-	# Wait a moment for effect, then return to settlement
-	await get_tree().create_timer(2.0).timeout
+	# Wait for UI display, then return to settlement
+	await get_tree().create_timer(3.0).timeout
 	
 	# Return to settlement bridge with no loot gain
 	get_tree().change_scene_to_file("res://scenes/levels/SettlementBridge.tscn")
+
+func _show_failure_message() -> void:
+	"""Display the mission failure message to the player"""
+	# Create failure message UI
+	var failure_popup = Control.new()
+	failure_popup.name = "FailurePopup"
+	failure_popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	
+	# Semi-transparent background
+	var bg_panel = Panel.new()
+	bg_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	bg_panel.modulate = Color(0, 0, 0, 0.7)
+	failure_popup.add_child(bg_panel)
+	
+	# Message container
+	var message_container = VBoxContainer.new()
+	message_container.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	message_container.position = Vector2(-150, -75)
+	message_container.size = Vector2(300, 150)
+	
+	# Main message
+	var failure_label = Label.new()
+	failure_label.text = "RAID FAILED!"
+	failure_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	failure_label.add_theme_font_size_override("font_size", 32)
+	failure_label.add_theme_color_override("font_color", Color.RED)
+	message_container.add_child(failure_label)
+	
+	# Subtitle
+	var subtitle_label = Label.new()
+	subtitle_label.text = "All units destroyed"
+	subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle_label.add_theme_font_size_override("font_size", 18)
+	subtitle_label.add_theme_color_override("font_color", Color.WHITE)
+	message_container.add_child(subtitle_label)
+	
+	# Return message
+	var return_label = Label.new()
+	return_label.text = "Returning to settlement..."
+	return_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	return_label.add_theme_font_size_override("font_size", 14)
+	return_label.add_theme_color_override("font_color", Color.GRAY)
+	message_container.add_child(return_label)
+	
+	failure_popup.add_child(message_container)
+	
+	# Add to scene as top layer
+	add_child(failure_popup)
+	
+	print("Failure message displayed")
 
 func _on_enemy_hall_destroyed() -> void:
 	"""Called when the enemy's Great Hall is destroyed"""

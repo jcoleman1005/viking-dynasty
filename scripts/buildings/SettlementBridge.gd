@@ -2,11 +2,16 @@
 
 extends Node
 
-# --- Preloaded Assets ---
-var test_building_data: BuildingData = preload("res://data/buildings/Bldg_Wall.tres")
-var raider_scene: PackedScene = preload("res://scenes/units/VikingRaider.tscn")
-var home_base_data: SettlementData = preload("res://data/settlements/home_base.tres")
-var welcome_popup_scene: PackedScene = preload("res://ui/WelcomeHome_Popup.tscn")
+# --- Exported Resources ---
+@export var home_base_data: SettlementData
+@export var test_building_data: BuildingData
+@export var raider_scene: PackedScene
+@export var welcome_popup_scene: PackedScene
+
+# --- Default Assets (fallback) ---
+var default_test_building: BuildingData = preload("res://data/buildings/Bldg_Wall.tres")
+var default_raider_scene: PackedScene = preload("res://scenes/units/VikingRaider.tscn")
+var default_welcome_popup: PackedScene = preload("res://ui/WelcomeHome_Popup.tscn")
 
 # --- Scene Node References ---
 @onready var unit_container: Node2D = $UnitContainer
@@ -24,8 +29,29 @@ const RAIDER_SPAWN_POS: Vector2 = Vector2(50, 50)
 
 
 func _ready() -> void:
-	# --- Setup ---
+	# --- Deferred Setup ---
+	await get_tree().process_frame
+	
+	# Setup fallback resources if not set in inspector
+	if not test_building_data:
+		test_building_data = default_test_building
+	if not raider_scene:
+		raider_scene = default_raider_scene
+	if not welcome_popup_scene:
+		welcome_popup_scene = default_welcome_popup
+	
+	# Use inspector data if available, otherwise create default
+	if not home_base_data:
+		home_base_data = SettlementData.new()
+		home_base_data.treasury = {"gold": 1000, "wood": 500, "food": 100, "stone": 200}
+		home_base_data.placed_buildings = []
+		home_base_data.garrisoned_units = {}
+		print("DEBUG: Created default settlement data")
+	else:
+		print("DEBUG: Using inspector settlement data")
+	
 	SettlementManager.load_settlement(home_base_data)
+	print("DEBUG: SettlementManager.current_settlement is: ", SettlementManager.current_settlement)
 	_find_and_setup_great_hall()
 	_instance_ui()
 	
@@ -49,15 +75,22 @@ func _input(event: InputEvent) -> void:
 		if game_is_over or welcome_popup.visible:
 			return # Don't grant loot if game over screen or popup is visible
 		
+		print("DEBUG: SettlementManager.current_settlement before deposit: ", SettlementManager.current_settlement)
 		var sample_loot = {"gold": 100, "wood": 50, "food": 25, "stone": 75}
 		print("DEBUG: Granting sample loot via key press.")
-		SettlementManager.deposit_loot(sample_loot)
+		SettlementManager.deposit_resources(sample_loot)
+		
+		# DEBUG: Ensure storefront UI is visible to see the update
+		if not storefront_ui.visible:
+			storefront_ui.show()
+			print("DEBUG: Showed storefront UI to display updated treasury")
+		
 		get_viewport().set_input_as_handled() # CRITICAL: Stop event from reaching buttons
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	# This runs AFTER GUI input, so it's safe for non-UI actions like placing buildings.
-	if game_is_over or welcome_popup.visible:
+	if game_is_over or (welcome_popup and welcome_popup.visible):
 		return
 		
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.is_pressed():
@@ -72,7 +105,7 @@ func _instance_ui() -> void:
 	welcome_popup.collect_button_pressed.connect(_on_payout_collected)
 
 func _on_payout_collected(payout: Dictionary) -> void:
-	SettlementManager.deposit_loot(payout)
+	SettlementManager.deposit_resources(payout)
 	start_attack_button.disabled = false # Re-enable combat
 	storefront_ui.show()
 
@@ -121,24 +154,23 @@ func _on_start_attack_pressed() -> void:
 	storefront_ui.hide()
 
 func _on_start_raid_pressed() -> void:
-	"""Start a raid mission - ensures settlement persists and transitions properly"""
-	print("Starting raid mission...")
+	"""Navigate to the world map to select targets"""
+	print("Opening world map...")
 	
 	# Validate that we have a settlement loaded
 	if not SettlementManager.current_settlement:
-		push_error("Cannot start raid: No settlement loaded")
+		push_error("Cannot open world map: No settlement loaded")
 		return
 	
-	# Ensure we have some units in the garrison for the raid
+	# Ensure we have some units in the garrison for raiding
 	if SettlementManager.current_settlement.garrisoned_units.is_empty():
-		print("Warning: No units in garrison. Adding test unit for raid.")
-		# Add a test unit so the raid can proceed
+		print("Warning: No units in garrison. Adding test unit.")
+		# Add a test unit so raids can proceed
 		var test_unit_path = "res://data/units/Unit_Raider.tres"
 		SettlementManager.current_settlement.garrisoned_units[test_unit_path] = 2
 		SettlementManager.save_settlement()
 	
 	print("Settlement loaded with garrison: %s" % SettlementManager.current_settlement.garrisoned_units)
 	
-	# Transition to the raid mission scene
-	# The SettlementManager (autoload) will persist the current_settlement across scenes
-	get_tree().change_scene_to_file("res://scenes/missions/RaidMission.tscn")
+	# Navigate to world map instead of direct raid
+	get_tree().change_scene_to_file("res://scenes/world_map/WorldMap_Stub.tscn")

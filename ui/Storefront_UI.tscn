@@ -1,11 +1,17 @@
 [gd_scene load_steps=2 format=3 uid="uid://btovbm7r6nern"]
 
-[ext_resource type="Script" uid="uid://t708tcf43ayu" path="res://ui/StorefrontUI.gd" id="1_ih31k"]
+[ext_resource type="Script" uid="uid://t708tcf43ayu" path="res://ui/StorefrontUI.gd" id="1_ht1qg"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
 anchors_preset = 0
-script = ExtResource("1_ih31k")
+script = ExtResource("1_ht1qg")
+default_treasury_display = {
+"food": 100,
+"gold": 100,
+"stone": 100,
+"wood": 100
+}
 
 [node name="PanelContainer" type="PanelContainer" parent="."]
 layout_mode = 1
@@ -15,6 +21,10 @@ offset_bottom = 100.0
 
 [node name="MarginContainer" type="MarginContainer" parent="PanelContainer"]
 layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
 
 [node name="TabContainer" type="TabContainer" parent="PanelContainer/MarginContainer"]
 layout_mode = 2
@@ -23,37 +33,44 @@ current_tab = 0
 [node name="BuildTab" type="VBoxContainer" parent="PanelContainer/MarginContainer/TabContainer"]
 layout_mode = 2
 metadata/_tab_index = 0
-metadata/_tab_name = "Build"
 
 [node name="TreasuryDisplay" type="HBoxContainer" parent="PanelContainer/MarginContainer/TabContainer/BuildTab"]
 layout_mode = 2
 
 [node name="GoldLabel" type="Label" parent="PanelContainer/MarginContainer/TabContainer/BuildTab/TreasuryDisplay"]
 layout_mode = 2
+text = "Gold: 0"
 
 [node name="WoodLabel" type="Label" parent="PanelContainer/MarginContainer/TabContainer/BuildTab/TreasuryDisplay"]
 layout_mode = 2
+text = "Wood: 0"
 
 [node name="FoodLabel" type="Label" parent="PanelContainer/MarginContainer/TabContainer/BuildTab/TreasuryDisplay"]
 layout_mode = 2
+text = "Food: 0"
 
 [node name="StoneLabel" type="Label" parent="PanelContainer/MarginContainer/TabContainer/BuildTab/TreasuryDisplay"]
 layout_mode = 2
+text = "Stone: 0"
 
 [node name="BuildButtons" type="HBoxContainer" parent="PanelContainer/MarginContainer/TabContainer/BuildTab"]
 layout_mode = 2
 
 [node name="BuyWallButton" type="Button" parent="PanelContainer/MarginContainer/TabContainer/BuildTab/BuildButtons"]
 layout_mode = 2
+text = "Wall"
 
 [node name="BuyLumberYardButton" type="Button" parent="PanelContainer/MarginContainer/TabContainer/BuildTab/BuildButtons"]
 layout_mode = 2
+text = "Lumber Yard"
 
 [node name="RecruitTab" type="VBoxContainer" parent="PanelContainer/MarginContainer/TabContainer"]
 visible = false
 layout_mode = 2
 metadata/_tab_index = 1
-metadata/_tab_name = "Recruit"
 
 [node name="RecruitButtons" type="VBoxContainer" parent="PanelContainer/MarginContainer/TabContainer/RecruitTab"]
+layout_mode = 2
+
+[node name="GarrisonList" type="VBoxContainer" parent="PanelContainer/MarginContainer/TabContainer/RecruitTab"]
 layout_mode = 2

@@ -1,7 +1,6 @@
 res://scenes/missions/RaidMission.gd
-res://ui/StorefrontUI.gd
-res://autoload/SettlementManager.gd
-res://data/missions/RaidLootData.gd
-res://scripts/ai/SentryAI.gd
-res://scenes/missions/RaidMission.tscn
+res://addons/GodotAiSuite/Masterprompt.txt
+res://scenes/units/VikingRaider.tscn
+res://data/units/Unit_Raider.tres
+res://scenes/levels/SettlementBridge.tscn
 res://placeholder_tile.tres
