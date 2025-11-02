@@ -9,6 +9,7 @@ extends Control
 @onready var buy_wall_button: Button = $PanelContainer/MarginContainer/TabContainer/BuildTab/BuildButtons/BuyWallButton
 @onready var buy_lumber_yard_button: Button = $PanelContainer/MarginContainer/TabContainer/BuildTab/BuildButtons/BuyLumberYardButton
 @onready var recruit_buttons_container: VBoxContainer = $PanelContainer/MarginContainer/TabContainer/RecruitTab/RecruitButtons
+@onready var garrison_list_container: VBoxContainer = $PanelContainer/MarginContainer/TabContainer/RecruitTab/GarrisonList
 
 # --- Data ---
 var wall_data: BuildingData = preload("res://data/buildings/Bldg_Wall.tres")
@@ -19,6 +20,7 @@ var available_units: Array[UnitData] = []
 
 func _ready() -> void:
 	EventBus.treasury_updated.connect(_update_treasury_display)
+	EventBus.purchase_successful.connect(_on_purchase_successful)
 	
 	if SettlementManager.current_settlement:
 		_update_treasury_display(SettlementManager.current_settlement.treasury)
@@ -31,6 +33,7 @@ func _ready() -> void:
 	# Load and setup recruit buttons
 	_load_unit_data()
 	_setup_recruit_buttons()
+	_update_garrison_display()
 
 func _load_unit_data() -> void:
 	"""Scan res://data/units/ directory for .tres files and load them as UnitData"""
@@ -105,3 +108,60 @@ func _on_recruit_button_pressed(unit_data: UnitData) -> void:
 		SettlementManager.recruit_unit(unit_data)
 	else:
 		print("UI received purchase failure for '%s'." % unit_data.display_name)
+
+func _on_purchase_successful(item_name: String) -> void:
+	"""Handle purchase success event - refresh garrison display"""
+	_update_garrison_display()
+
+func _update_garrison_display() -> void:
+	"""Update the garrison list display with current garrisoned units"""
+	if not garrison_list_container:
+		return
+	
+	# Clear existing display
+	for child in garrison_list_container.get_children():
+		child.queue_free()
+	
+	if not SettlementManager.current_settlement:
+		var no_settlement_label = Label.new()
+		no_settlement_label.text = "No settlement loaded"
+		garrison_list_container.add_child(no_settlement_label)
+		return
+	
+	var garrison = SettlementManager.current_settlement.garrisoned_units
+	
+	if garrison.is_empty():
+		var empty_garrison_label = Label.new()
+		empty_garrison_label.text = "No units in garrison"
+		garrison_list_container.add_child(empty_garrison_label)
+		return
+	
+	# Add header
+	var header_label = Label.new()
+	header_label.text = "Current Garrison:"
+	header_label.add_theme_font_size_override("font_size", 16)
+	garrison_list_container.add_child(header_label)
+	
+	# Display each unit type and count
+	for unit_path in garrison:
+		var unit_count: int = garrison[unit_path]
+		var unit_data: UnitData = load(unit_path)
+		
+		if unit_data:
+			var unit_label = Label.new()
+			unit_label.text = "• %s x%d" % [unit_data.display_name, unit_count]
+			garrison_list_container.add_child(unit_label)
+		else:
+			var error_label = Label.new()
+			error_label.text = "• Unknown unit x%d" % unit_count
+			garrison_list_container.add_child(error_label)
+	
+	# Add total count
+	var total_units = 0
+	for unit_path in garrison:
+		total_units += garrison[unit_path]
+	
+	var total_label = Label.new()
+	total_label.text = "Total units: %d" % total_units
+	total_label.add_theme_font_size_override("font_size", 12)
+	garrison_list_container.add_child(total_label)

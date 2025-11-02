@@ -65,7 +65,7 @@ func place_building(building_data: BuildingData, grid_position: Vector2i) -> Bas
 		
 	return new_building
 
-func deposit_loot(loot: Dictionary) -> void:
+func deposit_resources(loot: Dictionary) -> void:
 	if not current_settlement: return
 	for resource_type in loot:
 		if current_settlement.treasury.has(resource_type):

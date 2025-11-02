@@ -14,9 +14,14 @@ var rts_controller: Node = null
 
 # Mission state
 var player_units: Array[Node2D] = []
+var raid_loot: RaidLootData = null
 
 func _ready() -> void:
 	print("RaidMission starting...")
+	
+	# Initialize loot tracking system
+	raid_loot = RaidLootData.new()
+	print("Raid loot system initialized")
 	
 	# Load default enemy base if none specified
 	if not enemy_base_data:
@@ -28,6 +33,7 @@ func _ready() -> void:
 	_load_enemy_base()
 	_spawn_player_garrison()
 	_setup_rts_controller()
+	_setup_win_loss_conditions()
 
 func _load_enemy_base() -> void:
 	"""Load and instance the enemy's base from SettlementData"""
@@ -66,9 +72,13 @@ func _load_enemy_base() -> void:
 		if building_data.display_name.to_lower().contains("hall") or building_data.display_name.to_lower().contains("great"):
 			enemy_hall = building_instance
 			print("Found enemy hall: %s" % building_data.display_name)
-			# Connect to building destroyed signal
+			# Connect to building destroyed signal for win condition
 			if building_instance.has_signal("building_destroyed"):
 				building_instance.building_destroyed.connect(_on_enemy_hall_destroyed)
+		
+		# Connect ALL buildings to loot collection system
+		if building_instance.has_signal("building_destroyed"):
+			building_instance.building_destroyed.connect(_on_enemy_building_destroyed.bind(building_data))
 		
 		# Add to scene
 		add_child(building_instance)
@@ -255,17 +265,67 @@ func _setup_rts_controller() -> void:
 	
 	print("RTS controller setup complete")
 
+func _on_enemy_building_destroyed(building_data: BuildingData) -> void:
+	"""Called when any enemy building is destroyed - collect loot"""
+	if raid_loot:
+		raid_loot.add_loot_from_building(building_data)
+		print("Building destroyed: %s | %s" % [building_data.display_name, raid_loot.get_loot_summary()])
+
+func _setup_win_loss_conditions() -> void:
+	"""Setup win/loss condition monitoring"""
+	# Start periodic check for loss condition (all player units destroyed)
+	_check_loss_condition()
+
+func _check_loss_condition() -> void:
+	"""Check if all player units are destroyed (loss condition)"""
+	# Check every 2 seconds
+	await get_tree().create_timer(2.0).timeout
+	
+	# Count remaining player units
+	var remaining_units = 0
+	for unit in player_units:
+		if is_instance_valid(unit):
+			remaining_units += 1
+	
+	# Update the array to remove invalid units
+	player_units = player_units.filter(func(unit): return is_instance_valid(unit))
+	
+	if remaining_units == 0:
+		_on_mission_failed()
+		return
+	
+	# Continue checking if mission is still active
+	if not enemy_hall or is_instance_valid(enemy_hall):
+		_check_loss_condition()
+
+func _on_mission_failed() -> void:
+	"""Called when all player units are destroyed"""
+	print("Mission Failed! All units destroyed.")
+	
+	# Show failure message (could be a popup in the future)
+	print("Returning to settlement with no loot...")
+	
+	# Wait a moment for effect, then return to settlement
+	await get_tree().create_timer(2.0).timeout
+	
+	# Return to settlement bridge with no loot gain
+	get_tree().change_scene_to_file("res://scenes/levels/SettlementBridge.tscn")
+
 func _on_enemy_hall_destroyed() -> void:
 	"""Called when the enemy's Great Hall is destroyed"""
 	print("Enemy Hall destroyed! Mission success!")
 	
-	# Define loot payload
-	var loot: Dictionary = {"gold": 500, "food": 200}
+	# Use the dynamic loot system
+	var total_loot = raid_loot.get_total_loot()
+	
+	# Add bonus loot for completing the main objective
+	raid_loot.add_loot("gold", 200)  # Bonus gold for victory
+	total_loot = raid_loot.get_total_loot()
 	
 	# Deposit loot to player settlement
-	SettlementManager.deposit_loot(loot)
+	SettlementManager.deposit_resources(total_loot)
 	
-	print("Loot deposited: %s" % loot)
+	print("Mission Complete! %s" % raid_loot.get_loot_summary())
 	
 	# Wait a moment for effect, then return to settlement
 	await get_tree().create_timer(2.0).timeout
