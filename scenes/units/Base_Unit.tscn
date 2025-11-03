@@ -1,13 +1,14 @@
 [gd_scene load_steps=4 format=3 uid="uid://bky4c6y8fkk8g"]
 
-[ext_resource type="Script" uid="uid://djhncrlnql4ae" path="res://scripts/units/Base_Unit.gd" id="1_v38m3"]
-[ext_resource type="Texture2D" uid="uid://bg2e08mncpjg1" path="res://textures/placeholders/unit_placeholder.tres" id="2_lfiq5"]
+[ext_resource type="Script" uid="uid://djhncrlnql4ae" path="res://scripts/units/Base_Unit.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://pwi4bv5ch827" path="res://textures/placeholders/unit_placeholder.png" id="2_lfiq5"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_n6s0a"]
 size = Vector2(16, 16)
 
 [node name="Base_Unit" type="CharacterBody2D"]
-script = ExtResource("1_v38m3")
+collision_layer = 2
+script = ExtResource("1_script")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture = ExtResource("2_lfiq5")

@@ -1,82 +1,14 @@
-[gd_scene load_steps=7 format=3 uid="uid://c53k15q2w8c1a"]
+[gd_scene load_steps=6 format=3 uid="uid://c53k15q2w8c1a"]
 
 [ext_resource type="PackedScene" uid="uid://cpe46srqjmdh6" path="res://scenes/levels/DefensiveMicro.tscn" id="1_a26h3"]
 [ext_resource type="PackedScene" uid="uid://dqh0xu88khxct" path="res://ui/WelcomeHome_Popup.tscn" id="2_5el12"]
+[ext_resource type="Resource" path="res://data/settlements/home_base_fixed.tres" id="2_b34qi"]
 [ext_resource type="Script" uid="uid://dafjxa85ci2rx" path="res://scripts/buildings/SettlementBridge.gd" id="2_c48a7"]
 [ext_resource type="PackedScene" uid="uid://btovbm7r6nern" path="res://ui/Storefront_UI.tscn" id="3_vj45l"]
 
-[sub_resource type="GDScript" id="GDScript_cwoii"]
-script/source = "extends Resource
-
-@export var treasury: Dictionary = {\"gold\": 0, \"wood\": 0, \"food\": 0, \"stone\": 0}
-
-# Stores building data and position. Structure:
-# {\"resource_path\": \"res://...\", \"grid_position\": Vector2i(x, y)}
-@export var placed_buildings: Array[Dictionary] = []
-
-# Stores unit type (path) and count (int)
-# Example: {\"res://data/units/Unit_Raider.tres\": 3}
-@export var garrisoned_units: Dictionary = {}
-"
-
-[sub_resource type="Resource" id="Resource_83qlv"]
-script = SubResource("GDScript_cwoii")
-treasury = {
-"food": 100,
-"gold": 1660,
-"stone": 1225,
-"wood": 1410
-}
-placed_buildings = Array[Dictionary]([{
-"grid_position": Vector2i(25, 15),
-"resource_path": "res://data/buildings/Bldg_GreatHall.tres"
-}, {
-"grid_position": Vector2i(10, 15),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(10, 15),
-"resource_path": "res://data/buildings/Bldg_Wall.tres"
-}, {
-"grid_position": Vector2i(10, 15),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(10, 15),
-"resource_path": "res://data/buildings/Bldg_Wall.tres"
-}, {
-"grid_position": Vector2i(10, 15),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(10, 15),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(10, 15),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(10, 15),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(10, 15),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(10, 15),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(10, 15),
-"resource_path": "res://data/buildings/Bldg_Wall.tres"
-}, {
-"grid_position": Vector2i(10, 15),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(10, 15),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}])
-garrisoned_units = {
-"res://data/units/Unit_PlayerRaider.tres": 4
-}
-
 [node name="SettlementBridge" type="Node"]
 script = ExtResource("2_c48a7")
-home_base_data = SubResource("Resource_83qlv")
+home_base_data = ExtResource("2_b34qi")
 welcome_popup_scene = ExtResource("2_5el12")
 
 [node name="DefensiveMicro" parent="." instance=ExtResource("1_a26h3")]

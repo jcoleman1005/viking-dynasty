@@ -31,11 +31,33 @@ func load_settlement(data: SettlementData) -> void:
 		return
 	
 	current_settlement = data
+	
+	# Ensure resource_path is set for saving later
+	if not current_settlement.resource_path or current_settlement.resource_path.is_empty():
+		# Try to determine the path from how it was loaded
+		if data.resource_path and not data.resource_path.is_empty():
+			current_settlement.resource_path = data.resource_path
+		else:
+			# Fallback: assume it's the home base file
+			current_settlement.resource_path = "res://data/settlements/home_base_fixed.tres"
+			print("SettlementManager: Set fallback resource_path to: %s" % current_settlement.resource_path)
+	
 	print("SettlementManager: Settlement loaded - %s" % current_settlement.resource_path)
 	print("SettlementManager: Garrison units: %s" % current_settlement.garrisoned_units)
 	
 	# The grid already exists. Clear its state before loading new buildings.
+	# Note: clear() resets the region to (0,0,0,0), so we must reinitialize
 	astar_grid.clear()
+	
+	# Reinitialize grid parameters after clear()
+	var playable_rect := Rect2i(0, 0, GRID_WIDTH, GRID_HEIGHT)
+	astar_grid.region = playable_rect
+	astar_grid.cell_size = Vector2(TILE_SIZE, TILE_SIZE)
+	astar_grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_NEVER
+	
+	# CRITICAL: Update the grid after setting parameters
+	astar_grid.update()
+	print("AStarGrid reinitialized: %dx%d cells" % [GRID_WIDTH, GRID_HEIGHT])
 	
 	for child in building_container.get_children():
 		child.queue_free()
@@ -145,8 +167,24 @@ func get_astar_path(start_pos: Vector2, end_pos: Vector2) -> PackedVector2Array:
 	if not astar_grid:
 		push_error("AStarGrid is not initialized!")
 		return PackedVector2Array()
+	
+	# Check if grid region is properly set
+	if astar_grid.region.size.x <= 0 or astar_grid.region.size.y <= 0:
+		push_error("AStarGrid region is invalid: %s. Grid was likely cleared but not reinitialized." % astar_grid.region)
+		return PackedVector2Array()
+	
 	var start_id: Vector2i = Vector2i(start_pos / astar_grid.cell_size)
 	var end_id: Vector2i = Vector2i(end_pos / astar_grid.cell_size)
+	
+	# Check bounds before calling get_point_path
+	if start_id.x < 0 or start_id.x >= astar_grid.region.size.x or start_id.y < 0 or start_id.y >= astar_grid.region.size.y:
+		push_error("Start position (%s) -> grid_id (%s) is out of bounds. Grid size: %s" % [start_pos, start_id, astar_grid.region.size])
+		return PackedVector2Array()
+	
+	if end_id.x < 0 or end_id.x >= astar_grid.region.size.x or end_id.y < 0 or end_id.y >= astar_grid.region.size.y:
+		push_error("End position (%s) -> grid_id (%s) is out of bounds. Grid size: %s" % [end_pos, end_id, astar_grid.region.size])
+		return PackedVector2Array()
+	
 	return astar_grid.get_point_path(start_id, end_id)
 
 func recruit_unit(unit_data: UnitData) -> void:

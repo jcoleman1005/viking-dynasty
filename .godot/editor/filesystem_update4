@@ -1,1 +1,11 @@
+res://scenes/units/Base_Unit.tscn
+res://scenes/units/PlayerVikingRaider.tscn
+res://placeholder_tile.tres
 res://scenes/levels/SettlementBridge.tscn
+res://data/settlements/home_base_fixed.tres
+res://scenes/missions/RaidMission.tscn
+res://scenes/levels/DefensiveMicro.tscn
+res://player/RTSCamera.gd
+res://player/RTSController.gd
+res://autoload/SettlementManager.gd
+res://scripts/buildings/SettlementBridge.gd

@@ -5,6 +5,8 @@
 class_name BaseUnit
 extends CharacterBody2D
 
+signal destroyed
+
 @export var data: UnitData
 var fsm: UnitFSM
 var current_health: int = 50
@@ -49,6 +51,7 @@ func take_damage(amount: int) -> void:
 
 func die() -> void:
 	print("%s has been killed." % data.display_name)
+	destroyed.emit()
 	queue_free()
 
 # --- RTS Command Interface ---

@@ -75,11 +75,19 @@ func _on_select_command(select_rect: Rect2, is_box_select: bool) -> void:
 		return
 	
 	if is_box_select:
-		# Box select
+		# Box select - convert screen rect to world coordinates instead
+		# This is more reliable than converting world to screen for each unit
+		var camera_pos = main_camera.get_screen_center_position()
+		var camera_zoom = main_camera.zoom
+		var viewport_size = get_viewport().get_visible_rect().size
+		
+		# Convert screen rectangle to world coordinates
+		var world_rect_min = camera_pos - (viewport_size / (2.0 * camera_zoom)) + (select_rect.position / camera_zoom)
+		var world_rect_max = world_rect_min + (select_rect.size / camera_zoom)
+		var world_rect = Rect2(world_rect_min, world_rect_max - world_rect_min)
+		
 		for unit in controllable_units:
-			# Convert unit's world pos to screen pos
-			var screen_pos = main_camera.unproject_position(unit.global_position)
-			if select_rect.has_point(screen_pos):
+			if world_rect.has_point(unit.global_position):
 				selected_units.append(unit)
 				unit.set_selected(true)
 	else:

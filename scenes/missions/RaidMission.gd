@@ -112,6 +112,9 @@ func _load_enemy_base() -> void:
 		
 		# Add to enemy groups for targeting
 		building_instance.add_to_group("enemy_buildings")
+		# Set collision layer for right-click detection
+		if building_instance.has_method("set_collision_layer"):
+			building_instance.set_collision_layer(4)  # Layer 3 for enemy buildings
 		
 		# Check if this is the Great Hall (main target)
 		if building_data.display_name.to_lower().contains("hall"):

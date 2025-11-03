@@ -5,3 +5,6 @@
 
 [node name="PlayerVikingRaider" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+
+[node name="Sprite2D" parent="." index="0"]
+scale = Vector2(0.058593735, 0.06152343)

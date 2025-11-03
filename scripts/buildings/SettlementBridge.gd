@@ -59,7 +59,18 @@ func _initialize_settlement() -> void:
 		home_base_data = _create_default_settlement()
 		print("SettlementBridge: Created default settlement data")
 	else:
-		print("SettlementBridge: Using inspector settlement data")
+		# Verify inspector data is valid
+		if not home_base_data is SettlementData:
+			push_warning("SettlementBridge: Inspector data is not SettlementData, creating default")
+			home_base_data = _create_default_settlement()
+		else:
+			print("SettlementBridge: Using inspector settlement data")
+	
+	# Ensure resource path is set for saving
+	if home_base_data and (not home_base_data.resource_path or home_base_data.resource_path.is_empty()):
+		# Set the resource path based on the expected file name
+		home_base_data.resource_path = "res://data/settlements/home_base_fixed.tres"
+		print("SettlementBridge: Set resource_path to: %s" % home_base_data.resource_path)
 	
 	# Load the settlement into the manager
 	SettlementManager.load_settlement(home_base_data)
@@ -74,6 +85,10 @@ func _create_default_settlement() -> SettlementData:
 	var empty_buildings: Array[Dictionary] = []
 	settlement.placed_buildings = empty_buildings
 	settlement.garrisoned_units = {}
+	
+	# Set resource path for saving
+	settlement.resource_path = "res://data/settlements/home_base_fixed.tres"
+	
 	return settlement
 
 func _setup_ui() -> void:
