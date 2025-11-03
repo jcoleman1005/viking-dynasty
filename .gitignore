@@ -17,3 +17,4 @@ data_*/
 mono_crash.*.json
 # AI Chat Checkpoints (isolated storage)
 .ai-checkpoints/
+/.godot/editor
