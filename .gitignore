@@ -1,29 +1,19 @@
 # Godot 4+ specific ignores
 .godot/
+.nomedia
 
 # Godot-specific ignores
 .import/
 export.cfg
-export_presets.cfg
+export_credentials.cfg
+*.tmp
 
-# Imported translations (auto generated from CSV)
+# Imported translations (automatically generated from CSV files)
 *.translation
 
-# Mono-specific ignores (if using Godot Mono/C#)
+# Mono-specific ignores
 .mono/
-mono_crash.*.json
-
-# IDE/editor cache
-.idea/
-.DS_Store
-
-# OS-specific
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-
-# Other asset folders (for safety, if using any autogen data folders)
 data_*/
-
+mono_crash.*.json
 # AI Chat Checkpoints (isolated storage)
 .ai-checkpoints/
