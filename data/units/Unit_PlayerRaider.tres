@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="UnitData" load_steps=3 format=3 uid="uid://ejxn3hg8xcu6"]
+
+[ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="1_tcvvg"]
+[ext_resource type="PackedScene" uid="uid://cfanwutbtfcp2" path="res://scenes/units/PlayerVikingRaider.tscn" id="2_spawn_scene"]
+
+[resource]
+script = ExtResource("1_tcvvg")
+display_name = "Player Viking Raider"
+scene_to_spawn = ExtResource("2_spawn_scene")
+spawn_cost = {"food": 25, "gold": 10}
+max_health = 60
+move_speed = 100.0
+attack_damage = 15
+attack_range = 50.0
+attack_speed = 1.0

@@ -4,6 +4,12 @@
 
 extends Control
 
+## The main raid mission scene to load (e.g., RaidMission.tscn)
+@export var raid_mission_scene: PackedScene
+
+## The scene to return to (e.g., SettlementBridge.tscn)
+@export var settlement_bridge_scene: PackedScene
+
 @onready var raid_monastery_button: Button = $ButtonContainer/RaidMonasteryButton
 @onready var back_button: Button = $ButtonContainer/BackButton
 
@@ -38,9 +44,15 @@ func _on_raid_monastery_pressed() -> void:
 		return
 	
 	# Transition to raid mission
-	get_tree().change_scene_to_file("res://scenes/missions/RaidMission.tscn")
+	if raid_mission_scene:
+		get_tree().change_scene_to_packed(raid_mission_scene)
+	else:
+		push_error("WorldMap_Stub: raid_mission_scene is not set! Cannot start raid.")
 
 func _on_back_pressed() -> void:
 	"""Return to the settlement"""
 	print("Returning to settlement...")
-	get_tree().change_scene_to_file("res://scenes/levels/SettlementBridge.tscn")
+	if settlement_bridge_scene:
+		get_tree().change_scene_to_packed(settlement_bridge_scene)
+	else:
+		push_error("WorldMap_Stub: settlement_bridge_scene is not set! Cannot return.")

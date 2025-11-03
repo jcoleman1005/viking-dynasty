@@ -1,11 +1,16 @@
-[gd_scene load_steps=2 format=3 uid="uid://prjaf886ctj3"]
+[gd_scene load_steps=5 format=3 uid="uid://prjaf886ctj3"]
 
 [ext_resource type="Script" uid="uid://bqca4a5qwo3nm" path="res://scenes/world_map/WorldMap_Stub.gd" id="1_gdfdq"]
+[ext_resource type="PackedScene" uid="uid://d3ifdm0rvd5kl" path="res://scenes/missions/RaidMission.tscn" id="2_fvpdd"]
+[ext_resource type="PackedScene" uid="uid://c53k15q2w8c1a" path="res://scenes/levels/SettlementBridge.tscn" id="3_aum8n"]
+[ext_resource type="Script" uid="uid://dqgdqgx6uacsx" path="res://test_phase3.gd" id="4_aum8n"]
 
-[node name="Main" type="Control"]
+[node name="WorldMapStub" type="Control"]
 layout_mode = 3
 anchors_preset = 0
 script = ExtResource("1_gdfdq")
+raid_mission_scene = ExtResource("2_fvpdd")
+settlement_bridge_scene = ExtResource("3_aum8n")
 
 [node name="Background" type="ColorRect" parent="."]
 layout_mode = 0
@@ -36,3 +41,6 @@ layout_mode = 2
 [node name="BackButton" type="Button" parent="ButtonContainer"]
 layout_mode = 2
 text = "Return to Settlement"
+
+[node name="Phase3Test" type="Node" parent="."]
+script = ExtResource("4_aum8n")

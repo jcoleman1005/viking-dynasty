@@ -49,10 +49,15 @@ func _load_unit_data() -> void:
 				var unit_path = "res://data/units/" + file_name
 				var unit_data = load(unit_path) as UnitData
 				if unit_data:
-					available_units.append(unit_data)
-					print("Loaded unit data: %s" % unit_data.display_name)
+					# Only load player-appropriate units (exclude enemy-only units)
+					# Player units should have "Player" in their display name or specific naming convention
+					if _is_player_unit(unit_data):
+						available_units.append(unit_data)
+						print("Loaded player unit data: %s" % unit_data.display_name)
+					else:
+						print("Skipped enemy unit data: %s" % unit_data.display_name)
 			file_name = dir.get_next()
-		print("Total units loaded: %d" % available_units.size())
+		print("Total player units loaded: %d" % available_units.size())
 
 func _setup_recruit_buttons() -> void:
 	"""Create recruit buttons for each available unit"""
@@ -61,6 +66,33 @@ func _setup_recruit_buttons() -> void:
 		button.text = "%s (Cost: %s)" % [unit_data.display_name, _format_cost(unit_data.spawn_cost)]
 		button.pressed.connect(_on_recruit_button_pressed.bind(unit_data))
 		recruit_buttons_container.add_child(button)
+
+func _is_player_unit(unit_data: UnitData) -> bool:
+	"""Check if a unit is appropriate for player recruitment"""
+	if not unit_data:
+		return false
+	
+	# Check if the unit has "Player" in its display name
+	if "Player" in unit_data.display_name:
+		return true
+	
+	# Check if the unit data resource path contains "Player" 
+	if "Player" in unit_data.resource_path:
+		return true
+	
+	# Check if the scene points to a PlayerVikingRaider or other player unit
+	if unit_data.scene_to_spawn:
+		var scene_path = unit_data.scene_to_spawn.resource_path
+		if "Player" in scene_path:
+			return true
+	
+	# Fallback: exclude known enemy units by name
+	var enemy_unit_names = ["Viking Raider"] # This is the enemy version
+	if unit_data.display_name in enemy_unit_names:
+		return false
+	
+	# Default to true for backwards compatibility with existing units
+	return true
 
 func _format_cost(cost: Dictionary) -> String:
 	"""Format cost dictionary as readable string"""

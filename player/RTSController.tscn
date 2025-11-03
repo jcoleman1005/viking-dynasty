@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://cyp3t7gbdg0wx"]
+
+[ext_resource type="Script" uid="uid://dfyoxn7wr5p5q" path="res://player/RTSController.gd" id="1_bmfgp"]
+
+[node name="RTSController" type="Node"]
+script = ExtResource("1_bmfgp")

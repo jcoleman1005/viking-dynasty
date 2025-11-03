@@ -13,13 +13,17 @@ const GRID_HEIGHT: int = 30
 func _ready() -> void:
 	# Initialize the grid as soon as the manager is ready.
 	# This ensures astar_grid is never null after this point.
+	_initialize_grid()
+
+func _initialize_grid() -> void:
+	"""Initialize the AStarGrid2D with proper error handling"""
 	astar_grid = AStarGrid2D.new()
 	var playable_rect := Rect2i(0, 0, GRID_WIDTH, GRID_HEIGHT)
 	astar_grid.region = playable_rect
 	astar_grid.cell_size = Vector2(TILE_SIZE, TILE_SIZE)
 	astar_grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_NEVER
 	astar_grid.update()
-	print("Settlement Grid Initialized on ready.")
+	print("Settlement Grid Initialized: %dx%d cells" % [GRID_WIDTH, GRID_HEIGHT])
 
 func load_settlement(data: SettlementData) -> void:
 	if not data:
@@ -56,6 +60,11 @@ func place_building(building_data: BuildingData, grid_position: Vector2i) -> Bas
 		push_error("Build request failed: BuildingData or scene_to_spawn is null.")
 		return null
 	
+	# Validate grid position is within bounds
+	if not _is_position_valid(grid_position):
+		push_warning("Building placement at %s is outside grid bounds (%d x %d). Skipping pathfinding update." % [grid_position, GRID_WIDTH, GRID_HEIGHT])
+		# Still create the building but don't update pathfinding
+	
 	var new_building: BaseBuilding = building_data.scene_to_spawn.instantiate()
 	new_building.data = building_data
 	
@@ -65,10 +74,15 @@ func place_building(building_data: BuildingData, grid_position: Vector2i) -> Bas
 	
 	building_container.add_child(new_building)
 	
-	if building_data.blocks_pathfinding:
-		astar_grid.set_point_solid(grid_position, true)
-		astar_grid.update()
-		EventBus.pathfinding_grid_updated.emit(grid_position)
+	# Only update pathfinding if position is valid and building blocks pathfinding
+	if building_data.blocks_pathfinding and _is_position_valid(grid_position):
+		# Ensure grid is properly initialized before setting solid points
+		if astar_grid and astar_grid.region.size.x > 0 and astar_grid.region.size.y > 0:
+			astar_grid.set_point_solid(grid_position, true)
+			astar_grid.update()
+			EventBus.pathfinding_grid_updated.emit(grid_position)
+		else:
+			push_warning("AStarGrid not properly initialized, skipping pathfinding update for building at %s" % grid_position)
 		
 	return new_building
 
@@ -196,3 +210,8 @@ func get_settlement_status() -> String:
 		current_settlement.placed_buildings.size(),
 		garrison_count
 	]
+
+func _is_position_valid(grid_position: Vector2i) -> bool:
+	"""Check if a grid position is within the AStarGrid bounds"""
+	return grid_position.x >= 0 and grid_position.x < GRID_WIDTH and \
+		   grid_position.y >= 0 and grid_position.y < GRID_HEIGHT

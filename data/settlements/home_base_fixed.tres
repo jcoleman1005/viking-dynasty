@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://f50rmycjmf1e"]
+
+[ext_resource type="Script" uid="uid://hlb8s5g0yp6k" path="res://data/settlements/SettlementData.gd" id="1_rvipm"]
+
+[resource]
+script = ExtResource("1_rvipm")
+treasury = {
+"food": 200,
+"gold": 200,
+"stone": 200,
+"wood": 200
+}
+metadata/_custom_type_script = "uid://hlb8s5g0yp6k"

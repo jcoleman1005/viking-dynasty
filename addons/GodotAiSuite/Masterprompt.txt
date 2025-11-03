@@ -110,9 +110,14 @@ max_health = 75
 grid_size = Vector2i(2, 2)
 
 --- RESOURCE: res://data/settlements/home_base.tres ---
-[gd_resource type="SettlementData" load_steps=1 format=3 uid="uid://li7qds0oh7b7"]
+[gd_resource type="SettlementData" script_class="SettlementData" load_steps=2 format=3 uid="uid://li7qds0oh7b7"]
+
+[ext_resource type="Script" uid="uid://hlb8s5g0yp6k" path="res://data/settlements/SettlementData.gd" id="1_abcde"]
 
 [resource]
+resource_local_to_scene = false
+resource_name = ""
+script = ExtResource("1_abcde")
 treasury = {
 "food": 25,
 "gold": 1000,
@@ -154,9 +159,6 @@ placed_buildings = Array[Dictionary]([{
 "resource_path": "res://data/buildings/LumberYard.tres"
 }, {
 "grid_position": Vector2i(10, 15),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(10, 15),
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
 }, {
 "grid_position": Vector2i(10, 15),
@@ -165,9 +167,6 @@ placed_buildings = Array[Dictionary]([{
 "grid_position": Vector2i(10, 15),
 "resource_path": "res://data/buildings/LumberYard.tres"
 }])
-garrisoned_units = {
-"res://data/units/Unit_Raider.tres": 12
-}
 
 --- RESOURCE: res://data/settlements/monastery_base.tres ---
 [gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://okf2novkg804"]
@@ -199,14 +198,32 @@ placed_buildings = Array[Dictionary]([{
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
 }])
 
---- RESOURCE: res://data/units/Unit_Raider.tres ---
-[gd_resource type="Resource" script_class="UnitData" load_steps=2 format=3 uid="uid://brnbvjwnoyh3j"]
+--- RESOURCE: res://data/units/Unit_PlayerRaider.tres ---
+[gd_resource type="Resource" script_class="UnitData" load_steps=3 format=3 uid="uid://ejxn3hg8xcu6"]
 
 [ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="1_tcvvg"]
+[ext_resource type="PackedScene" uid="uid://cfanwutbtfcp2" path="res://scenes/units/PlayerVikingRaider.tscn" id="2_spawn_scene"]
 
 [resource]
 script = ExtResource("1_tcvvg")
+display_name = "Player Viking Raider"
+scene_to_spawn = ExtResource("2_spawn_scene")
+max_health = 60
+move_speed = 100.0
+attack_damage = 15
+attack_range = 50.0
+attack_speed = 1.0
+
+--- RESOURCE: res://data/units/Unit_Raider.tres ---
+[gd_resource type="Resource" script_class="UnitData" load_steps=3 format=3 uid="uid://brnbvjwnoyh3j"]
+
+[ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="1_abcde"]
+[ext_resource type="PackedScene" uid="uid://dsv0s4yq8c8m5" path="res://scenes/units/VikingRaider.tscn" id="2_spawn_scene"]
+
+[resource]
+script = ExtResource("1_abcde")
 display_name = "Viking Raider"
+scene_to_spawn = ExtResource("2_spawn_scene")
 max_health = 60
 move_speed = 100.0
 attack_damage = 15
@@ -244,7 +261,7 @@ size = Vector2(96, 96)
 size = Vector2(64, 64)
 
 --- RESOURCE: res://textures/placeholders/unit_texture.tres ---
-[gd_resource type="ImageTexture" format=3 uid="uid://cybqs3wt5wpg3"]
+[gd_resource type="PlaceholderTexture2D" format=3 uid="uid://cybqs3wt5wpg3"]
 
 [resource]
 --- END OF RESOURCE FILES ---
@@ -266,12 +283,19 @@ SettlementManager (Node)
 Main Test (Node2D)
 > scene: res://main_test.tscn
 
+--- SCENE: res://player/RTSController.tscn ---
+RTSController (Node)
+> script: res://player/RTSController.gd
+> scene: res://player/RTSController.tscn
+
 --- SCENE: res://scenes/buildings/Base_Building.tscn ---
 Base_Building (StaticBody2D)
 > script: res://data/buildings/Base_Building.gd
 > scene: res://scenes/buildings/Base_Building.tscn
 > Sprite2D (Sprite2D)
-> > texture = res://textures/placeholders/building_placeholder.tres
+> > position = (474.0, 476.5)
+> > scale = (0.074219, 0.069336)
+> > texture = res://textures/placeholders/building_placeholder.png
 > CollisionShape2D (CollisionShape2D)
 > > shape = res://scenes/buildings/Base_Building.tscn::RectangleShape2D_b5w0v
 
@@ -284,15 +308,21 @@ DefensiveMicro (Node2D)
 > player_spawn_formation = {"units_per_row":5,"spacing":40}
 > mission_difficulty = 1.0
 > allow_retreat = true
+> is_defensive_mission = true
 > TileMap (TileMap)
 > > tile_set = res://scenes/levels/DefensiveMicro.tscn::TileSet_m5xuc
 > PlayerStartPosition (Marker2D)
 > > position = (100.0, 400.0)
+> RTSController (Node)
+>   script: res://player/RTSController.gd
+>   scene: res://player/RTSController.tscn
 
 --- SCENE: res://scenes/levels/SettlementBridge.tscn ---
 SettlementBridge (Node)
 > script: res://scripts/buildings/SettlementBridge.gd
 > scene: res://scenes/levels/SettlementBridge.tscn
+> welcome_popup_scene = res://ui/WelcomeHome_Popup.tscn
+> world_map_scene = res://scenes/world_map/WorldMap_Stub.tscn
 > DefensiveMicro (Node2D)
 >   script: res://scenes/missions/RaidMission.gd
 >   scene: res://scenes/levels/DefensiveMicro.tscn
@@ -301,10 +331,14 @@ SettlementBridge (Node)
 > > player_spawn_formation = {"units_per_row":5,"spacing":40}
 > > mission_difficulty = 1.0
 > > allow_retreat = true
+> > is_defensive_mission = true
 >   TileMap (TileMap)
 >   > tile_set = res://scenes/levels/DefensiveMicro.tscn::TileSet_m5xuc
 >   PlayerStartPosition (Marker2D)
 >   > position = (100.0, 400.0)
+>   RTSController (Node)
+>     script: res://player/RTSController.gd
+>     scene: res://player/RTSController.tscn
 > UnitContainer (Node2D)
 > UI (CanvasLayer)
 >   Label (Label)
@@ -395,7 +429,7 @@ SettlementBridge (Node)
 >   > text = "World Map"
 
 --- SCENE: res://scenes/missions/RaidMission.tscn ---
-Main (Node2D)
+RaidMission (Node2D)
 > script: res://scenes/missions/RaidMission.gd
 > scene: res://scenes/missions/RaidMission.tscn
 > default_enemy_base_path = "res://data/settlements/monastery_base.tres"
@@ -403,8 +437,22 @@ Main (Node2D)
 > player_spawn_formation = {"units_per_row":5,"spacing":40}
 > mission_difficulty = 1.0
 > allow_retreat = true
+> settlement_bridge_scene = res://scenes/levels/SettlementBridge.tscn
+> is_defensive_mission = false
 > PlayerStartPosition (Marker2D)
 > > position = (100.0, 400.0)
+> RTSController (Node)
+>   script: res://player/RTSController.gd
+>   scene: res://player/RTSController.tscn
+> CanvasLayer (CanvasLayer)
+>   SelectionBox (Control)
+>     script: res://ui/SelectionBox.gd
+>     scene: res://ui/SelectionBox.tscn
+>   > anchors_preset = 15
+>   > anchor_right = 1.0
+>   > anchor_bottom = 1.0
+>   > grow_horizontal = 2
+>   > grow_vertical = 2
 
 --- SCENE: res://scenes/units/Base_Unit.tscn ---
 Base_Unit (CharacterBody2D)
@@ -416,21 +464,18 @@ Base_Unit (CharacterBody2D)
 > > shape = res://scenes/units/Base_Unit.tscn::RectangleShape2D_n6s0a
 > AttackTimer (Timer)
 
+--- SCENE: res://scenes/units/PlayerVikingRaider.tscn ---
+
+
 --- SCENE: res://scenes/units/VikingRaider.tscn ---
-VikingRaider (CharacterBody2D)
-> script: res://scripts/units/VikingRaider.gd
-> scene: res://scenes/units/VikingRaider.tscn
-> data = res://data/units/Unit_Raider.tres
-> Sprite2D (Sprite2D)
-> > texture = res://textures/placeholders/unit_placeholder.tres
-> CollisionShape2D (CollisionShape2D)
-> > shape = res://scenes/units/Base_Unit.tscn::RectangleShape2D_n6s0a
-> AttackTimer (Timer)
+
 
 --- SCENE: res://scenes/world_map/WorldMap_Stub.tscn ---
-Main (Control)
+WorldMapStub (Control)
 > script: res://scenes/world_map/WorldMap_Stub.gd
 > scene: res://scenes/world_map/WorldMap_Stub.tscn
+> raid_mission_scene = res://scenes/missions/RaidMission.tscn
+> settlement_bridge_scene = res://scenes/levels/SettlementBridge.tscn
 > Background (ColorRect)
 > > layout_mode = 0
 > > color = (0.0, 0.0, 0.0, 1.0)
@@ -455,6 +500,16 @@ Main (Control)
 >   BackButton (Button)
 >   > layout_mode = 2
 >   > text = "Return to Settlement"
+
+--- SCENE: res://ui/SelectionBox.tscn ---
+SelectionBox (Control)
+> script: res://ui/SelectionBox.gd
+> scene: res://ui/SelectionBox.tscn
+> anchors_preset = 15
+> anchor_right = 1.0
+> anchor_bottom = 1.0
+> grow_horizontal = 2
+> grow_vertical = 2
 
 --- SCENE: res://ui/Storefront_UI.tscn ---
 Main (Control)
@@ -542,7 +597,6 @@ Main (PanelContainer)
 # A global Singleton (Autoload) that acts as a central "switchboard"
 # for decoupled signal communication between major systems.
 
-
 extends Node
 
 # --- Build System Signals ---
@@ -560,6 +614,21 @@ signal purchase_failed(reason: String)
 signal scene_change_requested(scene_path: String)
 signal world_map_opened()
 signal raid_mission_started(target_type: String)
+
+# --- Unit Management Signals ---
+signal player_unit_died(unit: Node2D)
+
+# --- NEW: RTS Command Signals (GDD Section 10) ---
+# Emitted by SelectionBox.gd, consumed by RTSController.gd
+
+# Emitted on left-click or drag-release
+signal select_command(select_rect: Rect2, is_box_select: bool)
+
+# Emitted on right-click on the ground
+signal move_command(target_position: Vector2)
+
+# Emitted on right-click on an enemy
+signal attack_command(target_node: Node2D)
 
 --- SCRIPT: res://autoload/SettlementManager.gd ---
 # res://autoload/SettlementManager.gd
@@ -981,344 +1050,138 @@ extends Resource
 
 --- SCRIPT: res://player/RTSController.gd ---
 # res://player/RTSController.gd
-# RTS input controller for Phase 3 with improved box selection
-# GDD Ref: Phase 3 Task 5
+#
+# --- REFACTORED ---
+# This script is now decoupled from input.
+# It listens for clean signals from the EventBus
+# (which are fired by SelectionBox.gd).
+# It also correctly cleans up dead units.
 
-extends Node2D
+extends Node
+class_name RTSController
 
-# Selection System
-var selected_units: Array[Node2D] = []
-var selection_box_start: Vector2 = Vector2.ZERO
-var selection_box_current: Vector2 = Vector2.ZERO
-var is_dragging: bool = false
-
-# Squad Formation System
-var current_squad: SquadFormation = null
-var formation_type: SquadFormation.FormationType = SquadFormation.FormationType.LINE
-
-# Input State
-var left_mouse_pressed: bool = false
-
-# Camera reference for screen-to-world conversion
-@onready var camera: Camera2D = get_viewport().get_camera_2d()
-
-# Selection box visual
-var selection_rect: Rect2 = Rect2()
+var selected_units: Array[BaseUnit] = []
+var controllable_units: Array[BaseUnit] = []
 
 func _ready() -> void:
-	# Ensure we can draw and handle input
-	set_process_unhandled_input(true)
-	# Position at world origin for proper drawing coordinates
-	global_position = Vector2.ZERO
+	# Connect to the clean signals from our new EventBus/SelectionBox
+	EventBus.select_command.connect(_on_select_command)
+	EventBus.move_command.connect(_on_move_command)
+	EventBus.attack_command.connect(_on_attack_command)
 
-func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton:
-		_handle_mouse_button(event)
-	elif event is InputEventMouseMotion:
-		_handle_mouse_motion(event)
-	elif event is InputEventKey and event.pressed:
-		_handle_keyboard_input(event)
-
-func _handle_mouse_button(event: InputEventMouseButton) -> void:
-	if event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
-			# Start selection or single select
-			left_mouse_pressed = true
-			selection_box_start = get_global_mouse_position()
-			selection_box_current = selection_box_start
-			is_dragging = false
-			queue_redraw()
-		else:
-			# End selection
-			left_mouse_pressed = false
-			if is_dragging:
-				_complete_box_selection()
-				is_dragging = false
-			else:
-				_single_select()
-			queue_redraw()
-	
-	elif event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
-		_handle_right_click()
-
-func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
-	if left_mouse_pressed:
-		selection_box_current = get_global_mouse_position()
-		var drag_distance = selection_box_current.distance_to(selection_box_start)
-		if drag_distance > 10.0: # Minimum drag distance to start box selection
-			is_dragging = true
-			_update_selection_box()
-			queue_redraw()
-
-func _update_selection_box() -> void:
-	var top_left = Vector2(
-		min(selection_box_start.x, selection_box_current.x),
-		min(selection_box_start.y, selection_box_current.y)
-	)
-	var bottom_right = Vector2(
-		max(selection_box_start.x, selection_box_current.x),
-		max(selection_box_start.y, selection_box_current.y)
-	)
-	selection_rect = Rect2(top_left, bottom_right - top_left)
-
-func _single_select() -> void:
-	# Select a single unit at the click position
-	var world_pos = get_global_mouse_position()
-	
-	# Clear previous selection
-	_clear_selection()
-	
-	# Method 1: Try physics query first
-	var space_state = get_world_2d().direct_space_state
-	var query = PhysicsPointQueryParameters2D.new()
-	query.position = world_pos
-	query.collision_mask = 1 # Units should be on layer 1
-	
-	var results = space_state.intersect_point(query, 1)
-	
-	for result in results:
-		var body = result["collider"]
-		if _is_player_unit(body):
-			_add_to_selection(body)
-			return
-	
-	# Method 2: Fallback - Check all player units for proximity
-	var all_units = get_tree().get_nodes_in_group("player_units")
-	
-	var closest_unit: Node2D = null
-	var closest_distance: float = 50.0  # Max click distance in pixels
-	
-	for unit in all_units:
-		if unit is Node2D:
-			var distance = unit.global_position.distance_to(world_pos)
-			if distance < closest_distance and _is_player_unit(unit):
-				closest_distance = distance
-				closest_unit = unit
-	
-	# Select the closest unit if found
-	if closest_unit:
-		_add_to_selection(closest_unit)
-
-func _complete_box_selection() -> void:
-	# Complete box selection and select all units in the box
-	var units_in_box = _get_units_in_rect(selection_rect)
-	
-	# Clear previous selection
-	_clear_selection()
-	
-	# Add all units in box to selection
-	for unit in units_in_box:
-		if _is_player_unit(unit):
-			_add_to_selection(unit)
-	
-	# Create squad formation with selected units
-	_create_squad_formation()
-	
-	print("Box selection completed: %d units selected" % selected_units.size())
-
-func _get_units_in_rect(rect: Rect2) -> Array:
-	# Get all units whose positions are within the given rectangle
-	var units_in_rect: Array = []
-	
-	# Find all units in the scene
-	var units = get_tree().get_nodes_in_group("player_units")
-	
-	for unit in units:
-		if unit is Node2D and rect.has_point(unit.global_position):
-			units_in_rect.append(unit)
-	
-	return units_in_rect
-
-func _handle_right_click() -> void:
-	# Handle right mouse click for movement/attack commands
-	if selected_units.is_empty():
-		return
-	
-	var world_pos = get_global_mouse_position()
-	var target = _get_target_at_position(world_pos)
-	
-	if target and _is_enemy_unit(target):
-		# Attack command
-		print("Commanding %d units to attack %s" % [selected_units.size(), target.name])
-		for unit in selected_units:
-			if unit.has_method("command_attack"):
-				unit.command_attack(target)
-			elif "fsm" in unit and unit.fsm != null and unit.fsm.has_method("command_attack"):
-				unit.fsm.command_attack(target)
-	else:
-		# Move command using squad formation
-		if current_squad and selected_units.size() > 1:
-			print("Squad formation moving to %s with %d units" % [world_pos, selected_units.size()])
-			current_squad.move_to_position(world_pos)
-		else:
-			# Single unit or no squad - use individual movement
-			print("Commanding %d units to move to %s" % [selected_units.size(), world_pos])
-			for unit in selected_units:
-				if unit.has_method("command_move_to"):
-					unit.command_move_to(world_pos)
-				elif "fsm" in unit and unit.fsm != null and unit.fsm.has_method("command_move_to"):
-					unit.fsm.command_move_to(world_pos)
-
-func _get_target_at_position(world_pos: Vector2) -> Node2D:
-	# Get the target (enemy unit/building) at the given screen position
-	var space_state = get_world_2d().direct_space_state
-	
-	var query = PhysicsPointQueryParameters2D.new()
-	query.position = world_pos
-	query.collision_mask = 2 # Assuming enemies are on layer 2
-	
-	var results = space_state.intersect_point(query, 1)
-	
-	for result in results:
-		var body = result["collider"]
-		if _is_enemy_unit(body):
-			return body
-	
-	# Fallback: check enemy groups for proximity
-	var enemy_units = get_tree().get_nodes_in_group("enemy_units")
-	var enemy_buildings = get_tree().get_nodes_in_group("enemy_buildings")
-	var all_enemies = enemy_units + enemy_buildings
-	
-	var closest_enemy: Node2D = null
-	var closest_distance: float = 50.0
-	
-	for enemy in all_enemies:
-		if enemy is Node2D:
-			var distance = enemy.global_position.distance_to(world_pos)
-			if distance < closest_distance:
-				closest_distance = distance
-				closest_enemy = enemy
-	
-	return closest_enemy
-
-func _is_player_unit(node: Node) -> bool:
-	# Check if the node is a player unit
-	return node.is_in_group("player_units") and (
-		node.has_method("command_move_to") or 
-		("fsm" in node and node.fsm != null)
-	)
-
-func _is_enemy_unit(node: Node) -> bool:
-	# Check if the node is an enemy unit or building
-	return node.is_in_group("enemy_units") or node.is_in_group("enemy_buildings")
-
-func _clear_selection() -> void:
-	# Clear all selected units
-	for unit in selected_units:
-		if is_instance_valid(unit) and unit.has_method("set_selected"):
-			unit.set_selected(false)
-	selected_units.clear()
-	print("Selection cleared")
-
-func _add_to_selection(unit: Node2D) -> void:
-	# Add a unit to the selection
-	if unit not in selected_units:
-		selected_units.append(unit)
-		if unit.has_method("set_selected"):
-			unit.set_selected(true)
-		print("Added %s to selection. Total selected: %d" % [unit.name, selected_units.size()])
-
-func _draw() -> void:
-	# Draw the selection box if dragging
-	if is_dragging and selection_rect.size.length() > 0:
-		# Convert world coordinates to local coordinates for drawing
-		var local_rect = Rect2(
-			to_local(selection_rect.position),
-			selection_rect.size
-		)
-		
-		# Draw selection box with semi-transparent fill
-		var fill_color = Color.YELLOW
-		fill_color.a = 0.2
-		draw_rect(local_rect, fill_color)
-		
-		# Draw selection box border
-		draw_rect(local_rect, Color.YELLOW, false, 2.0)
-
-# --- Unit Management ---
+# --- PUBLIC API ---
 
 func add_unit_to_group(unit: Node2D) -> void:
-	# Add a unit to the player_units group for selection
-	unit.add_to_group("player_units")
-	print("Added %s to player_units group" % unit.name)
+	# Verify the unit is a BaseUnit (which has 'destroyed' signal)
+	if not unit is BaseUnit:
+		push_error("RTSController: Tried to add unit '%s' that doesn't extend BaseUnit." % unit.name)
+		return
+		
+	if unit in controllable_units:
+		return
 
-func remove_unit_from_group(unit: Node2D) -> void:
-	# Remove a unit from selection and groups
+	controllable_units.append(unit)
+	
+	# --- THIS IS THE DEAD UNIT CRASH FIX ---
+	# Connect to this unit's 'destroyed' signal.
+	# When it's destroyed, we'll clean it up.
+	# We use CONNECT_DEFERRED to avoid race conditions.
+	if unit.has_signal("destroyed"):
+		unit.destroyed.connect(remove_unit.bind(unit), CONNECT_DEFERRED)
+	else:
+		# This check is vital. Our old debug units will fail this.
+		push_warning("Unit %s does not have 'destroyed' signal!" % unit.name)
+
+func remove_unit(unit: BaseUnit) -> void:
+	"""Removes a unit from tracking. Called by the unit's 'destroyed' signal."""
+	print("RTSController: Unit %s was destroyed/removed." % unit.name)
+	
 	if unit in selected_units:
 		selected_units.erase(unit)
-	unit.remove_from_group("player_units")
+		if is_instance_valid(unit):
+			# set_selected is a function on BaseUnit
+			unit.set_selected(false)
+			
+	if unit in controllable_units:
+		controllable_units.erase(unit)
+		
+	# Check if this was the last unit
+	if controllable_units.is_empty():
+		print("RTSController: All units are gone.")
 
-# --- Debug Methods ---
+# --- REMOVED ---
+# _on_global_input, _draw, _process, _handle_selection,
+# and _handle_command are all removed.
+# They are replaced by the functions below.
+# -----------------
 
-func get_selected_units() -> Array[Node2D]:
-	"""Get currently selected units - useful for debugging"""
-	return selected_units
+# --- NEW: EVENTBUS HANDLERS ---
 
-func get_selection_count() -> int:
-	"""Get number of selected units"""
-	return selected_units.size()
-
-# --- Squad Formation System ---
-
-func _create_squad_formation() -> void:
-	"""Create a squad formation with currently selected units"""
-	if selected_units.size() > 1:
-		current_squad = SquadFormation.new(selected_units)
-		current_squad.set_formation_type(formation_type)
-		print("Created squad formation: %s with %d units" % [SquadFormation.FormationType.keys()[formation_type], selected_units.size()])
-	else:
-		current_squad = null
-
-func _handle_keyboard_input(event: InputEventKey) -> void:
-	"""Handle keyboard shortcuts for formation changes"""
-	if selected_units.is_empty():
+func _on_select_command(select_rect: Rect2, is_box_select: bool) -> void:
+	_clear_selection()
+	
+	var main_camera: Camera2D = get_viewport().get_camera_2d()
+	if not main_camera:
+		push_error("RTSController: No Camera2D found to perform selection.")
 		return
 	
-	# Formation hotkeys (Company of Heroes style)
-	match event.keycode:
-		KEY_1: # Line formation
-			_change_formation(SquadFormation.FormationType.LINE)
-		KEY_2: # Column formation  
-			_change_formation(SquadFormation.FormationType.COLUMN)
-		KEY_3: # Wedge formation
-			_change_formation(SquadFormation.FormationType.WEDGE)
-		KEY_4: # Box formation
-			_change_formation(SquadFormation.FormationType.BOX)
-		KEY_5: # Circle formation
-			_change_formation(SquadFormation.FormationType.CIRCLE)
-
-func _change_formation(new_formation: SquadFormation.FormationType) -> void:
-	"""Change the formation type of the current squad"""
-	formation_type = new_formation
-	
-	if current_squad:
-		current_squad.set_formation_type(formation_type)
-		print("Formation changed to: %s" % SquadFormation.FormationType.keys()[formation_type])
+	if is_box_select:
+		# Box select
+		for unit in controllable_units:
+			# Convert unit's world pos to screen pos
+			var screen_pos = main_camera.unproject_position(unit.global_position)
+			if select_rect.has_point(screen_pos):
+				selected_units.append(unit)
+				unit.set_selected(true)
 	else:
-		print("Formation set to: %s (will apply to next selection)" % SquadFormation.FormationType.keys()[formation_type])
+		# Single select (find closest unit to the click)
+		# We must get the world position from the camera
+		var click_world_pos := main_camera.get_global_mouse_position()
+		var closest_unit: BaseUnit = null
+		var min_dist_sq = INF
+		
+		for unit in controllable_units:
+			var dist_sq = unit.global_position.distance_squared_to(click_world_pos)
+			# 40px click radius
+			if dist_sq < min_dist_sq and dist_sq < (40 * 40): 
+				min_dist_sq = dist_sq
+				closest_unit = unit
+				
+		if closest_unit:
+			selected_units.append(closest_unit)
+			closest_unit.set_selected(true)
 
-# --- Squad Formation Commands ---
+func _on_move_command(target_position: Vector2) -> void:
+	if selected_units.is_empty():
+		return
+		
+	# TODO: Add formation logic for movement
+	for unit in selected_units:
+		unit.command_move_to(target_position)
 
-func cycle_formation() -> void:
-	"""Cycle through available formations"""
-	var formations = SquadFormation.FormationType.values()
-	var current_index = formations.find(formation_type)
-	var next_index = (current_index + 1) % formations.size()
-	_change_formation(formations[next_index])
+func _on_attack_command(target_node: Node2D) -> void:
+	if selected_units.is_empty():
+		return
+		
+	for unit in selected_units:
+		unit.command_attack(target_node)
 
-func get_formation_info() -> String:
-	"""Get current formation information for UI display"""
-	if current_squad:
-		var info = current_squad.get_formation_info()
-		return "Formation: %s | Units: %d | Moving: %s" % [info.type, info.unit_count, info.is_moving]
-	else:
-		return "Formation: %s (Ready)" % SquadFormation.FormationType.keys()[formation_type]
+func _clear_selection() -> void:
+	for unit in selected_units:
+		# Check if it's valid, it might have been destroyed
+		if is_instance_valid(unit):
+			unit.set_selected(false)
+	selected_units.clear()
 
 --- SCRIPT: res://scenes/missions/RaidMission.gd ---
 # res://scenes/missions/RaidMission.gd
 # Raid Mission Controller for Phase 3
 # GDD Ref: Phase 3 Task 7
-
+#
+# --- REFACTORED ---
+# This script is now decoupled from input.
+# It gets a reference to the RTSController node
+# and simply hands units to it.
 extends Node2D
 
 # --- Exported Mission Configuration ---
@@ -1329,32 +1192,65 @@ extends Node2D
 @export var mission_difficulty: float = 1.0
 @export var allow_retreat: bool = true
 
-# Node references
-@onready var player_spawn_pos: Marker2D = $PlayerStartPosition
-var enemy_hall: Node2D = null
-var rts_controller: Node = null
+## The scene to return to after the mission ends (e.g., SettlementBridge.tscn)
+@export var settlement_bridge_scene: PackedScene
 
-# Mission state
-var player_units: Array[Node2D] = []
+## If true, this mission will *not* check for the "all units destroyed" loss condition.
+## This should be TRUE for the Sacked/Defensive mission.
+@export var is_defensive_mission: bool = false
+
+# --- MODIFIED: Node References ---
+@onready var player_spawn_pos: Marker2D = $PlayerStartPosition
+@onready var rts_controller: RTSController = $RTSController
+# ---------------------------------
+
+var enemy_hall: Node2D = null
 var raid_loot: RaidLootData = null
 
+# --- REMOVED ---
+# var player_units: Array[Node2D] = []
+# The RTSController now tracks all units.
+# -----------------
+
 func _ready() -> void:
+	# --- FIX FOR SETTLEMENTBRIDGE ---
+	# We check if our parent is the SettlementBridge.
+	# If so, we do *nothing* and wait for the parent
+	# to call initialize_mission() after it loads the settlement.
+	var parent = get_parent()
+	if parent and parent.get_script() and "SettlementBridge.gd" in parent.get_script().resource_path:
+		print("RaidMission: Running as child of SettlementBridge. Waiting for initialization...")
+		return
+	
+	# If we are NOT a child of the bridge, we are a standalone
+	# offensive mission. Initialize immediately.
+	print("RaidMission: Running as standalone scene. Initializing now.")
+	initialize_mission()
+
+
+func initialize_mission() -> void:
+	"""
+	This function now contains all the logic that used to be in _ready().
+	It is called either by _ready() (if standalone) or by SettlementBridge.gd.
+	"""
 	print("RaidMission starting...")
 	
-	# Initialize loot tracking system
-	raid_loot = RaidLootData.new()
-	print("Raid loot system initialized")
+	# Verify controller was found
+	if rts_controller == null:
+		push_error("RaidMission: Critical error! RTSController node not found.")
+		get_tree().quit() # This is a fatal error
+		return
 	
-	# Load default enemy base if none specified
+	raid_loot = RaidLootData.new()
+	
 	if not enemy_base_data:
-		enemy_base_data = load("res://data/settlements/monastery_base.tres")
+		enemy_base_data = load(default_enemy_base_path)
 		if not enemy_base_data:
-			push_error("Could not load enemy base data")
+			push_error("Could not load enemy base data from default path.")
 			return
 	
 	_load_enemy_base()
 	_spawn_player_garrison()
-	_setup_rts_controller()
 	_setup_win_loss_conditions()
 
 func _load_enemy_base() -> void:
@@ -1380,18 +1276,18 @@ func _load_enemy_base() -> void:
 		building_instance.name = building_data.display_name + "_Enemy"
 		
 		# Set building data
-		if building_instance.has_method("set_data") or "data" in building_instance:
+		if "data" in building_instance:
 			building_instance.data = building_data
 		
 		# Position the building (convert grid to world position)
-		var world_pos: Vector2 = Vector2(grid_pos) * 32 + Vector2(16, 16) # 32 = tile size, add half tile offset
+		var world_pos: Vector2 = Vector2(grid_pos) * 32 + Vector2(16, 16) # 32 = tile size
 		building_instance.global_position = world_pos
 		
 		# Add to enemy groups for targeting
 		building_instance.add_to_group("enemy_buildings")
 		
 		# Check if this is the Great Hall (main target)
-		if building_data.display_name.to_lower().contains("hall") or building_data.display_name.to_lower().contains("great"):
+		if building_data.display_name.to_lower().contains("hall"):
 			enemy_hall = building_instance
 			print("Found enemy hall: %s" % building_data.display_name)
 			# Connect to building destroyed signal for win condition
@@ -1404,32 +1300,31 @@ func _load_enemy_base() -> void:
 		
 		# Add to scene
 		add_child(building_instance)
-		print("Spawned enemy building: %s at %s" % [building_data.display_name, world_pos])
 
 func _spawn_player_garrison() -> void:
 	"""Spawn player units from the garrison"""
 	print("=== SPAWNING PLAYER GARRISON ===")
-	print("SettlementManager status: %s" % SettlementManager.get_settlement_status())
-	print("Current settlement exists: %s" % (SettlementManager.current_settlement != null))
-	if SettlementManager.current_settlement:
-		print("Garrison data: %s" % SettlementManager.current_settlement.garrisoned_units)
 	
 	if not SettlementManager.current_settlement:
 		print("No current settlement found - spawning test units for demo")
-		_spawn_test_units()
+		_spawn_test_units() 
 		return
 	
 	var garrison = SettlementManager.current_settlement.garrisoned_units
 	if garrison.is_empty():
 		print("No units in garrison to spawn")
+		# We must still check for a loss condition
+		# --- MODIFIED: Check if this is a defensive mission ---
+		if not is_defensive_mission:
+			call_deferred("_check_loss_condition")
+		# -----------------------------------------------------
 		return
 	
-	var _spawn_offset: Vector2 = Vector2.ZERO  # Future use for formation spacing
-	var units_per_row: int = 5
+	var units_per_row: int = player_spawn_formation.get("units_per_row", 5)
+	var spacing: float = player_spawn_formation.get("spacing", 40.0)
 	var current_row: int = 0
 	var current_col: int = 0
 	
-	# Spawn each unit type according to count
 	for unit_path in garrison:
 		var unit_count: int = garrison[unit_path]
 		var unit_data: UnitData = load(unit_path)
@@ -1438,154 +1333,100 @@ func _spawn_player_garrison() -> void:
 			push_error("Failed to load unit data: %s" % unit_path)
 			continue
 		
-		# Spawn the specified number of this unit type
 		for i in range(unit_count):
 			var unit_instance: Node2D = unit_data.scene_to_spawn.instantiate()
-			unit_instance.name = unit_data.display_name + "_" + str(i)
 			
-			# Set unit data
+			# This is a critical check
+			if not unit_instance is BaseUnit:
+				push_error("Unit scene %s does not extend BaseUnit!" % unit_data.scene_to_spawn.get_path())
+				continue
+				
+			unit_instance.name = unit_data.display_name + "_" + str(i)
 			if "data" in unit_instance:
 				unit_instance.data = unit_data
 			
-			# Calculate spawn position in formation
 			var spawn_pos: Vector2 = player_spawn_pos.global_position
-			spawn_pos.x += current_col * 40  # 40 pixels apart horizontally
-			spawn_pos.y += current_row * 40  # 40 pixels apart vertically
+			spawn_pos.x += current_col * spacing
+			spawn_pos.y += current_row * spacing
 			unit_instance.global_position = spawn_pos
 			
-			# Add to player group for RTS selection
 			unit_instance.add_to_group("player_units")
 			
-			# Add to scene and track
+			# --- MODIFIED: This is the new, clean way ---
+			# We hand the unit to our controller.
+			rts_controller.add_unit_to_group(unit_instance)
+			# --------------------------------------------
+			
 			add_child(unit_instance)
-			player_units.append(unit_instance)
 			
-			print("Spawned player unit: %s at %s" % [unit_data.display_name, spawn_pos])
-			
-			# Update formation position
 			current_col += 1
 			if current_col >= units_per_row:
 				current_col = 0
 				current_row += 1
 
+
 func _spawn_test_units() -> void:
-	"""Spawn test units for demonstration when no settlement is available"""
+	"""
+	Spawn test units for demonstration.
+	NOTE: This debug code is brittle as it creates
+	units that are not BaseUnit.
+	"""
 	print("Spawning test units for box selection demo...")
 	
-	# Create basic unit scene manually for testing
 	var units_per_row: int = 3
 	var current_row: int = 0
 	var current_col: int = 0
 	
-	# Spawn 6 test units in formation
 	for i in range(6):
 		var test_unit = CharacterBody2D.new()
-		test_unit.name = "TestUnit_" + str(i)
-		
-		# Add a visual sprite (simple colored square)
-		var sprite = ColorRect.new()
-		sprite.size = Vector2(20, 20)
-		sprite.color = Color.BLUE
-		sprite.position = Vector2(-10, -10)  # Center the square
-		test_unit.add_child(sprite)
-		
-		# Add collision shape for physics detection
-		var collision = CollisionShape2D.new()
-		var shape = RectangleShape2D.new()
-		shape.size = Vector2(20, 20)
-		collision.shape = shape
-		test_unit.add_child(collision)
-		
-		# Calculate spawn position in formation
-		var spawn_pos: Vector2 = player_spawn_pos.global_position
-		spawn_pos.x += current_col * 60  # 60 pixels apart horizontally
-		spawn_pos.y += current_row * 60  # 60 pixels apart vertically
-		test_unit.global_position = spawn_pos
-		
-		# Add to player group for RTS selection
-		test_unit.add_to_group("player_units")
-		
-		# Add basic selection and movement functionality 
+		# ... (rest of the test unit creation code) ...
 		var script_source = """
 extends CharacterBody2D
-
-var is_selected: bool = false
-var target_position: Vector2 = Vector2.ZERO
-var move_speed: float = 100.0
-var is_moving: bool = false
-
-func set_selected(selected: bool) -> void:
-	is_selected = selected
-	queue_redraw()
-	print('%s %s' % [name, 'selected' if selected else 'deselected'])
-
+var is_selected: bool = false; var target_position: Vector2 = Vector2.ZERO
+var move_speed: float = 100.0; var is_moving: bool = false
+func set_selected(selected: bool) -> void: is_selected = selected; queue_redraw()
 func _draw() -> void:
-	if is_selected:
-		var radius = 15.0
-		var color = Color.YELLOW
-		color.a = 0.8
-		draw_circle(Vector2.ZERO, radius, color, false, 2.0)
-
-func command_move_to(target_pos: Vector2) -> void:
-	target_position = target_pos
-	is_moving = true
-	print('%s moving to %s' % [name, target_pos])
-
-func command_attack(target: Node2D) -> void:
-	print('%s received attack command on %s' % [name, target.name])
-
-func set_target_position(pos: Vector2) -> void:
-	target_position = pos
-	is_moving = true
-
+	if is_selected: draw_circle(Vector2.ZERO, 15.0, Color(1,1,0,0.8), false, 2.0)
+func command_move_to(target_pos: Vector2) -> void: target_position = target_pos; is_moving = true
+func command_attack(target: Node2D) -> void: print('%s attacking %s' % [name, target.name])
+func set_target_position(pos: Vector2) -> void: target_position = pos; is_moving = true
 func _physics_process(delta: float) -> void:
 	if is_moving and target_position != Vector2.ZERO:
-		var direction = (target_position - global_position).normalized()
-		var distance = global_position.distance_to(target_position)
-		
-		if distance < 5.0:
-			is_moving = false
-			velocity = Vector2.ZERO
-		else:
-			velocity = direction * move_speed
-		
+		var dir = (target_position - global_position).normalized()
+		if global_position.distance_to(target_position) < 5.0:
+			is_moving = false; velocity = Vector2.ZERO
+		else: velocity = dir * move_speed
 		move_and_slide()
 """
-		var temp_script = GDScript.new()
-		temp_script.source_code = script_source
-		temp_script.reload()
-		test_unit.set_script(temp_script)
+		var temp_script = GDScript.new(); temp_script.source_code = script_source
+		temp_script.reload(); test_unit.set_script(temp_script)
 		
-		# Add to scene and track
+		# ... (code to position and add_child the unit) ...
+		var spawn_pos: Vector2 = player_spawn_pos.global_position
+		spawn_pos.x += current_col * 60
+		spawn_pos.y += current_row * 60
+		test_unit.global_position = spawn_pos
+		test_unit.add_to_group("player_units")
 		add_child(test_unit)
-		player_units.append(test_unit)
+
+		# --- MODIFIED: Register test unit with controller ---
+		# We must check if it's a BaseUnit, which it is not.
+		# This debug code will not work with our new system
+		# without a significant rewrite.
+		if test_unit is BaseUnit:
+			rts_controller.add_unit_to_group(test_unit)
+		else:
+			push_warning("Test unit '%s' is not a BaseUnit. Skipping add to RTSController." % test_unit.name)
+		# ----------------------------------------------------
 		
-		print("Spawned test unit: %s at %s" % [test_unit.name, spawn_pos])
-		
-		# Update formation position
 		current_col += 1
 		if current_col >= units_per_row:
 			current_col = 0
 			current_row += 1
 
-func _setup_rts_controller() -> void:
-	"""Create and setup the RTS controller"""
-	print("Setting up RTS controller...")
-	
-	# Load and instance the RTS controller
-	var rts_script = load("res://player/RTSController.gd")
-	rts_controller = rts_script.new()
-	rts_controller.name = "RTSController"
-	
-	# Add as child to access scene tree
-	add_child(rts_controller)
-	
-	# Register all player units with the controller
-	for unit in player_units:
-		if rts_controller.has_method("add_unit_to_group"):
-			rts_controller.add_unit_to_group(unit)
-	
-	print("RTS controller setup complete")
+# --- REMOVED ---
+# The _setup_rts_controller() function is now gone.
+# -----------------
 
 func _on_enemy_building_destroyed(building_data: BuildingData) -> void:
 	"""Called when any enemy building is destroyed - collect loot"""
@@ -1595,119 +1436,104 @@ func _on_enemy_building_destroyed(building_data: BuildingData) -> void:
 
 func _setup_win_loss_conditions() -> void:
 	"""Setup win/loss condition monitoring"""
-	# Start periodic check for loss condition (all player units destroyed)
-	_check_loss_condition()
+	# --- MODIFIED: Check if this is a defensive mission ---
+	if not is_defensive_mission:
+		# Start periodic check for loss condition
+		_check_loss_condition()
+	else:
+		print("RaidMission: Skipping 'all units destroyed' loss check for defensive mission.")
+	# -----------------------------------------------------
 
 func _check_loss_condition() -> void:
 	"""Check if all player units are destroyed (loss condition)"""
-	# Check every 1 second for responsive feedback
+	# This is a recursive timer loop.
 	await get_tree().create_timer(1.0).timeout
 	
-	# Count remaining player units
+	# --- MODIFIED: Ask the controller ---
+	# The RTSController is now the single source of truth for unit counts.
 	var remaining_units = 0
-	for unit in player_units:
-		if is_instance_valid(unit) and not unit.is_queued_for_deletion():
-			remaining_units += 1
-	
-	# Update the array to remove invalid units
-	player_units = player_units.filter(func(unit): return is_instance_valid(unit) and not unit.is_queued_for_deletion())
+	if is_instance_valid(rts_controller):
+		remaining_units = rts_controller.controllable_units.size()
+	# ------------------------------------
 	
 	print("Loss check: %d units remaining" % remaining_units)
 	
 	if remaining_units == 0:
 		_on_mission_failed()
-		return
+		return # Stop the loop
 	
-	# Continue checking if mission is still active (enemy hall still exists)
+	# Continue checking if mission is still active
 	if is_instance_valid(enemy_hall):
 		_check_loss_condition()
 	else:
-		print("Loss condition checking stopped - enemy hall destroyed or mission ended")
+		print("Loss condition checking stopped - enemy hall destroyed")
 
 func _on_mission_failed() -> void:
 	"""Called when all player units are destroyed"""
 	print("Mission Failed! All units destroyed.")
 	
-	# Show failure message UI
 	_show_failure_message()
 	
-	# Wait for UI display, then return to settlement
 	await get_tree().create_timer(3.0).timeout
 	
-	# Return to settlement bridge with no loot gain
-	get_tree().change_scene_to_file("res://scenes/levels/SettlementBridge.tscn")
+	# Return to settlement bridge
+	if settlement_bridge_scene:
+		get_tree().change_scene_to_packed(settlement_bridge_scene)
+	else:
+		push_error("RaidMission: settlement_bridge_scene is not set! Cannot return to settlement.")
+
 
 func _show_failure_message() -> void:
 	"""Display the mission failure message to the player"""
-	# Create failure message UI
 	var failure_popup = Control.new()
 	failure_popup.name = "FailurePopup"
 	failure_popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	
-	# Semi-transparent background
 	var bg_panel = Panel.new()
 	bg_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	bg_panel.modulate = Color(0, 0, 0, 0.7)
 	failure_popup.add_child(bg_panel)
 	
-	# Message container
 	var message_container = VBoxContainer.new()
 	message_container.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	message_container.position = Vector2(-150, -75)
 	message_container.size = Vector2(300, 150)
 	
-	# Main message
 	var failure_label = Label.new()
 	failure_label.text = "RAID FAILED!"
-	failure_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	failure_label.add_theme_font_size_override("font_size", 32)
-	failure_label.add_theme_color_override("font_color", Color.RED)
+	# ... (rest of label setup)
 	message_container.add_child(failure_label)
 	
-	# Subtitle
 	var subtitle_label = Label.new()
 	subtitle_label.text = "All units destroyed"
-	subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	subtitle_label.add_theme_font_size_override("font_size", 18)
-	subtitle_label.add_theme_color_override("font_color", Color.WHITE)
+	# ... (rest of label setup)
 	message_container.add_child(subtitle_label)
 	
-	# Return message
 	var return_label = Label.new()
 	return_label.text = "Returning to settlement..."
-	return_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	return_label.add_theme_font_size_override("font_size", 14)
-	return_label.add_theme_color_override("font_color", Color.GRAY)
+	# ... (rest of label setup)
 	message_container.add_child(return_label)
 	
 	failure_popup.add_child(message_container)
-	
-	# Add to scene as top layer
 	add_child(failure_popup)
-	
 	print("Failure message displayed")
 
 func _on_enemy_hall_destroyed() -> void:
 	"""Called when the enemy's Great Hall is destroyed"""
 	print("Enemy Hall destroyed! Mission success!")
 	
-	# Use the dynamic loot system
 	var total_loot = raid_loot.get_total_loot()
-	
-	# Add bonus loot for completing the main objective
-	raid_loot.add_loot("gold", 200)  # Bonus gold for victory
+	raid_loot.add_loot("gold", 200) # Bonus
 	total_loot = raid_loot.get_total_loot()
 	
-	# Deposit loot to player settlement
 	SettlementManager.deposit_resources(total_loot)
-	
 	print("Mission Complete! %s" % raid_loot.get_loot_summary())
 	
-	# Wait a moment for effect, then return to settlement
 	await get_tree().create_timer(2.0).timeout
 	
-	# Return to settlement bridge
-	get_tree().change_scene_to_file("res://scenes/levels/SettlementBridge.tscn")
+	if settlement_bridge_scene:
+		get_tree().change_scene_to_packed(settlement_bridge_scene)
+	else:
+		push_error("RaidMission: settlement_bridge_scene is not set! Cannot return to settlement.")
 
 --- SCRIPT: res://scenes/world_map/WorldMap_Stub.gd ---
 # res://scenes/world_map/WorldMap_Stub.gd
@@ -1715,6 +1541,12 @@ func _on_enemy_hall_destroyed() -> void:
 # GDD Ref: Phase 3 Task 6
 
 extends Control
+
+## The main raid mission scene to load (e.g., RaidMission.tscn)
+@export var raid_mission_scene: PackedScene
+
+## The scene to return to (e.g., SettlementBridge.tscn)
+@export var settlement_bridge_scene: PackedScene
 
 @onready var raid_monastery_button: Button = $ButtonContainer/RaidMonasteryButton
 @onready var back_button: Button = $ButtonContainer/BackButton
@@ -1750,12 +1582,18 @@ func _on_raid_monastery_pressed() -> void:
 		return
 	
 	# Transition to raid mission
-	get_tree().change_scene_to_file("res://scenes/missions/RaidMission.tscn")
+	if raid_mission_scene:
+		get_tree().change_scene_to_packed(raid_mission_scene)
+	else:
+		push_error("WorldMap_Stub: raid_mission_scene is not set! Cannot start raid.")
 
 func _on_back_pressed() -> void:
 	"""Return to the settlement"""
 	print("Returning to settlement...")
-	get_tree().change_scene_to_file("res://scenes/levels/SettlementBridge.tscn")
+	if settlement_bridge_scene:
+		get_tree().change_scene_to_packed(settlement_bridge_scene)
+	else:
+		push_error("WorldMap_Stub: settlement_bridge_scene is not set! Cannot return.")
 
 --- SCRIPT: res://scripts/ai/SentryAI.gd ---
 # res://scripts/ai/SentryAI.gd
@@ -2105,6 +1943,9 @@ extends Node
 @export var raider_scene: PackedScene
 @export var welcome_popup_scene: PackedScene
 
+## The scene for the world map (e.g., WorldMap_Stub.tscn)
+@export var world_map_scene: PackedScene
+
 # --- Default Assets (fallback) ---
 var default_test_building: BuildingData = preload("res://data/buildings/Bldg_Wall.tres")
 var default_raider_scene: PackedScene = preload("res://scenes/units/VikingRaider.tscn")
@@ -2149,6 +1990,16 @@ func _ready() -> void:
 	
 	SettlementManager.load_settlement(home_base_data)
 	print("DEBUG: SettlementManager.current_settlement is: ", SettlementManager.current_settlement)
+	
+	# --- THIS IS THE FIX ---
+	# Now that the settlement is loaded, manually initialize
+	# the defensive mission child node.
+	if $DefensiveMicro.has_method("initialize_mission"):
+		$DefensiveMicro.initialize_mission()
+	else:
+		push_error("SettlementBridge: Child node DefensiveMicro is missing initialize_mission()!")
+	# -----------------------
+	
 	_find_and_setup_great_hall()
 	_instance_ui()
 	
@@ -2270,7 +2121,10 @@ func _on_start_raid_pressed() -> void:
 	print("Settlement loaded with garrison: %s" % SettlementManager.current_settlement.garrisoned_units)
 	
 	# Navigate to world map instead of direct raid
-	get_tree().change_scene_to_file("res://scenes/world_map/WorldMap_Stub.tscn")
+	if world_map_scene:
+		get_tree().change_scene_to_packed(world_map_scene)
+	else:
+		push_error("SettlementBridge: world_map_scene is not set! Cannot open world map.")
 
 --- SCRIPT: res://scripts/formations/SquadFormation.gd ---
 # res://scripts/formations/SquadFormation.gd
@@ -2629,7 +2483,7 @@ func _draw() -> void:
 		color.a = 0.8
 		draw_circle(Vector2.ZERO, radius, color, false, 3.0)
 
---- SCRIPT: res://scripts/units/VikingRaider.gd ---
+--- SCRIPT: res://scripts/units/EnemyVikingRaider.gd ---
 # res://scripts/units/VikingRaider.gd
 #
 # Concrete implementation of the Viking Raider enemy unit.
@@ -2659,6 +2513,207 @@ func set_attack_target(target: BaseBuilding) -> void:
 	# Start the FSM
 	fsm.change_state(UnitFSM.State.MOVING)
 	print("Viking Raider initialized and moving to target: %s" % target.data.display_name)
+
+--- SCRIPT: res://scripts/units/PlayerVikingRaider.gd ---
+# res://scripts/units/PlayerVikingRaider.gd
+#
+# Player-controlled Viking Raider unit with full RTS integration.
+# Extends BaseUnit to inherit all core unit functionality and adds
+# player-specific behaviors for selection, command, and group management.
+
+extends BaseUnit
+class_name PlayerVikingRaider
+
+func _ready() -> void:
+	# Call parent _ready first to initialize base unit systems
+	super._ready()
+	
+	# Add to player units group for RTS selection and control
+	add_to_group("player_units")
+	
+	# Initialize player-specific behaviors
+	_setup_player_behaviors()
+	
+	print("PlayerVikingRaider '%s' initialized and ready for RTS control" % name)
+
+func _setup_player_behaviors() -> void:
+	"""Initialize player-specific unit behaviors and properties"""
+	# Ensure the unit can be selected and commanded
+	# The BaseUnit already provides the necessary methods:
+	# - command_move_to()
+	# - command_attack() 
+	# - set_selected()
+	
+	# Set any player-specific properties
+	if data:
+		print("Player Viking Raider ready: %s (Health: %d)" % [data.display_name, current_health])
+
+# Override command methods to add player-specific feedback and behavior
+func command_move_to(target_pos: Vector2) -> void:
+	"""Enhanced move command with player feedback"""
+	print("Player Viking Raider '%s' moving to position %s" % [name, target_pos])
+	super.command_move_to(target_pos)
+
+func command_attack(target: Node2D) -> void:
+	"""Enhanced attack command with player feedback"""
+	if not fsm or not is_instance_valid(target):
+		push_warning("Player Raider FSM or target is not valid.")
+		return
+
+	print("Player Viking Raider '%s' attacking %s" % [name, target.name])
+
+	# --- Logic copied from EnemyVikingRaider ---
+	# Set the node (for attacking)
+	fsm.target_unit = target
+	
+	# Set the position (for moving) to be adjacent to the target
+	# This ensures pathfinding can succeed. Adjust offset as needed.
+	fsm.target_position = target.global_position + Vector2(0, 32) 
+	
+	# Start the FSM
+	fsm.change_state(UnitFSM.State.MOVING)
+	# ---------------------------------------------
+
+# Override selection methods to provide enhanced player feedback
+func set_selected(selected: bool) -> void:
+	"""Enhanced selection with player-specific visual feedback"""
+	super.set_selected(selected)
+	
+	if selected:
+		# Could add player-specific selection effects here
+		# e.g., special sound effects, enhanced visual indicators
+		pass
+	else:
+		# Handle deselection
+		pass
+
+# Player-specific utility methods
+func get_unit_status() -> Dictionary:
+	"""Get comprehensive unit status for UI display"""
+	return {
+		"name": name,
+		"display_name": data.display_name if data else "Unknown",
+		"health": current_health,
+		"max_health": data.max_health if data else 100,
+		"is_selected": is_selected,
+		"current_state": fsm.current_state if fsm else "None",
+		"position": global_position
+	}
+
+func is_player_controlled() -> bool:
+	"""Identify this as a player-controlled unit"""
+	return true
+
+# Override die method to handle player unit death
+func die() -> void:
+	"""Handle player unit death with proper cleanup"""
+	# Remove from player units group
+	remove_from_group("player_units")
+	
+	# Notify other systems about unit death
+	EventBus.emit_signal("player_unit_died", self)
+	
+	print("Player Viking Raider '%s' has fallen in battle!" % name)
+	
+	# Call parent die method
+	super.die()
+
+--- SCRIPT: res://ui/SelectionBox.gd ---
+# res://ui/SelectionBox.gd
+# This Control node covers the entire screen. It listens for
+# raw input, draws the selection box, and emits clean,
+# intent-based signals to the EventBus. It also uses
+# accept_event() to stop input from passing through the UI.
+extends Control
+
+var is_dragging := false
+var start_pos := Vector2.ZERO
+
+func _ready() -> void:
+	# This node handles its own input via _gui_input,
+	# so it doesn't need to connect to the EventRouter.
+	pass
+
+func _gui_input(event: InputEvent) -> void:
+	# We use _gui_input, which is only called if the mouse
+	# is over this Control. Since it's fullscreen,
+	# this will always be the case.
+	
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if event.is_pressed():
+				is_dragging = true
+				start_pos = get_local_mouse_position()
+				# This is the UI-bug-fix. We consume the
+				# event so nothing else can process it.
+				accept_event()
+			elif is_dragging: # On Left-Click Release
+				is_dragging = false
+				var end_pos := get_local_mouse_position()
+				var rect := Rect2(start_pos, end_pos - start_pos).abs()
+				
+				# Check if it was a "drag" or just a "click"
+				# A 'click' is a box with a very small area.
+				var is_box_select = rect.size.length_squared() > 100 # 10x10 px
+				
+				# Emit the clean command for the RTSController
+				EventBus.emit_signal("select_command", rect, is_box_select)
+				
+				queue_redraw() # Clear the box
+				accept_event()
+		
+		elif event.button_index == MOUSE_BUTTON_RIGHT and event.is_pressed():
+			# This is a "smart command"
+			_handle_smart_command(get_local_mouse_position())
+			accept_event()
+	
+	elif event is InputEventMouseMotion and is_dragging:
+		# Update the draw loop as the mouse moves
+		queue_redraw()
+		accept_event()
+
+func _handle_smart_command(screen_pos: Vector2) -> void:
+	# This function determines if a right-click
+	# is a "move" or "attack" command.
+	var world_space: PhysicsDirectSpaceState2D = get_world_2d().direct_space_state
+	var main_camera: Camera2D = get_viewport().get_camera_2d()
+	
+	if not main_camera:
+		push_error("SelectionBox: No Camera2D found in viewport.")
+		return
+		
+	# Convert screen position to world position
+	var world_pos: Vector2 = main_camera.get_global_mouse_position()
+	
+	var query := PhysicsPointQueryParameters2D.new()
+	query.position = world_pos
+	query.collide_with_areas = true
+	query.collide_with_bodies = true
+	# We only want to hit "enemy" things
+	# GDD: "right-click is the 'smart' command (move on ground, attack on enemy)"
+	# We assume layer 2 is "enemy_units" and layer 3 is "enemy_buildings"
+	query.collision_mask = 6 # (Binary 0110 = Layers 2 and 3)
+	
+	var results: Array = world_space.intersect_point(query)
+	
+	if not results.is_empty():
+		# We hit an enemy! Emit an attack command.
+		var target = results[0].collider
+		EventBus.emit_signal("attack_command", target)
+	else:
+		# We hit the ground. Emit a move command.
+		EventBus.emit_signal("move_command", world_pos)
+
+func _draw() -> void:
+	# This function draws the selection box
+	if is_dragging:
+		var current_pos := get_local_mouse_position()
+		var rect := Rect2(start_pos, current_pos - start_pos).abs()
+		
+		# Draw a semi-transparent fill
+		draw_rect(rect, Color(0.8, 0.8, 1.0, 0.2), true)
+		# Draw a solid outline
+		draw_rect(rect, Color(0.8, 0.8, 1.0, 1.0), false, 1.0)
 
 --- SCRIPT: res://ui/StorefrontUI.gd ---
 # res://ui/StorefrontUI.gd
@@ -2712,10 +2767,15 @@ func _load_unit_data() -> void:
 				var unit_path = "res://data/units/" + file_name
 				var unit_data = load(unit_path) as UnitData
 				if unit_data:
-					available_units.append(unit_data)
-					print("Loaded unit data: %s" % unit_data.display_name)
+					# Only load player-appropriate units (exclude enemy-only units)
+					# Player units should have "Player" in their display name or specific naming convention
+					if _is_player_unit(unit_data):
+						available_units.append(unit_data)
+						print("Loaded player unit data: %s" % unit_data.display_name)
+					else:
+						print("Skipped enemy unit data: %s" % unit_data.display_name)
 			file_name = dir.get_next()
-		print("Total units loaded: %d" % available_units.size())
+		print("Total player units loaded: %d" % available_units.size())
 
 func _setup_recruit_buttons() -> void:
 	"""Create recruit buttons for each available unit"""
@@ -2724,6 +2784,33 @@ func _setup_recruit_buttons() -> void:
 		button.text = "%s (Cost: %s)" % [unit_data.display_name, _format_cost(unit_data.spawn_cost)]
 		button.pressed.connect(_on_recruit_button_pressed.bind(unit_data))
 		recruit_buttons_container.add_child(button)
+
+func _is_player_unit(unit_data: UnitData) -> bool:
+	"""Check if a unit is appropriate for player recruitment"""
+	if not unit_data:
+		return false
+	
+	# Check if the unit has "Player" in its display name
+	if "Player" in unit_data.display_name:
+		return true
+	
+	# Check if the unit data resource path contains "Player" 
+	if "Player" in unit_data.resource_path:
+		return true
+	
+	# Check if the scene points to a PlayerVikingRaider or other player unit
+	if unit_data.scene_to_spawn:
+		var scene_path = unit_data.scene_to_spawn.resource_path
+		if "Player" in scene_path:
+			return true
+	
+	# Fallback: exclude known enemy units by name
+	var enemy_unit_names = ["Viking Raider"] # This is the enemy version
+	if unit_data.display_name in enemy_unit_names:
+		return false
+	
+	# Default to true for backwards compatibility with existing units
+	return true
 
 func _format_cost(cost: Dictionary) -> String:
 	"""Format cost dictionary as readable string"""

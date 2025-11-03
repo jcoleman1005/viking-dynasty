@@ -1,333 +1,123 @@
 # res://player/RTSController.gd
-# RTS input controller for Phase 3 with improved box selection
-# GDD Ref: Phase 3 Task 5
+#
+# --- REFACTORED ---
+# This script is now decoupled from input.
+# It listens for clean signals from the EventBus
+# (which are fired by SelectionBox.gd).
+# It also correctly cleans up dead units.
 
-extends Node2D
+extends Node
+class_name RTSController
 
-# Selection System
-var selected_units: Array[Node2D] = []
-var selection_box_start: Vector2 = Vector2.ZERO
-var selection_box_current: Vector2 = Vector2.ZERO
-var is_dragging: bool = false
-
-# Squad Formation System
-var current_squad: SquadFormation = null
-var formation_type: SquadFormation.FormationType = SquadFormation.FormationType.LINE
-
-# Input State
-var left_mouse_pressed: bool = false
-
-# Camera reference for screen-to-world conversion
-@onready var camera: Camera2D = get_viewport().get_camera_2d()
-
-# Selection box visual
-var selection_rect: Rect2 = Rect2()
+var selected_units: Array[BaseUnit] = []
+var controllable_units: Array[BaseUnit] = []
 
 func _ready() -> void:
-	# Ensure we can draw and handle input
-	set_process_unhandled_input(true)
-	# Position at world origin for proper drawing coordinates
-	global_position = Vector2.ZERO
+	# Connect to the clean signals from our new EventBus/SelectionBox
+	EventBus.select_command.connect(_on_select_command)
+	EventBus.move_command.connect(_on_move_command)
+	EventBus.attack_command.connect(_on_attack_command)
 
-func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton:
-		_handle_mouse_button(event)
-	elif event is InputEventMouseMotion:
-		_handle_mouse_motion(event)
-	elif event is InputEventKey and event.pressed:
-		_handle_keyboard_input(event)
-
-func _handle_mouse_button(event: InputEventMouseButton) -> void:
-	if event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
-			# Start selection or single select
-			left_mouse_pressed = true
-			selection_box_start = get_global_mouse_position()
-			selection_box_current = selection_box_start
-			is_dragging = false
-			queue_redraw()
-		else:
-			# End selection
-			left_mouse_pressed = false
-			if is_dragging:
-				_complete_box_selection()
-				is_dragging = false
-			else:
-				_single_select()
-			queue_redraw()
-	
-	elif event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
-		_handle_right_click()
-
-func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
-	if left_mouse_pressed:
-		selection_box_current = get_global_mouse_position()
-		var drag_distance = selection_box_current.distance_to(selection_box_start)
-		if drag_distance > 10.0: # Minimum drag distance to start box selection
-			is_dragging = true
-			_update_selection_box()
-			queue_redraw()
-
-func _update_selection_box() -> void:
-	var top_left = Vector2(
-		min(selection_box_start.x, selection_box_current.x),
-		min(selection_box_start.y, selection_box_current.y)
-	)
-	var bottom_right = Vector2(
-		max(selection_box_start.x, selection_box_current.x),
-		max(selection_box_start.y, selection_box_current.y)
-	)
-	selection_rect = Rect2(top_left, bottom_right - top_left)
-
-func _single_select() -> void:
-	# Select a single unit at the click position
-	var world_pos = get_global_mouse_position()
-	
-	# Clear previous selection
-	_clear_selection()
-	
-	# Method 1: Try physics query first
-	var space_state = get_world_2d().direct_space_state
-	var query = PhysicsPointQueryParameters2D.new()
-	query.position = world_pos
-	query.collision_mask = 1 # Units should be on layer 1
-	
-	var results = space_state.intersect_point(query, 1)
-	
-	for result in results:
-		var body = result["collider"]
-		if _is_player_unit(body):
-			_add_to_selection(body)
-			return
-	
-	# Method 2: Fallback - Check all player units for proximity
-	var all_units = get_tree().get_nodes_in_group("player_units")
-	
-	var closest_unit: Node2D = null
-	var closest_distance: float = 50.0  # Max click distance in pixels
-	
-	for unit in all_units:
-		if unit is Node2D:
-			var distance = unit.global_position.distance_to(world_pos)
-			if distance < closest_distance and _is_player_unit(unit):
-				closest_distance = distance
-				closest_unit = unit
-	
-	# Select the closest unit if found
-	if closest_unit:
-		_add_to_selection(closest_unit)
-
-func _complete_box_selection() -> void:
-	# Complete box selection and select all units in the box
-	var units_in_box = _get_units_in_rect(selection_rect)
-	
-	# Clear previous selection
-	_clear_selection()
-	
-	# Add all units in box to selection
-	for unit in units_in_box:
-		if _is_player_unit(unit):
-			_add_to_selection(unit)
-	
-	# Create squad formation with selected units
-	_create_squad_formation()
-	
-	print("Box selection completed: %d units selected" % selected_units.size())
-
-func _get_units_in_rect(rect: Rect2) -> Array:
-	# Get all units whose positions are within the given rectangle
-	var units_in_rect: Array = []
-	
-	# Find all units in the scene
-	var units = get_tree().get_nodes_in_group("player_units")
-	
-	for unit in units:
-		if unit is Node2D and rect.has_point(unit.global_position):
-			units_in_rect.append(unit)
-	
-	return units_in_rect
-
-func _handle_right_click() -> void:
-	# Handle right mouse click for movement/attack commands
-	if selected_units.is_empty():
-		return
-	
-	var world_pos = get_global_mouse_position()
-	var target = _get_target_at_position(world_pos)
-	
-	if target and _is_enemy_unit(target):
-		# Attack command
-		print("Commanding %d units to attack %s" % [selected_units.size(), target.name])
-		for unit in selected_units:
-			if unit.has_method("command_attack"):
-				unit.command_attack(target)
-			elif "fsm" in unit and unit.fsm != null and unit.fsm.has_method("command_attack"):
-				unit.fsm.command_attack(target)
-	else:
-		# Move command using squad formation
-		if current_squad and selected_units.size() > 1:
-			print("Squad formation moving to %s with %d units" % [world_pos, selected_units.size()])
-			current_squad.move_to_position(world_pos)
-		else:
-			# Single unit or no squad - use individual movement
-			print("Commanding %d units to move to %s" % [selected_units.size(), world_pos])
-			for unit in selected_units:
-				if unit.has_method("command_move_to"):
-					unit.command_move_to(world_pos)
-				elif "fsm" in unit and unit.fsm != null and unit.fsm.has_method("command_move_to"):
-					unit.fsm.command_move_to(world_pos)
-
-func _get_target_at_position(world_pos: Vector2) -> Node2D:
-	# Get the target (enemy unit/building) at the given screen position
-	var space_state = get_world_2d().direct_space_state
-	
-	var query = PhysicsPointQueryParameters2D.new()
-	query.position = world_pos
-	query.collision_mask = 2 # Assuming enemies are on layer 2
-	
-	var results = space_state.intersect_point(query, 1)
-	
-	for result in results:
-		var body = result["collider"]
-		if _is_enemy_unit(body):
-			return body
-	
-	# Fallback: check enemy groups for proximity
-	var enemy_units = get_tree().get_nodes_in_group("enemy_units")
-	var enemy_buildings = get_tree().get_nodes_in_group("enemy_buildings")
-	var all_enemies = enemy_units + enemy_buildings
-	
-	var closest_enemy: Node2D = null
-	var closest_distance: float = 50.0
-	
-	for enemy in all_enemies:
-		if enemy is Node2D:
-			var distance = enemy.global_position.distance_to(world_pos)
-			if distance < closest_distance:
-				closest_distance = distance
-				closest_enemy = enemy
-	
-	return closest_enemy
-
-func _is_player_unit(node: Node) -> bool:
-	# Check if the node is a player unit
-	return node.is_in_group("player_units") and (
-		node.has_method("command_move_to") or 
-		("fsm" in node and node.fsm != null)
-	)
-
-func _is_enemy_unit(node: Node) -> bool:
-	# Check if the node is an enemy unit or building
-	return node.is_in_group("enemy_units") or node.is_in_group("enemy_buildings")
-
-func _clear_selection() -> void:
-	# Clear all selected units
-	for unit in selected_units:
-		if is_instance_valid(unit) and unit.has_method("set_selected"):
-			unit.set_selected(false)
-	selected_units.clear()
-	print("Selection cleared")
-
-func _add_to_selection(unit: Node2D) -> void:
-	# Add a unit to the selection
-	if unit not in selected_units:
-		selected_units.append(unit)
-		if unit.has_method("set_selected"):
-			unit.set_selected(true)
-		print("Added %s to selection. Total selected: %d" % [unit.name, selected_units.size()])
-
-func _draw() -> void:
-	# Draw the selection box if dragging
-	if is_dragging and selection_rect.size.length() > 0:
-		# Convert world coordinates to local coordinates for drawing
-		var local_rect = Rect2(
-			to_local(selection_rect.position),
-			selection_rect.size
-		)
-		
-		# Draw selection box with semi-transparent fill
-		var fill_color = Color.YELLOW
-		fill_color.a = 0.2
-		draw_rect(local_rect, fill_color)
-		
-		# Draw selection box border
-		draw_rect(local_rect, Color.YELLOW, false, 2.0)
-
-# --- Unit Management ---
+# --- PUBLIC API ---
 
 func add_unit_to_group(unit: Node2D) -> void:
-	# Add a unit to the player_units group for selection
-	unit.add_to_group("player_units")
-	print("Added %s to player_units group" % unit.name)
+	# Verify the unit is a BaseUnit (which has 'destroyed' signal)
+	if not unit is BaseUnit:
+		push_error("RTSController: Tried to add unit '%s' that doesn't extend BaseUnit." % unit.name)
+		return
+		
+	if unit in controllable_units:
+		return
 
-func remove_unit_from_group(unit: Node2D) -> void:
-	# Remove a unit from selection and groups
+	controllable_units.append(unit)
+	
+	# --- THIS IS THE DEAD UNIT CRASH FIX ---
+	# Connect to this unit's 'destroyed' signal.
+	# When it's destroyed, we'll clean it up.
+	# We use CONNECT_DEFERRED to avoid race conditions.
+	if unit.has_signal("destroyed"):
+		unit.destroyed.connect(remove_unit.bind(unit), CONNECT_DEFERRED)
+	else:
+		# This check is vital. Our old debug units will fail this.
+		push_warning("Unit %s does not have 'destroyed' signal!" % unit.name)
+
+func remove_unit(unit: BaseUnit) -> void:
+	"""Removes a unit from tracking. Called by the unit's 'destroyed' signal."""
+	print("RTSController: Unit %s was destroyed/removed." % unit.name)
+	
 	if unit in selected_units:
 		selected_units.erase(unit)
-	unit.remove_from_group("player_units")
+		if is_instance_valid(unit):
+			# set_selected is a function on BaseUnit
+			unit.set_selected(false)
+			
+	if unit in controllable_units:
+		controllable_units.erase(unit)
+		
+	# Check if this was the last unit
+	if controllable_units.is_empty():
+		print("RTSController: All units are gone.")
 
-# --- Debug Methods ---
+# --- REMOVED ---
+# _on_global_input, _draw, _process, _handle_selection,
+# and _handle_command are all removed.
+# They are replaced by the functions below.
+# -----------------
 
-func get_selected_units() -> Array[Node2D]:
-	"""Get currently selected units - useful for debugging"""
-	return selected_units
+# --- NEW: EVENTBUS HANDLERS ---
 
-func get_selection_count() -> int:
-	"""Get number of selected units"""
-	return selected_units.size()
-
-# --- Squad Formation System ---
-
-func _create_squad_formation() -> void:
-	"""Create a squad formation with currently selected units"""
-	if selected_units.size() > 1:
-		current_squad = SquadFormation.new(selected_units)
-		current_squad.set_formation_type(formation_type)
-		print("Created squad formation: %s with %d units" % [SquadFormation.FormationType.keys()[formation_type], selected_units.size()])
-	else:
-		current_squad = null
-
-func _handle_keyboard_input(event: InputEventKey) -> void:
-	"""Handle keyboard shortcuts for formation changes"""
-	if selected_units.is_empty():
+func _on_select_command(select_rect: Rect2, is_box_select: bool) -> void:
+	_clear_selection()
+	
+	var main_camera: Camera2D = get_viewport().get_camera_2d()
+	if not main_camera:
+		push_error("RTSController: No Camera2D found to perform selection.")
 		return
 	
-	# Formation hotkeys (Company of Heroes style)
-	match event.keycode:
-		KEY_1: # Line formation
-			_change_formation(SquadFormation.FormationType.LINE)
-		KEY_2: # Column formation  
-			_change_formation(SquadFormation.FormationType.COLUMN)
-		KEY_3: # Wedge formation
-			_change_formation(SquadFormation.FormationType.WEDGE)
-		KEY_4: # Box formation
-			_change_formation(SquadFormation.FormationType.BOX)
-		KEY_5: # Circle formation
-			_change_formation(SquadFormation.FormationType.CIRCLE)
-
-func _change_formation(new_formation: SquadFormation.FormationType) -> void:
-	"""Change the formation type of the current squad"""
-	formation_type = new_formation
-	
-	if current_squad:
-		current_squad.set_formation_type(formation_type)
-		print("Formation changed to: %s" % SquadFormation.FormationType.keys()[formation_type])
+	if is_box_select:
+		# Box select
+		for unit in controllable_units:
+			# Convert unit's world pos to screen pos
+			var screen_pos = main_camera.unproject_position(unit.global_position)
+			if select_rect.has_point(screen_pos):
+				selected_units.append(unit)
+				unit.set_selected(true)
 	else:
-		print("Formation set to: %s (will apply to next selection)" % SquadFormation.FormationType.keys()[formation_type])
+		# Single select (find closest unit to the click)
+		# We must get the world position from the camera
+		var click_world_pos := main_camera.get_global_mouse_position()
+		var closest_unit: BaseUnit = null
+		var min_dist_sq = INF
+		
+		for unit in controllable_units:
+			var dist_sq = unit.global_position.distance_squared_to(click_world_pos)
+			# 40px click radius
+			if dist_sq < min_dist_sq and dist_sq < (40 * 40): 
+				min_dist_sq = dist_sq
+				closest_unit = unit
+				
+		if closest_unit:
+			selected_units.append(closest_unit)
+			closest_unit.set_selected(true)
 
-# --- Squad Formation Commands ---
+func _on_move_command(target_position: Vector2) -> void:
+	if selected_units.is_empty():
+		return
+		
+	# TODO: Add formation logic for movement
+	for unit in selected_units:
+		unit.command_move_to(target_position)
 
-func cycle_formation() -> void:
-	"""Cycle through available formations"""
-	var formations = SquadFormation.FormationType.values()
-	var current_index = formations.find(formation_type)
-	var next_index = (current_index + 1) % formations.size()
-	_change_formation(formations[next_index])
+func _on_attack_command(target_node: Node2D) -> void:
+	if selected_units.is_empty():
+		return
+		
+	for unit in selected_units:
+		unit.command_attack(target_node)
 
-func get_formation_info() -> String:
-	"""Get current formation information for UI display"""
-	if current_squad:
-		var info = current_squad.get_formation_info()
-		return "Formation: %s | Units: %d | Moving: %s" % [info.type, info.unit_count, info.is_moving]
-	else:
-		return "Formation: %s (Ready)" % SquadFormation.FormationType.keys()[formation_type]
+func _clear_selection() -> void:
+	for unit in selected_units:
+		# Check if it's valid, it might have been destroyed
+		if is_instance_valid(unit):
+			unit.set_selected(false)
+	selected_units.clear()

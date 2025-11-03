@@ -1,7 +1,10 @@
 res://data/settlements
+res://data/units
+res://scenes/world_map
+res://ui
+res://textures/placeholders
 res://data/buildings
 res://scripts/units
 res://autoload
 res://
-res://data/units
 C:/Users/jcole/OneDrive/Documents/GameDev/Project Folder/viking-dynasty

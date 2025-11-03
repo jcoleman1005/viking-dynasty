@@ -8,9 +8,13 @@ extends Node
 @export var raider_scene: PackedScene
 @export var welcome_popup_scene: PackedScene
 
+## The scene for the world map (e.g., WorldMap_Stub.tscn)
+@export var world_map_scene: PackedScene
+
 # --- Default Assets (fallback) ---
 var default_test_building: BuildingData = preload("res://data/buildings/Bldg_Wall.tres")
-var default_raider_scene: PackedScene = preload("res://scenes/units/VikingRaider.tscn")
+# --- FIX: Removed preload() to break circular dependency ---
+var default_raider_scene: PackedScene 
 var default_welcome_popup: PackedScene = preload("res://ui/WelcomeHome_Popup.tscn")
 
 # --- Scene Node References ---
@@ -29,44 +33,75 @@ const RAIDER_SPAWN_POS: Vector2 = Vector2(50, 50)
 
 
 func _ready() -> void:
-	# --- Deferred Setup ---
-	await get_tree().process_frame
-	
+	_setup_default_resources()
+	_initialize_settlement()
+	_setup_ui()
+	_connect_signals()
+	_handle_welcome_payout()
+
+func _setup_default_resources() -> void:
+	"""Initialize default resources and handle missing inspector assignments"""
 	# Setup fallback resources if not set in inspector
 	if not test_building_data:
 		test_building_data = default_test_building
+	
+	# Load the default raider scene at runtime to avoid circular dependencies
 	if not raider_scene:
-		raider_scene = default_raider_scene
+		raider_scene = load("res://scenes/units/VikingRaider.tscn")
+		
 	if not welcome_popup_scene:
 		welcome_popup_scene = default_welcome_popup
-	
+
+func _initialize_settlement() -> void:
+	"""Initialize or load settlement data"""
 	# Use inspector data if available, otherwise create default
 	if not home_base_data:
-		home_base_data = SettlementData.new()
-		home_base_data.treasury = {"gold": 1000, "wood": 500, "food": 100, "stone": 200}
-		home_base_data.placed_buildings = []
-		home_base_data.garrisoned_units = {}
-		print("DEBUG: Created default settlement data")
+		home_base_data = _create_default_settlement()
+		print("SettlementBridge: Created default settlement data")
 	else:
-		print("DEBUG: Using inspector settlement data")
+		print("SettlementBridge: Using inspector settlement data")
 	
+	# Load the settlement into the manager
 	SettlementManager.load_settlement(home_base_data)
-	print("DEBUG: SettlementManager.current_settlement is: ", SettlementManager.current_settlement)
-	_find_and_setup_great_hall()
-	_instance_ui()
 	
-	# --- Connect Signals ---
+	# Let child nodes handle their own initialization via signals
+	EventBus.settlement_loaded.emit(home_base_data)
+
+func _create_default_settlement() -> SettlementData:
+	"""Create a default settlement with basic resources"""
+	var settlement = SettlementData.new()
+	settlement.treasury = {"gold": 1000, "wood": 500, "food": 100, "stone": 200}
+	var empty_buildings: Array[Dictionary] = []
+	settlement.placed_buildings = empty_buildings
+	settlement.garrisoned_units = {}
+	return settlement
+
+func _setup_ui() -> void:
+	"""Initialize UI components"""
+	welcome_popup = welcome_popup_scene.instantiate()
+	ui_layer.add_child(welcome_popup)
+	welcome_popup.collect_button_pressed.connect(_on_payout_collected)
+
+func _connect_signals() -> void:
+	"""Connect button signals"""
 	restart_button.pressed.connect(_on_restart_pressed)
 	start_attack_button.pressed.connect(_on_start_attack_pressed)
 	start_raid_button.pressed.connect(_on_start_raid_pressed)
+	
+	# Connect to EventBus for loose coupling
+	EventBus.settlement_loaded.connect(_on_settlement_loaded)
 
-	# --- Payout Logic ---
-	# This now happens when the scene loads, simulating the return from an attack.
+func _handle_welcome_payout() -> void:
+	"""Handle any pending payout when returning to settlement"""
 	var payout = SettlementManager.calculate_payout()
 	if not payout.is_empty():
 		welcome_popup.display_payout(payout)
 		start_attack_button.disabled = true # Disable combat until payout is collected
 		storefront_ui.hide()
+
+func _on_settlement_loaded(_settlement_data: SettlementData) -> void:
+	"""Called when settlement is fully loaded - find and setup buildings"""
+	call_deferred("_find_and_setup_great_hall")
 
 
 func _input(event: InputEvent) -> void:
@@ -94,15 +129,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 		
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.is_pressed():
-		var mouse_pos: Vector2 = get_viewport().get_mouse_position()
-		var grid_pos: Vector2i = Vector2i(mouse_pos / SettlementManager.astar_grid.cell_size)
-		SettlementManager.place_building(test_building_data, grid_pos)
-		get_viewport().set_input_as_handled()
+		if SettlementManager.astar_grid and SettlementManager.astar_grid.cell_size != Vector2.ZERO:
+			var mouse_pos: Vector2 = get_viewport().get_mouse_position()
+			var grid_pos: Vector2i = Vector2i(mouse_pos / SettlementManager.astar_grid.cell_size)
+			SettlementManager.place_building(test_building_data, grid_pos)
+			get_viewport().set_input_as_handled()
+		else:
+			print("Cannot place building: AStarGrid not initialized")
 
-func _instance_ui() -> void:
-	welcome_popup = welcome_popup_scene.instantiate()
-	ui_layer.add_child(welcome_popup)
-	welcome_popup.collect_button_pressed.connect(_on_payout_collected)
+
 
 func _on_payout_collected(payout: Dictionary) -> void:
 	SettlementManager.deposit_resources(payout)
@@ -162,6 +197,7 @@ func _on_start_raid_pressed() -> void:
 		push_error("Cannot open world map: No settlement loaded")
 		return
 	
+	
 	# Ensure we have some units in the garrison for raiding
 	if SettlementManager.current_settlement.garrisoned_units.is_empty():
 		print("Warning: No units in garrison. Adding test unit.")
@@ -173,4 +209,9 @@ func _on_start_raid_pressed() -> void:
 	print("Settlement loaded with garrison: %s" % SettlementManager.current_settlement.garrisoned_units)
 	
 	# Navigate to world map instead of direct raid
-	get_tree().change_scene_to_file("res://scenes/world_map/WorldMap_Stub.tscn")
+	if world_map_scene:
+		get_tree().change_scene_to_packed(world_map_scene)
+	else:
+		# Fallback: load world map directly if not set in inspector
+		print("world_map_scene not set, loading WorldMap_Stub directly")
+		get_tree().change_scene_to_file("res://scenes/world_map/WorldMap_Stub.tscn")

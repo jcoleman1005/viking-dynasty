@@ -1,6 +1,4 @@
-res://scenes/missions/RaidMission.gd
-res://addons/GodotAiSuite/Masterprompt.txt
-res://scenes/units/VikingRaider.tscn
-res://data/units/Unit_Raider.tres
+res://data/settlements/home_base.tres
+res://scripts/buildings/SettlementBridge.gd
 res://scenes/levels/SettlementBridge.tscn
 res://placeholder_tile.tres
