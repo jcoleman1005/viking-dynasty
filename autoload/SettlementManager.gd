@@ -6,9 +6,18 @@ var current_settlement: SettlementData
 var astar_grid: AStarGrid2D
 @onready var building_container: Node2D = $BuildingContainer
 
-const TILE_SIZE: int = 32
-const GRID_WIDTH: int = 50
-const GRID_HEIGHT: int = 30
+# --- Configurable Grid Settings ---
+@export_group("Grid Configuration")
+@export var tile_size: int = 32
+@export var grid_width: int = 120  # Increased from 50
+@export var grid_height: int = 80  # Increased from 30
+@export var auto_resize_for_scene: bool = true  # Enable automatic scene detection
+
+# Scene-specific overrides (optional)
+@export_subgroup("Scene Overrides")
+@export var settlement_grid_size: Vector2i = Vector2i(60, 40)
+@export var raid_grid_size: Vector2i = Vector2i(120, 80)  # Increased for raid missions
+@export var defense_grid_size: Vector2i = Vector2i(80, 60)  # Increased for defensive missions
 
 func _ready() -> void:
 	# Initialize the grid as soon as the manager is ready.
@@ -17,13 +26,17 @@ func _ready() -> void:
 
 func _initialize_grid() -> void:
 	"""Initialize the AStarGrid2D with proper error handling"""
+	# Auto-detect scene type and adjust grid size if enabled
+	if auto_resize_for_scene:
+		_detect_and_set_grid_size()
+	
 	astar_grid = AStarGrid2D.new()
-	var playable_rect := Rect2i(0, 0, GRID_WIDTH, GRID_HEIGHT)
+	var playable_rect := Rect2i(0, 0, grid_width, grid_height)
 	astar_grid.region = playable_rect
-	astar_grid.cell_size = Vector2(TILE_SIZE, TILE_SIZE)
+	astar_grid.cell_size = Vector2(tile_size, tile_size)
 	astar_grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_NEVER
 	astar_grid.update()
-	print("Settlement Grid Initialized: %dx%d cells" % [GRID_WIDTH, GRID_HEIGHT])
+	print("Settlement Grid Initialized: %dx%d cells (auto-detected: %s)" % [grid_width, grid_height, auto_resize_for_scene])
 
 func load_settlement(data: SettlementData) -> void:
 	if not data:
@@ -50,14 +63,14 @@ func load_settlement(data: SettlementData) -> void:
 	astar_grid.clear()
 	
 	# Reinitialize grid parameters after clear()
-	var playable_rect := Rect2i(0, 0, GRID_WIDTH, GRID_HEIGHT)
+	var playable_rect := Rect2i(0, 0, grid_width, grid_height)
 	astar_grid.region = playable_rect
-	astar_grid.cell_size = Vector2(TILE_SIZE, TILE_SIZE)
+	astar_grid.cell_size = Vector2(tile_size, tile_size)
 	astar_grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_NEVER
 	
 	# CRITICAL: Update the grid after setting parameters
 	astar_grid.update()
-	print("AStarGrid reinitialized: %dx%d cells" % [GRID_WIDTH, GRID_HEIGHT])
+	print("AStarGrid reinitialized: %dx%d cells" % [grid_width, grid_height])
 	
 	for child in building_container.get_children():
 		child.queue_free()
@@ -84,8 +97,13 @@ func place_building(building_data: BuildingData, grid_position: Vector2i) -> Bas
 	
 	# Validate grid position is within bounds
 	if not _is_position_valid(grid_position):
-		push_warning("Building placement at %s is outside grid bounds (%d x %d). Skipping pathfinding update." % [grid_position, GRID_WIDTH, GRID_HEIGHT])
-		# Still create the building but don't update pathfinding
+		push_error("Cannot place building at %s: position is outside grid bounds (%d x %d)." % [grid_position, grid_width, grid_height])
+		return null
+	
+	# Check for existing building at this position
+	if _is_position_occupied(grid_position):
+		push_error("Cannot place building at %s: position is already occupied." % grid_position)
+		return null
 	
 	var new_building: BaseBuilding = building_data.scene_to_spawn.instantiate()
 	new_building.data = building_data
@@ -222,6 +240,11 @@ func save_settlement() -> void:
 		return
 	
 	if current_settlement.resource_path and not current_settlement.resource_path.is_empty():
+		# Ensure the settlement uses the external SettlementData script class
+		# This prevents inline script conflicts when saving
+		if not current_settlement.get_script():
+			current_settlement.set_script(preload("res://data/settlements/SettlementData.gd"))
+		
 		var error = ResourceSaver.save(current_settlement, current_settlement.resource_path)
 		if error == OK:
 			print("Settlement data saved successfully to: %s" % current_settlement.resource_path)
@@ -251,5 +274,68 @@ func get_settlement_status() -> String:
 
 func _is_position_valid(grid_position: Vector2i) -> bool:
 	"""Check if a grid position is within the AStarGrid bounds"""
-	return grid_position.x >= 0 and grid_position.x < GRID_WIDTH and \
-		   grid_position.y >= 0 and grid_position.y < GRID_HEIGHT
+	return grid_position.x >= 0 and grid_position.x < grid_width and \
+		   grid_position.y >= 0 and grid_position.y < grid_height
+
+func _is_position_occupied(grid_position: Vector2i) -> bool:
+	"""Check if a grid position is already occupied by a building"""
+	if not current_settlement:
+		return false
+	
+	for building_entry in current_settlement.placed_buildings:
+		var existing_pos: Vector2i = building_entry["grid_position"]
+		if existing_pos == grid_position:
+			return true
+	
+	return false
+
+func set_astar_point_solid(grid_position: Vector2i, solid: bool) -> void:
+	"""Public interface to set pathfinding grid points as solid/passable"""
+	if not astar_grid:
+		push_warning("AStarGrid not initialized")
+		return
+	
+	if not _is_position_valid(grid_position):
+		push_warning("Grid position %s is out of bounds" % grid_position)
+		return
+	
+	if astar_grid.region.size.x <= 0 or astar_grid.region.size.y <= 0:
+		push_warning("AStarGrid region is invalid")
+		return
+	
+	astar_grid.set_point_solid(grid_position, solid)
+	# Don't call update() here - let caller decide when to batch update
+
+func _detect_and_set_grid_size() -> void:
+	"""Auto-detect the current scene type and set appropriate grid size"""
+	var current_scene = get_tree().current_scene
+	if not current_scene:
+		print("SettlementManager: No current scene found for auto-detection")
+		return
+	
+	var scene_name = current_scene.name.to_lower()
+	var scene_path = current_scene.scene_file_path.to_lower()
+	
+	print("SettlementManager: Detecting scene type from '%s' (%s)" % [scene_name, scene_path])
+	
+	# Detect raid missions
+	if "raid" in scene_name or "raid" in scene_path:
+		grid_width = raid_grid_size.x
+		grid_height = raid_grid_size.y
+		print("SettlementManager: Auto-detected RAID mission - using grid %dx%d" % [grid_width, grid_height])
+	
+	# Detect defensive missions
+	elif "defensive" in scene_name or "defense" in scene_path or "sacked" in scene_name:
+		grid_width = defense_grid_size.x
+		grid_height = defense_grid_size.y
+		print("SettlementManager: Auto-detected DEFENSIVE mission - using grid %dx%d" % [grid_width, grid_height])
+	
+	# Detect settlement/bridge scenes
+	elif "settlement" in scene_name or "bridge" in scene_path:
+		grid_width = settlement_grid_size.x
+		grid_height = settlement_grid_size.y
+		print("SettlementManager: Auto-detected SETTLEMENT scene - using grid %dx%d" % [grid_width, grid_height])
+	
+	# Use large default for unknown scenes
+	else:
+		print("SettlementManager: Unknown scene type - using default large grid %dx%d" % [grid_width, grid_height])

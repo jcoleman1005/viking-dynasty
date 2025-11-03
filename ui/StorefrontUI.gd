@@ -101,6 +101,46 @@ func _format_cost(cost: Dictionary) -> String:
 		cost_parts.append("%d %s" % [cost[resource], resource])
 	return ", ".join(cost_parts)
 
+func _get_safe_placement_position() -> Vector2i:
+	"""Find a safe position to place a building, avoiding overlaps"""
+	if not SettlementManager.current_settlement:
+		return Vector2i(10, 15) # Fallback position
+	
+	# Get grid bounds from SettlementManager
+	var grid_width = SettlementManager.grid_width
+	var grid_height = SettlementManager.grid_height
+	
+	# Create a set of occupied positions for quick lookup
+	var occupied_positions: Array[Vector2i] = []
+	for building_entry in SettlementManager.current_settlement.placed_buildings:
+		occupied_positions.append(building_entry["grid_position"])
+	
+	# Find the first available position using a spiral search pattern
+	var center_x = grid_width / 2
+	var center_y = grid_height / 2
+	var max_radius = min(grid_width, grid_height) / 2
+	
+	# Start from center and spiral outward
+	for radius in range(1, max_radius + 1):
+		for angle_step in range(8 * radius): # More points for larger radii
+			var angle = (angle_step * 2.0 * PI) / (8 * radius)
+			var test_x = center_x + int(radius * cos(angle))
+			var test_y = center_y + int(radius * sin(angle))
+			var test_pos = Vector2i(test_x, test_y)
+			
+			# Check bounds
+			if test_pos.x < 0 or test_pos.x >= grid_width or test_pos.y < 0 or test_pos.y >= grid_height:
+				continue
+			
+			# Check if position is free
+			if not test_pos in occupied_positions:
+				print("Found safe placement position: %s" % test_pos)
+				return test_pos
+	
+	# If no free position found, use a fallback with warning
+	push_warning("No free placement position found, using fallback")
+	return Vector2i(10, 15)
+
 func _update_treasury_display(new_treasury: Dictionary) -> void:
 	gold_label.text = "Gold: %d" % new_treasury.get("gold", 0)
 	wood_label.text = "Wood: %d" % new_treasury.get("wood", 0)
@@ -116,16 +156,16 @@ func _on_buy_button_pressed(item_data: BuildingData) -> void:
 	
 	if purchase_successful:
 		print("UI received purchase confirmation for '%s'." % item_data.display_name)
-		var test_grid_pos = Vector2i(10, 15) # TODO: Replace with player input
-		var new_building = SettlementManager.place_building(item_data, test_grid_pos)
+		var placement_pos = _get_safe_placement_position()
+		var new_building = SettlementManager.place_building(item_data, placement_pos)
 		
 		if new_building and SettlementManager.current_settlement:
 			var building_entry = {
 				"resource_path": item_data.resource_path,
-				"grid_position": test_grid_pos
+				"grid_position": placement_pos
 			}
 			SettlementManager.current_settlement.placed_buildings.append(building_entry)
-			print("Added %s to persistent settlement data." % item_data.display_name)
+			print("Added %s to persistent settlement data at %s." % [item_data.display_name, placement_pos])
 			SettlementManager.save_settlement()
 	else:
 		print("UI received purchase failure for '%s'." % item_data.display_name)

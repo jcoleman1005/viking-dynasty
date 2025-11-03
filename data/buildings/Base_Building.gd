@@ -29,9 +29,29 @@ func take_damage(amount: int) -> void:
 func die() -> void:
 	print("%s has been destroyed." % data.display_name)
 	
+	# Add visual feedback for destruction
+	_show_destruction_effect()
+	
 	# --- ADDED ---
 	# Emit the signal *before* queue_free() so listeners
 	# can react before the node is deleted.
 	building_destroyed.emit(self)
 	
+	# Remove from groups before deletion
+	remove_from_group("enemy_buildings")
+	
+	# Queue for deletion on the next frame
+	print("Building %s queued for removal from scene" % data.display_name)
 	queue_free()
+
+func _show_destruction_effect() -> void:
+	"""Add a simple visual destruction effect"""
+	# Create a simple destruction tween for visual feedback
+	var tween = create_tween()
+	
+	# Scale down and fade out
+	tween.parallel().tween_property(self, "scale", Vector2(0.1, 0.1), 0.3)
+	tween.parallel().tween_property(self, "modulate", Color.TRANSPARENT, 0.3)
+	
+	# Optional: Add rotation for dramatic effect
+	tween.parallel().tween_property(self, "rotation", randf() * TAU, 0.3)

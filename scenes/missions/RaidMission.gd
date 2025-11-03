@@ -11,6 +11,11 @@ extends Node2D
 # --- Exported Mission Configuration ---
 @export var enemy_base_data: SettlementData
 @export var default_enemy_base_path: String = "res://data/settlements/monastery_base.tres"
+@export_group("Enemy Base Presets")
+@export var available_enemy_bases: Array[String] = [
+	"res://data/settlements/monastery_base.tres",
+	"res://data/settlements/fortress_base.tres"
+]
 @export var victory_bonus_loot: Dictionary = {"gold": 200}
 @export var player_spawn_formation: Dictionary = {"units_per_row": 5, "spacing": 40}
 @export var mission_difficulty: float = 1.0
@@ -40,13 +45,26 @@ func _ready() -> void:
 	# Connect to the settlement_loaded signal - this works for both standalone and child scenarios
 	EventBus.settlement_loaded.connect(_on_settlement_ready_for_mission)
 	
-	# If no settlement is currently loaded (standalone mode), initialize immediately
+	# If no settlement is currently loaded (standalone mode), load a test settlement
 	if not SettlementManager.has_current_settlement():
-		print("RaidMission: No current settlement - running in standalone mode")
+		print("RaidMission: No current settlement - loading test settlement for standalone mode")
+		_load_test_settlement()
 		call_deferred("initialize_mission")
 	else:
 		print("RaidMission: Settlement already loaded - initializing mission")
 		call_deferred("initialize_mission")
+
+func _load_test_settlement() -> void:
+	"""Load a test settlement with garrison units for standalone testing"""
+	var test_settlement_path = "res://data/settlements/home_base_fixed.tres"
+	var test_settlement = load(test_settlement_path) as SettlementData
+	
+	if test_settlement:
+		print("RaidMission: Loading test settlement: %s" % test_settlement_path)
+		print("RaidMission: Test settlement garrison: %s" % test_settlement.garrisoned_units)
+		SettlementManager.load_settlement(test_settlement)
+	else:
+		push_error("RaidMission: Failed to load test settlement from %s" % test_settlement_path)
 
 func _on_settlement_ready_for_mission(settlement_data: SettlementData) -> void:
 	"""Called when settlement is loaded - only initialize if we haven't already"""
@@ -77,6 +95,7 @@ func initialize_mission() -> void:
 			return
 	
 	_load_enemy_base()
+	_update_astar_grid_for_enemy_base()
 	_spawn_player_garrison()
 	_setup_win_loss_conditions()
 
@@ -93,8 +112,14 @@ func _load_enemy_base() -> void:
 		var building_res_path: String = building_entry["resource_path"]
 		var grid_pos: Vector2i = building_entry["grid_position"]
 		
-		var building_data: BuildingData = load(building_res_path)
-		if not building_data or not building_data.scene_to_spawn:
+		var loaded_resource = load(building_res_path)
+		var building_data: BuildingData = loaded_resource as BuildingData
+		
+		if not building_data:
+			push_error("Failed to load building resource as BuildingData: %s (loaded as %s)" % [building_res_path, loaded_resource.get_class() if loaded_resource else "null"])
+			continue
+		
+		if not building_data.scene_to_spawn:
 			push_error("Failed to load building: %s" % building_res_path)
 			continue
 		
@@ -112,9 +137,25 @@ func _load_enemy_base() -> void:
 		
 		# Add to enemy groups for targeting
 		building_instance.add_to_group("enemy_buildings")
-		# Set collision layer for right-click detection
+		
+		# Set collision layer for right-click detection and targeting
 		if building_instance.has_method("set_collision_layer"):
 			building_instance.set_collision_layer(4)  # Layer 3 for enemy buildings
+			building_instance.set_collision_mask(0)   # Don't physically collide with anything
+			print("Building %s collision setup: layer=4, mask=0" % building_data.display_name)
+		else:
+			push_warning("Building %s does not have collision layer methods!" % building_data.display_name)
+		
+		# Verify collision shape exists
+		var collision_shape = building_instance.get_node("CollisionShape2D")
+		if collision_shape and collision_shape.shape:
+			print("Building %s has collision shape: %s" % [building_data.display_name, collision_shape.shape.get_class()])
+		else:
+			push_error("Building %s missing collision shape!" % building_data.display_name)
+		
+		# Add debug area for targeting verification
+		building_instance.set_meta("building_data", building_data)
+		building_instance.set_meta("is_enemy_building", true)
 		
 		# Check if this is the Great Hall (main target)
 		if building_data.display_name.to_lower().contains("hall"):
@@ -126,10 +167,47 @@ func _load_enemy_base() -> void:
 		
 		# Connect ALL buildings to loot collection system
 		if building_instance.has_signal("building_destroyed"):
-			building_instance.building_destroyed.connect(_on_enemy_building_destroyed.bind(building_data))
+			building_instance.building_destroyed.connect(_on_enemy_building_destroyed)
 		
 		# Add to scene
 		add_child(building_instance)
+
+func _update_astar_grid_for_enemy_base() -> void:
+	"""Update the A* pathfinding grid to account for enemy buildings"""
+	print("Updating A* grid for enemy base...")
+	
+	if not enemy_base_data:
+		return
+	
+	# Process each building to update pathfinding grid
+	for building_entry in enemy_base_data.placed_buildings:
+		var building_res_path: String = building_entry["resource_path"]
+		var grid_pos: Vector2i = building_entry["grid_position"]
+		
+		var building_data: BuildingData = load(building_res_path)
+		if not building_data:
+			continue
+		
+		# Only block pathfinding for buildings that should block movement
+		if building_data.blocks_pathfinding:
+			var grid_size: Vector2i = building_data.grid_size
+			
+			# Mark all grid cells occupied by this building as blocked
+			for x in range(grid_size.x):
+				for y in range(grid_size.y):
+					var cell_pos = Vector2i(grid_pos.x + x, grid_pos.y + y)
+					SettlementManager.set_astar_point_solid(cell_pos, true)
+			
+			print("Blocked pathfinding for %s at %s (size: %s)" % [
+				building_data.display_name, grid_pos, grid_size
+			])
+		else:
+			print("Building %s does not block pathfinding" % building_data.display_name)
+	
+	# Update the grid once after all buildings are processed
+	if SettlementManager.astar_grid:
+		SettlementManager.astar_grid.update()
+		print("A* grid updated for enemy base with %d buildings" % enemy_base_data.placed_buildings.size())
 
 func _spawn_player_garrison() -> void:
 	"""Spawn player units from the garrison"""
@@ -258,11 +336,41 @@ func _physics_process(delta: float) -> void:
 # The _setup_rts_controller() function is now gone.
 # -----------------
 
-func _on_enemy_building_destroyed(building_data: BuildingData) -> void:
-	"""Called when any enemy building is destroyed - collect loot"""
-	if raid_loot:
+func _on_enemy_building_destroyed(building: BaseBuilding) -> void:
+	"""Called when any enemy building is destroyed - collect loot and update grid"""
+	var building_data = building.data as BuildingData
+	
+	if raid_loot and building_data:
 		raid_loot.add_loot_from_building(building_data)
 		print("Building destroyed: %s | %s" % [building_data.display_name, raid_loot.get_loot_summary()])
+	
+	# Update pathfinding grid to make the area passable again
+	_clear_building_from_pathfinding_grid(building)
+	
+	# Count remaining buildings for mission tracking
+	var remaining_buildings = get_tree().get_nodes_in_group("enemy_buildings").size()
+	print("Buildings remaining: %d" % remaining_buildings)
+
+func _clear_building_from_pathfinding_grid(building: BaseBuilding) -> void:
+	"""Remove building's collision from pathfinding grid"""
+	if not building.data:
+		return
+		
+	# Calculate the grid position from the building's world position
+	var world_pos = building.global_position
+	var grid_pos = Vector2i((world_pos - Vector2(16, 16)) / 32)  # Reverse the positioning logic
+	var grid_size = building.data.grid_size
+	
+	# Clear all grid cells that were occupied by this building
+	for x in range(grid_size.x):
+		for y in range(grid_size.y):
+			var cell_pos = Vector2i(grid_pos.x + x, grid_pos.y + y)
+			SettlementManager.set_astar_point_solid(cell_pos, false)
+	
+	# Update the grid
+	if SettlementManager.astar_grid:
+		SettlementManager.astar_grid.update()
+		print("Cleared pathfinding for destroyed building at %s (size: %s)" % [grid_pos, grid_size])
 
 func _setup_win_loss_conditions() -> void:
 	"""Setup win/loss condition monitoring"""
@@ -347,7 +455,7 @@ func _show_failure_message() -> void:
 	add_child(failure_popup)
 	print("Failure message displayed")
 
-func _on_enemy_hall_destroyed() -> void:
+func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	"""Called when the enemy's Great Hall is destroyed"""
 	print("Enemy Hall destroyed! Mission success!")
 	

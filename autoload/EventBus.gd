@@ -6,6 +6,8 @@
 extends Node
 
 # --- Build System Signals ---
+# TODO: Connect this signal when implementing advanced building system
+# @warning_ignore("unused_signal")
 signal build_request_made(building_data: BuildingData, grid_position: Vector2i)
 
 # --- Pathfinding Signals ---

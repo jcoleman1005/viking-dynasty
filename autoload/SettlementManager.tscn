@@ -4,5 +4,8 @@
 
 [node name="SettlementManager" type="Node"]
 script = ExtResource("1_l4vas")
+grid_width = 120
+grid_height = 120
+auto_resize_for_scene = true
 
 [node name="BuildingContainer" type="Node2D" parent="."]

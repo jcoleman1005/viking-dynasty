@@ -129,6 +129,12 @@ func _move_state(delta: float) -> void:
 	# First priority: Check if we have a valid attack target and are in range
 	if is_instance_valid(target_unit):
 		var distance_to_target: float = unit.global_position.distance_to(target_unit.global_position)
+		print("DEBUG MOVE: %s distance to %s: %.1f (range: %.1f)" % [
+			unit.data.display_name, 
+			target_unit.name, 
+			distance_to_target, 
+			unit.data.attack_range
+		])
 		if distance_to_target <= unit.data.attack_range:
 			print("Unit in attack range, switching to ATTACKING.")
 			change_state(State.ATTACKING)
@@ -193,7 +199,7 @@ func _attack_state(_delta: float) -> void:
 	var distance_to_target: float = unit.global_position.distance_to(target_unit.global_position)
 	print("DEBUG: Distance to target: %s, Attack range: %s" % [distance_to_target, unit.data.attack_range])
 	
-	if distance_to_target > unit.data.attack_range + 16: # Small buffer to avoid oscillation
+	if distance_to_target > unit.data.attack_range + 8: # Reduced buffer to avoid oscillation
 		print("%s target moved out of range. Re-engaging." % unit.data.display_name)
 		target_position = target_unit.global_position
 		change_state(State.MOVING)

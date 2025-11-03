@@ -26,3 +26,7 @@ enabled=PackedStringArray("res://addons/GodotAiSuite/plugin.cfg")
 [input]
 
 debug_time_travel="{\"deadzone\": 0.5, \"events\": [{\"physical_keycode\": 84, \"type\": \"key\"}]}"
+
+[plugins]
+
+enemy_base_editor/enabled=true

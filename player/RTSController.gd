@@ -11,12 +11,30 @@ class_name RTSController
 
 var selected_units: Array[BaseUnit] = []
 var controllable_units: Array[BaseUnit] = []
+var current_formation: SquadFormation.FormationType = SquadFormation.FormationType.LINE
 
 func _ready() -> void:
 	# Connect to the clean signals from our new EventBus/SelectionBox
 	EventBus.select_command.connect(_on_select_command)
 	EventBus.move_command.connect(_on_move_command)
 	EventBus.attack_command.connect(_on_attack_command)
+
+func _input(event: InputEvent) -> void:
+	# Formation hotkeys
+	if event is InputEventKey and event.pressed:
+		match event.keycode:
+			KEY_1:
+				current_formation = SquadFormation.FormationType.LINE
+				print("Formation: LINE")
+			KEY_2:
+				current_formation = SquadFormation.FormationType.COLUMN
+				print("Formation: COLUMN")
+			KEY_3:
+				current_formation = SquadFormation.FormationType.WEDGE
+				print("Formation: WEDGE")
+			KEY_4:
+				current_formation = SquadFormation.FormationType.BOX
+				print("Formation: BOX")
 
 # --- PUBLIC API ---
 
@@ -111,10 +129,20 @@ func _on_select_command(select_rect: Rect2, is_box_select: bool) -> void:
 func _on_move_command(target_position: Vector2) -> void:
 	if selected_units.is_empty():
 		return
+	
+	if selected_units.size() == 1:
+		# Single unit - direct movement
+		selected_units[0].command_move_to(target_position)
+	else:
+		# Multiple units - use formation
+		var units_as_node2d: Array[Node2D] = []
+		for unit in selected_units:
+			units_as_node2d.append(unit)
 		
-	# TODO: Add formation logic for movement
-	for unit in selected_units:
-		unit.command_move_to(target_position)
+		var formation = SquadFormation.new(units_as_node2d)
+		formation.formation_type = current_formation
+		formation.unit_spacing = 45.0
+		formation.move_to_position(target_position)
 
 func _on_attack_command(target_node: Node2D) -> void:
 	if selected_units.is_empty():

@@ -5,14 +5,38 @@
 [resource]
 script = ExtResource("1_abcde")
 treasury = {
-"food": 100,
-"gold": 300,
-"stone": 50,
-"wood": 150
+"food": 200,
+"gold": 500,
+"stone": 150,
+"wood": 250
 }
 placed_buildings = Array[Dictionary]([{
 "grid_position": Vector2i(25, 15),
 "resource_path": "res://data/buildings/Bldg_GreatHall.tres"
+}, {
+"grid_position": Vector2i(20, 12),
+"resource_path": "res://data/buildings/Monastery_Chapel.tres"
+}, {
+"grid_position": Vector2i(30, 12),
+"resource_path": "res://data/buildings/Monastery_Library.tres"
+}, {
+"grid_position": Vector2i(23, 20),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(27, 8),
+"resource_path": "res://data/buildings/Monastery_Scriptorium.tres"
+}, {
+"grid_position": Vector2i(17, 10),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(35, 10),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(17, 20),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(35, 20),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
 }, {
 "grid_position": Vector2i(24, 14),
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
@@ -24,5 +48,35 @@ placed_buildings = Array[Dictionary]([{
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
 }, {
 "grid_position": Vector2i(26, 16),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(19, 11),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(20, 11),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(21, 11),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(22, 11),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(28, 11),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(29, 11),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(30, 11),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(31, 11),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(32, 11),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(33, 11),
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
 }])

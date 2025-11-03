@@ -7,9 +7,12 @@
 script = ExtResource("1_tcvvg")
 display_name = "Player Viking Raider"
 scene_to_spawn = ExtResource("2_spawn_scene")
-spawn_cost = {"food": 25, "gold": 10}
+spawn_cost = {
+"food": 25,
+"gold": 10
+}
 max_health = 60
 move_speed = 100.0
 attack_damage = 15
-attack_range = 50.0
+attack_range = 80.0
 attack_speed = 1.0
