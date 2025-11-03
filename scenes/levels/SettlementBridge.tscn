@@ -7,7 +7,6 @@
 
 [sub_resource type="GDScript" id="GDScript_cwoii"]
 script/source = "extends Resource
-class_name SettlementData
 
 @export var treasury: Dictionary = {\"gold\": 0, \"wood\": 0, \"food\": 0, \"stone\": 0}
 

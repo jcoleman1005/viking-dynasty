@@ -1,4 +1,1 @@
-res://data/settlements/home_base.tres
-res://scripts/buildings/SettlementBridge.gd
 res://scenes/levels/SettlementBridge.tscn
-res://placeholder_tile.tres

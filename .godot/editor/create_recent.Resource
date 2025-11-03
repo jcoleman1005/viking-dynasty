@@ -1,6 +1,0 @@
-SettlementData
-PlaceholderTexture2D
-Resource
-BuildingData
-NoiseTexture2D
-UnitData
