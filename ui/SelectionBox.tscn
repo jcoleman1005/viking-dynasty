@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://1ly65bng2mep"]
+[gd_scene load_steps=3 format=3 uid="uid://1ly65bng2mep"]
 
 [ext_resource type="Script" uid="uid://cl00k8pr5pe01" path="res://ui/SelectionBox.gd" id="1_3dxp5"]
+[ext_resource type="Theme" path="res://ui/themes/VikingDynastyTheme.tres" id="2_theme"]
 
 [node name="SelectionBox" type="Control"]
 layout_mode = 3
@@ -9,4 +10,5 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("2_theme")
 script = ExtResource("1_3dxp5")

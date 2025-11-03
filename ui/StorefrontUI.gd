@@ -64,6 +64,7 @@ func _setup_recruit_buttons() -> void:
 	for unit_data in available_units:
 		var button = Button.new()
 		button.text = "%s (Cost: %s)" % [unit_data.display_name, _format_cost(unit_data.spawn_cost)]
+		button.custom_minimum_size = Vector2(200, 36)
 		button.pressed.connect(_on_recruit_button_pressed.bind(unit_data))
 		recruit_buttons_container.add_child(button)
 

@@ -416,7 +416,7 @@ func _on_mission_failed() -> void:
 	
 	# Return to settlement bridge
 	if settlement_bridge_scene:
-		get_tree().change_scene_to_packed(settlement_bridge_scene)
+		Engine.get_main_loop().change_scene_to_packed(settlement_bridge_scene)
 	else:
 		push_error("RaidMission: settlement_bridge_scene is not set! Cannot return to settlement.")
 
@@ -469,6 +469,6 @@ func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	await get_tree().create_timer(2.0).timeout
 	
 	if settlement_bridge_scene:
-		get_tree().change_scene_to_packed(settlement_bridge_scene)
+		Engine.get_main_loop().change_scene_to_packed(settlement_bridge_scene)
 	else:
 		push_error("RaidMission: settlement_bridge_scene is not set! Cannot return to settlement.")

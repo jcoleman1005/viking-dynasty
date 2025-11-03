@@ -34,6 +34,9 @@ func change_state(new_state: State) -> void:
 	
 	_exit_state(current_state)
 	current_state = new_state
+	# Notify unit visuals of state change
+	if unit and unit.has_method("on_state_changed"):
+		unit.on_state_changed(current_state)
 	_enter_state(current_state)
 
 func _enter_state(state: State) -> void:
@@ -66,6 +69,9 @@ func _recalculate_path() -> void:
 	path = SettlementManager.get_astar_path(unit.global_position, target_position)
 	if path.is_empty():
 		print("Unit at %s failed to find a path to %s." % [unit.global_position, target_position])
+		# Visual error feedback
+		if unit and unit.has_method("flash_error_color"):
+			unit.flash_error_color()
 		# If we can't find a path, check if we're already close to the target
 		if unit.global_position.distance_to(target_position) < (unit.data.attack_range + 16):
 			if target_unit:
@@ -92,6 +98,8 @@ func command_attack(target: Node2D) -> void:
 	
 	if not is_instance_valid(target):
 		print("Cannot attack invalid target")
+		if unit and unit.has_method("flash_error_color"):
+			unit.flash_error_color()
 		return
 		
 	target_unit = target
@@ -228,4 +236,6 @@ func _on_attack_timer_timeout() -> void:
 			print("Target %s does not have take_damage method" % target_unit.name)
 	else:
 		print("Attack timer fired but no valid target")
+		if unit and unit.has_method("flash_error_color"):
+			unit.flash_error_color()
 		change_state(State.IDLE)
