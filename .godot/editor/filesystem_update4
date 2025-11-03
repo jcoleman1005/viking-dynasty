@@ -5,3 +5,14 @@ res://ui/SelectionBox.tscn
 res://ui/StorefrontUI.gd
 res://ui/UI_IMPROVEMENTS.md
 res://data/settlements/home_base_fixed.tres
+res://addons/enemy_base_editor/plugin.gd
+res://placeholder_tile.tres
+res://addons/enemy_base_editor/BuildingPalette.gd
+res://addons/enemy_base_editor/EnemyBaseEditorDock.gd
+res://addons/enemy_base_editor/SettlementGridEditor.gd
+res://addons/enemy_base_editor/SettlementProperties.gd
+res://addons/enemy_base_editor/EnemyBaseEditorDock.tscn
+res://addons/enemy_base_editor/CollapsibleGroup.gd
+res://addons/enemy_base_editor/SettlementTemplates.gd
+res://data/settlements/sample_fortress_gui.tres
+res://addons/enemy_base_editor/README.md

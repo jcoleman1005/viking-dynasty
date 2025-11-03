@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://crxxrqvvy0ajt"]
+
+[ext_resource type="Script" uid="uid://3mwhhtrdsmwm" path="res://addons/enemy_base_editor/EnemyBaseEditorDock.gd" id="1_0q824"]
+
+[node name="Enemy Base Editor" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_0q824")

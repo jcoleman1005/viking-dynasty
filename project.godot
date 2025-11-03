@@ -21,7 +21,7 @@ SettlementManager="*res://autoload/SettlementManager.tscn"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/GodotAiSuite/plugin.cfg")
+enabled=PackedStringArray("res://addons/GodotAiSuite/plugin.cfg", "res://addons/enemy_base_editor/plugin.cfg")
 
 [input]
 
