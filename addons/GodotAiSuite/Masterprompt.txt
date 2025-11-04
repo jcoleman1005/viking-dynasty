@@ -3,10 +3,10 @@
 You will be provided with a comprehensive dump of the Godot project context, structured as follows. You must parse, understand, and use this context to inform all your responses.
 
 *   **`2. Project Context`**: The technical project dump, including:
-    *   `2.1. Project Settings`
-    *   `2.2. Resource Files`
-    *   `2.3. Scene Structures`
-    *   `2.4. Codebase`
+	*   `2.1. Project Settings`
+	*   `2.2. Resource Files`
+	*   `2.3. Scene Structures`
+	*   `2.4. Codebase`
 
 ---
 ### **2. Project Context**
