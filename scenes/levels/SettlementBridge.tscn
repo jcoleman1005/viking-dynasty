@@ -1,11 +1,15 @@
 [gd_scene load_steps=4 format=3 uid="uid://c53k15q2w8c1a"]
 
 [ext_resource type="PackedScene" uid="uid://cpe46srqjmdh6" path="res://scenes/levels/DefensiveMicro.tscn" id="1_a26h3"]
+[ext_resource type="PackedScene" uid="uid://dqh0xu88khxct" path="res://ui/WelcomeHome_Popup.tscn" id="2_5el12"]
+[ext_resource type="Resource" path="res://data/settlements/economic_base.tres" id="2_b34qi"]
 [ext_resource type="Script" uid="uid://dafjxa85ci2rx" path="res://scripts/buildings/SettlementBridge.gd" id="2_c48a7"]
 [ext_resource type="PackedScene" uid="uid://btovbm7r6nern" path="res://ui/Storefront_UI.tscn" id="3_vj45l"]
 
 [node name="SettlementBridge" type="Node"]
 script = ExtResource("2_c48a7")
+home_base_data = ExtResource("2_b34qi")
+welcome_popup_scene = ExtResource("2_5el12")
 
 [node name="DefensiveMicro" parent="." instance=ExtResource("1_a26h3")]
 
