@@ -1,0 +1,24 @@
+[gd_scene load_steps=6 format=3 uid="uid://d3ifdm0rvd5kl"]
+
+[ext_resource type="Script" uid="uid://cuw68f180xbui" path="res://scenes/missions/RaidMission.gd" id="1_qt4qp"]
+[ext_resource type="PackedScene" uid="uid://cyp3t7gbdg0wx" path="res://player/RTSController.tscn" id="2_8icmc"]
+[ext_resource type="PackedScene" uid="uid://c53k15q2w8c1a" path="res://scenes/levels/SettlementBridge.tscn" id="2_th2vh"]
+[ext_resource type="PackedScene" uid="uid://1ly65bng2mep" path="res://ui/SelectionBox.tscn" id="3_24u83"]
+[ext_resource type="Script" uid="uid://bxbqkyp1d6750" path="res://player/RTSCamera.gd" id="5_xkh2l"]
+
+[node name="RaidMission" type="Node2D"]
+script = ExtResource("1_qt4qp")
+settlement_bridge_scene = ExtResource("2_th2vh")
+
+[node name="PlayerStartPosition" type="Marker2D" parent="."]
+position = Vector2(100, 400)
+
+[node name="RTSController" parent="." instance=ExtResource("2_8icmc")]
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="SelectionBox" parent="CanvasLayer" instance=ExtResource("3_24u83")]
+
+[node name="RTSCamera" type="Camera2D" parent="."]
+position = Vector2(400, 300)
+script = ExtResource("5_xkh2l")

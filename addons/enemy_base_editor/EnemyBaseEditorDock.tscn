@@ -1,0 +1,836 @@
+[gd_scene load_steps=5 format=3 uid="uid://crxxrqvvy0ajt"]
+
+[ext_resource type="Script" uid="uid://3mwhhtrdsmwm" path="res://addons/enemy_base_editor/EnemyBaseEditorDock.gd" id="1_0q824"]
+
+[sub_resource type="GDScript" id="GDScript_0q824"]
+script/source = "@tool
+extends Control
+class_name SettlementGridEditor
+
+signal building_placed(building_data: BuildingData, position: Vector2i)
+signal building_removed(position: Vector2i)
+signal building_selected(building_data: BuildingData, position: Vector2i)
+
+# Grid settings
+const CELL_SIZE = 32
+const GRID_WIDTH = 120
+const GRID_HEIGHT = 80
+
+# Visual settings
+const GRID_COLOR = Color(0.3, 0.3, 0.3, 0.5)
+const SELECTION_COLOR = Color(1.0, 1.0, 0.0, 0.8)
+const VALID_PLACEMENT_COLOR = Color(0.0, 1.0, 0.0, 0.5)
+const INVALID_PLACEMENT_COLOR = Color(1.0, 0.0, 0.0, 0.5)
+
+# State
+var current_settlement: SettlementData
+var selected_building: BuildingData
+var hovered_position: Vector2i = Vector2i(-1, -1)
+var dragging: bool = false
+var drag_start_position: Vector2i
+
+# Visual elements
+var grid_tiles: Array[Array] = []
+var building_sprites: Dictionary = {} # position -> Sprite2D
+
+func _ready():
+	name = \"SettlementGridEditor\"
+	custom_minimum_size = Vector2(GRID_WIDTH * CELL_SIZE, GRID_HEIGHT * CELL_SIZE)
+	setup_grid()
+	mouse_entered.connect(_on_mouse_entered)
+	mouse_exited.connect(_on_mouse_exited)
+
+func setup_grid():
+	# Initialize grid tiles array
+	grid_tiles.resize(GRID_WIDTH)
+	for x in range(GRID_WIDTH):
+		grid_tiles[x] = []
+		grid_tiles[x].resize(GRID_HEIGHT)
+		for y in range(GRID_HEIGHT):
+			grid_tiles[x][y] = null
+
+func set_settlement(settlement: SettlementData):
+	current_settlement = settlement
+	_update_visual_buildings()
+
+func set_selected_building(building: BuildingData):
+	selected_building = building
+	queue_redraw()
+
+func _update_visual_buildings():
+	# Clear existing building sprites
+	for sprite in building_sprites.values():
+		if is_instance_valid(sprite):
+			sprite.queue_free()
+	building_sprites.clear()
+	
+	if not current_settlement:
+		return
+	
+	# Create sprites for each building
+	for building_entry in current_settlement.placed_buildings:
+		var pos = building_entry[\"grid_position\"]
+		var building_data = load(building_entry[\"resource_path\"]) as BuildingData
+		if building_data:
+			_create_building_sprite(building_data, pos)
+	
+	queue_redraw()
+
+func _create_building_sprite(building_data: BuildingData, position: Vector2i):
+	var sprite = Sprite2D.new()
+	sprite.position = Vector2(position * CELL_SIZE) + Vector2(CELL_SIZE, CELL_SIZE) * 0.5
+	
+	# Use building texture if available, otherwise create a colored rectangle
+	if building_data.building_texture:
+		sprite.texture = building_data.building_texture
+		sprite.scale = Vector2(CELL_SIZE, CELL_SIZE) / sprite.texture.get_size()
+	else:
+		# Create a simple colored texture
+		var texture = ImageTexture.new()
+		var image = Image.create(CELL_SIZE, CELL_SIZE, false, Image.FORMAT_RGBA8)
+		var color = _get_building_color(building_data)
+		image.fill(color)
+		texture.set_image(image)
+		sprite.texture = texture
+	
+	add_child(sprite)
+	building_sprites[position] = sprite
+
+func _get_building_color(building_data: BuildingData) -> Color:
+	# Assign colors based on building type
+	var name = building_data.display_name.to_lower()
+	if \"wall\" in name:
+		return Color(0.7, 0.5, 0.3, 1.0) # Brown
+	elif \"hall\" in name:
+		return Color(0.8, 0.8, 0.2, 1.0) # Yellow
+	elif \"tower\" in name or \"watchtower\" in name:
+		return Color(0.5, 0.5, 0.8, 1.0) # Blue
+	elif \"lumber\" in name or \"wood\" in name:
+		return Color(0.3, 0.8, 0.3, 1.0) # Green
+	elif \"chapel\" in name or \"library\" in name:
+		return Color(0.8, 0.3, 0.8, 1.0) # Purple
+	else:
+		return Color(0.6, 0.6, 0.6, 1.0) # Gray
+
+func _draw():
+	_draw_grid()
+	_draw_hover_preview()
+
+func _draw_grid():
+	# Draw grid lines
+	for x in range(GRID_WIDTH + 1):
+		var start_pos = Vector2(x * CELL_SIZE, 0)
+		var end_pos = Vector2(x * CELL_SIZE, GRID_HEIGHT * CELL_SIZE)
+		draw_line(start_pos, end_pos, GRID_COLOR, 1.0)
+	
+	for y in range(GRID_HEIGHT + 1):
+		var start_pos = Vector2(0, y * CELL_SIZE)
+		var end_pos = Vector2(GRID_WIDTH * CELL_SIZE, y * CELL_SIZE)
+		draw_line(start_pos, end_pos, GRID_COLOR, 1.0)
+
+func _draw_hover_preview():
+	if hovered_position.x < 0 or hovered_position.y < 0:
+		return
+	
+	var rect = Rect2(Vector2(hovered_position * CELL_SIZE), Vector2(CELL_SIZE, CELL_SIZE))
+	
+	# Draw selection highlight
+	draw_rect(rect, SELECTION_COLOR, false, 2.0)
+	
+	# Draw placement preview if building is selected
+	if selected_building:
+		var can_place = _can_place_building(selected_building, hovered_position)
+		var preview_color = VALID_PLACEMENT_COLOR if can_place else INVALID_PLACEMENT_COLOR
+		draw_rect(rect, preview_color)
+		
+		# Draw building name
+		var font = ThemeDB.fallback_font
+		var text = selected_building.display_name
+		var text_size = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 12)
+		var text_pos = rect.position + (rect.size - text_size) * 0.5
+		draw_string(font, text_pos, text, HORIZONTAL_ALIGNMENT_CENTER, -1, 12, Color.WHITE)
+
+func _gui_input(event):
+	if event is InputEventMouseMotion:
+		_handle_mouse_motion(event)
+	elif event is InputEventMouseButton:
+		_handle_mouse_button(event)
+
+func _handle_mouse_motion(event: InputEventMouseMotion):
+	var local_pos = event.position
+	var grid_pos = Vector2i(local_pos / CELL_SIZE)
+	
+	if grid_pos.x >= 0 and grid_pos.x < GRID_WIDTH and grid_pos.y >= 0 and grid_pos.y < GRID_HEIGHT:
+		if hovered_position != grid_pos:
+			hovered_position = grid_pos
+			queue_redraw()
+	else:
+		if hovered_position != Vector2i(-1, -1):
+			hovered_position = Vector2i(-1, -1)
+			queue_redraw()
+
+func _handle_mouse_button(event: InputEventMouseButton):
+	if not event.pressed:
+		return
+	
+	var local_pos = event.position
+	var grid_pos = Vector2i(local_pos / CELL_SIZE)
+	
+	if grid_pos.x < 0 or grid_pos.x >= GRID_WIDTH or grid_pos.y < 0 or grid_pos.y >= GRID_HEIGHT:
+		return
+	
+	if event.button_index == MOUSE_BUTTON_LEFT:
+		_handle_left_click(grid_pos)
+	elif event.button_index == MOUSE_BUTTON_RIGHT:
+		_handle_right_click(grid_pos)
+
+func _handle_left_click(grid_pos: Vector2i):
+	var existing_building = _get_building_at_position(grid_pos)
+	
+	if existing_building:
+		# Select existing building
+		building_selected.emit(existing_building, grid_pos)
+	elif selected_building:
+		# Try to place new building
+		if _can_place_building(selected_building, grid_pos):
+			building_placed.emit(selected_building, grid_pos)
+			# Note: Don't create sprite here - let the main dock update settlement data
+			# and then refresh the visual buildings through _update_visual_buildings()
+
+func _handle_right_click(grid_pos: Vector2i):
+	var existing_building = _get_building_at_position(grid_pos)
+	if existing_building:
+		# Remove building - the main dock will handle the data update and refresh
+		building_removed.emit(grid_pos)
+
+func _get_building_at_position(grid_pos: Vector2i) -> BuildingData:
+	if not current_settlement:
+		return null
+	
+	for building_entry in current_settlement.placed_buildings:
+		if building_entry[\"grid_position\"] == grid_pos:
+			return load(building_entry[\"resource_path\"]) as BuildingData
+	
+	return null
+
+func _can_place_building(building_data, position: Vector2i) -> bool:
+	if not current_settlement:
+		return false
+	
+	# Check if position is within grid bounds
+	if position.x < 0 or position.x >= GRID_WIDTH or position.y < 0 or position.y >= GRID_HEIGHT:
+		return false
+	
+	# Check for building overlap
+	return _get_building_at_position(position) == null
+
+func _on_mouse_entered():
+	pass
+
+func _on_mouse_exited():
+	hovered_position = Vector2i(-1, -1)
+	queue_redraw()
+
+# Utility functions for external access
+func get_grid_size() -> Vector2i:
+	return Vector2i(GRID_WIDTH, GRID_HEIGHT)
+
+func get_cell_size() -> int:
+	return CELL_SIZE
+
+func world_to_grid(world_pos: Vector2) -> Vector2i:
+	return Vector2i(world_pos / CELL_SIZE)
+
+func grid_to_world(grid_pos: Vector2i) -> Vector2:
+	return Vector2(grid_pos * CELL_SIZE) + Vector2(CELL_SIZE, CELL_SIZE) * 0.5
+"
+
+[sub_resource type="GDScript" id="GDScript_ejdfc"]
+script/source = "@tool
+extends VBoxContainer
+class_name BuildingPalette
+
+signal building_selected(building_data: BuildingData)
+
+# UI Elements
+var search_line_edit: LineEdit
+var category_option: OptionButton
+var buildings_scroll: ScrollContainer
+var buildings_container: VBoxContainer
+
+# Data
+var all_buildings: Array[BuildingData] = []
+var filtered_buildings: Array[BuildingData] = []
+var selected_building_button: Button = null
+
+# Categories
+enum BuildingCategory {
+	ALL,
+	DEFENSIVE,
+	ECONOMIC,
+	RESIDENTIAL,
+	RELIGIOUS,
+	UTILITY
+}
+
+var category_names = {
+	BuildingCategory.ALL: \"All Buildings\",
+	BuildingCategory.DEFENSIVE: \"Defensive\",
+	BuildingCategory.ECONOMIC: \"Economic\", 
+	BuildingCategory.RESIDENTIAL: \"Residential\",
+	BuildingCategory.RELIGIOUS: \"Religious\",
+	BuildingCategory.UTILITY: \"Utility\"
+}
+
+func _ready():
+	name = \"BuildingPalette\"
+	setup_ui()
+
+func setup_ui():
+	# Header
+	var header = Label.new()
+	header.text = \"Building Palette\"
+	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add_child(header)
+	
+	# Search
+	var search_container = HBoxContainer.new()
+	add_child(search_container)
+	
+	var search_label = Label.new()
+	search_label.text = \"Search:\"
+	search_container.add_child(search_label)
+	
+	search_line_edit = LineEdit.new()
+	search_line_edit.placeholder_text = \"Filter buildings...\"
+	search_line_edit.text_changed.connect(_on_search_changed)
+	search_container.add_child(search_line_edit)
+	
+	# Category filter
+	var category_container = HBoxContainer.new()
+	add_child(category_container)
+	
+	var category_label = Label.new()
+	category_label.text = \"Category:\"
+	category_container.add_child(category_label)
+	
+	category_option = OptionButton.new()
+	for category in category_names:
+		category_option.add_item(category_names[category])
+	category_option.selected = BuildingCategory.ALL
+	category_option.item_selected.connect(_on_category_changed)
+	category_container.add_child(category_option)
+	
+	# Separator
+	var separator = HSeparator.new()
+	add_child(separator)
+	
+	# Buildings list
+	buildings_scroll = ScrollContainer.new()
+	buildings_scroll.custom_minimum_size = Vector2(0, 300)
+	add_child(buildings_scroll)
+	
+	buildings_container = VBoxContainer.new()
+	buildings_scroll.add_child(buildings_container)
+
+func set_buildings(buildings: Array[BuildingData]):
+	all_buildings = buildings
+	_update_building_list()
+
+func _update_building_list():
+	# Clear existing buttons
+	for child in buildings_container.get_children():
+		child.queue_free()
+	
+	# Filter buildings
+	_filter_buildings()
+	
+	# Create buttons for filtered buildings
+	for building_data in filtered_buildings:
+		_create_building_button(building_data)
+
+func _filter_buildings():
+	filtered_buildings.clear()
+	
+	var search_text = search_line_edit.text.to_lower() if search_line_edit else \"\"
+	var selected_category = category_option.selected if category_option else BuildingCategory.ALL
+	
+	for building_data in all_buildings:
+		# Apply search filter
+		if search_text != \"\" and not building_data.display_name.to_lower().contains(search_text):
+			continue
+		
+		# Apply category filter
+		if selected_category != BuildingCategory.ALL:
+			var building_category = _get_building_category(building_data)
+			if building_category != selected_category:
+				continue
+		
+		filtered_buildings.append(building_data)
+
+func _get_building_category(building_data: BuildingData) -> BuildingCategory:
+	var name = building_data.display_name.to_lower()
+	
+	if building_data.is_defensive_structure or \"wall\" in name or \"tower\" in name or \"watchtower\" in name:
+		return BuildingCategory.DEFENSIVE
+	elif building_data is EconomicBuildingData or \"lumber\" in name or \"yard\" in name or \"mine\" in name:
+		return BuildingCategory.ECONOMIC
+	elif \"chapel\" in name or \"library\" in name or \"scriptorium\" in name or \"monastery\" in name:
+		return BuildingCategory.RELIGIOUS
+	elif \"hall\" in name or \"house\" in name or \"quarters\" in name:
+		return BuildingCategory.RESIDENTIAL
+	else:
+		return BuildingCategory.UTILITY
+
+func _create_building_button(building_data: BuildingData):
+	var button_container = HBoxContainer.new()
+	buildings_container.add_child(button_container)
+	
+	# Building button
+	var button = Button.new()
+	button.custom_minimum_size = Vector2(200, 48)
+	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button_container.add_child(button)
+	
+	# Icon (if available)
+	if building_data.icon:
+		button.icon = building_data.icon
+	
+	# Building info
+	var info_text = building_data.display_name
+	if building_data.build_cost and not building_data.build_cost.is_empty():
+		info_text += \"\\n\"
+		var cost_parts: Array[String] = []
+		for resource in building_data.build_cost:
+			cost_parts.append(\"%s: %d\" % [resource.capitalize(), building_data.build_cost[resource]])
+		info_text += \"Cost: \" + \", \".join(cost_parts)
+	
+	button.text = info_text
+	button.pressed.connect(_on_building_button_pressed.bind(building_data, button))
+	
+	# Health/stats info
+	var stats_label = Label.new()
+	var stats_text = \"HP: %d\" % building_data.max_health
+	if building_data.is_defensive_structure:
+		stats_text += \" | DMG: %d | Range: %.0f\" % [building_data.attack_damage, building_data.attack_range]
+	stats_label.text = stats_text
+	stats_label.add_theme_font_size_override(\"font_size\", 10)
+	button_container.add_child(stats_label)
+
+func _on_building_button_pressed(building_data: BuildingData, button: Button):
+	# Update selection visual
+	if selected_building_button:
+		selected_building_button.modulate = Color.WHITE
+	
+	selected_building_button = button
+	button.modulate = Color(1.2, 1.2, 0.8)  # Highlight selected
+	
+	# Emit signal
+	building_selected.emit(building_data)
+
+func _on_search_changed(new_text: String):
+	_update_building_list()
+
+func _on_category_changed(index: int):
+	_update_building_list()
+
+func clear_selection():
+	if selected_building_button:
+		selected_building_button.modulate = Color.WHITE
+		selected_building_button = null
+
+# Utility function to get building info for tooltips
+func get_building_tooltip(building_data: BuildingData) -> String:
+	var tooltip = building_data.display_name + \"\\n\\n\"
+	
+	# Health
+	tooltip += \"Health: %d HP\\n\" % building_data.max_health
+	
+	# Cost
+	if building_data.build_cost and not building_data.build_cost.is_empty():
+		tooltip += \"Cost: \"
+		var cost_parts: Array[String] = []
+		for resource in building_data.build_cost:
+			cost_parts.append(\"%s %d\" % [resource.capitalize(), building_data.build_cost[resource]])
+		tooltip += \", \".join(cost_parts) + \"\\n\"
+	
+	# Defensive stats
+	if building_data.is_defensive_structure:
+		tooltip += \"Damage: %d\\n\" % building_data.attack_damage
+		tooltip += \"Range: %.0f\\n\" % building_data.attack_range
+		tooltip += \"Attack Speed: %.1f/sec\\n\" % building_data.attack_speed
+	
+	# Economic info
+	if building_data is EconomicBuildingData:
+		var eco_data = building_data as EconomicBuildingData
+		tooltip += \"Produces: %s (%d per cycle)\\n\" % [eco_data.resource_type.capitalize(), eco_data.fixed_payout_amount]
+	
+	# Grid size
+	tooltip += \"Size: %dx%d\" % [building_data.grid_size.x, building_data.grid_size.y]
+	
+	return tooltip
+"
+
+[sub_resource type="GDScript" id="GDScript_rvn1h"]
+script/source = "@tool
+extends VBoxContainer
+class_name SettlementProperties
+
+signal treasury_changed(new_treasury: Dictionary)
+signal units_changed(new_units: Dictionary)
+
+# UI Elements
+var treasury_group: CollapsibleGroup
+var units_group: CollapsibleGroup
+
+# Treasury controls
+var gold_spinbox: SpinBox
+var wood_spinbox: SpinBox
+var food_spinbox: SpinBox
+var stone_spinbox: SpinBox
+
+# Units controls
+var units_container: VBoxContainer
+var add_unit_button: Button
+var unit_selection_dialog: AcceptDialog
+
+# Data
+var current_settlement: SettlementData
+var available_units: Array[String] = []
+
+func _ready():
+	name = \"SettlementProperties\"
+	setup_ui()
+	load_available_units()
+
+func setup_ui():
+	# Header
+	var header = Label.new()
+	header.text = \"Settlement Properties\"
+	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add_child(header)
+	
+	var separator = HSeparator.new()
+	add_child(separator)
+	
+	# Treasury section
+	setup_treasury_section()
+	
+	# Units section
+	setup_units_section()
+
+func setup_treasury_section():
+	treasury_group = CollapsibleGroup.new()
+	treasury_group.title = \"Treasury\"
+	treasury_group.expanded = true
+	add_child(treasury_group)
+	
+	var treasury_container = VBoxContainer.new()
+	treasury_group.add_child(treasury_container)
+	
+	# Gold
+	var gold_container = create_resource_control(\"Gold:\", 0, 99999)
+	gold_spinbox = gold_container.get_child(1) as SpinBox
+	gold_spinbox.value_changed.connect(_on_treasury_changed)
+	treasury_container.add_child(gold_container)
+	
+	# Wood
+	var wood_container = create_resource_control(\"Wood:\", 0, 99999)
+	wood_spinbox = wood_container.get_child(1) as SpinBox
+	wood_spinbox.value_changed.connect(_on_treasury_changed)
+	treasury_container.add_child(wood_container)
+	
+	# Food
+	var food_container = create_resource_control(\"Food:\", 0, 99999)
+	food_spinbox = food_container.get_child(1) as SpinBox
+	food_spinbox.value_changed.connect(_on_treasury_changed)
+	treasury_container.add_child(food_container)
+	
+	# Stone
+	var stone_container = create_resource_control(\"Stone:\", 0, 99999)
+	stone_spinbox = stone_container.get_child(1) as SpinBox
+	stone_spinbox.value_changed.connect(_on_treasury_changed)
+	treasury_container.add_child(stone_container)
+
+func setup_units_section():
+	units_group = CollapsibleGroup.new()
+	units_group.title = \"Garrisoned Units\"
+	units_group.expanded = false
+	add_child(units_group)
+	
+	var units_main_container = VBoxContainer.new()
+	units_group.add_child(units_main_container)
+	
+	# Add unit button
+	add_unit_button = Button.new()
+	add_unit_button.text = \"Add Unit Type\"
+	add_unit_button.pressed.connect(_on_add_unit_pressed)
+	units_main_container.add_child(add_unit_button)
+	
+	# Units list
+	units_container = VBoxContainer.new()
+	units_main_container.add_child(units_container)
+
+func create_resource_control(label_text: String, min_val: float, max_val: float) -> HBoxContainer:
+	var container = HBoxContainer.new()
+	
+	var label = Label.new()
+	label.text = label_text
+	label.custom_minimum_size = Vector2(60, 0)
+	container.add_child(label)
+	
+	var spinbox = SpinBox.new()
+	spinbox.min_value = min_val
+	spinbox.max_value = max_val
+	spinbox.step = 1
+	spinbox.custom_minimum_size = Vector2(120, 0)
+	container.add_child(spinbox)
+	
+	return container
+
+func set_settlement(settlement: SettlementData):
+	current_settlement = settlement
+	_update_ui()
+
+func _update_ui():
+	if not current_settlement:
+		return
+	
+	# Update treasury values
+	gold_spinbox.value = current_settlement.treasury.get(\"gold\", 0)
+	wood_spinbox.value = current_settlement.treasury.get(\"wood\", 0)
+	food_spinbox.value = current_settlement.treasury.get(\"food\", 0)
+	stone_spinbox.value = current_settlement.treasury.get(\"stone\", 0)
+	
+	# Update units
+	_update_units_list()
+
+func _update_units_list():
+	# Clear existing unit controls
+	for child in units_container.get_children():
+		child.queue_free()
+	
+	if not current_settlement:
+		return
+	
+	# Create controls for each unit type
+	for unit_path in current_settlement.garrisoned_units:
+		var count = current_settlement.garrisoned_units[unit_path]
+		_create_unit_control(unit_path, count)
+
+func _create_unit_control(unit_path: String, count: int):
+	var container = HBoxContainer.new()
+	units_container.add_child(container)
+	
+	# Unit name
+	var unit_name = unit_path.get_file().get_basename()
+	var label = Label.new()
+	label.text = unit_name + \":\"
+	label.custom_minimum_size = Vector2(100, 0)
+	container.add_child(label)
+	
+	# Count spinbox
+	var spinbox = SpinBox.new()
+	spinbox.min_value = 0
+	spinbox.max_value = 999
+	spinbox.step = 1
+	spinbox.value = count
+	spinbox.custom_minimum_size = Vector2(80, 0)
+	spinbox.value_changed.connect(_on_unit_count_changed.bind(unit_path))
+	container.add_child(spinbox)
+	
+	# Remove button
+	var remove_button = Button.new()
+	remove_button.text = \"X\"
+	remove_button.custom_minimum_size = Vector2(30, 0)
+	remove_button.pressed.connect(_on_remove_unit_pressed.bind(unit_path))
+	container.add_child(remove_button)
+
+func load_available_units():
+	available_units.clear()
+	
+	# Load all unit data files
+	var dir = DirAccess.open(\"res://data/units\")
+	if dir:
+		dir.list_dir_begin()
+		var file_name = dir.get_next()
+		while file_name != \"\":
+			if file_name.ends_with(\".tres\"):
+				available_units.append(\"res://data/units/\" + file_name)
+			file_name = dir.get_next()
+		dir.list_dir_end()
+
+func _on_treasury_changed(value: float):
+	if not current_settlement:
+		return
+	
+	# Update settlement treasury
+	current_settlement.treasury[\"gold\"] = int(gold_spinbox.value)
+	current_settlement.treasury[\"wood\"] = int(wood_spinbox.value)
+	current_settlement.treasury[\"food\"] = int(food_spinbox.value)
+	current_settlement.treasury[\"stone\"] = int(stone_spinbox.value)
+	
+	# Emit signal
+	treasury_changed.emit(current_settlement.treasury)
+
+func _on_unit_count_changed(unit_path: String, new_count: float):
+	if not current_settlement:
+		return
+	
+	var count = int(new_count)
+	if count <= 0:
+		current_settlement.garrisoned_units.erase(unit_path)
+	else:
+		current_settlement.garrisoned_units[unit_path] = count
+	
+	# Emit signal
+	units_changed.emit(current_settlement.garrisoned_units)
+
+func _on_remove_unit_pressed(unit_path: String):
+	if not current_settlement:
+		return
+	
+	current_settlement.garrisoned_units.erase(unit_path)
+	_update_units_list()
+	
+	# Emit signal
+	units_changed.emit(current_settlement.garrisoned_units)
+
+func _on_add_unit_pressed():
+	_show_unit_selection_dialog()
+
+func _show_unit_selection_dialog():
+	# Create unit selection dialog
+	var dialog = AcceptDialog.new()
+	dialog.title = \"Select Unit Type\"
+	dialog.custom_minimum_size = Vector2(400, 300)
+	add_child(dialog)
+	
+	var vbox = VBoxContainer.new()
+	dialog.add_child(vbox)
+	
+	var scroll = ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0, 200)
+	vbox.add_child(scroll)
+	
+	var units_list = VBoxContainer.new()
+	scroll.add_child(units_list)
+	
+	# Add buttons for each available unit
+	for unit_path in available_units:
+		var button = Button.new()
+		var unit_name = unit_path.get_file().get_basename()
+		button.text = unit_name
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		button.pressed.connect(_on_unit_selected.bind(unit_path, dialog))
+		units_list.add_child(button)
+	
+	dialog.popup_centered()
+
+func _on_unit_selected(unit_path: String, dialog: AcceptDialog):
+	if not current_settlement:
+		return
+	
+	# Add unit with count of 1
+	current_settlement.garrisoned_units[unit_path] = 1
+	_update_units_list()
+	
+	# Emit signal
+	units_changed.emit(current_settlement.garrisoned_units)
+	
+	# Close dialog
+	dialog.queue_free()
+
+# CollapsibleGroup is now in its own file
+"
+
+[node name="EnemyBaseEditorDock" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_0q824")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 0
+
+[node name="Toolbar" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="New" type="Button" parent="VBoxContainer/Toolbar"]
+layout_mode = 2
+text = "New"
+
+[node name="Load" type="Button" parent="VBoxContainer/Toolbar"]
+layout_mode = 2
+text = "Load"
+
+[node name="Save" type="Button" parent="VBoxContainer/Toolbar"]
+layout_mode = 2
+disabled = true
+text = "Save"
+
+[node name="SaveAs" type="Button" parent="VBoxContainer/Toolbar"]
+layout_mode = 2
+text = "Save As"
+
+[node name="VSeparator" type="VSeparator" parent="VBoxContainer/Toolbar"]
+layout_mode = 2
+
+[node name="Templates" type="MenuButton" parent="VBoxContainer/Toolbar"]
+layout_mode = 2
+text = "Templates"
+item_count = 4
+popup/item_0/text = "Fortress"
+popup/item_0/id = 0
+popup/item_1/text = "Monastery"
+popup/item_1/id = 1
+popup/item_2/text = "Village"
+popup/item_2/id = 2
+popup/item_3/text = "Outpost"
+popup/item_3/id = 3
+
+[node name="VSeparator2" type="VSeparator" parent="VBoxContainer/Toolbar"]
+layout_mode = 2
+
+[node name="Validate" type="Button" parent="VBoxContainer/Toolbar"]
+layout_mode = 2
+text = "Validate"
+
+[node name="CurrentFileLabel" type="Label" parent="VBoxContainer/Toolbar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "New Settlement"
+horizontal_alignment = 1
+
+[node name="ContentHSplit" type="HSplitContainer" parent="VBoxContainer"]
+layout_mode = 2
+split_offset = 600
+
+[node name="GridScrollContainer" type="ScrollContainer" parent="VBoxContainer/ContentHSplit"]
+custom_minimum_size = Vector2(600, 400)
+layout_mode = 2
+
+[node name="SettlementGridEditor" type="Control" parent="VBoxContainer/ContentHSplit/GridScrollContainer"]
+custom_minimum_size = Vector2(3840, 2560)
+layout_mode = 2
+script = SubResource("GDScript_0q824")
+
+[node name="RightPanel" type="VBoxContainer" parent="VBoxContainer/ContentHSplit"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+
+[node name="BuildingPalette" type="VBoxContainer" parent="VBoxContainer/ContentHSplit/RightPanel"]
+layout_mode = 2
+script = SubResource("GDScript_ejdfc")
+
+[node name="SettlementProperties" type="VBoxContainer" parent="VBoxContainer/ContentHSplit/RightPanel"]
+layout_mode = 2
+script = SubResource("GDScript_rvn1h")
+
+[node name="FileDialog" type="FileDialog" parent="VBoxContainer"]
+title = "Open a File"
+file_mode = 0
+filters = PackedStringArray("*.tres; Settlement Data Files")

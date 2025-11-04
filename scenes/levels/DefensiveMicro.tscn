@@ -1,6 +1,9 @@
-[gd_scene load_steps=4 format=3 uid="uid://cpe46srqjmdh6"]
+[gd_scene load_steps=7 format=3 uid="uid://cpe46srqjmdh6"]
 
 [ext_resource type="Texture2D" uid="uid://c6v2d1q8q7e3j" path="res://placeholder_tile.tres" id="1_a64e3"]
+[ext_resource type="Script" uid="uid://cuw68f180xbui" path="res://scenes/missions/RaidMission.gd" id="1_vwpxa"]
+[ext_resource type="PackedScene" uid="uid://cyp3t7gbdg0wx" path="res://player/RTSController.tscn" id="3_mb7gn"]
+[ext_resource type="Script" uid="uid://bxbqkyp1d6750" path="res://player/RTSCamera.gd" id="4_5s02u"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_vwpxa"]
 texture = ExtResource("1_a64e3")
@@ -12,7 +15,18 @@ tile_size = Vector2i(32, 32)
 sources/0 = SubResource("TileSetAtlasSource_vwpxa")
 
 [node name="DefensiveMicro" type="Node2D"]
+script = ExtResource("1_vwpxa")
+is_defensive_mission = true
 
 [node name="TileMap" type="TileMap" parent="."]
 tile_set = SubResource("TileSet_m5xuc")
 format = 2
+
+[node name="PlayerStartPosition" type="Marker2D" parent="."]
+position = Vector2(100, 400)
+
+[node name="RTSController" parent="." instance=ExtResource("3_mb7gn")]
+
+[node name="RTSCamera" type="Camera2D" parent="."]
+position = Vector2(400, 300)
+script = ExtResource("4_5s02u")

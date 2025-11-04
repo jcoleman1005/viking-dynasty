@@ -1,5 +1,0 @@
-SettlementData
-Resource
-BuildingData
-NoiseTexture2D
-UnitData
