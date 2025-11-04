@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://bqca4a5qwo3nm" path="res://scenes/world_map/WorldMap_Stub.gd" id="1_gdfdq"]
 [ext_resource type="PackedScene" uid="uid://d3ifdm0rvd5kl" path="res://scenes/missions/RaidMission.tscn" id="2_fvpdd"]
 [ext_resource type="PackedScene" uid="uid://c53k15q2w8c1a" path="res://scenes/levels/SettlementBridge.tscn" id="3_aum8n"]
-[ext_resource type="Script" uid="uid://dqgdqgx6uacsx" path="res://test_phase3.gd" id="4_aum8n"]
+[ext_resource type="Script" uid="uid://mqfns8dgbvdl" path="res://tools/test_phase3.gd" id="4_aum8n"]
 
 [node name="WorldMapStub" type="Control"]
 layout_mode = 3
