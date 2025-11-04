@@ -157,17 +157,8 @@ func _on_buy_button_pressed(item_data: BuildingData) -> void:
 	
 	if purchase_successful:
 		print("UI received purchase confirmation for '%s'." % item_data.display_name)
-		var placement_pos = _get_safe_placement_position()
-		var new_building = SettlementManager.place_building(item_data, placement_pos)
-		
-		if new_building and SettlementManager.current_settlement:
-			var building_entry = {
-				"resource_path": item_data.resource_path,
-				"grid_position": placement_pos
-			}
-			SettlementManager.current_settlement.placed_buildings.append(building_entry)
-			print("Added %s to persistent settlement data at %s." % [item_data.display_name, placement_pos])
-			SettlementManager.save_settlement()
+		# Emit signal for cursor-based placement instead of auto-placing
+		EventBus.building_ready_for_placement.emit(item_data)
 	else:
 		print("UI received purchase failure for '%s'." % item_data.display_name)
 

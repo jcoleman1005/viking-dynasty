@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/settlements/SettlementData.gd" id="1_e06fl"]
+
+[resource]
+script = ExtResource("1_e06fl")
+treasury = {
+"food": 325,
+"gold": 1620,
+"stone": 150,
+"wood": 500
+}
+placed_buildings = Array[Dictionary]([{
+"grid_position": Vector2i(10, 8),
+"resource_path": "res://data/buildings/Bldg_GreatHall.tres"
+}, {
+"grid_position": Vector2i(6, 6),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(8, 6),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(12, 6),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(14, 6),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(8, 4),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(10, 4),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(12, 4),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(10, 3),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}])
+garrisoned_units = {
+"res://data/units/Unit_PlayerRaider.tres": 6
+}

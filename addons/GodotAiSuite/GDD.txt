@@ -1,282 +1,506 @@
-GDD v1.77
-Viking Dynasty
+GDD v1.80
+Viking Dynasty GDD v1.80
+
+
 1. High-Level Concept & Vision
-Viking Dynasty is a strategy game that blends the dynastic ambition and grand strategy of Crusader Kings with the tactical, real-time battles of Age of Empires II.
-Players will manage a Viking dynasty, not just a single character. They will forge alliances, declare wars, and manage their growing family on a strategic world map (the Macro layer). When battles occur or raids are launched, the game will transition into a real-time strategy mission (the Micro layer). The bridge between these two layers is the player's persistent, grid-based Settlement, which they will build, upgrade, and defend.
-The core tension is balancing the long-term needs of your dynasty (geopolitics, heirs) with the immediate, visceral needs of combat (resources, unit control), all while protecting your home from rival Jarls.
-Target Audience: Players who enjoy deep strategic systems (e.g., Paradox titles) but also crave tactical, skill-based RTS combat (e.g., Age of Empires, Company of Heroes).
-Genre: Grand Strategy / Real-Time Strategy (RTS) Hybrid.
-Theme: Viking Age, focusing on the grit, ambition, and legacy of a Norse dynasty.
+
+
+
+
+Viking Dynasty is a strategy game that blends the dynastic ambition and grand strategy of Crusader Kings with the tactical, real-time battles of Age of Empires II. 1
+
+
+Players will manage a Viking dynasty, not just a single character. 2They will forge alliances, declare wars, and manage their growing family on a strategic world map (the Macro layer). 3When battles occur or raids are launched, the game will transition into a real-time strategy mission (the Micro layer). 4The bridge between these two layers is the player's persistent, grid-based Settlement, which they will build, upgrade, and defend. 5
+
+
+The core tension is balancing the long-term needs of your dynasty (geopolitics, heirs) with the immediate, visceral needs of combat (resources, unit control), all while protecting your home from rival Jarls. 6
+
+
+* Target Audience: Players who enjoy deep strategic systems (e.g., Paradox titles) but also crave tactical, skill-based RTS combat (e.g., Age of Empires, Company of Heroes). 7
+
+* Genre: Grand Strategy / Real-Time Strategy (RTS) Hybrid. 8
+
+* Theme: Viking Age, focusing on the grit, ambition, and legacy of a Norse dynasty. 9
+
 2. Core Gameplay Loop: The Three Layers
-The gameplay is built on three interconnected layers: the Macro (Dynasty), the Micro (RTS), and the Bridge (Settlement).
-2.A. The Macro (Dynasty Layer)
-This is the "Crusader Kings" layer. It is the top-level grand strategy map of Scandinavia and beyond.
-Gameplay: Turn-based or pausable real-time.
-Player Actions: Managing family and heirs, diplomacy with AI Jarls, managing traits and succession, triggering events, and directing armies on a geopolitical map.
-Consequence: Declaring war on a rival Jarl (Macro) triggers an offensive "Micro" mission. A rival attacking the player triggers a defensive "Micro" mission.
-2.B. The Micro (RTS Layer)
-This is the "Age of Empires" layer. It is the real-time, grid-based combat mission.
-Gameplay: Real-time strategy.
-Player Actions: Commanding units, using special abilities, and achieving mission objectives (e.g., "Destroy the enemy's Great Hall," "Survive for 10 minutes").
-Consequence: Winning a battle (Micro) results in loot and prestige (Macro). Losing a defensive battle (Micro) results in your Settlement being "Sacked" (Bridge).
-2.C. The Bridge (Settlement Layer)
-This is the player's persistent home base, which connects the two layers.
-Gameplay: Grid-based city-builder (e.g., RimWorld, Stronghold).
-Player Actions: Placing buildings, upgrading structures, assigning workers, and managing resources.
-Consequence: The layout of your Settlement becomes the map for all defensive "Micro" missions. A well-designed base provides a massive tactical advantage.
+The gameplay is built on three interconnected layers: the Macro (Dynasty), the Micro (RTS), and the Bridge (Settlement). 10
+   * 2.A. The Macro (Dynasty Layer) 11
+
+      * This is the "Crusader Kings" layer. It is the top-level grand strategy map of Scandinavia and beyond. 12
+
+      * Gameplay: Turn-based or pausable real-time. 13
+
+      * Player Actions: Managing family and heirs, diplomacy with AI Jarls, managing traits and succession, triggering events, and directing armies on a geopolitical map. 14
+
+      * Consequence: Declaring war on a rival Jarl (Macro) triggers an offensive "Micro" mission. 15A rival attacking the player triggers a defensive "Micro" mission. 16
+
+         * 2.B. The Micro (RTS Layer) 17
+
+            * This is the "Age of Empires" layer. It is the real-time, grid-based combat mission. 18
+
+            * Gameplay: Real-time strategy. 19
+
+			* Player Actions: Commanding units, using special abilities, and achieving mission objectives (e.g., "Destroy the enemy's Great Hall," "Survive for 10 minutes"). 20
+
+			* Consequence: Winning a battle (Micro) results in loot and prestige (Macro). 21Losing a defensive battle (Micro) results in your Settlement being "Sacked" (Bridge). 22
+
+               * 2.C. The Bridge (Settlement Layer) 23
+
+                  * This is the player's persistent home base, which connects the two layers. 24
+
+                  * Gameplay: Grid-based city-builder (e.g., RimWorld, Stronghold). 25
+
+                  * Player Actions: Placing buildings, upgrading structures, assigning workers, and managing resources. 26
+
+				  * Consequence: The layout of your Settlement becomes the map for all defensive "Micro" missions. 27A well-designed base provides a massive tactical advantage. 28
+
 3. The Player's Journey (NEW)
-This section describes the intended narrative and emotional arc for the player, serving as a "North Star" for development.
-First 5 Minutes (The Builder): The player starts as a new Jarl with only a Great Hall on a patch of land. They are guided to build their first economic buildings (e.g., Lumber Yard) and a simple wall. The feeling is one of fresh starts and potential.
-First 30 Minutes (The Defender): The player has a small, functional settlement with a basic economy. They are now facing their first "Sacked" attack, where a small rival band attacks. The goal is to survive and understand the importance of defensive layouts. The feeling is one of vulnerability and the drive to protect what's theirs.
-First Hour (The Raider): Having survived and invested in their economy, the player has now built a small garrison. They launch their first "Offensive Raid" (Phase 3) on a nearby camp. The feeling is one of empowerment, agency, and seeing the direct payoff for their investments as they return with loot.
-Long-Term Arc (The Jarl): The player is now balancing all three layers: expanding their settlement, launching bigger raids for more loot, and engaging in the high-level politics and family management of the Macro layer. The feeling is one of dynastic ambition and strategic depth.
+This section describes the intended narrative and emotional arc for the player, serving as a "North Star" for development. 29
+                     * First 5 Minutes (The Builder):
+                     * The player starts as a new Jarl with only a Great Hall on a patch of land. 30They are guided to build their first economic buildings (e.g., Lumber Yard) and a simple wall. 31The feeling is one of fresh starts and potential. 32
+
+						* First 30 Minutes (The Defender): The player has a small, functional settlement with a basic economy. 33They are now facing their first "Sacked" attack, where a small rival band attacks. 34The goal is to survive and understand the importance of defensive layouts. 35The feeling is one of vulnerability and the drive to protect what's theirs. 36
+
+						* First Hour (The Raider): Having survived and invested in their economy, the player has now built a small garrison. 37They launch their first "Offensive Raid" (Phase 3) on a nearby camp. 38The feeling is one of empowerment, agency, and seeing the direct payoff for their investments as they return with loot. 39
+
+                        * Long-Term Arc (The Jarl): The player is now balancing all three layers: expanding their settlement, launching bigger raids for more loot, and engaging in the high-level politics and family management of the Macro layer. 40The feeling is one of dynastic ambition and strategic depth. 41
+
 4. Key Features
 (This section will be expanded as we implement Phases 3-4)
-Build a persistent settlement and manage its 'Raid-and-Spend' economy.
-(Future: Phase 3) Command your warband in tactical RTS combat to raid rival settlements.
-(Future: Phase 4) Guide your dynasty through generations of war, politics, and intrigue.
+                           * Build a persistent settlement and manage its 'Raid-and-Spend' economy. 43
+
+                           * (Future: Phase 3) Command your warband in tactical RTS combat to raid rival settlements. 44
+
+                           * (Future: Phase 4) Guide your dynasty through generations of war, politics, and intrigue. 45
+
 5. Technical Stack & Philosophy
-Engine: Godot 4.4
-Scripting: GDScript
-Architecture:
-Data-Driven: All game stats (unit HP, building cost, etc.) must be custom Resource files (.tres) to empower design and balancing without code changes.
-Singleton (Autoload) Managers: Global systems (EventBus, SettlementManager) are implemented as Autoloads for easy access and clear separation of concerns.
-Event Bus: All communication between major, decoupled systems (e.g., UI, AI, Game Loop) must go through the EventBus singleton. No direct references.
-Finite State Machines (FSMs): All entities with 3+ states (like AI units) must use an FSM.
-5.A.Exported Resources Implementation (GDD Reference)
-This section details how the "Data-Driven" philosophy is implemented using exported variables in key scripts. This allows designers to configure, balance, and test content directly in the Godot inspector without code changes.
-1. StorefrontUI (res://ui/StorefrontUI.gd)
-@export var available_buildings: Array[BuildingData] - Buildings available for purchase
-@export var available_units: Array[UnitData] - Units available for recruitment
-@export var defaulttreasurydisplay: Dictionary - Default treasury values when no settlement loaded
-@export var autoloadunitsfromdirectory: bool - Whether to auto-scan unit directory
-Usage: Configure shop inventory and behavior per scene. Enables A/B testing different building sets.
-2. SettlementBridge (res://scripts/buildings/SettlementBridge.gd)
-@export var homebasedata: SettlementData - Settlement data for the level
-@export var testbuildingdata: BuildingData - Building spawned on click (testing)
-@export var raider_scene: PackedScene - Enemy unit scene for testing combat
-@export var welcomepopupscene: PackedScene - Popup UI scene for payouts
-Usage: Configure different settlements per level. Customize enemy types and UI components.
-3. RaidMission (res://scenes/missions/RaidMission.gd)
-@export var enemybasedata: SettlementData - Enemy settlement to raid
-@export var defaultenemybase_path: String - Fallback enemy base path
-@export var victorybonusloot: Dictionary - Extra loot for mission completion
-@export var playerspawnformation: Dictionary - Unit formation settings
-@export var mission_difficulty: float - Difficulty multiplier
-@export var allow_retreat: bool - Whether players can retreat
-Usage: Design custom raid missions with different enemy bases, difficulty, and rewards.
-Benefits for Game Design:
-Designer Control - Non-programmers can configure game content
-Easy Balancing - Tweak values without code changes
-A/B Testing - Compare different configurations easily
-Reusable Scenes - Same scene, different configurations
-Rapid Iteration - Quick testing of new content combinations
-Inspector Usage:
-Empty exports = Uses default/fallback values (current behavior maintained)
-Assigned exports = Uses custom inspector values
-Drag & Drop = Assign .tres resources directly from FileSystem dock
-Create New = Use inspector dropdown to create new resources inline
-This system provides maximum flexibility while maintaining backward compatibility with existing functionality.
+                              * Engine: Godot 4.4 46 (Verified from Project Settings) 47
 
+                              * Scripting: GDScript 48
+
+                              * Architecture:
+                                 * Data-Driven: All game stats (unit HP, building cost, etc.) must be custom Resource files (.tres) to empower design and balancing without code changes. 49
+
+                                 * Singleton (Autoload) Managers: Global systems (EventBus, SettlementManager) are implemented as Autoloads for easy access and clear separation of concerns. 505050
+
+                                 * Event Bus: All communication between major, decoupled systems (e.g., UI, AI, Game Loop) must go through the EventBus singleton. 51 No direct references.
+
+                                 * Finite State Machines (FSMs): All entities with 3+ states (like AI units) must use an FSM. 52
+                                 * (AMENDED) Developer Plugins: The project utilizes editor plugins for enhanced development capabilities.
+                                    * GodotAiSuite: Used for AI development.
+                                    * enemy_base_editor: (NEW) The official tool for designing, creating, and managing all enemy SettlementData .tres files.
+________________
+5.A. Exported Resources Implementation (GDD Reference) (AMENDED)
+This section details how the "Data-Driven" philosophy is implemented using exported variables in key scripts. 54This allows designers to configure, balance, and test content directly in the Godot inspector without code changes. 55
+                                    * 1. StorefrontUI (res://ui/StorefrontUI.gd) 56
+
+                                       * @export var available_buildings: Array[BuildingData] - Buildings available for purchase 57575757
+
+                                       * @export var available_units: Array[UnitData] - Units available for recruitment 58585858
+
+                                       * @export var default_treasury_display: Dictionary - Default treasury values when no settlement loaded 59595959
+
+                                       * @export var auto_load_units_from_directory: bool - (AMENDED) If true, scans res://data/units/ to automatically populate the recruit list. 60606060
+
+                                       * Usage: Configure shop inventory and behavior per scene. Enables A/B testing different building sets. 61
+
+                                          * 2. SettlementBridge (res://scripts/buildings/SettlementBridge.gd) 62
+
+                                             * @export var home_base_data: SettlementData - Settlement data for the level 63636363
+
+                                             * @export var test_building_data: BuildingData - Building spawned on click (testing) 64
+
+                                             * @export var raider_scene: PackedScene - Enemy unit scene for testing combat 65
+
+                                             * @export var welcome_popup_scene: PackedScene - Popup UI scene for payouts 66666666
+
+                                             * @export var world_map_scene: PackedScene - (NEW) The world map scene to transition to for raids. 67
+
+                                             * Usage: Configure different settlements per level. Customize enemy types and UI components. 68
+
+                                                * 3. RaidMission (res://scenes/missions/RaidMission.gd / DefensiveMicro.tscn) (AMENDED)
+                                                * @export var enemy_base_data: SettlementData - Enemy settlement to raid 696969
+
+                                                * @export var default_enemy_base_path: String - Fallback enemy base path 707070
+
+                                                * @export var victory_bonus_loot: Dictionary - Extra loot for mission completion 717171
+
+                                                * @export var player_spawn_formation: Dictionary - Unit formation settings 727272
+
+                                                * @export var mission_difficulty: float - Difficulty multiplier 737373
+
+                                                * @export var allow_retreat: bool - Whether players can retreat 747474
+
+                                                * @export var settlement_bridge_scene: PackedScene - (NEW) The settlement scene to return to after the mission. 75
+
+												* @export var is_defensive_mission: bool - (NEW) If true, disables the "all units destroyed" loss condition (for Sacked missions). 76
+
+                                                * Usage: Design custom raid missions with different enemy bases, difficulty, and rewards. 77
+
+                                                   * 4. WorldMapStub (res://scenes/world_map/WorldMap_Stub.gd) (NEW)
+                                                   * @export var raid_mission_scene: PackedScene - The main raid mission scene to load. 78
+
+                                                   * @export var settlement_bridge_scene: PackedScene - The settlement scene to return to. 79
+
+                                                   * Usage: Acts as the Phase 3 placeholder for selecting and launching offensive raids.
+5.B. Event Bus (AMENDED)
+All communication between major, decoupled systems (e.g., UI, AI, Game Loop) must go through the EventBus singleton. 80
+                                                      * build_request_made(building_data: BuildingData, grid_position: Vector2i) 81
+
+                                                      * pathfinding_grid_updated(grid_position: Vector2i) 82
+
+                                                      * treasury_updated(new_treasury: Dictionary) 83
+
+                                                      * purchase_successful(item_name: String) 84
+
+                                                      * purchase_failed(reason: String) 85
+
+                                                      * scene_change_requested(scene_path: String) 86
+
+                                                      * settlement_loaded(settlement_data: SettlementData) 87
+
+                                                      * player_unit_died(unit: Node2D) 88
+
+                                                      * (NEW) select_command(select_rect: Rect2, is_box_select: bool) - Emitted by SelectionBox.gd for RTS unit selection. 89
+
+                                                      * (NEW) move_command(target_position: Vector2) - Emitted by SelectionBox.gd for an RTS move command. 90
+
+                                                      * (NEW) attack_command(target_node: Node2D) - Emitted by SelectionBox.gd for an RTS attack command. 91
+
+________________
 6. Art Style & Mood
-(Placeholder section for future development)
-7. Core Entities & Data Structures
-7.A. Overview
-All game entities are defined by a Resource script (.gd) and then implemented as one or more .tres files.
-7.B. BuildingData.gd (AMENDED)
-Defines the stats for all static structures in the game.
-Path: res://data/buildings/BuildingData.gd
-Extends: Resource
-class_name BuildingData
-Key Properties:
-@export var display_name: String  (e.g., "Stone Wall")
-@export var scene_to_spawn: PackedScene  (The .tscn file to instance)
-@export var icon: Texture2D  (For the build menu)
-@export var build_cost: Dictionary  (e.g., {"stone": 25})
-@export var max_health: int
-@export var blocks_pathfinding: bool  (If true, updates the A* grid)
-@export var grid_size: Vector2i  (Size in grid cells)
-@export_group("Defensive Stats")
-@export var is_defensive_structure: bool
-@export var attack_damage: int
-@export var attack_range: float
-@export var attack_speed: float
+(Placeholder section for future development) 92
+7. Core Entities & Data Structures (AMENDED)
+All game entities are defined by a Resource script (.gd) and then implemented as one or more .tres files. 93
+                                                         * 7.A. Overview
+                                                         * All game entities are defined by a Resource script (.gd) and then implemented as one or more .tres files.
 
+                                                            * 7.B. BuildingData.gd (AMENDED) 95
 
-7.C. UnitData.gd (AMENDED)
-Defines the stats for all mobile units in the game.
-Path: res://data/units/UnitData.gd
-Extends: Resource
-class_name UnitData
-Key Properties:
-@export var display_name: String  (e.g., "Viking Raider")
-@export var scene_to_spawn: PackedScene
-@export var icon: Texture2D  (For the training menu)
-@export var spawn_cost: Dictionary (e.g., {"food": 50, "gold": 20})
-@export_group("Combat Stats")
-@export var max_health: int
-@export var move_speed: float
-@export var attack_damage: int
-@export var attack_range: float
-@export var attack_speed: float
+                                                               * Defines the stats for all static structures in the game. 96
 
+                                                               * Path: res://data/buildings/BuildingData.gd 97979797
 
-7.D. EconomicBuildingData.gd (NEW)
-Extends BuildingData with properties for resource generation.
-Path: res://data/buildings/EconomicBuildingData.gd
-Extends: BuildingData
-class_name EconomicBuildingData
-Key Properties:
-@export_group("Economic Stats")
-## The type of resource this building generates (e.g., "wood", "food", "gold").
-@export var resource_type: String = "wood"
+                                                               * Extends: Resource 98
 
-## The fixed amount of resources generated after each successful attack.
-@export var fixed_payout_amount: int = 10
+                                                               * class_name BuildingData 99999999
 
-## The maximum amount of the resource that can be stored before collection.
-@export var storage_cap: int = 100
+                                                               * Key Properties: 100
 
+                                                                  * @export var display_name: String 101101101101
 
-7.E. SettlementData.gd (NEW)
-A Resource file that holds all persistent data for a single settlement. This allows for scalability (e.g., multiple colonies).
-Path: res://data/settlements/SettlementData.gd
-Extends: Resource
-class_name SettlementData
-Key Properties:
-## Stores current "Loot" resources (e.g., {"gold": 1000, "wood": 500})
-@export var treasury: Dictionary
+                                                                  * @export var scene_to_spawn: PackedScene 102102102102
 
-## Stores all placed buildings for persistence.
-## Array of Dictionaries: [{"resource_path": "res://...", "grid_position": Vector2i(x, y)}]
-@export var placed_buildings: Array[Dictionary]
+                                                                  * @export var icon: Texture2D 103103103
 
-##Stores all recruited units available for deployment.
-Dictionary mapping unit resource path to an integer count.
-Example: {"res://data/units/Unit_Axeman.tres": 3}
-@export var garrisoned_units: Dictionar
+                                                                  * @export var building_texture: Texture2D - (NEW) Texture shown on screen. 104
 
+                                                                  * @export var build_cost: Dictionary 105105105105
+
+                                                                  * @export var max_health: int 106106106106
+
+                                                                  * @export var blocks_pathfinding: bool 107107107107
+
+                                                                  * @export var grid_size: Vector2i 108108108108
+
+																  * @export_group("Defensive Stats") 109109
+
+                                                                  * @export var is_defensive_structure: bool 110110110110
+
+                                                                  * @export var attack_damage: int 111111111111
+
+                                                                  * @export var attack_range: float 112112112112
+
+                                                                  * @export var attack_speed: float 113113113113
+
+                                                                     * 7.C. UnitData.gd 114 (No change)
+
+                                                                        * Path: res://data/units/UnitData.gd 115115115115
+
+                                                                        * class_name UnitData 116116116116
+
+                                                                        * Key Properties:
+                                                                           * @export var display_name: String 117117117117
+
+                                                                           * @export var scene_to_spawn: PackedScene 118118118118
+
+                                                                           * @export var icon: Texture2D 119119119119
+
+                                                                           * @export var spawn_cost: Dictionary 120120120120
+
+																		   * @export_group("Combat Stats") 121121
+
+                                                                           * @export var max_health: int 122122122122
+
+                                                                           * @export var move_speed: float 123123123123
+
+                                                                           * @export var attack_damage: int 124124124124
+
+                                                                           * @export var attack_range: float 125125125125
+
+                                                                           * @export var attack_speed: float 126126126126
+
+                                                                              * 7.D. EconomicBuildingData.gd
+
+                                                                                 * Path: res://data/buildings/EconomicBuildingData.gd 128128128128
+
+                                                                                 * class_name EconomicBuildingData 129129129129
+
+                                                                                 * Key Properties:
+																					* @export_group("Economic Stats") 130130
+
+                                                                                    * @export var resource_type: String 131131131131
+
+                                                                                    * @export var fixed_payout_amount: int 132132132132
+
+                                                                                    * @export var storage_cap: int 133133133133
+
+                                                                                       * 7.E. SettlementData.gd 134 (No change)
+
+                                                                                          * Path: res://data/settlements/SettlementData.gd 135135135135
+
+                                                                                          * class_name SettlementData 136136136136
+
+                                                                                          * Key Properties:
+                                                                                             * @export var treasury: Dictionary 137137137137
+
+                                                                                             * @export var placed_buildings: Array[Dictionary] 138138138138
+
+                                                                                             * @export var garrisoned_units: Dictionary 139139139139
+
+                                                                                                * 7.F. RaidLootData.gd (NEW)
+                                                                                                * A Resource file for tracking loot collected during an offensive raid.
+                                                                                                * Path: res://data/missions/RaidLootData.gd 140140
+
+                                                                                                * class_name RaidLootData 141141
+
+                                                                                                * Key Properties:
+																								   * @export var collected_loot: Dictionary - Stores loot (e.g., {"gold": 50}) gathered from destroyed buildings. 142142
+
+                                                                                                      * Key Methods:
+                                                                                                      * add_loot_from_building(building_data: BuildingData) - Adds loot to the collection based on the destroyed building's type. 143143
 
 8. Core Implemented Systems
-This section describes the major gameplay loops and architectural patterns that are currently implemented and functional in the game.
-8.A. "Sacked" Loop (Defense-First)
-The "Defense-First" MVP loop is complete and functional.
-Systems: SettlementManager, AStarGrid2D Pathfinding, EventBus, FSM.
-Core Loop:
-SettlementBridge.gd loads home_base.tres (a SettlementData resource).
-SettlementManager.load_settlement() reads this data, instantiates the "Great Hall" and any other saved buildings, and configures the AStarGrid2D.
-Player can place "Stone Wall" obstacles.
-Player clicks "Start Attack," which spawns an enemy "Viking Raider".
-Raider AI (UnitFSM) paths around walls to the Great Hall.
-Raider attacks and destroys the Hall.
-Hall's building_destroyed signal is caught by SettlementBridge.gd.
-UI shows "SACKED" message and a RestartButton.
-8.B. Core Architecture (Refactored)
+																										 * 8.A. "Sacked" Loop (Defense-First) (AMENDED) 144
+
+																											* The "Defense-First" MVP loop is complete and functional. 145This loop is triggered by loading the DefensiveMicro.tscn (or a similar scene) with its is_defensive_mission property set to true. 146
+
+                                                                                                            * Systems:
+                                                                                                               1. SettlementManager, AStarGrid2D Pathfinding, EventBus, FSM. 147
+
+                                                                                                                  * Core Loop:
+                                                                                                                  1. SettlementBridge.gd loads home_base.tres (a SettlementData resource). 148
+
+                                                                                                                  2. SettlementManager.load_settlement() reads this data, instantiates buildings, and configures the AStarGrid2D. 149
+
+																												  3. Player can place "Stone Wall" obstacles. 150
+
+																												  4. Player clicks "Start Attack," which spawns an enemy "Viking Raider". 151
+
+                                                                                                                  5. Raider AI (UnitFSM) paths around walls to the Great Hall. 152
+
+                                                                                                                  6. Raider attacks and destroys the Hall. 153
+
+                                                                                                                  7. Hall's building_destroyed signal is caught by SettlementBridge.gd. 154154154154
+
+																												  8. UI shows "SACKED" message and a RestartButton. 155
+
+                                                                                                                     * 8.B. Core Architecture (Refactored) 156 (No change)
+
 This section defines the current architecture after the Phase 2 refactor, which supports the economy and future scalability. The monolithic SettlementManager has been split.
-Persistent Data Resource (SettlementData.gd)
-This is a Resource script (.gd) that holds all persistent data for one settlement.
-A .tres file (e.g., home_base.tres) represents a unique, saveable settlement.
-It is responsible for storing:
-treasury: Dictionary (e.g., {"gold": 1000, "wood": 10})
-placed_buildings: Array[Dictionary]
-garrisoned_units: Dictionary
-Singleton Runtime Manager (SettlementManager.gd)
-This is the Autoload singleton. It is a runtime manager and holds no persistent data itself.
-Responsibilities:
-Load/Save: Loads a SettlementData resource (e.g., load_settlement(home_base_data)) and saves it (save_settlement()).
-Pathfinding: Manages the global AStarGrid2D and provides get_astar_path().
-Runtime Logic: Processes runtime requests (e.g., attempt_purchase, calculate_payout, add_unit_to_garrison).
-Scene Management: Holds the BuildingContainer node to parent all instanced buildings.
-Conductor Scene (SettlementBridge.gd)
-This is the main "Conductor" scene.
-Responsibilities:
-Telling SettlementManager which settlement to load.
-Managing the UI layer (Storefront, Payout Popup).
-Spawning units (both enemy Raiders for defense and player units for offense).
-Connecting signals (e.g., great_hall.building_destroyed).
-8.C. "Reinvestment" Economy (Phase 2)
+                                                                                                                        * Persistent Data Resource (SettlementData.gd)
+                                                                                                                        * This is a Resource script (.gd) that holds all persistent data for one settlement.
+                                                                                                                        * A .tres file (e.g., home_base.tres) represents a unique, saveable settlement.
+                                                                                                                        * It is responsible for storing:
+																														* treasury: Dictionary (e.g., {"gold": 1000, "wood": 10})
+                                                                                                                        * placed_buildings: Array[Dictionary]
+                                                                                                                        * garrisoned_units: Dictionary
+                                                                                                                        * Singleton Runtime Manager (SettlementManager.gd)
+                                                                                                                        * This is the Autoload singleton. It is a runtime manager and holds no persistent data itself.
+                                                                                                                        * Responsibilities:
+                                                                                                                        1. Load/Save: Loads a SettlementData resource (e.g., load_settlement(home_base_data)) and saves it (save_settlement()).
+                                                                                                                        2. Pathfinding: Manages the global AStarGrid2D and provides get_astar_path().
+                                                                                                                        3. Runtime Logic: Processes runtime requests (e.g., attempt_purchase, calculate_payout, add_unit_to_garrison).
+                                                                                                                        4. Scene Management: Holds the BuildingContainer node to parent all instanced buildings.
+                                                                                                                        * Conductor Scene (SettlementBridge.gd)
+																														* This is the main "Conductor" scene.
+                                                                                                                        * Responsibilities:
+                                                                                                                        1. Telling SettlementManager which settlement to load.
+                                                                                                                        2. Managing the UI layer (Storefront, Payout Popup).
+                                                                                                                        3. Spawning units (both enemy Raiders for defense and player units for offense).
+                                                                                                                        * Connecting signals (e.g., great_hall.building_destroyed).
+
+																														   * 8.C. "Reinvestment" Economy (Phase 2)
 This implements the core "Raid-and-Spend" economic engine.
-Pillar 1: The 'Treasury' & 'Storefront' (Implemented)
-Treasury: The treasury Dictionary in SettlementData.gd tracks all "Loot" resources (Gold, Wood, Stone, etc.).
-Storefront: Storefront_UI.tscn allows the player to spend Treasury resources.
-Build Cost: All buildable items (buildings, units) have their cost defined as a Dictionary in their data resource (e.g., build_cost = {"stone": 25} or spawn_cost = {"food": 50, "gold": 10}). SettlementManager.attempt_purchase() handles this logic.
-Pillar 2: The 'Active' Loop (Raiding for Loot) (Partial)
-Concept: This is the primary income generator, designed to connect to the Phase 3 (Offensive Raids) loop.
-Function: Upon completing an "Offensive Raid" (Phase 3), the player will be awarded a lump sum of Loot. For now, this is simulated with a debug key.
-Pillar 3: The 'Reinvestment' Loop (Implemented)
-Concept: This is the secondary economic loop. Players spend loot on "Economic Buildings" (e.g., LumberYard.tres) as a long-term investment.
-Function (The "Fixed" Payout): These buildings do not generate resources passively over time. Instead, they provide a fixed, lump-sum resource payout after each attack mission. This "one attack = one payout" model respects the player's effort and is highly predictable.
-Payout Mechanism:
-The player returns to the SettlementBridge scene (simulating a return from a raid).
-SettlementBridge.gd calls SettlementManager.calculate_payout().
-This function iterates all EconomicBuildingData buildings owned by the player and sums their fixed_payout_amount property.
-The total payout is displayed on the WelcomeHome_Popup.tscn.
-The player must click "Collect" to deposit the resources into the Treasury, providing a tangible feedback loop.
-Strategic Layer: This creates the central economic choice:
-Spend Loot: On immediate military power (e.g., better troops for the next raid).
-Invest Loot: On economic buildings for long-term, compounding resource growth.
+                                                                                                                           * Pillar 1: The 'Treasury' & 'Storefront' (Implemented)
+																														   * Treasury: The treasury Dictionary in SettlementData.gd tracks all "Loot" resources (Gold, Wood, Stone, etc.).
+                                                                                                                           * Storefront: Storefront_UI.tscn allows the player to spend Treasury resources.
+																														   * Build Cost: All buildable items (buildings, units) have their cost defined as a Dictionary in their data resource (e.g., build_cost = {"stone": 25} or spawn_cost = {"food": 50, "gold": 10}). SettlementManager.attempt_purchase() handles this logic.
+                                                                                                                           * Pillar 2: The 'Active' Loop (Raiding for Loot) (Partial)
+                                                                                                                           * Concept: This is the primary income generator, designed to connect to the Phase 3 (Offensive Raids) loop.
+																														   * Function: Upon completing an "Offensive Raid" (Phase 3), the player will be awarded a lump sum of Loot. For now, this is simulated with a debug key.
+                                                                                                                           * Pillar 3: The 'Reinvestment' Loop (Implemented)
+																														   * Concept: This is the secondary economic loop. Players spend loot on "Economic Buildings" (e.g., LumberYard.tres) as a long-term investment.
+																														   * Function (The "Fixed" Payout): These buildings do not generate resources passively over time. Instead, they provide a fixed, lump-sum resource payout after each attack mission. This "one attack = one payout" model respects the player's effort and is highly predictable.
+                                                                                                                           * Payout Mechanism:
+                                                                                                                           1. The player returns to the SettlementBridge scene (simulating a return from a raid).
+                                                                                                                           2. SettlementBridge.gd calls SettlementManager.calculate_payout().
+                                                                                                                           3. This function iterates all EconomicBuildingData buildings owned by the player and sums their fixed_payout_amount property.
+                                                                                                                           4. The total payout is displayed on the WelcomeHome_Popup.tscn.
+																														   5. The player must click "Collect" to deposit the resources into the Treasury, providing a tangible feedback loop.
+                                                                                                                           * Strategic Layer: This creates the central economic choice:
+                                                                                                                           * Spend Loot: On immediate military power (e.g., better troops for the next raid).
+                                                                                                                           * Invest Loot: On economic buildings for long-term, compounding resource growth.
+                                                                                                                           *
 9. Development Roadmap
-This section outlines the next major phases of development, building upon the implemented systems.
-9.A. Phase 3: The "Offensive Raid" (The 'Micro' Loop) (Next)
-1. Spirit & Core Concept
-Phase Spirit: "From Builder to Raider"
-This phase is the direct payoff for all the player's work in Phase 2. If Phase 2 was about strategic, long-term investment, Phase 3 is about immediate, aggressive action.
-This is where we build the "active" half of the RTS "Micro" layer. We are empowering the player with the agency they've been missing. They will transition from a reactive defender (in the MVP) to a proactive raider, taking direct control of a hand-picked army.
-This phase is the primary "income generator" for the "Reinvestment Economy" (Phase 2, Pillar 3) and completes our core gameplay loop:
-Spend Loot (Phase 2) $\rightarrow$ Build Army (Phase 3) $\rightarrow$ Go Raiding (Phase 3) $\rightarrow$ Get Loot (Phase 2)
-2. Goals & Key Pillars
-The goal of this phase is to allow the player to recruit an army, deploy it on an offensive mission, and control it with standard RTS commands to win loot.
-Pillar 1: The 'Garrison' (Army Creation)
-This pillar connects the Phase 2 economy directly to the player's military.
-Concept: The player needs to be able to spend their "Loot" to recruit units for their army. This system will reuse the "Storefront" architecture from Phase 2.
-Architecture:
-UI Extension: The Storefront_UI will be updated with a new "Recruit" or "Barracks" tab. This UI will read from a new set of UnitData.tres files (e.g., Axeman.tres, Archer.tres).
-UnitData Update: The UnitData resource will be expanded to include a spawn_cost: Dictionary (e.g., {"gold": 50, "food": 25}). (Self-correction: This is already implemented per Section 7.C, so this is just confirming its use).
-SettlementData Update: The SettlementData.gd resource will get a new variable: var garrisoned_units: Dictionary. (See Section 7.E).
-The Loop: When the player "buys" an Axeman from the UI, the exact same attempt_purchase(cost) function from Phase 2 is called. On success, instead of placing a building, the Axeman.tres resource path is added to the garrisoned_units array via a new SettlementManager.add_unit_to_garrison(unit_path) function, and the settlement is saved.
-Pillar 2: The 'RTS Controller' (Player Agency)
-This is the core new technical system of Phase 3. It gives the player direct control over their units.
-Concept: We will build a player-centric RTSController.gd script to handle classic real-time strategy inputs. This script will be active during the "Offensive Raid" mission.
-Architecture:
-Selection: The controller must handle multi-unit selection (click-and-drag box select) and single-unit selection (click). It will manage a var selected_units: Array of all currently selected units.
-Commands (The "Smart" Right-Click): The controller will detect the right_mouse_click input and perform a "smart" command:
-If Click on Ground: It will loop through all selected_units and tell their FSMs to move_to(target_position).
-If Click on Enemy: It will loop through all selected_units and tell their FSMs to attack(target_enemy).
-UnitFSM Refactor: The UnitFSM.gd (from the MVP) must be refactored. It can no longer just "seek the Great Hall." It will need new states: IDLE (waiting for a command), MOVING (following a player's move command), and ATTACKING (following a player's attack command).
-Pillar 3: The 'Raid Mission' (Completing the Loop)
-This pillar creates the mission structure that uses Pillars 1 & 2 to generate the "Loot" for Phase 2.
-Concept: We will create the "Offensive Raid" mission loader. To avoid getting stuck on Phase 4, we will use a temporary WorldMap_Stub.tscn as a placeholder.
-Architecture (The "Stub" Loader):
-WorldMap_Stub.tscn: A new, simple scene containing a background image and buttons. One button will be "Raid: Nearby Monastery."
-The "Raid Loader": Clicking the "Raid" button (likely on the SettlementBridge UI for now) triggers a new function. This function:
-A. Loads the DefensiveMicro.tscn scene (the same one from the MVP).
-B. Loads an enemy's SettlementData (e.g., monastery_base.tres) and uses your existing SettlementManager.load_settlement() to procedurally build their base.
-C. Reads the player's home_base.tres garrisoned_units array and spawns all those units at a PlayerStartPosition node.
-D. Attaches the RTSController.gd script to the player's camera.
-The Payout: When the enemy's "Great Hall" is destroyed, its building_destroyed signal is caught by a new function, _on_raid_successful(). This function calculates a Loot payload (e.g., {"gold": 500, "food": 200}), adds it to the player's Treasury (using the deposit_resources() function from Phase 2), and returns the player to the SettlementBridge.tscn.
-3. Verification & Test Plan
-[ ] Test (Pillar 1):  Can I go to the "Recruit" tab in my settlement, "buy" three Axemen, and verify that the home_base.tres file now shows a count of 3 for the Axeman resource in its garrisoned_units dictionary?
-[ ] Test (Pillar 2): In a test scene with 3 allied units, can I "box select" all of them? Can I right-click the ground and have all 3 move to that position?
-[ ] Test (Pillar 3): Can I click the "Raid" button? Does it correctly load the enemy base and spawn my 3 garrisoned Axemen?
-[ ] Test (Full Loop): After destroying the enemy's Great Hall in the raid, am I returned to my SettlementBridge? Does my "Treasury" UI now show the correct loot (e.g., "Gold: +500")?
-9.B. Phase 4: Integrate the "Macro" (The Dynasty Layer) (Future)
-Goal: To build the "Crusader Kings" DNA that connects all the loops into a single, compelling narrative.
-Key Features:
-Dynasty & Trait System: Implement the family tree, character inheritance, and traits.
-Geopolitical Map: Build the high-level map where the player interacts with other AI Jarls.
-Event Triggers: A rival Jarl declaring war (Macro) will trigger the "Sacked" defensive loop (Micro). The player deciding to attack (Macro) will trigger the "Offensive Raid" loop (Micro).
-Why last? This system provides the ultimate context, but it relies on the other two pillars (Economy and Combat) to have meaningful consequences.
-10. Controls & UI/UX Philosophy (NEW)
-This section defines the core principles for how the player interacts with each of the three layers.
-Bridge Layer (Settlement):
-Feel: Relaxed, strategic, "god-game" city builder.
-Controls: 100% mouse-driven. Left-click to select from the UI, left-click to place on the grid, right-click to cancel placement. Camera is panned with WASD or middle-mouse drag.
-UI: Non-intrusive. The "Storefront" is a modal window, not a persistent HUD, reinforcing that building is a deliberate, strategic choice, not a frantic, real-time action.
-Micro Layer (RTS Combat):
-Feel: Fast, responsive, tactical, and familiar.
-Controls: Classic RTS scheme. Left-click to select, click-and-drag for box selection. Right-click is the "smart" command (move on ground, attack on enemy). Hotkeys for unit groups (Ctrl+1) will be essential.
-UI: A minimal, persistent HUD is required here, showing selected unit(s), their HP, and any abilities. Must be readable at a glance.
-Macro Layer (Dynasty Map):
-Feel: Deliberate, thoughtful, "board game" or grand strategy.
-Controls: Turn-based or pausable real-time. Entirely mouse-driven, interacting with menus, map provinces, and character portraits.
-UI: Information-dense. The UI is the game. Heavy use of nested tooltips and clear iconography (e.g., Crusader Kings) to manage complex information (family trees, diplomacy, traits).
+																															  * 9.A. Phase 3: The "Offensive Raid" (The 'Micro' Loop) (AMENDED)
+                                                                                                                              * 1. Spirit & Core Concept
+																															  * The "Sacked" loop (Phase 1) proved our core technical systems work (pathfinding, building, FSMs). The "Reinvestment" loop (Phase 2) proved our economic data flow works (Spend -> Build -> Payout -> Spend).
+																															  * Phase 3 unites them. It gives the player agency by creating the "Offensive Raid," allowing them to use the economy they've built to create an army, and use that army to generate the loot that feeds their economy.
+																															  * This is the "Age of Empires" moment, where the player's strategic choices in the Settlement (what to build, what to recruit) pay off in a tactical RTS mission.
+                                                                                                                              * 2. Goals & Key Pillars
+                                                                                                                              * Pillar 1: The 'Garrison' (Army Creation) (AMENDED)
+																															  * Concept: The player's Settlement is not just a base; it's a barracks. We must connect the Phase 2 "Storefront" UI to the player's SettlementData.
+																															  * The Loop: When the player "buys" an Axeman from the UI, the exact same attempt_purchase(cost) function from Phase 2 is called. On success, the Axeman's UnitData is passed to the SettlementManager.recruit_unit(unit_data) function, which increments the count in the garrisoned_units dictionary and saves the settlement.
+                                                                                                                              * Pillar 2: The 'RTS Controller' (Player Agency) (AMENDED)
+                                                                                                                              * This is the core new technical system of Phase 3. It gives the player direct control over their units.
+																															  * Concept: A player-centric RTSController.gd script handles RTS commands. It is active during the "Offensive Raid" mission.
+                                                                                                                              * Architecture (AMENDED):
+                                                                                                                              1. SelectionBox.gd (Input): A top-level Control node (SelectionBox.tscn) captures all mouse input, draws the selection box, and prevents UI click-through.
+                                                                                                                              2. EventBus.gd (Decoupling): The SelectionBox emits clean, intent-based signals to the EventBus (select_command, move_command, attack_command).
+                                                                                                                              3. RTSController.gd (Logic): The RTSController (a node in the mission scene) listens for these EventBus signals. It does not handle raw input itself.
+                                                                                                                              4. Selection: The controller receives select_command signals to manage its selected_units: Array.
+																															  5. Commands (The "Smart" Right-Click): The controller receives move_command (on ground) or attack_command (on enemy) signals and loops through all selected_units to tell their FSMs to move_to(...) or attack(...).
+                                                                                                                              6. UnitFSM Refactor: The UnitFSM.gd has been refactored with new states: IDLE (waiting for a command), MOVING (following a player's move command), and ATTACKING (following a player's attack command).
+                                                                                                                              * Pillar 3: The 'Raid Mission' (Completing the Loop) (AMENDED)
+																															  * This pillar creates the mission structure that uses Pillars 1 & 2 to generate the "Loot" for Phase 2.
+																															  * Concept: We will create the "Offensive Raid" mission loader. We will use a temporary WorldMap_Stub.tscn as a placeholder.
+																															  * Architecture (The "Stub" Loader) (AMENDED):
+																															  1. WorldMap_Stub.tscn: A simple scene containing buttons. Clicking the "Raid" button (or one on the SettlementBridge UI) triggers the transition.
+																															  2. The "Raid Loader": This function:
+                                                                                                                              * A. Loads the RaidMission.tscn scene (which replaces the old DefensiveMicro.tscn as the all-in-one mission scene).
+                                                                                                                              * B. Loads an enemy's SettlementData (e.g., monastery_base.tres). This .tres file is a designer-created asset built using the enemy_base_editor plugin. The mission's _load_enemy_base function reads this data and instantiates the saved buildings.
+                                                                                                                              * C. Reads the player's home_base.tres garrisoned_units dictionary and spawns all those units at a PlayerStartPosition node.
+                                                                                                                              * D. The RaidMission.tscn contains a persistent RTSController node, which spawned units are registered with via its add_unit_to_group() method.
+																															  3. The Payout (AMENDED): When the enemy's "Great Hall" is destroyed, its building_destroyed signal is caught by _on_enemy_hall_destroyed().
+                                                                                                                              * Additionally, destroying any enemy building (especially economic ones) calls _on_enemy_building_destroyed(), which uses a RaidLootData resource to accumulate loot.
+                                                                                                                              * This total collected loot, plus any victory_bonus_loot, is added to the player's Treasury (using SettlementManager.deposit_resources()) before returning the player to the SettlementBridge.tscn.
+                                                                                                                              4.                                                                                                                               * 3. Verification & Test Plan
+                                                                                                                              * [ ] Test 1: Can the player buy 5 'Axemen' from the Storefront?
+																															  * [ ] Test 2: Does home_base.tres correctly save "garrisoned_units": {"res://data/units/Unit_Axeman.tres": 5}?
+																															  * [ ] Test 3: Does launching the "Raid" from the WorldMap_Stub correctly spawn 5 player-controlled Axemen in the RaidMission.tscn?
+                                                                                                                              * [ ] Test 4: Can the player select and move the Axemen with the mouse (box select, left click, right click)?
+                                                                                                                              * [ ] Test 5: Can the player command the Axemen to attack and destroy an enemy 'Monastery' building?
+                                                                                                                              * [ ] Test 6: Upon destroying the 'Monastery', does the player receive loot?
+                                                                                                                              * [ ] Test 7: Upon returning to the Settlement, is the loot correctly deposited into the player's Treasury?
+                                                                                                                              * [ ] Test 8: Is the garrison now empty, forcing the player to recruit more units for the next raid?
+																															  * 9.B. Phase 4: Integrate the "Macro" (The Dynasty Layer) (Future)
+																															  * Spirit & Core Concept: This is the "Crusader Kings" layer. This phase will be a massive undertaking and will integrate the final layer of the game, connecting the Settlement/RTS loops to a persistent grand strategy map.
+                                                                                                                              * Goals & Key Pillars:
+                                                                                                                              * Pillar 1: The 'World Map': Create the high-level map where players manage armies, diplomacy, and territories.
+                                                                                                                              * Pillar 2: The 'Dynasty System': Implement the core character, trait, and succession systems.
+                                                                                                                              * Pillar 3: The 'Event Bus 2.0': Refactor the EventBus to handle the flow of information between all three layers (e.g., A 'War Declaration' on the Macro map triggers the creation of a 'Raid Mission' on the Micro level).
+10. Controls & UI/UX Philosophy (AMENDED)
+                                                                                                                              * 10.A. Bridge Layer (Settlement)
+																															  * Feel: Relaxed, strategic, "god-game" city builder.
+                                                                                                                              * Controls: 100% mouse-driven. Left-click to select from the UI, left-click to place on the grid, right-click to cancel placement. Camera is panned with WASD or middle-mouse drag.
+																															  * UI: Non-intrusive. The "Storefront" is a modal window, not a persistent HUD, reinforcing that building is a deliberate, strategic choice, not a frantic, real-time action.
+                                                                                                                              * 10.B. Micro Layer (RTS Combat)
+                                                                                                                              * Feel: Fast, responsive, tactical, and familiar.
+																															  * Controls: Classic RTS scheme. Left-click to select, click-and-drag for box selection. Right-click is the "smart" command (move on ground, attack on enemy). Hotkeys for unit groups (Ctrl+1) will be essential.
+                                                                                                                              * Implementation: This is implemented via a top-level SelectionBox.gd Control node, which covers the screen and captures all input. It emits decoupled signals (select_command, move_command, attack_command) on the EventBus to prevent UI click-through and keep the RTSController clean.
+                                                                                                                              * UI: A minimal, persistent HUD is required here, showing selected unit(s), their HP, and any abilities. Must be readable at a glance.
+                                                                                                                              * 10.C. Macro Layer (Dynasty Map)
+																															  * Feel: Deliberate, thoughtful, "board game" or grand strategy.
+                                                                                                                              * Controls: Turn-based or pausable real-time. Entirely mouse-driven, interacting with menus, map provinces, and character portraits.
+                                                                                                                              * UI: Information-dense. The UI is the game. Heavy use of nested tooltips and clear iconography (e.g., Crusader Kings) to manage complex information (family trees, diplomacy, traits).
+                                                                                                                              * 10.D. UI Style Guide (NEW)
+                                                                                                                              * This section defines the specific, professional standards for all UI components to ensure visual consistency, readability, and usability.
+                                                                                                                              * 1. Central Theme:
+                                                                                                                              * All UI scenes and components must use the central theme resource: res://ui/themes/VikingDynastyTheme.tres.
+                                                                                                                              * 2. Spacing Standards (in pixels):
+                                                                                                                              * Primary Containers (e.g., Popups, Main UI Panels): 20px horizontal margins, 15px vertical margins.
+                                                                                                                              * Major Section Separation: 12-15px spacing between distinct UI areas (e.g., between Treasury and Build sections).
+                                                                                                                              * Element Groups (e.g., Buttons in a list): 8-10px spacing between related components.
+                                                                                                                              * List Items (e.g., Garrison list entries): 6px spacing.
+                                                                                                                              * 3. Typography:
+                                                                                                                              * Storefront: 14px base font size.
+                                                                                                                              * Popups (e.g., WelcomeHome): 16px base font size, centered.
+                                                                                                                              * 4. Interactive Target Sizing (Minimums):
+                                                                                                                              * Storefront Build Buttons: 100x36px.
+                                                                                                                              * Storefront Recruit Buttons: 200x36px (dynamic).
+                                                                                                                              * Popup Buttons (e.g., 'Collect'): 120x40px.
+                                                                                                                              * 5. Anchoring:
+                                                                                                                              * All UI must use proper anchoring and container layouts (e.g., VBoxContainer, MarginContainer) to ensure responsiveness. Popups must be anchored to the center. The main StorefrontUI is anchored to the bottom.
+                                                                                                                              * 6. Reference:
+                                                                                                                              * For a detailed log of the initial implementation, see res://ui/UI_IMPROVEMENTS.md.
+
+
+Appendix A
+ Integrated Gameplay Systems Proposal (v1.1)
+This document outlines a series of integrated design systems intended to unify the "Three Layers" of Viking Dynasty (Macro, Micro, Bridge). The primary goal is to solve the "hybrid conundrum" by ensuring each layer directly and meaningfully impacts the others, creating a single, cohesive game rather than two "lite" experiences.
+The core design philosophy is: The RTS (Micro Layer) provides the high-stakes, personal stories that are given permanent, dynastic consequence in the Macro Layer.
+1. The Core Pacing Engine: "1 Turn = 1 Year"
+This is the central engine that dictates the game's rhythm. It replaces a "1 raid = 1 year" loop to provide necessary space for the Macro and Bridge layers to function.
+																															  * Mechanic: The main interface is the "Macro Layer." The player's primary action is to hit an "End Year" button, which advances the game clock by one year.
+																															  * The "In-Between Years": The time between raids is the main strategic game. During these years, the player focuses on:
+                                                                                                                              * Macro (Dynasty): Managing family, heirs, succession, diplomacy, and vassals.
+                                                                                                                              * Bridge (Settlement): Planning and constructing multi-year building projects.
+                                                                                                                              * Buildup: Saving resources and recruiting troops for a future raid.
+																															  * Function: This model transforms raids from a "grind" into a "climactic event" that the player spends years planning for, thus solving the "repetitive RTS" problem.
+2. The Macro Layer: Authority, Renown, & Dynasty
+This layer is built on a new, interconnected system of Renown (progression) and Authority (action points) to manage the "in-between years" and prevent "macro spam."
+																  * Action Currency: "Authority" (Composite Cost System)
+                                                                                                                              * Mechanic: The Jarl generates a limited pool of Authority each year, based on their Renown Tier. This is the currency for taking actions.
+                                                                                                                              * Cost Structure: To provide flexibility without spam, costs are split:
+																  * Zero-Cost Actions: "Maintenance" actions like checking the family tree, viewing vassal opinions, or paying a Renown Decay fine with Gold.
+																															  * Fixed Cost (1 Authority): "Operational" actions like launching a Coastal Raid, recruiting units, or basic settlement repairs. These do not trigger the cost escalation.
+                                                                                                                              * Escalating Cost (1, 2, 4...): This only applies to high-stakes Political/Dynastic Actions (e.g., Arranging Marriage, Bribing Vassals, Declaring Subjugation, Major Upgrades). The first political action costs 1, the second 2, etc.
+																															  * Primary Failure State: "Dynasty Failure"
+                                                                                                                              * Mechanic: The game ends only if the player's Jarl dies without a designated, valid heir.
+                                                                                                                              * Function: This forces the player to prioritize the Macro (Dynasty) Layer. Losing a battle or Settlement is a setback, but failing your family line is defeat.
+2.A. The Renown & Succession Loop
+This is the core progression and consequence loop for your dynasty.
+																															  * Renown as "XP": Renown is the permanent "XP" or "Legacy" score of your dynasty. It is gained in large chunks from Raiding Expeditions and Subjugations.
+																															  * Renown Tiers & Authority Cap: Renown unlocks Renown Tiers (e.g., "Petty Jarl," "High Jarl," "Kingmaker"). Each Tier sets the maximum Authority your Jarl can generate per year (e.g., Tier 1 = 3 Authority, Tier 2 = 5 Authority).
+																															  * Renown "Soft Floor": The Great Hall's level determines the minimum Renown floor for your dynasty (e.g., Level 1 Hall = +25 Renown Floor). If the Great Hall is Sacked and degraded, this floor immediately drops, creating a massive political and progression-based consequence for a military failure.
+																															  * Renown Decay: If no offensive action is taken in a year, the Jarl suffers a small Renown penalty (the "Decay Tax").
+                                                                                                                              * Succession Crisis: Upon a Jarl's death, if the heir is weak or unpopular, a Rival Jarl may usurp the title. The player (as the heir) loses the Jarlship and must use their inherited wealth and forces to launch a Subjugation Campaign to reclaim their title.
+																															  * "Foolish Death" Penalty: If a Jarl dies on a meaningless or failed raid (e.g., very low loot payout), the heir suffers a massive, temporary Renown and Authority penalty for 3-5 years, reflecting the political cost of a wasteful and dishonorable death.
+3. The Micro Layer (RTS): Two Scales of Raiding
+The RTS layer is split into two distinct types of missions. The scale is kept small (20-50 units) to make each unit's survival personal.
+3.A. The "Raiding Expedition" (The "Big One")
+This is the climactic, high-stakes RTS mission that the player plans for over several years.
+                                                                                                                              * Structure: A 30-40 minute multi-stage mission on a persistent map.
+                                                                                                                              * Key Mechanics:
+																															  * Beachhead: Players establish a temporary forward base using "Thrall" units. This base is for defense and extraction, not economy.
+                                                                                                                              * Dual-Carrier Hauling: Thralls are the primary, high-capacity (5-8 stacks) haulers. Viking Warriors can carry a small amount of loot (1-2 stacks) but suffer a combat/speed penalty, creating a tactical trade-off.
+																															  * "Invisible Threat" Timer: After an initial "safe" period, a hidden timer begins to escalate enemy retaliation, sending increasingly powerful waves. This escalation must be signaled to the player via clear audio-visual cues (e.g., unique horn blasts, UI warnings).
+																															  * Dynamic "Extraction Phase": The "backing out" is the tense, player-driven decision to fight their way back to the ship while under escalating attack.
+																															  * Consequence Engine: "The Trait System"
+																															  * The "output" of this mission is not just "Loot." It is consequence.
+																															  * A Jarl wounded in the fighting may return with a permanent "Maimed" Trait (-3 Command). A Jarl who abandons troops may gain the "Betrayer" Trait (-15 Diplomacy).
+3.B. The "Coastal Raid" (The "Quick Cash Grab")
+This is a smaller, "pressure release" skirmish that provides a different risk/reward.
+																															  * Mechanic: A 5-10 minute, single-objective RTS skirmish (e.g., "Burn the Storehouse"). It does not end the turn.
+																															  * Purpose: Allows the player to "scratch the RTS itch" for a small, immediate injection of Gold or to satisfy the annual "Renown Decay" mechanic. However, Coastal Raids offer diminishing Renown XP returns after the first one per year to prevent farming; only major Expeditions grant the XP needed to advance Tiers.
+																															  * The Risk: Launching this raid makes the Jarl and Warband "Absent" for a portion of that year, leaving the Settlement vulnerable to a "Sacked" event.
+4. The Mid-Game Loop: "Subjugation" & "The Jarl's Judgment"
+This system provides a "conquest-lite" objective that expands the player's kingdom without the scope creep of full governance.
+																															  * Structure: A "Subjugation" is declared on a rival Jarl (costing escalating Authority), triggering a three-mission RTS campaign.
+																															  * Climax: "The Jarl's Judgment"
+																															  1. Upon victory, the player is presented with a defining political choice:
+																															  2. Execute the Rival: Gain a massive, one-time burst of Prestige/Renown. Lose all future economic gain.
+																															  3. Institute Rival as Vassal: Gain a yearly Levy Tribute (military). Incur a permanent Risk of Rebellion.
+																															  4. Install Your Heir as Vassal: Gain the highest yearly Economic Tribute (gold). Incur a Geopolitical Respect penalty.
+																															  * Function: This routes the "conquest" reward back into the existing Macro (politics) and Bridge (economy) layers.
+5. The Resource Market
+This new system makes Gold the premier strategic resource and provides economic flexibility.
+																															  * Mechanic: A building in the Settlement that allows the player to use Gold (the primary raid reward) to buy granular resources (Wood, Stone, Food).
+																															  * Strategic Function: Acts as an emergency "pressure release" to fix shortages (e.g., after a Sacked event) and makes Gold universally valuable.
+																															  * Balancing Risk: The market must not have fixed prices. Exchange rates must fluctuate (based on player activity or world events) to prevent economic exploits and ensure the Settlement's economic buildings remain the most efficient source of resources.
+6. Scope-Controlled Mechanics (Avoiding Creep)
+                                                                                                                              * Siege Warfare: Implemented via handheld assault tools (Battering Rams) or unit abilities (like "Set Fire"), not complex, dedicated siege engines.
+                                                                                                                              * Line Battles: Large-scale battles are simulated through mission design (e.g., reinforcement waves) within the small-scale (20-50 unit) RTS engine.
+                                                                                                                              * Map Structure: The Macro map is a Regional/Territorial Map, where each region is a discrete node for political relationships and a launch point for instanced RTS missions.
+                                                                                                                              *

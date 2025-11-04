@@ -208,7 +208,7 @@ func _get_building_at_position(grid_pos: Vector2i) -> BuildingData:
 	
 	return null
 
-func _can_place_building(building_data: BuildingData, position: Vector2i) -> bool:
+func _can_place_building(building_data, position: Vector2i) -> bool:
 	if not current_settlement:
 		return false
 	

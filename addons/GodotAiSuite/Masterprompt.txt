@@ -3,10 +3,10 @@
 You will be provided with a comprehensive dump of the Godot project context, structured as follows. You must parse, understand, and use this context to inform all your responses.
 
 *   **`2. Project Context`**: The technical project dump, including:
-	*   `2.1. Project Settings`
-	*   `2.2. Resource Files`
-	*   `2.3. Scene Structures`
-	*   `2.4. Codebase`
+    *   `2.1. Project Settings`
+    *   `2.2. Resource Files`
+    *   `2.3. Scene Structures`
+    *   `2.4. Codebase`
 
 ---
 ### **2. Project Context**
@@ -37,11 +37,15 @@ SettlementManager="*res://autoload/SettlementManager.tscn"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/GodotAiSuite/plugin.cfg")
+enabled=PackedStringArray("res://addons/GodotAiSuite/plugin.cfg", "res://addons/enemy_base_editor/plugin.cfg")
 
 [input]
 
 debug_time_travel="{\"deadzone\": 0.5, \"events\": [{\"physical_keycode\": 84, \"type\": \"key\"}]}"
+
+[plugins]
+
+enemy_base_editor/enabled=true
 --- END OF PROJECT SETTINGS ---
 
 #### **2.2. Resource Files**
@@ -109,64 +113,147 @@ build_cost = {
 max_health = 75
 grid_size = Vector2i(2, 2)
 
---- RESOURCE: res://data/settlements/home_base.tres ---
-[gd_resource type="SettlementData" script_class="SettlementData" load_steps=2 format=3 uid="uid://li7qds0oh7b7"]
+--- RESOURCE: res://data/buildings/Monastery_Chapel.tres ---
+[gd_resource type="Resource" script_class="EconomicBuildingData" load_steps=3 format=3 uid="uid://b7p70u4vm3uem"]
+
+[ext_resource type="Script" uid="uid://d33smw07vm6y4" path="res://data/buildings/EconomicBuildingData.gd" id="1_abcde"]
+[ext_resource type="PackedScene" uid="uid://cws6xle5x52g4" path="res://scenes/buildings/Base_Building.tscn" id="2_fghij"]
+
+[resource]
+script = ExtResource("1_abcde")
+resource_type = "gold"
+fixed_payout_amount = 25
+storage_cap = 200
+display_name = "Monastery Chapel"
+scene_to_spawn = ExtResource("2_fghij")
+build_cost = {
+"gold": 100,
+"stone": 80,
+"wood": 40
+}
+max_health = 120
+grid_size = Vector2i(2, 2)
+
+--- RESOURCE: res://data/buildings/Monastery_Granary.tres ---
+[gd_resource type="Resource" script_class="EconomicBuildingData" load_steps=3 format=3 uid="uid://bscr3flprg5ts"]
+
+[ext_resource type="Script" uid="uid://d33smw07vm6y4" path="res://data/buildings/EconomicBuildingData.gd" id="1_abcde"]
+[ext_resource type="PackedScene" uid="uid://cws6xle5x52g4" path="res://scenes/buildings/Base_Building.tscn" id="2_fghij"]
+
+[resource]
+script = ExtResource("1_abcde")
+resource_type = "food"
+fixed_payout_amount = 20
+storage_cap = 300
+display_name = "Monastery Granary"
+scene_to_spawn = ExtResource("2_fghij")
+build_cost = {
+"gold": 60,
+"stone": 40,
+"wood": 100
+}
+max_health = 90
+grid_size = Vector2i(2, 3)
+
+--- RESOURCE: res://data/buildings/Monastery_Library.tres ---
+[gd_resource type="Resource" script_class="EconomicBuildingData" load_steps=3 format=3 uid="uid://bfb0hbf1m2lgf"]
+
+[ext_resource type="Script" uid="uid://d33smw07vm6y4" path="res://data/buildings/EconomicBuildingData.gd" id="1_abcde"]
+[ext_resource type="PackedScene" uid="uid://cws6xle5x52g4" path="res://scenes/buildings/Base_Building.tscn" id="2_fghij"]
+
+[resource]
+script = ExtResource("1_abcde")
+resource_type = "gold"
+fixed_payout_amount = 35
+storage_cap = 250
+display_name = "Monastery Library"
+scene_to_spawn = ExtResource("2_fghij")
+build_cost = {
+"gold": 150,
+"stone": 60,
+"wood": 80
+}
+max_health = 80
+grid_size = Vector2i(3, 2)
+
+--- RESOURCE: res://data/buildings/Monastery_Scriptorium.tres ---
+[gd_resource type="Resource" script_class="EconomicBuildingData" load_steps=3 format=3 uid="uid://b6dkpjrewc1q6"]
+
+[ext_resource type="Script" uid="uid://d33smw07vm6y4" path="res://data/buildings/EconomicBuildingData.gd" id="1_abcde"]
+[ext_resource type="PackedScene" uid="uid://cws6xle5x52g4" path="res://scenes/buildings/Base_Building.tscn" id="2_fghij"]
+
+[resource]
+script = ExtResource("1_abcde")
+resource_type = "gold"
+fixed_payout_amount = 30
+storage_cap = 180
+display_name = "Monastery Scriptorium"
+scene_to_spawn = ExtResource("2_fghij")
+build_cost = {
+"gold": 120,
+"stone": 30,
+"wood": 90
+}
+max_health = 70
+grid_size = Vector2i(2, 2)
+
+--- RESOURCE: res://data/buildings/Monastery_Watchtower.tres ---
+[gd_resource type="Resource" script_class="BuildingData" load_steps=3 format=3 uid="uid://ckedcnw210a8k"]
+
+[ext_resource type="Script" uid="uid://js4bbqgeyd6c" path="res://data/buildings/BuildingData.gd" id="1_i2pmy"]
+[ext_resource type="PackedScene" uid="uid://cws6xle5x52g4" path="res://scenes/buildings/Base_Building.tscn" id="2_hptna"]
+
+[resource]
+script = ExtResource("1_i2pmy")
+display_name = "Monastery Watchtower"
+scene_to_spawn = ExtResource("2_hptna")
+build_cost = {
+"gold": 80,
+"stone": 120,
+"wood": 60
+}
+max_health = 150
+is_defensive_structure = true
+attack_damage = 15
+attack_range = 250.0
+attack_speed = 1.5
+
+--- RESOURCE: res://data/settlements/home_base_fixed.tres ---
+[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://dtg4x722cnuog"]
 
 [ext_resource type="Script" uid="uid://hlb8s5g0yp6k" path="res://data/settlements/SettlementData.gd" id="1_abcde"]
 
 [resource]
-resource_local_to_scene = false
-resource_name = ""
 script = ExtResource("1_abcde")
 treasury = {
-"food": 25,
-"gold": 1000,
-"stone": 700,
-"wood": 560
+"food": 0,
+"gold": 3460,
+"stone": 150,
+"wood": 280
 }
 placed_buildings = Array[Dictionary]([{
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(10, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(26, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
 "grid_position": Vector2i(25, 15),
-"resource_path": "res://data/buildings/Bldg_GreatHall.tres"
-}, {
-"grid_position": Vector2i(10, 15),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(10, 15),
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
 }, {
-"grid_position": Vector2i(10, 15),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(10, 15),
-"resource_path": "res://data/buildings/Bldg_Wall.tres"
-}, {
-"grid_position": Vector2i(10, 15),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(10, 15),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(10, 15),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(10, 15),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(10, 15),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(10, 15),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(10, 15),
-"resource_path": "res://data/buildings/Bldg_Wall.tres"
-}, {
-"grid_position": Vector2i(10, 15),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(10, 15),
+"grid_position": Vector2i(31, 20),
 "resource_path": "res://data/buildings/LumberYard.tres"
 }])
+garrisoned_units = {
+"res://data/units/Unit_PlayerRaider.tres": 12
+}
+metadata/_custom_type_script = "uid://hlb8s5g0yp6k"
 
 --- RESOURCE: res://data/settlements/monastery_base.tres ---
 [gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://okf2novkg804"]
@@ -176,14 +263,38 @@ placed_buildings = Array[Dictionary]([{
 [resource]
 script = ExtResource("1_abcde")
 treasury = {
-"food": 100,
-"gold": 300,
-"stone": 50,
-"wood": 150
+"food": 200,
+"gold": 500,
+"stone": 150,
+"wood": 250
 }
 placed_buildings = Array[Dictionary]([{
 "grid_position": Vector2i(25, 15),
 "resource_path": "res://data/buildings/Bldg_GreatHall.tres"
+}, {
+"grid_position": Vector2i(20, 12),
+"resource_path": "res://data/buildings/Monastery_Chapel.tres"
+}, {
+"grid_position": Vector2i(30, 12),
+"resource_path": "res://data/buildings/Monastery_Library.tres"
+}, {
+"grid_position": Vector2i(23, 20),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(27, 8),
+"resource_path": "res://data/buildings/Monastery_Scriptorium.tres"
+}, {
+"grid_position": Vector2i(17, 10),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(35, 10),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(17, 20),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(35, 20),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
 }, {
 "grid_position": Vector2i(24, 14),
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
@@ -196,7 +307,97 @@ placed_buildings = Array[Dictionary]([{
 }, {
 "grid_position": Vector2i(26, 16),
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(19, 11),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(20, 11),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(21, 11),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(22, 11),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(28, 11),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(29, 11),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(30, 11),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(31, 11),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(32, 11),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(33, 11),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
 }])
+
+--- RESOURCE: res://data/settlements/sample_fortress_gui.tres ---
+[gd_resource type="SettlementData" script_class="SettlementData" load_steps=2 format=3 uid="uid://cl3pbg7tiqyng"]
+
+[ext_resource type="Script" uid="uid://hlb8s5g0yp6k" path="res://data/settlements/SettlementData.gd" id="1"]
+
+[resource]
+resource_local_to_scene = false
+resource_name = ""
+script = ExtResource("1")
+treasury = {
+"food": 300,
+"gold": 1000,
+"stone": 400,
+"wood": 500
+}
+placed_buildings = Array[Dictionary]([{
+"grid_position": Vector2i(30, 20),
+"resource_path": "res://data/buildings/Bldg_GreatHall.tres"
+}, {
+"grid_position": Vector2i(29, 19),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(30, 19),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(31, 19),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(29, 21),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(30, 21),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(31, 21),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(28, 18),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(32, 18),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(28, 22),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(32, 22),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(27, 20),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(33, 20),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}])
+garrisoned_units = {
+"res://data/units/Base_Unit.tres": 4,
+"res://data/units/VikingRaider.tres": 8
+}
 
 --- RESOURCE: res://data/units/Unit_PlayerRaider.tres ---
 [gd_resource type="Resource" script_class="UnitData" load_steps=3 format=3 uid="uid://ejxn3hg8xcu6"]
@@ -208,10 +409,14 @@ placed_buildings = Array[Dictionary]([{
 script = ExtResource("1_tcvvg")
 display_name = "Player Viking Raider"
 scene_to_spawn = ExtResource("2_spawn_scene")
+spawn_cost = {
+"food": 25,
+"gold": 10
+}
 max_health = 60
 move_speed = 100.0
 attack_damage = 15
-attack_range = 50.0
+attack_range = 80.0
 attack_speed = 1.0
 
 --- RESOURCE: res://data/units/Unit_Raider.tres ---
@@ -224,6 +429,10 @@ attack_speed = 1.0
 script = ExtResource("1_abcde")
 display_name = "Viking Raider"
 scene_to_spawn = ExtResource("2_spawn_scene")
+spawn_cost = {
+"food": 30,
+"gold": 15
+}
 max_health = 60
 move_speed = 100.0
 attack_damage = 15
@@ -264,6 +473,11 @@ size = Vector2(64, 64)
 [gd_resource type="PlaceholderTexture2D" format=3 uid="uid://cybqs3wt5wpg3"]
 
 [resource]
+
+--- RESOURCE: res://ui/themes/VikingDynastyTheme.tres ---
+[gd_resource type="Theme" load_steps=0 format=3 uid="uid://63duv3n1vwhg"]
+
+[resource]
 --- END OF RESOURCE FILES ---
 
 #### **2.3. Scene Structures**
@@ -273,10 +487,32 @@ size = Vector2(64, 64)
 Main Test (Node2D)
 > scene: res://.ai-checkpoints/main_test.tscn
 
+--- SCENE: res://addons/enemy_base_editor/EnemyBaseEditorDock.tscn ---
+Main (Control)
+> script: res://addons/enemy_base_editor/EnemyBaseEditorDock.gd
+> scene: res://addons/enemy_base_editor/EnemyBaseEditorDock.tscn
+
+--- SCENE: res://addons/enemy_base_editor/EnemyBaseEditorDock_Simple.tscn ---
+EnemyBaseEditorDockSimple (Control)
+> script: res://addons/enemy_base_editor/EnemyBaseEditorDock_Simple.gd
+> scene: res://addons/enemy_base_editor/EnemyBaseEditorDock_Simple.tscn
+> anchors_preset = 15
+> anchor_right = 1.0
+> anchor_bottom = 1.0
+> grow_horizontal = 2
+> grow_vertical = 2
+
 --- SCENE: res://autoload/SettlementManager.tscn ---
 SettlementManager (Node)
 > script: res://autoload/SettlementManager.gd
 > scene: res://autoload/SettlementManager.tscn
+> tile_size = 32
+> grid_width = 120
+> grid_height = 120
+> auto_resize_for_scene = true
+> settlement_grid_size = (60, 40)
+> raid_grid_size = (120, 80)
+> defense_grid_size = (80, 60)
 > BuildingContainer (Node2D)
 
 --- SCENE: res://main_test.tscn ---
@@ -290,11 +526,10 @@ RTSController (Node)
 
 --- SCENE: res://scenes/buildings/Base_Building.tscn ---
 Base_Building (StaticBody2D)
-> script: res://data/buildings/Base_Building.gd
+> script: res://data/buildings/base_building.gd
 > scene: res://scenes/buildings/Base_Building.tscn
 > Sprite2D (Sprite2D)
-> > position = (474.0, 476.5)
-> > scale = (0.074219, 0.069336)
+> > scale = (0.088867, 0.083008)
 > > texture = res://textures/placeholders/building_placeholder.png
 > CollisionShape2D (CollisionShape2D)
 > > shape = res://scenes/buildings/Base_Building.tscn::RectangleShape2D_b5w0v
@@ -304,6 +539,7 @@ DefensiveMicro (Node2D)
 > script: res://scenes/missions/RaidMission.gd
 > scene: res://scenes/levels/DefensiveMicro.tscn
 > default_enemy_base_path = "res://data/settlements/monastery_base.tres"
+> available_enemy_bases = ["res://data/settlements/monastery_base.tres","res://data/settlements/fortress_base.tres"]
 > victory_bonus_loot = {"gold":200}
 > player_spawn_formation = {"units_per_row":5,"spacing":40}
 > mission_difficulty = 1.0
@@ -316,17 +552,27 @@ DefensiveMicro (Node2D)
 > RTSController (Node)
 >   script: res://player/RTSController.gd
 >   scene: res://player/RTSController.tscn
+> RTSCamera (Camera2D)
+>   script: res://player/RTSCamera.gd
+> > position = (400.0, 300.0)
+> > camera_speed = 400.0
+> > edge_pan_margin = 20.0
+> > enable_edge_panning = true
+> > enable_wasd_movement = true
+> > bounds_enabled = false
+> > bounds_rect = [P: (-500.0, -500.0), S: (1500.0, 1200.0)]
 
 --- SCENE: res://scenes/levels/SettlementBridge.tscn ---
 SettlementBridge (Node)
 > script: res://scripts/buildings/SettlementBridge.gd
 > scene: res://scenes/levels/SettlementBridge.tscn
+> home_base_data = res://data/settlements/home_base_fixed.tres
 > welcome_popup_scene = res://ui/WelcomeHome_Popup.tscn
-> world_map_scene = res://scenes/world_map/WorldMap_Stub.tscn
 > DefensiveMicro (Node2D)
 >   script: res://scenes/missions/RaidMission.gd
 >   scene: res://scenes/levels/DefensiveMicro.tscn
 > > default_enemy_base_path = "res://data/settlements/monastery_base.tres"
+> > available_enemy_bases = ["res://data/settlements/monastery_base.tres","res://data/settlements/fortress_base.tres"]
 > > victory_bonus_loot = {"gold":200}
 > > player_spawn_formation = {"units_per_row":5,"spacing":40}
 > > mission_difficulty = 1.0
@@ -339,6 +585,15 @@ SettlementBridge (Node)
 >   RTSController (Node)
 >     script: res://player/RTSController.gd
 >     scene: res://player/RTSController.tscn
+>   RTSCamera (Camera2D)
+>     script: res://player/RTSCamera.gd
+>   > position = (400.0, 300.0)
+>   > camera_speed = 400.0
+>   > edge_pan_margin = 20.0
+>   > enable_edge_panning = true
+>   > enable_wasd_movement = true
+>   > bounds_enabled = false
+>   > bounds_rect = [P: (-500.0, -500.0), S: (1500.0, 1200.0)]
 > UnitContainer (Node2D)
 > UI (CanvasLayer)
 >   Label (Label)
@@ -351,6 +606,11 @@ SettlementBridge (Node)
 >   Storefront_UI (Control)
 >     script: res://ui/StorefrontUI.gd
 >     scene: res://ui/Storefront_UI.tscn
+>   > anchors_preset = 15
+>   > anchor_right = 1.0
+>   > anchor_bottom = 1.0
+>   > grow_horizontal = 2
+>   > grow_vertical = 2
 >   > available_buildings = []
 >   > available_units = []
 >   > default_treasury_display = {"food":100,"gold":100,"stone":100,"wood":100}
@@ -358,8 +618,13 @@ SettlementBridge (Node)
 >     PanelContainer (PanelContainer)
 >     > layout_mode = 1
 >     > anchors_preset = -1
->     > offset_right = 400.0
->     > offset_bottom = 100.0
+>     > anchor_top = 1.0
+>     > anchor_bottom = 1.0
+>     > offset_left = 20.0
+>     > offset_top = -140.0
+>     > offset_right = 480.0
+>     > offset_bottom = -20.0
+>     > grow_vertical = 0
 >       MarginContainer (MarginContainer)
 >       > layout_mode = 2
 >         TabContainer (TabContainer)
@@ -385,9 +650,11 @@ SettlementBridge (Node)
 >             BuildButtons (HBoxContainer)
 >             > layout_mode = 2
 >               BuyWallButton (Button)
+>               > custom_minimum_size = (100.0, 36.0)
 >               > layout_mode = 2
 >               > text = "Wall"
 >               BuyLumberYardButton (Button)
+>               > custom_minimum_size = (100.0, 36.0)
 >               > layout_mode = 2
 >               > text = "Lumber Yard"
 >           RecruitTab (VBoxContainer)
@@ -433,6 +700,7 @@ RaidMission (Node2D)
 > script: res://scenes/missions/RaidMission.gd
 > scene: res://scenes/missions/RaidMission.tscn
 > default_enemy_base_path = "res://data/settlements/monastery_base.tres"
+> available_enemy_bases = ["res://data/settlements/monastery_base.tres","res://data/settlements/fortress_base.tres"]
 > victory_bonus_loot = {"gold":200}
 > player_spawn_formation = {"units_per_row":5,"spacing":40}
 > mission_difficulty = 1.0
@@ -453,22 +721,54 @@ RaidMission (Node2D)
 >   > anchor_bottom = 1.0
 >   > grow_horizontal = 2
 >   > grow_vertical = 2
+>   > theme = res://ui/themes/VikingDynastyTheme.tres
+> RTSCamera (Camera2D)
+>   script: res://player/RTSCamera.gd
+> > position = (400.0, 300.0)
+> > camera_speed = 400.0
+> > edge_pan_margin = 20.0
+> > enable_edge_panning = true
+> > enable_wasd_movement = true
+> > bounds_enabled = false
+> > bounds_rect = [P: (-500.0, -500.0), S: (1500.0, 1200.0)]
 
 --- SCENE: res://scenes/units/Base_Unit.tscn ---
 Base_Unit (CharacterBody2D)
 > script: res://scripts/units/Base_Unit.gd
 > scene: res://scenes/units/Base_Unit.tscn
+> collision_layer = 2
 > Sprite2D (Sprite2D)
-> > texture = res://textures/placeholders/unit_placeholder.tres
+> > texture = res://textures/placeholders/unit_placeholder.png
 > CollisionShape2D (CollisionShape2D)
 > > shape = res://scenes/units/Base_Unit.tscn::RectangleShape2D_n6s0a
 > AttackTimer (Timer)
 
 --- SCENE: res://scenes/units/PlayerVikingRaider.tscn ---
-
+PlayerVikingRaider (CharacterBody2D)
+> script: res://scripts/units/PlayerVikingRaider.gd
+> scene: res://scenes/units/PlayerVikingRaider.tscn
+> collision_layer = 2
+> Sprite2D (Sprite2D)
+> > scale = (0.058594, 0.061523)
+> > texture = res://textures/placeholders/unit_placeholder.png
+> CollisionShape2D (CollisionShape2D)
+> > shape = res://scenes/units/Base_Unit.tscn::RectangleShape2D_n6s0a
+> AttackTimer (Timer)
 
 --- SCENE: res://scenes/units/VikingRaider.tscn ---
+VikingRaider (CharacterBody2D)
+> script: res://scripts/units/EnemyVikingRaider.gd
+> scene: res://scenes/units/VikingRaider.tscn
+> collision_layer = 2
+> Sprite2D (Sprite2D)
+> > texture = res://textures/placeholders/unit_placeholder.png
+> CollisionShape2D (CollisionShape2D)
+> > shape = res://scenes/units/Base_Unit.tscn::RectangleShape2D_n6s0a
+> AttackTimer (Timer)
 
+--- SCENE: res://scenes/units/VikingRaider_Fixed.tscn ---
+Main (CharacterBody2D)
+> scene: res://scenes/units/VikingRaider_Fixed.tscn
 
 --- SCENE: res://scenes/world_map/WorldMap_Stub.tscn ---
 WorldMapStub (Control)
@@ -500,6 +800,8 @@ WorldMapStub (Control)
 >   BackButton (Button)
 >   > layout_mode = 2
 >   > text = "Return to Settlement"
+> Phase3Test (Node)
+>   script: res://test_phase3.gd
 
 --- SCENE: res://ui/SelectionBox.tscn ---
 SelectionBox (Control)
@@ -510,11 +812,17 @@ SelectionBox (Control)
 > anchor_bottom = 1.0
 > grow_horizontal = 2
 > grow_vertical = 2
+> theme = res://ui/themes/VikingDynastyTheme.tres
 
 --- SCENE: res://ui/Storefront_UI.tscn ---
 Main (Control)
 > script: res://ui/StorefrontUI.gd
 > scene: res://ui/Storefront_UI.tscn
+> anchors_preset = 15
+> anchor_right = 1.0
+> anchor_bottom = 1.0
+> grow_horizontal = 2
+> grow_vertical = 2
 > available_buildings = []
 > available_units = []
 > default_treasury_display = {"food":100,"gold":100,"stone":100,"wood":100}
@@ -522,8 +830,13 @@ Main (Control)
 > PanelContainer (PanelContainer)
 > > layout_mode = 1
 > > anchors_preset = -1
-> > offset_right = 400.0
-> > offset_bottom = 100.0
+> > anchor_top = 1.0
+> > anchor_bottom = 1.0
+> > offset_left = 20.0
+> > offset_top = -140.0
+> > offset_right = 480.0
+> > offset_bottom = -20.0
+> > grow_vertical = 0
 >   MarginContainer (MarginContainer)
 >   > layout_mode = 2
 >     TabContainer (TabContainer)
@@ -549,9 +862,11 @@ Main (Control)
 >         BuildButtons (HBoxContainer)
 >         > layout_mode = 2
 >           BuyWallButton (Button)
+>           > custom_minimum_size = (100.0, 36.0)
 >           > layout_mode = 2
 >           > text = "Wall"
 >           BuyLumberYardButton (Button)
+>           > custom_minimum_size = (100.0, 36.0)
 >           > layout_mode = 2
 >           > text = "Lumber Yard"
 >       RecruitTab (VBoxContainer)
@@ -570,12 +885,15 @@ Main (PanelContainer)
 > anchor_top = 0.5
 > anchor_right = 0.5
 > anchor_bottom = 0.5
-> offset_left = -2.0
-> offset_top = -15.5
-> offset_right = 2.0
-> offset_bottom = 15.5
+> offset_left = -150.0
+> offset_top = -75.0
+> offset_right = 150.0
+> offset_bottom = 75.0
+> grow_horizontal = 2
+> grow_vertical = 2
 > size_flags_horizontal = 4
 > size_flags_vertical = 4
+> theme = res://ui/themes/VikingDynastyTheme.tres
 > MarginContainer (MarginContainer)
 > > layout_mode = 2
 >   VBoxContainer (VBoxContainer)
@@ -583,7 +901,10 @@ Main (PanelContainer)
 >     PayoutLabel (Label)
 >     > layout_mode = 2
 >     > text = "Welcome home! ..."
+>     > horizontal_alignment = 1
+>     > vertical_alignment = 1
 >     CollectButton (Button)
+>     > custom_minimum_size = (120.0, 40.0)
 >     > layout_mode = 2
 >     > text = "Collect"
 --- END OF SCENE STRUCTURES ---
@@ -591,6 +912,1611 @@ Main (PanelContainer)
 #### **2.4. Codebase**
 
 --- START OF CODEBASE ---
+--- SCRIPT: res://.ai-checkpoints/test_phase3.gd ---
+# Test script for Phase 3 functionality
+extends Node
+
+func _ready():
+	print("=== PHASE 3 TEST STARTING ===")
+	test_garrison_system()
+	test_raid_system()
+
+func test_garrison_system():
+	print("\n--- Testing Garrison System (Pillar 1) ---")
+	if SettlementManager.current_settlement:
+		print("Current treasury: %s" % SettlementManager.current_settlement.treasury)
+		print("Current garrison: %s" % SettlementManager.current_settlement.garrisoned_units)
+		
+		# Test unit recruitment
+		var player_unit_data = load("res://data/units/Unit_PlayerRaider.tres") as UnitData
+		if player_unit_data:
+			print("Found player unit data: %s" % player_unit_data.display_name)
+			print("Unit spawn cost: %s" % player_unit_data.spawn_cost)
+			
+			# Try to recruit one unit
+			if SettlementManager.attempt_purchase(player_unit_data.spawn_cost):
+				SettlementManager.recruit_unit(player_unit_data)
+				print("Successfully recruited %s!" % player_unit_data.display_name)
+			else:
+				print("Cannot afford to recruit %s" % player_unit_data.display_name)
+		else:
+			print("ERROR: Could not load player unit data")
+	else:
+		print("ERROR: No settlement loaded")
+
+func test_raid_system():
+	print("\n--- Testing Raid System (Pillar 3) ---")
+	if SettlementManager.current_settlement:
+		var garrison = SettlementManager.current_settlement.garrisoned_units
+		if not garrison.is_empty():
+			print("Garrison ready for raid with %d unit types" % garrison.size())
+			var total_units = 0
+			for unit_path in garrison:
+				total_units += garrison[unit_path]
+			print("Total units available: %d" % total_units)
+			print("Phase 3 raid system ready!")
+		else:
+			print("No units in garrison - cannot start raid")
+	else:
+		print("ERROR: No settlement loaded")
+	
+	print("\n=== PHASE 3 TEST COMPLETE ===")
+
+--- SCRIPT: res://addons/enemy_base_editor/BuildingPalette.gd ---
+@tool
+extends VBoxContainer
+class_name BuildingPalette
+
+signal building_selected(building_data: BuildingData)
+
+# UI Elements
+var search_line_edit: LineEdit
+var category_option: OptionButton
+var buildings_scroll: ScrollContainer
+var buildings_container: VBoxContainer
+
+# Data
+var all_buildings: Array[BuildingData] = []
+var filtered_buildings: Array[BuildingData] = []
+var selected_building_button: Button = null
+
+# Categories
+enum BuildingCategory {
+	ALL,
+	DEFENSIVE,
+	ECONOMIC,
+	RESIDENTIAL,
+	RELIGIOUS,
+	UTILITY
+}
+
+var category_names = {
+	BuildingCategory.ALL: "All Buildings",
+	BuildingCategory.DEFENSIVE: "Defensive",
+	BuildingCategory.ECONOMIC: "Economic", 
+	BuildingCategory.RESIDENTIAL: "Residential",
+	BuildingCategory.RELIGIOUS: "Religious",
+	BuildingCategory.UTILITY: "Utility"
+}
+
+func _ready():
+	name = "BuildingPalette"
+	setup_ui()
+
+func setup_ui():
+	# Header
+	var header = Label.new()
+	header.text = "Building Palette"
+	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add_child(header)
+	
+	# Search
+	var search_container = HBoxContainer.new()
+	add_child(search_container)
+	
+	var search_label = Label.new()
+	search_label.text = "Search:"
+	search_container.add_child(search_label)
+	
+	search_line_edit = LineEdit.new()
+	search_line_edit.placeholder_text = "Filter buildings..."
+	search_line_edit.text_changed.connect(_on_search_changed)
+	search_container.add_child(search_line_edit)
+	
+	# Category filter
+	var category_container = HBoxContainer.new()
+	add_child(category_container)
+	
+	var category_label = Label.new()
+	category_label.text = "Category:"
+	category_container.add_child(category_label)
+	
+	category_option = OptionButton.new()
+	for category in category_names:
+		category_option.add_item(category_names[category])
+	category_option.selected = BuildingCategory.ALL
+	category_option.item_selected.connect(_on_category_changed)
+	category_container.add_child(category_option)
+	
+	# Separator
+	var separator = HSeparator.new()
+	add_child(separator)
+	
+	# Buildings list
+	buildings_scroll = ScrollContainer.new()
+	buildings_scroll.custom_minimum_size = Vector2(0, 300)
+	add_child(buildings_scroll)
+	
+	buildings_container = VBoxContainer.new()
+	buildings_scroll.add_child(buildings_container)
+
+func set_buildings(buildings: Array[BuildingData]):
+	all_buildings = buildings
+	_update_building_list()
+
+func _update_building_list():
+	# Clear existing buttons
+	for child in buildings_container.get_children():
+		child.queue_free()
+	
+	# Filter buildings
+	_filter_buildings()
+	
+	# Create buttons for filtered buildings
+	for building_data in filtered_buildings:
+		_create_building_button(building_data)
+
+func _filter_buildings():
+	filtered_buildings.clear()
+	
+	var search_text = search_line_edit.text.to_lower() if search_line_edit else ""
+	var selected_category = category_option.selected if category_option else BuildingCategory.ALL
+	
+	for building_data in all_buildings:
+		# Apply search filter
+		if search_text != "" and not building_data.display_name.to_lower().contains(search_text):
+			continue
+		
+		# Apply category filter
+		if selected_category != BuildingCategory.ALL:
+			var building_category = _get_building_category(building_data)
+			if building_category != selected_category:
+				continue
+		
+		filtered_buildings.append(building_data)
+
+func _get_building_category(building_data: BuildingData) -> BuildingCategory:
+	var name = building_data.display_name.to_lower()
+	
+	if building_data.is_defensive_structure or "wall" in name or "tower" in name or "watchtower" in name:
+		return BuildingCategory.DEFENSIVE
+	elif building_data is EconomicBuildingData or "lumber" in name or "yard" in name or "mine" in name:
+		return BuildingCategory.ECONOMIC
+	elif "chapel" in name or "library" in name or "scriptorium" in name or "monastery" in name:
+		return BuildingCategory.RELIGIOUS
+	elif "hall" in name or "house" in name or "quarters" in name:
+		return BuildingCategory.RESIDENTIAL
+	else:
+		return BuildingCategory.UTILITY
+
+func _create_building_button(building_data: BuildingData):
+	var button_container = HBoxContainer.new()
+	buildings_container.add_child(button_container)
+	
+	# Building button
+	var button = Button.new()
+	button.custom_minimum_size = Vector2(200, 48)
+	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button_container.add_child(button)
+	
+	# Icon (if available)
+	if building_data.icon:
+		button.icon = building_data.icon
+	
+	# Building info
+	var info_text = building_data.display_name
+	if building_data.build_cost and not building_data.build_cost.is_empty():
+		info_text += "\n"
+		var cost_parts: Array[String] = []
+		for resource in building_data.build_cost:
+			cost_parts.append("%s: %d" % [resource.capitalize(), building_data.build_cost[resource]])
+		info_text += "Cost: " + ", ".join(cost_parts)
+	
+	button.text = info_text
+	button.pressed.connect(_on_building_button_pressed.bind(building_data, button))
+	
+	# Health/stats info
+	var stats_label = Label.new()
+	var stats_text = "HP: %d" % building_data.max_health
+	if building_data.is_defensive_structure:
+		stats_text += " | DMG: %d | Range: %.0f" % [building_data.attack_damage, building_data.attack_range]
+	stats_label.text = stats_text
+	stats_label.add_theme_font_size_override("font_size", 10)
+	button_container.add_child(stats_label)
+
+func _on_building_button_pressed(building_data: BuildingData, button: Button):
+	# Update selection visual
+	if selected_building_button:
+		selected_building_button.modulate = Color.WHITE
+	
+	selected_building_button = button
+	button.modulate = Color(1.2, 1.2, 0.8)  # Highlight selected
+	
+	# Emit signal
+	building_selected.emit(building_data)
+
+func _on_search_changed(new_text: String):
+	_update_building_list()
+
+func _on_category_changed(index: int):
+	_update_building_list()
+
+func clear_selection():
+	if selected_building_button:
+		selected_building_button.modulate = Color.WHITE
+		selected_building_button = null
+
+# Utility function to get building info for tooltips
+func get_building_tooltip(building_data: BuildingData) -> String:
+	var tooltip = building_data.display_name + "\n\n"
+	
+	# Health
+	tooltip += "Health: %d HP\n" % building_data.max_health
+	
+	# Cost
+	if building_data.build_cost and not building_data.build_cost.is_empty():
+		tooltip += "Cost: "
+		var cost_parts: Array[String] = []
+		for resource in building_data.build_cost:
+			cost_parts.append("%s %d" % [resource.capitalize(), building_data.build_cost[resource]])
+		tooltip += ", ".join(cost_parts) + "\n"
+	
+	# Defensive stats
+	if building_data.is_defensive_structure:
+		tooltip += "Damage: %d\n" % building_data.attack_damage
+		tooltip += "Range: %.0f\n" % building_data.attack_range
+		tooltip += "Attack Speed: %.1f/sec\n" % building_data.attack_speed
+	
+	# Economic info
+	if building_data is EconomicBuildingData:
+		var eco_data = building_data as EconomicBuildingData
+		tooltip += "Produces: %s (%d per cycle)\n" % [eco_data.resource_type.capitalize(), eco_data.fixed_payout_amount]
+	
+	# Grid size
+	tooltip += "Size: %dx%d" % [building_data.grid_size.x, building_data.grid_size.y]
+	
+	return tooltip
+
+--- SCRIPT: res://addons/enemy_base_editor/CollapsibleGroup.gd ---
+@tool
+extends VBoxContainer
+class_name CollapsibleGroup
+
+var title: String = "Group"
+var expanded: bool = true
+
+var header_button: Button
+var content_container: VBoxContainer
+
+func _init():
+	setup_ui()
+
+func setup_ui():
+	# Header button
+	header_button = Button.new()
+	header_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	header_button.pressed.connect(_on_header_pressed)
+	super.add_child(header_button)
+	
+	# Content container
+	content_container = VBoxContainer.new()
+	super.add_child(content_container)
+	
+	_update_header()
+
+func _update_header():
+	var arrow = "▼ " if expanded else "▶ "
+	header_button.text = arrow + title
+	content_container.visible = expanded
+
+func _on_header_pressed():
+	expanded = !expanded
+	_update_header()
+
+func add_child(node, force_readable_name: bool = false, internal: int = INTERNAL_MODE_DISABLED):
+	if content_container and node != header_button and node != content_container:
+		content_container.add_child(node, force_readable_name, internal)
+	else:
+		super.add_child(node, force_readable_name, internal)
+
+--- SCRIPT: res://addons/enemy_base_editor/EnemyBaseEditor.gd ---
+@tool
+extends EditorScript
+
+# Enemy Base Layout Editor - EditorScript version
+# This script will appear in Tools -> Execute Script menu
+
+func _run():
+	print("=== ENEMY BASE LAYOUT EDITOR ===")
+	
+	var settlement_path = "res://data/settlements/monastery_base.tres"
+	var settlement_data: SettlementData = load(settlement_path)
+	
+	if not settlement_data:
+		print("ERROR: Could not load settlement data!")
+		push_error("Could not load settlement data from: " + settlement_path)
+		return
+	
+	print("Current layout for: " + settlement_path)
+	print("Grid positions (format: Building @ X,Y):")
+	print("-".repeat(40))
+	
+	for i in range(settlement_data.placed_buildings.size()):
+		var building = settlement_data.placed_buildings[i]
+		var pos = building["grid_position"]
+		var building_data: BuildingData = load(building["resource_path"])
+		var name = building_data.display_name if building_data else "Unknown"
+		
+		print("%d. %s @ %d,%d" % [i+1, name, pos.x, pos.y])
+	
+	print("-".repeat(40))
+	print("To modify layout:")
+	print("1. Edit grid_position values in the .tres file")
+	print("2. Or use EnemyBaseEditor.create_fortress_layout() in debugger")
+	print("3. Grid range: 0-%d (width), 0-%d (height)" % [
+		SettlementManager.grid_width-1, 
+		SettlementManager.grid_height-1
+	])
+	
+	print("=== ANALYSIS COMPLETE ===")
+
+# Helper function to create new enemy base layouts
+static func create_enemy_base_layout(buildings: Array[Dictionary], save_path: String):
+	var settlement = SettlementData.new()
+	settlement.treasury = {"gold": 500, "wood": 200, "food": 150, "stone": 100}
+	settlement.placed_buildings = buildings
+	
+	var error = ResourceSaver.save(settlement, save_path)
+	if error == OK:
+		print("✅ Created new enemy base: " + save_path)
+	else:
+		push_error("❌ Failed to save enemy base to: " + save_path)
+
+# Example fortress layout - call this function to create a sample fortress
+static func create_fortress_layout():
+	print("🏰 Creating fortress layout...")
+	var buildings = [
+		{"grid_position": Vector2i(30, 20), "resource_path": "res://data/buildings/Bldg_GreatHall.tres"},
+		{"grid_position": Vector2i(29, 19), "resource_path": "res://data/buildings/Bldg_Wall.tres"},
+		{"grid_position": Vector2i(30, 19), "resource_path": "res://data/buildings/Bldg_Wall.tres"},
+		{"grid_position": Vector2i(31, 19), "resource_path": "res://data/buildings/Bldg_Wall.tres"},
+		{"grid_position": Vector2i(29, 21), "resource_path": "res://data/buildings/Bldg_Wall.tres"},
+		{"grid_position": Vector2i(30, 21), "resource_path": "res://data/buildings/Bldg_Wall.tres"},
+		{"grid_position": Vector2i(31, 21), "resource_path": "res://data/buildings/Bldg_Wall.tres"},
+		{"grid_position": Vector2i(28, 20), "resource_path": "res://data/buildings/LumberYard.tres"},
+		{"grid_position": Vector2i(32, 20), "resource_path": "res://data/buildings/LumberYard.tres"},
+	]
+	
+	create_enemy_base_layout(buildings, "res://data/settlements/fortress_base.tres")
+
+--- SCRIPT: res://addons/enemy_base_editor/EnemyBaseEditorDock.gd ---
+@tool
+extends Control
+class_name EnemyBaseEditorDock
+
+# Core components
+var current_settlement: SettlementData
+var grid_editor: SettlementGridEditor
+var building_palette: BuildingPalette
+var property_panel: SettlementProperties
+
+# UI References
+var main_container: VBoxContainer
+var toolbar: HBoxContainer
+var content_hsplit: HSplitContainer
+var grid_scroll: ScrollContainer
+var right_panel: VBoxContainer
+
+# UI Elements
+var new_button: Button
+var load_button: Button
+var save_button: Button
+var save_as_button: Button
+var validate_button: Button
+var file_dialog: FileDialog
+var current_file_label: Label
+
+# Available buildings cache
+var available_buildings: Array[BuildingData] = []
+
+# Selected building for placement
+var selected_building: BuildingData = null
+
+# Undo/Redo system
+var undo_stack: Array[Dictionary] = []
+var redo_stack: Array[Dictionary] = []
+const MAX_UNDO_STEPS = 50
+
+func _ready():
+	name = "EnemyBaseEditorDock"
+	setup_ui()
+	load_available_buildings()
+	create_new_settlement()
+
+func setup_ui():
+	# Create main layout
+	if not main_container:
+		var vbox = VBoxContainer.new()
+		vbox.name = "VBoxContainer"
+		add_child(vbox)
+		main_container = vbox
+	
+	# Create toolbar
+	create_toolbar()
+	
+	# Create content area
+	create_content_area()
+	
+	# Setup file dialog
+	setup_file_dialog()
+
+func create_toolbar():
+	var toolbar_container = HBoxContainer.new()
+	toolbar_container.name = "Toolbar"
+	main_container.add_child(toolbar_container)
+	toolbar = toolbar_container
+	
+	# File operations
+	new_button = Button.new()
+	new_button.text = "New"
+	new_button.tooltip_text = "Create a new settlement"
+	new_button.pressed.connect(_on_new_pressed)
+	toolbar.add_child(new_button)
+	
+	load_button = Button.new()
+	load_button.text = "Load"
+	load_button.tooltip_text = "Load an existing settlement"
+	load_button.pressed.connect(_on_load_pressed)
+	toolbar.add_child(load_button)
+	
+	save_button = Button.new()
+	save_button.text = "Save"
+	save_button.tooltip_text = "Save current settlement"
+	save_button.pressed.connect(_on_save_pressed)
+	toolbar.add_child(save_button)
+	
+	save_as_button = Button.new()
+	save_as_button.text = "Save As"
+	save_as_button.tooltip_text = "Save settlement with new name"
+	save_as_button.pressed.connect(_on_save_as_pressed)
+	toolbar.add_child(save_as_button)
+	
+	# Add separator
+	var separator1 = VSeparator.new()
+	toolbar.add_child(separator1)
+	
+	# Templates dropdown
+	var templates_button = MenuButton.new()
+	templates_button.text = "Templates"
+	templates_button.tooltip_text = "Load settlement templates"
+	var templates_popup = templates_button.get_popup()
+	for template_name in SettlementTemplates.get_template_names():
+		templates_popup.add_item(template_name)
+	templates_popup.id_pressed.connect(_on_template_selected)
+	toolbar.add_child(templates_button)
+	
+	# Add separator
+	var separator2 = VSeparator.new()
+	toolbar.add_child(separator2)
+	
+	# Validation
+	validate_button = Button.new()
+	validate_button.text = "Validate"
+	validate_button.tooltip_text = "Check settlement for errors"
+	validate_button.pressed.connect(_on_validate_pressed)
+	toolbar.add_child(validate_button)
+	
+	# Current file label
+	current_file_label = Label.new()
+	current_file_label.text = "New Settlement"
+	current_file_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	toolbar.add_child(current_file_label)
+
+func create_content_area():
+	var hsplit = HSplitContainer.new()
+	hsplit.name = "ContentHSplit"
+	hsplit.split_offset = 600
+	main_container.add_child(hsplit)
+	content_hsplit = hsplit
+	
+	# Left side - Grid editor
+	var scroll = ScrollContainer.new()
+	scroll.name = "GridScrollContainer"
+	scroll.custom_minimum_size = Vector2(600, 400)
+	hsplit.add_child(scroll)
+	grid_scroll = scroll
+	
+	# Create grid editor
+	grid_editor = SettlementGridEditor.new()
+	grid_editor.building_placed.connect(_on_building_placed)
+	grid_editor.building_removed.connect(_on_building_removed)
+	grid_editor.building_selected.connect(_on_building_selected)
+	scroll.add_child(grid_editor)
+	
+	# Right side - Controls
+	var right_vbox = VBoxContainer.new()
+	right_vbox.name = "RightPanel"
+	right_vbox.custom_minimum_size = Vector2(300, 0)
+	hsplit.add_child(right_vbox)
+	right_panel = right_vbox
+	
+	# Building palette
+	building_palette = BuildingPalette.new()
+	building_palette.building_selected.connect(_on_palette_building_selected)
+	right_panel.add_child(building_palette)
+	
+	# Property panel
+	property_panel = SettlementProperties.new()
+	property_panel.treasury_changed.connect(_on_treasury_changed)
+	property_panel.units_changed.connect(_on_units_changed)
+	right_panel.add_child(property_panel)
+
+func setup_file_dialog():
+	file_dialog = FileDialog.new()
+	file_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
+	file_dialog.add_filter("*.tres", "Settlement Data Files")
+	file_dialog.current_dir = "res://data/settlements"
+	file_dialog.file_selected.connect(_on_file_selected)
+	add_child(file_dialog)
+
+func load_available_buildings():
+	available_buildings.clear()
+	
+	# Load all building data files
+	var dir = DirAccess.open("res://data/buildings")
+	if dir:
+		dir.list_dir_begin()
+		var file_name = dir.get_next()
+		while file_name != "":
+			if file_name.ends_with(".tres"):
+				print("Enemy Base Editor: Attempting to load building file: ", file_name)
+				var building_data = load("res://data/buildings/" + file_name) as BuildingData
+				if building_data:
+					print("Enemy Base Editor: Successfully loaded building: ", building_data.display_name)
+					available_buildings.append(building_data)
+				else:
+					print("Enemy Base Editor: Failed to load building from: ", file_name)
+			file_name = dir.get_next()
+		dir.list_dir_end()
+	else:
+		print("Enemy Base Editor: Failed to open buildings directory")
+	
+	# Update building palette
+	if building_palette:
+		print("Enemy Base Editor: Setting buildings in palette: ", available_buildings.size())
+		building_palette.set_buildings(available_buildings)
+	else:
+		print("Enemy Base Editor: Building palette not found!")
+	
+	print("Enemy Base Editor: Loaded %d building types" % available_buildings.size())
+
+func create_new_settlement():
+	current_settlement = SettlementData.new()
+	current_settlement.treasury = {"gold": 1000, "wood": 500, "food": 300, "stone": 200}
+	current_settlement.placed_buildings = []
+	current_settlement.garrisoned_units = {}
+	
+	_update_ui()
+	_clear_undo_history()
+	current_file_label.text = "New Settlement"
+	print("Enemy Base Editor: Created new settlement")
+
+func _update_ui():
+	if grid_editor:
+		grid_editor.set_settlement(current_settlement)
+	if property_panel:
+		property_panel.set_settlement(current_settlement)
+	
+	# Update save button state
+	if save_button:
+		save_button.disabled = not current_settlement or current_settlement.resource_path.is_empty()
+
+func _on_new_pressed():
+	create_new_settlement()
+
+func _on_load_pressed():
+	file_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
+	file_dialog.popup_centered(Vector2i(800, 600))
+
+func _on_save_pressed():
+	if not current_settlement:
+		return
+	
+	if current_settlement.resource_path.is_empty():
+		_on_save_as_pressed()
+		return
+	
+	_save_settlement(current_settlement.resource_path)
+
+func _on_save_as_pressed():
+	if not current_settlement:
+		return
+	
+	file_dialog.file_mode = FileDialog.FILE_MODE_SAVE_FILE
+	file_dialog.popup_centered(Vector2i(800, 600))
+
+func _on_validate_pressed():
+	if not current_settlement:
+		return
+	
+	var errors = _validate_settlement()
+	var dialog = AcceptDialog.new()
+	
+	if errors.is_empty():
+		dialog.dialog_text = "✅ Settlement validation passed!\n\nNo errors found."
+		dialog.title = "Validation Success"
+	else:
+		dialog.dialog_text = "❌ Settlement validation failed:\n\n" + "\n".join(errors)
+		dialog.title = "Validation Errors"
+	
+	add_child(dialog)
+	dialog.popup_centered()
+	dialog.confirmed.connect(func(): dialog.queue_free())
+
+func _on_file_selected(path: String):
+	if file_dialog.file_mode == FileDialog.FILE_MODE_OPEN_FILE:
+		_load_settlement(path)
+	else:
+		_save_settlement(path)
+
+func _load_settlement(path: String):
+	var settlement = load(path) as SettlementData
+	if not settlement:
+		_show_error("Failed to load settlement from: " + path)
+		return
+	
+	current_settlement = settlement
+	current_settlement.resource_path = path
+	_update_ui()
+	_clear_undo_history()
+	current_file_label.text = path.get_file()
+	print("Enemy Base Editor: Loaded settlement from " + path)
+
+func _save_settlement(path: String):
+	if not current_settlement:
+		return
+	
+	current_settlement.resource_path = path
+	var error = ResourceSaver.save(current_settlement, path)
+	
+	if error == OK:
+		current_file_label.text = path.get_file()
+		_update_ui()
+		print("Enemy Base Editor: Saved settlement to " + path)
+		_show_success("Settlement saved successfully!")
+	else:
+		_show_error("Failed to save settlement to: " + path + "\nError: " + str(error))
+
+func _on_palette_building_selected(building_data: BuildingData):
+	selected_building = building_data
+	if grid_editor:
+		grid_editor.set_selected_building(building_data)
+
+func _on_building_placed(building_data: BuildingData, position: Vector2i):
+	if not current_settlement:
+		return
+	
+	# Save state for undo
+	_save_state_for_undo()
+	
+	# Add building to settlement data
+	var building_entry = {
+		"resource_path": building_data.resource_path,
+		"grid_position": position
+	}
+	current_settlement.placed_buildings.append(building_entry)
+	
+	# Refresh the grid editor to show the new building
+	if grid_editor:
+		grid_editor.set_settlement(current_settlement)
+	
+	print("Enemy Base Editor: Placed %s at %s" % [building_data.display_name, position])
+
+func _on_building_removed(position: Vector2i):
+	if not current_settlement:
+		return
+	
+	# Save state for undo
+	_save_state_for_undo()
+	
+	# Remove building from settlement data
+	for i in range(current_settlement.placed_buildings.size() - 1, -1, -1):
+		var building = current_settlement.placed_buildings[i]
+		if building["grid_position"] == position:
+			current_settlement.placed_buildings.remove_at(i)
+			print("Enemy Base Editor: Removed building at %s" % position)
+			break
+	
+	# Refresh the grid editor to update the visual
+	if grid_editor:
+		grid_editor.set_settlement(current_settlement)
+
+func _on_building_selected(building_data: BuildingData, position: Vector2i):
+	# Update property panel to show building details
+	pass
+
+func _on_treasury_changed(new_treasury: Dictionary):
+	if current_settlement:
+		current_settlement.treasury = new_treasury
+
+func _on_units_changed(new_units: Dictionary):
+	if current_settlement:
+		current_settlement.garrisoned_units = new_units
+
+func _validate_settlement() -> Array[String]:
+	var errors: Array[String] = []
+	
+	if not current_settlement:
+		errors.append("No settlement loaded")
+		return errors
+	
+	# Check for building overlaps
+	var occupied_positions: Array[Vector2i] = []
+	for building_entry in current_settlement.placed_buildings:
+		var pos = building_entry["grid_position"]
+		if pos in occupied_positions:
+			errors.append("Building overlap detected at position " + str(pos))
+		else:
+			occupied_positions.append(pos)
+	
+	# Validate building positions are in bounds
+	for building_entry in current_settlement.placed_buildings:
+		var pos = building_entry["grid_position"]
+		if pos.x < 0 or pos.x >= 120 or pos.y < 0 or pos.y >= 80:
+			errors.append("Building at " + str(pos) + " is outside grid bounds")
+	
+	# Check if settlement has essential buildings
+	var has_main_hall = false
+	for building_entry in current_settlement.placed_buildings:
+		var building_data = load(building_entry["resource_path"]) as BuildingData
+		if building_data and "hall" in building_data.display_name.to_lower():
+			has_main_hall = true
+			break
+	
+	if not has_main_hall:
+		errors.append("Settlement should have a main hall or similar central building")
+	
+	return errors
+
+func _save_state_for_undo():
+	if not current_settlement:
+		return
+	
+	var state = {
+		"buildings": current_settlement.placed_buildings.duplicate(true),
+		"treasury": current_settlement.treasury.duplicate(),
+		"units": current_settlement.garrisoned_units.duplicate()
+	}
+	
+	undo_stack.append(state)
+	redo_stack.clear()
+	
+	# Limit undo stack size
+	while undo_stack.size() > MAX_UNDO_STEPS:
+		undo_stack.pop_front()
+
+func _clear_undo_history():
+	undo_stack.clear()
+	redo_stack.clear()
+
+func _show_error(message: String):
+	var dialog = AcceptDialog.new()
+	dialog.dialog_text = "❌ Error: " + message
+	dialog.title = "Error"
+	add_child(dialog)
+	dialog.popup_centered()
+	dialog.confirmed.connect(func(): dialog.queue_free())
+
+func _show_success(message: String):
+	var dialog = AcceptDialog.new()
+	dialog.dialog_text = "✅ " + message
+	dialog.title = "Success"
+	add_child(dialog)
+	dialog.popup_centered()
+	dialog.confirmed.connect(func(): dialog.queue_free())
+
+func _on_template_selected(id: int):
+	var template_names = SettlementTemplates.get_template_names()
+	if id >= 0 and id < template_names.size():
+		var template_name = template_names[id]
+		
+		# Show confirmation dialog with template description
+		var dialog = ConfirmationDialog.new()
+		dialog.title = "Load Template: " + template_name
+		dialog.dialog_text = SettlementTemplates.get_template_description(template_name) + "
+
+This will replace the current settlement. Continue?"
+		
+		dialog.confirmed.connect(_load_template.bind(template_name))
+		dialog.canceled.connect(func(): dialog.queue_free())
+		
+		add_child(dialog)
+		dialog.popup_centered()
+
+func _load_template(template_name: String):
+	# Save state for undo
+	_save_state_for_undo()
+	
+	# Load template
+	current_settlement = SettlementTemplates.create_template_by_name(template_name)
+	_update_ui()
+	current_file_label.text = "Template: " + template_name
+	
+	_show_success("Loaded template: " + template_name)
+	print("Enemy Base Editor: Loaded template '%s' with %d buildings" % [template_name, current_settlement.placed_buildings.size()])
+
+func show_legacy_analysis():
+	# Legacy function for backwards compatibility
+	if not current_settlement:
+		_show_error("No settlement loaded for analysis")
+		return
+	
+	print("=== ENEMY BASE LAYOUT ANALYSIS ===")
+	print("Buildings: %d" % current_settlement.placed_buildings.size())
+	
+	for i in range(current_settlement.placed_buildings.size()):
+		var building = current_settlement.placed_buildings[i]
+		var pos = building["grid_position"]
+		var building_data: BuildingData = load(building["resource_path"])
+		var name = building_data.display_name if building_data else "Unknown"
+		print("%d. %s @ %d,%d" % [i+1, name, pos.x, pos.y])
+	
+	print("=== ANALYSIS COMPLETE ===")
+
+--- SCRIPT: res://addons/enemy_base_editor/EnemyBaseEditorDock_Simple.gd ---
+@tool
+extends Control
+class_name EnemyBaseEditorDockSimple
+
+# Simple version without programmatic UI creation
+# Available buildings cache
+var available_buildings: Array[BuildingData] = []
+
+func _ready():
+	name = "EnemyBaseEditorDock"
+	# Create a simple label to start
+	var label = Label.new()
+	label.text = "Enemy Base Editor - Simple Version"
+	add_child(label)
+	
+	# Load buildings
+	load_available_buildings()
+
+func load_available_buildings():
+	available_buildings.clear()
+	
+	# Load all building data files
+	var dir = DirAccess.open("res://data/buildings")
+	if dir:
+		dir.list_dir_begin()
+		var file_name = dir.get_next()
+		while file_name != "":
+			if file_name.ends_with(".tres"):
+				print("Enemy Base Editor: Attempting to load building file: ", file_name)
+				var building_data = load("res://data/buildings/" + file_name)
+				# Try to cast to BuildingData or any subclass
+				if building_data is BuildingData:
+					building_data = building_data as BuildingData
+				else:
+					building_data = null
+				if building_data:
+					print("Enemy Base Editor: Successfully loaded building: ", building_data.display_name)
+					available_buildings.append(building_data)
+				else:
+					print("Enemy Base Editor: Failed to load building from: ", file_name)
+			file_name = dir.get_next()
+		dir.list_dir_end()
+	else:
+		print("Enemy Base Editor: Failed to open buildings directory")
+	
+	print("Enemy Base Editor: Loaded %d building types" % available_buildings.size())
+
+--- SCRIPT: res://addons/enemy_base_editor/plugin.gd ---
+@tool
+extends EditorPlugin
+
+var dock
+
+func _enter_tree():
+	# Create and add the custom dock
+	dock = preload("res://addons/enemy_base_editor/EnemyBaseEditorDock.tscn").instantiate()
+	add_control_to_dock(DOCK_SLOT_LEFT_UR, dock)
+	
+	# Also add the tool menu for backwards compatibility
+	add_tool_menu_item("Enemy Base Layout Editor", _open_legacy_editor)
+
+func _exit_tree():
+	# Remove the dock and menu item
+	if dock:
+		remove_control_from_docks(dock)
+		dock = null
+	remove_tool_menu_item("Enemy Base Layout Editor")
+
+func _open_legacy_editor():
+	# Legacy function - redirect to dock
+	if dock:
+		dock.show_legacy_analysis()
+	else:
+		print("Enemy Base Editor dock not available")
+
+--- SCRIPT: res://addons/enemy_base_editor/SettlementGridEditor.gd ---
+@tool
+extends Control
+class_name SettlementGridEditor
+
+signal building_placed(building_data: BuildingData, position: Vector2i)
+signal building_removed(position: Vector2i)
+signal building_selected(building_data: BuildingData, position: Vector2i)
+
+# Grid settings
+const CELL_SIZE = 32
+const GRID_WIDTH = 120
+const GRID_HEIGHT = 80
+
+# Visual settings
+const GRID_COLOR = Color(0.3, 0.3, 0.3, 0.5)
+const SELECTION_COLOR = Color(1.0, 1.0, 0.0, 0.8)
+const VALID_PLACEMENT_COLOR = Color(0.0, 1.0, 0.0, 0.5)
+const INVALID_PLACEMENT_COLOR = Color(1.0, 0.0, 0.0, 0.5)
+
+# State
+var current_settlement: SettlementData
+var selected_building: BuildingData
+var hovered_position: Vector2i = Vector2i(-1, -1)
+var dragging: bool = false
+var drag_start_position: Vector2i
+
+# Visual elements
+var grid_tiles: Array[Array] = []
+var building_sprites: Dictionary = {} # position -> Sprite2D
+
+func _ready():
+	name = "SettlementGridEditor"
+	custom_minimum_size = Vector2(GRID_WIDTH * CELL_SIZE, GRID_HEIGHT * CELL_SIZE)
+	setup_grid()
+	mouse_entered.connect(_on_mouse_entered)
+	mouse_exited.connect(_on_mouse_exited)
+
+func setup_grid():
+	# Initialize grid tiles array
+	grid_tiles.resize(GRID_WIDTH)
+	for x in range(GRID_WIDTH):
+		grid_tiles[x] = []
+		grid_tiles[x].resize(GRID_HEIGHT)
+		for y in range(GRID_HEIGHT):
+			grid_tiles[x][y] = null
+
+func set_settlement(settlement: SettlementData):
+	current_settlement = settlement
+	_update_visual_buildings()
+
+func set_selected_building(building: BuildingData):
+	selected_building = building
+	queue_redraw()
+
+func _update_visual_buildings():
+	# Clear existing building sprites
+	for sprite in building_sprites.values():
+		if is_instance_valid(sprite):
+			sprite.queue_free()
+	building_sprites.clear()
+	
+	if not current_settlement:
+		return
+	
+	# Create sprites for each building
+	for building_entry in current_settlement.placed_buildings:
+		var pos = building_entry["grid_position"]
+		var building_data = load(building_entry["resource_path"]) as BuildingData
+		if building_data:
+			_create_building_sprite(building_data, pos)
+	
+	queue_redraw()
+
+func _create_building_sprite(building_data: BuildingData, position: Vector2i):
+	var sprite = Sprite2D.new()
+	sprite.position = Vector2(position * CELL_SIZE) + Vector2(CELL_SIZE, CELL_SIZE) * 0.5
+	
+	# Use building texture if available, otherwise create a colored rectangle
+	if building_data.building_texture:
+		sprite.texture = building_data.building_texture
+		sprite.scale = Vector2(CELL_SIZE, CELL_SIZE) / sprite.texture.get_size()
+	else:
+		# Create a simple colored texture
+		var texture = ImageTexture.new()
+		var image = Image.create(CELL_SIZE, CELL_SIZE, false, Image.FORMAT_RGBA8)
+		var color = _get_building_color(building_data)
+		image.fill(color)
+		texture.set_image(image)
+		sprite.texture = texture
+	
+	add_child(sprite)
+	building_sprites[position] = sprite
+
+func _get_building_color(building_data: BuildingData) -> Color:
+	# Assign colors based on building type
+	var name = building_data.display_name.to_lower()
+	if "wall" in name:
+		return Color(0.7, 0.5, 0.3, 1.0) # Brown
+	elif "hall" in name:
+		return Color(0.8, 0.8, 0.2, 1.0) # Yellow
+	elif "tower" in name or "watchtower" in name:
+		return Color(0.5, 0.5, 0.8, 1.0) # Blue
+	elif "lumber" in name or "wood" in name:
+		return Color(0.3, 0.8, 0.3, 1.0) # Green
+	elif "chapel" in name or "library" in name:
+		return Color(0.8, 0.3, 0.8, 1.0) # Purple
+	else:
+		return Color(0.6, 0.6, 0.6, 1.0) # Gray
+
+func _draw():
+	_draw_grid()
+	_draw_hover_preview()
+
+func _draw_grid():
+	# Draw grid lines
+	for x in range(GRID_WIDTH + 1):
+		var start_pos = Vector2(x * CELL_SIZE, 0)
+		var end_pos = Vector2(x * CELL_SIZE, GRID_HEIGHT * CELL_SIZE)
+		draw_line(start_pos, end_pos, GRID_COLOR, 1.0)
+	
+	for y in range(GRID_HEIGHT + 1):
+		var start_pos = Vector2(0, y * CELL_SIZE)
+		var end_pos = Vector2(GRID_WIDTH * CELL_SIZE, y * CELL_SIZE)
+		draw_line(start_pos, end_pos, GRID_COLOR, 1.0)
+
+func _draw_hover_preview():
+	if hovered_position.x < 0 or hovered_position.y < 0:
+		return
+	
+	var rect = Rect2(Vector2(hovered_position * CELL_SIZE), Vector2(CELL_SIZE, CELL_SIZE))
+	
+	# Draw selection highlight
+	draw_rect(rect, SELECTION_COLOR, false, 2.0)
+	
+	# Draw placement preview if building is selected
+	if selected_building:
+		var can_place = _can_place_building(selected_building, hovered_position)
+		var preview_color = VALID_PLACEMENT_COLOR if can_place else INVALID_PLACEMENT_COLOR
+		draw_rect(rect, preview_color)
+		
+		# Draw building name
+		var font = ThemeDB.fallback_font
+		var text = selected_building.display_name
+		var text_size = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 12)
+		var text_pos = rect.position + (rect.size - text_size) * 0.5
+		draw_string(font, text_pos, text, HORIZONTAL_ALIGNMENT_CENTER, -1, 12, Color.WHITE)
+
+func _gui_input(event):
+	if event is InputEventMouseMotion:
+		_handle_mouse_motion(event)
+	elif event is InputEventMouseButton:
+		_handle_mouse_button(event)
+
+func _handle_mouse_motion(event: InputEventMouseMotion):
+	var local_pos = event.position
+	var grid_pos = Vector2i(local_pos / CELL_SIZE)
+	
+	if grid_pos.x >= 0 and grid_pos.x < GRID_WIDTH and grid_pos.y >= 0 and grid_pos.y < GRID_HEIGHT:
+		if hovered_position != grid_pos:
+			hovered_position = grid_pos
+			queue_redraw()
+	else:
+		if hovered_position != Vector2i(-1, -1):
+			hovered_position = Vector2i(-1, -1)
+			queue_redraw()
+
+func _handle_mouse_button(event: InputEventMouseButton):
+	if not event.pressed:
+		return
+	
+	var local_pos = event.position
+	var grid_pos = Vector2i(local_pos / CELL_SIZE)
+	
+	if grid_pos.x < 0 or grid_pos.x >= GRID_WIDTH or grid_pos.y < 0 or grid_pos.y >= GRID_HEIGHT:
+		return
+	
+	if event.button_index == MOUSE_BUTTON_LEFT:
+		_handle_left_click(grid_pos)
+	elif event.button_index == MOUSE_BUTTON_RIGHT:
+		_handle_right_click(grid_pos)
+
+func _handle_left_click(grid_pos: Vector2i):
+	var existing_building = _get_building_at_position(grid_pos)
+	
+	if existing_building:
+		# Select existing building
+		building_selected.emit(existing_building, grid_pos)
+	elif selected_building:
+		# Try to place new building
+		if _can_place_building(selected_building, grid_pos):
+			building_placed.emit(selected_building, grid_pos)
+			# Note: Don't create sprite here - let the main dock update settlement data
+			# and then refresh the visual buildings through _update_visual_buildings()
+
+func _handle_right_click(grid_pos: Vector2i):
+	var existing_building = _get_building_at_position(grid_pos)
+	if existing_building:
+		# Remove building - the main dock will handle the data update and refresh
+		building_removed.emit(grid_pos)
+
+func _get_building_at_position(grid_pos: Vector2i) -> BuildingData:
+	if not current_settlement:
+		return null
+	
+	for building_entry in current_settlement.placed_buildings:
+		if building_entry["grid_position"] == grid_pos:
+			return load(building_entry["resource_path"]) as BuildingData
+	
+	return null
+
+func _can_place_building(building_data, position: Vector2i) -> bool:
+	if not current_settlement:
+		return false
+	
+	# Check if position is within grid bounds
+	if position.x < 0 or position.x >= GRID_WIDTH or position.y < 0 or position.y >= GRID_HEIGHT:
+		return false
+	
+	# Check for building overlap
+	return _get_building_at_position(position) == null
+
+func _on_mouse_entered():
+	pass
+
+func _on_mouse_exited():
+	hovered_position = Vector2i(-1, -1)
+	queue_redraw()
+
+# Utility functions for external access
+func get_grid_size() -> Vector2i:
+	return Vector2i(GRID_WIDTH, GRID_HEIGHT)
+
+func get_cell_size() -> int:
+	return CELL_SIZE
+
+func world_to_grid(world_pos: Vector2) -> Vector2i:
+	return Vector2i(world_pos / CELL_SIZE)
+
+func grid_to_world(grid_pos: Vector2i) -> Vector2:
+	return Vector2(grid_pos * CELL_SIZE) + Vector2(CELL_SIZE, CELL_SIZE) * 0.5
+
+--- SCRIPT: res://addons/enemy_base_editor/SettlementProperties.gd ---
+@tool
+extends VBoxContainer
+class_name SettlementProperties
+
+signal treasury_changed(new_treasury: Dictionary)
+signal units_changed(new_units: Dictionary)
+
+# UI Elements
+var treasury_group: CollapsibleGroup
+var units_group: CollapsibleGroup
+
+# Treasury controls
+var gold_spinbox: SpinBox
+var wood_spinbox: SpinBox
+var food_spinbox: SpinBox
+var stone_spinbox: SpinBox
+
+# Units controls
+var units_container: VBoxContainer
+var add_unit_button: Button
+var unit_selection_dialog: AcceptDialog
+
+# Data
+var current_settlement: SettlementData
+var available_units: Array[String] = []
+
+func _ready():
+	name = "SettlementProperties"
+	setup_ui()
+	load_available_units()
+
+func setup_ui():
+	# Header
+	var header = Label.new()
+	header.text = "Settlement Properties"
+	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add_child(header)
+	
+	var separator = HSeparator.new()
+	add_child(separator)
+	
+	# Treasury section
+	setup_treasury_section()
+	
+	# Units section
+	setup_units_section()
+
+func setup_treasury_section():
+	treasury_group = CollapsibleGroup.new()
+	treasury_group.title = "Treasury"
+	treasury_group.expanded = true
+	add_child(treasury_group)
+	
+	var treasury_container = VBoxContainer.new()
+	treasury_group.add_child(treasury_container)
+	
+	# Gold
+	var gold_container = create_resource_control("Gold:", 0, 99999)
+	gold_spinbox = gold_container.get_child(1) as SpinBox
+	gold_spinbox.value_changed.connect(_on_treasury_changed)
+	treasury_container.add_child(gold_container)
+	
+	# Wood
+	var wood_container = create_resource_control("Wood:", 0, 99999)
+	wood_spinbox = wood_container.get_child(1) as SpinBox
+	wood_spinbox.value_changed.connect(_on_treasury_changed)
+	treasury_container.add_child(wood_container)
+	
+	# Food
+	var food_container = create_resource_control("Food:", 0, 99999)
+	food_spinbox = food_container.get_child(1) as SpinBox
+	food_spinbox.value_changed.connect(_on_treasury_changed)
+	treasury_container.add_child(food_container)
+	
+	# Stone
+	var stone_container = create_resource_control("Stone:", 0, 99999)
+	stone_spinbox = stone_container.get_child(1) as SpinBox
+	stone_spinbox.value_changed.connect(_on_treasury_changed)
+	treasury_container.add_child(stone_container)
+
+func setup_units_section():
+	units_group = CollapsibleGroup.new()
+	units_group.title = "Garrisoned Units"
+	units_group.expanded = false
+	add_child(units_group)
+	
+	var units_main_container = VBoxContainer.new()
+	units_group.add_child(units_main_container)
+	
+	# Add unit button
+	add_unit_button = Button.new()
+	add_unit_button.text = "Add Unit Type"
+	add_unit_button.pressed.connect(_on_add_unit_pressed)
+	units_main_container.add_child(add_unit_button)
+	
+	# Units list
+	units_container = VBoxContainer.new()
+	units_main_container.add_child(units_container)
+
+func create_resource_control(label_text: String, min_val: float, max_val: float) -> HBoxContainer:
+	var container = HBoxContainer.new()
+	
+	var label = Label.new()
+	label.text = label_text
+	label.custom_minimum_size = Vector2(60, 0)
+	container.add_child(label)
+	
+	var spinbox = SpinBox.new()
+	spinbox.min_value = min_val
+	spinbox.max_value = max_val
+	spinbox.step = 1
+	spinbox.custom_minimum_size = Vector2(120, 0)
+	container.add_child(spinbox)
+	
+	return container
+
+func set_settlement(settlement: SettlementData):
+	current_settlement = settlement
+	_update_ui()
+
+func _update_ui():
+	if not current_settlement:
+		return
+	
+	# Update treasury values
+	gold_spinbox.value = current_settlement.treasury.get("gold", 0)
+	wood_spinbox.value = current_settlement.treasury.get("wood", 0)
+	food_spinbox.value = current_settlement.treasury.get("food", 0)
+	stone_spinbox.value = current_settlement.treasury.get("stone", 0)
+	
+	# Update units
+	_update_units_list()
+
+func _update_units_list():
+	# Clear existing unit controls
+	for child in units_container.get_children():
+		child.queue_free()
+	
+	if not current_settlement:
+		return
+	
+	# Create controls for each unit type
+	for unit_path in current_settlement.garrisoned_units:
+		var count = current_settlement.garrisoned_units[unit_path]
+		_create_unit_control(unit_path, count)
+
+func _create_unit_control(unit_path: String, count: int):
+	var container = HBoxContainer.new()
+	units_container.add_child(container)
+	
+	# Unit name
+	var unit_name = unit_path.get_file().get_basename()
+	var label = Label.new()
+	label.text = unit_name + ":"
+	label.custom_minimum_size = Vector2(100, 0)
+	container.add_child(label)
+	
+	# Count spinbox
+	var spinbox = SpinBox.new()
+	spinbox.min_value = 0
+	spinbox.max_value = 999
+	spinbox.step = 1
+	spinbox.value = count
+	spinbox.custom_minimum_size = Vector2(80, 0)
+	spinbox.value_changed.connect(_on_unit_count_changed.bind(unit_path))
+	container.add_child(spinbox)
+	
+	# Remove button
+	var remove_button = Button.new()
+	remove_button.text = "X"
+	remove_button.custom_minimum_size = Vector2(30, 0)
+	remove_button.pressed.connect(_on_remove_unit_pressed.bind(unit_path))
+	container.add_child(remove_button)
+
+func load_available_units():
+	available_units.clear()
+	
+	# Load all unit data files
+	var dir = DirAccess.open("res://data/units")
+	if dir:
+		dir.list_dir_begin()
+		var file_name = dir.get_next()
+		while file_name != "":
+			if file_name.ends_with(".tres"):
+				available_units.append("res://data/units/" + file_name)
+			file_name = dir.get_next()
+		dir.list_dir_end()
+
+func _on_treasury_changed(value: float):
+	if not current_settlement:
+		return
+	
+	# Update settlement treasury
+	current_settlement.treasury["gold"] = int(gold_spinbox.value)
+	current_settlement.treasury["wood"] = int(wood_spinbox.value)
+	current_settlement.treasury["food"] = int(food_spinbox.value)
+	current_settlement.treasury["stone"] = int(stone_spinbox.value)
+	
+	# Emit signal
+	treasury_changed.emit(current_settlement.treasury)
+
+func _on_unit_count_changed(unit_path: String, new_count: float):
+	if not current_settlement:
+		return
+	
+	var count = int(new_count)
+	if count <= 0:
+		current_settlement.garrisoned_units.erase(unit_path)
+	else:
+		current_settlement.garrisoned_units[unit_path] = count
+	
+	# Emit signal
+	units_changed.emit(current_settlement.garrisoned_units)
+
+func _on_remove_unit_pressed(unit_path: String):
+	if not current_settlement:
+		return
+	
+	current_settlement.garrisoned_units.erase(unit_path)
+	_update_units_list()
+	
+	# Emit signal
+	units_changed.emit(current_settlement.garrisoned_units)
+
+func _on_add_unit_pressed():
+	_show_unit_selection_dialog()
+
+func _show_unit_selection_dialog():
+	# Create unit selection dialog
+	var dialog = AcceptDialog.new()
+	dialog.title = "Select Unit Type"
+	dialog.custom_minimum_size = Vector2(400, 300)
+	add_child(dialog)
+	
+	var vbox = VBoxContainer.new()
+	dialog.add_child(vbox)
+	
+	var scroll = ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0, 200)
+	vbox.add_child(scroll)
+	
+	var units_list = VBoxContainer.new()
+	scroll.add_child(units_list)
+	
+	# Add buttons for each available unit
+	for unit_path in available_units:
+		var button = Button.new()
+		var unit_name = unit_path.get_file().get_basename()
+		button.text = unit_name
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		button.pressed.connect(_on_unit_selected.bind(unit_path, dialog))
+		units_list.add_child(button)
+	
+	dialog.popup_centered()
+
+func _on_unit_selected(unit_path: String, dialog: AcceptDialog):
+	if not current_settlement:
+		return
+	
+	# Add unit with count of 1
+	current_settlement.garrisoned_units[unit_path] = 1
+	_update_units_list()
+	
+	# Emit signal
+	units_changed.emit(current_settlement.garrisoned_units)
+	
+	# Close dialog
+	dialog.queue_free()
+
+# CollapsibleGroup is now in its own file
+
+--- SCRIPT: res://addons/enemy_base_editor/SettlementTemplates.gd ---
+@tool
+extends RefCounted
+class_name SettlementTemplates
+
+# Pre-made settlement templates for quick creation
+static func create_fortress_template() -> SettlementData:
+	var settlement = SettlementData.new()
+	settlement.treasury = {"gold": 1000, "wood": 500, "food": 300, "stone": 400}
+	
+	settlement.placed_buildings = [
+		# Central Great Hall
+		{"grid_position": Vector2i(30, 20), "resource_path": "res://data/buildings/Bldg_GreatHall.tres"},
+		
+		# Surrounding walls
+		{"grid_position": Vector2i(29, 19), "resource_path": "res://data/buildings/Bldg_Wall.tres"},
+		{"grid_position": Vector2i(30, 19), "resource_path": "res://data/buildings/Bldg_Wall.tres"},
+		{"grid_position": Vector2i(31, 19), "resource_path": "res://data/buildings/Bldg_Wall.tres"},
+		{"grid_position": Vector2i(29, 21), "resource_path": "res://data/buildings/Bldg_Wall.tres"},
+		{"grid_position": Vector2i(30, 21), "resource_path": "res://data/buildings/Bldg_Wall.tres"},
+		{"grid_position": Vector2i(31, 21), "resource_path": "res://data/buildings/Bldg_Wall.tres"},
+		
+		# Corner towers
+		{"grid_position": Vector2i(28, 18), "resource_path": "res://data/buildings/Monastery_Watchtower.tres"},
+		{"grid_position": Vector2i(32, 18), "resource_path": "res://data/buildings/Monastery_Watchtower.tres"},
+		{"grid_position": Vector2i(28, 22), "resource_path": "res://data/buildings/Monastery_Watchtower.tres"},
+		{"grid_position": Vector2i(32, 22), "resource_path": "res://data/buildings/Monastery_Watchtower.tres"},
+		
+		# Economic buildings
+		{"grid_position": Vector2i(27, 20), "resource_path": "res://data/buildings/LumberYard.tres"},
+		{"grid_position": Vector2i(33, 20), "resource_path": "res://data/buildings/LumberYard.tres"},
+	]
+	
+	settlement.garrisoned_units = {
+		"res://data/units/VikingRaider.tres": 8,
+		"res://data/units/Base_Unit.tres": 4
+	}
+	
+	return settlement
+
+static func create_monastery_template() -> SettlementData:
+	var settlement = SettlementData.new()
+	settlement.treasury = {"gold": 800, "wood": 300, "food": 600, "stone": 200}
+	
+	settlement.placed_buildings = [
+		# Central chapel
+		{"grid_position": Vector2i(25, 25), "resource_path": "res://data/buildings/Monastery_Chapel.tres"},
+		
+		# Library and scriptorium
+		{"grid_position": Vector2i(23, 25), "resource_path": "res://data/buildings/Monastery_Library.tres"},
+		{"grid_position": Vector2i(27, 25), "resource_path": "res://data/buildings/Monastery_Scriptorium.tres"},
+		
+		# Storage and resources
+		{"grid_position": Vector2i(25, 23), "resource_path": "res://data/buildings/Monastery_Granary.tres"},
+		
+		# Defensive watchtower
+		{"grid_position": Vector2i(25, 27), "resource_path": "res://data/buildings/Monastery_Watchtower.tres"},
+		
+		# Outer walls for protection
+		{"grid_position": Vector2i(22, 24), "resource_path": "res://data/buildings/Bldg_Wall.tres"},
+		{"grid_position": Vector2i(22, 25), "resource_path": "res://data/buildings/Bldg_Wall.tres"},
+		{"grid_position": Vector2i(22, 26), "resource_path": "res://data/buildings/Bldg_Wall.tres"},
+		{"grid_position": Vector2i(28, 24), "resource_path": "res://data/buildings/Bldg_Wall.tres"},
+		{"grid_position": Vector2i(28, 25), "resource_path": "res://data/buildings/Bldg_Wall.tres"},
+		{"grid_position": Vector2i(28, 26), "resource_path": "res://data/buildings/Bldg_Wall.tres"},
+	]
+	
+	settlement.garrisoned_units = {
+		"res://data/units/Base_Unit.tres": 6
+	}
+	
+	return settlement
+
+static func create_village_template() -> SettlementData:
+	var settlement = SettlementData.new()
+	settlement.treasury = {"gold": 600, "wood": 400, "food": 200, "stone": 100}
+	
+	settlement.placed_buildings = [
+		# Great Hall (village center)
+		{"grid_position": Vector2i(15, 15), "resource_path": "res://data/buildings/Bldg_GreatHall.tres"},
+		
+		# Economic buildings scattered around
+		{"grid_position": Vector2i(13, 15), "resource_path": "res://data/buildings/LumberYard.tres"},
+		{"grid_position": Vector2i(17, 15), "resource_path": "res://data/buildings/LumberYard.tres"},
+		{"grid_position": Vector2i(15, 13), "resource_path": "res://data/buildings/Monastery_Granary.tres"},
+		{"grid_position": Vector2i(15, 17), "resource_path": "res://data/buildings/Monastery_Granary.tres"},
+		
+		# Minimal defensive structures
+		{"grid_position": Vector2i(12, 12), "resource_path": "res://data/buildings/Monastery_Watchtower.tres"},
+		{"grid_position": Vector2i(18, 18), "resource_path": "res://data/buildings/Monastery_Watchtower.tres"},
+	]
+	
+	settlement.garrisoned_units = {
+		"res://data/units/Base_Unit.tres": 3
+	}
+	
+	return settlement
+
+static func create_outpost_template() -> SettlementData:
+	var settlement = SettlementData.new()
+	settlement.treasury = {"gold": 300, "wood": 200, "food": 100, "stone": 150}
+	
+	settlement.placed_buildings = [
+		# Single watchtower as main structure
+		{"grid_position": Vector2i(10, 10), "resource_path": "res://data/buildings/Monastery_Watchtower.tres"},
+		
+		# Surrounding walls for basic protection
+		{"grid_position": Vector2i(9, 9), "resource_path": "res://data/buildings/Bldg_Wall.tres"},
+		{"grid_position": Vector2i(10, 9), "resource_path": "res://data/buildings/Bldg_Wall.tres"},
+		{"grid_position": Vector2i(11, 9), "resource_path": "res://data/buildings/Bldg_Wall.tres"},
+		{"grid_position": Vector2i(9, 11), "resource_path": "res://data/buildings/Bldg_Wall.tres"},
+		{"grid_position": Vector2i(10, 11), "resource_path": "res://data/buildings/Bldg_Wall.tres"},
+		{"grid_position": Vector2i(11, 11), "resource_path": "res://data/buildings/Bldg_Wall.tres"},
+		
+		# Basic economic support
+		{"grid_position": Vector2i(8, 10), "resource_path": "res://data/buildings/LumberYard.tres"},
+	]
+	
+	settlement.garrisoned_units = {
+		"res://data/units/Base_Unit.tres": 2
+	}
+	
+	return settlement
+
+static func get_template_names() -> Array[String]:
+	return ["Fortress", "Monastery", "Village", "Outpost"]
+
+static func create_template_by_name(template_name: String) -> SettlementData:
+	match template_name:
+		"Fortress":
+			return create_fortress_template()
+		"Monastery":
+			return create_monastery_template()
+		"Village":
+			return create_village_template()
+		"Outpost":
+			return create_outpost_template()
+		_:
+			print("Unknown template: " + template_name)
+			return SettlementData.new()
+
+static func get_template_description(template_name: String) -> String:
+	match template_name:
+		"Fortress":
+			return "A heavily fortified settlement with walls, towers, and strong defenses. Good for challenging raids."
+		"Monastery":
+			return "A peaceful religious settlement with chapel, library, and scriptorium. Moderate defenses."
+		"Village":
+			return "A basic settlement with economic buildings and minimal defenses. Good for early game raids."
+		"Outpost":
+			return "A small military outpost with basic walls and a watchtower. Minimal resources but strategic placement."
+		_:
+			return "No description available."
+
 --- SCRIPT: res://autoload/EventBus.gd ---
 # res://autoload/EventBus.gd
 #
@@ -600,6 +2526,8 @@ Main (PanelContainer)
 extends Node
 
 # --- Build System Signals ---
+# TODO: Connect this signal when implementing advanced building system
+# @warning_ignore("unused_signal")
 signal build_request_made(building_data: BuildingData, grid_position: Vector2i)
 
 # --- Pathfinding Signals ---
@@ -614,6 +2542,9 @@ signal purchase_failed(reason: String)
 signal scene_change_requested(scene_path: String)
 signal world_map_opened()
 signal raid_mission_started(target_type: String)
+
+# --- Settlement Management Signals ---
+signal settlement_loaded(settlement_data: SettlementData)
 
 # --- Unit Management Signals ---
 signal player_unit_died(unit: Node2D)
@@ -639,20 +2570,37 @@ var current_settlement: SettlementData
 var astar_grid: AStarGrid2D
 @onready var building_container: Node2D = $BuildingContainer
 
-const TILE_SIZE: int = 32
-const GRID_WIDTH: int = 50
-const GRID_HEIGHT: int = 30
+# --- Configurable Grid Settings ---
+@export_group("Grid Configuration")
+@export var tile_size: int = 32
+@export var grid_width: int = 120  # Increased from 50
+@export var grid_height: int = 80  # Increased from 30
+@export var auto_resize_for_scene: bool = true  # Enable automatic scene detection
+
+# Scene-specific overrides (optional)
+@export_subgroup("Scene Overrides")
+@export var settlement_grid_size: Vector2i = Vector2i(60, 40)
+@export var raid_grid_size: Vector2i = Vector2i(120, 80)  # Increased for raid missions
+@export var defense_grid_size: Vector2i = Vector2i(80, 60)  # Increased for defensive missions
 
 func _ready() -> void:
 	# Initialize the grid as soon as the manager is ready.
 	# This ensures astar_grid is never null after this point.
+	_initialize_grid()
+
+func _initialize_grid() -> void:
+	"""Initialize the AStarGrid2D with proper error handling"""
+	# Auto-detect scene type and adjust grid size if enabled
+	if auto_resize_for_scene:
+		_detect_and_set_grid_size()
+	
 	astar_grid = AStarGrid2D.new()
-	var playable_rect := Rect2i(0, 0, GRID_WIDTH, GRID_HEIGHT)
+	var playable_rect := Rect2i(0, 0, grid_width, grid_height)
 	astar_grid.region = playable_rect
-	astar_grid.cell_size = Vector2(TILE_SIZE, TILE_SIZE)
+	astar_grid.cell_size = Vector2(tile_size, tile_size)
 	astar_grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_NEVER
 	astar_grid.update()
-	print("Settlement Grid Initialized on ready.")
+	print("Settlement Grid Initialized: %dx%d cells (auto-detected: %s)" % [grid_width, grid_height, auto_resize_for_scene])
 
 func load_settlement(data: SettlementData) -> void:
 	if not data:
@@ -660,11 +2608,33 @@ func load_settlement(data: SettlementData) -> void:
 		return
 	
 	current_settlement = data
+	
+	# Ensure resource_path is set for saving later
+	if not current_settlement.resource_path or current_settlement.resource_path.is_empty():
+		# Try to determine the path from how it was loaded
+		if data.resource_path and not data.resource_path.is_empty():
+			current_settlement.resource_path = data.resource_path
+		else:
+			# Fallback: assume it's the home base file
+			current_settlement.resource_path = "res://data/settlements/home_base_fixed.tres"
+			print("SettlementManager: Set fallback resource_path to: %s" % current_settlement.resource_path)
+	
 	print("SettlementManager: Settlement loaded - %s" % current_settlement.resource_path)
 	print("SettlementManager: Garrison units: %s" % current_settlement.garrisoned_units)
 	
 	# The grid already exists. Clear its state before loading new buildings.
+	# Note: clear() resets the region to (0,0,0,0), so we must reinitialize
 	astar_grid.clear()
+	
+	# Reinitialize grid parameters after clear()
+	var playable_rect := Rect2i(0, 0, grid_width, grid_height)
+	astar_grid.region = playable_rect
+	astar_grid.cell_size = Vector2(tile_size, tile_size)
+	astar_grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_NEVER
+	
+	# CRITICAL: Update the grid after setting parameters
+	astar_grid.update()
+	print("AStarGrid reinitialized: %dx%d cells" % [grid_width, grid_height])
 	
 	for child in building_container.get_children():
 		child.queue_free()
@@ -689,6 +2659,16 @@ func place_building(building_data: BuildingData, grid_position: Vector2i) -> Bas
 		push_error("Build request failed: BuildingData or scene_to_spawn is null.")
 		return null
 	
+	# Validate grid position is within bounds
+	if not _is_position_valid(grid_position):
+		push_error("Cannot place building at %s: position is outside grid bounds (%d x %d)." % [grid_position, grid_width, grid_height])
+		return null
+	
+	# Check for existing building at this position
+	if _is_position_occupied(grid_position):
+		push_error("Cannot place building at %s: position is already occupied." % grid_position)
+		return null
+	
 	var new_building: BaseBuilding = building_data.scene_to_spawn.instantiate()
 	new_building.data = building_data
 	
@@ -698,10 +2678,15 @@ func place_building(building_data: BuildingData, grid_position: Vector2i) -> Bas
 	
 	building_container.add_child(new_building)
 	
-	if building_data.blocks_pathfinding:
-		astar_grid.set_point_solid(grid_position, true)
-		astar_grid.update()
-		EventBus.pathfinding_grid_updated.emit(grid_position)
+	# Only update pathfinding if position is valid and building blocks pathfinding
+	if building_data.blocks_pathfinding and _is_position_valid(grid_position):
+		# Ensure grid is properly initialized before setting solid points
+		if astar_grid and astar_grid.region.size.x > 0 and astar_grid.region.size.y > 0:
+			astar_grid.set_point_solid(grid_position, true)
+			astar_grid.update()
+			EventBus.pathfinding_grid_updated.emit(grid_position)
+		else:
+			push_warning("AStarGrid not properly initialized, skipping pathfinding update for building at %s" % grid_position)
 		
 	return new_building
 
@@ -764,8 +2749,24 @@ func get_astar_path(start_pos: Vector2, end_pos: Vector2) -> PackedVector2Array:
 	if not astar_grid:
 		push_error("AStarGrid is not initialized!")
 		return PackedVector2Array()
+	
+	# Check if grid region is properly set
+	if astar_grid.region.size.x <= 0 or astar_grid.region.size.y <= 0:
+		push_error("AStarGrid region is invalid: %s. Grid was likely cleared but not reinitialized." % astar_grid.region)
+		return PackedVector2Array()
+	
 	var start_id: Vector2i = Vector2i(start_pos / astar_grid.cell_size)
 	var end_id: Vector2i = Vector2i(end_pos / astar_grid.cell_size)
+	
+	# Check bounds before calling get_point_path
+	if start_id.x < 0 or start_id.x >= astar_grid.region.size.x or start_id.y < 0 or start_id.y >= astar_grid.region.size.y:
+		push_error("Start position (%s) -> grid_id (%s) is out of bounds. Grid size: %s" % [start_pos, start_id, astar_grid.region.size])
+		return PackedVector2Array()
+	
+	if end_id.x < 0 or end_id.x >= astar_grid.region.size.x or end_id.y < 0 or end_id.y >= astar_grid.region.size.y:
+		push_error("End position (%s) -> grid_id (%s) is out of bounds. Grid size: %s" % [end_pos, end_id, astar_grid.region.size])
+		return PackedVector2Array()
+	
 	return astar_grid.get_point_path(start_id, end_id)
 
 func recruit_unit(unit_data: UnitData) -> void:
@@ -803,6 +2804,11 @@ func save_settlement() -> void:
 		return
 	
 	if current_settlement.resource_path and not current_settlement.resource_path.is_empty():
+		# Ensure the settlement uses the external SettlementData script class
+		# This prevents inline script conflicts when saving
+		if not current_settlement.get_script():
+			current_settlement.set_script(preload("res://data/settlements/SettlementData.gd"))
+		
 		var error = ResourceSaver.save(current_settlement, current_settlement.resource_path)
 		if error == OK:
 			print("Settlement data saved successfully to: %s" % current_settlement.resource_path)
@@ -830,7 +2836,75 @@ func get_settlement_status() -> String:
 		garrison_count
 	]
 
---- SCRIPT: res://data/buildings/Base_Building.gd ---
+func _is_position_valid(grid_position: Vector2i) -> bool:
+	"""Check if a grid position is within the AStarGrid bounds"""
+	return grid_position.x >= 0 and grid_position.x < grid_width and \
+		   grid_position.y >= 0 and grid_position.y < grid_height
+
+func _is_position_occupied(grid_position: Vector2i) -> bool:
+	"""Check if a grid position is already occupied by a building"""
+	if not current_settlement:
+		return false
+	
+	for building_entry in current_settlement.placed_buildings:
+		var existing_pos: Vector2i = building_entry["grid_position"]
+		if existing_pos == grid_position:
+			return true
+	
+	return false
+
+func set_astar_point_solid(grid_position: Vector2i, solid: bool) -> void:
+	"""Public interface to set pathfinding grid points as solid/passable"""
+	if not astar_grid:
+		push_warning("AStarGrid not initialized")
+		return
+	
+	if not _is_position_valid(grid_position):
+		push_warning("Grid position %s is out of bounds" % grid_position)
+		return
+	
+	if astar_grid.region.size.x <= 0 or astar_grid.region.size.y <= 0:
+		push_warning("AStarGrid region is invalid")
+		return
+	
+	astar_grid.set_point_solid(grid_position, solid)
+	# Don't call update() here - let caller decide when to batch update
+
+func _detect_and_set_grid_size() -> void:
+	"""Auto-detect the current scene type and set appropriate grid size"""
+	var current_scene = get_tree().current_scene
+	if not current_scene:
+		print("SettlementManager: No current scene found for auto-detection")
+		return
+	
+	var scene_name = current_scene.name.to_lower()
+	var scene_path = current_scene.scene_file_path.to_lower()
+	
+	print("SettlementManager: Detecting scene type from '%s' (%s)" % [scene_name, scene_path])
+	
+	# Detect raid missions
+	if "raid" in scene_name or "raid" in scene_path:
+		grid_width = raid_grid_size.x
+		grid_height = raid_grid_size.y
+		print("SettlementManager: Auto-detected RAID mission - using grid %dx%d" % [grid_width, grid_height])
+	
+	# Detect defensive missions
+	elif "defensive" in scene_name or "defense" in scene_path or "sacked" in scene_name:
+		grid_width = defense_grid_size.x
+		grid_height = defense_grid_size.y
+		print("SettlementManager: Auto-detected DEFENSIVE mission - using grid %dx%d" % [grid_width, grid_height])
+	
+	# Detect settlement/bridge scenes
+	elif "settlement" in scene_name or "bridge" in scene_path:
+		grid_width = settlement_grid_size.x
+		grid_height = settlement_grid_size.y
+		print("SettlementManager: Auto-detected SETTLEMENT scene - using grid %dx%d" % [grid_width, grid_height])
+	
+	# Use large default for unknown scenes
+	else:
+		print("SettlementManager: Unknown scene type - using default large grid %dx%d" % [grid_width, grid_height])
+
+--- SCRIPT: res://data/buildings/base_building.gd ---
 # res://scenes/buildings/Base_Building.gd
 #
 # --- MODIFIED: Added 'building_destroyed' signal ---
@@ -862,12 +2936,32 @@ func take_damage(amount: int) -> void:
 func die() -> void:
 	print("%s has been destroyed." % data.display_name)
 	
+	# Add visual feedback for destruction
+	_show_destruction_effect()
+	
 	# --- ADDED ---
 	# Emit the signal *before* queue_free() so listeners
 	# can react before the node is deleted.
 	building_destroyed.emit(self)
 	
+	# Remove from groups before deletion
+	remove_from_group("enemy_buildings")
+	
+	# Queue for deletion on the next frame
+	print("Building %s queued for removal from scene" % data.display_name)
 	queue_free()
+
+func _show_destruction_effect() -> void:
+	"""Add a simple visual destruction effect"""
+	# Create a simple destruction tween for visual feedback
+	var tween = create_tween()
+	
+	# Scale down and fade out
+	tween.parallel().tween_property(self, "scale", Vector2(0.1, 0.1), 0.3)
+	tween.parallel().tween_property(self, "modulate", Color.TRANSPARENT, 0.3)
+	
+	# Optional: Add rotation for dramatic effect
+	tween.parallel().tween_property(self, "rotation", randf() * TAU, 0.3)
 
 --- SCRIPT: res://data/buildings/BuildingData.gd ---
 # res://data/buildings/BuildingData.gd
@@ -1048,6 +3142,67 @@ extends Resource
 ## Attacks per second.
 @export var attack_speed: float = 1.2
 
+--- SCRIPT: res://player/RTSCamera.gd ---
+# res://player/RTSCamera.gd
+# Basic RTS-style camera controller for Phase 3
+# Provides WASD movement and mouse edge panning
+# Keeps camera controls simple and focused on tactical gameplay
+
+extends Camera2D
+class_name RTSCamera
+
+@export var camera_speed: float = 400.0
+@export var edge_pan_margin: float = 20.0
+@export var enable_edge_panning: bool = true
+@export var enable_wasd_movement: bool = true
+
+# Movement bounds to keep camera on battlefield
+@export var bounds_enabled: bool = false
+@export var bounds_rect: Rect2 = Rect2(-500, -500, 1500, 1200)
+
+func _ready() -> void:
+	# Make this the current camera
+	make_current()
+
+func _process(delta: float) -> void:
+	var movement_vector := Vector2.ZERO
+	
+	# WASD camera movement (as specified in GDD Phase 3)
+	if enable_wasd_movement:
+		if Input.is_action_pressed("ui_left") or Input.is_key_pressed(KEY_A):
+			movement_vector.x -= 1
+		if Input.is_action_pressed("ui_right") or Input.is_key_pressed(KEY_D):
+			movement_vector.x += 1
+		if Input.is_action_pressed("ui_up") or Input.is_key_pressed(KEY_W):
+			movement_vector.y -= 1
+		if Input.is_action_pressed("ui_down") or Input.is_key_pressed(KEY_S):
+			movement_vector.y += 1
+	
+	# Mouse edge panning (common RTS feature)
+	if enable_edge_panning:
+		var mouse_pos = get_viewport().get_mouse_position()
+		var viewport_size = get_viewport().get_visible_rect().size
+		
+		if mouse_pos.x <= edge_pan_margin:
+			movement_vector.x -= 1
+		elif mouse_pos.x >= viewport_size.x - edge_pan_margin:
+			movement_vector.x += 1
+			
+		if mouse_pos.y <= edge_pan_margin:
+			movement_vector.y -= 1
+		elif mouse_pos.y >= viewport_size.y - edge_pan_margin:
+			movement_vector.y += 1
+	
+	# Apply movement
+	if movement_vector != Vector2.ZERO:
+		movement_vector = movement_vector.normalized()
+		global_position += movement_vector * camera_speed * delta
+		
+		# Apply bounds if enabled
+		if bounds_enabled:
+			global_position.x = clamp(global_position.x, bounds_rect.position.x, bounds_rect.position.x + bounds_rect.size.x)
+			global_position.y = clamp(global_position.y, bounds_rect.position.y, bounds_rect.position.y + bounds_rect.size.y)
+
 --- SCRIPT: res://player/RTSController.gd ---
 # res://player/RTSController.gd
 #
@@ -1062,12 +3217,30 @@ class_name RTSController
 
 var selected_units: Array[BaseUnit] = []
 var controllable_units: Array[BaseUnit] = []
+var current_formation: SquadFormation.FormationType = SquadFormation.FormationType.LINE
 
 func _ready() -> void:
 	# Connect to the clean signals from our new EventBus/SelectionBox
 	EventBus.select_command.connect(_on_select_command)
 	EventBus.move_command.connect(_on_move_command)
 	EventBus.attack_command.connect(_on_attack_command)
+
+func _input(event: InputEvent) -> void:
+	# Formation hotkeys
+	if event is InputEventKey and event.pressed:
+		match event.keycode:
+			KEY_1:
+				current_formation = SquadFormation.FormationType.LINE
+				print("Formation: LINE")
+			KEY_2:
+				current_formation = SquadFormation.FormationType.COLUMN
+				print("Formation: COLUMN")
+			KEY_3:
+				current_formation = SquadFormation.FormationType.WEDGE
+				print("Formation: WEDGE")
+			KEY_4:
+				current_formation = SquadFormation.FormationType.BOX
+				print("Formation: BOX")
 
 # --- PUBLIC API ---
 
@@ -1126,11 +3299,19 @@ func _on_select_command(select_rect: Rect2, is_box_select: bool) -> void:
 		return
 	
 	if is_box_select:
-		# Box select
+		# Box select - convert screen rect to world coordinates instead
+		# This is more reliable than converting world to screen for each unit
+		var camera_pos = main_camera.get_screen_center_position()
+		var camera_zoom = main_camera.zoom
+		var viewport_size = get_viewport().get_visible_rect().size
+		
+		# Convert screen rectangle to world coordinates
+		var world_rect_min = camera_pos - (viewport_size / (2.0 * camera_zoom)) + (select_rect.position / camera_zoom)
+		var world_rect_max = world_rect_min + (select_rect.size / camera_zoom)
+		var world_rect = Rect2(world_rect_min, world_rect_max - world_rect_min)
+		
 		for unit in controllable_units:
-			# Convert unit's world pos to screen pos
-			var screen_pos = main_camera.unproject_position(unit.global_position)
-			if select_rect.has_point(screen_pos):
+			if world_rect.has_point(unit.global_position):
 				selected_units.append(unit)
 				unit.set_selected(true)
 	else:
@@ -1154,10 +3335,20 @@ func _on_select_command(select_rect: Rect2, is_box_select: bool) -> void:
 func _on_move_command(target_position: Vector2) -> void:
 	if selected_units.is_empty():
 		return
+	
+	if selected_units.size() == 1:
+		# Single unit - direct movement
+		selected_units[0].command_move_to(target_position)
+	else:
+		# Multiple units - use formation
+		var units_as_node2d: Array[Node2D] = []
+		for unit in selected_units:
+			units_as_node2d.append(unit)
 		
-	# TODO: Add formation logic for movement
-	for unit in selected_units:
-		unit.command_move_to(target_position)
+		var formation = SquadFormation.new(units_as_node2d)
+		formation.formation_type = current_formation
+		formation.unit_spacing = 45.0
+		formation.move_to_position(target_position)
 
 func _on_attack_command(target_node: Node2D) -> void:
 	if selected_units.is_empty():
@@ -1187,6 +3378,11 @@ extends Node2D
 # --- Exported Mission Configuration ---
 @export var enemy_base_data: SettlementData
 @export var default_enemy_base_path: String = "res://data/settlements/monastery_base.tres"
+@export_group("Enemy Base Presets")
+@export var available_enemy_bases: Array[String] = [
+	"res://data/settlements/monastery_base.tres",
+	"res://data/settlements/fortress_base.tres"
+]
 @export var victory_bonus_loot: Dictionary = {"gold": 200}
 @export var player_spawn_formation: Dictionary = {"units_per_row": 5, "spacing": 40}
 @export var mission_difficulty: float = 1.0
@@ -1213,19 +3409,35 @@ var raid_loot: RaidLootData = null
 # -----------------
 
 func _ready() -> void:
-	# --- FIX FOR SETTLEMENTBRIDGE ---
-	# We check if our parent is the SettlementBridge.
-	# If so, we do *nothing* and wait for the parent
-	# to call initialize_mission() after it loads the settlement.
-	var parent = get_parent()
-	if parent and parent.get_script() and "SettlementBridge.gd" in parent.get_script().resource_path:
-		print("RaidMission: Running as child of SettlementBridge. Waiting for initialization...")
-		return
+	# Connect to the settlement_loaded signal - this works for both standalone and child scenarios
+	EventBus.settlement_loaded.connect(_on_settlement_ready_for_mission)
 	
-	# If we are NOT a child of the bridge, we are a standalone
-	# offensive mission. Initialize immediately.
-	print("RaidMission: Running as standalone scene. Initializing now.")
-	initialize_mission()
+	# If no settlement is currently loaded (standalone mode), load a test settlement
+	if not SettlementManager.has_current_settlement():
+		print("RaidMission: No current settlement - loading test settlement for standalone mode")
+		_load_test_settlement()
+		call_deferred("initialize_mission")
+	else:
+		print("RaidMission: Settlement already loaded - initializing mission")
+		call_deferred("initialize_mission")
+
+func _load_test_settlement() -> void:
+	"""Load a test settlement with garrison units for standalone testing"""
+	var test_settlement_path = "res://data/settlements/home_base_fixed.tres"
+	var test_settlement = load(test_settlement_path) as SettlementData
+	
+	if test_settlement:
+		print("RaidMission: Loading test settlement: %s" % test_settlement_path)
+		print("RaidMission: Test settlement garrison: %s" % test_settlement.garrisoned_units)
+		SettlementManager.load_settlement(test_settlement)
+	else:
+		push_error("RaidMission: Failed to load test settlement from %s" % test_settlement_path)
+
+func _on_settlement_ready_for_mission(settlement_data: SettlementData) -> void:
+	"""Called when settlement is loaded - only initialize if we haven't already"""
+	if not raid_loot:  # Check if we've already initialized
+		print("RaidMission: Settlement loaded - initializing mission")
+		initialize_mission()
 
 
 func initialize_mission() -> void:
@@ -1250,6 +3462,7 @@ func initialize_mission() -> void:
 			return
 	
 	_load_enemy_base()
+	_update_astar_grid_for_enemy_base()
 	_spawn_player_garrison()
 	_setup_win_loss_conditions()
 
@@ -1266,8 +3479,14 @@ func _load_enemy_base() -> void:
 		var building_res_path: String = building_entry["resource_path"]
 		var grid_pos: Vector2i = building_entry["grid_position"]
 		
-		var building_data: BuildingData = load(building_res_path)
-		if not building_data or not building_data.scene_to_spawn:
+		var loaded_resource = load(building_res_path)
+		var building_data: BuildingData = loaded_resource as BuildingData
+		
+		if not building_data:
+			push_error("Failed to load building resource as BuildingData: %s (loaded as %s)" % [building_res_path, loaded_resource.get_class() if loaded_resource else "null"])
+			continue
+		
+		if not building_data.scene_to_spawn:
 			push_error("Failed to load building: %s" % building_res_path)
 			continue
 		
@@ -1286,6 +3505,25 @@ func _load_enemy_base() -> void:
 		# Add to enemy groups for targeting
 		building_instance.add_to_group("enemy_buildings")
 		
+		# Set collision layer for right-click detection and targeting
+		if building_instance.has_method("set_collision_layer"):
+			building_instance.set_collision_layer(4)  # Layer 3 for enemy buildings
+			building_instance.set_collision_mask(0)   # Don't physically collide with anything
+			print("Building %s collision setup: layer=4, mask=0" % building_data.display_name)
+		else:
+			push_warning("Building %s does not have collision layer methods!" % building_data.display_name)
+		
+		# Verify collision shape exists
+		var collision_shape = building_instance.get_node("CollisionShape2D")
+		if collision_shape and collision_shape.shape:
+			print("Building %s has collision shape: %s" % [building_data.display_name, collision_shape.shape.get_class()])
+		else:
+			push_error("Building %s missing collision shape!" % building_data.display_name)
+		
+		# Add debug area for targeting verification
+		building_instance.set_meta("building_data", building_data)
+		building_instance.set_meta("is_enemy_building", true)
+		
 		# Check if this is the Great Hall (main target)
 		if building_data.display_name.to_lower().contains("hall"):
 			enemy_hall = building_instance
@@ -1296,10 +3534,47 @@ func _load_enemy_base() -> void:
 		
 		# Connect ALL buildings to loot collection system
 		if building_instance.has_signal("building_destroyed"):
-			building_instance.building_destroyed.connect(_on_enemy_building_destroyed.bind(building_data))
+			building_instance.building_destroyed.connect(_on_enemy_building_destroyed)
 		
 		# Add to scene
 		add_child(building_instance)
+
+func _update_astar_grid_for_enemy_base() -> void:
+	"""Update the A* pathfinding grid to account for enemy buildings"""
+	print("Updating A* grid for enemy base...")
+	
+	if not enemy_base_data:
+		return
+	
+	# Process each building to update pathfinding grid
+	for building_entry in enemy_base_data.placed_buildings:
+		var building_res_path: String = building_entry["resource_path"]
+		var grid_pos: Vector2i = building_entry["grid_position"]
+		
+		var building_data: BuildingData = load(building_res_path)
+		if not building_data:
+			continue
+		
+		# Only block pathfinding for buildings that should block movement
+		if building_data.blocks_pathfinding:
+			var grid_size: Vector2i = building_data.grid_size
+			
+			# Mark all grid cells occupied by this building as blocked
+			for x in range(grid_size.x):
+				for y in range(grid_size.y):
+					var cell_pos = Vector2i(grid_pos.x + x, grid_pos.y + y)
+					SettlementManager.set_astar_point_solid(cell_pos, true)
+			
+			print("Blocked pathfinding for %s at %s (size: %s)" % [
+				building_data.display_name, grid_pos, grid_size
+			])
+		else:
+			print("Building %s does not block pathfinding" % building_data.display_name)
+	
+	# Update the grid once after all buildings are processed
+	if SettlementManager.astar_grid:
+		SettlementManager.astar_grid.update()
+		print("A* grid updated for enemy base with %d buildings" % enemy_base_data.placed_buildings.size())
 
 func _spawn_player_garrison() -> void:
 	"""Spawn player units from the garrison"""
@@ -1428,11 +3703,41 @@ func _physics_process(delta: float) -> void:
 # The _setup_rts_controller() function is now gone.
 # -----------------
 
-func _on_enemy_building_destroyed(building_data: BuildingData) -> void:
-	"""Called when any enemy building is destroyed - collect loot"""
-	if raid_loot:
+func _on_enemy_building_destroyed(building: BaseBuilding) -> void:
+	"""Called when any enemy building is destroyed - collect loot and update grid"""
+	var building_data = building.data as BuildingData
+	
+	if raid_loot and building_data:
 		raid_loot.add_loot_from_building(building_data)
 		print("Building destroyed: %s | %s" % [building_data.display_name, raid_loot.get_loot_summary()])
+	
+	# Update pathfinding grid to make the area passable again
+	_clear_building_from_pathfinding_grid(building)
+	
+	# Count remaining buildings for mission tracking
+	var remaining_buildings = get_tree().get_nodes_in_group("enemy_buildings").size()
+	print("Buildings remaining: %d" % remaining_buildings)
+
+func _clear_building_from_pathfinding_grid(building: BaseBuilding) -> void:
+	"""Remove building's collision from pathfinding grid"""
+	if not building.data:
+		return
+		
+	# Calculate the grid position from the building's world position
+	var world_pos = building.global_position
+	var grid_pos = Vector2i((world_pos - Vector2(16, 16)) / 32)  # Reverse the positioning logic
+	var grid_size = building.data.grid_size
+	
+	# Clear all grid cells that were occupied by this building
+	for x in range(grid_size.x):
+		for y in range(grid_size.y):
+			var cell_pos = Vector2i(grid_pos.x + x, grid_pos.y + y)
+			SettlementManager.set_astar_point_solid(cell_pos, false)
+	
+	# Update the grid
+	if SettlementManager.astar_grid:
+		SettlementManager.astar_grid.update()
+		print("Cleared pathfinding for destroyed building at %s (size: %s)" % [grid_pos, grid_size])
 
 func _setup_win_loss_conditions() -> void:
 	"""Setup win/loss condition monitoring"""
@@ -1478,7 +3783,7 @@ func _on_mission_failed() -> void:
 	
 	# Return to settlement bridge
 	if settlement_bridge_scene:
-		get_tree().change_scene_to_packed(settlement_bridge_scene)
+		Engine.get_main_loop().change_scene_to_packed(settlement_bridge_scene)
 	else:
 		push_error("RaidMission: settlement_bridge_scene is not set! Cannot return to settlement.")
 
@@ -1517,7 +3822,7 @@ func _show_failure_message() -> void:
 	add_child(failure_popup)
 	print("Failure message displayed")
 
-func _on_enemy_hall_destroyed() -> void:
+func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	"""Called when the enemy's Great Hall is destroyed"""
 	print("Enemy Hall destroyed! Mission success!")
 	
@@ -1531,7 +3836,7 @@ func _on_enemy_hall_destroyed() -> void:
 	await get_tree().create_timer(2.0).timeout
 	
 	if settlement_bridge_scene:
-		get_tree().change_scene_to_packed(settlement_bridge_scene)
+		Engine.get_main_loop().change_scene_to_packed(settlement_bridge_scene)
 	else:
 		push_error("RaidMission: settlement_bridge_scene is not set! Cannot return to settlement.")
 
@@ -1742,6 +4047,9 @@ func change_state(new_state: State) -> void:
 	
 	_exit_state(current_state)
 	current_state = new_state
+	# Notify unit visuals of state change
+	if unit and unit.has_method("on_state_changed"):
+		unit.on_state_changed(current_state)
 	_enter_state(current_state)
 
 func _enter_state(state: State) -> void:
@@ -1774,6 +4082,9 @@ func _recalculate_path() -> void:
 	path = SettlementManager.get_astar_path(unit.global_position, target_position)
 	if path.is_empty():
 		print("Unit at %s failed to find a path to %s." % [unit.global_position, target_position])
+		# Visual error feedback
+		if unit and unit.has_method("flash_error_color"):
+			unit.flash_error_color()
 		# If we can't find a path, check if we're already close to the target
 		if unit.global_position.distance_to(target_position) < (unit.data.attack_range + 16):
 			if target_unit:
@@ -1800,6 +4111,8 @@ func command_attack(target: Node2D) -> void:
 	
 	if not is_instance_valid(target):
 		print("Cannot attack invalid target")
+		if unit and unit.has_method("flash_error_color"):
+			unit.flash_error_color()
 		return
 		
 	target_unit = target
@@ -1837,6 +4150,12 @@ func _move_state(delta: float) -> void:
 	# First priority: Check if we have a valid attack target and are in range
 	if is_instance_valid(target_unit):
 		var distance_to_target: float = unit.global_position.distance_to(target_unit.global_position)
+		print("DEBUG MOVE: %s distance to %s: %.1f (range: %.1f)" % [
+			unit.data.display_name, 
+			target_unit.name, 
+			distance_to_target, 
+			unit.data.attack_range
+		])
 		if distance_to_target <= unit.data.attack_range:
 			print("Unit in attack range, switching to ATTACKING.")
 			change_state(State.ATTACKING)
@@ -1901,7 +4220,7 @@ func _attack_state(_delta: float) -> void:
 	var distance_to_target: float = unit.global_position.distance_to(target_unit.global_position)
 	print("DEBUG: Distance to target: %s, Attack range: %s" % [distance_to_target, unit.data.attack_range])
 	
-	if distance_to_target > unit.data.attack_range + 16: # Small buffer to avoid oscillation
+	if distance_to_target > unit.data.attack_range + 8: # Reduced buffer to avoid oscillation
 		print("%s target moved out of range. Re-engaging." % unit.data.display_name)
 		target_position = target_unit.global_position
 		change_state(State.MOVING)
@@ -1930,6 +4249,8 @@ func _on_attack_timer_timeout() -> void:
 			print("Target %s does not have take_damage method" % target_unit.name)
 	else:
 		print("Attack timer fired but no valid target")
+		if unit and unit.has_method("flash_error_color"):
+			unit.flash_error_color()
 		change_state(State.IDLE)
 
 --- SCRIPT: res://scripts/buildings/SettlementBridge.gd ---
@@ -1948,7 +4269,8 @@ extends Node
 
 # --- Default Assets (fallback) ---
 var default_test_building: BuildingData = preload("res://data/buildings/Bldg_Wall.tres")
-var default_raider_scene: PackedScene = preload("res://scenes/units/VikingRaider.tscn")
+# --- FIX: Removed preload() to break circular dependency ---
+var default_raider_scene: PackedScene 
 var default_welcome_popup: PackedScene = preload("res://ui/WelcomeHome_Popup.tscn")
 
 # --- Scene Node References ---
@@ -1967,54 +4289,90 @@ const RAIDER_SPAWN_POS: Vector2 = Vector2(50, 50)
 
 
 func _ready() -> void:
-	# --- Deferred Setup ---
-	await get_tree().process_frame
-	
+	_setup_default_resources()
+	_initialize_settlement()
+	_setup_ui()
+	_connect_signals()
+	_handle_welcome_payout()
+
+func _setup_default_resources() -> void:
+	"""Initialize default resources and handle missing inspector assignments"""
 	# Setup fallback resources if not set in inspector
 	if not test_building_data:
 		test_building_data = default_test_building
+	
+	# Load the default raider scene at runtime to avoid circular dependencies
 	if not raider_scene:
-		raider_scene = default_raider_scene
+		raider_scene = load("res://scenes/units/VikingRaider.tscn")
+		
 	if not welcome_popup_scene:
 		welcome_popup_scene = default_welcome_popup
-	
+
+func _initialize_settlement() -> void:
+	"""Initialize or load settlement data"""
 	# Use inspector data if available, otherwise create default
 	if not home_base_data:
-		home_base_data = SettlementData.new()
-		home_base_data.treasury = {"gold": 1000, "wood": 500, "food": 100, "stone": 200}
-		home_base_data.placed_buildings = []
-		home_base_data.garrisoned_units = {}
-		print("DEBUG: Created default settlement data")
+		home_base_data = _create_default_settlement()
+		print("SettlementBridge: Created default settlement data")
 	else:
-		print("DEBUG: Using inspector settlement data")
+		# Verify inspector data is valid
+		if not home_base_data is SettlementData:
+			push_warning("SettlementBridge: Inspector data is not SettlementData, creating default")
+			home_base_data = _create_default_settlement()
+		else:
+			print("SettlementBridge: Using inspector settlement data")
 	
+	# Ensure resource path is set for saving
+	if home_base_data and (not home_base_data.resource_path or home_base_data.resource_path.is_empty()):
+		# Set the resource path based on the expected file name
+		home_base_data.resource_path = "res://data/settlements/home_base_fixed.tres"
+		print("SettlementBridge: Set resource_path to: %s" % home_base_data.resource_path)
+	
+	# Load the settlement into the manager
 	SettlementManager.load_settlement(home_base_data)
-	print("DEBUG: SettlementManager.current_settlement is: ", SettlementManager.current_settlement)
 	
-	# --- THIS IS THE FIX ---
-	# Now that the settlement is loaded, manually initialize
-	# the defensive mission child node.
-	if $DefensiveMicro.has_method("initialize_mission"):
-		$DefensiveMicro.initialize_mission()
-	else:
-		push_error("SettlementBridge: Child node DefensiveMicro is missing initialize_mission()!")
-	# -----------------------
+	# Let child nodes handle their own initialization via signals
+	EventBus.settlement_loaded.emit(home_base_data)
+
+func _create_default_settlement() -> SettlementData:
+	"""Create a default settlement with basic resources"""
+	var settlement = SettlementData.new()
+	settlement.treasury = {"gold": 1000, "wood": 500, "food": 100, "stone": 200}
+	var empty_buildings: Array[Dictionary] = []
+	settlement.placed_buildings = empty_buildings
+	settlement.garrisoned_units = {}
 	
-	_find_and_setup_great_hall()
-	_instance_ui()
+	# Set resource path for saving
+	settlement.resource_path = "res://data/settlements/home_base_fixed.tres"
 	
-	# --- Connect Signals ---
+	return settlement
+
+func _setup_ui() -> void:
+	"""Initialize UI components"""
+	welcome_popup = welcome_popup_scene.instantiate()
+	ui_layer.add_child(welcome_popup)
+	welcome_popup.collect_button_pressed.connect(_on_payout_collected)
+
+func _connect_signals() -> void:
+	"""Connect button signals"""
 	restart_button.pressed.connect(_on_restart_pressed)
 	start_attack_button.pressed.connect(_on_start_attack_pressed)
 	start_raid_button.pressed.connect(_on_start_raid_pressed)
+	
+	# Connect to EventBus for loose coupling
+	EventBus.settlement_loaded.connect(_on_settlement_loaded)
 
-	# --- Payout Logic ---
-	# This now happens when the scene loads, simulating the return from an attack.
+func _handle_welcome_payout() -> void:
+	"""Handle any pending payout when returning to settlement"""
 	var payout = SettlementManager.calculate_payout()
 	if not payout.is_empty():
 		welcome_popup.display_payout(payout)
 		start_attack_button.disabled = true # Disable combat until payout is collected
 		storefront_ui.hide()
+
+func _on_settlement_loaded(_settlement_data: SettlementData) -> void:
+	"""Called when settlement is fully loaded - find and setup buildings"""
+	call_deferred("_find_and_setup_great_hall")
 
 
 func _input(event: InputEvent) -> void:
@@ -2042,15 +4400,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 		
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.is_pressed():
-		var mouse_pos: Vector2 = get_viewport().get_mouse_position()
-		var grid_pos: Vector2i = Vector2i(mouse_pos / SettlementManager.astar_grid.cell_size)
-		SettlementManager.place_building(test_building_data, grid_pos)
-		get_viewport().set_input_as_handled()
+		if SettlementManager.astar_grid and SettlementManager.astar_grid.cell_size != Vector2.ZERO:
+			var mouse_pos: Vector2 = get_viewport().get_mouse_position()
+			var grid_pos: Vector2i = Vector2i(mouse_pos / SettlementManager.astar_grid.cell_size)
+			SettlementManager.place_building(test_building_data, grid_pos)
+			get_viewport().set_input_as_handled()
+		else:
+			print("Cannot place building: AStarGrid not initialized")
 
-func _instance_ui() -> void:
-	welcome_popup = welcome_popup_scene.instantiate()
-	ui_layer.add_child(welcome_popup)
-	welcome_popup.collect_button_pressed.connect(_on_payout_collected)
+
 
 func _on_payout_collected(payout: Dictionary) -> void:
 	SettlementManager.deposit_resources(payout)
@@ -2110,6 +4468,7 @@ func _on_start_raid_pressed() -> void:
 		push_error("Cannot open world map: No settlement loaded")
 		return
 	
+	
 	# Ensure we have some units in the garrison for raiding
 	if SettlementManager.current_settlement.garrisoned_units.is_empty():
 		print("Warning: No units in garrison. Adding test unit.")
@@ -2124,7 +4483,9 @@ func _on_start_raid_pressed() -> void:
 	if world_map_scene:
 		get_tree().change_scene_to_packed(world_map_scene)
 	else:
-		push_error("SettlementBridge: world_map_scene is not set! Cannot open world map.")
+		# Fallback: load world map directly if not set in inspector
+		print("world_map_scene not set, loading WorldMap_Stub directly")
+		get_tree().change_scene_to_file("res://scenes/world_map/WorldMap_Stub.tscn")
 
 --- SCRIPT: res://scripts/formations/SquadFormation.gd ---
 # res://scripts/formations/SquadFormation.gd
@@ -2388,17 +4749,29 @@ func get_formation_info() -> Dictionary:
 --- SCRIPT: res://scripts/units/Base_Unit.gd ---
 # res://scenes/units/Base_Unit.gd
 #
-# --- MODIFIED: Added AttackTimer reference ---
+# --- MODIFIED: Added AttackTimer reference and visual tweening by state ---
 
 class_name BaseUnit
 extends CharacterBody2D
+
+signal destroyed
 
 @export var data: UnitData
 var fsm: UnitFSM
 var current_health: int = 50
 
-# --- ADDED ---
+# Node refs
 @onready var attack_timer: Timer = $AttackTimer
+@onready var sprite: Sprite2D = $Sprite2D
+
+# Color tweening
+var _color_tween: Tween
+const STATE_COLORS := {
+	UnitFSM.State.IDLE: Color(0.3, 0.6, 1.0),     # Blue
+	UnitFSM.State.MOVING: Color(0.4, 1.0, 0.4),   # Green
+	UnitFSM.State.ATTACKING: Color(1.0, 0.3, 0.3) # Red
+}
+const ERROR_COLOR := Color(0.7, 0.3, 1.0)        # Purple
 
 func _ready() -> void:
 	if not data:
@@ -2407,9 +4780,11 @@ func _ready() -> void:
 	
 	current_health = data.max_health
 	
-	# --- MODIFIED ---
 	# Pass the timer reference to the FSM
 	fsm = UnitFSM.new(self, attack_timer)
+	
+	# Initialize visual to current state color (IDLE by default)
+	sprite.modulate = STATE_COLORS.get(UnitFSM.State.IDLE, Color.WHITE)
 	
 	EventBus.pathfinding_grid_updated.connect(_on_grid_updated)
 
@@ -2429,6 +4804,24 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector2.ZERO
 		move_and_slide()
 
+# --- Visual State Hooks ---
+func on_state_changed(state: UnitFSM.State) -> void:
+	var to_color: Color = STATE_COLORS.get(state, Color.WHITE)
+	_tween_color(to_color, 0.2)
+
+func flash_error_color() -> void:
+	# Quick flash to purple, then return to current state color
+	var back_color: Color = STATE_COLORS.get(fsm.current_state, Color.WHITE)
+	var t := create_tween()
+	t.tween_property(sprite, "modulate", ERROR_COLOR, 0.08).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	t.tween_property(sprite, "modulate", back_color, 0.18).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+func _tween_color(to_color: Color, duration: float = 0.2) -> void:
+	if _color_tween and _color_tween.is_running():
+		_color_tween.kill()
+	_color_tween = create_tween()
+	_color_tween.tween_property(sprite, "modulate", to_color, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
 func take_damage(amount: int) -> void:
 	current_health = max(0, current_health - amount)
 	print("%s took %d damage, %d HP remaining." % [data.display_name, amount, current_health])
@@ -2437,6 +4830,7 @@ func take_damage(amount: int) -> void:
 
 func die() -> void:
 	print("%s has been killed." % data.display_name)
+	destroyed.emit()
 	queue_free()
 
 # --- RTS Command Interface ---
@@ -2618,6 +5012,120 @@ func die() -> void:
 	# Call parent die method
 	super.die()
 
+--- SCRIPT: res://test_phase3.gd ---
+# Test script for Phase 3 functionality
+extends Node
+
+func _ready():
+	print("=== PHASE 3 TEST STARTING ===")
+	test_garrison_system()
+	test_raid_system()
+
+func test_garrison_system():
+	print("\n--- Testing Garrison System (Pillar 1) ---")
+	if SettlementManager.current_settlement:
+		print("Current treasury: %s" % SettlementManager.current_settlement.treasury)
+		print("Current garrison: %s" % SettlementManager.current_settlement.garrisoned_units)
+		
+		# Test unit recruitment
+		var player_unit_data = load("res://data/units/Unit_PlayerRaider.tres") as UnitData
+		if player_unit_data:
+			print("Found player unit data: %s" % player_unit_data.display_name)
+			print("Unit spawn cost: %s" % player_unit_data.spawn_cost)
+			
+			# Try to recruit one unit
+			if SettlementManager.attempt_purchase(player_unit_data.spawn_cost):
+				SettlementManager.recruit_unit(player_unit_data)
+				print("Successfully recruited %s!" % player_unit_data.display_name)
+			else:
+				print("Cannot afford to recruit %s" % player_unit_data.display_name)
+		else:
+			print("ERROR: Could not load player unit data")
+	else:
+		print("ERROR: No settlement loaded")
+
+func test_raid_system():
+	print("\n--- Testing Raid System (Pillar 3) ---")
+	if SettlementManager.current_settlement:
+		var garrison = SettlementManager.current_settlement.garrisoned_units
+		if not garrison.is_empty():
+			print("Garrison ready for raid with %d unit types" % garrison.size())
+			var total_units = 0
+			for unit_path in garrison:
+				total_units += garrison[unit_path]
+			print("Total units available: %d" % total_units)
+			print("Phase 3 raid system ready!")
+		else:
+			print("No units in garrison - cannot start raid")
+	else:
+		print("ERROR: No settlement loaded")
+	
+	print("\n=== PHASE 3 TEST COMPLETE ===")
+
+--- SCRIPT: res://tools/EnemyBaseEditor.gd ---
+@tool
+extends EditorScript
+
+# Simple Enemy Base Layout Editor
+# Usage: Tools -> Execute Script to run this
+
+func _run():
+	print("=== ENEMY BASE LAYOUT EDITOR ===")
+	
+	var settlement_path = "res://data/settlements/monastery_base.tres"
+	var settlement_data: SettlementData = load(settlement_path)
+	
+	if not settlement_data:
+		print("ERROR: Could not load settlement data!")
+		return
+	
+	print("Current layout for: " + settlement_path)
+	print("Grid positions (format: Building @ X,Y):")
+	print("-".repeat(40))
+	
+	for i in range(settlement_data.placed_buildings.size()):
+		var building = settlement_data.placed_buildings[i]
+		var pos = building["grid_position"]
+		var building_data: BuildingData = load(building["resource_path"])
+		var name = building_data.display_name if building_data else "Unknown"
+		
+		print("%d. %s @ %d,%d" % [i+1, name, pos.x, pos.y])
+	
+	print("-".repeat(40))
+	print("To modify layout:")
+	print("1. Edit grid_position values in the .tres file")
+	print("2. Or use this script to create new layouts")
+	print("3. Grid range: 0-%d (width), 0-%d (height)" % [
+		SettlementManager.grid_width-1, 
+		SettlementManager.grid_height-1
+	])
+
+# Helper function to create new enemy base layouts
+static func create_enemy_base_layout(buildings: Array[Dictionary], save_path: String):
+	var settlement = SettlementData.new()
+	settlement.treasury = {"gold": 500, "wood": 200, "food": 150, "stone": 100}
+	settlement.placed_buildings = buildings
+	
+	ResourceSaver.save(settlement, save_path)
+	print("Created new enemy base: " + save_path)
+
+# Example usage:
+# EnemyBaseEditor.create_fortress_layout()
+static func create_fortress_layout():
+	var buildings = [
+		{"grid_position": Vector2i(30, 20), "resource_path": "res://data/buildings/Bldg_GreatHall.tres"},
+		{"grid_position": Vector2i(29, 19), "resource_path": "res://data/buildings/Bldg_Wall.tres"},
+		{"grid_position": Vector2i(30, 19), "resource_path": "res://data/buildings/Bldg_Wall.tres"},
+		{"grid_position": Vector2i(31, 19), "resource_path": "res://data/buildings/Bldg_Wall.tres"},
+		{"grid_position": Vector2i(29, 21), "resource_path": "res://data/buildings/Bldg_Wall.tres"},
+		{"grid_position": Vector2i(30, 21), "resource_path": "res://data/buildings/Bldg_Wall.tres"},
+		{"grid_position": Vector2i(31, 21), "resource_path": "res://data/buildings/Bldg_Wall.tres"},
+		{"grid_position": Vector2i(28, 20), "resource_path": "res://data/buildings/LumberYard.tres"},
+		{"grid_position": Vector2i(32, 20), "resource_path": "res://data/buildings/LumberYard.tres"},
+	]
+	
+	create_enemy_base_layout(buildings, "res://data/settlements/fortress_base.tres")
+
 --- SCRIPT: res://ui/SelectionBox.gd ---
 # res://ui/SelectionBox.gd
 # This Control node covers the entire screen. It listens for
@@ -2782,6 +5290,7 @@ func _setup_recruit_buttons() -> void:
 	for unit_data in available_units:
 		var button = Button.new()
 		button.text = "%s (Cost: %s)" % [unit_data.display_name, _format_cost(unit_data.spawn_cost)]
+		button.custom_minimum_size = Vector2(200, 36)
 		button.pressed.connect(_on_recruit_button_pressed.bind(unit_data))
 		recruit_buttons_container.add_child(button)
 
@@ -2819,6 +5328,46 @@ func _format_cost(cost: Dictionary) -> String:
 		cost_parts.append("%d %s" % [cost[resource], resource])
 	return ", ".join(cost_parts)
 
+func _get_safe_placement_position() -> Vector2i:
+	"""Find a safe position to place a building, avoiding overlaps"""
+	if not SettlementManager.current_settlement:
+		return Vector2i(10, 15) # Fallback position
+	
+	# Get grid bounds from SettlementManager
+	var grid_width = SettlementManager.grid_width
+	var grid_height = SettlementManager.grid_height
+	
+	# Create a set of occupied positions for quick lookup
+	var occupied_positions: Array[Vector2i] = []
+	for building_entry in SettlementManager.current_settlement.placed_buildings:
+		occupied_positions.append(building_entry["grid_position"])
+	
+	# Find the first available position using a spiral search pattern
+	var center_x = grid_width / 2
+	var center_y = grid_height / 2
+	var max_radius = min(grid_width, grid_height) / 2
+	
+	# Start from center and spiral outward
+	for radius in range(1, max_radius + 1):
+		for angle_step in range(8 * radius): # More points for larger radii
+			var angle = (angle_step * 2.0 * PI) / (8 * radius)
+			var test_x = center_x + int(radius * cos(angle))
+			var test_y = center_y + int(radius * sin(angle))
+			var test_pos = Vector2i(test_x, test_y)
+			
+			# Check bounds
+			if test_pos.x < 0 or test_pos.x >= grid_width or test_pos.y < 0 or test_pos.y >= grid_height:
+				continue
+			
+			# Check if position is free
+			if not test_pos in occupied_positions:
+				print("Found safe placement position: %s" % test_pos)
+				return test_pos
+	
+	# If no free position found, use a fallback with warning
+	push_warning("No free placement position found, using fallback")
+	return Vector2i(10, 15)
+
 func _update_treasury_display(new_treasury: Dictionary) -> void:
 	gold_label.text = "Gold: %d" % new_treasury.get("gold", 0)
 	wood_label.text = "Wood: %d" % new_treasury.get("wood", 0)
@@ -2834,16 +5383,16 @@ func _on_buy_button_pressed(item_data: BuildingData) -> void:
 	
 	if purchase_successful:
 		print("UI received purchase confirmation for '%s'." % item_data.display_name)
-		var test_grid_pos = Vector2i(10, 15) # TODO: Replace with player input
-		var new_building = SettlementManager.place_building(item_data, test_grid_pos)
+		var placement_pos = _get_safe_placement_position()
+		var new_building = SettlementManager.place_building(item_data, placement_pos)
 		
 		if new_building and SettlementManager.current_settlement:
 			var building_entry = {
 				"resource_path": item_data.resource_path,
-				"grid_position": test_grid_pos
+				"grid_position": placement_pos
 			}
 			SettlementManager.current_settlement.placed_buildings.append(building_entry)
-			print("Added %s to persistent settlement data." % item_data.display_name)
+			print("Added %s to persistent settlement data at %s." % [item_data.display_name, placement_pos])
 			SettlementManager.save_settlement()
 	else:
 		print("UI received purchase failure for '%s'." % item_data.display_name)

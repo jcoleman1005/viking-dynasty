@@ -40,3 +40,10 @@ signal move_command(target_position: Vector2)
 
 # Emitted on right-click on an enemy
 signal attack_command(target_node: Node2D)
+
+# --- NEW: Building Cursor System Signals ---
+# Emitted when a building is purchased and ready for cursor placement
+signal building_ready_for_placement(building_data: BuildingData)
+
+# Emitted when building placement is cancelled (should refund cost)
+signal building_placement_cancelled(building_data: BuildingData)

@@ -1,14 +1,14 @@
-[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://okf2novkg804"]
+[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://6kk36f5nlwns"]
 
-[ext_resource type="Script" uid="uid://hlb8s5g0yp6k" path="res://data/settlements/SettlementData.gd" id="1_pnvr3"]
+[ext_resource type="Script" uid="uid://hlb8s5g0yp6k" path="res://data/settlements/SettlementData.gd" id="1_settlement_data"]
 
 [resource]
-script = ExtResource("1_pnvr3")
+script = ExtResource("1_settlement_data")
 treasury = {
-"food": 200,
-"gold": 1000,
-"stone": 300,
-"wood": 500
+"food": 300,
+"gold": 800,
+"stone": 200,
+"wood": 400
 }
 placed_buildings = Array[Dictionary]([{
 "grid_position": Vector2i(10, 10),
@@ -29,12 +29,6 @@ placed_buildings = Array[Dictionary]([{
 "grid_position": Vector2i(6, 5),
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
 }, {
-"grid_position": Vector2i(8, 5),
-"resource_path": "res://data/buildings/Bldg_Wall.tres"
-}, {
-"grid_position": Vector2i(12, 5),
-"resource_path": "res://data/buildings/Bldg_Wall.tres"
-}, {
 "grid_position": Vector2i(14, 5),
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
 }, {
@@ -42,12 +36,6 @@ placed_buildings = Array[Dictionary]([{
 "resource_path": "res://data/buildings/Monastery_Watchtower.tres"
 }, {
 "grid_position": Vector2i(15, 4),
-"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
-}, {
-"grid_position": Vector2i(5, 15),
-"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
-}, {
-"grid_position": Vector2i(15, 15),
 "resource_path": "res://data/buildings/Monastery_Watchtower.tres"
 }])
 garrisoned_units = {
