@@ -1,9 +1,18 @@
-[gd_resource type="Resource" script_class="UnitData" load_steps=2 format=3 uid="uid://brnbvjwnoyh3j"]
+[gd_resource type="Resource" script_class="UnitData" load_steps=3 format=3 uid="uid://brnbvjwnoyh3j"]
 
-[ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="1_tcvvg"]
+[ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="1_abcde"]
+[ext_resource type="PackedScene" uid="uid://dsv0s4yq8c8m5" path="res://scenes/units/VikingRaider.tscn" id="2_spawn_scene"]
 
 [resource]
-script = ExtResource("1_tcvvg")
+script = ExtResource("1_abcde")
 display_name = "Viking Raider"
+scene_to_spawn = ExtResource("2_spawn_scene")
+spawn_cost = {
+"food": 30,
+"gold": 15
+}
+max_health = 60
+move_speed = 100.0
+attack_damage = 15
 attack_range = 50.0
-metadata/_custom_type_script = "uid://cq155t20ujb2j"
+attack_speed = 1.0

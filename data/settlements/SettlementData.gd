@@ -6,3 +6,7 @@ class_name SettlementData
 # Stores building data and position. Structure:
 # {"resource_path": "res://...", "grid_position": Vector2i(x, y)}
 @export var placed_buildings: Array[Dictionary] = []
+
+# Stores unit type (path) and count (int)
+# Example: {"res://data/units/Unit_Raider.tres": 3}
+@export var garrisoned_units: Dictionary = {}

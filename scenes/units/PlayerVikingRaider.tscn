@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3 uid="uid://cfanwutbtfcp2"]
+
+[ext_resource type="PackedScene" uid="uid://bky4c6y8fkk8g" path="res://scenes/units/Base_Unit.tscn" id="1_base"]
+[ext_resource type="Script" uid="uid://btumxrbbibjx8" path="res://scripts/units/PlayerVikingRaider.gd" id="2_script"]
+
+[node name="PlayerVikingRaider" instance=ExtResource("1_base")]
+script = ExtResource("2_script")
+
+[node name="Sprite2D" parent="." index="0"]
+scale = Vector2(0.058593735, 0.06152343)

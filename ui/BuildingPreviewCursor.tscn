@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://c3spjoajs73th"]
+
+[ext_resource type="Script" uid="uid://c4bv8okjkvtt7" path="res://scripts/ui/BuildingPreviewCursor.gd" id="1"]
+
+[node name="BuildingPreviewCursor" type="Node2D"]
+script = ExtResource("1")

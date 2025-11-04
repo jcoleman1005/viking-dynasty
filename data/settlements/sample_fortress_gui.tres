@@ -1,0 +1,58 @@
+[gd_resource type="SettlementData" script_class="SettlementData" load_steps=2 format=3 uid="uid://cl3pbg7tiqyng"]
+
+[ext_resource type="Script" uid="uid://hlb8s5g0yp6k" path="res://data/settlements/SettlementData.gd" id="1"]
+
+[resource]
+resource_local_to_scene = false
+resource_name = ""
+script = ExtResource("1")
+treasury = {
+"food": 300,
+"gold": 1000,
+"stone": 400,
+"wood": 500
+}
+placed_buildings = Array[Dictionary]([{
+"grid_position": Vector2i(30, 20),
+"resource_path": "res://data/buildings/Bldg_GreatHall.tres"
+}, {
+"grid_position": Vector2i(29, 19),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(30, 19),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(31, 19),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(29, 21),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(30, 21),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(31, 21),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(28, 18),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(32, 18),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(28, 22),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(32, 22),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(27, 20),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(33, 20),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}])
+garrisoned_units = {
+"res://data/units/Base_Unit.tres": 4,
+"res://data/units/VikingRaider.tres": 8
+}

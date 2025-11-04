@@ -16,6 +16,9 @@ extends Resource
 ## The icon shown in the build menu.
 @export var icon: Texture2D
 
+## Texture shown on screen
+@export var building_texture: Texture2D
+
 ## The cost in 'Resources' (e.g., wood, gold) to build this.
 @export var build_cost: Dictionary
 

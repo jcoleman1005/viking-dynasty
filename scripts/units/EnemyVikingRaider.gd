@@ -16,7 +16,7 @@ func set_attack_target(target: BaseBuilding) -> void:
 		return
 
 	# Set the node (for attacking)
-	fsm.target_node = target
+	fsm.target_unit = target
 	
 	# --- THIS IS THE FIX ---
 	# Set the position (for moving) to be one tile *below*
@@ -25,5 +25,5 @@ func set_attack_target(target: BaseBuilding) -> void:
 	fsm.target_position = target.global_position + Vector2(0, 32)
 	
 	# Start the FSM
-	fsm.change_state(UnitFSM.State.MOVE)
+	fsm.change_state(UnitFSM.State.MOVING)
 	print("Viking Raider initialized and moving to target: %s" % target.data.display_name)
