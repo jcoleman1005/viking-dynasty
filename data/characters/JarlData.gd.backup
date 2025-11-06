@@ -139,7 +139,7 @@ func get_effective_skill(skill_name: String) -> int:
 	for trait in traits:
 		if trait == null:
 			continue
-		
+			
 		match skill_name.to_lower():
 			"command":
 				trait_modifier += trait.command_modifier
@@ -162,12 +162,69 @@ func add_trait(trait_data: TraitData) -> void:
 	traits.append(trait_data)
 
 
+## Remove a trait from the Jarl by TraitData reference
+func remove_trait(trait_data: TraitData) -> void:
+	var index = traits.find(trait_data)
+	if index >= 0:
+		traits.remove_at(index)
+
+
+## Remove a trait from the Jarl by display name
+func remove_trait_by_name(trait_name: String) -> void:
+	for i in range(traits.size() - 1, -1, -1):
+		if traits[i] != null and traits[i].display_name == trait_name:
+			traits.remove_at(i)
+			break
+
+
 ## Check if Jarl has a specific trait by display name
 func has_trait(trait_name: String) -> bool:
 	for trait in traits:
 		if trait != null and trait.display_name == trait_name:
 			return true
 	return false
+
+
+## Check if Jarl has a trait with specific behavior flags
+func has_wounded_trait() -> bool:
+	for trait in traits:
+		if trait != null and trait.is_wounded_trait:
+			return true
+	return false
+
+
+func has_dishonorable_trait() -> bool:
+	for trait in traits:
+		if trait != null and trait.is_dishonorable_trait:
+			return true
+	return false
+
+
+## Get total renown per year modifier from all traits
+func get_total_renown_modifier() -> float:
+	var total: float = 0.0
+	for trait in traits:
+		if trait != null:
+			total += trait.renown_per_year_modifier
+	return total
+
+
+## Get total vassal opinion modifier from all traits
+func get_total_vassal_opinion_modifier() -> int:
+	var total: int = 0
+	for trait in traits:
+		if trait != null:
+			total += trait.vassal_opinion_modifier
+	return total
+
+
+## Get alliance cost modifier (multiplicative)
+func get_alliance_cost_modifier() -> float:
+	var multiplier: float = 1.0
+	for trait in traits:
+		if trait != null:
+			multiplier *= trait.alliance_cost_modifier
+	return multiplier
 
 
 ## Get the Jarl's Authority cap based on Renown Tier (GDD reference)

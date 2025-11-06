@@ -1,0 +1,16 @@
+[gd_resource type="TraitData" format=3 uid="uid://c6a8qce5fgub0"]
+
+[resource]
+resource_local_to_scene = false
+resource_name = ""
+display_name = "Legendary"
+description = "This character has achieved legendary status through glorious deeds and successful raids."
+is_visible = true
+command_modifier = 5
+stewardship_modifier = 2
+intrigue_modifier = 3
+renown_per_year_modifier = 5.0
+vassal_opinion_modifier = 20
+alliance_cost_modifier = 0.8
+is_wounded_trait = false
+is_dishonorable_trait = false

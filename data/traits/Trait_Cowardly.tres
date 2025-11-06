@@ -1,0 +1,16 @@
+[gd_resource type="TraitData" format=3 uid="uid://bivw1rejl06qi"]
+
+[resource]
+resource_local_to_scene = false
+resource_name = ""
+display_name = "Cowardly"
+description = "This character has shown cowardice in battle, losing the respect of their people."
+is_visible = true
+command_modifier = -3
+stewardship_modifier = 0
+intrigue_modifier = 0
+renown_per_year_modifier = -2.0
+vassal_opinion_modifier = -10
+alliance_cost_modifier = 1.2
+is_wounded_trait = false
+is_dishonorable_trait = true
