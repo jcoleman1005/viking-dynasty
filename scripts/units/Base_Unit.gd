@@ -1,4 +1,4 @@
-# res://scenes/units/Base_Unit.gd
+# res://scripts/units/Base_Unit.gd
 #
 # --- MODIFIED: Added auto-scaling for texture and collision ---
 

@@ -8,7 +8,7 @@ var preview_sprite: Sprite2D
 var is_active: bool = false
 
 # Grid and placement
-var cell_size: int = 32 # Default fallback
+var cell_size: int = 32 # This is now SET by the scene (e.g., SettlementBridge)
 var grid_overlay: Node2D
 var can_place: bool = false
 
@@ -28,21 +28,20 @@ func _ready() -> void:
 	grid_overlay.name = "GridOverlay"
 	add_child(grid_overlay)
 	
-	# --- MODIFIED: Unify grid size source (from review) ---
-	# Use SettlementManager as the single source of truth for grid size.
-	if SettlementManager and SettlementManager.tile_size > 0:
-		cell_size = int(SettlementManager.tile_size)
-	else:
-		# Use the local 32 only as a fallback if the manager fails
-		push_warning("BuildingPreviewCursor: SettlementManager not ready or tile_size invalid. Defaulting to %d." % cell_size)
-	# --- END MODIFICATION ---
-	
-	print("BuildingPreviewCursor ready with cell_size: %d" % cell_size)
+	# --- THIS IS THE FIX ---
+	# Removed dependency on SettlementManager.tile_size
+	# The 'cell_size' var will be set externally by SettlementBridge.gd
+	# -----------------------
+	print("BuildingPreviewCursor ready. Waiting for cell_size to be set.")
 
 func set_building_preview(building_data: BuildingData) -> void:
 	"""Start building placement mode with the specified building"""
 	if not building_data:
 		print("ERROR: No building data provided to set_building_preview")
+		return
+	
+	if cell_size <= 0:
+		push_error("BuildingPreviewCursor: cell_size is not set! Cannot create preview.")
 		return
 	
 	print("Setting building preview for: %s" % building_data.display_name)
@@ -58,7 +57,6 @@ func set_building_preview(building_data: BuildingData) -> void:
 	# Set up the building texture
 	if building_data.building_texture:
 		preview_sprite.texture = building_data.building_texture
-		# print("Using building texture for preview") # No longer needed
 	else:
 		# Create a simple colored rectangle if no texture
 		var texture = _create_building_texture(building_data)
@@ -69,7 +67,6 @@ func set_building_preview(building_data: BuildingData) -> void:
 	# --- Automatic Scaling Logic ---
 	
 	# 1. Get the target size based on grid
-	# We can now safely use our local 'cell_size' because it's synced.
 	var target_size: Vector2 = Vector2(building_data.grid_size) * cell_size
 	
 	# 2. Scale the Sprite (if texture exists)
@@ -92,14 +89,11 @@ func set_building_preview(building_data: BuildingData) -> void:
 	add_child(preview_sprite)
 	
 	# Create grid outline to show building footprint
-	# This now correctly uses the synced 'cell_size'
 	_create_grid_outline(building_data.grid_size)
 	
 	# Activate placement mode
 	is_active = true
 	visible = true
-	
-	# print("Building preview activated for %s (grid size: %s)" % [building_data.display_name, building_data.grid_size])
 
 func _create_building_texture(building_data: BuildingData) -> ImageTexture:
 	"""Create a simple colored texture for buildings without textures"""
@@ -209,12 +203,11 @@ func _process(_delta: float) -> void:
 
 func _world_to_grid(world_pos: Vector2) -> Vector2i:
 	"""Convert world position to grid coordinates"""
-	# Now safely uses the synced 'cell_size'
+	if cell_size <= 0: return Vector2i.ZERO # Safety check
 	return Vector2i(int(world_pos.x / cell_size), int(world_pos.y / cell_size))
 
 func _grid_to_world(grid_pos: Vector2i) -> Vector2:
 	"""Convert grid coordinates to world position (centered on cell)"""
-	# Now safely uses the synced 'cell_size'
 	return Vector2(grid_pos.x * cell_size, grid_pos.y * cell_size)
 
 func _can_place_at_position(grid_pos: Vector2i) -> bool:
@@ -222,7 +215,8 @@ func _can_place_at_position(grid_pos: Vector2i) -> bool:
 	if not SettlementManager or not current_building_data:
 		return false
 	
-	# Delegate the check to the manager, which is the single source of truth
+	# This call still works because SettlementManager delegates
+	# to the registered AStarGrid object.
 	return SettlementManager.is_placement_valid(grid_pos, current_building_data.grid_size)
 
 func _update_visual_feedback() -> void:
@@ -254,7 +248,7 @@ func place_building() -> bool:
 	
 	print("Attempting to place %s at grid position %s" % [current_building_data.display_name, grid_pos])
 	
-	# Place building through SettlementManager
+	# This call still works!
 	var new_building = SettlementManager.place_building(current_building_data, grid_pos)
 	
 	if new_building:
