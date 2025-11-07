@@ -174,7 +174,9 @@ func _process(_delta: float) -> void:
 	global_position = snapped_world_pos
 	
 	# Check placement validity
+	# --- MODIFIED: Delegate check to the manager ---
 	can_place = _can_place_at_position(grid_pos)
+	# --- END MODIFICATION ---
 	
 	# Update visual feedback
 	_update_visual_feedback()
@@ -187,30 +189,15 @@ func _grid_to_world(grid_pos: Vector2i) -> Vector2:
 	"""Convert grid coordinates to world position (centered on cell)"""
 	return Vector2(grid_pos.x * cell_size, grid_pos.y * cell_size)
 
+# --- MODIFIED: This function is now much simpler and more reliable ---
 func _can_place_at_position(grid_pos: Vector2i) -> bool:
-	"""Check if building can be placed at the specified grid position"""
-	if not SettlementManager.astar_grid or not current_building_data:
+	"""Check if building can be placed by asking the SettlementManager."""
+	if not SettlementManager or not current_building_data:
 		return false
 	
-	var grid_size = SettlementManager.astar_grid.size
-	var building_size = current_building_data.grid_size
-	
-	# Check if building fits within grid bounds
-	if grid_pos.x < 0 or grid_pos.y < 0:
-		return false
-	if grid_pos.x + building_size.x > grid_size.x:
-		return false
-	if grid_pos.y + building_size.y > grid_size.y:
-		return false
-	
-	# Check if all cells are free
-	for x in range(building_size.x):
-		for y in range(building_size.y):
-			var check_pos = Vector2i(grid_pos.x + x, grid_pos.y + y)
-			if SettlementManager.astar_grid.is_point_solid(check_pos):
-				return false
-	
-	return true
+	# Delegate the check to the manager, which is the single source of truth
+	return SettlementManager.is_placement_valid(grid_pos, current_building_data.grid_size)
+# --- END MODIFICATION ---
 
 func _update_visual_feedback() -> void:
 	"""Update the visual appearance based on placement validity"""
@@ -234,6 +221,7 @@ func _set_grid_overlay_color(color: Color) -> void:
 func place_building() -> bool:
 	"""Attempt to place the building at current position"""
 	if not is_active or not current_building_data or not can_place:
+		# This is the log you were seeing
 		print("Cannot place building: not active (%s), no data (%s), or invalid position (%s)" % [is_active, current_building_data != null, can_place])
 		return false
 	
@@ -250,6 +238,8 @@ func place_building() -> bool:
 		cancel_preview()
 		return true
 	else:
+		# This log will now only appear if the manager *still* fails,
+		# which is unlikely as the validation is now unified.
 		print("Failed to place building through SettlementManager")
 		return false
 

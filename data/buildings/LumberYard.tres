@@ -12,3 +12,4 @@ build_cost = {
 }
 max_health = 75
 grid_size = Vector2i(2, 2)
+is_player_buildable = true

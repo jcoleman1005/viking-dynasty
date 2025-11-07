@@ -4,11 +4,13 @@
 
 extends Control
 
+# --- MODIFIED: Use String paths, not PackedScene ---
 ## The main raid mission scene to load (e.g., RaidMission.tscn)
-@export var raid_mission_scene: PackedScene
+@export var raid_mission_scene_path: String = "res://scenes/missions/RaidMission.tscn"
 
 ## The scene to return to (e.g., SettlementBridge.tscn)
-@export var settlement_bridge_scene: PackedScene
+@export var settlement_bridge_scene_path: String = "res://scenes/levels/SettlementBridge.tscn"
+# --- END MODIFICATION ---
 
 @onready var raid_monastery_button: Button = $ButtonContainer/RaidMonasteryButton
 @onready var back_button: Button = $ButtonContainer/BackButton
@@ -43,16 +45,20 @@ func _on_raid_monastery_pressed() -> void:
 		push_error("Cannot start raid: No settlement loaded")
 		return
 	
-	# Transition to raid mission
-	if raid_mission_scene:
-		get_tree().change_scene_to_packed(raid_mission_scene)
+	# --- MODIFIED: Emit signal ---
+	if not raid_mission_scene_path.is_empty():
+		EventBus.scene_change_requested.emit(raid_mission_scene_path)
 	else:
-		push_error("WorldMap_Stub: raid_mission_scene is not set! Cannot start raid.")
+		push_error("WorldMap_Stub: raid_mission_scene_path is not set! Cannot start raid.")
+	# --- END MODIFICATION ---
 
 func _on_back_pressed() -> void:
 	"""Return to the settlement"""
 	print("Returning to settlement...")
-	if settlement_bridge_scene:
-		get_tree().change_scene_to_packed(settlement_bridge_scene)
+	
+	# --- MODIFIED: Emit signal ---
+	if not settlement_bridge_scene_path.is_empty():
+		EventBus.scene_change_requested.emit(settlement_bridge_scene_path)
 	else:
-		push_error("WorldMap_Stub: settlement_bridge_scene is not set! Cannot return.")
+		push_error("WorldMap_Stub: settlement_bridge_scene_path is not set! Cannot return.")
+	# --- END MODIFICATION ---

@@ -9,7 +9,11 @@ extends Node
 @export var welcome_popup_scene: PackedScene
 
 ## The scene for the world map (e.g., WorldMap_Stub.tscn)
-@export var world_map_scene: PackedScene
+# --- REMOVED ---
+# @export var world_map_scene: PackedScene
+# --- ADDED ---
+@export var world_map_scene_path: String = "res://scenes/world_map/WorldMap_Stub.tscn"
+
 
 ##Size of the cell for the grid helper
 @export var cell_size: int = 32
@@ -23,7 +27,6 @@ var default_welcome_popup: PackedScene = preload("res://ui/WelcomeHome_Popup.tsc
 @onready var unit_container: Node2D = $UnitContainer
 @onready var ui_layer: CanvasLayer = $UI
 @onready var restart_button: Button = $UI/RestartButton
-@onready var start_attack_button: Button = $UI/StartAttackButton
 @onready var start_raid_button: Button = $UI/StartRaidButton
 @onready var storefront_ui: Control = $UI/Storefront_UI
 @onready var building_cursor: Node2D = $BuildingCursor
@@ -53,7 +56,7 @@ func _setup_default_resources() -> void:
 	if not raider_scene:
 		raider_scene = load("res://scenes/units/VikingRaider.tscn")
 		
-	if not welcome_popup_scene:
+	if not welcome_popup_scene: 
 		welcome_popup_scene = default_welcome_popup
 
 func _initialize_settlement() -> void:
@@ -104,7 +107,6 @@ func _setup_ui() -> void:
 func _connect_signals() -> void:
 	"""Connect button signals"""
 	restart_button.pressed.connect(_on_restart_pressed)
-	start_attack_button.pressed.connect(_on_start_attack_pressed)
 	start_raid_button.pressed.connect(_on_start_raid_pressed)
 	
 	# Connect to EventBus for loose coupling
@@ -122,7 +124,6 @@ func _handle_welcome_payout() -> void:
 	var payout = SettlementManager.calculate_payout()
 	if not payout.is_empty():
 		welcome_popup.display_payout(payout)
-		start_attack_button.disabled = true # Disable combat until payout is collected
 		storefront_ui.hide()
 
 func _on_settlement_loaded(_settlement_data: SettlementData) -> void:
@@ -167,7 +168,6 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _on_payout_collected(payout: Dictionary) -> void:
 	SettlementManager.deposit_resources(payout)
-	start_attack_button.disabled = false # Re-enable combat
 	storefront_ui.show()
 
 func _find_and_setup_great_hall() -> void:
@@ -178,17 +178,6 @@ func _find_and_setup_great_hall() -> void:
 			print("Great Hall found and connected.")
 			return
 	push_error("SettlementBridge: Could not find Great Hall instance after loading settlement.")
-
-
-func _spawn_raider_for_test() -> void:
-	if not great_hall_instance:
-		push_error("Cannot spawn raider: Great Hall does not exist.")
-		return
-		
-	var raider_instance: BaseUnit = raider_scene.instantiate()
-	unit_container.add_child(raider_instance)
-	raider_instance.global_position = RAIDER_SPAWN_POS
-	raider_instance.set_attack_target(great_hall_instance)
 
 
 func _on_great_hall_destroyed(_building: BaseBuilding) -> void:
@@ -206,13 +195,6 @@ func _destroy_all_enemies() -> void:
 
 func _on_restart_pressed() -> void:
 	get_tree().reload_current_scene()
-
-func _on_start_attack_pressed() -> void:
-	print("Start Attack button pressed. Spawning raider.")
-	# Timestamps are no longer needed for a fixed-payout system.
-	_spawn_raider_for_test()
-	start_attack_button.hide()
-	storefront_ui.hide()
 
 func _on_start_raid_pressed() -> void:
 	"""Navigate to the world map to select targets"""
@@ -234,13 +216,12 @@ func _on_start_raid_pressed() -> void:
 	
 	print("Settlement loaded with garrison: %s" % SettlementManager.current_settlement.garrisoned_units)
 	
-	# Navigate to world map instead of direct raid
-	if world_map_scene:
-		get_tree().change_scene_to_packed(world_map_scene)
+	# --- MODIFIED: Emit signal instead of changing scene ---
+	if not world_map_scene_path.is_empty():
+		EventBus.scene_change_requested.emit(world_map_scene_path)
 	else:
-		# Fallback: load world map directly if not set in inspector
-		print("world_map_scene not set, loading WorldMap_Stub directly")
-		get_tree().change_scene_to_file("res://scenes/world_map/WorldMap_Stub.tscn")
+		push_error("world_map_scene_path is not set! Cannot change scene.")
+	# --- END MODIFICATION ---
 
 # --- NEW BUILDING CURSOR SYSTEM FUNCTIONS ---
 

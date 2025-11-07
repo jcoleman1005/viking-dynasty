@@ -1,4 +1,4 @@
-# res://ui/StorefrontUI.gd
+# res://ui/StorefrontUI.gd (Fully Refactored)
 extends Control
 
 # --- Node References ---
@@ -6,20 +6,27 @@ extends Control
 @onready var wood_label: Label = $PanelContainer/MarginContainer/TabContainer/BuildTab/TreasuryDisplay/WoodLabel
 @onready var food_label: Label = $PanelContainer/MarginContainer/TabContainer/BuildTab/TreasuryDisplay/FoodLabel
 @onready var stone_label: Label = $PanelContainer/MarginContainer/TabContainer/BuildTab/TreasuryDisplay/StoneLabel
-@onready var buy_wall_button: Button = $PanelContainer/MarginContainer/TabContainer/BuildTab/BuildButtons/BuyWallButton
-@onready var buy_lumber_yard_button: Button = $PanelContainer/MarginContainer/TabContainer/BuildTab/BuildButtons/BuyLumberYardButton
+
+# --- REMOVED ---
+# @onready var buy_wall_button: Button = ...
+# @onready var buy_lumber_yard_button: Button = ...
+
+# --- ADDED ---
+@onready var build_buttons_container: VBoxContainer = $PanelContainer/MarginContainer/TabContainer/BuildTab/BuildButtonsContainer
+# --- END ADDED ---
+
 @onready var recruit_buttons_container: VBoxContainer = $PanelContainer/MarginContainer/TabContainer/RecruitTab/RecruitButtons
 @onready var garrison_list_container: VBoxContainer = $PanelContainer/MarginContainer/TabContainer/RecruitTab/GarrisonList
 
 # --- Exported Data ---
-@export var available_buildings: Array[BuildingData] = []
+@export var available_buildings: Array[BuildingData] = [] # This can now be deprecated or used for manual overrides
 @export var available_units: Array[UnitData] = []
 @export var default_treasury_display: Dictionary = {"gold": 0, "wood": 0, "food": 0, "stone": 0}
 @export var auto_load_units_from_directory: bool = true
 
-# Legacy data (kept for fallback)
-var wall_data: BuildingData = preload("res://data/buildings/Bldg_Wall.tres")
-var lumber_yard_data: BuildingData = preload("res://data/buildings/LumberYard.tres")
+# --- REMOVED ---
+# var wall_data: BuildingData = ...
+# var lumber_yard_data: BuildingData = ...
 
 func _ready() -> void:
 	EventBus.treasury_updated.connect(_update_treasury_display)
@@ -30,13 +37,48 @@ func _ready() -> void:
 	else:
 		_update_treasury_display(default_treasury_display)
 
-	buy_wall_button.pressed.connect(_on_buy_button_pressed.bind(wall_data))
-	buy_lumber_yard_button.pressed.connect(_on_buy_button_pressed.bind(lumber_yard_data))
+	# --- REMOVED ---
+	# buy_wall_button.pressed.connect(...)
+	# buy_lumber_yard_button.pressed.connect(...)
 	
+	# --- ADDED ---
+	_load_building_data()
+	# --- END ADDED ---
+
 	# Load and setup recruit buttons
 	_load_unit_data()
 	_setup_recruit_buttons()
 	_update_garrison_display()
+
+# --- ADDED NEW FUNCTION ---
+func _load_building_data() -> void:
+	"""Scan res://data/buildings/ for buildable .tres files and create buttons."""
+	var dir = DirAccess.open("res://data/buildings/")
+	if dir:
+		dir.list_dir_begin()
+		var file_name = dir.get_next()
+		while file_name != "":
+			if file_name.ends_with(".tres"):
+				var building_path = "res://data/buildings/" + file_name
+				var building_data = load(building_path) as BuildingData
+				
+				# Check if the building is valid AND flagged for the player
+				if building_data and building_data.is_player_buildable:
+					print("Found player-buildable building: %s" % building_data.display_name)
+					_create_building_button(building_data)
+					
+			file_name = dir.get_next()
+# --- END ADDED ---
+
+# --- ADDED NEW FUNCTION ---
+func _create_building_button(building_data: BuildingData) -> void:
+	"""Creates and connects a single button for the build tab."""
+	var button = Button.new()
+	button.text = "%s (Cost: %s)" % [building_data.display_name, _format_cost(building_data.build_cost)]
+	button.custom_minimum_size = Vector2(200, 36) # Matches GDD spec [cite: 405]
+	button.pressed.connect(_on_buy_button_pressed.bind(building_data))
+	build_buttons_container.add_child(button)
+# --- END ADDED ---
 
 func _load_unit_data() -> void:
 	"""Scan res://data/units/ directory for .tres files and load them as UnitData"""
@@ -117,12 +159,12 @@ func _get_safe_placement_position() -> Vector2i:
 		occupied_positions.append(building_entry["grid_position"])
 	
 	# Find the first available position using a spiral search pattern
-	var center_x = grid_width / 2
-	var center_y = grid_height / 2
-	var max_radius = min(grid_width, grid_height) / 2
+	var center_x = grid_width / 2.0
+	var center_y = grid_height / 2.0
+	var max_radius = min(grid_width, grid_height) / 2.0
 	
 	# Start from center and spiral outward
-	for radius in range(1, max_radius + 1):
+	for radius in range(1, int(max_radius) + 1):
 		for angle_step in range(8 * radius): # More points for larger radii
 			var angle = (angle_step * 2.0 * PI) / (8 * radius)
 			var test_x = center_x + int(radius * cos(angle))

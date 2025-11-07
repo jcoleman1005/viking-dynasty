@@ -209,3 +209,56 @@ func _update_renown_tier() -> void:
 		renown_tier = 1
 	else:
 		renown_tier = 0
+
+
+## Reset Authority at the start of a new year
+func reset_authority() -> void:
+	max_authority = get_authority_cap()
+	current_authority = max_authority
+
+
+## Apply aging effects to the Jarl
+func age_jarl(years: int = 1) -> void:
+	age += years
+	years_since_action += years
+	
+	# Apply age-related skill changes
+	if age > 60:
+		# Older Jarls lose prowess but gain wisdom
+		prowess = max(1, prowess - 1)
+		learning = min(20, learning + 1)
+
+
+## Get a summary string of the Jarl's current status
+func get_status_summary() -> String:
+	var status_parts: Array[String] = []
+	
+	status_parts.append("Age: %d" % age)
+	status_parts.append("Renown: %d (Tier %d)" % [renown, renown_tier])
+	status_parts.append("Authority: %d/%d" % [current_authority, max_authority])
+	
+	if is_wounded:
+		status_parts.append("WOUNDED (%d turns)" % wound_recovery_turns)
+	
+	if is_on_mission:
+		status_parts.append("ON MISSION")
+	
+	return " | ".join(status_parts)
+
+
+## Remove a trait by display name
+func remove_trait(trait_name: String) -> bool:
+	for i in range(traits.size()):
+		if traits[i] != null and traits[i].display_name == trait_name:
+			traits.remove_at(i)
+			return true
+	return false
+
+
+## Get all trait names as a string array (for easy saving/display)
+func get_trait_names() -> Array[String]:
+	var trait_names: Array[String] = []
+	for trait in traits:
+		if trait != null:
+			trait_names.append(trait.display_name)
+	return trait_names

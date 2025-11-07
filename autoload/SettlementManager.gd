@@ -95,14 +95,9 @@ func place_building(building_data: BuildingData, grid_position: Vector2i) -> Bas
 		push_error("Build request failed: BuildingData or scene_to_spawn is null.")
 		return null
 	
-	# Validate grid position is within bounds
-	if not _is_position_valid(grid_position):
-		push_error("Cannot place building at %s: position is outside grid bounds (%d x %d)." % [grid_position, grid_width, grid_height])
-		return null
-	
-	# Check for existing building at this position
-	if _is_position_occupied(grid_position):
-		push_error("Cannot place building at %s: position is already occupied." % grid_position)
+	# Use new, robust validation check
+	if not is_placement_valid(grid_position, building_data.grid_size):
+		push_error("Cannot place building at %s: position is invalid, out of bounds, or occupied." % grid_position)
 		return null
 	
 	var new_building: BaseBuilding = building_data.scene_to_spawn.instantiate()
@@ -114,15 +109,22 @@ func place_building(building_data: BuildingData, grid_position: Vector2i) -> Bas
 	
 	building_container.add_child(new_building)
 	
-	# Only update pathfinding if position is valid and building blocks pathfinding
-	if building_data.blocks_pathfinding and _is_position_valid(grid_position):
-		# Ensure grid is properly initialized before setting solid points
+	# --- MODIFIED: This is the critical fix ---
+	# Mark *all* cells occupied by the building as solid, not just the top-left corner.
+	if building_data.blocks_pathfinding:
 		if astar_grid and astar_grid.region.size.x > 0 and astar_grid.region.size.y > 0:
-			astar_grid.set_point_solid(grid_position, true)
-			astar_grid.update()
+			for x in range(building_data.grid_size.x):
+				for y in range(building_data.grid_size.y):
+					var cell_pos = grid_position + Vector2i(x, y)
+					# Check if cell is *within* bounds before setting it
+					if _is_cell_within_bounds(cell_pos):
+						astar_grid.set_point_solid(cell_pos, true)
+			
+			astar_grid.update() # Update grid *after* all points are set
 			EventBus.pathfinding_grid_updated.emit(grid_position)
 		else:
 			push_warning("AStarGrid not properly initialized, skipping pathfinding update for building at %s" % grid_position)
+	# --- END MODIFICATION ---
 		
 	return new_building
 
@@ -272,22 +274,41 @@ func get_settlement_status() -> String:
 		garrison_count
 	]
 
-func _is_position_valid(grid_position: Vector2i) -> bool:
-	"""Check if a grid position is within the AStarGrid bounds"""
+# --- NEW FUNCTION ---
+func is_placement_valid(grid_position: Vector2i, building_size: Vector2i) -> bool:
+	"""
+	Checks if a building can be placed at a location.
+	This is now the single source of truth for placement.
+	"""
+	if not astar_grid:
+		push_error("is_placement_valid: AStarGrid is not initialized!")
+		return false
+	
+	# Check all cells the building would occupy
+	for x in range(building_size.x):
+		for y in range(building_size.y):
+			var cell_pos = grid_position + Vector2i(x, y)
+			
+			# 1. Check if cell is within grid bounds
+			if not _is_cell_within_bounds(cell_pos):
+				return false
+			
+			# 2. Check if cell is already solid (occupied)
+			if astar_grid.is_point_solid(cell_pos):
+				return false
+	
+	# All cells are valid and unoccupied
+	return true
+
+# --- RENAMED FUNCTION (was _is_position_valid) ---
+func _is_cell_within_bounds(grid_position: Vector2i) -> bool:
+	"""Check if a *single* grid cell is within the AStarGrid bounds"""
 	return grid_position.x >= 0 and grid_position.x < grid_width and \
 		   grid_position.y >= 0 and grid_position.y < grid_height
 
-func _is_position_occupied(grid_position: Vector2i) -> bool:
-	"""Check if a grid position is already occupied by a building"""
-	if not current_settlement:
-		return false
-	
-	for building_entry in current_settlement.placed_buildings:
-		var existing_pos: Vector2i = building_entry["grid_position"]
-		if existing_pos == grid_position:
-			return true
-	
-	return false
+# --- REMOVED FUNCTION ---
+# _is_position_occupied() is no longer needed, as its logic
+# is now correctly handled by is_placement_valid() checking the AStarGrid.
 
 func set_astar_point_solid(grid_position: Vector2i, solid: bool) -> void:
 	"""Public interface to set pathfinding grid points as solid/passable"""
@@ -295,7 +316,7 @@ func set_astar_point_solid(grid_position: Vector2i, solid: bool) -> void:
 		push_warning("AStarGrid not initialized")
 		return
 	
-	if not _is_position_valid(grid_position):
+	if not _is_cell_within_bounds(grid_position):
 		push_warning("Grid position %s is out of bounds" % grid_position)
 		return
 	
