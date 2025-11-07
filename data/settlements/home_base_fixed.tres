@@ -5,9 +5,9 @@
 [resource]
 script = ExtResource("1_settlement_data")
 treasury = {
-"food": 320,
-"gold": 2240,
-"stone": 675,
+"food": 270,
+"gold": 3030,
+"stone": 650,
 "wood": 60
 }
 placed_buildings = Array[Dictionary]([{
@@ -19,8 +19,11 @@ placed_buildings = Array[Dictionary]([{
 }, {
 "grid_position": Vector2i(13, 7),
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(14, 7),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
 }])
 garrisoned_units = {
-"res://data/units/Unit_PlayerRaider.tres": 10
+"res://data/units/Unit_PlayerRaider.tres": 12
 }
 metadata/_custom_type_script = "uid://hlb8s5g0yp6k"
