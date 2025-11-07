@@ -35,3 +35,11 @@ extends Resource
 
 ## Attacks per second.
 @export var attack_speed: float = 1.2
+
+
+@export_group("Visuals")
+## The texture to use for the unit's sprite.
+@export var visual_texture: Texture2D
+
+## The target gameplay size in pixels (e.g., 32x32).
+@export var target_pixel_size: Vector2 = Vector2(32, 32)

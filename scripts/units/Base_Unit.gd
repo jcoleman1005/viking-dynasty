@@ -1,6 +1,6 @@
 # res://scenes/units/Base_Unit.gd
 #
-# --- MODIFIED: Added AttackTimer reference and visual tweening by state ---
+# --- MODIFIED: Added auto-scaling for texture and collision ---
 
 class_name BaseUnit
 extends CharacterBody2D
@@ -14,6 +14,7 @@ var current_health: int = 50
 # Node refs
 @onready var attack_timer: Timer = $AttackTimer
 @onready var sprite: Sprite2D = $Sprite2D
+@onready var collision_shape: CollisionShape2D = $CollisionShape2D
 
 # Color tweening
 var _color_tween: Tween
@@ -22,14 +23,17 @@ const STATE_COLORS := {
 	UnitFSM.State.MOVING: Color(0.4, 1.0, 0.4),   # Green
 	UnitFSM.State.ATTACKING: Color(1.0, 0.3, 0.3) # Red
 }
-const ERROR_COLOR := Color(0.7, 0.3, 1.0)        # Purple
+const ERROR_COLOR := Color(0.7, 0.3, 1.0)         # Purple
 
 func _ready() -> void:
 	if not data:
-		push_warning("BaseUnit scene is missing its BuildingData resource.")
+		push_warning("BaseUnit: Node is missing its 'UnitData' resource. Cannot initialize.")
 		return
 	
 	current_health = data.max_health
+	
+	# --- ADDED: Apply Texture and Scaling ---
+	_apply_texture_and_scale()
 	
 	# Pass the timer reference to the FSM
 	fsm = UnitFSM.new(self, attack_timer)
@@ -38,6 +42,41 @@ func _ready() -> void:
 	sprite.modulate = STATE_COLORS.get(UnitFSM.State.IDLE, Color.WHITE)
 	
 	EventBus.pathfinding_grid_updated.connect(_on_grid_updated)
+
+func _apply_texture_and_scale() -> void:
+	"""
+	Applies the texture from 'data' and scales both the
+	sprite and collision shape to match the 'data.target_pixel_size'.
+	"""
+	
+	# 1. Validate the target size
+	if data.target_pixel_size.x <= 0 or data.target_pixel_size.y <= 0:
+		push_warning("BaseUnit: '%s' has a target_pixel_size of %s, which is invalid." % [data.display_name, data.target_pixel_size])
+		return
+		
+	var target_size: Vector2 = data.target_pixel_size
+
+	# 2. Apply and Scale the Sprite
+	if data.visual_texture:
+		sprite.texture = data.visual_texture
+		var texture_size: Vector2 = sprite.texture.get_size()
+		
+		if texture_size.x > 0 and texture_size.y > 0:
+			# Non-uniform scaling to fill the target size
+			var new_scale: Vector2 = target_size / texture_size
+			sprite.scale = new_scale
+		else:
+			push_warning("BaseUnit: Texture for '%s' has an invalid size of %s. Cannot scale sprite." % [data.display_name, texture_size])
+	else:
+		push_warning("BaseUnit: '%s' is missing its 'visual_texture'. Sprite will be blank or use placeholder." % data.display_name)
+		
+	# 3. Scale the Collision Shape
+	if collision_shape and collision_shape.shape is RectangleShape2D:
+		# Set extents to *half* the target size (from center)
+		collision_shape.shape.extents = target_size / 2.0
+	else:
+		push_warning("BaseUnit: '%s' is missing its CollisionShape2D node or its shape is not a RectangleShape2D. Collision will not match visuals." % data.display_name)
+# --- END ADDED ---
 
 func _exit_tree() -> void:
 	if EventBus.is_connected("pathfinding_grid_updated", _on_grid_updated):
@@ -75,7 +114,7 @@ func _tween_color(to_color: Color, duration: float = 0.2) -> void:
 
 func take_damage(amount: int) -> void:
 	current_health = max(0, current_health - amount)
-	print("%s took %d damage, %d HP remaining." % [data.display_name, amount, current_health])
+	# print("%s took %d damage, %d HP remaining." % [data.display_name, amount, current_health])
 	if current_health == 0:
 		die()
 
@@ -106,10 +145,10 @@ func set_selected(selected: bool) -> void:
 	
 	if is_selected:
 		_show_selection_indicator()
-		print("%s selected" % data.display_name)
+		# print("%s selected" % data.display_name) # Too noisy
 	else:
 		_hide_selection_indicator()
-		print("%s deselected" % data.display_name)
+		# print("%s deselected" % data.display_name) # Too noisy
 
 func _show_selection_indicator() -> void:
 	"""Show visual selection indicator"""
