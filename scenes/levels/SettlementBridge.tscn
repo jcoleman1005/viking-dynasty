@@ -1,16 +1,16 @@
-[gd_scene load_steps=6 format=3 uid="uid://c53k15q2w8c1a"]
+[gd_scene load_steps=7 format=3 uid="uid://c53k15q2w8c1a"]
 
 [ext_resource type="PackedScene" uid="uid://dqh0xu88khxct" path="res://ui/WelcomeHome_Popup.tscn" id="2_5el12"]
 [ext_resource type="Script" uid="uid://dafjxa85ci2rx" path="res://scripts/buildings/SettlementBridge.gd" id="2_c48a7"]
 [ext_resource type="Resource" path="res://data/settlements/home_base_fixed.tres" id="2_oq6tm"]
 [ext_resource type="PackedScene" uid="uid://btovbm7r6nern" path="res://ui/Storefront_UI.tscn" id="3_vj45l"]
+[ext_resource type="PackedScene" uid="uid://dsrvmutqo7g3h" path="res://scripts/utility/GridManager.tscn" id="6_b34qi"]
 [ext_resource type="Script" uid="uid://c4bv8okjkvtt7" path="res://scripts/ui/BuildingPreviewCursor.gd" id="6_cursor"]
 
 [node name="SettlementBridge" type="Node"]
 script = ExtResource("2_c48a7")
 home_base_data = ExtResource("2_oq6tm")
 welcome_popup_scene = ExtResource("2_5el12")
-cell_size = 16
 
 [node name="UnitContainer" type="Node2D" parent="."]
 
@@ -49,3 +49,7 @@ text = "World Map"
 
 [node name="BuildingCursor" type="Node2D" parent="."]
 script = ExtResource("6_cursor")
+
+[node name="BuildingContainer" type="Node2D" parent="."]
+
+[node name="GridManager" parent="." instance=ExtResource("6_b34qi")]

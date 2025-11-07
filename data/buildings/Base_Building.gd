@@ -1,6 +1,9 @@
-# res://scenes/buildings/Base_Building.gd
+# res://data/buildings/Base_Building.gd
 #
-# --- MODIFIED: Added debug warnings and robust checks ---
+# --- MODIFIED: (The "Proper Fix") ---
+# Now uses SettlementManager.get_active_grid_cell_size()
+# to get the grid size, instead of accessing a hard-coded
+# .tile_size property.
 
 class_name BaseBuilding
 extends StaticBody2D
@@ -32,14 +35,21 @@ func _apply_texture_and_scale() -> void:
 	sprite and collision shape to match the 'data.grid_size'.
 	"""
 	
-	# 1. Validate SettlementManager and tile_size
-	if not SettlementManager or SettlementManager.tile_size <= 0:
-		push_error("BaseBuilding: SettlementManager not ready or tile_size is invalid (<= 0). Cannot scale '%s'." % data.display_name)
+	# 1. Validate SettlementManager and get the cell size
+	if not SettlementManager:
+		push_error("BaseBuilding: SettlementManager not ready. Cannot scale '%s'." % data.display_name)
 		return
+	
+	# --- THIS IS THE FIX ---
+	# Get the cell size from the manager, which gets it from the active grid
+	var cell_size: Vector2 = SettlementManager.get_active_grid_cell_size()
+	if cell_size.x <= 0 or cell_size.y <= 0:
+		push_error("BaseBuilding: SettlementManager returned invalid cell_size (%s). Cannot scale '%s'." % [cell_size, data.display_name])
+		return
+	# --- END FIX ---
 		
 	# 2. Get the target size based on grid
-	var tile_size: float = SettlementManager.tile_size
-	var target_size: Vector2 = Vector2(data.grid_size) * tile_size
+	var target_size: Vector2 = Vector2(data.grid_size) * cell_size
 	
 	if target_size.x <= 0 or target_size.y <= 0:
 		push_warning("BaseBuilding: '%s' has a grid_size of %s, resulting in an invalid target_size." % [data.display_name, data.grid_size])

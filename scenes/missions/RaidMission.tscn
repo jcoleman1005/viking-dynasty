@@ -2,13 +2,12 @@
 
 [ext_resource type="Script" uid="uid://cuw68f180xbui" path="res://scenes/missions/RaidMission.gd" id="1_qt4qp"]
 [ext_resource type="PackedScene" uid="uid://cyp3t7gbdg0wx" path="res://player/RTSController.tscn" id="2_8icmc"]
-[ext_resource type="PackedScene" uid="uid://c53k15q2w8c1a" path="res://scenes/levels/SettlementBridge.tscn" id="2_th2vh"]
 [ext_resource type="PackedScene" uid="uid://1ly65bng2mep" path="res://ui/SelectionBox.tscn" id="3_24u83"]
+[ext_resource type="PackedScene" uid="uid://dsrvmutqo7g3h" path="res://scripts/utility/GridManager.tscn" id="5_olj83"]
 [ext_resource type="Script" uid="uid://bxbqkyp1d6750" path="res://player/RTSCamera.gd" id="5_xkh2l"]
 
 [node name="RaidMission" type="Node2D"]
 script = ExtResource("1_qt4qp")
-settlement_bridge_scene = ExtResource("2_th2vh")
 
 [node name="PlayerStartPosition" type="Marker2D" parent="."]
 position = Vector2(100, 400)
@@ -22,3 +21,9 @@ position = Vector2(100, 400)
 [node name="RTSCamera" type="Camera2D" parent="."]
 position = Vector2(400, 300)
 script = ExtResource("5_xkh2l")
+
+[node name="GridManager" parent="." instance=ExtResource("5_olj83")]
+grid_width = 120
+grid_height = 80
+
+[node name="BuildingContainer" type="Node2D" parent="."]
