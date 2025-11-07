@@ -14,7 +14,7 @@ treasury = {
 }
 placed_buildings = Array[Dictionary]([{
 "grid_position": Vector2i(30, 20),
-"resource_path": "res://data/buildings/Bldg_GreatHall.tres"
+"resource_path": "res://data/buildings/GreatHall.tres"
 }, {
 "grid_position": Vector2i(29, 19),
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
@@ -53,6 +53,6 @@ placed_buildings = Array[Dictionary]([{
 "resource_path": "res://data/buildings/LumberYard.tres"
 }])
 garrisoned_units = {
-"res://data/units/Base_Unit.tres": 4,
-"res://data/units/VikingRaider.tres": 8
+"res://data/units/Unit_PlayerRaider.tres": 4,
+"res://data/units/Unit_Raider.tres": 8
 }

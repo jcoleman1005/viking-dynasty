@@ -12,7 +12,7 @@ treasury = {
 }
 placed_buildings = Array[Dictionary]([{
 "grid_position": Vector2i(8, 6),
-"resource_path": "res://data/buildings/Bldg_GreatHall.tres"
+"resource_path": "res://data/buildings/GreatHall.tres"
 }, {
 "grid_position": Vector2i(5, 4),
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
