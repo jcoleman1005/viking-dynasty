@@ -241,7 +241,7 @@ treasury = {
 }
 placed_buildings = Array[Dictionary]([{
 "grid_position": Vector2i(10, 8),
-"resource_path": "res://data/buildings/Bldg_GreatHall.tres"
+"resource_path": "res://data/buildings/GreatHall.tres"
 }, {
 "grid_position": Vector2i(6, 6),
 "resource_path": "res://data/buildings/LumberYard.tres"
@@ -342,13 +342,13 @@ garrisoned_units = {
 [resource]
 script = ExtResource("1_settlement_data")
 treasury = {
-"food": 370,
-"gold": 2260,
-"stone": 750,
+"food": 530,
+"gold": 3190,
+"stone": 1025,
 "wood": 60
 }
 garrisoned_units = {
-"res://data/units/Unit_PlayerRaider.tres": 8
+"res://data/units/Unit_PlayerRaider.tres": 9
 }
 metadata/_custom_type_script = "uid://hlb8s5g0yp6k"
 
@@ -367,7 +367,7 @@ treasury = {
 }
 placed_buildings = Array[Dictionary]([{
 "grid_position": Vector2i(10, 10),
-"resource_path": "res://data/buildings/Bldg_GreatHall.tres"
+"resource_path": "res://data/buildings/GreatHall.tres"
 }, {
 "grid_position": Vector2i(8, 7),
 "resource_path": "res://data/buildings/Monastery_Chapel.tres"
@@ -424,7 +424,7 @@ treasury = {
 }
 placed_buildings = Array[Dictionary]([{
 "grid_position": Vector2i(10, 10),
-"resource_path": "res://data/buildings/Bldg_GreatHall.tres"
+"resource_path": "res://data/buildings/GreatHall.tres"
 }, {
 "grid_position": Vector2i(8, 7),
 "resource_path": "res://data/buildings/Monastery_Chapel.tres"
@@ -471,7 +471,7 @@ treasury = {
 }
 placed_buildings = Array[Dictionary]([{
 "grid_position": Vector2i(30, 20),
-"resource_path": "res://data/buildings/Bldg_GreatHall.tres"
+"resource_path": "res://data/buildings/GreatHall.tres"
 }, {
 "grid_position": Vector2i(29, 19),
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
@@ -510,8 +510,8 @@ placed_buildings = Array[Dictionary]([{
 "resource_path": "res://data/buildings/LumberYard.tres"
 }])
 garrisoned_units = {
-"res://data/units/Base_Unit.tres": 4,
-"res://data/units/VikingRaider.tres": 8
+"res://data/units/Unit_PlayerRaider.tres": 4,
+"res://data/units/Unit_Raider.tres": 8
 }
 
 --- RESOURCE: res://data/settlements/small_defensive.tres ---
@@ -529,7 +529,7 @@ treasury = {
 }
 placed_buildings = Array[Dictionary]([{
 "grid_position": Vector2i(8, 6),
-"resource_path": "res://data/buildings/Bldg_GreatHall.tres"
+"resource_path": "res://data/buildings/GreatHall.tres"
 }, {
 "grid_position": Vector2i(5, 4),
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
@@ -4463,7 +4463,7 @@ extends EditorScript
 
 # Define available buildings with their paths
 const BUILDINGS = {
-	"Great Hall": "res://data/buildings/Bldg_GreatHall.tres",
+	"Great Hall": "res://data/buildings/GreatHall.tres",
 	"Wall": "res://data/buildings/Bldg_Wall.tres", 
 	"Lumber Yard": "res://data/buildings/LumberYard.tres",
 	"Chapel": "res://data/buildings/Monastery_Chapel.tres",

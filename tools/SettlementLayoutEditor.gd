@@ -5,7 +5,7 @@ extends EditorScript
 
 # Define available buildings with their paths
 const BUILDINGS = {
-	"Great Hall": "res://data/buildings/Bldg_GreatHall.tres",
+	"Great Hall": "res://data/buildings/GreatHall.tres",
 	"Wall": "res://data/buildings/Bldg_Wall.tres", 
 	"Lumber Yard": "res://data/buildings/LumberYard.tres",
 	"Chapel": "res://data/buildings/Monastery_Chapel.tres",
