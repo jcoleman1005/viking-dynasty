@@ -6,9 +6,9 @@
 script = ExtResource("1_settlement_data")
 treasury = {
 "food": 220,
-"gold": 1300,
-"stone": 175,
-"wood": 310
+"gold": 1200,
+"stone": 125,
+"wood": 60
 }
 garrisoned_units = {
 "res://data/units/Unit_PlayerRaider.tres": 5

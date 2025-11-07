@@ -1,6 +1,6 @@
 # res://scenes/buildings/Base_Building.gd
 #
-# --- MODIFIED: Added code to apply building_texture ---
+# --- MODIFIED: Added debug warnings and robust checks ---
 
 class_name BaseBuilding
 extends StaticBody2D
@@ -12,26 +12,64 @@ signal building_destroyed(building: BaseBuilding)
 @export var data: BuildingData
 var current_health: int = 100
 
-# Get a reference to the Sprite2D node
+# Get a reference to the nodes
 @onready var sprite: Sprite2D = $Sprite2D
+@onready var collision_shape: CollisionShape2D = $CollisionShape2D
 
 func _ready() -> void:
 	if not data:
-		push_warning("BaseBuilding scene is missing its BuildingData resource.")
+		push_warning("BaseBuilding: Node is missing its 'BuildingData' resource. Cannot initialize.")
 		return
 	
 	current_health = data.max_health
 	
-	# --- ADDED: Apply the texture from the data ---
-	# This checks if a texture has been assigned in the .tres file
+	# --- Apply Texture and Scaling ---
+	_apply_texture_and_scale()
+
+func _apply_texture_and_scale() -> void:
+	"""
+	Applies the texture from 'data' and scales both the
+	sprite and collision shape to match the 'data.grid_size'.
+	"""
+	
+	# 1. Validate SettlementManager and tile_size
+	if not SettlementManager or SettlementManager.tile_size <= 0:
+		push_error("BaseBuilding: SettlementManager not ready or tile_size is invalid (<= 0). Cannot scale '%s'." % data.display_name)
+		return
+		
+	# 2. Get the target size based on grid
+	var tile_size: float = SettlementManager.tile_size
+	var target_size: Vector2 = Vector2(data.grid_size) * tile_size
+	
+	if target_size.x <= 0 or target_size.y <= 0:
+		push_warning("BaseBuilding: '%s' has a grid_size of %s, resulting in an invalid target_size." % [data.display_name, data.grid_size])
+		return
+
+	# 3. Apply and Scale the Sprite
 	if data.building_texture:
-		# If it has, apply it to our Sprite2D node
 		sprite.texture = data.building_texture
-	# --- END ADDED ---
+		var texture_size: Vector2 = sprite.texture.get_size()
+		
+		if texture_size.x > 0 and texture_size.y > 0:
+			# Non-uniform scaling to fill the grid space
+			var new_scale: Vector2 = target_size / texture_size
+			sprite.scale = new_scale
+		else:
+			push_warning("BaseBuilding: Texture for '%s' has an invalid size of %s. Cannot scale sprite." % [data.display_name, texture_size])
+	else:
+		push_warning("BaseBuilding: '%s' is missing its 'building_texture'. Sprite will be blank or use placeholder." % data.display_name)
+		
+	# 4. Scale the Collision Shape
+	if collision_shape and collision_shape.shape is RectangleShape2D:
+		# Set extents to *half* the target size (from center)
+		collision_shape.shape.extents = target_size / 2.0
+	else:
+		push_warning("BaseBuilding: '%s' is missing its CollisionShape2D node or its shape is not a RectangleShape2D. Collision will not match visuals." % data.display_name)
 
 func take_damage(amount: int) -> void:
 	current_health = max(0, current_health - amount)
-	print("%s took %d damage, %d HP remaining." % [data.display_name, amount, current_health])
+	# Removed the print statement for cleaner debug output
+	# print("%s took %d damage, %d HP remaining." % [data.display_name, amount, current_health])
 	
 	if current_health == 0:
 		die()
@@ -42,7 +80,6 @@ func die() -> void:
 	# Add visual feedback for destruction
 	_show_destruction_effect()
 	
-	# --- ADDED ---
 	# Emit the signal *before* queue_free() so listeners
 	# can react before the node is deleted.
 	building_destroyed.emit(self)
