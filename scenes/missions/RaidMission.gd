@@ -2,10 +2,10 @@
 # Raid Mission Controller for Phase 3
 # GDD Ref: Phase 3 Task 7
 #
-# --- REFACTORED (The "Proper Fix" + GridManager) ---
-# This scene now instances its own GridManager and BuildingContainer.
-# It registers them with the SettlementManager on load, ensuring
-# all pathfinding and building logic is scoped to this scene.
+# --- REFACTORED (The "God Object" Fix) ---
+# This script is now just a "level loader."
+# It loads the map, spawns buildings/units, and then
+# passes control to the RaidObjectiveManager node.
 
 extends Node2D
 
@@ -17,23 +17,25 @@ extends Node2D
 	"res://data/settlements/monastery_base.tres",
 	"res://data/settlements/fortress_base.tres"
 ]
-@export var victory_bonus_loot: Dictionary = {"gold": 200}
 @export var player_spawn_formation: Dictionary = {"units_per_row": 5, "spacing": 40}
 @export var mission_difficulty: float = 1.0
 @export var allow_retreat: bool = true
-@export var settlement_bridge_scene_path: String = "res://scenes/levels/SettlementBridge.tscn"
-@export var is_defensive_mission: bool = false
+
+# --- REMOVED: These vars were moved to RaidObjectiveManager ---
+# @export var settlement_bridge_scene_path: String
+# @export var is_defensive_mission: bool
+# @export var victory_bonus_loot: Dictionary
 
 # --- Node References ---
 @onready var player_spawn_pos: Marker2D = $PlayerStartPosition
 @onready var rts_controller: RTSController = $RTSController
-
-# --- NEW: Local Node References ---
 @onready var grid_manager: Node = $GridManager
 @onready var building_container: Node2D = $BuildingContainer
+@onready var objective_manager: Node = $RaidObjectiveManager # New reference
 
-var enemy_hall: Node2D = null
-var raid_loot: RaidLootData = null
+# --- State Variables ---
+var enemy_hall: BaseBuilding = null
+# --- REMOVED: var raid_loot: RaidLootData = null ---
 
 
 func _ready() -> void:
@@ -48,8 +50,6 @@ func _ready() -> void:
 		call_deferred("initialize_mission")
 
 func _exit_tree() -> void:
-	# Unregister our nodes so the manager doesn't try to use them
-	# when we change scenes. This is critical.
 	SettlementManager.unregister_active_scene_nodes()
 	
 	if EventBus.is_connected("settlement_loaded", _on_settlement_ready_for_mission):
@@ -63,14 +63,14 @@ func _load_test_settlement() -> void:
 	
 	if test_settlement:
 		print("RaidMission: Loading test settlement: %s" % test_settlement_path)
-		print("RaidMission: Test settlement garrison: %s" % test_settlement.garrisoned_units)
 		SettlementManager.load_settlement(test_settlement)
 	else:
 		push_error("RaidMission: Failed to load test settlement from %s" % test_settlement_path)
 
 func _on_settlement_ready_for_mission(_settlement_data: SettlementData) -> void:
 	"""Called when settlement is loaded - only initialize if we haven't already"""
-	if not raid_loot:  # Check if we've already initialized
+	# Check if objective_manager has been initialized (as a proxy for mission start)
+	if not is_instance_valid(objective_manager.rts_controller): 
 		print("RaidMission: Settlement loaded - initializing mission")
 		initialize_mission()
 
@@ -78,12 +78,10 @@ func _on_settlement_ready_for_mission(_settlement_data: SettlementData) -> void:
 func initialize_mission() -> void:
 	print("RaidMission starting...")
 	
-	if rts_controller == null:
-		push_error("RaidMission: Critical error! RTSController node not found.")
-		get_tree().quit() # This is a fatal error
+	if rts_controller == null or objective_manager == null:
+		push_error("RaidMission: Critical error! RTSController or RaidObjectiveManager node not found.")
+		get_tree().quit()
 		return
-	
-	raid_loot = RaidLootData.new()
 	
 	if not enemy_base_data:
 		enemy_base_data = load(default_enemy_base_path)
@@ -91,26 +89,27 @@ func initialize_mission() -> void:
 			push_error("Could not load enemy base data from default path.")
 			return
 	
-	# --- THIS IS THE FIX ---
-	# 1. Get the grid from our new GridManager child
+	# 1. Register local grid
 	if not is_instance_valid(grid_manager) or not "astar_grid" in grid_manager:
 		push_error("RaidMission: GridManager node is missing or invalid!")
 		return
 	var local_astar_grid = grid_manager.astar_grid
-	
-	# 2. Register our local nodes with the manager
-	# This ensures all calls to SettlementManager.get_astar_path()
-	# will now use THIS scene's grid, not the home base's.
 	SettlementManager.register_active_scene_nodes(local_astar_grid, building_container)
-	# --- END FIX ---
 	
+	# 2. Load buildings and grid
 	_load_enemy_base()
 	_update_astar_grid_for_enemy_base()
+	
+	# 3. Spawn units
 	_spawn_player_garrison()
-	_setup_win_loss_conditions()
+	
+	# 4. Hand off to Objective Manager
+	if is_instance_valid(enemy_hall):
+		objective_manager.initialize(rts_controller, enemy_hall, building_container)
+	else:
+		push_error("RaidMission: Could not find Enemy Hall! Objectives will not function.")
 
 func _load_enemy_base() -> void:
-	"""Load and instance the enemy's base from SettlementData"""
 	print("Loading enemy base...")
 	
 	if not enemy_base_data:
@@ -121,76 +120,64 @@ func _load_enemy_base() -> void:
 		var building_res_path: String = building_entry["resource_path"]
 		var grid_pos: Vector2i = building_entry["grid_position"]
 		
-		var loaded_resource = load(building_res_path)
-		var building_data: BuildingData = loaded_resource as BuildingData
-		
+		var building_data: BuildingData = load(building_res_path)
 		if not building_data:
-			push_error("Failed to load building resource as BuildingData: %s (loaded as %s)" % [building_res_path, loaded_resource.get_class() if loaded_resource else "null"])
+			push_error("Failed to load building resource as BuildingData: %s" % building_res_path)
 			continue
 		
 		if not building_data.scene_to_spawn:
 			push_error("Failed to load building: %s" % building_res_path)
 			continue
 		
-		# Instance the building
-		var building_instance: Node2D = building_data.scene_to_spawn.instantiate()
+		var building_instance: BaseBuilding = building_data.scene_to_spawn.instantiate()
 		building_instance.name = building_data.display_name + "_Enemy"
 		
 		if "data" in building_instance:
 			building_instance.data = building_data
 		
-		# Position the building
 		var world_pos: Vector2 = Vector2(grid_pos) * grid_manager.cell_size + (Vector2.ONE * grid_manager.cell_size / 2.0)
 		building_instance.global_position = world_pos
 		
 		building_instance.add_to_group("enemy_buildings")
 		
 		if building_instance.has_method("set_collision_layer"):
-			building_instance.set_collision_layer(4)  # Layer 3 for enemy buildings
+			building_instance.set_collision_layer(4)
 			building_instance.set_collision_mask(0)
 		
 		building_instance.set_meta("building_data", building_data)
 		building_instance.set_meta("is_enemy_building", true)
 		
+		# Find the hall
 		if building_data.display_name.to_lower().contains("hall"):
 			enemy_hall = building_instance
 			print("Found enemy hall: %s" % building_data.display_name)
-			if building_instance.has_signal("building_destroyed"):
-				building_instance.building_destroyed.connect(_on_enemy_hall_destroyed)
 		
+		# Connect signal for GRID CLEARING (loot is handled by objective manager)
 		if building_instance.has_signal("building_destroyed"):
-			building_instance.building_destroyed.connect(_on_enemy_building_destroyed)
+			building_instance.building_destroyed.connect(_on_enemy_building_destroyed_grid_clear)
 		
-		# --- MODIFIED ---
-		# Add to our local container, not the root node
 		building_container.add_child(building_instance)
-		# ----------------
 
 func _update_astar_grid_for_enemy_base() -> void:
-	"""Update the A* pathfinding grid to account for enemy buildings"""
 	print("Updating A* grid for enemy base...")
 	
 	if not enemy_base_data:
 		return
 	
 	for building_entry in enemy_base_data.placed_buildings:
-		var building_res_path: String = building_entry["resource_path"]
-		var grid_pos: Vector2i = building_entry["grid_position"]
-		
-		var building_data: BuildingData = load(building_res_path)
+		var building_data: BuildingData = load(building_entry["resource_path"])
 		if not building_data:
 			continue
 		
 		if building_data.blocks_pathfinding:
 			var grid_size: Vector2i = building_data.grid_size
+			var grid_pos: Vector2i = building_entry["grid_position"]
 			
 			for x in range(grid_size.x):
 				for y in range(grid_size.y):
 					var cell_pos = Vector2i(grid_pos.x + x, grid_pos.y + y)
-					# This call now correctly delegates to our local grid
 					SettlementManager.set_astar_point_solid(cell_pos, true)
 	
-	# Update the grid once after all buildings are processed
 	if is_instance_valid(grid_manager) and is_instance_valid(grid_manager.astar_grid):
 		grid_manager.astar_grid.update()
 		print("A* grid updated for enemy base with %d buildings" % enemy_base_data.placed_buildings.size())
@@ -206,8 +193,10 @@ func _spawn_player_garrison() -> void:
 	var garrison = SettlementManager.current_settlement.garrisoned_units
 	if garrison.is_empty():
 		print("No units in garrison to spawn")
-		if not is_defensive_mission:
-			call_deferred("_check_loss_condition")
+		# We must still check for a loss condition
+		if not objective_manager.is_defensive_mission:
+			# Defer the call to the objective manager
+			objective_manager.call_deferred("_check_loss_condition")
 		return
 	
 	var units_per_row: int = player_spawn_formation.get("units_per_row", 5)
@@ -240,10 +229,8 @@ func _spawn_player_garrison() -> void:
 			unit_instance.global_position = spawn_pos
 			
 			unit_instance.add_to_group("player_units")
-			
 			rts_controller.add_unit_to_group(unit_instance)
-			
-			add_child(unit_instance) # Units are children of RaidMission root
+			add_child(unit_instance)
 			
 			current_col += 1
 			if current_col >= units_per_row:
@@ -254,7 +241,6 @@ func _spawn_player_garrison() -> void:
 func _spawn_test_units() -> void:
 	# This function is for debug only and does not need refactoring
 	print("Spawning test units for box selection demo...")
-	# (rest of function unchanged)
 	var units_per_row: int = 3
 	var current_row: int = 0
 	var current_col: int = 0
@@ -300,126 +286,38 @@ func _physics_process(delta: float) -> void:
 			current_row += 1
 
 
-func _on_enemy_building_destroyed(building: BaseBuilding) -> void:
-	"""Called when any enemy building is destroyed - collect loot and update grid"""
-	var building_data = building.data as BuildingData
-	
-	if raid_loot and building_data:
-		raid_loot.add_loot_from_building(building_data)
-		print("Building destroyed: %s | %s" % [building_data.display_name, raid_loot.get_loot_summary()])
-	
+func _on_enemy_building_destroyed_grid_clear(building: BaseBuilding) -> void:
+	"""
+	Called when any enemy building is destroyed.
+	This function's ONLY job is to clear the pathfinding grid.
+	Loot is handled by RaidObjectiveManager.
+	"""
 	_clear_building_from_pathfinding_grid(building)
-	
-	var remaining_buildings = get_tree().get_nodes_in_group("enemy_buildings").size()
-	print("Buildings remaining: %d" % remaining_buildings)
 
 func _clear_building_from_pathfinding_grid(building: BaseBuilding) -> void:
 	"""Remove building's collision from pathfinding grid"""
 	if not building.data or not is_instance_valid(grid_manager):
 		return
-	
-	# --- MODIFIED ---
+		
 	var cell_size = grid_manager.cell_size
 	var half_cell = Vector2.ONE * cell_size / 2.0
 	
 	var world_pos = building.global_position
-	# Reverse the positioning logic
 	var grid_pos = Vector2i((world_pos - half_cell) / cell_size) 
 	var grid_size = building.data.grid_size
 	
 	for x in range(grid_size.x):
 		for y in range(grid_size.y):
 			var cell_pos = Vector2i(grid_pos.x + x, grid_pos.y + y)
-			# This call delegates to our local grid
 			SettlementManager.set_astar_point_solid(cell_pos, false)
 	
-	# Update the grid
 	if is_instance_valid(grid_manager.astar_grid):
 		grid_manager.astar_grid.update()
-		print("Cleared pathfinding for destroyed building at %s (size: %s)" % [grid_pos, grid_size])
-	# --- END MODIFIED ---
+		print("RaidMission: Cleared pathfinding for destroyed building at %s (size: %s)" % [grid_pos, grid_size])
 
-func _setup_win_loss_conditions() -> void:
-	if not is_defensive_mission:
-		_check_loss_condition()
-	else:
-		print("RaidMission: Skipping 'all units destroyed' loss check for defensive mission.")
-
-func _check_loss_condition() -> void:
-	await get_tree().create_timer(1.0).timeout
-	
-	var remaining_units = 0
-	if is_instance_valid(rts_controller):
-		remaining_units = rts_controller.controllable_units.size()
-	
-	print("Loss check: %d units remaining" % remaining_units)
-	
-	if remaining_units == 0:
-		_on_mission_failed()
-		return # Stop the loop
-	
-	if is_instance_valid(enemy_hall):
-		_check_loss_condition()
-	else:
-		print("Loss condition checking stopped - enemy hall destroyed")
-
-func _on_mission_failed() -> void:
-	print("Mission Failed! All units destroyed.")
-	_show_failure_message()
-	await get_tree().create_timer(3.0).timeout
-	
-	if not settlement_bridge_scene_path.is_empty():
-		EventBus.scene_change_requested.emit(settlement_bridge_scene_path)
-	else:
-		push_error("RaidMission: settlement_bridge_scene_path is not set! Cannot return to settlement.")
-
-
-func _show_failure_message() -> void:
-	var failure_popup = Control.new()
-	failure_popup.name = "FailurePopup"
-	failure_popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	
-	var bg_panel = Panel.new()
-	bg_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	bg_panel.modulate = Color(0, 0, 0, 0.7)
-	failure_popup.add_child(bg_panel)
-	
-	var message_container = VBoxContainer.new()
-	message_container.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	message_container.size = Vector2(300, 150)
-	
-	var failure_label = Label.new()
-	failure_label.text = "RAID FAILED!"
-	failure_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	message_container.add_child(failure_label)
-	
-	var subtitle_label = Label.new()
-	subtitle_label.text = "All units destroyed"
-	subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	message_container.add_child(subtitle_label)
-	
-	var return_label = Label.new()
-	return_label.text = "Returning to settlement..."
-	return_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	message_container.add_child(return_label)
-	
-	failure_popup.add_child(message_container)
-	add_child(failure_popup)
-	print("Failure message displayed")
-
-func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
-	print("Enemy Hall destroyed! Mission success!")
-	
-	var total_loot = raid_loot.get_total_loot()
-	raid_loot.add_loot("gold", 200) # Bonus
-	total_loot = raid_loot.get_total_loot()
-	
-	SettlementManager.deposit_resources(total_loot)
-	print("Mission Complete! %s" % raid_loot.get_loot_summary())
-	
-	await get_tree().create_timer(2.0).timeout
-	
-	if not settlement_bridge_scene_path.is_empty():
-		EventBus.scene_change_requested.emit(settlement_bridge_scene_path)
-	else:
-		push_error("RaidMission: settlement_bridge_scene_path is not set! Cannot return to settlement.")
+# --- ALL WIN/LOSS FUNCTIONS REMOVED ---
+# _setup_win_loss_conditions()
+# _check_loss_condition()
+# _on_mission_failed()
+# _show_failure_message()
+# _on_enemy_hall_destroyed()
