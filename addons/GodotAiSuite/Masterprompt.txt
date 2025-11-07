@@ -34,6 +34,7 @@ config/features=PackedStringArray("4.5", "GL Compatibility")
 
 EventBus="*res://autoload/EventBus.gd"
 SettlementManager="*res://autoload/SettlementManager.tscn"
+SceneManager="*res://autoload/SceneManager.gd"
 
 [editor_plugins]
 
@@ -63,7 +64,27 @@ width = 32
 height = 32
 noise = SubResource("FastNoiseLite_cemhj")
 
---- RESOURCE: res://data/buildings/Bldg_GreatHall.tres ---
+--- RESOURCE: res://data/buildings/Bldg_Wall.tres ---
+[gd_resource type="Resource" script_class="BuildingData" load_steps=4 format=3 uid="uid://b2356vlfukf14"]
+
+[ext_resource type="Texture2D" uid="uid://csni4uyao275g" path="res://textures/placeholders/wall_stone_texture.png" id="1_n45a8"]
+[ext_resource type="Script" uid="uid://js4bbqgeyd6c" path="res://data/buildings/BuildingData.gd" id="1_t76rl"]
+[ext_resource type="PackedScene" uid="uid://cws6xle5x52g4" path="res://scenes/buildings/Base_Building.tscn" id="1_vluf5"]
+
+[resource]
+script = ExtResource("1_t76rl")
+display_name = "Stone Wall"
+scene_to_spawn = ExtResource("1_vluf5")
+building_texture = ExtResource("1_n45a8")
+build_cost = {
+"stone": 25
+}
+is_player_buildable = true
+attack_damage = 0
+attack_range = 0.0
+attack_speed = 0.0
+
+--- RESOURCE: res://data/buildings/GreatHall.tres ---
 [gd_resource type="Resource" script_class="BuildingData" load_steps=3 format=3 uid="uid://bs1e1mgqnldwq"]
 
 [ext_resource type="Script" uid="uid://js4bbqgeyd6c" path="res://data/buildings/BuildingData.gd" id="1_i2pmy"]
@@ -81,34 +102,18 @@ max_health = 50
 grid_size = Vector2i(4, 4)
 is_player_buildable = true
 
---- RESOURCE: res://data/buildings/Bldg_Wall.tres ---
-[gd_resource type="Resource" script_class="BuildingData" load_steps=3 format=3 uid="uid://b2356vlfukf14"]
-
-[ext_resource type="PackedScene" uid="uid://cws6xle5x52g4" path="res://scenes/buildings/Base_Building.tscn" id="1_vluf5"]
-[ext_resource type="Script" uid="uid://js4bbqgeyd6c" path="res://data/buildings/BuildingData.gd" id="2_vluf5"]
-
-[resource]
-script = ExtResource("2_vluf5")
-display_name = "Stone Wall"
-scene_to_spawn = ExtResource("1_vluf5")
-build_cost = {
-"stone": 25
-}
-is_player_buildable = true
-attack_damage = 0
-attack_range = 0.0
-attack_speed = 0.0
-
 --- RESOURCE: res://data/buildings/LumberYard.tres ---
-[gd_resource type="Resource" script_class="EconomicBuildingData" load_steps=3 format=3 uid="uid://drx4sih8numo1"]
+[gd_resource type="Resource" script_class="EconomicBuildingData" load_steps=4 format=3 uid="uid://drx4sih8numo1"]
 
 [ext_resource type="Script" uid="uid://d33smw07vm6y4" path="res://data/buildings/EconomicBuildingData.gd" id="1_abcde"]
+[ext_resource type="Texture2D" uid="uid://cvtmpipin3j4" path="res://textures/placeholders/lumber_mill_placeholder.png" id="1_plclm"]
 [ext_resource type="PackedScene" uid="uid://cws6xle5x52g4" path="res://scenes/buildings/Base_Building.tscn" id="2_fghij"]
 
 [resource]
 script = ExtResource("1_abcde")
 display_name = "Lumber Yard"
 scene_to_spawn = ExtResource("2_fghij")
+building_texture = ExtResource("1_plclm")
 build_cost = {
 "wood": 50
 }
@@ -337,41 +342,13 @@ garrisoned_units = {
 [resource]
 script = ExtResource("1_settlement_data")
 treasury = {
-"food": 220,
-"gold": 1500,
-"stone": 300,
-"wood": 810
+"food": 370,
+"gold": 2260,
+"stone": 750,
+"wood": 60
 }
-placed_buildings = Array[Dictionary]([{
-"grid_position": Vector2i(10, 8),
-"resource_path": "res://data/buildings/Bldg_GreatHall.tres"
-}, {
-"grid_position": Vector2i(8, 6),
-"resource_path": "res://data/buildings/Bldg_Wall.tres"
-}, {
-"grid_position": Vector2i(9, 6),
-"resource_path": "res://data/buildings/Bldg_Wall.tres"
-}, {
-"grid_position": Vector2i(11, 6),
-"resource_path": "res://data/buildings/Bldg_Wall.tres"
-}, {
-"grid_position": Vector2i(12, 6),
-"resource_path": "res://data/buildings/Bldg_Wall.tres"
-}, {
-"grid_position": Vector2i(7, 5),
-"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
-}, {
-"grid_position": Vector2i(13, 5),
-"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
-}, {
-"grid_position": Vector2i(6, 10),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(14, 10),
-"resource_path": "res://data/buildings/Monastery_Granary.tres"
-}])
 garrisoned_units = {
-"res://data/units/Unit_PlayerRaider.tres": 5
+"res://data/units/Unit_PlayerRaider.tres": 8
 }
 metadata/_custom_type_script = "uid://hlb8s5g0yp6k"
 
@@ -640,10 +617,11 @@ is_wounded_trait = true
 is_dishonorable_trait = false
 
 --- RESOURCE: res://data/units/Unit_PlayerRaider.tres ---
-[gd_resource type="Resource" script_class="UnitData" load_steps=3 format=3 uid="uid://ejxn3hg8xcu6"]
+[gd_resource type="Resource" script_class="UnitData" load_steps=4 format=3 uid="uid://ejxn3hg8xcu6"]
 
 [ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="1_tcvvg"]
 [ext_resource type="PackedScene" uid="uid://cfanwutbtfcp2" path="res://scenes/units/PlayerVikingRaider.tscn" id="2_spawn_scene"]
+[ext_resource type="Texture2D" uid="uid://pwi4bv5ch827" path="res://textures/placeholders/unit_placeholder.png" id="3_6go6j"]
 
 [resource]
 script = ExtResource("1_tcvvg")
@@ -658,6 +636,7 @@ move_speed = 100.0
 attack_damage = 15
 attack_range = 80.0
 attack_speed = 1.0
+visual_texture = ExtResource("3_6go6j")
 
 --- RESOURCE: res://data/units/Unit_Raider.tres ---
 [gd_resource type="Resource" script_class="UnitData" load_steps=3 format=3 uid="uid://brnbvjwnoyh3j"]
@@ -749,6 +728,7 @@ DefensiveMicro (Node2D)
 > player_spawn_formation = {"units_per_row":5,"spacing":40}
 > mission_difficulty = 1.0
 > allow_retreat = true
+> settlement_bridge_scene_path = "res://scenes/levels/SettlementBridge.tscn"
 > is_defensive_mission = true
 > TileMap (TileMap)
 > > tile_set = res://scenes/levels/DefensiveMicro.tscn::TileSet_m5xuc
@@ -773,38 +753,11 @@ SettlementBridge (Node)
 > scene: res://scenes/levels/SettlementBridge.tscn
 > home_base_data = res://data/settlements/home_base_fixed.tres
 > welcome_popup_scene = res://ui/WelcomeHome_Popup.tscn
-> world_map_scene = res://scenes/world_map/WorldMap_Stub.tscn
+> world_map_scene_path = "res://scenes/world_map/WorldMap_Stub.tscn"
 > cell_size = 16
-> DefensiveMicro (Node2D)
->   script: res://scenes/missions/RaidMission.gd
->   scene: res://scenes/levels/DefensiveMicro.tscn
-> > default_enemy_base_path = "res://data/settlements/monastery_base.tres"
-> > available_enemy_bases = ["res://data/settlements/monastery_base.tres","res://data/settlements/fortress_base.tres"]
-> > victory_bonus_loot = {"gold":200}
-> > player_spawn_formation = {"units_per_row":5,"spacing":40}
-> > mission_difficulty = 1.0
-> > allow_retreat = true
-> > is_defensive_mission = true
->   TileMap (TileMap)
->   > tile_set = res://scenes/levels/DefensiveMicro.tscn::TileSet_m5xuc
->   PlayerStartPosition (Marker2D)
->   > position = (100.0, 400.0)
->   RTSController (Node)
->     script: res://player/RTSController.gd
->     scene: res://player/RTSController.tscn
->   RTSCamera (Camera2D)
->     script: res://player/RTSCamera.gd
->   > position = (400.0, 300.0)
->   > camera_speed = 400.0
->   > edge_pan_margin = 20.0
->   > enable_edge_panning = true
->   > enable_wasd_movement = true
->   > bounds_enabled = false
->   > bounds_rect = [P: (-500.0, -500.0), S: (1500.0, 1200.0)]
 > UnitContainer (Node2D)
 > UI (CanvasLayer)
 >   Label (Label)
->   > anchors_preset = -1
 >   > offset_left = 19.0
 >   > offset_top = 16.0
 >   > offset_right = 328.0
@@ -865,7 +818,7 @@ SettlementBridge (Node)
 >             > layout_mode = 2
 >   RestartButton (Button)
 >   > visible = false
->   > anchors_preset = -1
+>   > anchors_preset = 8
 >   > anchor_left = 0.5
 >   > anchor_top = 0.5
 >   > anchor_right = 0.5
@@ -877,17 +830,7 @@ SettlementBridge (Node)
 >   > grow_horizontal = 2
 >   > grow_vertical = 2
 >   > text = "Return to Settlement"
->   StartAttackButton (Button)
->   > anchors_preset = -1
->   > anchor_left = 1.0
->   > anchor_right = 1.0
->   > offset_left = -110.0
->   > offset_right = -10.0
->   > offset_bottom = 31.0
->   > grow_horizontal = 0
->   > text = "Start Attack"
 >   StartRaidButton (Button)
->   > anchors_preset = -1
 >   > offset_left = 200.0
 >   > offset_top = 20.0
 >   > offset_right = 350.0
@@ -906,7 +849,7 @@ RaidMission (Node2D)
 > player_spawn_formation = {"units_per_row":5,"spacing":40}
 > mission_difficulty = 1.0
 > allow_retreat = true
-> settlement_bridge_scene = res://scenes/levels/SettlementBridge.tscn
+> settlement_bridge_scene_path = "res://scenes/levels/SettlementBridge.tscn"
 > is_defensive_mission = false
 > PlayerStartPosition (Marker2D)
 > > position = (100.0, 400.0)
@@ -971,8 +914,8 @@ VikingRaider (CharacterBody2D)
 WorldMapStub (Control)
 > script: res://scenes/world_map/WorldMap_Stub.gd
 > scene: res://scenes/world_map/WorldMap_Stub.tscn
-> raid_mission_scene = res://scenes/missions/RaidMission.tscn
-> settlement_bridge_scene = res://scenes/levels/SettlementBridge.tscn
+> raid_mission_scene_path = "res://scenes/missions/RaidMission.tscn"
+> settlement_bridge_scene_path = "res://scenes/levels/SettlementBridge.tscn"
 > Background (ColorRect)
 > > layout_mode = 0
 > > color = (0.0, 0.0, 0.0, 1.0)
@@ -1161,6 +1104,30 @@ signal building_ready_for_placement(building_data: BuildingData)
 # Emitted when building placement is cancelled (should refund cost)
 signal building_placement_cancelled(building_data: BuildingData)
 
+--- SCRIPT: res://autoload/SceneManager.gd ---
+# res://autoload/SceneManager.gd
+#
+# A global Singleton (Autoload) that handles all scene transitions.
+# It listens for a signal on the EventBus and performs the change.
+# This decouples all scenes from each other, preventing circular dependencies.
+
+extends Node
+
+func _ready() -> void:
+	# Connect to the EventBus signal that all other scenes will use 
+	EventBus.scene_change_requested.connect(_on_scene_change_requested)
+
+func _on_scene_change_requested(scene_path: String) -> void:
+	if scene_path.is_empty():
+		push_error("SceneManager: scene_change_requested received an empty path.")
+		return
+	
+	print("SceneManager: Changing to scene: %s" % scene_path)
+	var error = get_tree().change_scene_to_file(scene_path)
+	
+	if error != OK:
+		push_error("SceneManager: Failed to change to scene '%s'. Error code: %s" % [scene_path, error])
+
 --- SCRIPT: res://autoload/SettlementManager.gd ---
 # res://autoload/SettlementManager.gd
 
@@ -1259,14 +1226,9 @@ func place_building(building_data: BuildingData, grid_position: Vector2i) -> Bas
 		push_error("Build request failed: BuildingData or scene_to_spawn is null.")
 		return null
 	
-	# Validate grid position is within bounds
-	if not _is_position_valid(grid_position):
-		push_error("Cannot place building at %s: position is outside grid bounds (%d x %d)." % [grid_position, grid_width, grid_height])
-		return null
-	
-	# Check for existing building at this position
-	if _is_position_occupied(grid_position):
-		push_error("Cannot place building at %s: position is already occupied." % grid_position)
+	# Use new, robust validation check
+	if not is_placement_valid(grid_position, building_data.grid_size):
+		push_error("Cannot place building at %s: position is invalid, out of bounds, or occupied." % grid_position)
 		return null
 	
 	var new_building: BaseBuilding = building_data.scene_to_spawn.instantiate()
@@ -1278,15 +1240,22 @@ func place_building(building_data: BuildingData, grid_position: Vector2i) -> Bas
 	
 	building_container.add_child(new_building)
 	
-	# Only update pathfinding if position is valid and building blocks pathfinding
-	if building_data.blocks_pathfinding and _is_position_valid(grid_position):
-		# Ensure grid is properly initialized before setting solid points
+	# --- MODIFIED: This is the critical fix ---
+	# Mark *all* cells occupied by the building as solid, not just the top-left corner.
+	if building_data.blocks_pathfinding:
 		if astar_grid and astar_grid.region.size.x > 0 and astar_grid.region.size.y > 0:
-			astar_grid.set_point_solid(grid_position, true)
-			astar_grid.update()
+			for x in range(building_data.grid_size.x):
+				for y in range(building_data.grid_size.y):
+					var cell_pos = grid_position + Vector2i(x, y)
+					# Check if cell is *within* bounds before setting it
+					if _is_cell_within_bounds(cell_pos):
+						astar_grid.set_point_solid(cell_pos, true)
+			
+			astar_grid.update() # Update grid *after* all points are set
 			EventBus.pathfinding_grid_updated.emit(grid_position)
 		else:
 			push_warning("AStarGrid not properly initialized, skipping pathfinding update for building at %s" % grid_position)
+	# --- END MODIFICATION ---
 		
 	return new_building
 
@@ -1436,22 +1405,41 @@ func get_settlement_status() -> String:
 		garrison_count
 	]
 
-func _is_position_valid(grid_position: Vector2i) -> bool:
-	"""Check if a grid position is within the AStarGrid bounds"""
+# --- NEW FUNCTION ---
+func is_placement_valid(grid_position: Vector2i, building_size: Vector2i) -> bool:
+	"""
+	Checks if a building can be placed at a location.
+	This is now the single source of truth for placement.
+	"""
+	if not astar_grid:
+		push_error("is_placement_valid: AStarGrid is not initialized!")
+		return false
+	
+	# Check all cells the building would occupy
+	for x in range(building_size.x):
+		for y in range(building_size.y):
+			var cell_pos = grid_position + Vector2i(x, y)
+			
+			# 1. Check if cell is within grid bounds
+			if not _is_cell_within_bounds(cell_pos):
+				return false
+			
+			# 2. Check if cell is already solid (occupied)
+			if astar_grid.is_point_solid(cell_pos):
+				return false
+	
+	# All cells are valid and unoccupied
+	return true
+
+# --- RENAMED FUNCTION (was _is_position_valid) ---
+func _is_cell_within_bounds(grid_position: Vector2i) -> bool:
+	"""Check if a *single* grid cell is within the AStarGrid bounds"""
 	return grid_position.x >= 0 and grid_position.x < grid_width and \
 		   grid_position.y >= 0 and grid_position.y < grid_height
 
-func _is_position_occupied(grid_position: Vector2i) -> bool:
-	"""Check if a grid position is already occupied by a building"""
-	if not current_settlement:
-		return false
-	
-	for building_entry in current_settlement.placed_buildings:
-		var existing_pos: Vector2i = building_entry["grid_position"]
-		if existing_pos == grid_position:
-			return true
-	
-	return false
+# --- REMOVED FUNCTION ---
+# _is_position_occupied() is no longer needed, as its logic
+# is now correctly handled by is_placement_valid() checking the AStarGrid.
 
 func set_astar_point_solid(grid_position: Vector2i, solid: bool) -> void:
 	"""Public interface to set pathfinding grid points as solid/passable"""
@@ -1459,7 +1447,7 @@ func set_astar_point_solid(grid_position: Vector2i, solid: bool) -> void:
 		push_warning("AStarGrid not initialized")
 		return
 	
-	if not _is_position_valid(grid_position):
+	if not _is_cell_within_bounds(grid_position):
 		push_warning("Grid position %s is out of bounds" % grid_position)
 		return
 	
@@ -1507,7 +1495,7 @@ func _detect_and_set_grid_size() -> void:
 --- SCRIPT: res://data/buildings/Base_Building.gd ---
 # res://scenes/buildings/Base_Building.gd
 #
-# --- MODIFIED: Added 'building_destroyed' signal ---
+# --- MODIFIED: Added debug warnings and robust checks ---
 
 class_name BaseBuilding
 extends StaticBody2D
@@ -1519,16 +1507,64 @@ signal building_destroyed(building: BaseBuilding)
 @export var data: BuildingData
 var current_health: int = 100
 
+# Get a reference to the nodes
+@onready var sprite: Sprite2D = $Sprite2D
+@onready var collision_shape: CollisionShape2D = $CollisionShape2D
+
 func _ready() -> void:
 	if not data:
-		push_warning("BaseBuilding scene is missing its BuildingData resource.")
+		push_warning("BaseBuilding: Node is missing its 'BuildingData' resource. Cannot initialize.")
 		return
 	
 	current_health = data.max_health
+	
+	# --- Apply Texture and Scaling ---
+	_apply_texture_and_scale()
+
+func _apply_texture_and_scale() -> void:
+	"""
+	Applies the texture from 'data' and scales both the
+	sprite and collision shape to match the 'data.grid_size'.
+	"""
+	
+	# 1. Validate SettlementManager and tile_size
+	if not SettlementManager or SettlementManager.tile_size <= 0:
+		push_error("BaseBuilding: SettlementManager not ready or tile_size is invalid (<= 0). Cannot scale '%s'." % data.display_name)
+		return
+		
+	# 2. Get the target size based on grid
+	var tile_size: float = SettlementManager.tile_size
+	var target_size: Vector2 = Vector2(data.grid_size) * tile_size
+	
+	if target_size.x <= 0 or target_size.y <= 0:
+		push_warning("BaseBuilding: '%s' has a grid_size of %s, resulting in an invalid target_size." % [data.display_name, data.grid_size])
+		return
+
+	# 3. Apply and Scale the Sprite
+	if data.building_texture:
+		sprite.texture = data.building_texture
+		var texture_size: Vector2 = sprite.texture.get_size()
+		
+		if texture_size.x > 0 and texture_size.y > 0:
+			# Non-uniform scaling to fill the grid space
+			var new_scale: Vector2 = target_size / texture_size
+			sprite.scale = new_scale
+		else:
+			push_warning("BaseBuilding: Texture for '%s' has an invalid size of %s. Cannot scale sprite." % [data.display_name, texture_size])
+	else:
+		push_warning("BaseBuilding: '%s' is missing its 'building_texture'. Sprite will be blank or use placeholder." % data.display_name)
+		
+	# 4. Scale the Collision Shape
+	if collision_shape and collision_shape.shape is RectangleShape2D:
+		# Set extents to *half* the target size (from center)
+		collision_shape.shape.extents = target_size / 2.0
+	else:
+		push_warning("BaseBuilding: '%s' is missing its CollisionShape2D node or its shape is not a RectangleShape2D. Collision will not match visuals." % data.display_name)
 
 func take_damage(amount: int) -> void:
 	current_health = max(0, current_health - amount)
-	print("%s took %d damage, %d HP remaining." % [data.display_name, amount, current_health])
+	# Removed the print statement for cleaner debug output
+	# print("%s took %d damage, %d HP remaining." % [data.display_name, amount, current_health])
 	
 	if current_health == 0:
 		die()
@@ -1539,7 +1575,6 @@ func die() -> void:
 	# Add visual feedback for destruction
 	_show_destruction_effect()
 	
-	# --- ADDED ---
 	# Emit the signal *before* queue_free() so listeners
 	# can react before the node is deleted.
 	building_destroyed.emit(self)
@@ -2038,6 +2073,14 @@ extends Resource
 ## Attacks per second.
 @export var attack_speed: float = 1.2
 
+
+@export_group("Visuals")
+## The texture to use for the unit's sprite.
+@export var visual_texture: Texture2D
+
+## The target gameplay size in pixels (e.g., 32x32).
+@export var target_pixel_size: Vector2 = Vector2(32, 32)
+
 --- SCRIPT: res://player/RTSCamera.gd ---
 # res://player/RTSCamera.gd
 # Basic RTS-style camera controller for Phase 3
@@ -2285,7 +2328,11 @@ extends Node2D
 @export var allow_retreat: bool = true
 
 ## The scene to return to after the mission ends (e.g., SettlementBridge.tscn)
-@export var settlement_bridge_scene: PackedScene
+# --- REMOVED ---
+# @export var settlement_bridge_scene: PackedScene
+# --- ADDED ---
+@export var settlement_bridge_scene_path: String = "res://scenes/levels/SettlementBridge.tscn"
+
 
 ## If true, this mission will *not* check for the "all units destroyed" loss condition.
 ## This should be TRUE for the Sacked/Defensive mission.
@@ -2677,11 +2724,12 @@ func _on_mission_failed() -> void:
 	
 	await get_tree().create_timer(3.0).timeout
 	
-	# Return to settlement bridge
-	if settlement_bridge_scene:
-		Engine.get_main_loop().change_scene_to_packed(settlement_bridge_scene)
+	# --- MODIFIED: Emit signal ---
+	if not settlement_bridge_scene_path.is_empty():
+		EventBus.scene_change_requested.emit(settlement_bridge_scene_path)
 	else:
-		push_error("RaidMission: settlement_bridge_scene is not set! Cannot return to settlement.")
+		push_error("RaidMission: settlement_bridge_scene_path is not set! Cannot return to settlement.")
+	# --- END MODIFICATION ---
 
 
 func _show_failure_message() -> void:
@@ -2731,10 +2779,14 @@ func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	
 	await get_tree().create_timer(2.0).timeout
 	
-	if settlement_bridge_scene:
-		Engine.get_main_loop().change_scene_to_packed(settlement_bridge_scene)
+	# --- MODIFIED: Emit signal ---
+	if not settlement_bridge_scene_path.is_empty():
+		EventBus.scene_change_requested.emit(settlement_bridge_scene_path)
 	else:
-		push_error("RaidMission: settlement_bridge_scene is not set! Cannot return to settlement.")
+		push_error("Ra...
+		
+		idMission: settlement_bridge_scene_path is not set! Cannot return to settlement.")
+	# --- END MODIFICATION ---
 
 --- SCRIPT: res://scenes/world_map/WorldMap_Stub.gd ---
 # res://scenes/world_map/WorldMap_Stub.gd
@@ -2743,11 +2795,13 @@ func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 
 extends Control
 
+# --- MODIFIED: Use String paths, not PackedScene ---
 ## The main raid mission scene to load (e.g., RaidMission.tscn)
-@export var raid_mission_scene: PackedScene
+@export var raid_mission_scene_path: String = "res://scenes/missions/RaidMission.tscn"
 
 ## The scene to return to (e.g., SettlementBridge.tscn)
-@export var settlement_bridge_scene: PackedScene
+@export var settlement_bridge_scene_path: String = "res://scenes/levels/SettlementBridge.tscn"
+# --- END MODIFICATION ---
 
 @onready var raid_monastery_button: Button = $ButtonContainer/RaidMonasteryButton
 @onready var back_button: Button = $ButtonContainer/BackButton
@@ -2782,19 +2836,23 @@ func _on_raid_monastery_pressed() -> void:
 		push_error("Cannot start raid: No settlement loaded")
 		return
 	
-	# Transition to raid mission
-	if raid_mission_scene:
-		get_tree().change_scene_to_packed(raid_mission_scene)
+	# --- MODIFIED: Emit signal ---
+	if not raid_mission_scene_path.is_empty():
+		EventBus.scene_change_requested.emit(raid_mission_scene_path)
 	else:
-		push_error("WorldMap_Stub: raid_mission_scene is not set! Cannot start raid.")
+		push_error("WorldMap_Stub: raid_mission_scene_path is not set! Cannot start raid.")
+	# --- END MODIFICATION ---
 
 func _on_back_pressed() -> void:
 	"""Return to the settlement"""
 	print("Returning to settlement...")
-	if settlement_bridge_scene:
-		get_tree().change_scene_to_packed(settlement_bridge_scene)
+	
+	# --- MODIFIED: Emit signal ---
+	if not settlement_bridge_scene_path.is_empty():
+		EventBus.scene_change_requested.emit(settlement_bridge_scene_path)
 	else:
-		push_error("WorldMap_Stub: settlement_bridge_scene is not set! Cannot return.")
+		push_error("WorldMap_Stub: settlement_bridge_scene_path is not set! Cannot return.")
+	# --- END MODIFICATION ---
 
 --- SCRIPT: res://scripts/ai/SentryAI.gd ---
 # res://scripts/ai/SentryAI.gd
@@ -3161,7 +3219,11 @@ extends Node
 @export var welcome_popup_scene: PackedScene
 
 ## The scene for the world map (e.g., WorldMap_Stub.tscn)
-@export var world_map_scene: PackedScene
+# --- REMOVED ---
+# @export var world_map_scene: PackedScene
+# --- ADDED ---
+@export var world_map_scene_path: String = "res://scenes/world_map/WorldMap_Stub.tscn"
+
 
 ##Size of the cell for the grid helper
 @export var cell_size: int = 32
@@ -3175,7 +3237,6 @@ var default_welcome_popup: PackedScene = preload("res://ui/WelcomeHome_Popup.tsc
 @onready var unit_container: Node2D = $UnitContainer
 @onready var ui_layer: CanvasLayer = $UI
 @onready var restart_button: Button = $UI/RestartButton
-@onready var start_attack_button: Button = $UI/StartAttackButton
 @onready var start_raid_button: Button = $UI/StartRaidButton
 @onready var storefront_ui: Control = $UI/Storefront_UI
 @onready var building_cursor: Node2D = $BuildingCursor
@@ -3205,7 +3266,7 @@ func _setup_default_resources() -> void:
 	if not raider_scene:
 		raider_scene = load("res://scenes/units/VikingRaider.tscn")
 		
-	if not welcome_popup_scene:
+	if not welcome_popup_scene: 
 		welcome_popup_scene = default_welcome_popup
 
 func _initialize_settlement() -> void:
@@ -3256,7 +3317,6 @@ func _setup_ui() -> void:
 func _connect_signals() -> void:
 	"""Connect button signals"""
 	restart_button.pressed.connect(_on_restart_pressed)
-	start_attack_button.pressed.connect(_on_start_attack_pressed)
 	start_raid_button.pressed.connect(_on_start_raid_pressed)
 	
 	# Connect to EventBus for loose coupling
@@ -3274,7 +3334,6 @@ func _handle_welcome_payout() -> void:
 	var payout = SettlementManager.calculate_payout()
 	if not payout.is_empty():
 		welcome_popup.display_payout(payout)
-		start_attack_button.disabled = true # Disable combat until payout is collected
 		storefront_ui.hide()
 
 func _on_settlement_loaded(_settlement_data: SettlementData) -> void:
@@ -3319,7 +3378,6 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _on_payout_collected(payout: Dictionary) -> void:
 	SettlementManager.deposit_resources(payout)
-	start_attack_button.disabled = false # Re-enable combat
 	storefront_ui.show()
 
 func _find_and_setup_great_hall() -> void:
@@ -3330,17 +3388,6 @@ func _find_and_setup_great_hall() -> void:
 			print("Great Hall found and connected.")
 			return
 	push_error("SettlementBridge: Could not find Great Hall instance after loading settlement.")
-
-
-func _spawn_raider_for_test() -> void:
-	if not great_hall_instance:
-		push_error("Cannot spawn raider: Great Hall does not exist.")
-		return
-		
-	var raider_instance: BaseUnit = raider_scene.instantiate()
-	unit_container.add_child(raider_instance)
-	raider_instance.global_position = RAIDER_SPAWN_POS
-	raider_instance.set_attack_target(great_hall_instance)
 
 
 func _on_great_hall_destroyed(_building: BaseBuilding) -> void:
@@ -3358,13 +3405,6 @@ func _destroy_all_enemies() -> void:
 
 func _on_restart_pressed() -> void:
 	get_tree().reload_current_scene()
-
-func _on_start_attack_pressed() -> void:
-	print("Start Attack button pressed. Spawning raider.")
-	# Timestamps are no longer needed for a fixed-payout system.
-	_spawn_raider_for_test()
-	start_attack_button.hide()
-	storefront_ui.hide()
 
 func _on_start_raid_pressed() -> void:
 	"""Navigate to the world map to select targets"""
@@ -3386,13 +3426,12 @@ func _on_start_raid_pressed() -> void:
 	
 	print("Settlement loaded with garrison: %s" % SettlementManager.current_settlement.garrisoned_units)
 	
-	# Navigate to world map instead of direct raid
-	if world_map_scene:
-		get_tree().change_scene_to_packed(world_map_scene)
+	# --- MODIFIED: Emit signal instead of changing scene ---
+	if not world_map_scene_path.is_empty():
+		EventBus.scene_change_requested.emit(world_map_scene_path)
 	else:
-		# Fallback: load world map directly if not set in inspector
-		print("world_map_scene not set, loading WorldMap_Stub directly")
-		get_tree().change_scene_to_file("res://scenes/world_map/WorldMap_Stub.tscn")
+		push_error("world_map_scene_path is not set! Cannot change scene.")
+	# --- END MODIFICATION ---
 
 # --- NEW BUILDING CURSOR SYSTEM FUNCTIONS ---
 
@@ -3749,7 +3788,7 @@ var preview_sprite: Sprite2D
 var is_active: bool = false
 
 # Grid and placement
-var cell_size: int = 32
+var cell_size: int = 32 # Default fallback
 var grid_overlay: Node2D
 var can_place: bool = false
 
@@ -3769,9 +3808,14 @@ func _ready() -> void:
 	grid_overlay.name = "GridOverlay"
 	add_child(grid_overlay)
 	
-	# Set cell size from SettlementManager if available
-	if SettlementManager.astar_grid and SettlementManager.astar_grid.cell_size != Vector2.ZERO:
-		cell_size = int(SettlementManager.astar_grid.cell_size.x)
+	# --- MODIFIED: Unify grid size source (from review) ---
+	# Use SettlementManager as the single source of truth for grid size.
+	if SettlementManager and SettlementManager.tile_size > 0:
+		cell_size = int(SettlementManager.tile_size)
+	else:
+		# Use the local 32 only as a fallback if the manager fails
+		push_warning("BuildingPreviewCursor: SettlementManager not ready or tile_size invalid. Defaulting to %d." % cell_size)
+	# --- END MODIFICATION ---
 	
 	print("BuildingPreviewCursor ready with cell_size: %d" % cell_size)
 
@@ -3794,25 +3838,48 @@ func set_building_preview(building_data: BuildingData) -> void:
 	# Set up the building texture
 	if building_data.building_texture:
 		preview_sprite.texture = building_data.building_texture
-		print("Using building texture for preview")
+		# print("Using building texture for preview") # No longer needed
 	else:
 		# Create a simple colored rectangle if no texture
 		var texture = _create_building_texture(building_data)
 		preview_sprite.texture = texture
 		print("Created fallback texture for preview")
 	
+	
+	# --- Automatic Scaling Logic ---
+	
+	# 1. Get the target size based on grid
+	# We can now safely use our local 'cell_size' because it's synced.
+	var target_size: Vector2 = Vector2(building_data.grid_size) * cell_size
+	
+	# 2. Scale the Sprite (if texture exists)
+	if preview_sprite.texture:
+		var texture_size: Vector2 = preview_sprite.texture.get_size()
+		
+		if texture_size.x > 0 and texture_size.y > 0:
+			var new_scale: Vector2 = target_size / texture_size
+			preview_sprite.scale = new_scale
+		else:
+			push_warning("BuildingPreviewCursor: Texture for '%s' has invalid size %s. Cannot scale preview." % [building_data.display_name, texture_size])
+	else:
+		push_warning("BuildingPreviewCursor: No texture for '%s' preview." % building_data.display_name)
+			
+	# --- END SCALING LOGIC ---
+
+	
 	# Set semi-transparent
 	preview_sprite.modulate = valid_color
 	add_child(preview_sprite)
 	
 	# Create grid outline to show building footprint
+	# This now correctly uses the synced 'cell_size'
 	_create_grid_outline(building_data.grid_size)
 	
 	# Activate placement mode
 	is_active = true
 	visible = true
 	
-	print("Building preview activated for %s (grid size: %s)" % [building_data.display_name, building_data.grid_size])
+	# print("Building preview activated for %s (grid size: %s)" % [building_data.display_name, building_data.grid_size])
 
 func _create_building_texture(building_data: BuildingData) -> ImageTexture:
 	"""Create a simple colored texture for buildings without textures"""
@@ -3836,7 +3903,7 @@ func _create_grid_outline(grid_size: Vector2i) -> void:
 	var outline_color = Color.WHITE
 	var line_width = 2.0
 	
-	# Calculate outline rectangle
+	# This var 'rect_size' now correctly uses the synced 'cell_size'
 	var rect_size = Vector2(grid_size.x * cell_size, grid_size.y * cell_size)
 	
 	# Create outline using Line2D nodes for each edge
@@ -3922,36 +3989,21 @@ func _process(_delta: float) -> void:
 
 func _world_to_grid(world_pos: Vector2) -> Vector2i:
 	"""Convert world position to grid coordinates"""
+	# Now safely uses the synced 'cell_size'
 	return Vector2i(int(world_pos.x / cell_size), int(world_pos.y / cell_size))
 
 func _grid_to_world(grid_pos: Vector2i) -> Vector2:
 	"""Convert grid coordinates to world position (centered on cell)"""
+	# Now safely uses the synced 'cell_size'
 	return Vector2(grid_pos.x * cell_size, grid_pos.y * cell_size)
 
 func _can_place_at_position(grid_pos: Vector2i) -> bool:
-	"""Check if building can be placed at the specified grid position"""
-	if not SettlementManager.astar_grid or not current_building_data:
+	"""Check if building can be placed by asking the SettlementManager."""
+	if not SettlementManager or not current_building_data:
 		return false
 	
-	var grid_size = SettlementManager.astar_grid.size
-	var building_size = current_building_data.grid_size
-	
-	# Check if building fits within grid bounds
-	if grid_pos.x < 0 or grid_pos.y < 0:
-		return false
-	if grid_pos.x + building_size.x > grid_size.x:
-		return false
-	if grid_pos.y + building_size.y > grid_size.y:
-		return false
-	
-	# Check if all cells are free
-	for x in range(building_size.x):
-		for y in range(building_size.y):
-			var check_pos = Vector2i(grid_pos.x + x, grid_pos.y + y)
-			if SettlementManager.astar_grid.is_point_solid(check_pos):
-				return false
-	
-	return true
+	# Delegate the check to the manager, which is the single source of truth
+	return SettlementManager.is_placement_valid(grid_pos, current_building_data.grid_size)
 
 func _update_visual_feedback() -> void:
 	"""Update the visual appearance based on placement validity"""
@@ -4037,7 +4089,7 @@ func _input(event: InputEvent) -> void:
 --- SCRIPT: res://scripts/units/Base_Unit.gd ---
 # res://scenes/units/Base_Unit.gd
 #
-# --- MODIFIED: Added AttackTimer reference and visual tweening by state ---
+# --- MODIFIED: Added auto-scaling for texture and collision ---
 
 class_name BaseUnit
 extends CharacterBody2D
@@ -4051,6 +4103,7 @@ var current_health: int = 50
 # Node refs
 @onready var attack_timer: Timer = $AttackTimer
 @onready var sprite: Sprite2D = $Sprite2D
+@onready var collision_shape: CollisionShape2D = $CollisionShape2D
 
 # Color tweening
 var _color_tween: Tween
@@ -4059,14 +4112,17 @@ const STATE_COLORS := {
 	UnitFSM.State.MOVING: Color(0.4, 1.0, 0.4),   # Green
 	UnitFSM.State.ATTACKING: Color(1.0, 0.3, 0.3) # Red
 }
-const ERROR_COLOR := Color(0.7, 0.3, 1.0)        # Purple
+const ERROR_COLOR := Color(0.7, 0.3, 1.0)         # Purple
 
 func _ready() -> void:
 	if not data:
-		push_warning("BaseUnit scene is missing its BuildingData resource.")
+		push_warning("BaseUnit: Node is missing its 'UnitData' resource. Cannot initialize.")
 		return
 	
 	current_health = data.max_health
+	
+	# --- ADDED: Apply Texture and Scaling ---
+	_apply_texture_and_scale()
 	
 	# Pass the timer reference to the FSM
 	fsm = UnitFSM.new(self, attack_timer)
@@ -4075,6 +4131,41 @@ func _ready() -> void:
 	sprite.modulate = STATE_COLORS.get(UnitFSM.State.IDLE, Color.WHITE)
 	
 	EventBus.pathfinding_grid_updated.connect(_on_grid_updated)
+
+func _apply_texture_and_scale() -> void:
+	"""
+	Applies the texture from 'data' and scales both the
+	sprite and collision shape to match the 'data.target_pixel_size'.
+	"""
+	
+	# 1. Validate the target size
+	if data.target_pixel_size.x <= 0 or data.target_pixel_size.y <= 0:
+		push_warning("BaseUnit: '%s' has a target_pixel_size of %s, which is invalid." % [data.display_name, data.target_pixel_size])
+		return
+		
+	var target_size: Vector2 = data.target_pixel_size
+
+	# 2. Apply and Scale the Sprite
+	if data.visual_texture:
+		sprite.texture = data.visual_texture
+		var texture_size: Vector2 = sprite.texture.get_size()
+		
+		if texture_size.x > 0 and texture_size.y > 0:
+			# Non-uniform scaling to fill the target size
+			var new_scale: Vector2 = target_size / texture_size
+			sprite.scale = new_scale
+		else:
+			push_warning("BaseUnit: Texture for '%s' has an invalid size of %s. Cannot scale sprite." % [data.display_name, texture_size])
+	else:
+		push_warning("BaseUnit: '%s' is missing its 'visual_texture'. Sprite will be blank or use placeholder." % data.display_name)
+		
+	# 3. Scale the Collision Shape
+	if collision_shape and collision_shape.shape is RectangleShape2D:
+		# Set extents to *half* the target size (from center)
+		collision_shape.shape.extents = target_size / 2.0
+	else:
+		push_warning("BaseUnit: '%s' is missing its CollisionShape2D node or its shape is not a RectangleShape2D. Collision will not match visuals." % data.display_name)
+# --- END ADDED ---
 
 func _exit_tree() -> void:
 	if EventBus.is_connected("pathfinding_grid_updated", _on_grid_updated):
@@ -4112,7 +4203,7 @@ func _tween_color(to_color: Color, duration: float = 0.2) -> void:
 
 func take_damage(amount: int) -> void:
 	current_health = max(0, current_health - amount)
-	print("%s took %d damage, %d HP remaining." % [data.display_name, amount, current_health])
+	# print("%s took %d damage, %d HP remaining." % [data.display_name, amount, current_health])
 	if current_health == 0:
 		die()
 
@@ -4143,10 +4234,10 @@ func set_selected(selected: bool) -> void:
 	
 	if is_selected:
 		_show_selection_indicator()
-		print("%s selected" % data.display_name)
+		# print("%s selected" % data.display_name) # Too noisy
 	else:
 		_hide_selection_indicator()
-		print("%s deselected" % data.display_name)
+		# print("%s deselected" % data.display_name) # Too noisy
 
 func _show_selection_indicator() -> void:
 	"""Show visual selection indicator"""
