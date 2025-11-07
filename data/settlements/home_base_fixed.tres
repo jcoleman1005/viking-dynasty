@@ -1,14 +1,14 @@
-[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://4sgf1nphws1d"]
+[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3]
 
-[ext_resource type="Script" uid="uid://hlb8s5g0yp6k" path="res://data/settlements/SettlementData.gd" id="1_settlement_data"]
+[ext_resource type="Script" path="res://data/settlements/SettlementData.gd" id="1_settlement_data"]
 
 [resource]
 script = ExtResource("1_settlement_data")
 treasury = {
 "food": 220,
-"gold": 1400,
-"stone": 225,
-"wood": 560
+"gold": 1300,
+"stone": 175,
+"wood": 310
 }
 garrisoned_units = {
 "res://data/units/Unit_PlayerRaider.tres": 5
