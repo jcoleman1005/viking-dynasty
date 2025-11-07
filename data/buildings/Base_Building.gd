@@ -1,6 +1,6 @@
 # res://scenes/buildings/Base_Building.gd
 #
-# --- MODIFIED: Added 'building_destroyed' signal ---
+# --- MODIFIED: Added code to apply building_texture ---
 
 class_name BaseBuilding
 extends StaticBody2D
@@ -12,12 +12,22 @@ signal building_destroyed(building: BaseBuilding)
 @export var data: BuildingData
 var current_health: int = 100
 
+# Get a reference to the Sprite2D node
+@onready var sprite: Sprite2D = $Sprite2D
+
 func _ready() -> void:
 	if not data:
 		push_warning("BaseBuilding scene is missing its BuildingData resource.")
 		return
 	
 	current_health = data.max_health
+	
+	# --- ADDED: Apply the texture from the data ---
+	# This checks if a texture has been assigned in the .tres file
+	if data.building_texture:
+		# If it has, apply it to our Sprite2D node
+		sprite.texture = data.building_texture
+	# --- END ADDED ---
 
 func take_damage(amount: int) -> void:
 	current_health = max(0, current_health - amount)
