@@ -8,7 +8,7 @@ var preview_sprite: Sprite2D
 var is_active: bool = false
 
 # Grid and placement
-var cell_size: int = 32
+var cell_size: int = 32 # Default fallback
 var grid_overlay: Node2D
 var can_place: bool = false
 
@@ -28,9 +28,14 @@ func _ready() -> void:
 	grid_overlay.name = "GridOverlay"
 	add_child(grid_overlay)
 	
-	# Set cell size from SettlementManager if available
-	if SettlementManager.astar_grid and SettlementManager.astar_grid.cell_size != Vector2.ZERO:
-		cell_size = int(SettlementManager.astar_grid.cell_size.x)
+	# --- MODIFIED: Unify grid size source (from review) ---
+	# Use SettlementManager as the single source of truth for grid size.
+	if SettlementManager and SettlementManager.tile_size > 0:
+		cell_size = int(SettlementManager.tile_size)
+	else:
+		# Use the local 32 only as a fallback if the manager fails
+		push_warning("BuildingPreviewCursor: SettlementManager not ready or tile_size invalid. Defaulting to %d." % cell_size)
+	# --- END MODIFICATION ---
 	
 	print("BuildingPreviewCursor ready with cell_size: %d" % cell_size)
 
@@ -53,25 +58,48 @@ func set_building_preview(building_data: BuildingData) -> void:
 	# Set up the building texture
 	if building_data.building_texture:
 		preview_sprite.texture = building_data.building_texture
-		print("Using building texture for preview")
+		# print("Using building texture for preview") # No longer needed
 	else:
 		# Create a simple colored rectangle if no texture
 		var texture = _create_building_texture(building_data)
 		preview_sprite.texture = texture
 		print("Created fallback texture for preview")
 	
+	
+	# --- Automatic Scaling Logic ---
+	
+	# 1. Get the target size based on grid
+	# We can now safely use our local 'cell_size' because it's synced.
+	var target_size: Vector2 = Vector2(building_data.grid_size) * cell_size
+	
+	# 2. Scale the Sprite (if texture exists)
+	if preview_sprite.texture:
+		var texture_size: Vector2 = preview_sprite.texture.get_size()
+		
+		if texture_size.x > 0 and texture_size.y > 0:
+			var new_scale: Vector2 = target_size / texture_size
+			preview_sprite.scale = new_scale
+		else:
+			push_warning("BuildingPreviewCursor: Texture for '%s' has invalid size %s. Cannot scale preview." % [building_data.display_name, texture_size])
+	else:
+		push_warning("BuildingPreviewCursor: No texture for '%s' preview." % building_data.display_name)
+			
+	# --- END SCALING LOGIC ---
+
+	
 	# Set semi-transparent
 	preview_sprite.modulate = valid_color
 	add_child(preview_sprite)
 	
 	# Create grid outline to show building footprint
+	# This now correctly uses the synced 'cell_size'
 	_create_grid_outline(building_data.grid_size)
 	
 	# Activate placement mode
 	is_active = true
 	visible = true
 	
-	print("Building preview activated for %s (grid size: %s)" % [building_data.display_name, building_data.grid_size])
+	# print("Building preview activated for %s (grid size: %s)" % [building_data.display_name, building_data.grid_size])
 
 func _create_building_texture(building_data: BuildingData) -> ImageTexture:
 	"""Create a simple colored texture for buildings without textures"""
@@ -95,7 +123,7 @@ func _create_grid_outline(grid_size: Vector2i) -> void:
 	var outline_color = Color.WHITE
 	var line_width = 2.0
 	
-	# Calculate outline rectangle
+	# This var 'rect_size' now correctly uses the synced 'cell_size'
 	var rect_size = Vector2(grid_size.x * cell_size, grid_size.y * cell_size)
 	
 	# Create outline using Line2D nodes for each edge
@@ -181,36 +209,21 @@ func _process(_delta: float) -> void:
 
 func _world_to_grid(world_pos: Vector2) -> Vector2i:
 	"""Convert world position to grid coordinates"""
+	# Now safely uses the synced 'cell_size'
 	return Vector2i(int(world_pos.x / cell_size), int(world_pos.y / cell_size))
 
 func _grid_to_world(grid_pos: Vector2i) -> Vector2:
 	"""Convert grid coordinates to world position (centered on cell)"""
+	# Now safely uses the synced 'cell_size'
 	return Vector2(grid_pos.x * cell_size, grid_pos.y * cell_size)
 
 func _can_place_at_position(grid_pos: Vector2i) -> bool:
-	"""Check if building can be placed at the specified grid position"""
-	if not SettlementManager.astar_grid or not current_building_data:
+	"""Check if building can be placed by asking the SettlementManager."""
+	if not SettlementManager or not current_building_data:
 		return false
 	
-	var grid_size = SettlementManager.astar_grid.size
-	var building_size = current_building_data.grid_size
-	
-	# Check if building fits within grid bounds
-	if grid_pos.x < 0 or grid_pos.y < 0:
-		return false
-	if grid_pos.x + building_size.x > grid_size.x:
-		return false
-	if grid_pos.y + building_size.y > grid_size.y:
-		return false
-	
-	# Check if all cells are free
-	for x in range(building_size.x):
-		for y in range(building_size.y):
-			var check_pos = Vector2i(grid_pos.x + x, grid_pos.y + y)
-			if SettlementManager.astar_grid.is_point_solid(check_pos):
-				return false
-	
-	return true
+	# Delegate the check to the manager, which is the single source of truth
+	return SettlementManager.is_placement_valid(grid_pos, current_building_data.grid_size)
 
 func _update_visual_feedback() -> void:
 	"""Update the visual appearance based on placement validity"""

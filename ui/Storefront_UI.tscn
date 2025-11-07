@@ -1,7 +1,6 @@
-[gd_scene load_steps=3 format=3 uid="uid://btovbm7r6nern"]
+[gd_scene load_steps=2 format=3 uid="uid://btovbm7r6nern"]
 
 [ext_resource type="Script" uid="uid://t708tcf43ayu" path="res://ui/StorefrontUI.gd" id="1_ht1qg"]
-[ext_resource type="PackedScene" uid="uid://dqh0xu88khxct" path="res://ui/WelcomeHome_Popup.tscn" id="2_theme"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -10,7 +9,6 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme = ExtResource("2_theme")
 script = ExtResource("1_ht1qg")
 default_treasury_display = {
 "food": 100,
@@ -21,7 +19,7 @@ default_treasury_display = {
 
 [node name="PanelContainer" type="PanelContainer" parent="."]
 layout_mode = 1
-anchors_preset = 2
+anchors_preset = -1
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = 20.0
@@ -52,37 +50,26 @@ theme_override_constants/separation = 15
 
 [node name="GoldLabel" type="Label" parent="PanelContainer/MarginContainer/TabContainer/BuildTab/TreasuryDisplay"]
 layout_mode = 2
-text = "Gold: 0"
 theme_override_font_sizes/font_size = 14
+text = "Gold: 0"
 
 [node name="WoodLabel" type="Label" parent="PanelContainer/MarginContainer/TabContainer/BuildTab/TreasuryDisplay"]
 layout_mode = 2
-text = "Wood: 0"
 theme_override_font_sizes/font_size = 14
+text = "Wood: 0"
 
 [node name="FoodLabel" type="Label" parent="PanelContainer/MarginContainer/TabContainer/BuildTab/TreasuryDisplay"]
 layout_mode = 2
-text = "Food: 0"
 theme_override_font_sizes/font_size = 14
+text = "Food: 0"
 
 [node name="StoneLabel" type="Label" parent="PanelContainer/MarginContainer/TabContainer/BuildTab/TreasuryDisplay"]
 layout_mode = 2
-text = "Stone: 0"
 theme_override_font_sizes/font_size = 14
+text = "Stone: 0"
 
-[node name="BuildButtons" type="HBoxContainer" parent="PanelContainer/MarginContainer/TabContainer/BuildTab"]
+[node name="BuildButtonsContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer/TabContainer/BuildTab"]
 layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="BuyWallButton" type="Button" parent="PanelContainer/MarginContainer/TabContainer/BuildTab/BuildButtons"]
-layout_mode = 2
-custom_minimum_size = Vector2(100, 36)
-text = "Wall"
-
-[node name="BuyLumberYardButton" type="Button" parent="PanelContainer/MarginContainer/TabContainer/BuildTab/BuildButtons"]
-layout_mode = 2
-custom_minimum_size = Vector2(100, 36)
-text = "Lumber Yard"
 
 [node name="RecruitTab" type="VBoxContainer" parent="PanelContainer/MarginContainer/TabContainer"]
 visible = false

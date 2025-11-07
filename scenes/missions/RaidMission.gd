@@ -22,7 +22,11 @@ extends Node2D
 @export var allow_retreat: bool = true
 
 ## The scene to return to after the mission ends (e.g., SettlementBridge.tscn)
-@export var settlement_bridge_scene: PackedScene
+# --- REMOVED ---
+# @export var settlement_bridge_scene: PackedScene
+# --- ADDED ---
+@export var settlement_bridge_scene_path: String = "res://scenes/levels/SettlementBridge.tscn"
+
 
 ## If true, this mission will *not* check for the "all units destroyed" loss condition.
 ## This should be TRUE for the Sacked/Defensive mission.
@@ -414,11 +418,12 @@ func _on_mission_failed() -> void:
 	
 	await get_tree().create_timer(3.0).timeout
 	
-	# Return to settlement bridge
-	if settlement_bridge_scene:
-		Engine.get_main_loop().change_scene_to_packed(settlement_bridge_scene)
+	# --- MODIFIED: Emit signal ---
+	if not settlement_bridge_scene_path.is_empty():
+		EventBus.scene_change_requested.emit(settlement_bridge_scene_path)
 	else:
-		push_error("RaidMission: settlement_bridge_scene is not set! Cannot return to settlement.")
+		push_error("RaidMission: settlement_bridge_scene_path is not set! Cannot return to settlement.")
+	# --- END MODIFICATION ---
 
 
 func _show_failure_message() -> void:
@@ -468,7 +473,11 @@ func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	
 	await get_tree().create_timer(2.0).timeout
 	
-	if settlement_bridge_scene:
-		Engine.get_main_loop().change_scene_to_packed(settlement_bridge_scene)
+	# --- MODIFIED: Emit signal ---
+	if not settlement_bridge_scene_path.is_empty():
+		EventBus.scene_change_requested.emit(settlement_bridge_scene_path)
 	else:
-		push_error("RaidMission: settlement_bridge_scene is not set! Cannot return to settlement.")
+		push_error("Ra...
+		
+		idMission: settlement_bridge_scene_path is not set! Cannot return to settlement.")
+	# --- END MODIFICATION ---

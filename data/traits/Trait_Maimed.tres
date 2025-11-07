@@ -1,0 +1,16 @@
+[gd_resource type="TraitData" format=3 uid="uid://bbiwlkmmne5md"]
+
+[resource]
+resource_local_to_scene = false
+resource_name = ""
+display_name = "Maimed"
+description = "This character has suffered a permanent injury that affects their combat ability."
+is_visible = true
+command_modifier = -2
+stewardship_modifier = 0
+intrigue_modifier = 0
+renown_per_year_modifier = -1.0
+vassal_opinion_modifier = -5
+alliance_cost_modifier = 1.1
+is_wounded_trait = true
+is_dishonorable_trait = false

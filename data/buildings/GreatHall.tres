@@ -12,4 +12,5 @@ build_cost = {
 "wood": 250
 }
 max_health = 50
-grid_size = Vector2i(3, 2)
+grid_size = Vector2i(4, 4)
+is_player_buildable = true

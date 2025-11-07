@@ -1,14 +1,14 @@
-[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://chtd3i4qtdv31"]
 
-[ext_resource type="Script" path="res://data/settlements/SettlementData.gd" id="1_e06fl"]
+[ext_resource type="Script" uid="uid://hlb8s5g0yp6k" path="res://data/settlements/SettlementData.gd" id="1_e06fl"]
 
 [resource]
 script = ExtResource("1_e06fl")
 treasury = {
-"food": 325,
-"gold": 1620,
+"food": 315,
+"gold": 1600,
 "stone": 150,
-"wood": 500
+"wood": 520
 }
 placed_buildings = Array[Dictionary]([{
 "grid_position": Vector2i(10, 8),
@@ -39,5 +39,5 @@ placed_buildings = Array[Dictionary]([{
 "resource_path": "res://data/buildings/Monastery_Watchtower.tres"
 }])
 garrisoned_units = {
-"res://data/units/Unit_PlayerRaider.tres": 6
+"res://data/units/Unit_PlayerRaider.tres": 8
 }
