@@ -1,5 +1,8 @@
+# res://data/traits/JarlTraitData.gd
+#
 # This resource defines the statistical and diplomatic impact of a single trait.
-class_name TraitData
+# Renamed to JarlTraitData to avoid keyword conflict with Godot's internal 'Trait'.
+class_name JarlTraitData
 extends Resource
 
 ## General Information

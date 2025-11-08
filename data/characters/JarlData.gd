@@ -59,8 +59,8 @@ extends Resource
 
 
 @export_group("Traits")
-## Array of TraitData resources that modify the Jarl's abilities and story
-@export var traits: Array[TraitData] = []
+## Array of JarlTraitData resources that modify the Jarl's abilities and story
+@export var traits: Array[JarlTraitData] = []
 
 ## Legacy trait names for backward compatibility (can be removed later)
 @export var legacy_trait_names: Array[String] = []
@@ -136,23 +136,23 @@ func get_effective_skill(skill_name: String) -> int:
 	
 	# Apply trait modifiers
 	var trait_modifier: int = 0
-	for trait in traits:
-		if trait == null:
+	for jarl_trait in traits:
+		if jarl_trait == null:
 			continue
 		
 		match skill_name.to_lower():
 			"command":
-				trait_modifier += trait.command_modifier
+				trait_modifier += jarl_trait.command_modifier
 			"stewardship":
-				trait_modifier += trait.stewardship_modifier
+				trait_modifier += jarl_trait.stewardship_modifier
 			"intrigue":
-				trait_modifier += trait.intrigue_modifier
+				trait_modifier += jarl_trait.intrigue_modifier
 	
 	return base_value + trait_modifier
 
 
 ## Add a trait to the Jarl (if not already present)
-func add_trait(trait_data: TraitData) -> void:
+func add_trait(trait_data: JarlTraitData) -> void:
 	if trait_data == null:
 		return
 	# Check if we already have this trait (by display name)
@@ -164,8 +164,8 @@ func add_trait(trait_data: TraitData) -> void:
 
 ## Check if Jarl has a specific trait by display name
 func has_trait(trait_name: String) -> bool:
-	for trait in traits:
-		if trait != null and trait.display_name == trait_name:
+	for jarl_trait in traits:
+		if jarl_trait != null and jarl_trait.display_name == trait_name:
 			return true
 	return false
 
@@ -258,7 +258,7 @@ func remove_trait(trait_name: String) -> bool:
 ## Get all trait names as a string array (for easy saving/display)
 func get_trait_names() -> Array[String]:
 	var trait_names: Array[String] = []
-	for trait in traits:
-		if trait != null:
-			trait_names.append(trait.display_name)
+	for jarl_trait in traits:
+		if jarl_trait != null:
+			trait_names.append(jarl_trait.display_name)
 	return trait_names
