@@ -1,7 +1,7 @@
 # res://scenes/world_map/Region.gd
 #
 # Attached to an Area2D node to make a map province
-# clickable and interactive. 
+# clickable and interactive.
 class_name Region
 extends Area2D
 
@@ -90,12 +90,18 @@ func set_visual_state(is_hovered: bool) -> void:
 	tween.tween_property(sprite, "modulate", target_color, 0.1).set_trans(Tween.TRANS_SINE)
 
 func _on_mouse_entered() -> void:
-	print("Mouse entered region: %s" % data.display_name)
+	# --- DEBUGGING CODE ---
+	print("DEBUG: Mouse ENTERED region: %s" % data.display_name)
+	# --- END DEBUGGING ---
+	
 	set_visual_state(true)
 	emit_signal("region_hovered", data, get_global_mouse_position())
 
 func _on_mouse_exited() -> void:
-	print("Mouse exited region: %s" % data.display_name)
+	# --- DEBUGGING CODE ---
+	print("DEBUG: Mouse EXITED region: %s" % data.display_name)
+	# --- END DEBUGGING ---
+	
 	set_visual_state(false)
 	emit_signal("region_exited")
 

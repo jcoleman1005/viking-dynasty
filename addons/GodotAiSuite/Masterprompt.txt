@@ -371,17 +371,17 @@ garrisoned_units = {
 }
 
 --- RESOURCE: res://data/settlements/home_base_fixed.tres ---
-[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://krrruuxkr64y"]
+[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://dg8j06gh4u1jj"]
 
 [ext_resource type="Script" uid="uid://hlb8s5g0yp6k" path="res://data/settlements/SettlementData.gd" id="1_settlement_data"]
 
 [resource]
 script = ExtResource("1_settlement_data")
 treasury = {
-"food": 220,
-"gold": 3010,
-"stone": 650,
-"wood": 60
+"food": 195,
+"gold": 3325,
+"stone": 625,
+"wood": 20
 }
 placed_buildings = Array[Dictionary]([{
 "grid_position": Vector2i(11, 7),
@@ -395,9 +395,15 @@ placed_buildings = Array[Dictionary]([{
 }, {
 "grid_position": Vector2i(14, 7),
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(11, 17),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(17, 8),
+"resource_path": "res://data/buildings/LumberYard.tres"
 }])
 garrisoned_units = {
-"res://data/units/Unit_PlayerRaider.tres": 14
+"res://data/units/Unit_PlayerRaider.tres": 15
 }
 metadata/_custom_type_script = "uid://hlb8s5g0yp6k"
 
@@ -818,11 +824,15 @@ SettlementBridge (Node)
 > UnitContainer (Node2D)
 > UI (CanvasLayer)
 >   Label (Label)
->   > offset_left = 19.0
->   > offset_top = 16.0
->   > offset_right = 328.0
->   > offset_bottom = 39.0
+>   > anchors_preset = 5
+>   > anchor_left = 0.5
+>   > anchor_right = 0.5
+>   > offset_left = -319.0
+>   > offset_right = 319.0
+>   > offset_bottom = 23.0
+>   > grow_horizontal = 2
 >   > text = "Purchase buildings from the storefront below, then place them on your settlement"
+>   > horizontal_alignment = 1
 >   Storefront_UI (Control)
 >     script: res://ui/StorefrontUI.gd
 >     scene: res://ui/Storefront_UI.tscn
@@ -891,10 +901,15 @@ SettlementBridge (Node)
 >   > grow_vertical = 2
 >   > text = "Return to Settlement"
 >   StartRaidButton (Button)
->   > offset_left = 200.0
->   > offset_top = 20.0
->   > offset_right = 350.0
->   > offset_bottom = 60.0
+>   > anchors_preset = 3
+>   > anchor_left = 1.0
+>   > anchor_top = 1.0
+>   > anchor_right = 1.0
+>   > anchor_bottom = 1.0
+>   > offset_left = -150.0
+>   > offset_top = -40.0
+>   > grow_horizontal = 0
+>   > grow_vertical = 0
 >   > text = "World Map"
 > BuildingCursor (Node2D)
 >   script: res://scripts/ui/BuildingPreviewCursor.gd
@@ -1014,6 +1029,7 @@ MacroMap (Node2D)
 > > grow_horizontal = 2
 > > grow_vertical = 2
 > > scale = (60.0, 34.0)
+> > mouse_filter = 2
 > > color = (0.8314, 0.7725, 0.6275, 1.0)
 > Regions (Node2D)
 >   Region (Area2D)
@@ -1034,7 +1050,6 @@ MacroMap (Node2D)
 > > bounds_rect = [P: (0.0, 0.0), S: (1920.0, 1080.0)]
 > UI (CanvasLayer)
 > > layer = 10
-> > visible = false
 >   JarlInfo (PanelContainer)
 >   > anchors_preset = 5
 >   > anchor_left = 0.5
@@ -1043,7 +1058,7 @@ MacroMap (Node2D)
 >   > offset_right = 20.0
 >   > offset_bottom = 40.0
 >   > grow_horizontal = 2
->   > mouse_filter = 2
+>   > mouse_filter = 1
 >     VBoxContainer (VBoxContainer)
 >     > layout_mode = 2
 >       AuthorityLabel (Label)
@@ -1065,7 +1080,7 @@ MacroMap (Node2D)
 >   > offset_top = -40.0
 >   > grow_horizontal = 0
 >   > grow_vertical = 0
->   > mouse_filter = 1
+>   > mouse_filter = 2
 >     VBoxContainer (VBoxContainer)
 >     > layout_mode = 2
 >       EndYearButton (Button)
@@ -1086,7 +1101,7 @@ MacroMap (Node2D)
 >   > offset_right = 20.0
 >   > grow_horizontal = 2
 >   > grow_vertical = 0
->   > mouse_filter = 2
+>   > mouse_filter = 1
 >     VBoxContainer (VBoxContainer)
 >     > layout_mode = 2
 >       RegionNameLabel (Label)
@@ -3334,7 +3349,7 @@ func _input(event: InputEvent) -> void:
 # res://scenes/world_map/Region.gd
 #
 # Attached to an Area2D node to make a map province
-# clickable and interactive. 
+# clickable and interactive.
 class_name Region
 extends Area2D
 
@@ -3423,12 +3438,18 @@ func set_visual_state(is_hovered: bool) -> void:
 	tween.tween_property(sprite, "modulate", target_color, 0.1).set_trans(Tween.TRANS_SINE)
 
 func _on_mouse_entered() -> void:
-	print("Mouse entered region: %s" % data.display_name)
+	# --- DEBUGGING CODE ---
+	print("DEBUG: Mouse ENTERED region: %s" % data.display_name)
+	# --- END DEBUGGING ---
+	
 	set_visual_state(true)
 	emit_signal("region_hovered", data, get_global_mouse_position())
 
 func _on_mouse_exited() -> void:
-	print("Mouse exited region: %s" % data.display_name)
+	# --- DEBUGGING CODE ---
+	print("DEBUG: Mouse EXITED region: %s" % data.display_name)
+	# --- END DEBUGGING ---
+	
 	set_visual_state(false)
 	emit_signal("region_exited")
 
