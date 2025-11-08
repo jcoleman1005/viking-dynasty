@@ -12,6 +12,7 @@ building_texture = ExtResource("1_n45a8")
 build_cost = {
 "stone": 25
 }
+dev_color = Color(0.4, 0.4, 0.8, 1)
 is_player_buildable = true
 attack_damage = 0
 attack_range = 0.0

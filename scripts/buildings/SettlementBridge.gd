@@ -222,7 +222,7 @@ func _on_start_raid_pressed() -> void:
 	print("Settlement loaded with garrison: %s" % SettlementManager.current_settlement.garrisoned_units)
 	
 	if not world_map_scene_path.is_empty():
-		EventBus.scene_change_requested.emit(world_map_scene_path)
+		EventBus.scene_change_requested.emit("world_map")
 	else:
 		push_error("world_map_scene_path is not set! Cannot change scene.")
 

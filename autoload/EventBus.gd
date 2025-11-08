@@ -19,7 +19,8 @@ signal purchase_successful(item_name: String)
 signal purchase_failed(reason: String)
 
 # --- Navigation Signals (Phase 3) ---
-signal scene_change_requested(scene_path: String)
+# MODIFIED: Now emits a string KEY name, not a full path.
+signal scene_change_requested(scene_key: String)
 signal world_map_opened()
 signal raid_mission_started(target_type: String)
 
