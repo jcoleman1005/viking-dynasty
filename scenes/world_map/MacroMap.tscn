@@ -1,0 +1,132 @@
+[gd_scene load_steps=5 format=3 uid="uid://ba41qxyi1a30u"]
+
+[ext_resource type="Script" uid="uid://dmq8s5ifmd1dx" path="res://scenes/world_map/MacroMap.gd" id="1_macro_map"]
+[ext_resource type="PackedScene" uid="uid://cuyni4y77q51q" path="res://scenes/world_map/Region.tscn" id="2_region"]
+[ext_resource type="Resource" uid="uid://dbhfg3lfhe6tw" path="res://data/world_map/Region_Monastery.tres" id="3_monastery_data"]
+[ext_resource type="PackedScene" uid="uid://lpxvj8dvfbnl" path="res://scenes/world_map/MacroCamera.tscn" id="5_okptj"]
+
+[node name="MacroMap" type="Node2D"]
+position = Vector2(131, 23)
+script = ExtResource("1_macro_map")
+
+[node name="MapBackground" type="ColorRect" parent="."]
+modulate = Color(0.735357, 0.735357, 0.735357, 1)
+custom_minimum_size = Vector2(1920, 1080)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -703.00006
+offset_top = -262.0
+offset_right = 1217.0
+offset_bottom = 818.0
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(60, 34)
+mouse_filter = 2
+color = Color(0.83137256, 0.77254903, 0.627451, 1)
+
+[node name="Regions" type="Node2D" parent="."]
+
+[node name="Region" parent="Regions" instance=ExtResource("2_region")]
+position = Vector2(392, 139)
+data = ExtResource("3_monastery_data")
+
+[node name="MacroCamera" parent="." instance=ExtResource("5_okptj")]
+
+[node name="UI" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="JarlInfo" type="PanelContainer" parent="UI"]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.0
+offset_right = 20.0
+offset_bottom = 40.0
+grow_horizontal = 2
+mouse_filter = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/JarlInfo"]
+layout_mode = 2
+
+[node name="AuthorityLabel" type="Label" parent="UI/JarlInfo/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Authority: 3/3"
+horizontal_alignment = 1
+
+[node name="RenownLabel" type="Label" parent="UI/JarlInfo/VBoxContainer"]
+layout_mode = 2
+text = "Renown: 25"
+horizontal_alignment = 1
+
+[node name="Actions" type="PanelContainer" parent="UI"]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -40.0
+offset_top = -40.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/Actions"]
+layout_mode = 2
+
+[node name="EndYearButton" type="Button" parent="UI/Actions/VBoxContainer"]
+layout_mode = 2
+text = "End Year"
+
+[node name="SettlementButton" type="Button" parent="UI/Actions/VBoxContainer"]
+layout_mode = 2
+text = "Return to Settlement"
+
+[node name="RegionInfo" type="PanelContainer" parent="UI"]
+visible = false
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -20.0
+offset_top = -40.0
+offset_right = 20.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/RegionInfo"]
+layout_mode = 2
+
+[node name="RegionNameLabel" type="Label" parent="UI/RegionInfo/VBoxContainer"]
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="LaunchRaidButton" type="Button" parent="UI/RegionInfo/VBoxContainer"]
+layout_mode = 2
+disabled = true
+text = "Launch Raid"
+
+[node name="Tooltip" type="PanelContainer" parent="UI"]
+visible = false
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -51.5
+offset_top = -58.0
+offset_right = 98.5
+offset_bottom = -28.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="Label" type="Label" parent="UI/Tooltip"]
+layout_mode = 2
+text = "Region Name"
+horizontal_alignment = 1
+
+[editable path="Regions/Region"]

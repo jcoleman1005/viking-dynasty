@@ -1,6 +1,9 @@
-[gd_resource type="TraitData" format=3 uid="uid://bivw1rejl06qi"]
+[gd_resource type="Resource" script_class="JarlTraitData" load_steps=2 format=3 uid="uid://bivw1rejl06qi"]
+
+[ext_resource type="Script" path="res://data/traits/JarlTraitData.gd" id="1_jarl_trait"]
 
 [resource]
+script = ExtResource("1_jarl_trait")
 resource_local_to_scene = false
 resource_name = ""
 display_name = "Cowardly"

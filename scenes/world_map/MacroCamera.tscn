@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://lpxvj8dvfbnl"]
+
+[ext_resource type="Script" uid="uid://ccjwevksm7s3s" path="res://scenes/world_map/MacroCamera.gd" id="1_tibwm"]
+
+[node name="MacroCamera" type="Camera2D"]
+script = ExtResource("1_tibwm")
