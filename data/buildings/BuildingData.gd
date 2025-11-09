@@ -31,6 +31,9 @@ extends Resource
 ## The size of the building on the AStarGrid2D.
 @export var grid_size: Vector2i = Vector2i.ONE
 
+## Development visual color for the building rectangle.
+@export var dev_color: Color = Color.GRAY
+
 ## If true, this building will appear in the player's Storefront UI.
 @export var is_player_buildable: bool = false
 

@@ -197,9 +197,11 @@ func place_building(building_data: BuildingData, grid_position: Vector2i) -> Bas
 	var new_building: BaseBuilding = building_data.scene_to_spawn.instantiate()
 	new_building.data = building_data
 	
+	# Calculate the center position of the building's entire footprint
 	var world_pos_top_left: Vector2 = Vector2(grid_position) * active_astar_grid.cell_size
-	var half_cell_offset: Vector2 = active_astar_grid.cell_size / 2.0
-	new_building.global_position = world_pos_top_left + half_cell_offset
+	var building_footprint_size: Vector2 = Vector2(building_data.grid_size) * active_astar_grid.cell_size
+	var building_center_offset: Vector2 = building_footprint_size / 2.0
+	new_building.global_position = world_pos_top_left + building_center_offset
 	
 	active_building_container.add_child(new_building)
 	

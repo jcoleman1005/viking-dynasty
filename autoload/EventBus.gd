@@ -19,7 +19,8 @@ signal purchase_successful(item_name: String)
 signal purchase_failed(reason: String)
 
 # --- Navigation Signals (Phase 3) ---
-signal scene_change_requested(scene_path: String)
+# MODIFIED: Now emits a string KEY name, not a full path.
+signal scene_change_requested(scene_key: String)
 signal world_map_opened()
 signal raid_mission_started(target_type: String)
 
@@ -40,6 +41,9 @@ signal move_command(target_position: Vector2)
 
 # Emitted on right-click on an enemy
 signal attack_command(target_node: Node2D)
+
+# --- NEW: Emitted on right-click-and-drag ---
+signal formation_move_command(target_position: Vector2, direction_vector: Vector2)
 
 # --- NEW: Building Cursor System Signals ---
 # Emitted when a building is purchased and ready for cursor placement

@@ -1,12 +1,19 @@
 # res://ui/SelectionBox.gd
-# This Control node covers the entire screen. It listens for
+# This Control node covers the entire screen.
+# It listens for
 # raw input, draws the selection box, and emits clean,
-# intent-based signals to the EventBus. It also uses
+# intent-based signals to the EventBus.
+# It also uses
 # accept_event() to stop input from passing through the UI.
 extends Control
 
 var is_dragging := false
 var start_pos := Vector2.ZERO
+
+# --- NEW: Formation Drag ---
+var is_command_dragging := false
+var command_start_pos := Vector2.ZERO
+# ---------------------------
 
 func _ready() -> void:
 	# This node handles its own input via _gui_input,
@@ -41,15 +48,52 @@ func _gui_input(event: InputEvent) -> void:
 				queue_redraw() # Clear the box
 				accept_event()
 		
-		elif event.button_index == MOUSE_BUTTON_RIGHT and event.is_pressed():
-			# This is a "smart command"
-			_handle_smart_command(get_local_mouse_position())
-			accept_event()
+		# --- MODIFIED: Handle Right Click Drag ---
+		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			if event.is_pressed():
+				is_command_dragging = true
+				command_start_pos = get_local_mouse_position()
+				accept_event()
+			else: # On Right-Click Release
+				if not is_command_dragging:
+					# This can happen if the click started outside the window
+					# and was released inside. Ignore it.
+					return
+					
+				is_command_dragging = false
+				var end_pos = get_local_mouse_position()
+				var drag_vector = end_pos - command_start_pos
+				
+				var main_camera: Camera2D = get_viewport().get_camera_2d()
+				if not main_camera: 
+					push_error("SelectionBox: No Camera2D found.")
+					return
+
+				# Convert screen positions to world
+				# We use get_global_mouse_position() for the *end*
+				# and calculate the start based on the drag vector
+				var world_end_pos = main_camera.get_global_mouse_position()
+				var world_start_pos = world_end_pos - (drag_vector / main_camera.zoom)
+				
+				# Check if it was a drag or just a click
+				if drag_vector.length_squared() > 225: # 15px drag threshold
+					# It was a drag. Emit formation move.
+					# The direction is from start to end
+					var world_drag_vector = (world_end_pos - world_start_pos).normalized()
+					EventBus.formation_move_command.emit(world_start_pos, world_drag_vector)
+				else:
+					# It was a click. Do smart command.
+					_handle_smart_command(end_pos)
+					
+				queue_redraw() # Clear drag line
+				accept_event()
+		# -----------------------------------------
 	
-	elif event is InputEventMouseMotion and is_dragging:
-		# Update the draw loop as the mouse moves
-		queue_redraw()
-		accept_event()
+	elif event is InputEventMouseMotion:
+		if is_dragging or is_command_dragging:
+			# Update the draw loop as the mouse moves
+			queue_redraw()
+			accept_event()
 
 func _handle_smart_command(screen_pos: Vector2) -> void:
 	# This function determines if a right-click
@@ -93,3 +137,11 @@ func _draw() -> void:
 		draw_rect(rect, Color(0.8, 0.8, 1.0, 0.2), true)
 		# Draw a solid outline
 		draw_rect(rect, Color(0.8, 0.8, 1.0, 1.0), false, 1.0)
+	
+	# --- NEW: Draw command drag line ---
+	if is_command_dragging:
+		var current_pos := get_local_mouse_position()
+		draw_line(command_start_pos, current_pos, Color.GREEN, 2.0)
+		draw_circle(command_start_pos, 5.0, Color.GREEN)
+		draw_circle(current_pos, 3.0, Color.GREEN)
+	# ----------------------------------

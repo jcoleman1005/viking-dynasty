@@ -17,10 +17,10 @@ config/features=PackedStringArray("4.5", "GL Compatibility")
 [autoload]
 
 EventBus="*res://autoload/EventBus.gd"
-SceneManager="*res://autoload/SceneManager.gd"
 SettlementManager="*res://autoload/SettlementManager.gd"
 PauseManager="*res://autoload/PauseManager.tscn"
 DynastyManager="*res://autoload/DynastyManager.gd"
+SceneManager="*res://autoload/SceneManager.tscn"
 
 [editor]
 

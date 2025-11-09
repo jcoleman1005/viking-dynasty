@@ -33,10 +33,10 @@ config/features=PackedStringArray("4.5", "GL Compatibility")
 [autoload]
 
 EventBus="*res://autoload/EventBus.gd"
-SceneManager="*res://autoload/SceneManager.gd"
 SettlementManager="*res://autoload/SettlementManager.gd"
 PauseManager="*res://autoload/PauseManager.tscn"
 DynastyManager="*res://autoload/DynastyManager.gd"
+SceneManager="*res://autoload/SceneManager.tscn"
 
 [editor]
 
@@ -91,6 +91,7 @@ building_texture = ExtResource("1_n45a8")
 build_cost = {
 "stone": 25
 }
+dev_color = Color(0.4, 0.4, 0.8, 1)
 is_player_buildable = true
 attack_damage = 0
 attack_range = 0.0
@@ -233,10 +234,75 @@ build_cost = {
 "wood": 60
 }
 max_health = 150
+dev_color = Color(0.8, 0.2, 0.2, 1)
 is_defensive_structure = true
 attack_damage = 15
 attack_range = 250.0
 attack_speed = 1.5
+
+--- RESOURCE: res://data/buildings/Player_Barracks.tres ---
+[gd_resource type="Resource" script_class="BuildingData" load_steps=4 format=3 uid="uid://c0ih7mriv2h1g"]
+
+[ext_resource type="Texture2D" uid="uid://csni4uyao275g" path="res://textures/placeholders/wall_stone_texture.png" id="1_e5dmt"]
+[ext_resource type="PackedScene" uid="uid://cws6xle5x52g4" path="res://scenes/buildings/Base_Building.tscn" id="2_n2ory"]
+[ext_resource type="Script" uid="uid://js4bbqgeyd6c" path="res://data/buildings/BuildingData.gd" id="3_yutc8"]
+
+[resource]
+script = ExtResource("3_yutc8")
+display_name = "Barracks"
+scene_to_spawn = ExtResource("2_n2ory")
+building_texture = ExtResource("1_e5dmt")
+build_cost = {
+"stone": 50,
+"wood": 100
+}
+is_player_buildable = true
+attack_damage = 0
+attack_range = 0.0
+attack_speed = 0.0
+
+--- RESOURCE: res://data/buildings/Player_Farm.tres ---
+[gd_resource type="Resource" script_class="EconomicBuildingData" load_steps=4 format=3 uid="uid://y7xhmemltm28"]
+
+[ext_resource type="Texture2D" uid="uid://cvtmpipin3j4" path="res://textures/placeholders/lumber_mill_placeholder.png" id="1_lr1ah"]
+[ext_resource type="PackedScene" uid="uid://cws6xle5x52g4" path="res://scenes/buildings/Base_Building.tscn" id="2_mixjq"]
+[ext_resource type="Script" uid="uid://d33smw07vm6y4" path="res://data/buildings/EconomicBuildingData.gd" id="3_svyis"]
+
+[resource]
+script = ExtResource("3_svyis")
+resource_type = "food"
+fixed_payout_amount = 75
+display_name = "Farm"
+scene_to_spawn = ExtResource("2_mixjq")
+building_texture = ExtResource("1_lr1ah")
+build_cost = {
+"wood": 75
+}
+max_health = 75
+grid_size = Vector2i(2, 2)
+dev_color = Color(0.2, 0.8, 0.2, 1)
+is_player_buildable = true
+
+--- RESOURCE: res://data/buildings/Test_Large_Building.tres ---
+[gd_resource type="Resource" script_class="BuildingData" load_steps=3 format=3 uid="uid://bk4qd2jfm3kgp"]
+
+[ext_resource type="Script" uid="uid://js4bbqgeyd6c" path="res://data/buildings/BuildingData.gd" id="1_i2pmy"]
+[ext_resource type="PackedScene" uid="uid://cws6xle5x52g4" path="res://scenes/buildings/Base_Building.tscn" id="2_hptna"]
+
+[resource]
+script = ExtResource("1_i2pmy")
+display_name = "Large Test Building"
+scene_to_spawn = ExtResource("2_hptna")
+build_cost = {
+"wood": 100
+}
+max_health = 200
+grid_size = Vector2i(3, 3)
+dev_color = Color(0.8, 0.6, 0.2, 1)
+is_player_buildable = true
+attack_damage = 0
+attack_range = 0.0
+attack_speed = 0.0
 
 --- RESOURCE: res://data/characters/PlayerJarl.tres ---
 [gd_resource type="Resource" script_class="JarlData" load_steps=3 format=3]
@@ -249,6 +315,7 @@ script = ExtResource("1_jarl_data")
 display_name = "Jarl Bjorn"
 age = 30
 renown = 25
+current_authority = 1
 command = 12
 stewardship = 11
 learning = 9
@@ -371,17 +438,17 @@ garrisoned_units = {
 }
 
 --- RESOURCE: res://data/settlements/home_base_fixed.tres ---
-[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://dg8j06gh4u1jj"]
+[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://cr75f5mo2ac1u"]
 
 [ext_resource type="Script" uid="uid://hlb8s5g0yp6k" path="res://data/settlements/SettlementData.gd" id="1_settlement_data"]
 
 [resource]
 script = ExtResource("1_settlement_data")
 treasury = {
-"food": 195,
-"gold": 3325,
-"stone": 625,
-"wood": 20
+"food": 170,
+"gold": 3715,
+"stone": 600,
+"wood": 40
 }
 placed_buildings = Array[Dictionary]([{
 "grid_position": Vector2i(11, 7),
@@ -401,9 +468,18 @@ placed_buildings = Array[Dictionary]([{
 }, {
 "grid_position": Vector2i(17, 8),
 "resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(20, 7),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(15, 7),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(22, 7),
+"resource_path": "res://data/buildings/LumberYard.tres"
 }])
 garrisoned_units = {
-"res://data/units/Unit_PlayerRaider.tres": 15
+"res://data/units/Unit_PlayerRaider.tres": 16
 }
 metadata/_custom_type_script = "uid://hlb8s5g0yp6k"
 
@@ -773,6 +849,14 @@ PauseManager (Node)
 > scene: res://autoload/PauseManager.tscn
 > pause_menu_scene = res://scripts/ui/PauseMenu.tscn
 
+--- SCENE: res://autoload/SceneManager.tscn ---
+SceneManager (Node)
+> script: res://autoload/SceneManager.gd
+> scene: res://autoload/SceneManager.tscn
+> settlement_scene = res://scenes/levels/SettlementBridge.tscn
+> world_map_scene = res://scenes/world_map/MacroMap.tscn
+> raid_mission_scene = res://scenes/missions/RaidMission.tscn
+
 --- SCENE: res://player/RTSController.tscn ---
 RTSController (Node)
 > script: res://player/RTSController.gd
@@ -782,11 +866,21 @@ RTSController (Node)
 Base_Building (StaticBody2D)
 > script: res://data/buildings/Base_Building.gd
 > scene: res://scenes/buildings/Base_Building.tscn
-> Sprite2D (Sprite2D)
-> > scale = (0.088867, 0.083008)
-> > texture = res://textures/placeholders/building_placeholder.png
 > CollisionShape2D (CollisionShape2D)
 > > shape = res://scenes/buildings/Base_Building.tscn::RectangleShape2D_b5w0v
+> ColorRect (ColorRect)
+> > custom_minimum_size = (25.0, 25.0)
+> > anchors_preset = -1
+> > offset_right = 40.0
+> > offset_bottom = 40.0
+> > size_flags_horizontal = 3
+> > color = (0.7373, 0.7373, 0.7373, 1.0)
+>   Label (Label)
+>   > layout_mode = 0
+>   > offset_right = 114.0
+>   > offset_bottom = 23.0
+>   > text = "Building Name"
+>   > horizontal_alignment = 1
 
 --- SCENE: res://scenes/levels/DefensiveMicro.tscn ---
 DefensiveMicro (Node2D)
@@ -820,11 +914,11 @@ SettlementBridge (Node)
 > scene: res://scenes/levels/SettlementBridge.tscn
 > home_base_data = res://data/settlements/home_base_fixed.tres
 > welcome_popup_scene = res://ui/WelcomeHome_Popup.tscn
-> world_map_scene_path = "res://scenes/world_map/WorldMap_Stub.tscn"
+> world_map_scene_path = "res://scenes/world_map/MacroMap.tscn"
 > UnitContainer (Node2D)
 > UI (CanvasLayer)
 >   Label (Label)
->   > anchors_preset = 5
+>   > anchors_preset = -1
 >   > anchor_left = 0.5
 >   > anchor_right = 0.5
 >   > offset_left = -319.0
@@ -888,7 +982,7 @@ SettlementBridge (Node)
 >             > layout_mode = 2
 >   RestartButton (Button)
 >   > visible = false
->   > anchors_preset = 8
+>   > anchors_preset = -1
 >   > anchor_left = 0.5
 >   > anchor_top = 0.5
 >   > anchor_right = 0.5
@@ -901,7 +995,7 @@ SettlementBridge (Node)
 >   > grow_vertical = 2
 >   > text = "Return to Settlement"
 >   StartRaidButton (Button)
->   > anchors_preset = 3
+>   > anchors_preset = -1
 >   > anchor_left = 1.0
 >   > anchor_top = 1.0
 >   > anchor_right = 1.0
@@ -1019,7 +1113,7 @@ MacroMap (Node2D)
 > MapBackground (ColorRect)
 > > modulate = (0.7354, 0.7354, 0.7354, 1.0)
 > > custom_minimum_size = (1920.0, 1080.0)
-> > anchors_preset = 15
+> > anchors_preset = -1
 > > anchor_right = 1.0
 > > anchor_bottom = 1.0
 > > offset_left = -703.000061035156
@@ -1051,7 +1145,7 @@ MacroMap (Node2D)
 > UI (CanvasLayer)
 > > layer = 10
 >   JarlInfo (PanelContainer)
->   > anchors_preset = 5
+>   > anchors_preset = -1
 >   > anchor_left = 0.5
 >   > anchor_right = 0.5
 >   > offset_left = -20.0
@@ -1071,7 +1165,7 @@ MacroMap (Node2D)
 >       > text = "Renown: 25"
 >       > horizontal_alignment = 1
 >   Actions (PanelContainer)
->   > anchors_preset = 3
+>   > anchors_preset = -1
 >   > anchor_left = 1.0
 >   > anchor_top = 1.0
 >   > anchor_right = 1.0
@@ -1091,7 +1185,7 @@ MacroMap (Node2D)
 >       > text = "Return to Settlement"
 >   RegionInfo (PanelContainer)
 >   > visible = false
->   > anchors_preset = 7
+>   > anchors_preset = -1
 >   > anchor_left = 0.5
 >   > anchor_top = 1.0
 >   > anchor_right = 0.5
@@ -1113,7 +1207,7 @@ MacroMap (Node2D)
 >       > text = "Launch Raid"
 >   Tooltip (PanelContainer)
 >   > visible = false
->   > anchors_preset = 7
+>   > anchors_preset = -1
 >   > anchor_left = 0.5
 >   > anchor_top = 1.0
 >   > anchor_right = 0.5
@@ -1179,7 +1273,7 @@ PauseMenu (CanvasLayer)
 > scene: res://scripts/ui/PauseMenu.tscn
 > process_mode = 2
 > PanelContainer (PanelContainer)
-> > anchors_preset = 8
+> > anchors_preset = -1
 > > anchor_left = 0.5
 > > anchor_top = 0.5
 > > anchor_right = 0.5
@@ -1213,6 +1307,11 @@ GridManager (Node)
 --- SCENE: res://tools/main_test.tscn ---
 Main Test (Node2D)
 > scene: res://tools/main_test.tscn
+
+--- SCENE: res://tools/Phase1_TestRunner.tscn ---
+Node (Node)
+> script: res://tools/Phase1TestRunner.gd
+> scene: res://tools/Phase1_TestRunner.tscn
 
 --- SCENE: res://ui/BuildingPreviewCursor.tscn ---
 BuildingPreviewCursor (Node2D)
@@ -1445,7 +1544,8 @@ signal purchase_successful(item_name: String)
 signal purchase_failed(reason: String)
 
 # --- Navigation Signals (Phase 3) ---
-signal scene_change_requested(scene_path: String)
+# MODIFIED: Now emits a string KEY name, not a full path.
+signal scene_change_requested(scene_key: String)
 signal world_map_opened()
 signal raid_mission_started(target_type: String)
 
@@ -1513,23 +1613,47 @@ func _unhandled_input(event: InputEvent) -> void:
 # A global Singleton (Autoload) that handles all scene transitions.
 # It listens for a signal on the EventBus and performs the change.
 # This decouples all scenes from each other, preventing circular dependencies.
-
 extends Node
+
+# --- Phase 1 Refactor: PackedScene Exports ---
+# Assign these in the Godot Editor (Project > Project Settings > Autoload > SceneManager)
+@export var settlement_scene: PackedScene
+@export var world_map_scene: PackedScene
+@export var raid_mission_scene: PackedScene
+# ---------------------------------------------
 
 func _ready() -> void:
 	# Connect to the EventBus signal that all other scenes will use 
 	EventBus.scene_change_requested.connect(_on_scene_change_requested)
 
-func _on_scene_change_requested(scene_path: String) -> void:
-	if scene_path.is_empty():
-		push_error("SceneManager: scene_change_requested received an empty path.")
+func _on_scene_change_requested(scene_key: String) -> void:
+	if scene_key.is_empty():
+		push_error("SceneManager: scene_change_requested received an empty key.")
 		return
+
+	var target_scene: PackedScene = null
 	
-	print("SceneManager: Changing to scene: %s" % scene_path)
-	var error = get_tree().change_scene_to_file(scene_path)
+	# Match the string key to the exported PackedScene
+	match scene_key.to_lower():
+		"settlement":
+			target_scene = settlement_scene
+		"world_map":
+			target_scene = world_map_scene
+		"raid_mission":
+			target_scene = raid_mission_scene
+		_:
+			push_error("SceneManager: Unknown scene key '%s'. No scene transition will occur." % scene_key)
+			return
+
+	if not target_scene:
+		push_error("SceneManager: Scene key '%s' is valid, but its PackedScene is not assigned in the Inspector!" % scene_key)
+		return
+
+	print("SceneManager: Changing to scene: %s (Key: %s)" % [target_scene.resource_path, scene_key])
+	var error = get_tree().change_scene_to_packed(target_scene)
 	
 	if error != OK:
-		push_error("SceneManager: Failed to change to scene '%s'. Error code: %s" % [scene_path, error])
+		push_error("SceneManager: Failed to change to scene '%s'. Error code: %s" % [target_scene.resource_path, error])
 
 --- SCRIPT: res://autoload/SettlementManager.gd ---
 # res://autoload/SettlementManager.gd
@@ -1731,9 +1855,11 @@ func place_building(building_data: BuildingData, grid_position: Vector2i) -> Bas
 	var new_building: BaseBuilding = building_data.scene_to_spawn.instantiate()
 	new_building.data = building_data
 	
+	# Calculate the center position of the building's entire footprint
 	var world_pos_top_left: Vector2 = Vector2(grid_position) * active_astar_grid.cell_size
-	var half_cell_offset: Vector2 = active_astar_grid.cell_size / 2.0
-	new_building.global_position = world_pos_top_left + half_cell_offset
+	var building_footprint_size: Vector2 = Vector2(building_data.grid_size) * active_astar_grid.cell_size
+	var building_center_offset: Vector2 = building_footprint_size / 2.0
+	new_building.global_position = world_pos_top_left + building_center_offset
 	
 	active_building_container.add_child(new_building)
 	
@@ -1810,24 +1936,25 @@ func set_astar_point_solid(grid_position: Vector2i, solid: bool) -> void:
 --- SCRIPT: res://data/buildings/Base_Building.gd ---
 # res://data/buildings/Base_Building.gd
 #
-# --- MODIFIED: (The "Proper Fix") ---
-# Now uses SettlementManager.get_active_grid_cell_size()
-# to get the grid size, instead of accessing a hard-coded
-# .tile_size property.
-
+# --- MODIFIED: (Dev Art Fix) ---
+# Now uses a ColorRect and Label instead of a Sprite2D.
 class_name BaseBuilding
 extends StaticBody2D
 
 ## This signal is emitted when health reaches zero.
-## GDD Ref:
 signal building_destroyed(building: BaseBuilding)
 
 @export var data: BuildingData
 var current_health: int = 100
 
-# Get a reference to the nodes
-@onready var sprite: Sprite2D = $Sprite2D
+# Get a reference to the new nodes
+@onready var background: ColorRect = $ColorRect
+@onready var label: Label = $ColorRect/Label
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
+
+# Development visual enhancements
+var health_bar: ProgressBar
+var border_rect: ColorRect
 
 func _ready() -> void:
 	if not data:
@@ -1836,13 +1963,16 @@ func _ready() -> void:
 	
 	current_health = data.max_health
 	
-	# --- Apply Texture and Scaling ---
-	_apply_texture_and_scale()
+	# --- Apply Data and Scaling ---
+	_apply_data_and_scale()
+	
+	# --- Create Development Visuals ---
+	_create_dev_visuals()
 
-func _apply_texture_and_scale() -> void:
+func _apply_data_and_scale() -> void:
 	"""
-	Applies the texture from 'data' and scales both the
-	sprite and collision shape to match the 'data.grid_size'.
+	Applies the data from the .tres file and scales the
+	ColorRect and collision shape to match the 'data.grid_size'.
 	"""
 	
 	# 1. Validate SettlementManager and get the cell size
@@ -1850,13 +1980,10 @@ func _apply_texture_and_scale() -> void:
 		push_error("BaseBuilding: SettlementManager not ready. Cannot scale '%s'." % data.display_name)
 		return
 	
-	# --- THIS IS THE FIX ---
-	# Get the cell size from the manager, which gets it from the active grid
 	var cell_size: Vector2 = SettlementManager.get_active_grid_cell_size()
 	if cell_size.x <= 0 or cell_size.y <= 0:
 		push_error("BaseBuilding: SettlementManager returned invalid cell_size (%s). Cannot scale '%s'." % [cell_size, data.display_name])
 		return
-	# --- END FIX ---
 		
 	# 2. Get the target size based on grid
 	var target_size: Vector2 = Vector2(data.grid_size) * cell_size
@@ -1865,31 +1992,33 @@ func _apply_texture_and_scale() -> void:
 		push_warning("BaseBuilding: '%s' has a grid_size of %s, resulting in an invalid target_size." % [data.display_name, data.grid_size])
 		return
 
-	# 3. Apply and Scale the Sprite
-	if data.building_texture:
-		sprite.texture = data.building_texture
-		var texture_size: Vector2 = sprite.texture.get_size()
-		
-		if texture_size.x > 0 and texture_size.y > 0:
-			# Non-uniform scaling to fill the grid space
-			var new_scale: Vector2 = target_size / texture_size
-			sprite.scale = new_scale
-		else:
-			push_warning("BaseBuilding: Texture for '%s' has an invalid size of %s. Cannot scale sprite." % [data.display_name, texture_size])
-	else:
-		push_warning("BaseBuilding: '%s' is missing its 'building_texture'. Sprite will be blank or use placeholder." % data.display_name)
-		
-	# 4. Scale the Collision Shape
+	# 3. Apply and Scale the Background
+	background.custom_minimum_size = target_size
+	
+	# --- THIS IS THE FIX (PART 1) ---
+	# Shift the background's position so it's centered on the node's origin,
+	# just like the collision shape.
+	background.position = -target_size / 2.0
+	
+	# 4. Apply Enhanced Visual Styling
+	_apply_visual_styling(target_size)
+
+	# 5. Scale the Collision Shape
 	if collision_shape and collision_shape.shape is RectangleShape2D:
-		# Set extents to *half* the target size (from center)
-		collision_shape.shape.extents = target_size / 2.0
+		# Set size to match the target size (Godot 4.x uses 'size', not 'extents')
+		collision_shape.shape.size = target_size
 	else:
-		push_warning("BaseBuilding: '%s' is missing its CollisionShape2D node or its shape is not a RectangleShape2D. Collision will not match visuals." % data.display_name)
+		# --- THIS IS THE BUG FIX ---
+		# The '%' format string now correctly uses brackets [].
+		push_warning("BaseBuilding: '%s' is missing its CollisionShape2D node or its shape is not a RectangleShape2D. Collision will not match visuals." % [data.display_name])
+		# --- END BUG FIX ---
 
 func take_damage(amount: int) -> void:
 	current_health = max(0, current_health - amount)
-	# Removed the print statement for cleaner debug output
-	# print("%s took %d damage, %d HP remaining." % [data.display_name, amount, current_health])
+	
+	# Update health bar if it exists
+	if health_bar:
+		health_bar.value = current_health
 	
 	if current_health == 0:
 		die()
@@ -1897,31 +2026,97 @@ func take_damage(amount: int) -> void:
 func die() -> void:
 	print("%s has been destroyed." % data.display_name)
 	
-	# Add visual feedback for destruction
 	_show_destruction_effect()
 	
-	# Emit the signal *before* queue_free() so listeners
-	# can react before the node is deleted.
 	building_destroyed.emit(self)
 	
-	# Remove from groups before deletion
 	remove_from_group("enemy_buildings")
 	
-	# Queue for deletion on the next frame
 	print("Building %s queued for removal from scene" % data.display_name)
 	queue_free()
 
 func _show_destruction_effect() -> void:
 	"""Add a simple visual destruction effect"""
-	# Create a simple destruction tween for visual feedback
 	var tween = create_tween()
 	
-	# Scale down and fade out
 	tween.parallel().tween_property(self, "scale", Vector2(0.1, 0.1), 0.3)
 	tween.parallel().tween_property(self, "modulate", Color.TRANSPARENT, 0.3)
-	
-	# Optional: Add rotation for dramatic effect
 	tween.parallel().tween_property(self, "rotation", randf() * TAU, 0.3)
+
+func _apply_visual_styling(target_size: Vector2) -> void:
+	"""Enhanced visual styling with color coding and improved label"""
+	# Apply building name
+	label.text = data.display_name
+	label.custom_minimum_size = target_size
+	
+	# Enhanced label properties
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	
+	# Adjust font size based on building size
+	if target_size.x < 64:
+		label.add_theme_font_size_override("font_size", 10)
+	elif target_size.x < 128:
+		label.add_theme_font_size_override("font_size", 12)
+	else:
+		label.add_theme_font_size_override("font_size", 14)
+	
+	# Apply color coding based on building type
+	_apply_color_coding()
+
+func _apply_color_coding() -> void:
+	"""Apply colors based on building type and properties"""
+	var base_color: Color
+	
+	# Use custom color if set, otherwise use type-based colors
+	if data.dev_color != Color.TRANSPARENT and data.dev_color != Color.GRAY:
+		base_color = data.dev_color
+	else:
+		# Color coding by building type
+		if data.is_defensive_structure:
+			base_color = Color.CRIMSON * 0.8
+		elif data.is_player_buildable:
+			base_color = Color.ROYAL_BLUE * 0.8
+		else:
+			base_color = Color.GRAY * 0.8
+	
+	background.color = base_color
+
+func _create_dev_visuals() -> void:
+	"""Create additional development visual aids"""
+	if not data:
+		return
+		
+	var target_size: Vector2 = Vector2(data.grid_size) * SettlementManager.get_active_grid_cell_size()
+	
+	# Create border for defensive structures
+	if data.is_defensive_structure:
+		_create_border(target_size)
+	
+	# Create health bar for all buildings
+	_create_health_bar(target_size)
+
+func _create_border(target_size: Vector2) -> void:
+	"""Create a border rect for defensive buildings"""
+	border_rect = ColorRect.new()
+	border_rect.color = Color.DARK_RED
+	border_rect.custom_minimum_size = target_size + Vector2(4, 4)
+	border_rect.position = -border_rect.custom_minimum_size / 2.0
+	add_child(border_rect)
+	move_child(border_rect, 0)  # Behind main background
+
+func _create_health_bar(target_size: Vector2) -> void:
+	"""Create a health bar above the building"""
+	health_bar = ProgressBar.new()
+	health_bar.custom_minimum_size = Vector2(target_size.x, 6)
+	health_bar.position = Vector2(-target_size.x/2, -target_size.y/2 - 10)
+	health_bar.max_value = data.max_health
+	health_bar.value = current_health
+	
+	# Style the health bar
+	health_bar.modulate = Color.WHITE
+	add_child(health_bar)
 
 --- SCRIPT: res://data/buildings/BuildingData.gd ---
 # res://data/buildings/BuildingData.gd
@@ -1956,6 +2151,9 @@ extends Resource
 
 ## The size of the building on the AStarGrid2D.
 @export var grid_size: Vector2i = Vector2i.ONE
+
+## Development visual color for the building rectangle.
+@export var dev_color: Color = Color.GRAY
 
 ## If true, this building will appear in the player's Storefront UI.
 @export var is_player_buildable: bool = false
@@ -2985,12 +3183,12 @@ func _clear_building_from_pathfinding_grid(building: BaseBuilding) -> void:
 # Manages all mission-specific logic for a raid, including
 # loot, win conditions, and loss conditions.
 # Decoupled from RaidMission.gd (which is now just a level loader).
-
 extends Node
 
 # --- Mission Configuration ---
 # These will be set in the Inspector on this node.
 @export var victory_bonus_loot: Dictionary = {"gold": 200}
+# MODIFIED: This is no longer used, but we leave it to avoid breaking the .tscn file
 @export var settlement_bridge_scene_path: String = "res://scenes/levels/SettlementBridge.tscn"
 @export var is_defensive_mission: bool = false
 
@@ -3089,10 +3287,9 @@ func _on_mission_failed() -> void:
 	
 	await get_tree().create_timer(3.0).timeout
 	
-	if not settlement_bridge_scene_path.is_empty():
-		EventBus.scene_change_requested.emit(settlement_bridge_scene_path)
-	else:
-		push_error("RaidObjectiveManager: settlement_bridge_scene_path is not set! Cannot return to settlement.")
+	# --- MODIFICATION ---
+	EventBus.scene_change_requested.emit("settlement")
+	# --- END MODIFICATION ---
 
 
 func _show_failure_message() -> void:
@@ -3142,10 +3339,9 @@ func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	
 	await get_tree().create_timer(2.0).timeout
 	
-	if not settlement_bridge_scene_path.is_empty():
-		EventBus.scene_change_requested.emit(settlement_bridge_scene_path)
-	else:
-		push_error("RaidObjectiveManager: settlement_bridge_scene_path is not set! Cannot return to settlement.")
+	# --- MODIFICATION ---
+	EventBus.scene_change_requested.emit("settlement")
+	# --- END MODIFICATION ---
 
 --- SCRIPT: res://scenes/world_map/MacroCamera.gd ---
 # res://scenes/world_map/MacroCamera.gd
@@ -3210,57 +3406,57 @@ func _clamp_camera_to_bounds() -> void:
 --- SCRIPT: res://scenes/world_map/MacroMap.gd ---
 # res://scenes/world_map/MacroMap.gd
 #
-# Main controller for the Macro Map scene. 
+# Main controller for the Macro Map scene.
 # Connects UI to the DynastyManager and handles region selection.
-extends Node2D # [cite: 476]
+extends Node2D # [cite: 164]
 
-# Scene paths for navigation
+# Scene paths for navigation (DEPRECATED, but kept to avoid breaking .tscn)
 @export var raid_mission_scene_path: String = "res://scenes/missions/RaidMission.tscn"
 @export var settlement_bridge_scene_path: String = "res://scenes/levels/SettlementBridge.tscn"
 
 # UI Node References
-@onready var authority_label: Label = $UI/JarlInfo/VBoxContainer/AuthorityLabel # [cite: 438, 479]
-@onready var renown_label: Label = $UI/JarlInfo/VBoxContainer/RenownLabel # [cite: 439]
-@onready var end_year_button: Button = $UI/Actions/VBoxContainer/EndYearButton # [cite: 441, 481]
-@onready var region_info_panel: PanelContainer = $UI/RegionInfo # [cite: 442]
-@onready var region_name_label: Label = $UI/RegionInfo/VBoxContainer/RegionNameLabel # [cite: 443]
-@onready var launch_raid_button: Button = $UI/RegionInfo/VBoxContainer/LaunchRaidButton # [cite: 444, 480]
-@onready var settlement_button: Button = $UI/Actions/VBoxContainer/SettlementButton # [cite: 445, 483]
-@onready var tooltip: PanelContainer = $UI/Tooltip # [cite: 446, 482]
+@onready var authority_label: Label = $UI/JarlInfo/VBoxContainer/AuthorityLabel # [cite: 164]
+@onready var renown_label: Label = $UI/JarlInfo/VBoxContainer/RenownLabel # [cite: 164]
+@onready var end_year_button: Button = $UI/Actions/VBoxContainer/EndYearButton # [cite: 164]
+@onready var region_info_panel: PanelContainer = $UI/RegionInfo # [cite: 164]
+@onready var region_name_label: Label = $UI/RegionInfo/VBoxContainer/RegionNameLabel # [cite: 164]
+@onready var launch_raid_button: Button = $UI/RegionInfo/VBoxContainer/LaunchRaidButton # [cite: 164]
+@onready var settlement_button: Button = $UI/Actions/VBoxContainer/SettlementButton # [cite: 164]
+@onready var tooltip: PanelContainer = $UI/Tooltip # [cite: 164]
 @onready var tooltip_label: Label = $UI/Tooltip/Label
 
-@onready var regions_container: Node2D = $Regions # [cite: 434]
+@onready var regions_container: Node2D = $Regions # [cite: 165]
 
-var selected_region_data: WorldRegionData # [cite: 478]
+var selected_region_data: WorldRegionData # [cite: 165]
 var selected_region_node: Region = null
 
 func _ready() -> void:
 	# Connect to the DynastyManager
-	DynastyManager.jarl_stats_updated.connect(_update_jarl_ui) # [cite: 486]
+	DynastyManager.jarl_stats_updated.connect(_update_jarl_ui) # [cite: 165]
 	
-	# Connect to all child regions [cite: 487]
+	# Connect to all child regions [cite: 165]
 	for region in regions_container.get_children():
 		if region is Region:
 			region.region_hovered.connect(_on_region_hovered)
 			region.region_exited.connect(_on_region_exited)
 			region.region_selected.connect(_on_region_selected)
 			
-	# Connect local UI buttons [cite: 488]
+	# Connect local UI buttons [cite: 165]
 	launch_raid_button.pressed.connect(_on_launch_raid_pressed)
 	end_year_button.pressed.connect(_on_end_year_pressed)
 	settlement_button.pressed.connect(_on_settlement_pressed)
 	
 	# Initialize UI
-	_update_jarl_ui(DynastyManager.get_current_jarl()) # [cite: 489]
+	_update_jarl_ui(DynastyManager.get_current_jarl()) # [cite: 165]
 	region_info_panel.hide()
 	tooltip.hide()
 
-func _update_jarl_ui(jarl: JarlData) -> void:
+func _update_jarl_ui(jarl: JarlData) -> void: # [cite: 165]
 	if not jarl:
 		return
 		
-	authority_label.text = "Authority: %d / %d" % [jarl.current_authority, jarl.max_authority] # [cite: 507]
-	renown_label.text = "Renown: %d" % jarl.renown # [cite: 508]
+	authority_label.text = "Authority: %d / %d" % [jarl.current_authority, jarl.max_authority] # [cite: 165]
+	renown_label.text = "Renown: %d" % jarl.renown # [cite: 165]
 	
 	# Re-check if we can still afford the selected raid
 	if selected_region_data:
@@ -3268,16 +3464,16 @@ func _update_jarl_ui(jarl: JarlData) -> void:
 
 # --- Region Signal Handlers ---
 
-func _on_region_hovered(data: WorldRegionData, _screen_position: Vector2) -> void:
-	tooltip_label.text = data.display_name # [cite: 490]
+func _on_region_hovered(data: WorldRegionData, _screen_position: Vector2) -> void: # [cite: 165]
+	tooltip_label.text = data.display_name # [cite: 165]
 	var mouse_pos = get_viewport().get_mouse_position()
 	tooltip.position = mouse_pos + Vector2(15, 15)
 	tooltip.show()
 
-func _on_region_exited() -> void:
-	tooltip.hide() # [cite: 491]
+func _on_region_exited() -> void: # [cite: 166]
+	tooltip.hide() # [cite: 166]
 
-func _on_region_selected(data: WorldRegionData) -> void:
+func _on_region_selected(data: WorldRegionData) -> void: # [cite: 166]
 	# De-select the previously selected region, if any
 	if is_instance_valid(selected_region_node):
 		selected_region_node.is_selected = false
@@ -3291,13 +3487,13 @@ func _on_region_selected(data: WorldRegionData) -> void:
 			selected_region_node.set_visual_state(false) # Update visual state (hover will be false)
 			break
 			
-	selected_region_data = data # [cite: 493]
+	selected_region_data = data # [cite: 166]
 	
-	# Update the UI panel [cite: 494]
+	# Update the UI panel [cite: 166]
 	region_name_label.text = data.display_name
-	launch_raid_button.text = "Raid: %s (Cost: %d)" % [data.display_name, data.base_authority_cost] # [cite: 495]
+	launch_raid_button.text = "Raid: %s (Cost: %d)" % [data.display_name, data.base_authority_cost] # [cite: 166]
 	
-	# Check if Jarl can afford this action [cite: 496]
+	# Check if Jarl can afford this action [cite: 166]
 	var can_afford = DynastyManager.can_spend_authority(data.base_authority_cost)
 	launch_raid_button.disabled = not can_afford
 	
@@ -3308,26 +3504,28 @@ func _on_region_selected(data: WorldRegionData) -> void:
 
 # --- UI Button Handlers ---
 
-func _on_launch_raid_pressed() -> void:
+func _on_launch_raid_pressed() -> void: # [cite: 167]
 	if not selected_region_data:
 		return
 		
-	# 1. Set the target for the RaidMission [cite: 498]
+	# 1. Set the target for the RaidMission [cite: 167]
 	DynastyManager.set_current_raid_target(selected_region_data.target_settlement_data)
 	
-	# 2. Spend the Authority [cite: 499]
+	# 2. Spend the Authority [cite: 167]
 	var success = DynastyManager.spend_authority(selected_region_data.base_authority_cost)
 	
 	# 3. Change scene 
 	if success:
-		EventBus.scene_change_requested.emit(raid_mission_scene_path)
+		# --- MODIFICATION ---
+		EventBus.scene_change_requested.emit("raid_mission") # [cite: 167]
+		# --- END MODIFICATION ---
 	else:
 		# This shouldn't happen if the button is disabled, but as a fallback:
 		push_error("MacroMap: LaunchRaid button was pressed but authority check failed.")
 		DynastyManager.set_current_raid_target(null) # Clear the target
 
-func _on_end_year_pressed() -> void:
-	DynastyManager.end_year() # [cite: 502]
+func _on_end_year_pressed() -> void: # [cite: 167]
+	DynastyManager.end_year() # [cite: 167]
 	
 	# Deselect region as actions may no longer be valid
 	if is_instance_valid(selected_region_node):
@@ -3338,10 +3536,12 @@ func _on_end_year_pressed() -> void:
 	selected_region_node = null
 	region_info_panel.hide()
 
-func _on_settlement_pressed() -> void:
-	EventBus.scene_change_requested.emit(settlement_bridge_scene_path) # [cite: 504]
+func _on_settlement_pressed() -> void: # [cite: 167]
+	# --- MODIFICATION ---
+	EventBus.scene_change_requested.emit("settlement") # [cite: 167]
+	# --- END MODIFICATION ---
 
-func _input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void: # [cite: 167]
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		print("MacroMap received click - this means nothing blocked it yet")
 
@@ -4107,7 +4307,7 @@ func _on_start_raid_pressed() -> void:
 	print("Settlement loaded with garrison: %s" % SettlementManager.current_settlement.garrisoned_units)
 	
 	if not world_map_scene_path.is_empty():
-		EventBus.scene_change_requested.emit(world_map_scene_path)
+		EventBus.scene_change_requested.emit("world_map")
 	else:
 		push_error("world_map_scene_path is not set! Cannot change scene.")
 
@@ -5152,6 +5352,203 @@ static func create_fortress_layout():
 	]
 	
 	create_enemy_base_layout(buildings, "res://data/settlements/fortress_base.tres")
+
+--- SCRIPT: res://tools/Phase1TestRunner.gd ---
+# res://tools/Phase1_TestRunner.gd
+#
+# This is an automated integration test for our Phase 1 SceneManager refactor.
+# It runs AS AN AUTOLOAD.
+#
+# To run:
+# 1. Add this SCRIPT to Project > Project Settings > Autoload.
+# 2. Set the "Main Scene" to "res://scenes/levels/SettlementBridge.tscn".
+# 3. Press F5 to run the project.
+# 4. Watch the console output. The game will quit automatically on pass/fail.
+
+extends Node
+
+func _ready() -> void:
+	# Wait one frame for the main scene (SettlementBridge) to finish loading
+	await get_tree().create_timer(0.2).timeout
+	
+	# Start the test flow
+	call_deferred("run_test_flow")
+
+func run_test_flow() -> void:
+	print("--- STARTING PHASE 1 TRANSITION TEST ---")
+	
+	# ---
+	# TEST 1: (Settlement -> Map)
+	# ---
+	print("\nTEST 1/4: Settlement -> Map")
+	
+	# --- MODIFICATION ---
+	# First, verify we are on the correct starting scene (no await)
+	if not check_current_scene("res://scenes/levels/SettlementBridge.tscn", "SettlementBridge"):
+		return
+	# --- END MODIFICATION ---
+	
+	if not await simulate_button_press("UI/StartRaidButton"):
+		fail_test("Failed to press 'World Map' button from Settlement.")
+		return
+		
+	if not await assert_scene_changed("res://scenes/world_map/MacroMap.tscn", "MacroMap"):
+		return
+	print("...PASS")
+
+	# ---
+	# TEST 2: (Map -> Settlement)
+	# ---
+	print("\nTEST 2/4: Map -> Settlement")
+	if not await simulate_button_press("UI/Actions/VBoxContainer/SettlementButton"):
+		fail_test("Failed to press 'Return to Settlement' button from Map.")
+		return
+		
+	if not await assert_scene_changed("res://scenes/levels/SettlementBridge.tscn", "SettlementBridge (from Map)"):
+		return
+	print("...PASS")
+	
+	# ---
+	# TEST 3: (Map -> Raid)
+	# ---
+	print("\nTEST 3/4: Map -> Raid")
+	# Go back to the map first
+	EventBus.scene_change_requested.emit("world_map")
+	if not await assert_scene_changed("res://scenes/world_map/MacroMap.tscn", "MacroMap (Re-load)"):
+		return
+	
+	# This is a complex click, we must simulate selecting a region first
+	if not await simulate_map_to_raid():
+		fail_test("Failed to simulate map-to-raid sequence.")
+		return
+		
+	if not await assert_scene_changed("res://scenes/missions/RaidMission.tscn", "RaidMission"):
+		return
+	print("...PASS")
+	
+	# ---
+	# TEST 4: (Raid -> Settlement)
+	# ---
+	print("\nTEST 4/4: Raid -> Settlement")
+	if not await simulate_raid_end():
+		fail_test("Failed to simulate raid end.")
+		return
+		
+	if not await assert_scene_changed("res://scenes/levels/SettlementBridge.tscn", "SettlementBridge (from Raid)"):
+		return
+	print("...PASS")
+	
+	# ---
+	# COMPLETE
+	# ---
+	print("\n--- ALL TESTS PASSED ---")
+	print("Remember to remove 'Phase1_TestRunner.gd' from Autoload.")
+	get_tree().quit()
+
+
+# --- TEST HELPER FUNCTIONS ---
+
+func simulate_button_press(button_path: String) -> bool:
+	# Wait one frame for scene to be fully ready
+	await get_tree().create_timer(0.1).timeout 
+	
+	var scene = get_tree().current_scene
+	if not is_instance_valid(scene):
+		print("  ERROR: Current scene is not valid.")
+		return false
+		
+	var button = scene.get_node_or_null(button_path)
+	
+	if not is_instance_valid(button):
+		print("  ERROR: Could not find button at path: %s in scene %s" % [button_path, scene.scene_file_path])
+		return false
+		
+	if button.disabled:
+		print("  ERROR: Button '%s' is disabled, cannot press." % button_path)
+		return false
+	
+	button.emit_signal("pressed")
+	return true
+
+func simulate_map_to_raid() -> bool:
+	await get_tree().create_timer(0.1).timeout
+	var scene = get_tree().current_scene
+	if not is_instance_valid(scene):
+		print("  ERROR: Current scene is not valid for map-to-raid sim.")
+		return false
+		
+	# 1. Get the region (assuming only one, "Region")
+	var region = scene.get_node_or_null("Regions/Region")
+	if not is_instance_valid(region):
+		print("  ERROR: Could not find node 'Regions/Region' in MacroMap.")
+		return false
+	
+	# 2. Simulate selecting it
+	region.emit_signal("region_selected", region.data)
+	
+	# 3. Press the launch button
+	return await simulate_button_press("UI/RegionInfo/VBoxContainer/LaunchRaidButton")
+
+func simulate_raid_end() -> bool:
+	await get_tree().create_timer(0.1).timeout
+	var scene = get_tree().current_scene
+	if not is_instance_valid(scene):
+		print("  ERROR: Current scene is not valid for raid-end sim.")
+		return false
+		
+	var objective_manager = scene.get_node_or_null("RaidObjectiveManager")
+	if not is_instance_valid(objective_manager):
+		print("  ERROR: Could not find 'RaidObjectiveManager' in RaidMission.")
+		return false
+	
+	# 4. Force a mission end
+	# We call _on_mission_failed as it's the quickest way to trigger the scene change
+	objective_manager._on_mission_failed()
+	return true
+
+# --- NEW FUNCTION ---
+func check_current_scene(expected_path: String, step_name: String) -> bool:
+	"""Checks the CURRENTLY loaded scene without awaiting a change."""
+	var scene = get_tree().current_scene
+	if not is_instance_valid(scene) or not scene.scene_file_path == expected_path:
+		print("  ERROR: Failed pre-check for test '%s'" % step_name)
+		print("    Expected scene: %s" % expected_path)
+		if is_instance_valid(scene):
+			print("    Got scene: %s" % scene.scene_file_path)
+		else:
+			print("    Got: <invalid_scene>")
+		get_tree().quit()
+		return false
+	print("  Pre-check PASSED: Currently on %s" % scene.scene_file_path)
+	return true
+
+# --- RENAMED FUNCTION ---
+func assert_scene_changed(expected_path: String, step_name: String) -> bool:
+	"""Waits for a scene change, THEN asserts the new scene is correct."""
+	var scene = get_tree().current_scene
+	
+	# Wait for the scene change to fully complete
+	await get_tree().scene_changed
+	
+	# Get the new scene reference
+	scene = get_tree().current_scene
+	
+	if not is_instance_valid(scene) or not scene.scene_file_path == expected_path:
+		print("  ERROR: Failed test '%s'" % step_name)
+		print("    Expected: %s" % expected_path)
+		if is_instance_valid(scene):
+			print("    Got: %s" % scene.scene_file_path)
+		else:
+			print("    Got: <invalid_scene>")
+		get_tree().quit()
+		return false
+	return true
+
+func fail_test(reason: String) -> void:
+	print("\n--- TEST FAILED ---")
+	print(reason)
+	print("-------------------")
+	get_tree().quit()
 
 --- SCRIPT: res://tools/SettlementLayoutEditor.gd ---
 # SettlementLayoutEditor.gd

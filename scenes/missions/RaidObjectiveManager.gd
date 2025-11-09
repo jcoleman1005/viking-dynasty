@@ -3,12 +3,12 @@
 # Manages all mission-specific logic for a raid, including
 # loot, win conditions, and loss conditions.
 # Decoupled from RaidMission.gd (which is now just a level loader).
-
 extends Node
 
 # --- Mission Configuration ---
 # These will be set in the Inspector on this node.
 @export var victory_bonus_loot: Dictionary = {"gold": 200}
+# MODIFIED: This is no longer used, but we leave it to avoid breaking the .tscn file
 @export var settlement_bridge_scene_path: String = "res://scenes/levels/SettlementBridge.tscn"
 @export var is_defensive_mission: bool = false
 
@@ -107,10 +107,9 @@ func _on_mission_failed() -> void:
 	
 	await get_tree().create_timer(3.0).timeout
 	
-	if not settlement_bridge_scene_path.is_empty():
-		EventBus.scene_change_requested.emit(settlement_bridge_scene_path)
-	else:
-		push_error("RaidObjectiveManager: settlement_bridge_scene_path is not set! Cannot return to settlement.")
+	# --- MODIFICATION ---
+	EventBus.scene_change_requested.emit("settlement")
+	# --- END MODIFICATION ---
 
 
 func _show_failure_message() -> void:
@@ -160,7 +159,6 @@ func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	
 	await get_tree().create_timer(2.0).timeout
 	
-	if not settlement_bridge_scene_path.is_empty():
-		EventBus.scene_change_requested.emit(settlement_bridge_scene_path)
-	else:
-		push_error("RaidObjectiveManager: settlement_bridge_scene_path is not set! Cannot return to settlement.")
+	# --- MODIFICATION ---
+	EventBus.scene_change_requested.emit("settlement")
+	# --- END MODIFICATION ---

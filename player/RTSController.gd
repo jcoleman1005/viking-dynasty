@@ -5,6 +5,8 @@
 # It listens for clean signals from the EventBus
 # (which are fired by SelectionBox.gd).
 # It also correctly cleans up dead units.
+#
+# --- ADDED: Control Group & Formation Drag Support ---
 
 extends Node
 class_name RTSController
@@ -13,28 +15,64 @@ var selected_units: Array[BaseUnit] = []
 var controllable_units: Array[BaseUnit] = []
 var current_formation: SquadFormation.FormationType = SquadFormation.FormationType.LINE
 
+# --- NEW: Control Group Storage ---
+# We store the unit instance IDs, not the nodes themselves,
+# to more safely handle units dying.
+var control_groups: Dictionary = {
+	1: [], 2: [], 3: [], 4: [], 5: [],
+	6: [], 7: [], 8: [], 9: [], 0: [],
+}
+# ---------------------------------
+
+
 func _ready() -> void:
 	# Connect to the clean signals from our new EventBus/SelectionBox
 	EventBus.select_command.connect(_on_select_command)
 	EventBus.move_command.connect(_on_move_command)
 	EventBus.attack_command.connect(_on_attack_command)
+	# --- THIS LINE IS REQUIRED FOR DRAG-FORMATIONS ---
+	EventBus.formation_move_command.connect(_on_formation_move_command)
 
 func _input(event: InputEvent) -> void:
-	# Formation hotkeys
-	if event is InputEventKey and event.pressed:
-		match event.keycode:
-			KEY_1:
-				current_formation = SquadFormation.FormationType.LINE
-				print("Formation: LINE")
-			KEY_2:
-				current_formation = SquadFormation.FormationType.COLUMN
-				print("Formation: COLUMN")
-			KEY_3:
-				current_formation = SquadFormation.FormationType.WEDGE
-				print("Formation: WEDGE")
-			KEY_4:
-				current_formation = SquadFormation.FormationType.BOX
-				print("Formation: BOX")
+	# --- MODIFIED: Handle Control Group logic ---
+	if event is InputEventKey and event.is_pressed():
+		var key = event.keycode
+		
+		# --- THIS IS THE FIX (Line 41) ---
+		# We use the 'ctrl_pressed' *property*
+		var is_ctrl_pressed: bool = event.ctrl_pressed
+		# ---------------------------------
+
+		# Handle number keys 0-9
+		if key >= KEY_0 and key <= KEY_9:
+			var num = key - KEY_0 # Get the integer 0-9
+			
+			if is_ctrl_pressed:
+				# Ctrl + Number: SET group
+				_set_control_group(num)
+				get_viewport().set_input_as_handled()
+			else:
+				# Number: SELECT group
+				_select_control_group(num)
+				get_viewport().set_input_as_handled()
+		# -------------------------------------------
+		else:
+			# Handle non-number-key inputs (like formations)
+			match event.keycode:
+				# --- MOVED to F-Keys to avoid conflict ---
+				KEY_F1:
+					current_formation = SquadFormation.FormationType.LINE
+					print("Formation: LINE")
+				KEY_F2:
+					current_formation = SquadFormation.FormationType.COLUMN
+					print("Formation: COLUMN")
+				KEY_F3:
+					current_formation = SquadFormation.FormationType.WEDGE
+					print("Formation: WEDGE")
+				KEY_F4:
+					current_formation = SquadFormation.FormationType.BOX
+					print("Formation: BOX")
+				# -----------------------------------------
 
 # --- PUBLIC API ---
 
@@ -72,17 +110,18 @@ func remove_unit(unit: BaseUnit) -> void:
 	if unit in controllable_units:
 		controllable_units.erase(unit)
 		
+	# --- NEW: Clean up control groups ---
+	var unit_id = unit.get_instance_id()
+	for group_num in control_groups:
+		if control_groups[group_num].has(unit_id):
+			control_groups[group_num].erase(unit_id)
+	# ------------------------------------
+		
 	# Check if this was the last unit
 	if controllable_units.is_empty():
 		print("RTSController: All units are gone.")
 
-# --- REMOVED ---
-# _on_global_input, _draw, _process, _handle_selection,
-# and _handle_command are all removed.
-# They are replaced by the functions below.
-# -----------------
-
-# --- NEW: EVENTBUS HANDLERS ---
+# --- EVENTBUS HANDLERS ---
 
 func _on_select_command(select_rect: Rect2, is_box_select: bool) -> void:
 	_clear_selection()
@@ -142,7 +181,42 @@ func _on_move_command(target_position: Vector2) -> void:
 		var formation = SquadFormation.new(units_as_node2d)
 		formation.formation_type = current_formation
 		formation.unit_spacing = 45.0
-		formation.move_to_position(target_position)
+		
+		# --- MODIFIED: Calculate direction ---
+		# For a simple right-click, we just face the destination
+		var group_center = formation.formation_center
+		var direction = (target_position - group_center).normalized()
+		if direction.is_zero_approx():
+			direction = Vector2.DOWN # Default fallback
+		formation.move_to_position(target_position, direction)
+		# -------------------------------------
+
+# --- THIS IS THE NEW FUNCTION FOR DRAG-FORMATIONS ---
+func _on_formation_move_command(target_position: Vector2, direction_vector: Vector2):
+	# --- DEBUG ---
+	print("==================================================")
+	print("RTSController: Received formation_move_command.")
+	print("  -> Target Center: %s, Direction: %s" % [target_position, direction_vector])
+	# --- END DEBUG ---
+	
+	if selected_units.is_empty():
+		return
+
+	if selected_units.size() == 1:
+		# Single unit - just move, ignore direction
+		selected_units[0].command_move_to(target_position)
+	else:
+		# Multiple units - use formation
+		var units_as_node2d: Array[Node2D] = []
+		for unit in selected_units:
+			units_as_node2d.append(unit)
+		
+		var formation = SquadFormation.new(units_as_node2d)
+		formation.formation_type = current_formation
+		formation.unit_spacing = 45.0
+		# Pass the specific direction from the drag
+		formation.move_to_position(target_position, direction_vector)
+# ---------------------------------------------
 
 func _on_attack_command(target_node: Node2D) -> void:
 	if selected_units.is_empty():
@@ -157,3 +231,48 @@ func _clear_selection() -> void:
 		if is_instance_valid(unit):
 			unit.set_selected(false)
 	selected_units.clear()
+
+# --- Control Group Functions ---
+
+func _set_control_group(num: int) -> void:
+	print("Setting control group %d" % num)
+	# Clear the old group
+	control_groups[num].clear()
+	# Add all currently selected units by their ID
+	for unit in selected_units:
+		control_groups[num].append(unit.get_instance_id())
+
+func _select_control_group(num: int) -> void:
+	print("Selecting control group %d" % num)
+	_clear_selection()
+	
+	var new_group_ids = control_groups[num]
+	var still_valid_ids = []
+	
+	for unit_id in new_group_ids:
+		var unit = instance_from_id(unit_id) as BaseUnit
+		
+		# Check if unit is still alive and controllable
+		if is_instance_valid(unit) and unit in controllable_units:
+			selected_units.append(unit)
+			unit.set_selected(true)
+			still_valid_ids.append(unit_id)
+		
+	# Prune any dead units from the control group
+	control_groups[num] = still_valid_ids
+
+	# --- Optional: Camera Pan ---
+	# If we selected units, pan camera to them
+	if not selected_units.is_empty():
+		var center_pos = Vector2.ZERO
+		for unit in selected_units:
+			center_pos += unit.global_position
+		center_pos /= selected_units.size()
+		
+		# Pan camera (assuming camera is RTSCamera)
+		var camera = get_viewport().get_camera_2d()
+		if camera and camera is RTSCamera:
+			# Simple jump, as RTSCamera has no tween_pan_to method
+			camera.global_position = center_pos
+		elif camera:
+			camera.global_position = center_pos
