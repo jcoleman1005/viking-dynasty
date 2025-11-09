@@ -119,12 +119,27 @@ func attempt_purchase(item_cost: Dictionary) -> bool:
 	print("Purchase successful. New treasury: %s" % current_settlement.treasury)
 	return true
 
+# --- MODIFIED: Added Stewardship Bonus Logic ---
 func calculate_payout() -> Dictionary:
 	if not current_settlement:
 		return {}
 
 	var total_payout: Dictionary = {}
+	
+	# 1. Get the Jarl's stewardship bonus
+	var stewardship_bonus: float = 1.0
+	var jarl = DynastyManager.get_current_jarl()
+	if jarl:
+		# Logic: +5% bonus for every point of stewardship above 10
+		var stewardship_skill = jarl.get_effective_skill("stewardship")
+		stewardship_bonus = 1.0 + (stewardship_skill - 10) * 0.05
+		# Ensure bonus can't be negative (e.g., stewardship below 10)
+		stewardship_bonus = max(0.5, stewardship_bonus) # Cap negative bonus at -50%
+		print("Jarl Stewardship: %d. Payout Multiplier: %s" % [stewardship_skill, stewardship_bonus])
+	else:
+		push_warning("SettlementManager: Could not get Jarl to calculate stewardship bonus.")
 
+	# 2. Calculate payout for each building
 	for building_entry in current_settlement.placed_buildings:
 		var building_data: BuildingData = load(building_entry["resource_path"])
 		if building_data is EconomicBuildingData:
@@ -134,11 +149,16 @@ func calculate_payout() -> Dictionary:
 			if not total_payout.has(resource_type):
 				total_payout[resource_type] = 0
 			
-			total_payout[resource_type] += eco_data.fixed_payout_amount
+			# 3. Apply the bonus and round to the nearest integer
+			var base_payout = eco_data.fixed_payout_amount
+			var final_payout = int(round(base_payout * stewardship_bonus))
+			
+			total_payout[resource_type] += final_payout
 
 	if not total_payout.is_empty():
-		print("Calculated fixed payout: %s" % total_payout)
+		print("Calculated fixed payout (with bonus): %s" % total_payout)
 	return total_payout
+# --- END MODIFICATION ---
 
 # --- Unit Management ---
 
@@ -242,7 +262,6 @@ func _is_cell_within_bounds(grid_position: Vector2i) -> bool:
 	return grid_position.x >= bounds.position.x and grid_position.x < bounds.end.x and \
 		   grid_position.y >= bounds.position.y and grid_position.y < bounds.end.y
 
-# --- MODIFIED FUNCTION ---
 func get_astar_path(start_pos: Vector2, end_pos: Vector2, allow_partial_path: bool = false) -> PackedVector2Array:
 	if not is_instance_valid(active_astar_grid):
 		push_error("AStarGrid is not registered!")
@@ -265,7 +284,6 @@ func get_astar_path(start_pos: Vector2, end_pos: Vector2, allow_partial_path: bo
 	
 	# Pass the allow_partial_path flag to the real AStarGrid2D function
 	return active_astar_grid.get_point_path(start_id, end_id, allow_partial_path)
-# --- END MODIFIED FUNCTION ---
 
 func set_astar_point_solid(grid_position: Vector2i, solid: bool) -> void:
 	if not is_instance_valid(active_astar_grid):
@@ -277,5 +295,3 @@ func set_astar_point_solid(grid_position: Vector2i, solid: bool) -> void:
 		return
 	
 	active_astar_grid.set_point_solid(grid_position, solid)
-
-# --- REMOVED 'get_closest_walkable_cell' FUNCTION ---

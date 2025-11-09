@@ -1,6 +1,6 @@
 # res://scenes/world_map/MacroMap.gd
 #
-# Main controller for the Macro Map scene.
+# Main controller for the MacroMap scene.
 # Connects UI to the DynastyManager and handles region selection.
 extends Node2D
 
@@ -12,6 +12,10 @@ extends Node2D
 @export var end_year_popup_scene: PackedScene
 var end_year_popup: PanelContainer
 # ----------------------
+
+# --- NEW: Raid Chance ---
+@export var enemy_raid_chance: float = 0.25 # 25% chance
+# ------------------------
 
 # UI Node References
 @onready var authority_label: Label = $UI/JarlInfo/VBoxContainer/AuthorityLabel
@@ -28,6 +32,11 @@ var end_year_popup: PanelContainer
 
 var selected_region_data: WorldRegionData
 var selected_region_node: Region = null
+
+# --- MODIFICATION ---
+# Stores the calculated cost after applying Jarl stats
+var calculated_final_cost: int = 1
+# --- END MODIFICATION ---
 
 func _ready() -> void:
 	# Connect to the DynastyManager
@@ -69,7 +78,10 @@ func _update_jarl_ui(jarl: JarlData) -> void:
 	
 	# Re-check if we can still afford the selected raid
 	if selected_region_data:
+		# --- MODIFICATION ---
+		# Re-run the selection logic to update cost based on new stats
 		_on_region_selected(selected_region_data)
+		# --- END MODIFICATION ---
 
 # --- Region Signal Handlers ---
 
@@ -98,12 +110,30 @@ func _on_region_selected(data: WorldRegionData) -> void:
 			
 	selected_region_data = data
 	
+	# --- MODIFICATION: Calculate cost based on Jarl's Command skill ---
+	var jarl = DynastyManager.get_current_jarl()
+	if not jarl:
+		push_error("MacroMap: Cannot get Jarl from DynastyManager!")
+		return
+
+	# Calculate cost reduction: -1 Authority for every 10 Command
+	var command_skill = jarl.get_effective_skill("command")
+	var cost_reduction = int(floor(command_skill / 10.0))
+	
+	# Final cost is base cost minus reduction, with a minimum of 1
+	calculated_final_cost = max(1, data.base_authority_cost - cost_reduction)
+	# --- END MODIFICATION ---
+	
 	# Update the UI panel
 	region_name_label.text = data.display_name
-	launch_raid_button.text = "Raid: %s (Cost: %d)" % [data.display_name, data.base_authority_cost]
+	
+	# --- MODIFICATION: Update button text with final cost ---
+	launch_raid_button.text = "Raid: %s (Cost: %d)" % [data.display_name, calculated_final_cost]
 	
 	# Check if Jarl can afford this action
-	var can_afford = DynastyManager.can_spend_authority(data.base_authority_cost)
+	var can_afford = DynastyManager.can_spend_authority(calculated_final_cost)
+	# --- END MODIFICATION ---
+	
 	launch_raid_button.disabled = not can_afford
 	
 	if not can_afford:
@@ -120,8 +150,10 @@ func _on_launch_raid_pressed() -> void:
 	# 1. Set the target for the RaidMission
 	DynastyManager.set_current_raid_target(selected_region_data.target_settlement_data)
 	
+	# --- MODIFICATION: Use the calculated_final_cost ---
 	# 2. Spend the Authority
-	var success = DynastyManager.spend_authority(selected_region_data.base_authority_cost)
+	var success = DynastyManager.spend_authority(calculated_final_cost)
+	# --- END MODIFICATION ---
 	
 	# 3. Change scene 
 	if success:
@@ -149,9 +181,15 @@ func _on_end_year_payout_collected(payout: Dictionary) -> void:
 	# This is now the main logic, called *after* the user clicks "Collect"
 	_process_end_year_logic(payout)
 	
-	# --- MODIFICATION ---
-	# Add the scene change *after* processing the year
-	EventBus.scene_change_requested.emit("settlement")
+	# --- MODIFICATION: Check for enemy raid ---
+	if randf() < enemy_raid_chance:
+		print("--- ENEMY RAID TRIGGERED ---")
+		DynastyManager.is_defensive_raid = true
+		EventBus.scene_change_requested.emit("raid_mission")
+	else:
+		print("No enemy raid this year.")
+		# Return to settlement as normal
+		EventBus.scene_change_requested.emit("settlement")
 	# --- END MODIFICATION ---
 
 func _process_end_year_logic(payout: Dictionary) -> void:

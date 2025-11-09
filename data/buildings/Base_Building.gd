@@ -3,7 +3,6 @@
 # This script is attached to the Base_Building.tscn scene.
 # It procedurally creates its own visual nodes
 # and instances its AI component from its 'data' resource.
-
 class_name BaseBuilding
 extends StaticBody2D
 
@@ -16,6 +15,7 @@ var current_health: int = 100
 var background: ColorRect
 var label: Label
 var collision_shape: CollisionShape2D
+var hitbox_area: Area2D # --- NEW ---
 
 # Development visual enhancements
 var health_bar: ProgressBar
@@ -28,6 +28,11 @@ func _ready() -> void:
 	if not data:
 		push_warning("BaseBuilding: Node is missing its 'BuildingData' resource. Cannot initialize.")
 		return
+	
+	# --- DEBUGGING ---
+	print("--- BaseBuilding DEBUG ---")
+	print("'%s' SPAWNED. Collision Layer: %s, Collision Mask: %s" % [name, collision_layer, collision_mask])
+	print("--------------------------")
 	
 	current_health = data.max_health
 	
@@ -42,9 +47,43 @@ func _ready() -> void:
 	add_child(background)
 	# -------------------------
 	
+	# --- NEW: Create the Hitbox ---
+	_create_hitbox()
+	# --- END NEW ---
+	
 	_apply_data_and_scale()
 	_create_dev_visuals()
 	_setup_defensive_ai()
+
+	# --- REMOVED ---
+	# connect("area_entered", _on_area_entered) # This was incorrect
+	# --- END REMOVED ---
+
+# --- NEW FUNCTION ---
+func _create_hitbox() -> void:
+	"""Creates an Area2D child to act as a detectable hitbox for projectiles."""
+	hitbox_area = Area2D.new()
+	hitbox_area.name = "Hitbox"
+	
+	# This is the "Player Buildings" layer (Layer 1)
+	hitbox_area.collision_layer = 1
+	hitbox_area.collision_mask = 0 # Doesn't need to detect anything
+	
+	hitbox_area.monitoring = false # Doesn't need to detect bodies or areas
+	hitbox_area.monitorable = true # CAN BE detected by other areas (projectiles)
+	
+	# Create a shape for the hitbox
+	var hitbox_shape = CollisionShape2D.new()
+	hitbox_shape.shape = RectangleShape2D.new()
+	hitbox_area.add_child(hitbox_shape)
+	
+	add_child(hitbox_area)
+	print("'%s' created Area2D Hitbox on Layer %s" % [name, hitbox_area.collision_layer])
+# --- END NEW FUNCTION ---
+
+# --- REMOVED ---
+# func _on_area_entered(area: Area2D) -> void: ...
+# --- END REMOVED ---
 
 func _apply_data_and_scale() -> void:
 	if not SettlementManager:
@@ -69,10 +108,19 @@ func _apply_data_and_scale() -> void:
 
 	if collision_shape and collision_shape.shape is RectangleShape2D:
 		collision_shape.shape.size = target_size
-	else:
-		push_warning("BaseBuilding: '%s' is missing its CollisionShape2D node or its shape is not a RectangleShape2D. Collision will not match visuals." % [data.display_name])
+	
+	# --- NEW: Scale the hitbox shape ---
+	if hitbox_area:
+		var hitbox_shape = hitbox_area.get_child(0) as CollisionShape2D
+		if hitbox_shape and hitbox_shape.shape is RectangleShape2D:
+			hitbox_shape.shape.size = target_size
+	# --- END NEW ---
 
 func take_damage(amount: int) -> void:
+	# --- DEBUGGING ---
+	print("'%s' TOOK %d DAMAGE. Health: %d/%d" % [name, amount, current_health - amount, data.max_health])
+	# --- END DEBUGGING ---
+	
 	current_health = max(0, current_health - amount)
 	
 	if health_bar:
@@ -186,8 +234,12 @@ func _setup_defensive_ai() -> void:
 	if attack_ai.has_method("configure_from_data"):
 		attack_ai.configure_from_data(data)
 	
-	# Set target mask to hit player units (Layer 2)
+	# --- DEBUGGING ---
+	# For defensive buildings, the target mask is set in Base_Building.gd
 	var player_collision_mask: int = 1 << 1  # Layer 2 (bit position 1)
+	print("'%s' (Defensive) AI: Setting target mask to %s (Player Units)" % [name, player_collision_mask])
+	# --- END DEBUGGING ---
+	
 	if attack_ai.has_method("set_target_mask"):
 		attack_ai.set_target_mask(player_collision_mask)
 	

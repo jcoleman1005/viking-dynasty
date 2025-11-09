@@ -4,7 +4,6 @@
 # for the player's Jarl and dynasty state.
 # This is the "Core Pacing Engine" as defined in the GDD.
 # It is the single source of truth for all Jarl data.
-
 extends Node
 
 ## Emitted when Jarl data changes (e.g., spent Authority, ended year)
@@ -12,6 +11,10 @@ signal jarl_stats_updated(jarl_data: JarlData)
 
 var current_jarl: JarlData
 var current_raid_target: SettlementData
+
+# --- NEW: Flag for defensive missions ---
+var is_defensive_raid: bool = false
+# -------------------------------------
 
 # Path to the player's persistent Jarl data
 const PLAYER_JARL_PATH = "res://data/characters/PlayerJarl.tres"

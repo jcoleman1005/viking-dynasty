@@ -56,11 +56,17 @@ func _setup_ai() -> void:
 		
 		# Connect detection signals
 		detection_area.body_entered.connect(_on_target_entered)
+		detection_area.area_entered.connect(_on_target_entered) # Also check for areas (building hitboxes)
 		detection_area.body_exited.connect(_on_target_exited)
+		detection_area.area_exited.connect(_on_target_exited) # Also check for areas
 	
 	# Configure attack timer
 	if attack_timer:
-		attack_timer.wait_time = 1.0 / attack_speed
+		if attack_speed > 0:
+			attack_timer.wait_time = 1.0 / attack_speed
+		else:
+			attack_timer.wait_time = 999.0 # Effectively disable timer if speed is 0
+	
 		attack_timer.timeout.connect(_on_attack_timer_timeout)
 
 func configure_from_data(data_resource) -> void:
@@ -107,16 +113,24 @@ func force_target(target: Node2D) -> void:
 	if not is_instance_valid(target):
 		return
 	
-	current_target = target
-	if target not in targets_in_range:
-		targets_in_range.append(target)
+	# --- MODIFIED ---
+	# If the target is a BaseBuilding, target its 'Hitbox' child instead
+	if target is BaseBuilding and target.has_node("Hitbox"):
+		current_target = target.get_node("Hitbox")
+	else:
+		current_target = target
+	# --- END MODIFIED ---
+	
+	if current_target not in targets_in_range:
+		targets_in_range.append(current_target)
 	
 	_start_attacking()
 
 func stop_attacking() -> void:
 	"""Stop all attack behavior"""
 	current_target = null
-	targets_in_range.clear()
+	# Don't clear targets_in_range, as _on_target_exited handles that.
+	# If we clear it, units that are still in range won't be re-acquired.
 	_stop_attacking()
 
 func _on_target_entered(body: Node2D) -> void:
@@ -140,29 +154,57 @@ func _on_target_exited(body: Node2D) -> void:
 		_select_target()
 
 func _select_target() -> void:
-	"""Select the closest valid target from the targets_in_range array"""
+	"""Select the closest valid target, prioritizing units over buildings."""
 	if targets_in_range.is_empty():
 		current_target = null
 		_stop_attacking()
 		return
 	
-	# Find closest target
+	# --- NEW PRIORITY LOGIC ---
+	var unit_targets: Array[Node2D] = []
+	var building_targets: Array[Node2D] = []
+
+	# 1. Prune invalid targets and sort into lists
+	for target in targets_in_range:
+		if not is_instance_valid(target):
+			targets_in_range.erase(target)
+			continue
+		
+		# Layer 2 is Player_Units
+		if target.collision_layer & (1 << 1): 
+			unit_targets.append(target)
+		# Layer 1 is Player_Buildings (hitbox)
+		elif target.collision_layer & (1 << 0): 
+			building_targets.append(target)
+
 	var closest_target: Node2D = null
 	var closest_distance: float = INF
 	
-	for target in targets_in_range:
-		if is_instance_valid(target):
+	# 2. Prioritize Units: Find the closest unit
+	if not unit_targets.is_empty():
+		for target in unit_targets:
 			var distance = parent_node.global_position.distance_to(target.global_position)
 			if distance < closest_distance:
 				closest_distance = distance
 				closest_target = target
-		else:
-			# Remove invalid targets
-			targets_in_range.erase(target)
 	
+	# 3. Fallback to Buildings: If no units, find the closest building
+	elif not building_targets.is_empty():
+		for target in building_targets:
+			var distance = parent_node.global_position.distance_to(target.global_position)
+			if distance < closest_distance:
+				closest_distance = distance
+				closest_target = target
+	
+	# 4. Set the target
 	current_target = closest_target
+	# --- END NEW PRIORITY LOGIC ---
+	
 	if current_target:
 		_start_attacking()
+	else:
+		# No valid targets were found
+		_stop_attacking()
 
 func _start_attacking() -> void:
 	"""Begin attacking the current target"""
@@ -207,8 +249,14 @@ func _on_attack_timer_timeout() -> void:
 		_spawn_projectile(current_target.global_position)
 	else:
 		# MELEE: Direct damage
-		if current_target.has_method("take_damage"):
-			current_target.take_damage(attack_damage)
+		var target_to_damage = current_target
+		
+		# If the target is a hitbox, damage its parent building
+		if target_to_damage.name == "Hitbox":
+			target_to_damage = target_to_damage.get_parent()
+		
+		if target_to_damage.has_method("take_damage"):
+			target_to_damage.take_damage(attack_damage)
 
 func _spawn_projectile(target_position_world: Vector2) -> void:
 	"""Spawn a projectile towards the target position"""
@@ -222,14 +270,19 @@ func _spawn_projectile(target_position_world: Vector2) -> void:
 		print("Error: Failed to instantiate projectile for AttackAI")
 		return
 	
-	# Add projectile to the current scene
-	parent_node.get_tree().current_scene.add_child(projectile)
+	# --- DEBUGGING ---
+	print("--- AttackAI DEBUG ---")
+	print("'%s' spawning projectile. Target Mask being sent: %s" % [parent_node.name, target_collision_mask])
+	print("----------------------")
 	
-	# Initialize the projectile
+	# 1. Initialize the projectile
 	projectile.setup(
 		parent_node.global_position,  # start position
 		target_position_world,        # target position
 		attack_damage,                # damage
-		projectile_speed,             # --- MODIFIED: Use configured speed ---
+		projectile_speed,             # Use configured speed
 		target_collision_mask         # what to hit
 	)
+	
+	# 2. Add projectile to the current scene
+	parent_node.get_tree().current_scene.add_child(projectile)
