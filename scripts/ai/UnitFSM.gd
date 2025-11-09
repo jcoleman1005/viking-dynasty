@@ -74,7 +74,14 @@ func _exit_state(state: State) -> void:
 		# -----------------------------------------
 
 func _recalculate_path() -> void:
-	path = SettlementManager.get_astar_path(unit.global_position, target_position)
+	# --- MODIFICATION ---
+	# Determine if we should allow a partial path.
+	# We allow it if we have an attack target (target_unit).
+	var allow_partial = is_instance_valid(target_unit)
+	
+	path = SettlementManager.get_astar_path(unit.global_position, target_position, allow_partial)
+	# --- END MODIFICATION ---
+	
 	if path.is_empty():
 		print("Unit at %s failed to find a path to %s." % [unit.global_position, target_position])
 		if unit and unit.has_method("flash_error_color"):
@@ -121,16 +128,19 @@ func command_attack(target: Node2D) -> void:
 		return
 		
 	target_unit = target
+	
+	# --- THIS IS THE FIX ---
+	# Target the building's actual center.
+	# _recalculate_path will handle finding the closest spot.
 	target_position = target.global_position
+	# --- END FIX ---
 	
 	var distance: float = unit.global_position.distance_to(target.global_position)
 	
-	# --- MODIFIED: Transition to ATTACKING ---
 	if distance <= unit.data.attack_range:
 		change_state(State.ATTACKING)
 	else:
 		change_state(State.MOVING)
-	# ---------------------------------------
 
 # --- State Machine Update ---
 
@@ -142,10 +152,8 @@ func update(delta: float) -> void:
 			_move_state(delta)
 		State.FORMATION_MOVING:
 			_formation_move_state(delta)
-		# --- NEW: Call attack state logic ---
 		State.ATTACKING:
 			_attack_state(delta)
-		# ----------------------------------
 
 # --- State Logic Functions ---
 
@@ -176,12 +184,12 @@ func _move_state(delta: float) -> void:
 	if is_instance_valid(target_unit):
 		var distance_to_target: float = unit.global_position.distance_to(target_unit.global_position)
 		
-		# --- MODIFIED: Transition to ATTACKING ---
 		if distance_to_target <= unit.data.attack_range:
 			change_state(State.ATTACKING)
 			return
-		# ---------------------------------------
 		else:
+			# --- MODIFIED: Target the actual center ---
+			# The pathfinder will get as close as possible.
 			target_position = target_unit.global_position
 	
 	if stance == Stance.DEFENSIVE:
@@ -210,20 +218,16 @@ func _move_state(delta: float) -> void:
 		if path.is_empty():
 			if is_instance_valid(target_unit):
 				var distance_to_target: float = unit.global_position.distance_to(target_unit.global_position)
-				# --- MODIFIED: Transition to ATTACKING ---
 				if distance_to_target <= unit.data.attack_range:
 					change_state(State.ATTACKING)
-				# ---------------------------------------
 				else:
 					_recalculate_path()
 			else:
 				change_state(State.IDLE)
 
-# --- NEW: Attack State Logic ---
 func _attack_state(_delta: float) -> void:
 	# This state just monitors the target.
 	# The AttackAI component handles the actual firing.
-	
 	if not is_instance_valid(target_unit):
 		# Target is dead or gone
 		change_state(State.IDLE)
@@ -237,7 +241,6 @@ func _attack_state(_delta: float) -> void:
 	
 	# Otherwise, stay in ATTACKING state
 	unit.velocity = Vector2.ZERO
-# --- END NEW ---
 
 func _check_defensive_response() -> void:
 	pass

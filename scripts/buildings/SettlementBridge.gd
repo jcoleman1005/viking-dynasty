@@ -3,14 +3,15 @@
 # --- REFACTORED (The "Proper Fix" + GridManager) ---
 # This scene now instances a GridManager node for all grid logic.
 # It gets the grid from that child and registers it with the SettlementManager.
-
 extends Node
 
 # --- Exported Resources ---
 @export var home_base_data: SettlementData
 @export var test_building_data: BuildingData
 @export var raider_scene: PackedScene
-@export var welcome_popup_scene: PackedScene
+# --- MODIFICATION: Renamed export ---
+@export var end_of_year_popup_scene: PackedScene
+# --- END MODIFICATION ---
 @export var world_map_scene_path: String = "res://scenes/world_map/WorldMap_Stub.tscn"
 
 # --- DEPRECATED: Grid config is now on the GridManager node ---
@@ -21,7 +22,9 @@ extends Node
 # --- Default Assets (fallback) ---
 var default_test_building: BuildingData = preload("res://data/buildings/Bldg_Wall.tres")
 var default_raider_scene: PackedScene 
-var default_welcome_popup: PackedScene = preload("res://ui/WelcomeHome_Popup.tscn")
+# --- MODIFICATION: Renamed preload path and variable ---
+var default_end_of_year_popup: PackedScene = preload("res://ui/EndOfYear_Popup.tscn")
+# --- END MODIFICATION ---
 
 # --- Scene Node References ---
 @onready var unit_container: Node2D = $UnitContainer
@@ -30,7 +33,9 @@ var default_welcome_popup: PackedScene = preload("res://ui/WelcomeHome_Popup.tsc
 @onready var start_raid_button: Button = $UI/StartRaidButton
 @onready var storefront_ui: Control = $UI/Storefront_UI
 @onready var building_cursor: Node2D = $BuildingCursor
-var welcome_popup: PanelContainer
+# --- MODIFICATION: Renamed variable ---
+var end_of_year_popup: PanelContainer
+# --- END MODIFICATION ---
 
 # --- Local Node References ---
 @onready var building_container: Node2D = $BuildingContainer
@@ -47,7 +52,15 @@ func _ready() -> void:
 	_initialize_settlement() 
 	_setup_ui()
 	_connect_signals()
-	_handle_welcome_payout()
+	
+	# --- MODIFICATION ---
+	# We no longer handle the payout here.
+	# _handle_welcome_payout()
+	# Instead, we just show the storefront immediately.
+	storefront_ui.show()
+	if end_of_year_popup:
+		end_of_year_popup.hide()
+	# --- END MODIFICATION ---
 
 func _exit_tree() -> void:
 	SettlementManager.unregister_active_scene_nodes()
@@ -57,8 +70,10 @@ func _setup_default_resources() -> void:
 		test_building_data = default_test_building
 	if not raider_scene:
 		raider_scene = load("res://scenes/units/VikingRaider.tscn")
-	if not welcome_popup_scene: 
-		welcome_popup_scene = default_welcome_popup
+	# --- MODIFICATION: Renamed variables ---
+	if not end_of_year_popup_scene: 
+		end_of_year_popup_scene = default_end_of_year_popup
+	# --- END MODIFICATION ---
 
 func _initialize_settlement() -> void:
 	"""Initialize data, then grid, then spawn buildings."""
@@ -138,9 +153,14 @@ func _create_default_settlement() -> SettlementData:
 	return settlement
 
 func _setup_ui() -> void:
-	welcome_popup = welcome_popup_scene.instantiate()
-	ui_layer.add_child(welcome_popup)
-	welcome_popup.collect_button_pressed.connect(_on_payout_collected)
+	# --- MODIFICATION: Renamed variables ---
+	end_of_year_popup = end_of_year_popup_scene.instantiate()
+	ui_layer.add_child(end_of_year_popup)
+	end_of_year_popup.collect_button_pressed.connect(_on_payout_collected)
+	# --- END MODIFICATION ---
+	
+	# We hide the storefront here initially
+	storefront_ui.hide()
 
 func _connect_signals() -> void:
 	restart_button.pressed.connect(_on_restart_pressed)
@@ -156,15 +176,23 @@ func _connect_signals() -> void:
 
 func _handle_welcome_payout() -> void:
 	var payout = SettlementManager.calculate_payout()
+	# --- MODIFICATION: Renamed variable ---
 	if not payout.is_empty():
-		welcome_popup.display_payout(payout)
+		end_of_year_popup.display_payout(payout)
 		storefront_ui.hide()
+	else:
+		# If no payout, just show the store
+		storefront_ui.show()
+		end_of_year_popup.hide()
+	# --- END MODIFICATION ---
 
 func _on_settlement_loaded(_settlement_data: SettlementData) -> void:
 	pass
 
 func _unhandled_input(event: InputEvent) -> void:
-	if game_is_over or (welcome_popup and welcome_popup.visible):
+	# --- MODIFICATION: Renamed variable ---
+	if game_is_over or (end_of_year_popup and end_of_year_popup.visible):
+	# --- END MODIFICATION ---
 		return
 	
 	if event.is_action_pressed("ui_accept") and not awaiting_placement:

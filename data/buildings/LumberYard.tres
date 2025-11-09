@@ -6,6 +6,7 @@
 
 [resource]
 script = ExtResource("1_abcde")
+fixed_payout_amount = 50
 display_name = "Lumber Yard"
 scene_to_spawn = ExtResource("2_fghij")
 building_texture = ExtResource("1_plclm")

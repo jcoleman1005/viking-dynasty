@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://dqh0xu88khxct"]
 
-[ext_resource type="Script" uid="uid://pi8qvm18eita" path="res://ui/WelcomeHomePopup.gd" id="1_3kn8e"]
-[ext_resource type="Theme" path="res://ui/themes/VikingDynastyTheme.tres" id="2_theme"]
+[ext_resource type="Script" uid="uid://pi8qvm18eita" path="res://ui/EndOfYear_Popup.gd" id="1_3kn8e"]
+[ext_resource type="Theme" uid="uid://63duv3n1vwhg" path="res://ui/themes/VikingDynastyTheme.tres" id="2_theme"]
 
 [node name="Main" type="PanelContainer"]
 anchors_preset = 8

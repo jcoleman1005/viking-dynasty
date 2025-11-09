@@ -1,6 +1,7 @@
-[gd_scene load_steps=5 format=3 uid="uid://ba41qxyi1a30u"]
+[gd_scene load_steps=6 format=3 uid="uid://ba41qxyi1a30u"]
 
 [ext_resource type="Script" uid="uid://dmq8s5ifmd1dx" path="res://scenes/world_map/MacroMap.gd" id="1_macro_map"]
+[ext_resource type="PackedScene" uid="uid://dqh0xu88khxct" path="res://ui/EndOfYear_Popup.tscn" id="2_okptj"]
 [ext_resource type="PackedScene" uid="uid://cuyni4y77q51q" path="res://scenes/world_map/Region.tscn" id="2_region"]
 [ext_resource type="Resource" uid="uid://dbhfg3lfhe6tw" path="res://data/world_map/Region_Monastery.tres" id="3_monastery_data"]
 [ext_resource type="PackedScene" uid="uid://lpxvj8dvfbnl" path="res://scenes/world_map/MacroCamera.tscn" id="5_okptj"]
@@ -8,11 +9,12 @@
 [node name="MacroMap" type="Node2D"]
 position = Vector2(131, 23)
 script = ExtResource("1_macro_map")
+end_year_popup_scene = ExtResource("2_okptj")
 
 [node name="MapBackground" type="ColorRect" parent="."]
 modulate = Color(0.735357, 0.735357, 0.735357, 1)
 custom_minimum_size = Vector2(1920, 1080)
-anchors_preset = 15
+anchors_preset = -1
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = -703.00006
@@ -37,7 +39,7 @@ data = ExtResource("3_monastery_data")
 layer = 10
 
 [node name="JarlInfo" type="PanelContainer" parent="UI"]
-anchors_preset = 5
+anchors_preset = -1
 anchor_left = 0.5
 anchor_right = 0.5
 offset_left = -20.0
@@ -61,7 +63,7 @@ text = "Renown: 25"
 horizontal_alignment = 1
 
 [node name="Actions" type="PanelContainer" parent="UI"]
-anchors_preset = 3
+anchors_preset = -1
 anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
@@ -85,7 +87,7 @@ text = "Return to Settlement"
 
 [node name="RegionInfo" type="PanelContainer" parent="UI"]
 visible = false
-anchors_preset = 7
+anchors_preset = -1
 anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
@@ -111,7 +113,7 @@ text = "Launch Raid"
 
 [node name="Tooltip" type="PanelContainer" parent="UI"]
 visible = false
-anchors_preset = 7
+anchors_preset = -1
 anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
