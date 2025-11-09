@@ -39,6 +39,6 @@ placed_buildings = Array[Dictionary]([{
 "resource_path": "res://data/buildings/LumberYard.tres"
 }])
 garrisoned_units = {
-"res://data/units/Unit_PlayerRaider.tres": 16
+"res://data/units/Unit_PlayerRaider.tres": 8
 }
 metadata/_custom_type_script = "uid://hlb8s5g0yp6k"

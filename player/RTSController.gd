@@ -6,7 +6,7 @@
 # (which are fired by SelectionBox.gd).
 # It also correctly cleans up dead units.
 #
-# --- ADDED: Control Group Support ---
+# --- ADDED: Control Group & Formation Drag Support ---
 
 extends Node
 class_name RTSController
@@ -19,16 +19,8 @@ var current_formation: SquadFormation.FormationType = SquadFormation.FormationTy
 # We store the unit instance IDs, not the nodes themselves,
 # to more safely handle units dying.
 var control_groups: Dictionary = {
-	1: [],
-	2: [],
-	3: [],
-	4: [],
-	5: [],
-	6: [],
-	7: [],
-	8: [],
-	9: [],
-	0: []
+	1: [], 2: [], 3: [], 4: [], 5: [],
+	6: [], 7: [], 8: [], 9: [], 0: [],
 }
 # ---------------------------------
 
@@ -38,12 +30,18 @@ func _ready() -> void:
 	EventBus.select_command.connect(_on_select_command)
 	EventBus.move_command.connect(_on_move_command)
 	EventBus.attack_command.connect(_on_attack_command)
+	# --- THIS LINE IS REQUIRED FOR DRAG-FORMATIONS ---
+	EventBus.formation_move_command.connect(_on_formation_move_command)
 
 func _input(event: InputEvent) -> void:
 	# --- MODIFIED: Handle Control Group logic ---
 	if event is InputEventKey and event.is_pressed():
 		var key = event.keycode
+		
+		# --- THIS IS THE FIX (Line 41) ---
+		# We use the 'ctrl_pressed' *property*
 		var is_ctrl_pressed: bool = event.ctrl_pressed
+		# ---------------------------------
 
 		# Handle number keys 0-9
 		if key >= KEY_0 and key <= KEY_9:
@@ -123,13 +121,7 @@ func remove_unit(unit: BaseUnit) -> void:
 	if controllable_units.is_empty():
 		print("RTSController: All units are gone.")
 
-# --- REMOVED ---
-# _on_global_input, _draw, _process, _handle_selection,
-# and _handle_command are all removed.
-# They are replaced by the functions below.
-# -----------------
-
-# --- NEW: EVENTBUS HANDLERS ---
+# --- EVENTBUS HANDLERS ---
 
 func _on_select_command(select_rect: Rect2, is_box_select: bool) -> void:
 	_clear_selection()
@@ -189,9 +181,42 @@ func _on_move_command(target_position: Vector2) -> void:
 		var formation = SquadFormation.new(units_as_node2d)
 		formation.formation_type = current_formation
 		formation.unit_spacing = 45.0
-		# This uses the original move_to_position, as we haven't
-		# implemented click-drag formations yet.
-		formation.move_to_position(target_position)
+		
+		# --- MODIFIED: Calculate direction ---
+		# For a simple right-click, we just face the destination
+		var group_center = formation.formation_center
+		var direction = (target_position - group_center).normalized()
+		if direction.is_zero_approx():
+			direction = Vector2.DOWN # Default fallback
+		formation.move_to_position(target_position, direction)
+		# -------------------------------------
+
+# --- THIS IS THE NEW FUNCTION FOR DRAG-FORMATIONS ---
+func _on_formation_move_command(target_position: Vector2, direction_vector: Vector2):
+	# --- DEBUG ---
+	print("==================================================")
+	print("RTSController: Received formation_move_command.")
+	print("  -> Target Center: %s, Direction: %s" % [target_position, direction_vector])
+	# --- END DEBUG ---
+	
+	if selected_units.is_empty():
+		return
+
+	if selected_units.size() == 1:
+		# Single unit - just move, ignore direction
+		selected_units[0].command_move_to(target_position)
+	else:
+		# Multiple units - use formation
+		var units_as_node2d: Array[Node2D] = []
+		for unit in selected_units:
+			units_as_node2d.append(unit)
+		
+		var formation = SquadFormation.new(units_as_node2d)
+		formation.formation_type = current_formation
+		formation.unit_spacing = 45.0
+		# Pass the specific direction from the drag
+		formation.move_to_position(target_position, direction_vector)
+# ---------------------------------------------
 
 func _on_attack_command(target_node: Node2D) -> void:
 	if selected_units.is_empty():
@@ -207,7 +232,7 @@ func _clear_selection() -> void:
 			unit.set_selected(false)
 	selected_units.clear()
 
-# --- NEW: Control Group Functions ---
+# --- Control Group Functions ---
 
 func _set_control_group(num: int) -> void:
 	print("Setting control group %d" % num)

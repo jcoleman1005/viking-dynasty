@@ -4,7 +4,8 @@
 
 class_name UnitFSM
 
-enum State { IDLE, MOVING, ATTACKING }
+# --- MODIFIED: Added new state ---
+enum State { IDLE, MOVING, FORMATION_MOVING, ATTACKING }
 enum Stance { DEFENSIVE, HOLD_POSITION } # Future-proofed for other stances
 
 # Unit References
@@ -46,8 +47,15 @@ func _enter_state(state: State) -> void:
 			unit.velocity = Vector2.ZERO
 			
 		State.MOVING:
+			# This state is now only for A* pathfinding
 			print("%s entering MOVING state to %s." % [unit.data.display_name, target_position])
-			_recalculate_path()
+			_recalculate_path() 
+		
+		State.FORMATION_MOVING:
+			# This state is only for direct formation moves
+			print("%s entering FORMATION_MOVING state to %s." % [unit.data.display_name, target_position])
+			# Path is already set by command_move_to_formation_pos
+			pass
 			
 		State.ATTACKING:
 			print("%s entering ATTACKING state." % unit.data.display_name)
@@ -61,6 +69,8 @@ func _enter_state(state: State) -> void:
 func _exit_state(state: State) -> void:
 	match state:
 		State.MOVING:
+			path.clear()
+		State.FORMATION_MOVING:
 			path.clear()
 		State.ATTACKING:
 			attack_timer.stop()
@@ -85,12 +95,35 @@ func _recalculate_path() -> void:
 
 # --- RTS Command Functions ---
 
-func command_move_to(target_pos: Vector2) -> void:
-	"""Command the unit to move to a specific position"""
+# --- MODIFIED: This now uses the new state ---
+func command_move_to_formation_pos(target_pos: Vector2) -> void:
+	"""
+	Command the unit to move to a specific formation position.
+	This BYPASSES A* pathfinding and moves in a straight line.
+	"""
 	target_position = target_pos
 	move_command_position = target_pos
 	target_unit = null # Clear any attack target
-	change_state(State.MOVING)
+	
+	# Create a simple, direct path with only one waypoint: the destination
+	path.clear()
+	path.append(target_pos)
+	
+	# Use the new, dedicated state
+	change_state(State.FORMATION_MOVING)
+	
+	print("%s moving to formation spot %s." % [unit.data.display_name, target_pos])
+# --- END MODIFICATION ---
+
+
+func command_move_to(target_pos: Vector2) -> void:
+	"""
+	Command the unit to move to a specific position using A* pathfinding.
+	"""
+	target_position = target_pos
+	move_command_position = target_pos
+	target_unit = null # Clear any attack target
+	change_state(State.MOVING) # This will call _recalculate_path()
 
 func command_attack(target: Node2D) -> void:
 	"""Command the unit to attack a specific target"""
@@ -114,7 +147,7 @@ func command_attack(target: Node2D) -> void:
 		change_state(State.ATTACKING)
 	else:
 		print("DEBUG: Target out of range, transitioning to MOVING")
-		change_state(State.MOVING)
+		change_state(State.MOVING) # This will call _recalculate_path()
 
 # --- State Machine Update ---
 
@@ -124,6 +157,8 @@ func update(delta: float) -> void:
 			_idle_state(delta)
 		State.MOVING:
 			_move_state(delta)
+		State.FORMATION_MOVING:
+			_formation_move_state(delta) # Call the new function
 		State.ATTACKING:
 			_attack_state(delta)
 
@@ -133,7 +168,42 @@ func _idle_state(_delta: float) -> void:
 	# In idle state, unit stands still
 	unit.velocity = Vector2.ZERO
 
+# --- NEW: Dedicated state function for formations ---
+func _formation_move_state(delta: float) -> void:
+	"""
+	A simplified move state that ONLY moves along the path.
+	It does not check for enemies or recalculate A*.
+	"""
+	if path.is_empty():
+		# We've reached our destination
+		print("%s reached formation spot." % unit.data.display_name)
+		change_state(State.IDLE)
+		return
+
+	# Move along the path
+	var next_waypoint: Vector2 = path[0]
+	var direction: Vector2 = (next_waypoint - unit.global_position).normalized()
+	var velocity: Vector2 = direction * unit.data.move_speed
+	
+	unit.velocity = velocity
+	unit.move_and_slide()
+	
+	# Check if we've reached the current waypoint
+	var arrival_radius: float = 8.0 
+	if unit.global_position.distance_to(next_waypoint) < arrival_radius:
+		path.pop_front()
+		
+		# If that was the last waypoint, we're done
+		if path.is_empty():
+			change_state(State.IDLE)
+# --- END NEW FUNCTION ---
+
+
 func _move_state(delta: float) -> void:
+	"""
+	This is the complex A* move state, used for attacking and
+	simple move commands.
+	"""
 	# First priority: Check if we have a valid attack target and are in range
 	if is_instance_valid(target_unit):
 		var distance_to_target: float = unit.global_position.distance_to(target_unit.global_position)
@@ -210,7 +280,7 @@ func _attack_state(_delta: float) -> void:
 	if distance_to_target > unit.data.attack_range + 8: # Reduced buffer to avoid oscillation
 		print("%s target moved out of range. Re-engaging." % unit.data.display_name)
 		target_position = target_unit.global_position
-		change_state(State.MOVING)
+		change_state(State.MOVING) # This will call _recalculate_path()
 
 func _check_defensive_response() -> void:
 	"""Check if unit should respond defensively to being attacked"""

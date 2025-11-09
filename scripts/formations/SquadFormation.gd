@@ -48,17 +48,20 @@ func set_formation_type(new_type: FormationType) -> void:
 	formation_type = new_type
 	_update_formation_positions()
 
-func move_to_position(target_pos: Vector2) -> void:
+# --- MODIFIED: Added direction vector parameter ---
+func move_to_position(target_pos: Vector2, direction: Vector2 = Vector2.DOWN) -> void:
 	"""Command the entire squad to move to a target position"""
 	target_position = target_pos
 	is_moving = true
 	
-	# Calculate formation positions around the target
-	var formation_positions = _calculate_formation_positions(target_pos)
+	# Calculate formation positions around the target, using the direction
+	var formation_positions = _calculate_formation_positions(target_pos, direction)
 	
 	# Assign each unit a position in the formation
 	for i in range(min(units.size(), formation_positions.size())):
 		var unit = units[i]
+		if not is_instance_valid(unit):
+			continue
 		var target_formation_pos = formation_positions[i]
 		
 		# Move the unit to its formation position
@@ -66,10 +69,18 @@ func move_to_position(target_pos: Vector2) -> void:
 	
 	print("Squad moving to %s in %s formation with %d units" % [target_pos, FormationType.keys()[formation_type], units.size()])
 
-func _calculate_formation_positions(center_pos: Vector2) -> Array[Vector2]:
+# --- MODIFIED: Added direction and rotation logic ---
+func _calculate_formation_positions(center_pos: Vector2, direction: Vector2) -> Array[Vector2]:
 	"""Calculate formation positions based on formation type"""
 	var positions: Array[Vector2] = []
 	var unit_count = units.size()
+	
+	# --- AI FIX: Invert the direction vector ---
+	# The user is dragging *from* the center *to* the facing direction.
+	# Our previous logic was calculating the opposite rotation.
+	# Inverting the vector here corrects the rotation 180 degrees.
+	var rotation_angle = Vector2.DOWN.angle_to(direction * -1.0)
+	# ------------------------------------------
 	
 	match formation_type:
 		FormationType.LINE:
@@ -83,8 +94,19 @@ func _calculate_formation_positions(center_pos: Vector2) -> Array[Vector2]:
 		FormationType.CIRCLE:
 			positions = _calculate_circle_formation(center_pos, unit_count)
 	
-	return positions
-
+	# --- NEW: Rotate all points ---
+	var rotated_positions: Array[Vector2] = []
+	for pos in positions:
+		# 1. Translate position to be relative to center_pos
+		var relative_pos = pos - center_pos
+		# 2. Rotate it
+		var rotated_relative_pos = relative_pos.rotated(rotation_angle)
+		# 3. Translate it back to world space
+		rotated_positions.append(center_pos + rotated_relative_pos)
+	
+	return rotated_positions
+	# ---------------------------------
+	
 func _calculate_line_formation(center_pos: Vector2, unit_count: int) -> Array[Vector2]:
 	"""Calculate horizontal line formation positions"""
 	var positions: Array[Vector2] = []
@@ -111,7 +133,7 @@ func _calculate_wedge_formation(center_pos: Vector2, unit_count: int) -> Array[V
 	"""Calculate V-shaped wedge formation positions"""
 	var positions: Array[Vector2] = []
 	
-	# Leader at the front
+	# Leader at the front (relative to center_pos.y)
 	positions.append(center_pos)
 	
 	# Place remaining units in V formation behind the leader
@@ -122,10 +144,12 @@ func _calculate_wedge_formation(center_pos: Vector2, unit_count: int) -> Array[V
 		var row = (i + 1) / 2  # Which row behind the leader
 		var side = 1 if i % 2 == 1 else -1  # Left or right side
 		
+		# --- AI FIX: Changed from - to + to face DOWN by default ---
 		var pos = Vector2(
 			center_pos.x + side * side_offset * row,
 			center_pos.y + rear_offset * row
 		)
+		# -----------------------------------------------------------
 		positions.append(pos)
 	
 	return positions
@@ -171,6 +195,7 @@ func _calculate_circle_formation(center_pos: Vector2, unit_count: int) -> Array[
 	
 	return positions
 
+# --- MODIFIED: To call the new FSM function ---
 func _move_unit_to_position(unit: Node2D, target_pos: Vector2) -> void:
 	"""Move a specific unit to a target position"""
 	if not is_instance_valid(unit):
@@ -178,13 +203,16 @@ func _move_unit_to_position(unit: Node2D, target_pos: Vector2) -> void:
 	
 	# Check if unit has FSM (proper unit system)
 	if "fsm" in unit and unit.fsm != null:
-		unit.fsm.command_move_to(target_pos)
+		# Call the new formation-specific move function
+		unit.fsm.command_move_to_formation_pos(target_pos)
 	# Check if unit has direct movement method
 	elif unit.has_method("command_move_to"):
+		# Fallback for non-FSM units (like old test units)
 		unit.command_move_to(target_pos)
 	# Fallback: simple movement for test units
 	else:
 		_simple_unit_movement(unit, target_pos)
+# --- END MODIFICATION ---
 
 func _simple_unit_movement(unit: Node2D, target_pos: Vector2) -> void:
 	"""Simple movement system for test units without FSM"""
@@ -214,7 +242,12 @@ func _physics_process(delta: float) -> void:
 """
 		# Create and attach movement behavior
 		var script = GDScript.new()
-		script.source_code = unit.get_script().source_code + "\n" + movement_script
+		var existing_script = unit.get_script()
+		if existing_script:
+			script.source_code = existing_script.source_code + "\n" + movement_script
+		else:
+			push_error("Unit has no script, cannot add simple movement.")
+			return
 		script.reload()
 		unit.set_script(script)
 	
