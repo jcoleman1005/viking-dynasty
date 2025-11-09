@@ -242,7 +242,8 @@ func _is_cell_within_bounds(grid_position: Vector2i) -> bool:
 	return grid_position.x >= bounds.position.x and grid_position.x < bounds.end.x and \
 		   grid_position.y >= bounds.position.y and grid_position.y < bounds.end.y
 
-func get_astar_path(start_pos: Vector2, end_pos: Vector2) -> PackedVector2Array:
+# --- MODIFIED FUNCTION ---
+func get_astar_path(start_pos: Vector2, end_pos: Vector2, allow_partial_path: bool = false) -> PackedVector2Array:
 	if not is_instance_valid(active_astar_grid):
 		push_error("AStarGrid is not registered!")
 		return PackedVector2Array()
@@ -259,10 +260,12 @@ func get_astar_path(start_pos: Vector2, end_pos: Vector2) -> PackedVector2Array:
 		return PackedVector2Array()
 	
 	if not _is_cell_within_bounds(end_id):
-		push_error("End position (%s) -> grid_id (%s) is out of bounds." % [end_pos, end_id])
-		return PackedVector2Array()
+		# Don't error if the end_id is out of bounds, a partial path might still work
+		pass
 	
-	return active_astar_grid.get_point_path(start_id, end_id)
+	# Pass the allow_partial_path flag to the real AStarGrid2D function
+	return active_astar_grid.get_point_path(start_id, end_id, allow_partial_path)
+# --- END MODIFIED FUNCTION ---
 
 func set_astar_point_solid(grid_position: Vector2i, solid: bool) -> void:
 	if not is_instance_valid(active_astar_grid):
@@ -274,3 +277,5 @@ func set_astar_point_solid(grid_position: Vector2i, solid: bool) -> void:
 		return
 	
 	active_astar_grid.set_point_solid(grid_position, solid)
+
+# --- REMOVED 'get_closest_walkable_cell' FUNCTION ---

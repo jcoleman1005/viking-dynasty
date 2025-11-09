@@ -1,8 +1,8 @@
-# res://scripts/units/VikingRaider.gd
+# res://scripts/units/EnemyVikingRaider.gd
 #
 # Concrete implementation of the Viking Raider enemy unit.
 #
-# --- MODIFIED: Target position is now adjacent to the Hall ---
+# --- MODIFIED: Target position is now set correctly ---
 
 extends BaseUnit
 
@@ -19,10 +19,10 @@ func set_attack_target(target: BaseBuilding) -> void:
 	fsm.target_unit = target
 	
 	# --- THIS IS THE FIX ---
-	# Set the position (for moving) to be one tile *below*
-	# the Hall's center. This is a walkable tile, so
-	# pathfinding will succeed.
-	fsm.target_position = target.global_position + Vector2(0, 32)
+	# Target the building's actual center.
+	# The FSM will find the closest walkable spot.
+	fsm.target_position = target.global_position
+	# --- END FIX ---
 	
 	# Start the FSM
 	fsm.change_state(UnitFSM.State.MOVING)
