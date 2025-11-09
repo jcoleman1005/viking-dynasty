@@ -43,3 +43,12 @@ extends Resource
 
 ## The target gameplay size in pixels (e.g., 32x32).
 @export var target_pixel_size: Vector2 = Vector2(32, 32)
+
+
+@export_group("Movement Feel")
+# --- NEW: Added properties from Base_Unit ---
+## How quickly the unit reaches max speed (e.g., 10.0)
+@export var acceleration: float = 10.0
+## How much "friction" the unit has (e.g., 5.0)
+@export var linear_damping: float = 5.0
+# ---------------------------------------------
