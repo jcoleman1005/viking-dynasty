@@ -1,26 +1,6 @@
-[gd_scene load_steps=3 format=3 uid="uid://cws6xle5x52g4"]
+[gd_scene load_steps=2 format=3 uid="uid://cws6xle5x52g4"]
 
 [ext_resource type="Script" uid="uid://cb2ldxc7vxxah" path="res://data/buildings/Base_Building.gd" id="1_script"]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_b5w0v"]
-size = Vector2(32, 32)
-
 [node name="Base_Building" type="StaticBody2D"]
 script = ExtResource("1_script")
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-shape = SubResource("RectangleShape2D_b5w0v")
-
-[node name="ColorRect" type="ColorRect" parent="."]
-custom_minimum_size = Vector2(25, 25)
-offset_right = 40.0
-offset_bottom = 40.0
-size_flags_horizontal = 3
-color = Color(0.7372549, 0.7372549, 0.7372549, 1)
-
-[node name="Label" type="Label" parent="ColorRect"]
-layout_mode = 0
-offset_right = 114.0
-offset_bottom = 23.0
-text = "Building Name"
-horizontal_alignment = 1

@@ -36,6 +36,15 @@ extends Resource
 ## Attacks per second.
 @export var attack_speed: float = 1.2
 
+## An optional AI scene to instance (e.g., for ranged units)
+@export var ai_component_scene: PackedScene
+
+## The projectile scene to spawn when this unit attacks (for ranged units).
+@export var projectile_scene: PackedScene
+
+## The speed of the projectile, in pixels per second.
+@export var projectile_speed: float = 400.0
+
 
 @export_group("Visuals")
 ## The texture to use for the unit's sprite.

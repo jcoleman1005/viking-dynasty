@@ -17,6 +17,7 @@ var raid_loot: RaidLootData
 var rts_controller: RTSController
 var enemy_hall: BaseBuilding
 var building_container: Node2D
+var is_initialized: bool = false
 
 func _ready() -> void:
 	raid_loot = RaidLootData.new()
@@ -30,6 +31,11 @@ func initialize(
 	Called by RaidMission.gd after the level is loaded
 	to pass in all necessary scene references.
 	"""
+	# Prevent multiple initialization
+	if is_initialized:
+		print("RaidObjectiveManager: Already initialized, skipping.")
+		return
+		
 	self.rts_controller = p_rts_controller
 	self.enemy_hall = p_enemy_hall
 	self.building_container = p_building_container
@@ -45,17 +51,22 @@ func initialize(
 	# Connect to all necessary signals
 	_connect_to_building_signals()
 	_setup_win_loss_conditions()
+	
+	# Mark as initialized
+	is_initialized = true
 
 
 func _connect_to_building_signals() -> void:
 	# Connect to the Great Hall for the win condition
 	if enemy_hall.has_signal("building_destroyed"):
-		enemy_hall.building_destroyed.connect(_on_enemy_hall_destroyed)
+		if not enemy_hall.building_destroyed.is_connected(_on_enemy_hall_destroyed):
+			enemy_hall.building_destroyed.connect(_on_enemy_hall_destroyed)
 	
 	# Connect to *all* buildings for loot collection
 	for building in building_container.get_children():
 		if building is BaseBuilding and building.has_signal("building_destroyed"):
-			building.building_destroyed.connect(_on_enemy_building_destroyed_for_loot)
+			if not building.building_destroyed.is_connected(_on_enemy_building_destroyed_for_loot):
+				building.building_destroyed.connect(_on_enemy_building_destroyed_for_loot)
 
 # --- Objective Logic ---
 

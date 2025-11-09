@@ -4,4 +4,10 @@
 [ext_resource type="Script" uid="uid://cavpq2rrgln2v" path="res://scripts/units/EnemyVikingRaider.gd" id="2_script"]
 
 [node name="VikingRaider" instance=ExtResource("1_base")]
+collision_layer = 4
 script = ExtResource("2_script")
+
+[node name="Sprite2D" parent="." index="0"]
+modulate = Color(0.5464087, 3.85046e-07, 2.4065375e-07, 1)
+self_modulate = Color(1, 0, 0, 1)
+scale = Vector2(0.059, 0.062)

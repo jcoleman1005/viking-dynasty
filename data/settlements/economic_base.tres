@@ -5,10 +5,10 @@
 [resource]
 script = ExtResource("1_e06fl")
 treasury = {
-"food": 315,
-"gold": 1600,
-"stone": 150,
-"wood": 520
+"food": 200,
+"gold": 1000,
+"stone": 300,
+"wood": 500
 }
 placed_buildings = Array[Dictionary]([{
 "grid_position": Vector2i(10, 8),
@@ -39,5 +39,5 @@ placed_buildings = Array[Dictionary]([{
 "resource_path": "res://data/buildings/Monastery_Watchtower.tres"
 }])
 garrisoned_units = {
-"res://data/units/Unit_PlayerRaider.tres": 8
+"res://data/units/Unit_PlayerRaider.tres": 3
 }

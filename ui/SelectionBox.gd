@@ -112,10 +112,12 @@ func _handle_smart_command(screen_pos: Vector2) -> void:
 	query.position = world_pos
 	query.collide_with_areas = true
 	query.collide_with_bodies = true
-	# We only want to hit "enemy" things
-	# GDD: "right-click is the 'smart' command (move on ground, attack on enemy)"
-	# We assume layer 2 is "enemy_units" and layer 3 is "enemy_buildings"
-	query.collision_mask = 6 # (Binary 0110 = Layers 2 and 3)
+	
+	# --- MODIFIED: Collision Mask ---
+	# We now attack Layer 3 (Enemy Units) and Layer 4 (Enemy Buildings)
+	# Binary 1100 = 12
+	query.collision_mask = 12 
+	# --------------------------------
 	
 	var results: Array = world_space.intersect_point(query)
 	

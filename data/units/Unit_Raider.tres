@@ -1,67 +1,13 @@
-[gd_resource type="Resource" script_class="UnitData" load_steps=4 format=3 uid="uid://brnbvjwnoyh3j"]
+[gd_resource type="Resource" script_class="UnitData" load_steps=6 format=3 uid="uid://brnbvjwnoyh3j"]
 
+[ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://dsv0s4yq8c8m5" path="res://scenes/units/VikingRaider.tscn" id="2_spawn_scene"]
 [ext_resource type="Texture2D" uid="uid://pwi4bv5ch827" path="res://textures/placeholders/unit_placeholder.png" id="3_6go6j"]
-
-[sub_resource type="GDScript" id="GDScript_tyo8t"]
-script/source = "# res://data/units/UnitData.gd
-#
-# Defines the core data for any unit in the game.
-# This resource is used by Base_Unit.tscn to configure instances.
-# GDD Ref: 7.C.1.b
-
-class_name UnitData
-extends Resource
-
-## The name displayed in the UI (e.g., \"Viking Raider\").
-@export var display_name: String = \"New Unit\"
-
-## The scene that will be instanced when this unit is spawned.
-@export var scene_to_spawn: PackedScene
-
-## The icon shown in the training menu.
-@export var icon: Texture2D
-
-## The cost in 'Resources' to train this unit.
-@export var spawn_cost: Dictionary = {\"food\": 25}
-
-
-@export_group(\"Combat Stats\")
-## The unit's maximum hit points.
-@export var max_health: int = 50
-
-## Movement speed in pixels per second.
-@export var move_speed: float = 75.0
-
-## Damage dealt per attack.
-@export var attack_damage: int = 8
-
-## Range in pixels. (e.g., 10 for melee, 300 for archer).
-@export var attack_range: float = 10.0
-
-## Attacks per second.
-@export var attack_speed: float = 1.2
-
-
-@export_group(\"Visuals\")
-## The texture to use for the unit's sprite.
-@export var visual_texture: Texture2D
-
-## The target gameplay size in pixels (e.g., 32x32).
-@export var target_pixel_size: Vector2 = Vector2(32, 32)
-
-
-@export_group(\"Movement Feel\")
-# --- NEW: Added properties from Base_Unit ---
-## How quickly the unit reaches max speed (e.g., 10.0)
-@export var acceleration: float = 10.0
-## How much \"friction\" the unit has (e.g., 5.0)
-@export var linear_damping: float = 5.0
-# ---------------------------------------------
-"
+[ext_resource type="PackedScene" path="res://scenes/components/AttackAI.tscn" id="4_ai"]
+[ext_resource type="PackedScene" path="res://scenes/effects/Projectile.tscn" id="5_proj"]
 
 [resource]
-script = SubResource("GDScript_tyo8t")
+script = ExtResource("1_script")
 display_name = "Viking Raider"
 scene_to_spawn = ExtResource("2_spawn_scene")
 icon = ExtResource("3_6go6j")
@@ -69,9 +15,12 @@ spawn_cost = {
 "food": 30,
 "gold": 15
 }
-max_health = 60
+max_health = 45
 move_speed = 100.0
-attack_damage = 15
-attack_range = 50.0
-attack_speed = 1.0
+attack_damage = 10
+attack_range = 200.0
+attack_speed = 0.8
+ai_component_scene = ExtResource("4_ai")
+projectile_scene = ExtResource("5_proj")
+projectile_speed = 450.0
 visual_texture = ExtResource("3_6go6j")

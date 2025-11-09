@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3 uid="uid://de3nko6b1rqyg"]
+
+[ext_resource type="Script" uid="uid://cf6j84umrg0id" path="res://scenes/components/AttackAI.gd" id="1_2a4el"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_2baay"]
+
+[node name="AttackAI" type="Node2D"]
+script = ExtResource("1_2a4el")
+
+[node name="DetectionArea" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DetectionArea"]
+shape = SubResource("CircleShape2D_2baay")
+
+[node name="AttackTimer" type="Timer" parent="."]
