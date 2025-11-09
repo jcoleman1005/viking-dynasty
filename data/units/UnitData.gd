@@ -36,6 +36,15 @@ extends Resource
 ## Attacks per second.
 @export var attack_speed: float = 1.2
 
+## An optional AI scene to instance (e.g., for ranged units)
+@export var ai_component_scene: PackedScene
+
+## The projectile scene to spawn when this unit attacks (for ranged units).
+@export var projectile_scene: PackedScene
+
+## The speed of the projectile, in pixels per second.
+@export var projectile_speed: float = 400.0
+
 
 @export_group("Visuals")
 ## The texture to use for the unit's sprite.
@@ -43,3 +52,12 @@ extends Resource
 
 ## The target gameplay size in pixels (e.g., 32x32).
 @export var target_pixel_size: Vector2 = Vector2(32, 32)
+
+
+@export_group("Movement Feel")
+# --- NEW: Added properties from Base_Unit ---
+## How quickly the unit reaches max speed (e.g., 10.0)
+@export var acceleration: float = 10.0
+## How much "friction" the unit has (e.g., 5.0)
+@export var linear_damping: float = 5.0
+# ---------------------------------------------

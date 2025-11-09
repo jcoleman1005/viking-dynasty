@@ -40,6 +40,13 @@ ui_pause={
 ]
 }
 
+[layer_names]
+
+2d_physics/layer_1="Environment"
+2d_physics/layer_2="Player_Units"
+2d_physics/layer_3="Enemy_Units"
+2d_physics/layer_4="Enemy_Buildings"
+
 [plugins]
 
 enemy_base_editor/enabled=true

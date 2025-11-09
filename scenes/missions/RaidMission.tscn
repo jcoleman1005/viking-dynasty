@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://d3ifdm0rvd5kl"]
+[gd_scene load_steps=9 format=3 uid="uid://d3ifdm0rvd5kl"]
 
 [ext_resource type="Script" uid="uid://cuw68f180xbui" path="res://scenes/missions/RaidMission.gd" id="1_qt4qp"]
 [ext_resource type="PackedScene" uid="uid://cyp3t7gbdg0wx" path="res://player/RTSController.tscn" id="2_8icmc"]
@@ -6,6 +6,8 @@
 [ext_resource type="PackedScene" uid="uid://dsrvmutqo7g3h" path="res://scripts/utility/GridManager.tscn" id="5_olj83"]
 [ext_resource type="Script" uid="uid://bxbqkyp1d6750" path="res://player/RTSCamera.gd" id="5_xkh2l"]
 [ext_resource type="Script" uid="uid://by77ij2ft60cp" path="res://scenes/missions/RaidObjectiveManager.gd" id="6_olj83"]
+[ext_resource type="PackedScene" uid="uid://dsv0s4yq8c8m5" path="res://scenes/units/VikingRaider.tscn" id="7_l8hqj"]
+[ext_resource type="Resource" uid="uid://brnbvjwnoyh3j" path="res://data/units/Unit_Raider.tres" id="8_e8k8h"]
 
 [node name="RaidMission" type="Node2D"]
 script = ExtResource("1_qt4qp")
@@ -31,3 +33,7 @@ grid_height = 80
 
 [node name="RaidObjectiveManager" type="Node" parent="."]
 script = ExtResource("6_olj83")
+
+[node name="VikingRaider" parent="." instance=ExtResource("7_l8hqj")]
+position = Vector2(945, 79)
+data = ExtResource("8_e8k8h")

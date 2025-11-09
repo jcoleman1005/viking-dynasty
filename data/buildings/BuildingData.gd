@@ -49,3 +49,12 @@ extends Resource
 
 ## Attacks per second (if defensive).
 @export var attack_speed: float = 1.0
+
+## An optional AI scene to instance (e.g., for defensive buildings)
+@export var ai_component_scene: PackedScene
+
+## The projectile scene to spawn when this building attacks (for defensive structures).
+@export var projectile_scene: PackedScene
+
+## The speed of the projectile, in pixels per second.
+@export var projectile_speed: float = 400.0

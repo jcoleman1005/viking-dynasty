@@ -1,24 +1,28 @@
 # res://data/buildings/Base_Building.gd
 #
-# --- MODIFIED: (Dev Art Fix) ---
-# Now uses a ColorRect and Label instead of a Sprite2D.
+# This script is attached to the Base_Building.tscn scene.
+# It procedurally creates its own visual nodes
+# and instances its AI component from its 'data' resource.
+
 class_name BaseBuilding
 extends StaticBody2D
 
-## This signal is emitted when health reaches zero.
 signal building_destroyed(building: BaseBuilding)
 
 @export var data: BuildingData
 var current_health: int = 100
 
-# Get a reference to the new nodes
-@onready var background: ColorRect = $ColorRect
-@onready var label: Label = $ColorRect/Label
-@onready var collision_shape: CollisionShape2D = $CollisionShape2D
+# Node refs (will be created in _ready)
+var background: ColorRect
+var label: Label
+var collision_shape: CollisionShape2D
 
 # Development visual enhancements
 var health_bar: ProgressBar
 var border_rect: ColorRect
+
+# AI component (optional)
+var attack_ai: Node = null # Use generic Node, could be AttackAI or DefensiveAI
 
 func _ready() -> void:
 	if not data:
@@ -27,19 +31,22 @@ func _ready() -> void:
 	
 	current_health = data.max_health
 	
-	# --- Apply Data and Scaling ---
-	_apply_data_and_scale()
+	# --- Create core nodes ---
+	collision_shape = CollisionShape2D.new()
+	collision_shape.shape = RectangleShape2D.new()
+	add_child(collision_shape)
 	
-	# --- Create Development Visuals ---
+	background = ColorRect.new()
+	label = Label.new()
+	background.add_child(label)
+	add_child(background)
+	# -------------------------
+	
+	_apply_data_and_scale()
 	_create_dev_visuals()
+	_setup_defensive_ai()
 
 func _apply_data_and_scale() -> void:
-	"""
-	Applies the data from the .tres file and scales the
-	ColorRect and collision shape to match the 'data.grid_size'.
-	"""
-	
-	# 1. Validate SettlementManager and get the cell size
 	if not SettlementManager:
 		push_error("BaseBuilding: SettlementManager not ready. Cannot scale '%s'." % data.display_name)
 		return
@@ -49,38 +56,25 @@ func _apply_data_and_scale() -> void:
 		push_error("BaseBuilding: SettlementManager returned invalid cell_size (%s). Cannot scale '%s'." % [cell_size, data.display_name])
 		return
 		
-	# 2. Get the target size based on grid
 	var target_size: Vector2 = Vector2(data.grid_size) * cell_size
 	
 	if target_size.x <= 0 or target_size.y <= 0:
 		push_warning("BaseBuilding: '%s' has a grid_size of %s, resulting in an invalid target_size." % [data.display_name, data.grid_size])
 		return
 
-	# 3. Apply and Scale the Background
 	background.custom_minimum_size = target_size
-	
-	# --- THIS IS THE FIX (PART 1) ---
-	# Shift the background's position so it's centered on the node's origin,
-	# just like the collision shape.
 	background.position = -target_size / 2.0
 	
-	# 4. Apply Enhanced Visual Styling
 	_apply_visual_styling(target_size)
 
-	# 5. Scale the Collision Shape
 	if collision_shape and collision_shape.shape is RectangleShape2D:
-		# Set size to match the target size (Godot 4.x uses 'size', not 'extents')
 		collision_shape.shape.size = target_size
 	else:
-		# --- THIS IS THE BUG FIX ---
-		# The '%' format string now correctly uses brackets [].
 		push_warning("BaseBuilding: '%s' is missing its CollisionShape2D node or its shape is not a RectangleShape2D. Collision will not match visuals." % [data.display_name])
-		# --- END BUG FIX ---
 
 func take_damage(amount: int) -> void:
 	current_health = max(0, current_health - amount)
 	
-	# Update health bar if it exists
 	if health_bar:
 		health_bar.value = current_health
 	
@@ -100,7 +94,6 @@ func die() -> void:
 	queue_free()
 
 func _show_destruction_effect() -> void:
-	"""Add a simple visual destruction effect"""
 	var tween = create_tween()
 	
 	tween.parallel().tween_property(self, "scale", Vector2(0.1, 0.1), 0.3)
@@ -108,17 +101,13 @@ func _show_destruction_effect() -> void:
 	tween.parallel().tween_property(self, "rotation", randf() * TAU, 0.3)
 
 func _apply_visual_styling(target_size: Vector2) -> void:
-	"""Enhanced visual styling with color coding and improved label"""
-	# Apply building name
 	label.text = data.display_name
 	label.custom_minimum_size = target_size
 	
-	# Enhanced label properties
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	
-	# Adjust font size based on building size
 	if target_size.x < 64:
 		label.add_theme_font_size_override("font_size", 10)
 	elif target_size.x < 128:
@@ -126,18 +115,14 @@ func _apply_visual_styling(target_size: Vector2) -> void:
 	else:
 		label.add_theme_font_size_override("font_size", 14)
 	
-	# Apply color coding based on building type
 	_apply_color_coding()
 
 func _apply_color_coding() -> void:
-	"""Apply colors based on building type and properties"""
 	var base_color: Color
 	
-	# Use custom color if set, otherwise use type-based colors
 	if data.dev_color != Color.TRANSPARENT and data.dev_color != Color.GRAY:
 		base_color = data.dev_color
 	else:
-		# Color coding by building type
 		if data.is_defensive_structure:
 			base_color = Color.CRIMSON * 0.8
 		elif data.is_player_buildable:
@@ -148,36 +133,72 @@ func _apply_color_coding() -> void:
 	background.color = base_color
 
 func _create_dev_visuals() -> void:
-	"""Create additional development visual aids"""
 	if not data:
 		return
 		
 	var target_size: Vector2 = Vector2(data.grid_size) * SettlementManager.get_active_grid_cell_size()
 	
-	# Create border for defensive structures
 	if data.is_defensive_structure:
 		_create_border(target_size)
 	
-	# Create health bar for all buildings
 	_create_health_bar(target_size)
 
 func _create_border(target_size: Vector2) -> void:
-	"""Create a border rect for defensive buildings"""
 	border_rect = ColorRect.new()
 	border_rect.color = Color.DARK_RED
 	border_rect.custom_minimum_size = target_size + Vector2(4, 4)
 	border_rect.position = -border_rect.custom_minimum_size / 2.0
 	add_child(border_rect)
-	move_child(border_rect, 0)  # Behind main background
+	move_child(border_rect, 0)
 
 func _create_health_bar(target_size: Vector2) -> void:
-	"""Create a health bar above the building"""
 	health_bar = ProgressBar.new()
 	health_bar.custom_minimum_size = Vector2(target_size.x, 6)
 	health_bar.position = Vector2(-target_size.x/2, -target_size.y/2 - 10)
 	health_bar.max_value = data.max_health
 	health_bar.value = current_health
 	
-	# Style the health bar
 	health_bar.modulate = Color.WHITE
 	add_child(health_bar)
+
+# === DEFENSIVE AI SETUP ===
+
+func _setup_defensive_ai() -> void:
+	"""Initialize AI systems for defensive buildings"""
+	if not data or not data.is_defensive_structure:
+		return
+	
+	# --- MODIFIED: Load AI from data, not hard-coded ---
+	if not data.ai_component_scene:
+		print("BaseBuilding: '%s' is defensive but has no ai_component_scene assigned." % data.display_name)
+		return
+		
+	attack_ai = data.ai_component_scene.instantiate()
+	if not attack_ai:
+		push_error("BaseBuilding: Failed to instantiate ai_component_scene for %s" % data.display_name)
+		return
+	# --- END MODIFICATION ---
+	
+	add_child(attack_ai)
+	
+	# Configure AI from building data
+	# We must check for methods/properties since attack_ai is a generic Node
+	if attack_ai.has_method("configure_from_data"):
+		attack_ai.configure_from_data(data)
+	
+	# Set target mask to hit player units (Layer 2)
+	var player_collision_mask: int = 1 << 1  # Layer 2 (bit position 1)
+	if attack_ai.has_method("set_target_mask"):
+		attack_ai.set_target_mask(player_collision_mask)
+	
+	# Connect AI signals for feedback (optional)
+	if attack_ai.has_signal("attack_started"):
+		attack_ai.attack_started.connect(_on_ai_attack_started)
+	if attack_ai.has_signal("attack_stopped"):
+		attack_ai.attack_stopped.connect(_on_ai_attack_stopped)
+
+func _on_ai_attack_started(_target: Node2D) -> void:
+	pass
+
+func _on_ai_attack_stopped() -> void:
+	pass

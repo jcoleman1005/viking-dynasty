@@ -56,6 +56,13 @@ ui_pause={
 ]
 }
 
+[layer_names]
+
+2d_physics/layer_1="Environment"
+2d_physics/layer_2="Player_Units"
+2d_physics/layer_3="Enemy_Units"
+2d_physics/layer_4="Enemy_Buildings"
+
 [plugins]
 
 enemy_base_editor/enabled=true
@@ -337,10 +344,10 @@ metadata/_custom_type_script = "uid://bm8qe8d38a1il"
 [resource]
 script = ExtResource("1_e06fl")
 treasury = {
-"food": 315,
-"gold": 1600,
-"stone": 150,
-"wood": 520
+"food": 200,
+"gold": 1000,
+"stone": 300,
+"wood": 500
 }
 placed_buildings = Array[Dictionary]([{
 "grid_position": Vector2i(10, 8),
@@ -371,7 +378,7 @@ placed_buildings = Array[Dictionary]([{
 "resource_path": "res://data/buildings/Monastery_Watchtower.tres"
 }])
 garrisoned_units = {
-"res://data/units/Unit_PlayerRaider.tres": 8
+"res://data/units/Unit_PlayerRaider.tres": 3
 }
 
 --- RESOURCE: res://data/settlements/fortress_layout.tres ---
@@ -438,7 +445,7 @@ garrisoned_units = {
 }
 
 --- RESOURCE: res://data/settlements/home_base_fixed.tres ---
-[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://cr75f5mo2ac1u"]
+[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://bfswp6ebxx4kf"]
 
 [ext_resource type="Script" uid="uid://hlb8s5g0yp6k" path="res://data/settlements/SettlementData.gd" id="1_settlement_data"]
 
@@ -448,7 +455,7 @@ treasury = {
 "food": 170,
 "gold": 3715,
 "stone": 600,
-"wood": 40
+"wood": 100
 }
 placed_buildings = Array[Dictionary]([{
 "grid_position": Vector2i(11, 7),
@@ -479,7 +486,7 @@ placed_buildings = Array[Dictionary]([{
 "resource_path": "res://data/buildings/LumberYard.tres"
 }])
 garrisoned_units = {
-"res://data/units/Unit_PlayerRaider.tres": 16
+"res://data/units/Unit_PlayerRaider.tres": 8
 }
 metadata/_custom_type_script = "uid://hlb8s5g0yp6k"
 
@@ -759,14 +766,15 @@ is_dishonorable_trait = false
 --- RESOURCE: res://data/units/Unit_PlayerRaider.tres ---
 [gd_resource type="Resource" script_class="UnitData" load_steps=4 format=3 uid="uid://ejxn3hg8xcu6"]
 
-[ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="1_tcvvg"]
+[ext_resource type="Script" path="res://data/units/UnitData.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://cfanwutbtfcp2" path="res://scenes/units/PlayerVikingRaider.tscn" id="2_spawn_scene"]
 [ext_resource type="Texture2D" uid="uid://pwi4bv5ch827" path="res://textures/placeholders/unit_placeholder.png" id="3_6go6j"]
 
 [resource]
-script = ExtResource("1_tcvvg")
+script = ExtResource("1_script")
 display_name = "Player Viking Raider"
 scene_to_spawn = ExtResource("2_spawn_scene")
+icon = ExtResource("3_6go6j")
 spawn_cost = {
 "food": 25,
 "gold": 10
@@ -776,18 +784,25 @@ move_speed = 100.0
 attack_damage = 15
 attack_range = 80.0
 attack_speed = 1.0
+ai_component_scene = null
+projectile_scene = null
 visual_texture = ExtResource("3_6go6j")
+target_pixel_size = Vector2(32, 32)
+acceleration = 12.0
+linear_damping = 6.0
 
 --- RESOURCE: res://data/units/Unit_Raider.tres ---
-[gd_resource type="Resource" script_class="UnitData" load_steps=3 format=3 uid="uid://brnbvjwnoyh3j"]
+[gd_resource type="Resource" script_class="UnitData" load_steps=4 format=3 uid="uid://brnbvjwnoyh3j"]
 
-[ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="1_abcde"]
+[ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://dsv0s4yq8c8m5" path="res://scenes/units/VikingRaider.tscn" id="2_spawn_scene"]
+[ext_resource type="Texture2D" uid="uid://pwi4bv5ch827" path="res://textures/placeholders/unit_placeholder.png" id="3_6go6j"]
 
 [resource]
-script = ExtResource("1_abcde")
+script = ExtResource("1_script")
 display_name = "Viking Raider"
 scene_to_spawn = ExtResource("2_spawn_scene")
+icon = ExtResource("3_6go6j")
 spawn_cost = {
 "food": 30,
 "gold": 15
@@ -797,6 +812,7 @@ move_speed = 100.0
 attack_damage = 15
 attack_range = 50.0
 attack_speed = 1.0
+visual_texture = ExtResource("3_6go6j")
 
 --- RESOURCE: res://data/world_map/Region_Monastery.tres ---
 [gd_resource type="Resource" script_class="WorldRegionData" load_steps=3 format=3 uid="uid://dbhfg3lfhe6tw"]
@@ -810,6 +826,18 @@ display_name = "Nearby Monastery"
 description = "A wealthy but poorly-defended monastery. An easy target for a quick grab."
 target_settlement_data = ExtResource("1_settlement")
 metadata/_custom_type_script = "uid://dqlbgeegli821"
+
+--- RESOURCE: res://resources/rectangleshape2d_879319.tres ---
+[gd_resource type="RectangleShape2D" format=3 uid="uid://bvjkr2ny3hnvo"]
+
+[resource]
+size = Vector2(4, 12)
+
+--- RESOURCE: res://resources/separation_circle_shape.tres ---
+[gd_resource type="CircleShape2D" format=3 uid="uid://bda7xb0judu2h"]
+
+[resource]
+radius = 40.0
 
 --- RESOURCE: res://textures/placeholders/building_placeholder.tres ---
 [gd_resource type="PlaceholderTexture2D" format=3 uid="uid://ds2w780g4nf1t"]
@@ -866,21 +894,36 @@ RTSController (Node)
 Base_Building (StaticBody2D)
 > script: res://data/buildings/Base_Building.gd
 > scene: res://scenes/buildings/Base_Building.tscn
+
+--- SCENE: res://scenes/components/AttackAI.tscn ---
+AttackAI (Node2D)
+> script: res://scenes/components/AttackAI.gd
+> scene: res://scenes/components/AttackAI.tscn
+> attack_damage = 10
+> attack_range = 200.0
+> attack_speed = 1.0
+> target_collision_mask = 0
+> DetectionArea (Area2D)
+>   CollisionShape2D (CollisionShape2D)
+>   > shape = res://scenes/components/AttackAI.tscn::CircleShape2D_2baay
+> AttackTimer (Timer)
+
+--- SCENE: res://scenes/effects/Projectile.tscn ---
+Main (Area2D)
+> script: res://scenes/effects/Projectile.gd
+> scene: res://scenes/effects/Projectile.tscn
+> collision_layer = 1024
+> collision_mask = 0
+> monitorable = false
+> Sprite2D (Sprite2D)
+> > scale = (0.1, 0.3)
+> > texture = res://textures/placeholders/unit_texture.tres
 > CollisionShape2D (CollisionShape2D)
-> > shape = res://scenes/buildings/Base_Building.tscn::RectangleShape2D_b5w0v
-> ColorRect (ColorRect)
-> > custom_minimum_size = (25.0, 25.0)
-> > anchors_preset = -1
-> > offset_right = 40.0
-> > offset_bottom = 40.0
-> > size_flags_horizontal = 3
-> > color = (0.7373, 0.7373, 0.7373, 1.0)
->   Label (Label)
->   > layout_mode = 0
->   > offset_right = 114.0
->   > offset_bottom = 23.0
->   > text = "Building Name"
->   > horizontal_alignment = 1
+> > shape = res://resources/rectangleshape2d_879319.tres
+> LifetimeTimer (Timer)
+> > wait_time = 3.0
+> > one_shot = true
+> > autostart = true
 
 --- SCENE: res://scenes/levels/DefensiveMicro.tscn ---
 DefensiveMicro (Node2D)
@@ -1060,40 +1103,92 @@ RaidMission (Node2D)
 > > victory_bonus_loot = {"gold":200}
 > > settlement_bridge_scene_path = "res://scenes/levels/SettlementBridge.tscn"
 > > is_defensive_mission = false
+> VikingRaider (CharacterBody2D)
+>   script: res://scripts/units/EnemyVikingRaider.gd
+>   scene: res://scenes/units/VikingRaider.tscn
+> > position = (945.0, 79.0)
+> > collision_layer = 4
+> > separation_enabled = true
+> > separation_force = 30.0
+> > separation_radius = 40.0
+>   Sprite2D (Sprite2D)
+>   > modulate = (0.5464, 0.0, 0.0, 1.0)
+>   > self_modulate = (1.0, 0.0, 0.0, 1.0)
+>   > scale = (0.059, 0.062)
+>   > texture = res://textures/placeholders/unit_placeholder.png
+>   CollisionShape2D (CollisionShape2D)
+>   > shape = res://scenes/units/Base_Unit.tscn::RectangleShape2D_n6s0a
+>   AttackTimer (Timer)
+>   SeparationArea (Area2D)
+>   > collision_layer = 0
+>   > collision_mask = 2
+>   > monitorable = false
+>     CollisionShape2D (CollisionShape2D)
+>     > shape = res://resources/separation_circle_shape.tres
 
 --- SCENE: res://scenes/units/Base_Unit.tscn ---
 Base_Unit (CharacterBody2D)
 > script: res://scripts/units/Base_Unit.gd
 > scene: res://scenes/units/Base_Unit.tscn
 > collision_layer = 2
+> separation_enabled = true
+> separation_force = 30.0
+> separation_radius = 40.0
 > Sprite2D (Sprite2D)
 > > texture = res://textures/placeholders/unit_placeholder.png
 > CollisionShape2D (CollisionShape2D)
 > > shape = res://scenes/units/Base_Unit.tscn::RectangleShape2D_n6s0a
 > AttackTimer (Timer)
+> SeparationArea (Area2D)
+> > collision_layer = 0
+> > collision_mask = 2
+> > monitorable = false
+>   CollisionShape2D (CollisionShape2D)
+>   > shape = res://resources/separation_circle_shape.tres
 
 --- SCENE: res://scenes/units/PlayerVikingRaider.tscn ---
 PlayerVikingRaider (CharacterBody2D)
 > script: res://scripts/units/PlayerVikingRaider.gd
 > scene: res://scenes/units/PlayerVikingRaider.tscn
 > collision_layer = 2
+> separation_enabled = true
+> separation_force = 30.0
+> separation_radius = 40.0
 > Sprite2D (Sprite2D)
 > > scale = (0.058594, 0.061523)
 > > texture = res://textures/placeholders/unit_placeholder.png
 > CollisionShape2D (CollisionShape2D)
 > > shape = res://scenes/units/Base_Unit.tscn::RectangleShape2D_n6s0a
 > AttackTimer (Timer)
+> SeparationArea (Area2D)
+> > collision_layer = 0
+> > collision_mask = 2
+> > monitorable = false
+>   CollisionShape2D (CollisionShape2D)
+>   > shape = res://resources/separation_circle_shape.tres
 
 --- SCENE: res://scenes/units/VikingRaider.tscn ---
 VikingRaider (CharacterBody2D)
 > script: res://scripts/units/EnemyVikingRaider.gd
 > scene: res://scenes/units/VikingRaider.tscn
-> collision_layer = 2
+> collision_layer = 4
+> separation_enabled = true
+> separation_force = 30.0
+> separation_radius = 40.0
 > Sprite2D (Sprite2D)
+> > modulate = (0.5464, 0.0, 0.0, 1.0)
+> > self_modulate = (1.0, 0.0, 0.0, 1.0)
+> > scale = (0.059, 0.062)
 > > texture = res://textures/placeholders/unit_placeholder.png
 > CollisionShape2D (CollisionShape2D)
 > > shape = res://scenes/units/Base_Unit.tscn::RectangleShape2D_n6s0a
 > AttackTimer (Timer)
+> SeparationArea (Area2D)
+> > collision_layer = 0
+> > collision_mask = 2
+> > monitorable = false
+>   CollisionShape2D (CollisionShape2D)
+>   > shape = res://resources/separation_circle_shape.tres
 
 --- SCENE: res://scenes/world_map/MacroCamera.tscn ---
 MacroCamera (Camera2D)
@@ -1265,7 +1360,6 @@ WorldMapStub (Control)
 >   > layout_mode = 2
 >   > text = "Return to Settlement"
 > Phase3Test (Node)
->   script: res://tools/test_phase3.gd
 
 --- SCENE: res://scripts/ui/PauseMenu.tscn ---
 PauseMenu (CanvasLayer)
@@ -1303,15 +1397,6 @@ GridManager (Node)
 > grid_width = 60
 > grid_height = 40
 > cell_size = 32
-
---- SCENE: res://tools/main_test.tscn ---
-Main Test (Node2D)
-> scene: res://tools/main_test.tscn
-
---- SCENE: res://tools/Phase1_TestRunner.tscn ---
-Node (Node)
-> script: res://tools/Phase1TestRunner.gd
-> scene: res://tools/Phase1_TestRunner.tscn
 
 --- SCENE: res://ui/BuildingPreviewCursor.tscn ---
 BuildingPreviewCursor (Node2D)
@@ -1419,6 +1504,108 @@ Main (PanelContainer)
 #### **2.4. Codebase**
 
 --- START OF CODEBASE ---
+--- SCRIPT: res://.ai-checkpoints/temp_ai_functions.gd ---
+func _on_target_entered(body: Node2D) -> void:
+	"""Called when a potential target enters detection range"""
+	if not data.is_defensive_structure:
+		return
+	
+	# Add to targets list
+	if body not in targets_in_range:
+		targets_in_range.append(body)
+	
+	# If we don't have a current target, start attacking this one
+	if not current_target and targets_in_range.size() > 0:
+		_select_target()
+
+func _on_target_exited(body: Node2D) -> void:
+	"""Called when a target leaves detection range"""
+	# Remove from targets list
+	targets_in_range.erase(body)
+	
+	# If this was our current target, find a new one
+	if current_target == body:
+		current_target = null
+		_select_target()
+
+func _select_target() -> void:
+	"""Select the closest valid target from the targets_in_range array"""
+	if targets_in_range.is_empty():
+		current_target = null
+		attack_timer.stop()
+		return
+	
+	# Find closest target
+	var closest_target: Node2D = null
+	var closest_distance: float = INF
+	
+	for target in targets_in_range:
+		if is_instance_valid(target):
+			var distance = global_position.distance_to(target.global_position)
+			if distance < closest_distance:
+				closest_distance = distance
+				closest_target = target
+		else:
+			# Remove invalid targets
+			targets_in_range.erase(target)
+	
+	current_target = closest_target
+	if current_target:
+		# Start attacking
+		if attack_timer.is_stopped():
+			attack_timer.start()
+
+func _on_attack_timer_timeout() -> void:
+	"""Called when the attack timer fires"""
+	if not data.is_defensive_structure or not current_target:
+		return
+	
+	# Verify target is still valid and in range
+	if not is_instance_valid(current_target):
+		_select_target()
+		return
+	
+	var distance_to_target = global_position.distance_to(current_target.global_position)
+	if distance_to_target > data.attack_range:
+		_select_target()
+		return
+	
+	# Attack the target
+	if data.projectile_scene:
+		# RANGED: Spawn projectile
+		_spawn_projectile(current_target.global_position)
+	else:
+		# MELEE: Direct damage (buildings shouldn't typically do this, but included for completeness)
+		if current_target.has_method("take_damage"):
+			current_target.take_damage(data.attack_damage)
+
+func _spawn_projectile(target_position_world: Vector2) -> void:
+	"""Spawn a projectile towards the target position"""
+	if not data.projectile_scene:
+		print("Error: No projectile scene assigned to %s" % data.display_name)
+		return
+	
+	# Create the projectile
+	var projectile: Projectile = data.projectile_scene.instantiate()
+	if not projectile:
+		print("Error: Failed to instantiate projectile for %s" % data.display_name)
+		return
+	
+	# Add projectile to the current scene
+	get_tree().current_scene.add_child(projectile)
+	
+	# Set up collision mask to hit player units (Layer 2)
+	var player_collision_mask: int = 1 << 1  # Layer 2 (bit position 1)
+	
+	# Initialize the projectile
+	projectile.setup(
+		global_position,        # start position
+		target_position_world,  # target position
+		data.attack_damage,     # damage
+		400.0,                  # projectile speed
+		player_collision_mask   # what to hit
+	)
+
 --- SCRIPT: res://autoload/DynastyManager.gd ---
 # res://autoload/DynastyManager.gd
 #
@@ -1566,6 +1753,9 @@ signal move_command(target_position: Vector2)
 
 # Emitted on right-click on an enemy
 signal attack_command(target_node: Node2D)
+
+# --- NEW: Emitted on right-click-and-drag ---
+signal formation_move_command(target_position: Vector2, direction_vector: Vector2)
 
 # --- NEW: Building Cursor System Signals ---
 # Emitted when a building is purchased and ready for cursor placement
@@ -1936,25 +2126,29 @@ func set_astar_point_solid(grid_position: Vector2i, solid: bool) -> void:
 --- SCRIPT: res://data/buildings/Base_Building.gd ---
 # res://data/buildings/Base_Building.gd
 #
-# --- MODIFIED: (Dev Art Fix) ---
-# Now uses a ColorRect and Label instead of a Sprite2D.
+# This script is attached to the Base_Building.tscn scene.
+# It procedurally creates its own visual nodes
+# and instances its AI component from its 'data' resource.
+
 class_name BaseBuilding
 extends StaticBody2D
 
-## This signal is emitted when health reaches zero.
 signal building_destroyed(building: BaseBuilding)
 
 @export var data: BuildingData
 var current_health: int = 100
 
-# Get a reference to the new nodes
-@onready var background: ColorRect = $ColorRect
-@onready var label: Label = $ColorRect/Label
-@onready var collision_shape: CollisionShape2D = $CollisionShape2D
+# Node refs (will be created in _ready)
+var background: ColorRect
+var label: Label
+var collision_shape: CollisionShape2D
 
 # Development visual enhancements
 var health_bar: ProgressBar
 var border_rect: ColorRect
+
+# AI component (optional)
+var attack_ai: Node = null # Use generic Node, could be AttackAI or DefensiveAI
 
 func _ready() -> void:
 	if not data:
@@ -1963,19 +2157,22 @@ func _ready() -> void:
 	
 	current_health = data.max_health
 	
-	# --- Apply Data and Scaling ---
-	_apply_data_and_scale()
+	# --- Create core nodes ---
+	collision_shape = CollisionShape2D.new()
+	collision_shape.shape = RectangleShape2D.new()
+	add_child(collision_shape)
 	
-	# --- Create Development Visuals ---
+	background = ColorRect.new()
+	label = Label.new()
+	background.add_child(label)
+	add_child(background)
+	# -------------------------
+	
+	_apply_data_and_scale()
 	_create_dev_visuals()
+	_setup_defensive_ai()
 
 func _apply_data_and_scale() -> void:
-	"""
-	Applies the data from the .tres file and scales the
-	ColorRect and collision shape to match the 'data.grid_size'.
-	"""
-	
-	# 1. Validate SettlementManager and get the cell size
 	if not SettlementManager:
 		push_error("BaseBuilding: SettlementManager not ready. Cannot scale '%s'." % data.display_name)
 		return
@@ -1985,38 +2182,25 @@ func _apply_data_and_scale() -> void:
 		push_error("BaseBuilding: SettlementManager returned invalid cell_size (%s). Cannot scale '%s'." % [cell_size, data.display_name])
 		return
 		
-	# 2. Get the target size based on grid
 	var target_size: Vector2 = Vector2(data.grid_size) * cell_size
 	
 	if target_size.x <= 0 or target_size.y <= 0:
 		push_warning("BaseBuilding: '%s' has a grid_size of %s, resulting in an invalid target_size." % [data.display_name, data.grid_size])
 		return
 
-	# 3. Apply and Scale the Background
 	background.custom_minimum_size = target_size
-	
-	# --- THIS IS THE FIX (PART 1) ---
-	# Shift the background's position so it's centered on the node's origin,
-	# just like the collision shape.
 	background.position = -target_size / 2.0
 	
-	# 4. Apply Enhanced Visual Styling
 	_apply_visual_styling(target_size)
 
-	# 5. Scale the Collision Shape
 	if collision_shape and collision_shape.shape is RectangleShape2D:
-		# Set size to match the target size (Godot 4.x uses 'size', not 'extents')
 		collision_shape.shape.size = target_size
 	else:
-		# --- THIS IS THE BUG FIX ---
-		# The '%' format string now correctly uses brackets [].
 		push_warning("BaseBuilding: '%s' is missing its CollisionShape2D node or its shape is not a RectangleShape2D. Collision will not match visuals." % [data.display_name])
-		# --- END BUG FIX ---
 
 func take_damage(amount: int) -> void:
 	current_health = max(0, current_health - amount)
 	
-	# Update health bar if it exists
 	if health_bar:
 		health_bar.value = current_health
 	
@@ -2036,7 +2220,6 @@ func die() -> void:
 	queue_free()
 
 func _show_destruction_effect() -> void:
-	"""Add a simple visual destruction effect"""
 	var tween = create_tween()
 	
 	tween.parallel().tween_property(self, "scale", Vector2(0.1, 0.1), 0.3)
@@ -2044,17 +2227,13 @@ func _show_destruction_effect() -> void:
 	tween.parallel().tween_property(self, "rotation", randf() * TAU, 0.3)
 
 func _apply_visual_styling(target_size: Vector2) -> void:
-	"""Enhanced visual styling with color coding and improved label"""
-	# Apply building name
 	label.text = data.display_name
 	label.custom_minimum_size = target_size
 	
-	# Enhanced label properties
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	
-	# Adjust font size based on building size
 	if target_size.x < 64:
 		label.add_theme_font_size_override("font_size", 10)
 	elif target_size.x < 128:
@@ -2062,18 +2241,14 @@ func _apply_visual_styling(target_size: Vector2) -> void:
 	else:
 		label.add_theme_font_size_override("font_size", 14)
 	
-	# Apply color coding based on building type
 	_apply_color_coding()
 
 func _apply_color_coding() -> void:
-	"""Apply colors based on building type and properties"""
 	var base_color: Color
 	
-	# Use custom color if set, otherwise use type-based colors
 	if data.dev_color != Color.TRANSPARENT and data.dev_color != Color.GRAY:
 		base_color = data.dev_color
 	else:
-		# Color coding by building type
 		if data.is_defensive_structure:
 			base_color = Color.CRIMSON * 0.8
 		elif data.is_player_buildable:
@@ -2084,39 +2259,75 @@ func _apply_color_coding() -> void:
 	background.color = base_color
 
 func _create_dev_visuals() -> void:
-	"""Create additional development visual aids"""
 	if not data:
 		return
 		
 	var target_size: Vector2 = Vector2(data.grid_size) * SettlementManager.get_active_grid_cell_size()
 	
-	# Create border for defensive structures
 	if data.is_defensive_structure:
 		_create_border(target_size)
 	
-	# Create health bar for all buildings
 	_create_health_bar(target_size)
 
 func _create_border(target_size: Vector2) -> void:
-	"""Create a border rect for defensive buildings"""
 	border_rect = ColorRect.new()
 	border_rect.color = Color.DARK_RED
 	border_rect.custom_minimum_size = target_size + Vector2(4, 4)
 	border_rect.position = -border_rect.custom_minimum_size / 2.0
 	add_child(border_rect)
-	move_child(border_rect, 0)  # Behind main background
+	move_child(border_rect, 0)
 
 func _create_health_bar(target_size: Vector2) -> void:
-	"""Create a health bar above the building"""
 	health_bar = ProgressBar.new()
 	health_bar.custom_minimum_size = Vector2(target_size.x, 6)
 	health_bar.position = Vector2(-target_size.x/2, -target_size.y/2 - 10)
 	health_bar.max_value = data.max_health
 	health_bar.value = current_health
 	
-	# Style the health bar
 	health_bar.modulate = Color.WHITE
 	add_child(health_bar)
+
+# === DEFENSIVE AI SETUP ===
+
+func _setup_defensive_ai() -> void:
+	"""Initialize AI systems for defensive buildings"""
+	if not data or not data.is_defensive_structure:
+		return
+	
+	# --- MODIFIED: Load AI from data, not hard-coded ---
+	if not data.ai_component_scene:
+		print("BaseBuilding: '%s' is defensive but has no ai_component_scene assigned." % data.display_name)
+		return
+		
+	attack_ai = data.ai_component_scene.instantiate()
+	if not attack_ai:
+		push_error("BaseBuilding: Failed to instantiate ai_component_scene for %s" % data.display_name)
+		return
+	# --- END MODIFICATION ---
+	
+	add_child(attack_ai)
+	
+	# Configure AI from building data
+	# We must check for methods/properties since attack_ai is a generic Node
+	if attack_ai.has_method("configure_from_data"):
+		attack_ai.configure_from_data(data)
+	
+	# Set target mask to hit player units (Layer 2)
+	var player_collision_mask: int = 1 << 1  # Layer 2 (bit position 1)
+	if attack_ai.has_method("set_target_mask"):
+		attack_ai.set_target_mask(player_collision_mask)
+	
+	# Connect AI signals for feedback (optional)
+	if attack_ai.has_signal("attack_started"):
+		attack_ai.attack_started.connect(_on_ai_attack_started)
+	if attack_ai.has_signal("attack_stopped"):
+		attack_ai.attack_stopped.connect(_on_ai_attack_stopped)
+
+func _on_ai_attack_started(_target: Node2D) -> void:
+	pass
+
+func _on_ai_attack_stopped() -> void:
+	pass
 
 --- SCRIPT: res://data/buildings/BuildingData.gd ---
 # res://data/buildings/BuildingData.gd
@@ -2170,6 +2381,12 @@ extends Resource
 
 ## Attacks per second (if defensive).
 @export var attack_speed: float = 1.0
+
+## An optional AI scene to instance (e.g., for defensive buildings)
+@export var ai_component_scene: PackedScene
+
+## The projectile scene to spawn when this building attacks (for defensive structures).
+@export var projectile_scene: PackedScene
 
 --- SCRIPT: res://data/buildings/EconomicBuildingData.gd ---
 # res://data/buildings/EconomicBuildingData.gd
@@ -2599,6 +2816,12 @@ extends Resource
 ## Attacks per second.
 @export var attack_speed: float = 1.2
 
+## An optional AI scene to instance (e.g., for ranged units)
+@export var ai_component_scene: PackedScene
+
+## The projectile scene to spawn when this unit attacks (for ranged units).
+@export var projectile_scene: PackedScene
+
 
 @export_group("Visuals")
 ## The texture to use for the unit's sprite.
@@ -2606,6 +2829,15 @@ extends Resource
 
 ## The target gameplay size in pixels (e.g., 32x32).
 @export var target_pixel_size: Vector2 = Vector2(32, 32)
+
+
+@export_group("Movement Feel")
+# --- NEW: Added properties from Base_Unit ---
+## How quickly the unit reaches max speed (e.g., 10.0)
+@export var acceleration: float = 10.0
+## How much "friction" the unit has (e.g., 5.0)
+@export var linear_damping: float = 5.0
+# ---------------------------------------------
 
 --- SCRIPT: res://data/world_map/WorldRegionData.gd ---
 # res://data/world_map/WorldRegionData.gd
@@ -2699,6 +2931,8 @@ func _process(delta: float) -> void:
 # It listens for clean signals from the EventBus
 # (which are fired by SelectionBox.gd).
 # It also correctly cleans up dead units.
+#
+# --- ADDED: Control Group & Formation Drag Support ---
 
 extends Node
 class_name RTSController
@@ -2707,28 +2941,64 @@ var selected_units: Array[BaseUnit] = []
 var controllable_units: Array[BaseUnit] = []
 var current_formation: SquadFormation.FormationType = SquadFormation.FormationType.LINE
 
+# --- NEW: Control Group Storage ---
+# We store the unit instance IDs, not the nodes themselves,
+# to more safely handle units dying.
+var control_groups: Dictionary = {
+	1: [], 2: [], 3: [], 4: [], 5: [],
+	6: [], 7: [], 8: [], 9: [], 0: [],
+}
+# ---------------------------------
+
+
 func _ready() -> void:
 	# Connect to the clean signals from our new EventBus/SelectionBox
 	EventBus.select_command.connect(_on_select_command)
 	EventBus.move_command.connect(_on_move_command)
 	EventBus.attack_command.connect(_on_attack_command)
+	# --- THIS LINE IS REQUIRED FOR DRAG-FORMATIONS ---
+	EventBus.formation_move_command.connect(_on_formation_move_command)
 
 func _input(event: InputEvent) -> void:
-	# Formation hotkeys
-	if event is InputEventKey and event.pressed:
-		match event.keycode:
-			KEY_1:
-				current_formation = SquadFormation.FormationType.LINE
-				print("Formation: LINE")
-			KEY_2:
-				current_formation = SquadFormation.FormationType.COLUMN
-				print("Formation: COLUMN")
-			KEY_3:
-				current_formation = SquadFormation.FormationType.WEDGE
-				print("Formation: WEDGE")
-			KEY_4:
-				current_formation = SquadFormation.FormationType.BOX
-				print("Formation: BOX")
+	# --- MODIFIED: Handle Control Group logic ---
+	if event is InputEventKey and event.is_pressed():
+		var key = event.keycode
+		
+		# --- THIS IS THE FIX (Line 41) ---
+		# We use the 'ctrl_pressed' *property*
+		var is_ctrl_pressed: bool = event.ctrl_pressed
+		# ---------------------------------
+
+		# Handle number keys 0-9
+		if key >= KEY_0 and key <= KEY_9:
+			var num = key - KEY_0 # Get the integer 0-9
+			
+			if is_ctrl_pressed:
+				# Ctrl + Number: SET group
+				_set_control_group(num)
+				get_viewport().set_input_as_handled()
+			else:
+				# Number: SELECT group
+				_select_control_group(num)
+				get_viewport().set_input_as_handled()
+		# -------------------------------------------
+		else:
+			# Handle non-number-key inputs (like formations)
+			match event.keycode:
+				# --- MOVED to F-Keys to avoid conflict ---
+				KEY_F1:
+					current_formation = SquadFormation.FormationType.LINE
+					print("Formation: LINE")
+				KEY_F2:
+					current_formation = SquadFormation.FormationType.COLUMN
+					print("Formation: COLUMN")
+				KEY_F3:
+					current_formation = SquadFormation.FormationType.WEDGE
+					print("Formation: WEDGE")
+				KEY_F4:
+					current_formation = SquadFormation.FormationType.BOX
+					print("Formation: BOX")
+				# -----------------------------------------
 
 # --- PUBLIC API ---
 
@@ -2766,17 +3036,18 @@ func remove_unit(unit: BaseUnit) -> void:
 	if unit in controllable_units:
 		controllable_units.erase(unit)
 		
+	# --- NEW: Clean up control groups ---
+	var unit_id = unit.get_instance_id()
+	for group_num in control_groups:
+		if control_groups[group_num].has(unit_id):
+			control_groups[group_num].erase(unit_id)
+	# ------------------------------------
+		
 	# Check if this was the last unit
 	if controllable_units.is_empty():
 		print("RTSController: All units are gone.")
 
-# --- REMOVED ---
-# _on_global_input, _draw, _process, _handle_selection,
-# and _handle_command are all removed.
-# They are replaced by the functions below.
-# -----------------
-
-# --- NEW: EVENTBUS HANDLERS ---
+# --- EVENTBUS HANDLERS ---
 
 func _on_select_command(select_rect: Rect2, is_box_select: bool) -> void:
 	_clear_selection()
@@ -2836,7 +3107,42 @@ func _on_move_command(target_position: Vector2) -> void:
 		var formation = SquadFormation.new(units_as_node2d)
 		formation.formation_type = current_formation
 		formation.unit_spacing = 45.0
-		formation.move_to_position(target_position)
+		
+		# --- MODIFIED: Calculate direction ---
+		# For a simple right-click, we just face the destination
+		var group_center = formation.formation_center
+		var direction = (target_position - group_center).normalized()
+		if direction.is_zero_approx():
+			direction = Vector2.DOWN # Default fallback
+		formation.move_to_position(target_position, direction)
+		# -------------------------------------
+
+# --- THIS IS THE NEW FUNCTION FOR DRAG-FORMATIONS ---
+func _on_formation_move_command(target_position: Vector2, direction_vector: Vector2):
+	# --- DEBUG ---
+	print("==================================================")
+	print("RTSController: Received formation_move_command.")
+	print("  -> Target Center: %s, Direction: %s" % [target_position, direction_vector])
+	# --- END DEBUG ---
+	
+	if selected_units.is_empty():
+		return
+
+	if selected_units.size() == 1:
+		# Single unit - just move, ignore direction
+		selected_units[0].command_move_to(target_position)
+	else:
+		# Multiple units - use formation
+		var units_as_node2d: Array[Node2D] = []
+		for unit in selected_units:
+			units_as_node2d.append(unit)
+		
+		var formation = SquadFormation.new(units_as_node2d)
+		formation.formation_type = current_formation
+		formation.unit_spacing = 45.0
+		# Pass the specific direction from the drag
+		formation.move_to_position(target_position, direction_vector)
+# ---------------------------------------------
 
 func _on_attack_command(target_node: Node2D) -> void:
 	if selected_units.is_empty():
@@ -2851,6 +3157,348 @@ func _clear_selection() -> void:
 		if is_instance_valid(unit):
 			unit.set_selected(false)
 	selected_units.clear()
+
+# --- Control Group Functions ---
+
+func _set_control_group(num: int) -> void:
+	print("Setting control group %d" % num)
+	# Clear the old group
+	control_groups[num].clear()
+	# Add all currently selected units by their ID
+	for unit in selected_units:
+		control_groups[num].append(unit.get_instance_id())
+
+func _select_control_group(num: int) -> void:
+	print("Selecting control group %d" % num)
+	_clear_selection()
+	
+	var new_group_ids = control_groups[num]
+	var still_valid_ids = []
+	
+	for unit_id in new_group_ids:
+		var unit = instance_from_id(unit_id) as BaseUnit
+		
+		# Check if unit is still alive and controllable
+		if is_instance_valid(unit) and unit in controllable_units:
+			selected_units.append(unit)
+			unit.set_selected(true)
+			still_valid_ids.append(unit_id)
+		
+	# Prune any dead units from the control group
+	control_groups[num] = still_valid_ids
+
+	# --- Optional: Camera Pan ---
+	# If we selected units, pan camera to them
+	if not selected_units.is_empty():
+		var center_pos = Vector2.ZERO
+		for unit in selected_units:
+			center_pos += unit.global_position
+		center_pos /= selected_units.size()
+		
+		# Pan camera (assuming camera is RTSCamera)
+		var camera = get_viewport().get_camera_2d()
+		if camera and camera is RTSCamera:
+			# Simple jump, as RTSCamera has no tween_pan_to method
+			camera.global_position = center_pos
+		elif camera:
+			camera.global_position = center_pos
+
+--- SCRIPT: res://scenes/components/AttackAI.gd ---
+# res://scenes/components/AttackAI.gd
+#
+# A modular AI component that provides attack behavior for any unit or building.
+# Simply instance this as a child of units or buildings that need to attack.
+
+class_name AttackAI
+extends Node2D
+
+## Emitted when this AI starts attacking a target
+signal attack_started(target: Node2D)
+## Emitted when this AI stops attacking (no targets)
+signal attack_stopped()
+## Emitted just before firing a projectile or dealing damage
+signal about_to_attack(target: Node2D, damage: int)
+
+# Configuration - set these from the parent
+@export var attack_damage: int = 10
+@export var attack_range: float = 200.0
+@export var attack_speed: float = 1.0  # attacks per second
+@export var projectile_scene: PackedScene
+@export var target_collision_mask: int = 0  # What layers to target
+
+# Node references
+@onready var detection_area: Area2D = $DetectionArea
+@onready var attack_timer: Timer = $AttackTimer
+
+# AI state
+var parent_node: Node2D
+var current_target: Node2D = null
+var targets_in_range: Array[Node2D] = []
+var is_attacking: bool = false
+
+func _ready() -> void:
+	parent_node = get_parent() as Node2D
+	if not parent_node:
+		push_error("AttackAI: Parent must be a Node2D")
+		return
+	
+	_setup_ai()
+
+func _setup_ai() -> void:
+	"""Initialize the AI components"""
+	# Configure detection area
+	if detection_area:
+		detection_area.collision_layer = 0  # AI components don't need to be on any layer
+		detection_area.collision_mask = target_collision_mask
+		
+		# Scale detection area to match attack range
+		if detection_area.get_child(0) is CollisionShape2D:
+			var detection_shape = detection_area.get_child(0) as CollisionShape2D
+			if detection_shape.shape is CircleShape2D:
+				(detection_shape.shape as CircleShape2D).radius = attack_range
+		
+		# Connect detection signals
+		detection_area.body_entered.connect(_on_target_entered)
+		detection_area.body_exited.connect(_on_target_exited)
+	
+	# Configure attack timer
+	if attack_timer:
+		attack_timer.wait_time = 1.0 / attack_speed
+		attack_timer.timeout.connect(_on_attack_timer_timeout)
+
+func configure_from_data(data_resource) -> void:
+	"""Configure the AI from a unit or building data resource"""
+	if not data_resource:
+		return
+	
+	# Extract common properties that both UnitData and BuildingData should have
+	if "attack_damage" in data_resource:
+		attack_damage = data_resource.attack_damage
+	if "attack_range" in data_resource:
+		attack_range = data_resource.attack_range
+	if "attack_speed" in data_resource:
+		attack_speed = data_resource.attack_speed
+	if "projectile_scene" in data_resource:
+		projectile_scene = data_resource.projectile_scene
+	
+	# Update attack timer if it exists
+	if attack_timer:
+		attack_timer.wait_time = 1.0 / attack_speed
+	
+	# Update detection radius if it exists
+	if detection_area and detection_area.get_child(0) is CollisionShape2D:
+		var detection_shape = detection_area.get_child(0) as CollisionShape2D
+		if detection_shape.shape is CircleShape2D:
+			(detection_shape.shape as CircleShape2D).radius = attack_range
+
+func set_target_mask(mask: int) -> void:
+	"""Set what collision layers this AI should target"""
+	target_collision_mask = mask
+	if detection_area:
+		detection_area.collision_mask = mask
+
+func force_target(target: Node2D) -> void:
+	"""Force the AI to target a specific node (useful for player commands)"""
+	if not is_instance_valid(target):
+		return
+	
+	current_target = target
+	if target not in targets_in_range:
+		targets_in_range.append(target)
+	
+	_start_attacking()
+
+func stop_attacking() -> void:
+	"""Stop all attack behavior"""
+	current_target = null
+	targets_in_range.clear()
+	_stop_attacking()
+
+func _on_target_entered(body: Node2D) -> void:
+	"""Called when a potential target enters detection range"""
+	# Add to targets list
+	if body not in targets_in_range:
+		targets_in_range.append(body)
+	
+	# If we don't have a current target, start attacking this one
+	if not current_target and targets_in_range.size() > 0:
+		_select_target()
+
+func _on_target_exited(body: Node2D) -> void:
+	"""Called when a target leaves detection range"""
+	# Remove from targets list
+	targets_in_range.erase(body)
+	
+	# If this was our current target, find a new one
+	if current_target == body:
+		current_target = null
+		_select_target()
+
+func _select_target() -> void:
+	"""Select the closest valid target from the targets_in_range array"""
+	if targets_in_range.is_empty():
+		current_target = null
+		_stop_attacking()
+		return
+	
+	# Find closest target
+	var closest_target: Node2D = null
+	var closest_distance: float = INF
+	
+	for target in targets_in_range:
+		if is_instance_valid(target):
+			var distance = parent_node.global_position.distance_to(target.global_position)
+			if distance < closest_distance:
+				closest_distance = distance
+				closest_target = target
+		else:
+			# Remove invalid targets
+			targets_in_range.erase(target)
+	
+	current_target = closest_target
+	if current_target:
+		_start_attacking()
+
+func _start_attacking() -> void:
+	"""Begin attacking the current target"""
+	if not is_attacking:
+		is_attacking = true
+		attack_started.emit(current_target)
+	
+	if attack_timer and attack_timer.is_stopped():
+		attack_timer.start()
+
+func _stop_attacking() -> void:
+	"""Stop attacking"""
+	if is_attacking:
+		is_attacking = false
+		attack_stopped.emit()
+	
+	if attack_timer:
+		attack_timer.stop()
+
+func _on_attack_timer_timeout() -> void:
+	"""Called when the attack timer fires"""
+	if not current_target:
+		return
+	
+	# Verify target is still valid and in range
+	if not is_instance_valid(current_target):
+		_select_target()
+		return
+	
+	var distance_to_target = parent_node.global_position.distance_to(current_target.global_position)
+	if distance_to_target > attack_range:
+		_select_target()
+		return
+	
+	# Emit signal before attacking
+	about_to_attack.emit(current_target, attack_damage)
+	
+	# Attack the target
+	if projectile_scene:
+		# RANGED: Spawn projectile
+		_spawn_projectile(current_target.global_position)
+	else:
+		# MELEE: Direct damage
+		if current_target.has_method("take_damage"):
+			current_target.take_damage(attack_damage)
+
+func _spawn_projectile(target_position_world: Vector2) -> void:
+	"""Spawn a projectile towards the target position"""
+	if not projectile_scene:
+		print("Error: No projectile scene assigned to AttackAI")
+		return
+	
+	# Create the projectile
+	var projectile: Projectile = projectile_scene.instantiate()
+	if not projectile:
+		print("Error: Failed to instantiate projectile for AttackAI")
+		return
+	
+	# Add projectile to the current scene
+	parent_node.get_tree().current_scene.add_child(projectile)
+	
+	# Initialize the projectile
+	projectile.setup(
+		parent_node.global_position,  # start position
+		target_position_world,        # target position
+		attack_damage,                # damage
+		400.0,                        # projectile speed
+		target_collision_mask         # what to hit
+	)
+
+--- SCRIPT: res://scenes/effects/Projectile.gd ---
+# res://scenes/effects/Projectile.gd
+#
+# A simple, straight-line projectile that applies damage on impact.
+# More performant than homing projectiles.
+
+class_name Projectile
+extends Area2D
+
+# Projectile properties
+var damage: int = 0
+var speed: float = 400.0
+var direction: Vector2 = Vector2.RIGHT
+var valid_collision_mask: int = 0  # Set by the firing unit to determine what to hit
+
+@onready var lifetime_timer: Timer = $LifetimeTimer
+
+func _ready() -> void:
+	# Connect signals in code
+	body_entered.connect(_on_body_entered)
+	lifetime_timer.timeout.connect(_on_lifetime_timeout)
+
+func _physics_process(delta: float) -> void:
+	# Move in straight line
+	global_position += direction * speed * delta
+
+func setup(start_position: Vector2, target_position: Vector2, projectile_damage: int, projectile_speed: float = 400.0, collision_mask: int = 0) -> void:
+	"""
+	Initialize the projectile with all necessary parameters.
+	
+	Args:
+		start_position: Where the projectile starts
+		target_position: Where to aim (calculates direction)
+		projectile_damage: Damage to deal on hit
+		projectile_speed: How fast the projectile moves
+		collision_mask: What collision layers this projectile can hit
+	"""
+	global_position = start_position
+	direction = (target_position - start_position).normalized()
+	damage = projectile_damage
+	speed = projectile_speed
+	valid_collision_mask = collision_mask
+	
+	# Set the collision mask on the Area2D
+	collision_mask = collision_mask
+	
+	# Point the projectile in the direction of travel (for visual rotation)
+	if direction != Vector2.ZERO:
+		rotation = direction.angle()
+
+func _on_body_entered(body: Node2D) -> void:
+	# Check if this body is on a layer we're supposed to hit
+	if body is CharacterBody2D or body is RigidBody2D or body is StaticBody2D:
+		var body_layer = 0
+		if body.has_method("get_collision_layer"):
+			body_layer = body.get_collision_layer()
+		elif "collision_layer" in body:
+			body_layer = body.collision_layer
+		
+		# Check if this body's layer matches our collision mask
+		if body_layer & valid_collision_mask:
+			# Deal damage if the body can take it
+			if body.has_method("take_damage"):
+				body.take_damage(damage)
+			
+			# Destroy the projectile
+			queue_free()
+
+func _on_lifetime_timeout() -> void:
+	# Projectile flew for too long, destroy self
+	queue_free()
 
 --- SCRIPT: res://scenes/missions/RaidMission.gd ---
 # res://scenes/missions/RaidMission.gd
@@ -3197,6 +3845,7 @@ var raid_loot: RaidLootData
 var rts_controller: RTSController
 var enemy_hall: BaseBuilding
 var building_container: Node2D
+var is_initialized: bool = false
 
 func _ready() -> void:
 	raid_loot = RaidLootData.new()
@@ -3210,6 +3859,11 @@ func initialize(
 	Called by RaidMission.gd after the level is loaded
 	to pass in all necessary scene references.
 	"""
+	# Prevent multiple initialization
+	if is_initialized:
+		print("RaidObjectiveManager: Already initialized, skipping.")
+		return
+		
 	self.rts_controller = p_rts_controller
 	self.enemy_hall = p_enemy_hall
 	self.building_container = p_building_container
@@ -3225,17 +3879,22 @@ func initialize(
 	# Connect to all necessary signals
 	_connect_to_building_signals()
 	_setup_win_loss_conditions()
+	
+	# Mark as initialized
+	is_initialized = true
 
 
 func _connect_to_building_signals() -> void:
 	# Connect to the Great Hall for the win condition
 	if enemy_hall.has_signal("building_destroyed"):
-		enemy_hall.building_destroyed.connect(_on_enemy_hall_destroyed)
+		if not enemy_hall.building_destroyed.is_connected(_on_enemy_hall_destroyed):
+			enemy_hall.building_destroyed.connect(_on_enemy_hall_destroyed)
 	
 	# Connect to *all* buildings for loot collection
 	for building in building_container.get_children():
 		if building is BaseBuilding and building.has_signal("building_destroyed"):
-			building.building_destroyed.connect(_on_enemy_building_destroyed_for_loot)
+			if not building.building_destroyed.is_connected(_on_enemy_building_destroyed_for_loot):
+				building.building_destroyed.connect(_on_enemy_building_destroyed_for_loot)
 
 # --- Objective Logic ---
 
@@ -3842,16 +4501,18 @@ func is_actively_defending() -> bool:
 --- SCRIPT: res://scripts/ai/UnitFSM.gd ---
 # res://scripts/ai/UnitFSM.gd
 # Refactored UnitFSM for Phase 3 RTS commands
+# Now uses modular AttackAI component for attacking behavior
 # GDD Ref: Phase 3 Task 4
 
 class_name UnitFSM
 
-enum State { IDLE, MOVING, ATTACKING }
-enum Stance { DEFENSIVE, HOLD_POSITION } # Future-proofed for other stances
+# --- MODIFIED: Added ATTACKING state back ---
+enum State { IDLE, MOVING, FORMATION_MOVING, ATTACKING }
+enum Stance { DEFENSIVE, HOLD_POSITION }
 
 # Unit References
 var unit: BaseUnit
-var attack_timer: Timer
+var attack_ai: AttackAI  # Reference to the AttackAI component
 
 # State Data
 var current_state: State = State.IDLE
@@ -3860,15 +4521,16 @@ var path: Array = []
 
 # Target Data
 var target_position: Vector2 = Vector2.ZERO
-var target_unit: Node2D = null # Can be BaseBuilding or BaseUnit
+var target_unit: Node2D = null
 var move_command_position: Vector2 = Vector2.ZERO
 
-func _init(p_unit: BaseUnit, p_timer: Timer) -> void:
+func _init(p_unit: BaseUnit, p_attack_ai: AttackAI) -> void:
 	unit = p_unit
-	attack_timer = p_timer
+	attack_ai = p_attack_ai
 	
-	# Connect the timer's timeout signal to our attack function
-	attack_timer.timeout.connect(_on_attack_timer_timeout)
+	if attack_ai:
+		attack_ai.attack_started.connect(_on_ai_attack_started)
+		attack_ai.attack_stopped.connect(_on_ai_attack_stopped)
 
 func change_state(new_state: State) -> void:
 	if current_state == new_state:
@@ -3876,7 +4538,7 @@ func change_state(new_state: State) -> void:
 	
 	_exit_state(current_state)
 	current_state = new_state
-	# Notify unit visuals of state change
+	
 	if unit and unit.has_method("on_state_changed"):
 		unit.on_state_changed(current_state)
 	_enter_state(current_state)
@@ -3884,60 +4546,75 @@ func change_state(new_state: State) -> void:
 func _enter_state(state: State) -> void:
 	match state:
 		State.IDLE:
-			print("%s entering IDLE state." % unit.data.display_name)
 			unit.velocity = Vector2.ZERO
 			
 		State.MOVING:
-			print("%s entering MOVING state to %s." % [unit.data.display_name, target_position])
-			_recalculate_path()
-			
+			_recalculate_path() 
+		
+		State.FORMATION_MOVING:
+			pass
+		
+		# --- NEW: Handle entering ATTACKING state ---
 		State.ATTACKING:
-			print("%s entering ATTACKING state." % unit.data.display_name)
 			unit.velocity = Vector2.ZERO
-			# Set timer wait time based on unit's attack speed
-			attack_timer.wait_time = 1.0 / unit.data.attack_speed
-			attack_timer.start()
-			# Attack immediately on entering state
-			_on_attack_timer_timeout()
+			if attack_ai and is_instance_valid(target_unit):
+				attack_ai.force_target(target_unit)
+		# ------------------------------------------
 
 func _exit_state(state: State) -> void:
 	match state:
 		State.MOVING:
 			path.clear()
+		State.FORMATION_MOVING:
+			path.clear()
+		
+		# --- NEW: Handle exiting ATTACKING state ---
 		State.ATTACKING:
-			attack_timer.stop()
+			if attack_ai:
+				attack_ai.stop_attacking()
+		# -----------------------------------------
 
 func _recalculate_path() -> void:
 	path = SettlementManager.get_astar_path(unit.global_position, target_position)
 	if path.is_empty():
 		print("Unit at %s failed to find a path to %s." % [unit.global_position, target_position])
-		# Visual error feedback
 		if unit and unit.has_method("flash_error_color"):
 			unit.flash_error_color()
-		# If we can't find a path, check if we're already close to the target
-		if unit.global_position.distance_to(target_position) < (unit.data.attack_range + 16):
-			if target_unit:
-				change_state(State.ATTACKING)
-			else:
-				change_state(State.IDLE)
+		
+		# If we can't find a path but have a target, just attack
+		if is_instance_valid(target_unit):
+			change_state(State.ATTACKING)
 		else:
 			change_state(State.IDLE)
 	else:
-		print("Unit found new path. Waypoints: %d" % path.size())
+		pass
 
 # --- RTS Command Functions ---
 
-func command_move_to(target_pos: Vector2) -> void:
-	"""Command the unit to move to a specific position"""
+func command_move_to_formation_pos(target_pos: Vector2) -> void:
 	target_position = target_pos
 	move_command_position = target_pos
 	target_unit = null # Clear any attack target
+	
+	if attack_ai:
+		attack_ai.stop_attacking()
+	
+	path.clear()
+	path.append(target_pos)
+	
+	change_state(State.FORMATION_MOVING)
+
+func command_move_to(target_pos: Vector2) -> void:
+	target_position = target_pos
+	move_command_position = target_pos
+	target_unit = null # Clear any attack target
+	
+	if attack_ai:
+		attack_ai.stop_attacking()
+	
 	change_state(State.MOVING)
 
 func command_attack(target: Node2D) -> void:
-	"""Command the unit to attack a specific target"""
-	print("DEBUG: %s received attack command on target: %s" % [unit.data.display_name, target.name])
-	
 	if not is_instance_valid(target):
 		print("Cannot attack invalid target")
 		if unit and unit.has_method("flash_error_color"):
@@ -3947,16 +4624,14 @@ func command_attack(target: Node2D) -> void:
 	target_unit = target
 	target_position = target.global_position
 	
-	# Check if we're already in range
 	var distance: float = unit.global_position.distance_to(target.global_position)
-	print("DEBUG: Current distance to target: %s, attack range: %s" % [distance, unit.data.attack_range])
 	
+	# --- MODIFIED: Transition to ATTACKING ---
 	if distance <= unit.data.attack_range:
-		print("DEBUG: Target in range, transitioning to ATTACKING")
 		change_state(State.ATTACKING)
 	else:
-		print("DEBUG: Target out of range, transitioning to MOVING")
 		change_state(State.MOVING)
+	# ---------------------------------------
 
 # --- State Machine Update ---
 
@@ -3966,50 +4641,23 @@ func update(delta: float) -> void:
 			_idle_state(delta)
 		State.MOVING:
 			_move_state(delta)
+		State.FORMATION_MOVING:
+			_formation_move_state(delta)
+		# --- NEW: Call attack state logic ---
 		State.ATTACKING:
 			_attack_state(delta)
+		# ----------------------------------
 
 # --- State Logic Functions ---
 
 func _idle_state(_delta: float) -> void:
-	# In idle state, unit stands still
 	unit.velocity = Vector2.ZERO
 
-func _move_state(delta: float) -> void:
-	# First priority: Check if we have a valid attack target and are in range
-	if is_instance_valid(target_unit):
-		var distance_to_target: float = unit.global_position.distance_to(target_unit.global_position)
-		print("DEBUG MOVE: %s distance to %s: %.1f (range: %.1f)" % [
-			unit.data.display_name, 
-			target_unit.name, 
-			distance_to_target, 
-			unit.data.attack_range
-		])
-		if distance_to_target <= unit.data.attack_range:
-			print("Unit in attack range, switching to ATTACKING.")
-			change_state(State.ATTACKING)
-			return
-		else:
-			# Update target position if target moved
-			target_position = target_unit.global_position
-	
-	# Handle defensive stance: Check for nearby enemies if being attacked
-	if stance == Stance.DEFENSIVE:
-		_check_defensive_response()
-	
-	# If we're not in range, check if our path is empty
+func _formation_move_state(delta: float) -> void:
 	if path.is_empty():
-		# If we have an attack target but no path, try to recalculate
-		if is_instance_valid(target_unit):
-			_recalculate_path()
-			return
-		else:
-			# No target and no path, we've reached our destination
-			print("Unit reached destination.")
-			change_state(State.IDLE)
-			return
-	
-	# Move along the path
+		change_state(State.IDLE)
+		return
+
 	var next_waypoint: Vector2 = path[0]
 	var direction: Vector2 = (next_waypoint - unit.global_position).normalized()
 	var velocity: Vector2 = direction * unit.data.move_speed
@@ -4017,69 +4665,91 @@ func _move_state(delta: float) -> void:
 	unit.velocity = velocity
 	unit.move_and_slide()
 	
-	# Check if we've reached the current waypoint
 	var arrival_radius: float = 8.0 
 	if unit.global_position.distance_to(next_waypoint) < arrival_radius:
 		path.pop_front()
 		
-		# If that was the last waypoint, check what to do next
+		if path.is_empty():
+			change_state(State.IDLE)
+
+func _move_state(delta: float) -> void:
+	# Check if we have an attack target and are now in range
+	if is_instance_valid(target_unit):
+		var distance_to_target: float = unit.global_position.distance_to(target_unit.global_position)
+		
+		# --- MODIFIED: Transition to ATTACKING ---
+		if distance_to_target <= unit.data.attack_range:
+			change_state(State.ATTACKING)
+			return
+		# ---------------------------------------
+		else:
+			target_position = target_unit.global_position
+	
+	if stance == Stance.DEFENSIVE:
+		_check_defensive_response()
+	
+	if path.is_empty():
+		if is_instance_valid(target_unit):
+			_recalculate_path()
+			return
+		else:
+			print("Unit reached destination.")
+			change_state(State.IDLE)
+			return
+	
+	var next_waypoint: Vector2 = path[0]
+	var direction: Vector2 = (next_waypoint - unit.global_position).normalized()
+	var velocity: Vector2 = direction * unit.data.move_speed
+	
+	unit.velocity = velocity
+	unit.move_and_slide()
+	
+	var arrival_radius: float = 8.0 
+	if unit.global_position.distance_to(next_waypoint) < arrival_radius:
+		path.pop_front()
+		
 		if path.is_empty():
 			if is_instance_valid(target_unit):
 				var distance_to_target: float = unit.global_position.distance_to(target_unit.global_position)
+				# --- MODIFIED: Transition to ATTACKING ---
 				if distance_to_target <= unit.data.attack_range:
 					change_state(State.ATTACKING)
+				# ---------------------------------------
 				else:
-					# Target moved, recalculate path
 					_recalculate_path()
 			else:
-				# Just a move command, we're done
 				change_state(State.IDLE)
 
+# --- NEW: Attack State Logic ---
 func _attack_state(_delta: float) -> void:
-	# Debug output for attack state
-	print("DEBUG: %s in ATTACKING state - timer running: %s" % [unit.data.display_name, not attack_timer.is_stopped()])
+	# This state just monitors the target.
+	# The AttackAI component handles the actual firing.
 	
-	# Check if target is still valid
 	if not is_instance_valid(target_unit):
-		print("%s target destroyed or invalid. Returning to IDLE." % unit.data.display_name)
+		# Target is dead or gone
 		change_state(State.IDLE)
 		return
 	
-	# Check if target moved out of range
 	var distance_to_target: float = unit.global_position.distance_to(target_unit.global_position)
-	print("DEBUG: Distance to target: %s, Attack range: %s" % [distance_to_target, unit.data.attack_range])
-	
-	if distance_to_target > unit.data.attack_range + 8: # Reduced buffer to avoid oscillation
-		print("%s target moved out of range. Re-engaging." % unit.data.display_name)
-		target_position = target_unit.global_position
+	if distance_to_target > unit.data.attack_range + 10: # +10 pixel buffer
+		# Target moved out of range
 		change_state(State.MOVING)
+		return
+	
+	# Otherwise, stay in ATTACKING state
+	unit.velocity = Vector2.ZERO
+# --- END NEW ---
 
 func _check_defensive_response() -> void:
-	"""Check if unit should respond defensively to being attacked"""
-	# This is a placeholder for future implementation
-	# In a real implementation, this might check for nearby enemies
-	# or respond to damage events
 	pass
 
-# --- Signal Callback ---
+# --- AI Signal Callbacks ---
+func _on_ai_attack_started(_target: Node2D) -> void:
+	pass
 
-func _on_attack_timer_timeout() -> void:
-	"""Called every time the AttackTimer finishes"""
-	if current_state != State.ATTACKING:
-		return
-		
-	if is_instance_valid(target_unit):
-		print("%s attacks %s!" % [unit.data.display_name, target_unit.name])
-		
-		# Check if target has a take_damage method
-		if target_unit.has_method("take_damage"):
-			target_unit.take_damage(unit.data.attack_damage)
-		else:
-			print("Target %s does not have take_damage method" % target_unit.name)
-	else:
-		print("Attack timer fired but no valid target")
-		if unit and unit.has_method("flash_error_color"):
-			unit.flash_error_color()
+func _on_ai_attack_stopped() -> void:
+	# If our AI stops for any reason, go back to IDLE
+	if current_state == State.ATTACKING:
 		change_state(State.IDLE)
 
 --- SCRIPT: res://scripts/buildings/SettlementBridge.gd ---
@@ -4397,17 +5067,20 @@ func set_formation_type(new_type: FormationType) -> void:
 	formation_type = new_type
 	_update_formation_positions()
 
-func move_to_position(target_pos: Vector2) -> void:
+# --- MODIFIED: Added direction vector parameter ---
+func move_to_position(target_pos: Vector2, direction: Vector2 = Vector2.DOWN) -> void:
 	"""Command the entire squad to move to a target position"""
 	target_position = target_pos
 	is_moving = true
 	
-	# Calculate formation positions around the target
-	var formation_positions = _calculate_formation_positions(target_pos)
+	# Calculate formation positions around the target, using the direction
+	var formation_positions = _calculate_formation_positions(target_pos, direction)
 	
 	# Assign each unit a position in the formation
 	for i in range(min(units.size(), formation_positions.size())):
 		var unit = units[i]
+		if not is_instance_valid(unit):
+			continue
 		var target_formation_pos = formation_positions[i]
 		
 		# Move the unit to its formation position
@@ -4415,10 +5088,18 @@ func move_to_position(target_pos: Vector2) -> void:
 	
 	print("Squad moving to %s in %s formation with %d units" % [target_pos, FormationType.keys()[formation_type], units.size()])
 
-func _calculate_formation_positions(center_pos: Vector2) -> Array[Vector2]:
+# --- MODIFIED: Added direction and rotation logic ---
+func _calculate_formation_positions(center_pos: Vector2, direction: Vector2) -> Array[Vector2]:
 	"""Calculate formation positions based on formation type"""
 	var positions: Array[Vector2] = []
 	var unit_count = units.size()
+	
+	# --- AI FIX: Invert the direction vector ---
+	# The user is dragging *from* the center *to* the facing direction.
+	# Our previous logic was calculating the opposite rotation.
+	# Inverting the vector here corrects the rotation 180 degrees.
+	var rotation_angle = Vector2.DOWN.angle_to(direction * -1.0)
+	# ------------------------------------------
 	
 	match formation_type:
 		FormationType.LINE:
@@ -4432,8 +5113,19 @@ func _calculate_formation_positions(center_pos: Vector2) -> Array[Vector2]:
 		FormationType.CIRCLE:
 			positions = _calculate_circle_formation(center_pos, unit_count)
 	
-	return positions
-
+	# --- NEW: Rotate all points ---
+	var rotated_positions: Array[Vector2] = []
+	for pos in positions:
+		# 1. Translate position to be relative to center_pos
+		var relative_pos = pos - center_pos
+		# 2. Rotate it
+		var rotated_relative_pos = relative_pos.rotated(rotation_angle)
+		# 3. Translate it back to world space
+		rotated_positions.append(center_pos + rotated_relative_pos)
+	
+	return rotated_positions
+	# ---------------------------------
+	
 func _calculate_line_formation(center_pos: Vector2, unit_count: int) -> Array[Vector2]:
 	"""Calculate horizontal line formation positions"""
 	var positions: Array[Vector2] = []
@@ -4460,7 +5152,7 @@ func _calculate_wedge_formation(center_pos: Vector2, unit_count: int) -> Array[V
 	"""Calculate V-shaped wedge formation positions"""
 	var positions: Array[Vector2] = []
 	
-	# Leader at the front
+	# Leader at the front (relative to center_pos.y)
 	positions.append(center_pos)
 	
 	# Place remaining units in V formation behind the leader
@@ -4471,10 +5163,12 @@ func _calculate_wedge_formation(center_pos: Vector2, unit_count: int) -> Array[V
 		var row = (i + 1) / 2  # Which row behind the leader
 		var side = 1 if i % 2 == 1 else -1  # Left or right side
 		
+		# --- AI FIX: Changed from - to + to face DOWN by default ---
 		var pos = Vector2(
 			center_pos.x + side * side_offset * row,
 			center_pos.y + rear_offset * row
 		)
+		# -----------------------------------------------------------
 		positions.append(pos)
 	
 	return positions
@@ -4520,6 +5214,7 @@ func _calculate_circle_formation(center_pos: Vector2, unit_count: int) -> Array[
 	
 	return positions
 
+# --- MODIFIED: To call the new FSM function ---
 func _move_unit_to_position(unit: Node2D, target_pos: Vector2) -> void:
 	"""Move a specific unit to a target position"""
 	if not is_instance_valid(unit):
@@ -4527,13 +5222,16 @@ func _move_unit_to_position(unit: Node2D, target_pos: Vector2) -> void:
 	
 	# Check if unit has FSM (proper unit system)
 	if "fsm" in unit and unit.fsm != null:
-		unit.fsm.command_move_to(target_pos)
+		# Call the new formation-specific move function
+		unit.fsm.command_move_to_formation_pos(target_pos)
 	# Check if unit has direct movement method
 	elif unit.has_method("command_move_to"):
+		# Fallback for non-FSM units (like old test units)
 		unit.command_move_to(target_pos)
 	# Fallback: simple movement for test units
 	else:
 		_simple_unit_movement(unit, target_pos)
+# --- END MODIFICATION ---
 
 func _simple_unit_movement(unit: Node2D, target_pos: Vector2) -> void:
 	"""Simple movement system for test units without FSM"""
@@ -4563,7 +5261,12 @@ func _physics_process(delta: float) -> void:
 """
 		# Create and attach movement behavior
 		var script = GDScript.new()
-		script.source_code = unit.get_script().source_code + "\n" + movement_script
+		var existing_script = unit.get_script()
+		if existing_script:
+			script.source_code = existing_script.source_code + "\n" + movement_script
+		else:
+			push_error("Unit has no script, cannot add simple movement.")
+			return
 		script.reload()
 		unit.set_script(script)
 	
@@ -4957,8 +5660,7 @@ func _on_quit_pressed() -> void:
 
 --- SCRIPT: res://scripts/units/Base_Unit.gd ---
 # res://scripts/units/Base_Unit.gd
-#
-# --- MODIFIED: Added auto-scaling for texture and collision ---
+# Base unit class for all units in the Viking Dynasty RTS
 
 class_name BaseUnit
 extends CharacterBody2D
@@ -4968,20 +5670,30 @@ signal destroyed
 @export var data: UnitData
 var fsm: UnitFSM
 var current_health: int = 50
+var attack_ai: AttackAI = null
 
 # Node refs
 @onready var attack_timer: Timer = $AttackTimer
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
+@onready var separation_area: Area2D = $SeparationArea
 
-# Color tweening
+@export_group("AI")
+@export var separation_enabled: bool = true
+@export var separation_force: float = 30.0
+@export var separation_radius: float = 40.0
+
+# Visual state system
 var _color_tween: Tween
+# --- AI FIX: Added ATTACKING state back to match the FSM ---
 const STATE_COLORS := {
 	UnitFSM.State.IDLE: Color(0.3, 0.6, 1.0),     # Blue
 	UnitFSM.State.MOVING: Color(0.4, 1.0, 0.4),   # Green
+	UnitFSM.State.FORMATION_MOVING: Color(0.4, 1.0, 0.4), # Green
 	UnitFSM.State.ATTACKING: Color(1.0, 0.3, 0.3) # Red
 }
-const ERROR_COLOR := Color(0.7, 0.3, 1.0)         # Purple
+# -----------------------------------------------------------
+const ERROR_COLOR := Color(0.7, 0.3, 1.0)
 
 func _ready() -> void:
 	if not data:
@@ -4989,38 +5701,43 @@ func _ready() -> void:
 		return
 	
 	current_health = data.max_health
-	
-	# --- ADDED: Apply Texture and Scaling ---
 	_apply_texture_and_scale()
 	
-	# Pass the timer reference to the FSM
-	fsm = UnitFSM.new(self, attack_timer)
+	if data.ai_component_scene:
+		attack_ai = data.ai_component_scene.instantiate() as AttackAI
+		if attack_ai:
+			add_child(attack_ai)
+			attack_ai.configure_from_data(data)
+			attack_ai.set_target_mask(0b1100) # Layers 3 & 4
+		else:
+			push_error("BaseUnit: Failed to instantiate ai_component_scene for %s" % data.display_name)
 	
-	# Initialize visual to current state color (IDLE by default)
+	fsm = UnitFSM.new(self, attack_ai)
+	
 	sprite.modulate = STATE_COLORS.get(UnitFSM.State.IDLE, Color.WHITE)
 	
 	EventBus.pathfinding_grid_updated.connect(_on_grid_updated)
+	
+	separation_area.collision_mask = 2
+	
+	var area_shape = separation_area.get_node_or_null("CollisionShape2D")
+	if area_shape and area_shape.shape is CircleShape2D:
+		area_shape.shape.radius = separation_radius
+	else:
+		push_warning("'%s' has no 'SeparationArea/CollisionShape2D' with a CircleShape!" % name)
 
 func _apply_texture_and_scale() -> void:
-	"""
-	Applies the texture from 'data' and scales both the
-	sprite and collision shape to match the 'data.target_pixel_size'.
-	"""
-	
-	# 1. Validate the target size
 	if data.target_pixel_size.x <= 0 or data.target_pixel_size.y <= 0:
 		push_warning("BaseUnit: '%s' has a target_pixel_size of %s, which is invalid." % [data.display_name, data.target_pixel_size])
 		return
 		
 	var target_size: Vector2 = data.target_pixel_size
 
-	# 2. Apply and Scale the Sprite
 	if data.visual_texture:
 		sprite.texture = data.visual_texture
 		var texture_size: Vector2 = sprite.texture.get_size()
 		
 		if texture_size.x > 0 and texture_size.y > 0:
-			# Non-uniform scaling to fill the target size
 			var new_scale: Vector2 = target_size / texture_size
 			sprite.scale = new_scale
 		else:
@@ -5028,13 +5745,10 @@ func _apply_texture_and_scale() -> void:
 	else:
 		push_warning("BaseUnit: '%s' is missing its 'visual_texture'. Sprite will be blank or use placeholder." % data.display_name)
 		
-	# 3. Scale the Collision Shape
 	if collision_shape and collision_shape.shape is RectangleShape2D:
-		# Set extents to *half* the target size (from center)
-		collision_shape.shape.extents = target_size / 2.0
+		collision_shape.shape.size = target_size
 	else:
 		push_warning("BaseUnit: '%s' is missing its CollisionShape2D node or its shape is not a RectangleShape2D. Collision will not match visuals." % data.display_name)
-# --- END ADDED ---
 
 func _exit_tree() -> void:
 	if EventBus.is_connected("pathfinding_grid_updated", _on_grid_updated):
@@ -5045,20 +5759,55 @@ func _on_grid_updated(_grid_pos: Vector2i) -> void:
 		fsm._recalculate_path()
 
 func _physics_process(delta: float) -> void:
+	if not data:
+		return
+
+	var fsm_velocity = Vector2.ZERO
 	if fsm:
 		fsm.update(delta)
+		fsm_velocity = velocity
+		velocity = Vector2.ZERO 
 	
-	if not fsm or fsm.current_state != UnitFSM.State.MOVING:
-		velocity = Vector2.ZERO
-		move_and_slide()
+	var target_fsm_velocity = Vector2.ZERO
+	
+	if fsm and (fsm.current_state == UnitFSM.State.MOVING or fsm.current_state == UnitFSM.State.FORMATION_MOVING):
+		target_fsm_velocity = fsm_velocity
+	
+	if target_fsm_velocity.length() > 0.1:
+		velocity = velocity.lerp(target_fsm_velocity, data.acceleration * delta)
+	else:
+		velocity = velocity.lerp(Vector2.ZERO, data.linear_damping * delta)
+	
+	if separation_enabled:
+		var separation_push = _calculate_separation_push(delta)
+		velocity += separation_push
 
-# --- Visual State Hooks ---
+	move_and_slide()
+
+func _calculate_separation_push(delta: float) -> Vector2:
+	var push_vector = Vector2.ZERO
+	var neighbors = separation_area.get_overlapping_bodies()
+	if neighbors.is_empty():
+		return Vector2.ZERO
+		
+	for neighbor in neighbors:
+		if neighbor == self or not neighbor is CharacterBody2D:
+			continue
+			
+		var away_vector = global_position - neighbor.global_position
+		var distance_sq = away_vector.length_squared()
+		
+		if distance_sq > 0.01 and distance_sq < separation_radius * separation_radius:
+			var push_strength = 1.0 - (sqrt(distance_sq) / separation_radius)
+			push_vector += away_vector.normalized() * push_strength
+			
+	return push_vector * separation_force * delta
+
 func on_state_changed(state: UnitFSM.State) -> void:
 	var to_color: Color = STATE_COLORS.get(state, Color.WHITE)
 	_tween_color(to_color, 0.2)
 
 func flash_error_color() -> void:
-	# Quick flash to purple, then return to current state color
 	var back_color: Color = STATE_COLORS.get(fsm.current_state, Color.WHITE)
 	var t := create_tween()
 	t.tween_property(sprite, "modulate", ERROR_COLOR, 0.08).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
@@ -5072,54 +5821,39 @@ func _tween_color(to_color: Color, duration: float = 0.2) -> void:
 
 func take_damage(amount: int) -> void:
 	current_health = max(0, current_health - amount)
-	# print("%s took %d damage, %d HP remaining." % [data.display_name, amount, current_health])
 	if current_health == 0:
 		die()
 
 func die() -> void:
-	print("%s has been killed." % data.display_name)
 	destroyed.emit()
 	queue_free()
 
-# --- RTS Command Interface ---
-
 func command_move_to(target_pos: Vector2) -> void:
-	"""Command this unit to move to a position"""
 	if fsm:
 		fsm.command_move_to(target_pos)
 
 func command_attack(target: Node2D) -> void:
-	"""Command this unit to attack a target"""
 	if fsm:
 		fsm.command_attack(target)
-
-# --- Selection System ---
 
 var is_selected: bool = false
 
 func set_selected(selected: bool) -> void:
-	"""Set the unit's selection state"""
 	is_selected = selected
 	
 	if is_selected:
 		_show_selection_indicator()
-		# print("%s selected" % data.display_name) # Too noisy
 	else:
 		_hide_selection_indicator()
-		# print("%s deselected" % data.display_name) # Too noisy
 
 func _show_selection_indicator() -> void:
-	"""Show visual selection indicator"""
 	queue_redraw()
 
 func _hide_selection_indicator() -> void:
-	"""Hide visual selection indicator"""
 	queue_redraw()
 
 func _draw() -> void:
-	"""Draw unit-specific visuals"""
 	if is_selected:
-		# Draw selection circle around the unit
 		var radius = 25.0
 		var color = Color.YELLOW
 		color.a = 0.8
@@ -5159,9 +5893,9 @@ func set_attack_target(target: BaseBuilding) -> void:
 --- SCRIPT: res://scripts/units/PlayerVikingRaider.gd ---
 # res://scripts/units/PlayerVikingRaider.gd
 #
-# Player-controlled Viking Raider unit with full RTS integration.
-# Extends BaseUnit to inherit all core unit functionality and adds
-# player-specific behaviors for selection, command, and group management.
+# Player-controlled Viking Raider unit.
+# This script is now much simpler. It just inherits all the
+# complex logic from BaseUnit and the FSM.
 
 extends BaseUnit
 class_name PlayerVikingRaider
@@ -5173,78 +5907,22 @@ func _ready() -> void:
 	# Add to player units group for RTS selection and control
 	add_to_group("player_units")
 	
-	# Initialize player-specific behaviors
-	_setup_player_behaviors()
-	
 	print("PlayerVikingRaider '%s' initialized and ready for RTS control" % name)
 
-func _setup_player_behaviors() -> void:
-	"""Initialize player-specific unit behaviors and properties"""
-	# Ensure the unit can be selected and commanded
-	# The BaseUnit already provides the necessary methods:
-	# - command_move_to()
-	# - command_attack() 
-	# - set_selected()
-	
-	# Set any player-specific properties
-	if data:
-		print("Player Viking Raider ready: %s (Health: %d)" % [data.display_name, current_health])
-
-# Override command methods to add player-specific feedback and behavior
-func command_move_to(target_pos: Vector2) -> void:
-	"""Enhanced move command with player feedback"""
-	print("Player Viking Raider '%s' moving to position %s" % [name, target_pos])
-	super.command_move_to(target_pos)
-
+# --- THIS IS THE FIX ---
+# We override the command_attack function just to add a print statement,
+# then we call super.command_attack(target) to let the Base_Unit and FSM
+# handle the *actual* logic correctly.
 func command_attack(target: Node2D) -> void:
-	"""Enhanced attack command with player feedback"""
 	if not fsm or not is_instance_valid(target):
 		push_warning("Player Raider FSM or target is not valid.")
 		return
 
 	print("Player Viking Raider '%s' attacking %s" % [name, target.name])
 
-	# --- Logic copied from EnemyVikingRaider ---
-	# Set the node (for attacking)
-	fsm.target_unit = target
-	
-	# Set the position (for moving) to be adjacent to the target
-	# This ensures pathfinding can succeed. Adjust offset as needed.
-	fsm.target_position = target.global_position + Vector2(0, 32) 
-	
-	# Start the FSM
-	fsm.change_state(UnitFSM.State.MOVING)
-	# ---------------------------------------------
-
-# Override selection methods to provide enhanced player feedback
-func set_selected(selected: bool) -> void:
-	"""Enhanced selection with player-specific visual feedback"""
-	super.set_selected(selected)
-	
-	if selected:
-		# Could add player-specific selection effects here
-		# e.g., special sound effects, enhanced visual indicators
-		pass
-	else:
-		# Handle deselection
-		pass
-
-# Player-specific utility methods
-func get_unit_status() -> Dictionary:
-	"""Get comprehensive unit status for UI display"""
-	return {
-		"name": name,
-		"display_name": data.display_name if data else "Unknown",
-		"health": current_health,
-		"max_health": data.max_health if data else 100,
-		"is_selected": is_selected,
-		"current_state": fsm.current_state if fsm else "None",
-		"position": global_position
-	}
-
-func is_player_controlled() -> bool:
-	"""Identify this as a player-controlled unit"""
-	return true
+	# Pass the command to the base class, which will pass it to the FSM
+	super.command_attack(target)
+# --- END FIX ---
 
 # Override die method to handle player unit death
 func die() -> void:
@@ -5288,6 +5966,108 @@ func _ready() -> void:
 	astar_grid.update()
 	
 	print("GridManager: Local grid initialized: %dx%d cells" % [grid_width, grid_height])
+
+--- SCRIPT: res://temp_ai_functions.gd ---
+func _on_target_entered(body: Node2D) -> void:
+	"""Called when a potential target enters detection range"""
+	if not data.is_defensive_structure:
+		return
+	
+	# Add to targets list
+	if body not in targets_in_range:
+		targets_in_range.append(body)
+	
+	# If we don't have a current target, start attacking this one
+	if not current_target and targets_in_range.size() > 0:
+		_select_target()
+
+func _on_target_exited(body: Node2D) -> void:
+	"""Called when a target leaves detection range"""
+	# Remove from targets list
+	targets_in_range.erase(body)
+	
+	# If this was our current target, find a new one
+	if current_target == body:
+		current_target = null
+		_select_target()
+
+func _select_target() -> void:
+	"""Select the closest valid target from the targets_in_range array"""
+	if targets_in_range.is_empty():
+		current_target = null
+		attack_timer.stop()
+		return
+	
+	# Find closest target
+	var closest_target: Node2D = null
+	var closest_distance: float = INF
+	
+	for target in targets_in_range:
+		if is_instance_valid(target):
+			var distance = global_position.distance_to(target.global_position)
+			if distance < closest_distance:
+				closest_distance = distance
+				closest_target = target
+		else:
+			# Remove invalid targets
+			targets_in_range.erase(target)
+	
+	current_target = closest_target
+	if current_target:
+		# Start attacking
+		if attack_timer.is_stopped():
+			attack_timer.start()
+
+func _on_attack_timer_timeout() -> void:
+	"""Called when the attack timer fires"""
+	if not data.is_defensive_structure or not current_target:
+		return
+	
+	# Verify target is still valid and in range
+	if not is_instance_valid(current_target):
+		_select_target()
+		return
+	
+	var distance_to_target = global_position.distance_to(current_target.global_position)
+	if distance_to_target > data.attack_range:
+		_select_target()
+		return
+	
+	# Attack the target
+	if data.projectile_scene:
+		# RANGED: Spawn projectile
+		_spawn_projectile(current_target.global_position)
+	else:
+		# MELEE: Direct damage (buildings shouldn't typically do this, but included for completeness)
+		if current_target.has_method("take_damage"):
+			current_target.take_damage(data.attack_damage)
+
+func _spawn_projectile(target_position_world: Vector2) -> void:
+	"""Spawn a projectile towards the target position"""
+	if not data.projectile_scene:
+		print("Error: No projectile scene assigned to %s" % data.display_name)
+		return
+	
+	# Create the projectile
+	var projectile: Projectile = data.projectile_scene.instantiate()
+	if not projectile:
+		print("Error: Failed to instantiate projectile for %s" % data.display_name)
+		return
+	
+	# Add projectile to the current scene
+	get_tree().current_scene.add_child(projectile)
+	
+	# Set up collision mask to hit player units (Layer 2)
+	var player_collision_mask: int = 1 << 1  # Layer 2 (bit position 1)
+	
+	# Initialize the projectile
+	projectile.setup(
+		global_position,        # start position
+		target_position_world,  # target position
+		data.attack_damage,     # damage
+		400.0,                  # projectile speed
+		player_collision_mask   # what to hit
+	)
 
 --- SCRIPT: res://tools/EnemyBaseEditor.gd ---
 @tool
@@ -5352,203 +6132,6 @@ static func create_fortress_layout():
 	]
 	
 	create_enemy_base_layout(buildings, "res://data/settlements/fortress_base.tres")
-
---- SCRIPT: res://tools/Phase1TestRunner.gd ---
-# res://tools/Phase1_TestRunner.gd
-#
-# This is an automated integration test for our Phase 1 SceneManager refactor.
-# It runs AS AN AUTOLOAD.
-#
-# To run:
-# 1. Add this SCRIPT to Project > Project Settings > Autoload.
-# 2. Set the "Main Scene" to "res://scenes/levels/SettlementBridge.tscn".
-# 3. Press F5 to run the project.
-# 4. Watch the console output. The game will quit automatically on pass/fail.
-
-extends Node
-
-func _ready() -> void:
-	# Wait one frame for the main scene (SettlementBridge) to finish loading
-	await get_tree().create_timer(0.2).timeout
-	
-	# Start the test flow
-	call_deferred("run_test_flow")
-
-func run_test_flow() -> void:
-	print("--- STARTING PHASE 1 TRANSITION TEST ---")
-	
-	# ---
-	# TEST 1: (Settlement -> Map)
-	# ---
-	print("\nTEST 1/4: Settlement -> Map")
-	
-	# --- MODIFICATION ---
-	# First, verify we are on the correct starting scene (no await)
-	if not check_current_scene("res://scenes/levels/SettlementBridge.tscn", "SettlementBridge"):
-		return
-	# --- END MODIFICATION ---
-	
-	if not await simulate_button_press("UI/StartRaidButton"):
-		fail_test("Failed to press 'World Map' button from Settlement.")
-		return
-		
-	if not await assert_scene_changed("res://scenes/world_map/MacroMap.tscn", "MacroMap"):
-		return
-	print("...PASS")
-
-	# ---
-	# TEST 2: (Map -> Settlement)
-	# ---
-	print("\nTEST 2/4: Map -> Settlement")
-	if not await simulate_button_press("UI/Actions/VBoxContainer/SettlementButton"):
-		fail_test("Failed to press 'Return to Settlement' button from Map.")
-		return
-		
-	if not await assert_scene_changed("res://scenes/levels/SettlementBridge.tscn", "SettlementBridge (from Map)"):
-		return
-	print("...PASS")
-	
-	# ---
-	# TEST 3: (Map -> Raid)
-	# ---
-	print("\nTEST 3/4: Map -> Raid")
-	# Go back to the map first
-	EventBus.scene_change_requested.emit("world_map")
-	if not await assert_scene_changed("res://scenes/world_map/MacroMap.tscn", "MacroMap (Re-load)"):
-		return
-	
-	# This is a complex click, we must simulate selecting a region first
-	if not await simulate_map_to_raid():
-		fail_test("Failed to simulate map-to-raid sequence.")
-		return
-		
-	if not await assert_scene_changed("res://scenes/missions/RaidMission.tscn", "RaidMission"):
-		return
-	print("...PASS")
-	
-	# ---
-	# TEST 4: (Raid -> Settlement)
-	# ---
-	print("\nTEST 4/4: Raid -> Settlement")
-	if not await simulate_raid_end():
-		fail_test("Failed to simulate raid end.")
-		return
-		
-	if not await assert_scene_changed("res://scenes/levels/SettlementBridge.tscn", "SettlementBridge (from Raid)"):
-		return
-	print("...PASS")
-	
-	# ---
-	# COMPLETE
-	# ---
-	print("\n--- ALL TESTS PASSED ---")
-	print("Remember to remove 'Phase1_TestRunner.gd' from Autoload.")
-	get_tree().quit()
-
-
-# --- TEST HELPER FUNCTIONS ---
-
-func simulate_button_press(button_path: String) -> bool:
-	# Wait one frame for scene to be fully ready
-	await get_tree().create_timer(0.1).timeout 
-	
-	var scene = get_tree().current_scene
-	if not is_instance_valid(scene):
-		print("  ERROR: Current scene is not valid.")
-		return false
-		
-	var button = scene.get_node_or_null(button_path)
-	
-	if not is_instance_valid(button):
-		print("  ERROR: Could not find button at path: %s in scene %s" % [button_path, scene.scene_file_path])
-		return false
-		
-	if button.disabled:
-		print("  ERROR: Button '%s' is disabled, cannot press." % button_path)
-		return false
-	
-	button.emit_signal("pressed")
-	return true
-
-func simulate_map_to_raid() -> bool:
-	await get_tree().create_timer(0.1).timeout
-	var scene = get_tree().current_scene
-	if not is_instance_valid(scene):
-		print("  ERROR: Current scene is not valid for map-to-raid sim.")
-		return false
-		
-	# 1. Get the region (assuming only one, "Region")
-	var region = scene.get_node_or_null("Regions/Region")
-	if not is_instance_valid(region):
-		print("  ERROR: Could not find node 'Regions/Region' in MacroMap.")
-		return false
-	
-	# 2. Simulate selecting it
-	region.emit_signal("region_selected", region.data)
-	
-	# 3. Press the launch button
-	return await simulate_button_press("UI/RegionInfo/VBoxContainer/LaunchRaidButton")
-
-func simulate_raid_end() -> bool:
-	await get_tree().create_timer(0.1).timeout
-	var scene = get_tree().current_scene
-	if not is_instance_valid(scene):
-		print("  ERROR: Current scene is not valid for raid-end sim.")
-		return false
-		
-	var objective_manager = scene.get_node_or_null("RaidObjectiveManager")
-	if not is_instance_valid(objective_manager):
-		print("  ERROR: Could not find 'RaidObjectiveManager' in RaidMission.")
-		return false
-	
-	# 4. Force a mission end
-	# We call _on_mission_failed as it's the quickest way to trigger the scene change
-	objective_manager._on_mission_failed()
-	return true
-
-# --- NEW FUNCTION ---
-func check_current_scene(expected_path: String, step_name: String) -> bool:
-	"""Checks the CURRENTLY loaded scene without awaiting a change."""
-	var scene = get_tree().current_scene
-	if not is_instance_valid(scene) or not scene.scene_file_path == expected_path:
-		print("  ERROR: Failed pre-check for test '%s'" % step_name)
-		print("    Expected scene: %s" % expected_path)
-		if is_instance_valid(scene):
-			print("    Got scene: %s" % scene.scene_file_path)
-		else:
-			print("    Got: <invalid_scene>")
-		get_tree().quit()
-		return false
-	print("  Pre-check PASSED: Currently on %s" % scene.scene_file_path)
-	return true
-
-# --- RENAMED FUNCTION ---
-func assert_scene_changed(expected_path: String, step_name: String) -> bool:
-	"""Waits for a scene change, THEN asserts the new scene is correct."""
-	var scene = get_tree().current_scene
-	
-	# Wait for the scene change to fully complete
-	await get_tree().scene_changed
-	
-	# Get the new scene reference
-	scene = get_tree().current_scene
-	
-	if not is_instance_valid(scene) or not scene.scene_file_path == expected_path:
-		print("  ERROR: Failed test '%s'" % step_name)
-		print("    Expected: %s" % expected_path)
-		if is_instance_valid(scene):
-			print("    Got: %s" % scene.scene_file_path)
-		else:
-			print("    Got: <invalid_scene>")
-		get_tree().quit()
-		return false
-	return true
-
-func fail_test(reason: String) -> void:
-	print("\n--- TEST FAILED ---")
-	print(reason)
-	print("-------------------")
-	get_tree().quit()
 
 --- SCRIPT: res://tools/SettlementLayoutEditor.gd ---
 # SettlementLayoutEditor.gd
@@ -5687,66 +6270,23 @@ func save_layout(layout: Array[Dictionary], path: String):
 	else:
 		print("❌ Failed to save layout to: %s" % path)
 
---- SCRIPT: res://tools/test_phase3.gd ---
-# Test script for Phase 3 functionality
-extends Node
-
-func _ready():
-	print("=== PHASE 3 TEST STARTING ===")
-	test_garrison_system()
-	test_raid_system()
-
-func test_garrison_system():
-	print("\n--- Testing Garrison System (Pillar 1) ---")
-	if SettlementManager.current_settlement:
-		print("Current treasury: %s" % SettlementManager.current_settlement.treasury)
-		print("Current garrison: %s" % SettlementManager.current_settlement.garrisoned_units)
-		
-		# Test unit recruitment
-		var player_unit_data = load("res://data/units/Unit_PlayerRaider.tres") as UnitData
-		if player_unit_data:
-			print("Found player unit data: %s" % player_unit_data.display_name)
-			print("Unit spawn cost: %s" % player_unit_data.spawn_cost)
-			
-			# Try to recruit one unit
-			if SettlementManager.attempt_purchase(player_unit_data.spawn_cost):
-				SettlementManager.recruit_unit(player_unit_data)
-				print("Successfully recruited %s!" % player_unit_data.display_name)
-			else:
-				print("Cannot afford to recruit %s" % player_unit_data.display_name)
-		else:
-			print("ERROR: Could not load player unit data")
-	else:
-		print("ERROR: No settlement loaded")
-
-func test_raid_system():
-	print("\n--- Testing Raid System (Pillar 3) ---")
-	if SettlementManager.current_settlement:
-		var garrison = SettlementManager.current_settlement.garrisoned_units
-		if not garrison.is_empty():
-			print("Garrison ready for raid with %d unit types" % garrison.size())
-			var total_units = 0
-			for unit_path in garrison:
-				total_units += garrison[unit_path]
-			print("Total units available: %d" % total_units)
-			print("Phase 3 raid system ready!")
-		else:
-			print("No units in garrison - cannot start raid")
-	else:
-		print("ERROR: No settlement loaded")
-	
-	print("\n=== PHASE 3 TEST COMPLETE ===")
-
 --- SCRIPT: res://ui/SelectionBox.gd ---
 # res://ui/SelectionBox.gd
-# This Control node covers the entire screen. It listens for
+# This Control node covers the entire screen.
+# It listens for
 # raw input, draws the selection box, and emits clean,
-# intent-based signals to the EventBus. It also uses
+# intent-based signals to the EventBus.
+# It also uses
 # accept_event() to stop input from passing through the UI.
 extends Control
 
 var is_dragging := false
 var start_pos := Vector2.ZERO
+
+# --- NEW: Formation Drag ---
+var is_command_dragging := false
+var command_start_pos := Vector2.ZERO
+# ---------------------------
 
 func _ready() -> void:
 	# This node handles its own input via _gui_input,
@@ -5781,15 +6321,52 @@ func _gui_input(event: InputEvent) -> void:
 				queue_redraw() # Clear the box
 				accept_event()
 		
-		elif event.button_index == MOUSE_BUTTON_RIGHT and event.is_pressed():
-			# This is a "smart command"
-			_handle_smart_command(get_local_mouse_position())
-			accept_event()
+		# --- MODIFIED: Handle Right Click Drag ---
+		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			if event.is_pressed():
+				is_command_dragging = true
+				command_start_pos = get_local_mouse_position()
+				accept_event()
+			else: # On Right-Click Release
+				if not is_command_dragging:
+					# This can happen if the click started outside the window
+					# and was released inside. Ignore it.
+					return
+					
+				is_command_dragging = false
+				var end_pos = get_local_mouse_position()
+				var drag_vector = end_pos - command_start_pos
+				
+				var main_camera: Camera2D = get_viewport().get_camera_2d()
+				if not main_camera: 
+					push_error("SelectionBox: No Camera2D found.")
+					return
+
+				# Convert screen positions to world
+				# We use get_global_mouse_position() for the *end*
+				# and calculate the start based on the drag vector
+				var world_end_pos = main_camera.get_global_mouse_position()
+				var world_start_pos = world_end_pos - (drag_vector / main_camera.zoom)
+				
+				# Check if it was a drag or just a click
+				if drag_vector.length_squared() > 225: # 15px drag threshold
+					# It was a drag. Emit formation move.
+					# The direction is from start to end
+					var world_drag_vector = (world_end_pos - world_start_pos).normalized()
+					EventBus.formation_move_command.emit(world_start_pos, world_drag_vector)
+				else:
+					# It was a click. Do smart command.
+					_handle_smart_command(end_pos)
+					
+				queue_redraw() # Clear drag line
+				accept_event()
+		# -----------------------------------------
 	
-	elif event is InputEventMouseMotion and is_dragging:
-		# Update the draw loop as the mouse moves
-		queue_redraw()
-		accept_event()
+	elif event is InputEventMouseMotion:
+		if is_dragging or is_command_dragging:
+			# Update the draw loop as the mouse moves
+			queue_redraw()
+			accept_event()
 
 func _handle_smart_command(screen_pos: Vector2) -> void:
 	# This function determines if a right-click
@@ -5808,10 +6385,12 @@ func _handle_smart_command(screen_pos: Vector2) -> void:
 	query.position = world_pos
 	query.collide_with_areas = true
 	query.collide_with_bodies = true
-	# We only want to hit "enemy" things
-	# GDD: "right-click is the 'smart' command (move on ground, attack on enemy)"
-	# We assume layer 2 is "enemy_units" and layer 3 is "enemy_buildings"
-	query.collision_mask = 6 # (Binary 0110 = Layers 2 and 3)
+	
+	# --- MODIFIED: Collision Mask ---
+	# We now attack Layer 3 (Enemy Units) and Layer 4 (Enemy Buildings)
+	# Binary 1100 = 12
+	query.collision_mask = 12 
+	# --------------------------------
 	
 	var results: Array = world_space.intersect_point(query)
 	
@@ -5833,6 +6412,14 @@ func _draw() -> void:
 		draw_rect(rect, Color(0.8, 0.8, 1.0, 0.2), true)
 		# Draw a solid outline
 		draw_rect(rect, Color(0.8, 0.8, 1.0, 1.0), false, 1.0)
+	
+	# --- NEW: Draw command drag line ---
+	if is_command_dragging:
+		var current_pos := get_local_mouse_position()
+		draw_line(command_start_pos, current_pos, Color.GREEN, 2.0)
+		draw_circle(command_start_pos, 5.0, Color.GREEN)
+		draw_circle(current_pos, 3.0, Color.GREEN)
+	# ----------------------------------
 
 --- SCRIPT: res://ui/StorefrontUI.gd ---
 # res://ui/StorefrontUI.gd (Fully Refactored)
