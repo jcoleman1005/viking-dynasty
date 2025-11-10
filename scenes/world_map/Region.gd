@@ -26,27 +26,12 @@ func _ready() -> void:
 		queue_free()
 		return
 	
-	# Debug collision shape
+	# Essential error checking for collision shapes
 	var collision_shape = get_node_or_null("CollisionShape2D")
-	if collision_shape:
-		print("Region '%s' - CollisionShape2D found!" % name)
-		print("  Shape: %s" % collision_shape.shape)
-		if collision_shape.shape:
-			print("  Shape type: %s" % collision_shape.shape.get_class())
-			# Check the actual size
-			if collision_shape.shape is RectangleShape2D:
-				print("  Rectangle size: %s" % collision_shape.shape.size)
-			elif collision_shape.shape is CircleShape2D:
-				print("  Circle radius: %s" % collision_shape.shape.radius)
-		else:
-			push_error("  ERROR: Shape is NULL!")
-	else:
+	if not collision_shape:
 		push_error("Region '%s' - CollisionShape2D NOT FOUND!" % name)
-	
-	print("Region '%s' initialized at position: %s" % [name, global_position])
-	print("  - Input Pickable: %s" % input_pickable)
-	print("  - Monitoring: %s" % monitoring)
-	print("  - Monitorable: %s" % monitorable)
+	elif not collision_shape.shape:
+		push_error("Region '%s' - CollisionShape2D shape is NULL!" % name)
 	
 	# Connect to our own signals
 	mouse_entered.connect(_on_mouse_entered)
@@ -59,14 +44,6 @@ func _ready() -> void:
 		set_visual_state(false)
 	else:
 		push_warning("Region node '%s' is missing its $Sprite2D child." % name)
-
-# Debug: Track ALL mouse clicks globally
-func _input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		var screen_pos = get_viewport().get_mouse_position()
-		var world_pos = get_global_mouse_position()
-		var canvas_pos = get_canvas_transform().affine_inverse() * screen_pos
-		
 
 func set_visual_state(is_hovered: bool) -> void:
 	if not sprite:
@@ -84,26 +61,16 @@ func set_visual_state(is_hovered: bool) -> void:
 	tween.tween_property(sprite, "modulate", target_color, 0.1).set_trans(Tween.TRANS_SINE)
 
 func _on_mouse_entered() -> void:
-	# --- DEBUGGING CODE ---
-	print("DEBUG: Mouse ENTERED region: %s" % data.display_name)
-	# --- END DEBUGGING ---
-	
 	set_visual_state(true)
 	emit_signal("region_hovered", data, get_global_mouse_position())
 
 func _on_mouse_exited() -> void:
-	# --- DEBUGGING CODE ---
-	print("DEBUG: Mouse EXITED region: %s" % data.display_name)
-	# --- END DEBUGGING ---
-	
 	set_visual_state(false)
 	emit_signal("region_exited")
 
 func _on_input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
-	print("Input event in region: %s, event: %s" % [data.display_name, event])
 	# Check for left mouse button click
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		print("Region clicked: %s" % data.display_name)
 		is_selected = true
 		set_visual_state(true)
 		emit_signal("region_selected", data)

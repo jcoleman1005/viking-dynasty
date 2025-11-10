@@ -21,6 +21,9 @@ var enemy_units: Array[BaseUnit] = [] # For defensive win condition
 var is_initialized: bool = false
 var mission_over: bool = false
 
+# --- NEW: Preload the theme ---
+const UI_THEME = preload("res://ui/themes/VikingDynastyTheme.tres")
+
 func _ready() -> void:
 	raid_loot = RaidLootData.new()
 
@@ -88,7 +91,6 @@ func _on_enemy_building_destroyed_for_loot(building: BaseBuilding) -> void:
 	
 	# Count remaining buildings for mission tracking
 	var remaining_buildings = building_container.get_children().size() - 1 # -1 for the one just destroyed
-	print("RaidObjectiveManager: Buildings remaining: %d" % remaining_buildings)
 
 func _setup_win_loss_conditions() -> void:
 	"""Setup win/loss condition monitoring"""
@@ -115,8 +117,6 @@ func _check_loss_condition() -> void:
 	if is_instance_valid(rts_controller):
 		remaining_units = rts_controller.controllable_units.size()
 	
-	print("Loss check: %d player units remaining" % remaining_units)
-	
 	if remaining_units == 0:
 		_on_mission_failed("All units destroyed")
 		return # Stop the loop
@@ -134,8 +134,6 @@ func _check_defensive_win_condition() -> void:
 	enemy_units = enemy_units.filter(func(unit): return is_instance_valid(unit))
 	var remaining_enemies = enemy_units.size()
 	
-	print("Win check: %d enemy units remaining" % remaining_enemies)
-
 	if remaining_enemies == 0:
 		_on_defensive_mission_won()
 		return # Stop the loop
@@ -154,7 +152,8 @@ func _on_defensive_mission_won() -> void:
 	mission_over = true
 	print("Mission Success! All attackers defeated.")
 	
-	# TODO: Add popup message
+	# --- NEW: Show Victory Popup ---
+	_show_victory_message("VICTORY!", "All attackers have been defeated.")
 	
 	# No loot for defense, just return home
 	await get_tree().create_timer(3.0).timeout
@@ -180,6 +179,8 @@ func _show_failure_message(reason: String) -> void:
 	var failure_popup = Control.new()
 	failure_popup.name = "FailurePopup"
 	failure_popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# --- FIX: Apply theme ---
+	failure_popup.theme = UI_THEME
 	
 	var bg_panel = Panel.new()
 	bg_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -192,6 +193,9 @@ func _show_failure_message(reason: String) -> void:
 	var failure_label = Label.new()
 	failure_label.text = "RAID FAILED!"
 	failure_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	# --- FIX: Add theme overrides for visibility ---
+	failure_label.add_theme_font_size_override("font_size", 32)
+	failure_label.add_theme_color_override("font_color", Color.CRIMSON)
 	message_container.add_child(failure_label)
 	
 	var subtitle_label = Label.new()
@@ -205,9 +209,60 @@ func _show_failure_message(reason: String) -> void:
 	message_container.add_child(return_label)
 	
 	failure_popup.add_child(message_container)
-	# Add to the root of the scene tree to ensure it's visible
-	get_tree().current_scene.add_child(failure_popup)
-	print("Failure message displayed")
+	
+	# --- FIX: Add to CanvasLayer, not scene root ---
+	var canvas = get_parent().get_node_or_null("CanvasLayer")
+	if canvas:
+		canvas.add_child(failure_popup)
+	else:
+		push_error("RaidObjectiveManager: Could not find 'CanvasLayer' to show failure message!")
+		get_tree().current_scene.add_child(failure_popup) # Fallback
+
+# --- NEW: VICTORY POPUP FUNCTION ---
+func _show_victory_message(title: String, subtitle: String) -> void:
+	"""Displays a generic victory message popup."""
+	var victory_popup = Control.new()
+	victory_popup.name = "VictoryPopup"
+	victory_popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# --- FIX: Apply theme ---
+	victory_popup.theme = UI_THEME
+	
+	var bg_panel = Panel.new()
+	bg_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	bg_panel.modulate = Color(0.1, 0.1, 0.1, 0.7) # Darker background
+	victory_popup.add_child(bg_panel)
+	
+	var message_container = VBoxContainer.new()
+	message_container.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	
+	var title_label = Label.new()
+	title_label.text = title
+	# --- FIX: Add theme overrides for visibility ---
+	title_label.add_theme_font_size_override("font_size", 32)
+	title_label.add_theme_color_override("font_color", Color.GOLD)
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	message_container.add_child(title_label)
+	
+	var subtitle_label = Label.new()
+	subtitle_label.text = subtitle
+	subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	message_container.add_child(subtitle_label)
+	
+	var return_label = Label.new()
+	return_label.text = "Returning to settlement..."
+	return_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	message_container.add_child(return_label)
+	
+	victory_popup.add_child(message_container)
+	
+	# --- FIX: Add to CanvasLayer, not scene root ---
+	var canvas = get_parent().get_node_or_null("CanvasLayer")
+	if canvas:
+		canvas.add_child(victory_popup)
+	else:
+		push_error("RaidObjectiveManager: Could not find 'CanvasLayer' to show victory message!")
+		get_tree().current_scene.add_child(victory_popup) # Fallback
+# --- END NEW ---
 
 func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	"""Called when the enemy's Great Hall is destroyed (OFFENSIVE win condition)"""
@@ -223,6 +278,10 @@ func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	SettlementManager.deposit_resources(total_loot)
 	print("Mission Complete! %s" % raid_loot.get_loot_summary())
 	
-	await get_tree().create_timer(2.0).timeout
+	# --- NEW: Show Victory Popup ---
+	var subtitle = "The enemy's Great Hall is in ruins.\nLoot: %s" % raid_loot.get_loot_summary()
+	_show_victory_message("VICTORY!", subtitle)
+	
+	await get_tree().create_timer(3.0).timeout # Increased timer to 3s to read
 	
 	EventBus.scene_change_requested.emit("settlement")

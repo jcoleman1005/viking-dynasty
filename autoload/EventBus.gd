@@ -51,3 +51,6 @@ signal building_ready_for_placement(building_data: BuildingData)
 
 # Emitted when building placement is cancelled (should refund cost)
 signal building_placement_cancelled(building_data: BuildingData)
+
+# --- NEW: Event System Flow Control ---
+signal event_system_finished()

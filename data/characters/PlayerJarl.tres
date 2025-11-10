@@ -1,13 +1,15 @@
-[gd_resource type="Resource" script_class="JarlData" load_steps=5 format=3]
+[gd_resource type="Resource" script_class="JarlData" load_steps=7 format=3]
 
-[ext_resource type="Script" path="res://data/characters/JarlHeirData.gd" id="1_0xpic"]
+[ext_resource type="Script" path="res://data/characters/JarlHeirData.gd" id="1_4gouw"]
 [ext_resource type="Script" path="res://data/characters/JarlData.gd" id="1_jarl_data"]
+[ext_resource type="Resource" path="res://data/characters/heirs/TestHeir.tres" id="2_0bn2j"]
 [ext_resource type="Resource" path="res://data/traits/Trait_Pious.tres" id="2_pious_trait"]
-[ext_resource type="Script" path="res://data/traits/JarlTraitData.gd" id="3_4gouw"]
+[ext_resource type="Script" path="res://data/traits/JarlTraitData.gd" id="3_0bn2j"]
+[ext_resource type="Resource" path="res://data/traits/Trait_Ambitious.tres" id="4_ambitious_trait"]
 
 [resource]
 script = ExtResource("1_jarl_data")
-display_name = "Jarl Bjorn"
+display_name = "Bjorn"
 age = 30
 renown = 25
 current_authority = 1
@@ -15,10 +17,9 @@ command = 12
 stewardship = 11
 learning = 9
 prowess = 14
-traits = Array[ExtResource("3_4gouw")]([ExtResource("2_pious_trait")])
+traits = Array[ExtResource("3_0bn2j")]([ExtResource("2_pious_trait"), ExtResource("4_ambitious_trait")])
 spouse_name = "Lagertha"
-has_valid_heir = true
-children_count = 1
+heirs = Array[ExtResource("1_4gouw")]([ExtResource("2_0bn2j")])
 battles_fought = 2
 battles_won = 2
 successful_raids = 2

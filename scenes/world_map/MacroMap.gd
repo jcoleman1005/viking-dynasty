@@ -76,6 +76,9 @@ func _ready() -> void:
 	else:
 		push_warning("MacroMap: 'end_year_popup_scene' is not set in the Inspector!")
 	
+	# Connect to the EventManager's "all-clear" signal
+	EventBus.event_system_finished.connect(_on_event_system_finished)
+	
 	# Initialize UI
 	_update_jarl_ui(DynastyManager.get_current_jarl())
 	region_info_panel.hide()
@@ -241,8 +244,13 @@ func _on_end_year_pressed() -> void:
 	end_year_popup.display_payout(payout, "End of Year Payout")
 
 func _on_end_year_payout_collected(payout: Dictionary) -> void:
+	# This function's ONLY job is to process the end of year logic.
+	# The scene change is now handled by _on_event_system_finished.
 	_process_end_year_logic(payout)
-	
+
+func _on_event_system_finished() -> void:
+	# This is the "all-clear" signal.
+	# NOW we check for raids and change the scene.
 	if randf() < enemy_raid_chance:
 		print("--- ENEMY RAID TRIGGERED ---")
 		DynastyManager.is_defensive_raid = true
@@ -255,6 +263,7 @@ func _process_end_year_logic(payout: Dictionary) -> void:
 	if not payout.is_empty():
 		SettlementManager.deposit_resources(payout)
 	
+	# This call is what triggers the EventManager's logic
 	DynastyManager.end_year()
 	
 	if is_instance_valid(selected_region_node):

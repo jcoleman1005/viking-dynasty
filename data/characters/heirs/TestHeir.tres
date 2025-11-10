@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="JarlHeirData" load_steps=2 format=3 uid="uid://dgxbmto5mqee5"]
+
+[ext_resource type="Script" uid="uid://cql5qpafvywy1" path="res://data/characters/JarlHeirData.gd" id="1_iui4g"]
+
+[resource]
+script = ExtResource("1_iui4g")
+display_name = "Ragnar (Test)"
+metadata/_custom_type_script = "uid://cql5qpafvywy1"

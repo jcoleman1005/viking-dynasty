@@ -8,6 +8,7 @@ extends Node
 
 ## Emitted when Jarl data changes (e.g., spent Authority, ended year)
 signal jarl_stats_updated(jarl_data: JarlData)
+signal year_ended
 
 var current_jarl: JarlData
 var current_raid_target: SettlementData
@@ -25,6 +26,7 @@ func _load_player_jarl() -> void:
 		current_jarl = load(PLAYER_JARL_PATH)
 		print("DynastyManager: PlayerJarl.tres loaded successfully.")
 	else:
+		# Use push_error for missing persistent files
 		push_error("DynastyManager: Failed to load Jarl data from %s. File not found!" % PLAYER_JARL_PATH)
 		# Create a fallback in-memory Jarl to prevent crashes
 		current_jarl = JarlData.new()
@@ -52,9 +54,10 @@ func spend_authority(cost: int) -> bool:
 	if current_jarl.spend_authority(cost):
 		_save_jarl_data()
 		jarl_stats_updated.emit(current_jarl)
-		print("DynastyManager: Spent %d authority. %d remaining." % [cost, current_jarl.current_authority])
+		# REMOVED: print("DynastyManager: Spent %d authority. %d remaining." % [cost, current_jarl.current_authority])
 		return true
 	
+	# RETAINED: Failure is important
 	print("DynastyManager: Failed to spend %d authority. %d remaining." % [cost, current_jarl.current_authority])
 	return false
 
@@ -67,13 +70,14 @@ func can_spend_renown(cost: int) -> bool:
 func spend_renown(cost: int) -> bool:
 	"""Spend the Jarl's Renown."""
 	if not can_spend_renown(cost):
+		# RETAINED: Failure is important
 		print("DynastyManager: Failed to spend %d renown. %d available." % [cost, current_jarl.renown])
 		return false
 	
 	current_jarl.renown -= cost
 	_save_jarl_data()
 	jarl_stats_updated.emit(current_jarl)
-	print("DynastyManager: Spent %d renown. %d remaining." % [cost, current_jarl.renown])
+	# REMOVED: print("DynastyManager: Spent %d renown. %d remaining." % [cost, current_jarl.renown])
 	return true
 
 func purchase_legacy_upgrade(upgrade_key: String) -> void:
@@ -99,10 +103,10 @@ func add_conquered_region(region_path: String) -> void:
 	if not region_path in current_jarl.conquered_regions:
 		current_jarl.conquered_regions.append(region_path)
 		_save_jarl_data()
+		# RETAINED: This is a major game state change
 		print("DynastyManager: Region '%s' conquered and saved." % region_path)
 		# We don't emit jarl_stats_updated here because spending authority
 		# will have already triggered the UI refresh.
-
 func has_conquered_region(region_path: String) -> bool:
 	"""Checks if a region has been conquered."""
 	if not current_jarl:
@@ -133,8 +137,7 @@ func start_heir_expedition(heir: JarlHeirData, expedition_duration: int = 5) -> 
 
 func process_heir_expeditions() -> Array[String]:
 	"""
-	Called at the End of Year.
-	Processes all heirs on expedition, returning results.
+	Called at the End of Year. Processes all heirs on expedition, returning results.
 	"""
 	if not current_jarl:
 		return []
@@ -201,9 +204,19 @@ func is_allied_region(region_path: String) -> bool:
 		return false
 	return region_path in current_jarl.allied_regions
 # --- END NEW ---
+func add_trait_to_heir(heir: JarlHeirData, trait_data: JarlTraitData) -> void:
+	"""
+	Placeholder function to add a trait to an heir.
+	Currently, JarlHeirData does not store traits.
+	This function will just log for now.
+	"""
+	# Using push_warning to flag this missing feature for development
+	push_warning("EVENT: (TODO) Would add trait '%s' to heir '%s'." % [trait_data.display_name, heir.display_name])
+
 
 func end_year() -> void:
 	if not current_jarl:
+		push_error("DynastyManager: Cannot end year, current Jarl is null.")
 		return
 		
 	current_jarl.reset_authority()
@@ -214,15 +227,17 @@ func end_year() -> void:
 		print("Expedition Results: %s" % expedition_results)
 		# TODO: We will need a way to show these results to the player,
 		# likely by modifying the EndOfYear_Popup.
-	# --- END NEW ---
 	
 	_save_jarl_data()
 	jarl_stats_updated.emit(current_jarl)
 	print("DynastyManager: Year ended. Authority reset to %d." % current_jarl.max_authority)
 	
+	# Emit the signal so the EventManager can hear it.
+	year_ended.emit()
+	
 func set_current_raid_target(data: SettlementData) -> void:
 	current_raid_target = data
-	print("DynastyManager: Raid target set to %s" % data.resource_path)
+	# REMOVED: print("DynastyManager: Raid target set to %s" % data.resource_path)
 
 func get_current_raid_target() -> SettlementData:
 	var target = current_raid_target
@@ -239,12 +254,13 @@ func _save_jarl_data() -> void:
 		
 	var error = ResourceSaver.save(current_jarl, current_jarl.resource_path)
 	if error != OK:
+		# Using push_error to alert to critical save file failures
 		push_error("DynastyManager: Failed to save Jarl data to %s. Error: %s" % [current_jarl.resource_path, error])
-	else:
-		print("DynastyManager: Jarl data saved to %s" % current_jarl.resource_path)
+	# No success print needed for every save, keeps log clean
 
 func award_renown(amount: int) -> void:
 	if not current_jarl:
+		push_error("DynastyManager: Cannot award renown, current Jarl is null.")
 		return
 	
 	current_jarl.award_renown(amount)

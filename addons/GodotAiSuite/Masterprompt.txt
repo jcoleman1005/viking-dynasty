@@ -37,6 +37,7 @@ SettlementManager="*res://autoload/SettlementManager.gd"
 PauseManager="*res://autoload/PauseManager.tscn"
 DynastyManager="*res://autoload/DynastyManager.gd"
 SceneManager="*res://autoload/SceneManager.tscn"
+EventManager="*res://autoload/EventManager.tscn"
 
 [editor]
 
@@ -317,30 +318,132 @@ attack_damage = 0
 attack_range = 0.0
 attack_speed = 0.0
 
---- RESOURCE: res://data/characters/PlayerJarl.tres ---
-[gd_resource type="Resource" script_class="JarlData" load_steps=3 format=3]
+--- RESOURCE: res://data/characters/heirs/Ragnar.tres ---
+[gd_resource type="Resource" format=3 uid="uid://c2ilgcmlp12pb"]
 
+[resource]
+metadata/_custom_type_script = "uid://cql5qpafvywy1"
+
+--- RESOURCE: res://data/characters/heirs/TestHeir.tres ---
+[gd_resource type="Resource" script_class="JarlHeirData" load_steps=2 format=3 uid="uid://dgxbmto5mqee5"]
+
+[ext_resource type="Script" uid="uid://cql5qpafvywy1" path="res://data/characters/JarlHeirData.gd" id="1_iui4g"]
+
+[resource]
+script = ExtResource("1_iui4g")
+display_name = "Ragnar (Test)"
+metadata/_custom_type_script = "uid://cql5qpafvywy1"
+
+--- RESOURCE: res://data/characters/PlayerJarl.tres ---
+[gd_resource type="Resource" script_class="JarlData" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://data/characters/JarlHeirData.gd" id="1_4gouw"]
 [ext_resource type="Script" path="res://data/characters/JarlData.gd" id="1_jarl_data"]
-[ext_resource type="Script" path="res://data/traits/JarlTraitData.gd" id="2_3vd45"]
+[ext_resource type="Resource" path="res://data/characters/heirs/TestHeir.tres" id="2_0bn2j"]
+[ext_resource type="Resource" path="res://data/traits/Trait_Pious.tres" id="2_pious_trait"]
+[ext_resource type="Script" path="res://data/traits/JarlTraitData.gd" id="3_0bn2j"]
+[ext_resource type="Resource" path="res://data/traits/Trait_Ambitious.tres" id="4_ambitious_trait"]
 
 [resource]
 script = ExtResource("1_jarl_data")
-display_name = "Jarl Bjorn"
+display_name = "Bjorn"
 age = 30
 renown = 25
-current_authority = 2
 command = 12
 stewardship = 11
 learning = 9
 prowess = 14
+traits = Array[ExtResource("3_0bn2j")]([ExtResource("2_pious_trait"), ExtResource("4_ambitious_trait")])
 spouse_name = "Lagertha"
-heirs = Array[String](["Ragnar"])
-has_valid_heir = true
-children_count = 1
+heirs = Array[ExtResource("1_4gouw")]([ExtResource("2_0bn2j")])
 battles_fought = 2
 battles_won = 2
 successful_raids = 2
 metadata/_custom_type_script = "uid://bm8qe8d38a1il"
+
+--- RESOURCE: res://data/events/ambitious_heir.tres ---
+[gd_resource type="Resource" script_class="EventData" load_steps=5 format=3 uid="uid://ddjwe73h3diq5"]
+
+[ext_resource type="Script" uid="uid://c7lxr02yr1fn6" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" uid="uid://dvc7gumtvwaal" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="EventChoice_accept"]
+script = ExtResource("2_event_choice")
+choice_text = "Here is 100 Renown. Bring us glory!"
+tooltip_text = "Spend 100 Renown."
+effect_key = "accept"
+
+[sub_resource type="Resource" id="EventChoice_decline"]
+script = ExtResource("2_event_choice")
+choice_text = "We cannot spare it. Be patient."
+tooltip_text = "Your heir will be displeased and gain the 'Rival' trait."
+effect_key = "decline"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "An Ambitious Heir"
+description = "Your heir, Ragnar, approaches you. \"My Jarl, I am bored! I wish to lead an expedition to prove my worth. Please fund it so I may bring glory to our dynasty!\""
+event_id = "ambitious_heir_1"
+base_chance = 1.0
+must_have_trait = "Ambitious"
+min_available_heirs = 1
+choices = Array[ExtResource("2_event_choice")]([SubResource("EventChoice_accept"), SubResource("EventChoice_decline")])
+metadata/_custom_type_script = "uid://c7lxr02yr1fn6"
+
+--- RESOURCE: res://data/legacy/JellingStone.tres ---
+[gd_resource type="Resource" script_class="LegacyUpgradeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/legacy/LegacyUpgradeData.gd" id="1_jelling"]
+
+[resource]
+script = ExtResource("1_jelling")
+display_name = "Erect Jelling Stone"
+description = "Commission a great rune stone to proclaim your dynasty's glory. All future heirs will begin their rule with bonus Renown."
+renown_cost = 200
+authority_cost = 2
+effect_key = "UPG_JELLING_STONE"
+prerequisite_key = ""
+
+--- RESOURCE: res://data/legacy/TrelleborgFortress.tres ---
+[gd_resource type="Resource" script_class="LegacyUpgradeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/legacy/LegacyUpgradeData.gd" id="1_trelleborg"]
+
+[resource]
+script = ExtResource("1_trelleborg")
+display_name = "Upgrade Trelleborg"
+description = "Invest in the Trelleborg's defenses, permanently increasing the max garrison size for your home settlement."
+renown_cost = 100
+authority_cost = 3
+effect_key = "UPG_TRELLEBORG"
+prerequisite_key = ""
+
+--- RESOURCE: res://data/legacy/Upg_BuildChapel.tres ---
+[gd_resource type="Resource" script_class="LegacyUpgradeData" load_steps=2 format=3 uid="uid://c4qpn4hvsgkvh"]
+
+[ext_resource type="Script" uid="uid://bot3rirdcml6f" path="res://data/legacy/LegacyUpgradeData.gd" id="1_chapel"]
+
+[resource]
+script = ExtResource("1_chapel")
+display_name = "Build Chapel"
+description = "Erect a small chapel, honoring the gods and securing their favor for your dynasty."
+renown_cost = 50
+effect_key = "UPG_BUILD_CHAPEL"
+metadata/_custom_type_script = "uid://bot3rirdcml6f"
+
+--- RESOURCE: res://data/legacy/VikingLongships.tres ---
+[gd_resource type="Resource" script_class="LegacyUpgradeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/legacy/LegacyUpgradeData.gd" id="1_longships"]
+
+[resource]
+script = ExtResource("1_longships")
+display_name = "Viking Longships"
+description = "Improve shipbuilding techniques, allowing for faster raids and more loot."
+renown_cost = 150
+authority_cost = 1
+effect_key = "UPG_LONGSHIPS"
+prerequisite_key = ""
 
 --- RESOURCE: res://data/settlements/economic_base.tres ---
 [gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://chtd3i4qtdv31"]
@@ -451,17 +554,17 @@ garrisoned_units = {
 }
 
 --- RESOURCE: res://data/settlements/home_base_fixed.tres ---
-[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://bt5fttgseqrg7"]
+[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3]
 
-[ext_resource type="Script" uid="uid://hlb8s5g0yp6k" path="res://data/settlements/SettlementData.gd" id="1_settlement_data"]
+[ext_resource type="Script" path="res://data/settlements/SettlementData.gd" id="1_settlement_data"]
 
 [resource]
 script = ExtResource("1_settlement_data")
 treasury = {
-"food": 3504,
-"gold": 6615,
-"stone": 500,
-"wood": 5383
+"food": 5551,
+"gold": 7430,
+"stone": 475,
+"wood": 10220
 }
 placed_buildings = Array[Dictionary]([{
 "grid_position": Vector2i(11, 7),
@@ -523,9 +626,12 @@ placed_buildings = Array[Dictionary]([{
 }, {
 "grid_position": Vector2i(20, 0),
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(12, 5),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
 }])
 garrisoned_units = {
-"res://data/units/Unit_PlayerRaider.tres": 12
+"res://data/units/Unit_PlayerRaider.tres": 15
 }
 metadata/_custom_type_script = "uid://hlb8s5g0yp6k"
 
@@ -739,6 +845,20 @@ garrisoned_units = {
 "res://data/units/Unit_PlayerRaider.tres": 3
 }
 
+--- RESOURCE: res://data/traits/Trait_Ambitious.tres ---
+[gd_resource type="Resource" script_class="JarlTraitData" load_steps=2 format=3 uid="uid://wo43cpcxhf4i"]
+
+[ext_resource type="Script" uid="uid://dwh8olikns4xw" path="res://data/traits/JarlTraitData.gd" id="1_jarl_trait"]
+
+[resource]
+script = ExtResource("1_jarl_trait")
+display_name = "Ambitious"
+description = "This Jarl is driven by a burning desire for power and glory, and inspires the same in their children."
+command_modifier = 2
+stewardship_modifier = -1
+intrigue_modifier = 1
+metadata/_custom_type_script = "uid://dwh8olikns4xw"
+
 --- RESOURCE: res://data/traits/Trait_Cowardly.tres ---
 [gd_resource type="Resource" script_class="JarlTraitData" load_steps=2 format=3 uid="uid://bivw1rejl06qi"]
 
@@ -802,6 +922,33 @@ alliance_cost_modifier = 1.1
 is_wounded_trait = true
 is_dishonorable_trait = false
 
+--- RESOURCE: res://data/traits/Trait_Pious.tres ---
+[gd_resource type="Resource" script_class="JarlTraitData" load_steps=2 format=3 uid="uid://y1xcw7hwydkx"]
+
+[ext_resource type="Script" uid="uid://dwh8olikns4xw" path="res://data/traits/JarlTraitData.gd" id="1_jarl_trait"]
+
+[resource]
+script = ExtResource("1_jarl_trait")
+display_name = "Pious"
+description = "This Jarl is known for their devotion to the gods, making religious acts cheaper and sacrilege more costly."
+stewardship_modifier = 1
+metadata/_custom_type_script = "uid://dwh8olikns4xw"
+
+--- RESOURCE: res://data/traits/Trait_Rival.tres ---
+[gd_resource type="Resource" script_class="JarlTraitData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/traits/JarlTraitData.gd" id="1_jarl_trait"]
+
+[resource]
+script = ExtResource("1_jarl_trait")
+display_name = "Rival"
+description = "This character has developed a bitter rivalry with their liege."
+is_visible = true
+command_modifier = 1
+stewardship_modifier = 0
+intrigue_modifier = 2
+vassal_opinion_modifier = -15
+
 --- RESOURCE: res://data/units/Unit_PlayerRaider.tres ---
 [gd_resource type="Resource" script_class="UnitData" load_steps=5 format=3 uid="uid://ejxn3hg8xcu6"]
 
@@ -858,7 +1005,7 @@ projectile_speed = 450.0
 visual_texture = ExtResource("3_6go6j")
 
 --- RESOURCE: res://data/world_map/Region_Monastery.tres ---
-[gd_resource type="Resource" script_class="WorldRegionData" load_steps=3 format=3 uid="uid://dbhfg3lfhe6tw"]
+[gd_resource type="Resource" script_class="WorldRegionData" load_steps=3 format=3 uid="uid://bk6wv22mknptc"]
 
 [ext_resource type="Resource" uid="uid://okf2novkg804" path="res://data/settlements/monastery_base.tres" id="1_settlement"]
 [ext_resource type="Script" uid="uid://dqlbgeegli821" path="res://data/world_map/WorldRegionData.gd" id="2_world_region"]
@@ -868,6 +1015,11 @@ script = ExtResource("2_world_region")
 display_name = "Nearby Monastery"
 description = "A wealthy but poorly-defended monastery. An easy target for a quick grab."
 target_settlement_data = ExtResource("1_settlement")
+region_type_tag = "Monastery"
+yearly_income = {
+"food": 10,
+"gold": 25
+}
 metadata/_custom_type_script = "uid://dqlbgeegli821"
 
 --- RESOURCE: res://resources/rectangleshape2d_879319.tres ---
@@ -915,6 +1067,12 @@ size = Vector2(10, 2)
 #### **2.3. Scene Structures**
 
 --- START OF SCENE STRUCTURES ---
+--- SCENE: res://autoload/EventManager.tscn ---
+EventManager (Node)
+> script: res://autoload/EventManager.gd
+> scene: res://autoload/EventManager.tscn
+> event_ui_scene = res://ui/Event_UI.tscn
+
 --- SCENE: res://autoload/PauseManager.tscn ---
 PauseManager (Node)
 > script: res://autoload/PauseManager.gd
@@ -943,10 +1101,6 @@ Base_Building (StaticBody2D)
 AttackAI (Node2D)
 > script: res://scenes/components/AttackAI.gd
 > scene: res://scenes/components/AttackAI.tscn
-> attack_damage = 10
-> attack_range = 200.0
-> attack_speed = 1.0
-> target_collision_mask = 0
 > DetectionArea (Area2D)
 >   CollisionShape2D (CollisionShape2D)
 >   > shape = res://scenes/components/AttackAI.tscn::CircleShape2D_2baay
@@ -1038,10 +1192,7 @@ SettlementBridge (Node)
 >   > anchor_bottom = 1.0
 >   > grow_horizontal = 2
 >   > grow_vertical = 2
->   > available_buildings = []
->   > available_units = []
 >   > default_treasury_display = {"food":100,"gold":100,"stone":100,"wood":100}
->   > auto_load_units_from_directory = true
 >     PanelContainer (PanelContainer)
 >     > layout_mode = 1
 >     > anchors_preset = -1
@@ -1082,6 +1233,25 @@ SettlementBridge (Node)
 >             RecruitButtons (VBoxContainer)
 >             > layout_mode = 2
 >             GarrisonList (VBoxContainer)
+>             > layout_mode = 2
+>           LegacyTab (VBoxContainer)
+>           > visible = false
+>           > layout_mode = 2
+>             JarlStatsDisplay (HBoxContainer)
+>             > layout_mode = 2
+>               RenownLabel (Label)
+>               > layout_mode = 2
+>               > text = "Renown: 0"
+>               AuthorityLabel (Label)
+>               > layout_mode = 2
+>               > text = "Authority: 0/0"
+>             Description (Label)
+>             > layout_mode = 2
+>             > text = "Spend Renown and Authority on permanent dynasty upgrades."
+>             > autowrap_mode = 3
+>             HSeparator (HSeparator)
+>             > layout_mode = 2
+>             LegacyButtonsContainer (VBoxContainer)
 >             > layout_mode = 2
 >     DebugRaidButton (Button)
 >     > layout_mode = 1
@@ -1331,6 +1501,9 @@ MacroMap (Node2D)
 >       SettlementButton (Button)
 >       > layout_mode = 2
 >       > text = "Return to Settlement"
+>       DynastyButton (Button)
+>       > layout_mode = 2
+>       > text = "Dynasty"
 >   RegionInfo (PanelContainer)
 >   > visible = false
 >   > anchors_preset = -1
@@ -1353,6 +1526,14 @@ MacroMap (Node2D)
 >       > layout_mode = 2
 >       > disabled = true
 >       > text = "Launch Raid"
+>       SubjugateButton (Button)
+>       > layout_mode = 2
+>       > disabled = true
+>       > text = "Subjugate"
+>       MarryButton (Button)
+>       > layout_mode = 2
+>       > disabled = true
+>       > text = "Marry for Alliance"
 >   Tooltip (PanelContainer)
 >   > visible = false
 >   > anchors_preset = -1
@@ -1371,6 +1552,41 @@ MacroMap (Node2D)
 >     > layout_mode = 2
 >     > text = "Region Name"
 >     > horizontal_alignment = 1
+>   Dynasty_UI (PanelContainer)
+>     script: res://ui/DynastyUI.gd
+>     scene: res://ui/Dynasty_UI.tscn
+>   > anchors_preset = -1
+>   > anchor_left = 0.5
+>   > anchor_top = 0.5
+>   > anchor_right = 0.5
+>   > anchor_bottom = 0.5
+>   > offset_left = -200.0
+>   > offset_top = -150.0
+>   > offset_right = 200.0
+>   > offset_bottom = 150.0
+>   > grow_horizontal = 2
+>   > grow_vertical = 2
+>     Margin (MarginContainer)
+>     > layout_mode = 2
+>       VBox (VBoxContainer)
+>       > layout_mode = 2
+>         TitleLabel (Label)
+>         > layout_mode = 2
+>         > text = "Jarl Bjorn\'s Dynasty"
+>         > horizontal_alignment = 1
+>         HSeparator (HSeparator)
+>         > layout_mode = 2
+>         HeirsLabel (Label)
+>         > layout_mode = 2
+>         > text = "Heirs:"
+>         HeirsContainer (VBoxContainer)
+>         > layout_mode = 2
+>         Spacer (Control)
+>         > layout_mode = 2
+>         > size_flags_vertical = 3
+>         CloseButton (Button)
+>         > layout_mode = 2
+>         > text = "Close"
 
 --- SCENE: res://scenes/world_map/Region.tscn ---
 Region (Area2D)
@@ -1456,6 +1672,42 @@ BuildingPreviewCursor (Node2D)
 > script: res://scripts/ui/BuildingPreviewCursor.gd
 > scene: res://ui/BuildingPreviewCursor.tscn
 
+--- SCENE: res://ui/Dynasty_UI.tscn ---
+Dynasty_UI (PanelContainer)
+> script: res://ui/DynastyUI.gd
+> scene: res://ui/Dynasty_UI.tscn
+> anchor_left = 0.5
+> anchor_top = 0.5
+> anchor_right = 0.5
+> anchor_bottom = 0.5
+> offset_left = -200.0
+> offset_top = -150.0
+> offset_right = 200.0
+> offset_bottom = 150.0
+> grow_horizontal = 2
+> grow_vertical = 2
+> Margin (MarginContainer)
+> > layout_mode = 2
+>   VBox (VBoxContainer)
+>   > layout_mode = 2
+>     TitleLabel (Label)
+>     > layout_mode = 2
+>     > text = "Jarl Bjorn\'s Dynasty"
+>     > horizontal_alignment = 1
+>     HSeparator (HSeparator)
+>     > layout_mode = 2
+>     HeirsLabel (Label)
+>     > layout_mode = 2
+>     > text = "Heirs:"
+>     HeirsContainer (VBoxContainer)
+>     > layout_mode = 2
+>     Spacer (Control)
+>     > layout_mode = 2
+>     > size_flags_vertical = 3
+>     CloseButton (Button)
+>     > layout_mode = 2
+>     > text = "Close"
+
 --- SCENE: res://ui/EndOfYear_Popup.tscn ---
 Main (PanelContainer)
 > script: res://ui/EndOfYear_Popup.gd
@@ -1486,6 +1738,63 @@ Main (PanelContainer)
 >     > custom_minimum_size = (120.0, 40.0)
 >     > layout_mode = 2
 >     > text = "Collect"
+
+--- SCENE: res://ui/Event_UI.tscn ---
+Event_UI (CanvasLayer)
+> script: res://ui/Event_UI.gd
+> scene: res://ui/Event_UI.tscn
+> process_mode = 2
+> layer = 20
+> PanelContainer (PanelContainer)
+> > custom_minimum_size = (500.0, 300.0)
+> > anchors_preset = -1
+> > anchor_left = 0.5
+> > anchor_top = 0.5
+> > anchor_right = 0.5
+> > anchor_bottom = 0.5
+> > offset_left = -78.5
+> > offset_top = -105.5
+> > offset_right = 78.5
+> > offset_bottom = 105.5
+> > grow_horizontal = 2
+> > grow_vertical = 2
+>   Margin (MarginContainer)
+>   > layout_mode = 2
+>     VBox (VBoxContainer)
+>     > layout_mode = 2
+>       TitleLabel (Label)
+>       > custom_minimum_size = (300.0, 30.0)
+>       > layout_mode = 2
+>       > size_flags_vertical = 1
+>       > text = "Event Title"
+>       > horizontal_alignment = 1
+>       > autowrap_mode = 3
+>       HSeparator (HSeparator)
+>       > layout_mode = 2
+>       HBox (HBoxContainer)
+>       > layout_mode = 2
+>       > size_flags_vertical = 3
+>         Portrait (TextureRect)
+>         > unique_name_in_owner = true
+>         > custom_minimum_size = (128.0, 128.0)
+>         > layout_mode = 2
+>         > texture = res://textures/placeholders/unit_placeholder.png
+>         > expand_mode = 1
+>         > stretch_mode = 5
+>         DescriptionLabel (Label)
+>         > custom_minimum_size = (200.0, 100.0)
+>         > layout_mode = 2
+>         > size_flags_horizontal = 3
+>         > size_flags_vertical = 1
+>         > text = "This is the event description text. It will be multiple lines long and explain the situation to the player, presenting them with a difficult choice."
+>         > autowrap_mode = 3
+>         > clip_text = true
+>       HSeparator2 (HSeparator)
+>       > layout_mode = 2
+>       ChoiceButtonsContainer (VBoxContainer)
+>       > layout_mode = 2
+>       > size_flags_vertical = 10
+>       > alignment = 2
 
 --- SCENE: res://ui/SelectionBox.tscn ---
 SelectionBox (Control)
@@ -1552,113 +1861,30 @@ Main (Control)
 >         > layout_mode = 2
 >         GarrisonList (VBoxContainer)
 >         > layout_mode = 2
+>       LegacyTab (VBoxContainer)
+>       > visible = false
+>       > layout_mode = 2
+>         JarlStatsDisplay (HBoxContainer)
+>         > layout_mode = 2
+>           RenownLabel (Label)
+>           > layout_mode = 2
+>           > text = "Renown: 0"
+>           AuthorityLabel (Label)
+>           > layout_mode = 2
+>           > text = "Authority: 0/0"
+>         Description (Label)
+>         > layout_mode = 2
+>         > text = "Spend Renown and Authority on permanent dynasty upgrades."
+>         > autowrap_mode = 3
+>         HSeparator (HSeparator)
+>         > layout_mode = 2
+>         LegacyButtonsContainer (VBoxContainer)
+>         > layout_mode = 2
 --- END OF SCENE STRUCTURES ---
 
 #### **2.4. Codebase**
 
 --- START OF CODEBASE ---
---- SCRIPT: res://.ai-checkpoints/temp_ai_functions.gd ---
-func _on_target_entered(body: Node2D) -> void:
-	"""Called when a potential target enters detection range"""
-	if not data.is_defensive_structure:
-		return
-	
-	# Add to targets list
-	if body not in targets_in_range:
-		targets_in_range.append(body)
-	
-	# If we don't have a current target, start attacking this one
-	if not current_target and targets_in_range.size() > 0:
-		_select_target()
-
-func _on_target_exited(body: Node2D) -> void:
-	"""Called when a target leaves detection range"""
-	# Remove from targets list
-	targets_in_range.erase(body)
-	
-	# If this was our current target, find a new one
-	if current_target == body:
-		current_target = null
-		_select_target()
-
-func _select_target() -> void:
-	"""Select the closest valid target from the targets_in_range array"""
-	if targets_in_range.is_empty():
-		current_target = null
-		attack_timer.stop()
-		return
-	
-	# Find closest target
-	var closest_target: Node2D = null
-	var closest_distance: float = INF
-	
-	for target in targets_in_range:
-		if is_instance_valid(target):
-			var distance = global_position.distance_to(target.global_position)
-			if distance < closest_distance:
-				closest_distance = distance
-				closest_target = target
-		else:
-			# Remove invalid targets
-			targets_in_range.erase(target)
-	
-	current_target = closest_target
-	if current_target:
-		# Start attacking
-		if attack_timer.is_stopped():
-			attack_timer.start()
-
-func _on_attack_timer_timeout() -> void:
-	"""Called when the attack timer fires"""
-	if not data.is_defensive_structure or not current_target:
-		return
-	
-	# Verify target is still valid and in range
-	if not is_instance_valid(current_target):
-		_select_target()
-		return
-	
-	var distance_to_target = global_position.distance_to(current_target.global_position)
-	if distance_to_target > data.attack_range:
-		_select_target()
-		return
-	
-	# Attack the target
-	if data.projectile_scene:
-		# RANGED: Spawn projectile
-		_spawn_projectile(current_target.global_position)
-	else:
-		# MELEE: Direct damage (buildings shouldn't typically do this, but included for completeness)
-		if current_target.has_method("take_damage"):
-			current_target.take_damage(data.attack_damage)
-
-func _spawn_projectile(target_position_world: Vector2) -> void:
-	"""Spawn a projectile towards the target position"""
-	if not data.projectile_scene:
-		print("Error: No projectile scene assigned to %s" % data.display_name)
-		return
-	
-	# Create the projectile
-	var projectile: Projectile = data.projectile_scene.instantiate()
-	if not projectile:
-		print("Error: Failed to instantiate projectile for %s" % data.display_name)
-		return
-	
-	# Add projectile to the current scene
-	get_tree().current_scene.add_child(projectile)
-	
-	# Set up collision mask to hit player units (Layer 2)
-	var player_collision_mask: int = 1 << 1  # Layer 2 (bit position 1)
-	
-	# Initialize the projectile
-	projectile.setup(
-		global_position,        # start position
-		target_position_world,  # target position
-		data.attack_damage,     # damage
-		400.0,                  # projectile speed
-		player_collision_mask   # what to hit
-	)
-
 --- SCRIPT: res://autoload/DynastyManager.gd ---
 # res://autoload/DynastyManager.gd
 #
@@ -1670,13 +1896,12 @@ extends Node
 
 ## Emitted when Jarl data changes (e.g., spent Authority, ended year)
 signal jarl_stats_updated(jarl_data: JarlData)
+signal year_ended
 
 var current_jarl: JarlData
 var current_raid_target: SettlementData
 
-# --- NEW: Flag for defensive missions ---
 var is_defensive_raid: bool = false
-# -------------------------------------
 
 # Path to the player's persistent Jarl data
 const PLAYER_JARL_PATH = "res://data/characters/PlayerJarl.tres"
@@ -1689,6 +1914,7 @@ func _load_player_jarl() -> void:
 		current_jarl = load(PLAYER_JARL_PATH)
 		print("DynastyManager: PlayerJarl.tres loaded successfully.")
 	else:
+		# Use push_error for missing persistent files
 		push_error("DynastyManager: Failed to load Jarl data from %s. File not found!" % PLAYER_JARL_PATH)
 		# Create a fallback in-memory Jarl to prevent crashes
 		current_jarl = JarlData.new()
@@ -1707,7 +1933,7 @@ func get_current_jarl() -> JarlData:
 func can_spend_authority(cost: int) -> bool:
 	if not current_jarl:
 		return false
-	return current_jarl.can_take_action(cost) #
+	return current_jarl.can_take_action(cost)
 
 func spend_authority(cost: int) -> bool:
 	if not current_jarl:
@@ -1715,26 +1941,188 @@ func spend_authority(cost: int) -> bool:
 		
 	if current_jarl.spend_authority(cost):
 		_save_jarl_data()
-		jarl_stats_updated.emit(current_jarl) #
+		jarl_stats_updated.emit(current_jarl)
 		print("DynastyManager: Spent %d authority. %d remaining." % [cost, current_jarl.current_authority])
 		return true
 	
 	print("DynastyManager: Failed to spend %d authority. %d remaining." % [cost, current_jarl.current_authority])
 	return false
 
-func end_year() -> void:
+func can_spend_renown(cost: int) -> bool:
+	"""Check if the Jarl has enough Renown."""
+	if not current_jarl:
+		return false
+	return current_jarl.renown >= cost
+
+func spend_renown(cost: int) -> bool:
+	"""Spend the Jarl's Renown."""
+	if not can_spend_renown(cost):
+		print("DynastyManager: Failed to spend %d renown. %d available." % [cost, current_jarl.renown])
+		return false
+	
+	current_jarl.renown -= cost
+	_save_jarl_data()
+	jarl_stats_updated.emit(current_jarl)
+	print("DynastyManager: Spent %d renown. %d remaining." % [cost, current_jarl.renown])
+	return true
+
+func purchase_legacy_upgrade(upgrade_key: String) -> void:
+	"""Mark a legacy upgrade as purchased on the Jarl's data."""
 	if not current_jarl:
 		return
+	if not upgrade_key in current_jarl.purchased_legacy_upgrades:
+		current_jarl.purchased_legacy_upgrades.append(upgrade_key)
+		_save_jarl_data()
+		print("DynastyManager: Legacy upgrade '%s' purchased and saved." % upgrade_key)
+
+func has_purchased_upgrade(upgrade_key: String) -> bool:
+	"""Check if a legacy upgrade has already been purchased."""
+	if not current_jarl:
+		return false
+	return upgrade_key in current_jarl.purchased_legacy_upgrades
+
+# --- NEW: Unifier Pillar Functions ---
+func add_conquered_region(region_path: String) -> void:
+	"""Adds a region's path to the Jarl's list of conquered territories."""
+	if not current_jarl:
+		return
+	if not region_path in current_jarl.conquered_regions:
+		current_jarl.conquered_regions.append(region_path)
+		_save_jarl_data()
+		print("DynastyManager: Region '%s' conquered and saved." % region_path)
+		# We don't emit jarl_stats_updated here because spending authority
+		# will have already triggered the UI refresh.
+func has_conquered_region(region_path: String) -> bool:
+	"""Checks if a region has been conquered."""
+	if not current_jarl:
+		return false
+	return region_path in current_jarl.conquered_regions
+
+# --- NEW: Progenitor Pillar Functions ---
+
+func get_available_heir_count() -> int:
+	if not current_jarl:
+		return 0
+	return current_jarl.get_available_heir_count()
+
+func start_heir_expedition(heir: JarlHeirData, expedition_duration: int = 5) -> void:
+	"""
+	Sends an heir on an expedition.
+	This marks them as unavailable and starts a timer.
+	"""
+	if not current_jarl or not heir in current_jarl.heirs:
+		push_error("DynastyManager: Tried to send an invalid heir on expedition.")
+		return
+	
+	heir.status = JarlHeirData.HeirStatus.OnExpedition
+	heir.expedition_years_remaining = expedition_duration
+	_save_jarl_data()
+	jarl_stats_updated.emit(current_jarl)
+	print("Heir %s sent on expedition for %d years." % [heir.display_name, expedition_duration])
+
+func process_heir_expeditions() -> Array[String]:
+	"""
+	Called at the End of Year.
+	Processes all heirs on expedition, returning results.
+	"""
+	if not current_jarl:
+		return []
+
+	var results: Array[String] = []
+	var heirs_to_remove: Array[JarlHeirData] = []
+	
+	for heir in current_jarl.heirs:
+		if heir.status == JarlHeirData.HeirStatus.OnExpedition:
+			heir.expedition_years_remaining -= 1
+			
+			if heir.expedition_years_remaining <= 0:
+				# Expedition is over, run probability check
+				var roll = randf()
+				if roll <= 0.7: # 70% success 
+					var renown_gain = randi_range(100, 300)
+					award_renown(renown_gain)
+					results.append("Heir %s returned from their expedition with %d Renown!" % [heir.display_name, renown_gain])
+					heir.status = JarlHeirData.HeirStatus.Available
+				else: # 30% failure 
+					results.append("Tragic news! Heir %s was lost at sea during their expedition." % heir.display_name)
+					heir.status = JarlHeirData.HeirStatus.LostAtSea
+					heirs_to_remove.append(heir) # Queue for removal
+	
+	# Remove lost heirs
+	for heir in heirs_to_remove:
+		current_jarl.remove_heir(heir)
+
+	if not results.is_empty():
+		_save_jarl_data()
+		jarl_stats_updated.emit(current_jarl)
 		
-	current_jarl.reset_authority() #
-	# TODO: Hook in Renown Decay and other end-of-year events here
+	return results
+
+# --- NEW: Marry for Alliance ---
+func marry_heir_for_alliance(region_path: String) -> bool:
+	"""
+	Spends the first available heir to form an alliance with a region.
+	Returns true on success, false if no heir is available.
+	"""
+	if not current_jarl:
+		return false
+		
+	var heir_to_marry = current_jarl.get_first_available_heir()
+	if not heir_to_marry:
+		print("DynastyManager: Marriage failed. No available heir.")
+		return false
+	
+	# "Spend" the heir
+	heir_to_marry.status = JarlHeirData.HeirStatus.MarriedOff
+	
+	# Add the alliance
+	if not region_path in current_jarl.allied_regions:
+		current_jarl.allied_regions.append(region_path)
+	
+	print("Heir %s married off to form alliance with %s" % [heir_to_marry.display_name, region_path])
+	_save_jarl_data()
+	jarl_stats_updated.emit(current_jarl)
+	return true
+
+func is_allied_region(region_path: String) -> bool:
+	"""Checks if a region is allied."""
+	if not current_jarl:
+		return false
+	return region_path in current_jarl.allied_regions
+# --- END NEW ---
+func add_trait_to_heir(heir: JarlHeirData, trait_data: JarlTraitData) -> void:
+	"""
+	Placeholder function to add a trait to an heir.
+	Currently, JarlHeirData does not store traits.
+	This function will just log for now.
+	"""
+	# Using push_warning to flag this missing feature for development
+	push_warning("EVENT: (TODO) Would add trait '%s' to heir '%s'." % [trait_data.display_name, heir.display_name])
+
+
+func end_year() -> void:
+	if not current_jarl:
+		push_error("DynastyManager: Cannot end year, current Jarl is null.")
+		return
+		
+	current_jarl.reset_authority()
+	
+	# --- NEW: Process Expeditions ---
+	var expedition_results = process_heir_expeditions()
+	if not expedition_results.is_empty():
+		print("Expedition Results: %s" % expedition_results)
+		# TODO: We will need a way to show these results to the player,
+		# likely by modifying the EndOfYear_Popup.
 	
 	_save_jarl_data()
 	jarl_stats_updated.emit(current_jarl)
 	print("DynastyManager: Year ended. Authority reset to %d." % current_jarl.max_authority)
-
+	
+	# Emit the signal so the EventManager can hear it.
+	year_ended.emit()
+	
 func set_current_raid_target(data: SettlementData) -> void:
-	current_raid_target = data #
+	current_raid_target = data
 	print("DynastyManager: Raid target set to %s" % data.resource_path)
 
 func get_current_raid_target() -> SettlementData:
@@ -1752,15 +2140,16 @@ func _save_jarl_data() -> void:
 		
 	var error = ResourceSaver.save(current_jarl, current_jarl.resource_path)
 	if error != OK:
+		# Using push_error to alert to critical save file failures
 		push_error("DynastyManager: Failed to save Jarl data to %s. Error: %s" % [current_jarl.resource_path, error])
-	else:
-		print("DynastyManager: Jarl data saved to %s" % current_jarl.resource_path)
+	# No success print needed for every save, keeps log clean
 
 func award_renown(amount: int) -> void:
 	if not current_jarl:
+		push_error("DynastyManager: Cannot award renown, current Jarl is null.")
 		return
 	
-	current_jarl.award_renown(amount) #
+	current_jarl.award_renown(amount)
 	_save_jarl_data()
 	jarl_stats_updated.emit(current_jarl)
 	print("DynastyManager: Awarded %d renown. Total: %d" % [amount, current_jarl.renown])
@@ -1819,6 +2208,188 @@ signal building_ready_for_placement(building_data: BuildingData)
 
 # Emitted when building placement is cancelled (should refund cost)
 signal building_placement_cancelled(building_data: BuildingData)
+
+# --- NEW: Event System Flow Control ---
+signal event_system_finished()
+
+--- SCRIPT: res://autoload/EventManager.gd ---
+# res://autoload/EventManager.gd
+#
+# Global singleton (Autoload) to manage the "Full Event System" (Phase 3b).
+# This manager loads all events, checks their triggers,
+# and displays them to the player.
+extends Node
+
+# Assign res://ui/Event_UI.tscn in the Autoload settings in Godot
+@export var event_ui_scene: PackedScene
+
+var event_ui: EventUI
+var available_events: Array[EventData] = []
+var fired_unique_events: Array[String] = []
+
+# Preload resources needed for consequences
+const TRAIT_RIVAL = preload("res://data/traits/Trait_Rival.tres")
+
+func _ready() -> void:
+	# Defer initialization to ensure all Autoloads are ready
+	call_deferred("initialize_event_system")
+
+func initialize_event_system() -> void:
+	"""Handles all initialization after the engine is stable."""
+	if not event_ui_scene:
+		push_error("EventManager: 'event_ui_scene' is not set in Autoload Inspector! Event system is disabled.")
+		return
+	
+	# 1. Instance and add the UI
+	event_ui = event_ui_scene.instantiate()
+	add_child(event_ui)
+	event_ui.choice_made.connect(_on_choice_made)
+	
+	# 2. Load all events
+	_load_events_from_disk()
+	
+	# 3. Connect to the main game trigger
+	if DynastyManager:
+		DynastyManager.year_ended.connect(_on_year_ended)
+	else:
+		push_error("EventManager: DynastyManager Autoload is not found! Cannot connect year_ended signal.")
+
+func _load_events_from_disk() -> void:
+	"""Scans the res://data/events/ directory for EventData resources."""
+	available_events.clear()
+	var dir = DirAccess.open("res://data/events/")
+	if dir:
+		dir.list_dir_begin()
+		var file_name = dir.get_next()
+		while file_name != "":
+			if file_name.ends_with(".tres"):
+				var path = "res://data/events/" + file_name
+				var event_data = load(path) as EventData 
+				if event_data:
+					available_events.append(event_data)
+				else:
+					push_warning("EventManager: Failed to load event resource from %s." % path)
+			file_name = dir.get_next()
+	print("EventManager: Loaded %d events from disk." % available_events.size())
+
+func _on_year_ended() -> void:
+	"""Triggered by DynastyManager, this checks all events."""
+	print("EventManager: Checking event triggers for end of year...")
+	
+	var event_was_triggered: bool = _check_event_triggers()
+	
+	# Status print remains for end-of-year summary
+	if event_was_triggered:
+		print("EventManager: An event was recognized and triggered.")
+	else:
+		print("EventManager: No events were recognized or triggered this year.")
+	
+	if not event_was_triggered:
+		# No events were found, so we signal the "all-clear" immediately.
+		EventBus.event_system_finished.emit()
+
+func _check_event_triggers() -> bool:
+	"""
+	Checks all events. Returns true if an event was triggered, false otherwise.
+	"""
+	var jarl = DynastyManager.get_current_jarl()
+	if not jarl:
+		push_error("EventManager: Cannot check events, Jarl data is null.")
+		return false
+
+	for event in available_events:
+		if _check_conditions(event, jarl):
+			_trigger_event(event)
+			return true # An event was triggered
+	
+	return false # No events were triggered
+
+func _check_conditions(event: EventData, jarl: JarlData) -> bool:
+	"""Checks if a single event's trigger conditions are met."""
+	
+	# Check if unique and already fired
+	if event.is_unique and event.event_id in fired_unique_events:
+		return false
+		
+	# Check prerequisites
+	for pre_id in event.prerequisites:
+		if not pre_id in fired_unique_events:
+			return false 
+			
+	# Check Jarl stats
+	if event.min_renown > -1 and jarl.renown < event.min_renown:
+		return false
+	if event.min_stewardship > -1 and jarl.get_effective_skill("stewardship") < event.min_stewardship:
+		return false
+	
+	# Check Jarl traits
+	if not event.must_have_trait.is_empty() and not jarl.has_trait(event.must_have_trait):
+		return false
+	if not event.must_not_have_trait.is_empty() and jarl.has_trait(event.must_not_have_trait):
+		return false
+	
+	# Check Dynasty state
+	if event.min_available_heirs > -1 and jarl.get_available_heir_count() < event.min_available_heirs:
+		return false
+	
+	# Check World state
+	if event.min_conquered_regions > -1 and jarl.conquered_regions.size() < event.min_conquered_regions:
+		return false
+		
+	# Check base chance
+	if randf() > event.base_chance:
+		return false
+	
+	# All conditions passed
+	print("EventManager: Conditions MET for event '%s'" % event.event_id)
+	return true
+
+func _trigger_event(event: EventData) -> void:
+	"""Pauses the game and displays the event UI."""
+	print("EventManager: Triggering event '%s'" % event.event_id)
+	
+	get_tree().paused = true
+	event_ui.display_event(event)
+	
+	if event.is_unique:
+		fired_unique_events.append(event.event_id)
+
+func _on_choice_made(event: EventData, choice: EventChoice) -> void:
+	"""
+	Called by the EventUI.
+	Applies consequences, unpauses, and signals the "all-clear".
+	"""
+	
+	if choice:
+		print("EventManager: Player chose '%s' (%s) for event '%s'" % [choice.choice_text, choice.effect_key, event.event_id])
+		_apply_event_consequences(event, choice)
+	else:
+		print("EventManager: Event '%s' closed with no choice." % event.event_id)
+		
+	get_tree().paused = false
+	
+	# This is the "all-clear" signal.
+	EventBus.event_system_finished.emit()
+
+func _apply_event_consequences(event: EventData, choice: EventChoice) -> void:
+	"""
+	This is the "logic" part of the event system.
+	It matches the event_id and choice.effect_key to apply results.
+	"""
+	
+	if event.event_id == "ambitious_heir_1":
+		
+		if choice.effect_key == "accept":
+			var success = DynastyManager.spend_renown(100)
+			if not success:
+				push_warning("EventManager: Tried to spend 100 Renown for event, but failed.")
+			
+		elif choice.effect_key == "decline":
+			var heir = DynastyManager.get_current_jarl().get_first_available_heir()
+			if heir and TRAIT_RIVAL:
+				DynastyManager.add_trait_to_heir(heir, TRAIT_RIVAL)
+			else:
+				push_warning("EventManager: Could not apply 'Rival' trait. No heir or trait not loaded.")
 
 --- SCRIPT: res://autoload/PauseManager.gd ---
 # res://autoload/PauseManager.gd
@@ -2059,12 +2630,28 @@ func calculate_payout() -> Dictionary:
 			
 			total_payout[resource_type] += final_payout
 
+	# --- NEW: Add income from Conquered Regions ---
+	if jarl:
+		for region_path in jarl.conquered_regions:
+			var region_data: WorldRegionData = load(region_path)
+			if not region_data:
+				push_warning("Could not load conquered region data from path: %s" % region_path)
+				continue
+			
+			for resource_type in region_data.yearly_income:
+				var income_amount = region_data.yearly_income[resource_type]
+				if not total_payout.has(resource_type):
+					total_payout[resource_type] = 0
+				
+				# Apply stewardship bonus to region income as well
+				var final_income = int(round(income_amount * stewardship_bonus))
+				total_payout[resource_type] += final_income
+				print("Added %d %s from conquered region: %s" % [final_income, resource_type, region_data.display_name])
+	# --- END NEW ---
+
 	if not total_payout.is_empty():
 		print("Calculated fixed payout (with bonus): %s" % total_payout)
 	return total_payout
-# --- END MODIFICATION ---
-
-# --- Unit Management ---
 
 func recruit_unit(unit_data: UnitData) -> void:
 	if not current_settlement:
@@ -2232,11 +2819,6 @@ func _ready() -> void:
 		push_warning("BaseBuilding: Node is missing its 'BuildingData' resource. Cannot initialize.")
 		return
 	
-	# --- DEBUGGING ---
-	print("--- BaseBuilding DEBUG ---")
-	print("'%s' SPAWNED. Collision Layer: %s, Collision Mask: %s" % [name, collision_layer, collision_mask])
-	print("--------------------------")
-	
 	current_health = data.max_health
 	
 	# --- Create core nodes ---
@@ -2258,10 +2840,6 @@ func _ready() -> void:
 	_create_dev_visuals()
 	_setup_defensive_ai()
 
-	# --- REMOVED ---
-	# connect("area_entered", _on_area_entered) # This was incorrect
-	# --- END REMOVED ---
-
 # --- NEW FUNCTION ---
 func _create_hitbox() -> void:
 	"""Creates an Area2D child to act as a detectable hitbox for projectiles."""
@@ -2281,12 +2859,7 @@ func _create_hitbox() -> void:
 	hitbox_area.add_child(hitbox_shape)
 	
 	add_child(hitbox_area)
-	print("'%s' created Area2D Hitbox on Layer %s" % [name, hitbox_area.collision_layer])
 # --- END NEW FUNCTION ---
-
-# --- REMOVED ---
-# func _on_area_entered(area: Area2D) -> void: ...
-# --- END REMOVED ---
 
 func _apply_data_and_scale() -> void:
 	if not SettlementManager:
@@ -2320,9 +2893,6 @@ func _apply_data_and_scale() -> void:
 	# --- END NEW ---
 
 func take_damage(amount: int) -> void:
-	# --- DEBUGGING ---
-	print("'%s' TOOK %d DAMAGE. Health: %d/%d" % [name, amount, current_health - amount, data.max_health])
-	# --- END DEBUGGING ---
 	
 	current_health = max(0, current_health - amount)
 	
@@ -2437,11 +3007,8 @@ func _setup_defensive_ai() -> void:
 	if attack_ai.has_method("configure_from_data"):
 		attack_ai.configure_from_data(data)
 	
-	# --- DEBUGGING ---
 	# For defensive buildings, the target mask is set in Base_Building.gd
 	var player_collision_mask: int = 1 << 1  # Layer 2 (bit position 1)
-	print("'%s' (Defensive) AI: Setting target mask to %s (Player Units)" % [name, player_collision_mask])
-	# --- END DEBUGGING ---
 	
 	if attack_ai.has_method("set_target_mask"):
 		attack_ai.set_target_mask(player_collision_mask)
@@ -2575,6 +3142,22 @@ extends Resource
 ## Years since last offensive action (for Renown Decay calculations)
 @export var years_since_action: int = 0
 
+# --- Builder Pillar Upgrade Properties ---
+## Bonus starting renown for all future heirs (from "Erect Jelling Stone")
+@export var heir_starting_renown_bonus: int = 0
+
+## An array of unique effect_keys for one-time legacy upgrades
+## (e.g., ["UPG_TRELLEBORG", "UPG_JELLING_STONE"])
+@export var purchased_legacy_upgrades: Array[String] = []
+
+# --- Unifier Pillar Property ---
+## An array of resource paths to WorldRegionData files that have been subjugated.
+@export var conquered_regions: Array[String] = []
+
+# --- NEW: Progenitor Pillar Property ---
+## An array of resource paths to WorldRegionData files that are allied.
+@export var allied_regions: Array[String] = []
+# --- END NEW ---
 
 @export_group("Base Skills")
 ## Combat leadership and personal prowess
@@ -2609,19 +3192,55 @@ extends Resource
 ## Number of turns remaining for wound recovery
 @export var wound_recovery_turns: int = 0
 
+# --- HELPER FUNCTIONS ---
+# These must be defined *before* the properties that use them.
+
+## Get the number of *available* heirs (not on expedition, etc.)
+func get_available_heir_count() -> int:
+	var count = 0
+	for heir in heirs:
+		if heir and heir.status == JarlHeirData.HeirStatus.Available:
+			count += 1
+	return count
+
+## Get the first available heir resource
+func get_first_available_heir() -> JarlHeirData:
+	for heir in heirs:
+		if heir and heir.status == JarlHeirData.HeirStatus.Available:
+			return heir
+	return null
+
+## Remove an heir from the dynasty (e.g., married off or lost)
+## Returns false if the heir could not be found.
+func remove_heir(heir_to_remove: JarlHeirData) -> bool:
+	if heir_to_remove in heirs:
+		heirs.erase(heir_to_remove)
+		return true
+	return false
+
+## Check if the Jarl has at least one valid, available heir
+func check_has_valid_heir() -> bool:
+	return get_first_available_heir() != null
+
+# --- END HELPER FUNCTIONS ---
+
 
 @export_group("Family & Succession")
 ## The Jarl's spouse (if any)
 @export var spouse_name: String = ""
 
-## Array of heir names in order of succession priority
-@export var heirs: Array[String] = []
+## Array of JarlHeirData resources in order of succession priority
+@export var heirs: Array[JarlHeirData] = []
 
-## Whether this Jarl has a designated heir
-@export var has_valid_heir: bool = false
+## DEPRECATED: Replaced with a read-only property that calls check_has_valid_heir()
+var has_valid_heir: bool:
+	get:
+		return check_has_valid_heir()
 
-## Number of living children
-@export var children_count: int = 0
+## DEPRECATED: Replaced with a read-only property that calls get_available_heir_count()
+var children_count: int:
+	get:
+		return get_available_heir_count()
 
 
 @export_group("Political Status")
@@ -2801,6 +3420,136 @@ func get_trait_names() -> Array[String]:
 			trait_names.append(jarl_trait.display_name)
 	return trait_names
 
+--- SCRIPT: res://data/characters/JarlHeirData.gd ---
+# res://data/characters/JarlHeirData.gd
+#
+# Defines the data for a single heir in the dynasty.
+# This allows heirs to be "spent" or go on missions.
+class_name JarlHeirData
+extends Resource
+
+enum HeirStatus {
+	Available,
+	OnExpedition,
+	MarriedOff,
+	LostAtSea,
+	Deceased
+}
+
+## The heir's name.
+@export var display_name: String = "New Heir"
+
+## The heir's age.
+@export var age: int = 16
+
+## The heir's current status.
+@export var status: HeirStatus = HeirStatus.Available
+
+## If on expedition, how many "years" remain.
+@export var expedition_years_remaining: int = 0
+
+--- SCRIPT: res://data/events/EventChoice.gd ---
+# res://data/events/EventChoice.gd
+#
+# Defines a single choice for a story event.
+# This resource is designed to be embedded within an EventData resource.
+class_name EventChoice
+extends Resource
+
+## The text displayed on the button for this choice.
+@export var choice_text: String = "Choice Text"
+
+## A tooltip to show what the likely (or guaranteed) outcome is.
+@export var tooltip_text: String = "Tooltip"
+
+## A unique key (e.g., "CHOICE_ACCEPT", "CHOICE_DECLINE")
+## The EventManager will use this key to apply the correct consequence.
+@export var effect_key: String = ""
+
+--- SCRIPT: res://data/events/EventData.gd ---
+# res://data/events/EventData.gd
+#
+# Defines a single, self-contained story event.
+# This resource is the core of the "Full Event System" (Phase 3b).
+# It is designed to be created and edited by designers in the Inspector.
+class_name EventData
+extends Resource
+
+# --- The nested "class EventChoice" definition has been REMOVED ---
+
+@export_group("Event Display")
+## The title of the event window.
+@export var title: String = "An Event Occurs"
+## The main story text for the event.
+@export_multiline var description: String = "Event description..."
+## An optional icon or portrait for the event.
+@export var portrait: Texture2D
+
+@export_group("Event Triggering")
+## The unique ID for this event.
+@export var event_id: String = "unique_event_id"
+## If true, this event can only fire once per campaign.
+@export var is_unique: bool = true
+## The base chance (0.0 to 1.0) for this event to fire when its
+## conditions are met.
+@export var base_chance: float = 0.5
+## An array of prerequisite event_ids that must have fired
+## *before* this event can be considered.
+@export var prerequisites: Array[String] = []
+
+@export_group("Event Conditions")
+## Conditions related to the Jarl's stats.
+@export var min_stewardship: int = -1
+@export var min_command: int = -1
+@export var min_prowess: int = -1
+@export var min_renown: int = -1
+## Conditions related to the Jarl's traits.
+@export var must_have_trait: String = ""
+@export var must_not_have_trait: String = ""
+## Conditions related to the dynasty.
+@export var min_available_heirs: int = -1
+## Conditions related to the game world.
+@export var min_conquered_regions: int = -1
+
+@export_group("Event Choices")
+## The array of choices to present to the player.
+## This now correctly references the external EventChoice resource.
+@export var choices: Array[EventChoice] = []
+
+--- SCRIPT: res://data/legacy/LegacyUpgradeData.gd ---
+# res://data/legacy/LegacyUpgradeData.gd
+#
+# Defines a permanent, one-time dynasty upgrade.
+# These are purchased in the "Legacy" tab of the Storefront
+# and cost Renown and Authority.
+class_name LegacyUpgradeData
+extends Resource
+
+## The name displayed in the Storefront UI.
+@export var display_name: String = "New Legacy Upgrade"
+
+## The icon shown next to the upgrade name in the UI.
+@export var icon: Texture2D
+
+## The description shown in a tooltip or in the UI.
+@export_multiline var description: String = "A permanent dynasty upgrade."
+
+## The cost in Jarl's Renown.
+@export var renown_cost: int = 100
+
+## The cost in Jarl's Authority.
+@export var authority_cost: int = 1
+
+## A unique key to identify this upgrade's effect in code.
+## e.g., "UPG_TRELLEBORG", "UPG_JELLING_STONE"
+@export var effect_key: String = ""
+
+## A key to check if a prerequisite upgrade has been purchased.
+@export var prerequisite_key: String = ""
+
+## Used by the UI to disable the button after purchase.
+var is_purchased: bool = false
+
 --- SCRIPT: res://data/missions/RaidLootData.gd ---
 # res://data/missions/RaidLootData.gd
 # Resource for tracking loot collected during raids
@@ -2877,6 +3626,11 @@ class_name SettlementData
 # Stores unit type (path) and count (int)
 # Example: {"res://data/units/Unit_Raider.tres": 3}
 @export var garrisoned_units: Dictionary = {}
+
+# --- NEW: Builder Pillar Upgrade Property ---
+## Bonus max garrison size from Legacy Upgrades (e.g., "Upgrade Trelleborg")
+@export var max_garrison_bonus: int = 0
+# --- END NEW ---
 
 --- SCRIPT: res://data/traits/JarlTraitData.gd ---
 # res://data/traits/JarlTraitData.gd
@@ -2977,25 +3731,34 @@ extends Resource
 --- SCRIPT: res://data/world_map/WorldRegionData.gd ---
 # res://data/world_map/WorldRegionData.gd
 #
-# Defines the data for a single clickable region on the Macro Map. 
+# Defines the data for a single clickable region on the Macro Map.
 # This allows the map to be data-driven.
 class_name WorldRegionData
 extends Resource
 
-## The name displayed in tooltips and UI [cite: 424]
+## The name displayed in tooltips and UI
 @export var display_name: String = "New Region"
 
 ## The flavor text description shown when selected
-@export_multiline var description: String = "A description of this region." # [cite: 425]
+@export_multiline var description: String = "A description of this region."
 
 ## The SettlementData.tres file to load for the RaidMission
-@export var target_settlement_data: SettlementData # [cite: 426]
+@export var target_settlement_data: SettlementData
 
-## The base Authority cost to launch a raid here [cite: 427]
+## The base Authority cost to launch a raid here
 @export var base_authority_cost: int = 1
 
-## Flag for future conquest loop (GDD 4.D) [cite: 428, 534]
-@export var is_conquered: bool = false
+# --- NEW: Phase 2 Properties ---
+
+## A tag for the "soft-guide" system (e.g., "Monastery", "Settlement", "Ruins")
+@export var region_type_tag: String = "Settlement"
+
+## The passive, yearly income this region provides *after* being subjugated.
+@export var yearly_income: Dictionary = {"gold": 10}
+
+# --- REMOVED ---
+# @export var is_conquered: bool = false
+# This is now tracked on JarlData.gd for better persistence.
 
 --- SCRIPT: res://player/RTSCamera.gd ---
 # res://player/RTSCamera.gd
@@ -3358,7 +4121,6 @@ signal about_to_attack(target: Node2D, damage: int)
 @export var attack_range: float = 200.0
 @export var attack_speed: float = 1.0  # attacks per second
 @export var projectile_scene: PackedScene
-@export var target_collision_mask: int = 0  # What layers to target
 
 # --- NEW: Added projectile speed ---
 var projectile_speed: float = 400.0
@@ -3602,19 +4364,16 @@ func _on_attack_timer_timeout() -> void:
 func _spawn_projectile(target_position_world: Vector2) -> void:
 	"""Spawn a projectile towards the target position"""
 	if not projectile_scene:
-		print("Error: No projectile scene assigned to AttackAI")
+		# Changed to push_warning as this is a configuration error, not a runtime crash
+		push_warning("AttackAI: No projectile scene assigned. Cannot fire.")
 		return
 	
 	# Create the projectile
 	var projectile: Projectile = projectile_scene.instantiate()
 	if not projectile:
-		print("Error: Failed to instantiate projectile for AttackAI")
+		# Changed to push_error, as failed instantiation is a critical error
+		push_error("AttackAI: Failed to instantiate projectile for %s" % parent_node.name)
 		return
-	
-	# --- DEBUGGING ---
-	print("--- AttackAI DEBUG ---")
-	print("'%s' spawning projectile. Target Mask being sent: %s" % [parent_node.name, target_collision_mask])
-	print("----------------------")
 	
 	# 1. Initialize the projectile
 	projectile.setup(
@@ -3645,11 +4404,18 @@ var direction: Vector2 = Vector2.RIGHT
 @onready var lifetime_timer: Timer = $LifetimeTimer
 
 func _ready() -> void:
-	# --- THIS IS THE FIX (Part 1) ---
 	# We now connect to 'area_entered' to detect the building's Hitbox
 	area_entered.connect(_on_area_entered)
 	# We also keep body_entered for the Watchtower's projectiles
 	body_entered.connect(_on_body_entered)
+	# --- THIS IS THE FIX (Part 2) ---
+	# Set 'monitoring' to true. This tells the Area2D to
+	# detect 'monitorable' areas AND bodies.
+	self.monitoring = true
+	
+	# Set 'monitorable' to false. This projectile doesn't
+	# need to be detected by other areas.
+	self.monitorable = false
 	# --- END FIX ---
 	lifetime_timer.timeout.connect(_on_lifetime_timeout)
 
@@ -3660,12 +4426,6 @@ func _physics_process(delta: float) -> void:
 func setup(start_position: Vector2, target_position: Vector2, projectile_damage: int, projectile_speed: float = 400.0, collision_mask: int = 0) -> void:
 	"""
 	Initialize the projectile with all necessary parameters.
-	Args:
-		start_position: Where the projectile starts
-		target_position: Where to aim (calculates direction)
-		projectile_damage: Damage to deal on hit
-		projectile_speed: How fast the projectile moves
-		collision_mask: What collision layers this projectile can hit
 	"""
 	global_position = start_position
 	direction = (target_position - start_position).normalized()
@@ -3675,75 +4435,39 @@ func setup(start_position: Vector2, target_position: Vector2, projectile_damage:
 	# Set the collision mask on the Area2D
 	self.collision_mask = collision_mask
 	
-	# --- THIS IS THE FIX (Part 2) ---
-	# Set 'monitoring' to true. This tells the Area2D to
-	# detect 'monitorable' areas AND bodies.
-	self.monitoring = true
-	
-	# Set 'monitorable' to false. This projectile doesn't
-	# need to be detected by other areas.
-	self.monitorable = false
-	# --- END FIX ---
-	
-	# --- DEBUGGING ---
-	print("--- Projectile DEBUG ---")
-	print("Projectile spawned. Mask: %s, monitoring: %s" % [self.collision_mask, self.monitoring])
-	print("------------------------")
-	
 	# Point the projectile in the direction of travel (for visual rotation)
 	if direction != Vector2.ZERO:
-		# Sprite is horizontal, so just angle() is correct.
 		rotation = direction.angle()
 
-# --- NEW FUNCTION (for hitting buildings) ---
 func _on_area_entered(area: Area2D) -> void:
 	"""Called when this Area2D detects a 'monitorable' Area2D (like our Hitbox)."""
 	
-	# --- DEBUGGING ---
-	print("--- Projectile HIT Area ---")
-	print("Projectile hit area '%s' on layer %s!" % [area.name, area.collision_layer])
-	print("  > My mask is: %s" % self.collision_mask)
-	
 	# Check if the area's layer matches our mask
 	if area.collision_layer & self.collision_mask:
-		print("  > SUCCESS: Layer matches mask.")
 		# Find the building, which is the parent of the Hitbox
 		var parent_body = area.get_parent()
 		if parent_body and parent_body.has_method("take_damage"):
 			parent_body.take_damage(damage)
 			queue_free() # Destroy projectile
 		else:
-			print("  > ERROR: Hitbox parent is not a building or cannot take damage.")
-	else:
-		print("  > FAILURE: Layer does not match mask.")
-	print("---------------------------")
-# --- END NEW FUNCTION ---
+			push_warning("Projectile hit non-damagable Area: '%s'." % area.name)
+	# else: We hit an Area we don't care about (e.g. SeparationArea), just ignore.
 
-# --- EXISTING FUNCTION (for hitting units) ---
 func _on_body_entered(body: Node2D) -> void:
 	"""Called when this Area2D detects a 'monitorable' PhysicsBody (like a unit)."""
 	
 	if not body is CollisionObject2D:
 		return
 	
-	# --- DEBUGGING ---
-	print("--- Projectile HIT Body ---")
-	print("Projectile hit body '%s' on layer %s!" % [body.name, body.collision_layer])
-	print("  > My mask is: %s" % self.collision_mask)
-
 	# Check if the body's layer matches our mask
 	if body.collision_layer & self.collision_mask:
-		print("  > SUCCESS: Layer matches mask.")
 		# Deal damage if the body can take it
 		if body.has_method("take_damage"):
 			body.take_damage(damage)
 		
 		# Destroy the projectile
 		queue_free()
-	else:
-		print("  > FAILURE: Layer does not match mask.")
-	print("---------------------------")
-# --- END EXISTING FUNCTION ---
+	# else: We hit a body we don't care about, just ignore.
 
 func _on_lifetime_timeout() -> void:
 	# Projectile flew for too long, destroy self
@@ -4481,18 +5205,13 @@ func _clamp_camera_to_bounds() -> void:
 # Connects UI to the DynastyManager and handles region selection.
 extends Node2D
 
-# Scene paths for navigation (DEPRECATED, but kept to avoid breaking .tscn)
+# Scene paths for navigation
 @export var raid_mission_scene_path: String = "res://scenes/missions/RaidMission.tscn"
 @export var settlement_bridge_scene_path: String = "res://scenes/levels/SettlementBridge.tscn"
-
-# --- NEW: Popup Scene ---
 @export var end_year_popup_scene: PackedScene
-var end_year_popup: PanelContainer
-# ----------------------
 
-# --- NEW: Raid Chance ---
+# Raid Chance
 @export var enemy_raid_chance: float = 0.25 # 25% chance
-# ------------------------
 
 # UI Node References
 @onready var authority_label: Label = $UI/JarlInfo/VBoxContainer/AuthorityLabel
@@ -4505,15 +5224,24 @@ var end_year_popup: PanelContainer
 @onready var tooltip: PanelContainer = $UI/Tooltip
 @onready var tooltip_label: Label = $UI/Tooltip/Label
 
+# --- Phase 2 UI ---
+@onready var subjugate_button: Button = $UI/RegionInfo/VBoxContainer/SubjugateButton
+
+# --- Phase 3a UI ---
+@onready var dynasty_button: Button = $UI/Actions/VBoxContainer/DynastyButton
+@onready var dynasty_ui: DynastyUI = $UI/Dynasty_UI
+@onready var marry_button: Button = $UI/RegionInfo/VBoxContainer/MarryButton
+# --- END ---
+
 @onready var regions_container: Node2D = $Regions
 
+var end_year_popup: PanelContainer
 var selected_region_data: WorldRegionData
 var selected_region_node: Region = null
 
-# --- MODIFICATION ---
 # Stores the calculated cost after applying Jarl stats
-var calculated_final_cost: int = 1
-# --- END MODIFICATION ---
+var calculated_raid_cost: int = 1
+var calculated_subjugate_cost: int = 5 # Base cost from proposal
 
 func _ready() -> void:
 	# Connect to the DynastyManager
@@ -4528,18 +5256,29 @@ func _ready() -> void:
 			
 	# Connect local UI buttons
 	launch_raid_button.pressed.connect(_on_launch_raid_pressed)
-	end_year_button.pressed.connect(_on_end_year_pressed)
 	settlement_button.pressed.connect(_on_settlement_pressed)
+	subjugate_button.pressed.connect(_on_subjugate_pressed)
+	end_year_button.pressed.connect(_on_end_year_pressed)
 	
-	# --- NEW: Setup Payout Popup ---
+	# --- Phase 3a Connection ---
+	dynasty_button.pressed.connect(_on_dynasty_pressed)
+	marry_button.pressed.connect(_on_marry_pressed)
+	# --- END ---
+	
+	# --- Setup Payout Popup ---
 	if end_year_popup_scene:
 		end_year_popup = end_year_popup_scene.instantiate()
-		add_child(end_year_popup) # Add to MacroMap, not $UI (CanvasLayer)
-		end_year_popup.collect_button_pressed.connect(_on_end_year_payout_collected)
+		add_child(end_year_popup) 
+		if end_year_popup.has_signal("collect_button_pressed"):
+			end_year_popup.collect_button_pressed.connect(_on_end_year_payout_collected)
+		else:
+			push_error("EndOfYear_Popup scene is missing 'collect_button_pressed' signal.")
 		end_year_popup.hide()
 	else:
 		push_warning("MacroMap: 'end_year_popup_scene' is not set in the Inspector!")
-	# -----------------------------
+	
+	# Connect to the EventManager's "all-clear" signal
+	EventBus.event_system_finished.connect(_on_event_system_finished)
 	
 	# Initialize UI
 	_update_jarl_ui(DynastyManager.get_current_jarl())
@@ -4553,12 +5292,8 @@ func _update_jarl_ui(jarl: JarlData) -> void:
 	authority_label.text = "Authority: %d / %d" % [jarl.current_authority, jarl.max_authority]
 	renown_label.text = "Renown: %d" % jarl.renown
 	
-	# Re-check if we can still afford the selected raid
 	if selected_region_data:
-		# --- MODIFICATION ---
-		# Re-run the selection logic to update cost based on new stats
 		_on_region_selected(selected_region_data)
-		# --- END MODIFICATION ---
 
 # --- Region Signal Handlers ---
 
@@ -4582,39 +5317,75 @@ func _on_region_selected(data: WorldRegionData) -> void:
 		if region is Region and region.data == data:
 			selected_region_node = region
 			selected_region_node.is_selected = true
-			selected_region_node.set_visual_state(false) # Update visual state (hover will be false)
+			selected_region_node.set_visual_state(false)
 			break
 			
 	selected_region_data = data
+	region_name_label.text = data.display_name
 	
-	# --- MODIFICATION: Calculate cost based on Jarl's Command skill ---
 	var jarl = DynastyManager.get_current_jarl()
 	if not jarl:
 		push_error("MacroMap: Cannot get Jarl from DynastyManager!")
 		return
 
-	# Calculate cost reduction: -1 Authority for every 10 Command
-	var command_skill = jarl.get_effective_skill("command")
-	var cost_reduction = int(floor(command_skill / 10.0))
+	# --- CHECK IF CONQUERED OR ALLIED ---
+	var is_conquered = DynastyManager.has_conquered_region(data.resource_path)
+	var is_allied = DynastyManager.is_allied_region(data.resource_path)
 	
-	# Final cost is base cost minus reduction, with a minimum of 1
-	calculated_final_cost = max(1, data.base_authority_cost - cost_reduction)
-	# --- END MODIFICATION ---
+	if is_conquered:
+		launch_raid_button.disabled = true
+		launch_raid_button.text = "Raid (Conquered)"
+		subjugate_button.disabled = true
+		subjugate_button.text = "Subjugate (Conquered)"
+		marry_button.disabled = true
+		marry_button.text = "Marry (Conquered)"
+		region_info_panel.show()
+		return
 	
-	# Update the UI panel
-	region_name_label.text = data.display_name
-	
-	# --- MODIFICATION: Update button text with final cost ---
-	launch_raid_button.text = "Raid: %s (Cost: %d)" % [data.display_name, calculated_final_cost]
-	
-	# Check if Jarl can afford this action
-	var can_afford = DynastyManager.can_spend_authority(calculated_final_cost)
-	# --- END MODIFICATION ---
-	
-	launch_raid_button.disabled = not can_afford
-	
-	if not can_afford:
+	# --- 1. CALCULATE RAID COST ---
+	calculated_raid_cost = max(1, data.base_authority_cost) # Placeholder for now
+	launch_raid_button.text = "Launch Raid (Cost: %d Auth)" % calculated_raid_cost
+	var can_afford_raid = DynastyManager.can_spend_authority(calculated_raid_cost)
+	launch_raid_button.disabled = (not can_afford_raid) or is_allied
+	if is_allied:
+		launch_raid_button.text = "Raid (Allied)"
+	elif not can_afford_raid:
 		launch_raid_button.text += "\nNot Enough Authority"
+		
+	# --- 2. CALCULATE SUBJUGATE COST ---
+	var base_subjugate_cost = 5
+	var trait_penalty = 0
+	var alliance_discount = 0
+	var penalty_text = ""
+	var discount_text = ""
+	
+	# "Soft-Guide" Trait Penalty
+	if jarl.has_trait("Pious") and data.region_type_tag == "Monastery":
+		trait_penalty = 3
+		penalty_text = " (+3 Pious)"
+	
+	# "Marry for Alliance" Bonus
+	if is_allied:
+		alliance_discount = 2 # Example discount
+		discount_text = " (-2 Alliance)"
+	
+	calculated_subjugate_cost = max(1, base_subjugate_cost + trait_penalty - alliance_discount)
+	
+	subjugate_button.text = "Subjugate (Cost: %d Auth%s%s)" % [calculated_subjugate_cost, penalty_text, discount_text]
+	var can_afford_subjugate = DynastyManager.can_spend_authority(calculated_subjugate_cost)
+	subjugate_button.disabled = not can_afford_subjugate
+	if not can_afford_subjugate:
+		subjugate_button.text += "\nNot Enough Authority"
+
+	# --- 3. CALCULATE MARRIAGE COST ---
+	marry_button.text = "Marry for Alliance (Cost: 1 Heir)"
+	var has_heir = DynastyManager.get_available_heir_count() > 0
+	marry_button.disabled = is_allied or (not has_heir)
+	
+	if is_allied:
+		marry_button.text = "Marry (Allied)"
+	elif not has_heir:
+		marry_button.text += "\n(No Available Heir)"
 		
 	region_info_panel.show()
 
@@ -4624,60 +5395,78 @@ func _on_launch_raid_pressed() -> void:
 	if not selected_region_data:
 		return
 		
-	# 1. Set the target for the RaidMission
 	DynastyManager.set_current_raid_target(selected_region_data.target_settlement_data)
+	var success = DynastyManager.spend_authority(calculated_raid_cost)
 	
-	# --- MODIFICATION: Use the calculated_final_cost ---
-	# 2. Spend the Authority
-	var success = DynastyManager.spend_authority(calculated_final_cost)
-	# --- END MODIFICATION ---
-	
-	# 3. Change scene 
 	if success:
 		EventBus.scene_change_requested.emit("raid_mission")
 	else:
-		# This shouldn't happen if the button is disabled, but as a fallback:
 		push_error("MacroMap: LaunchRaid button was pressed but authority check failed.")
-		DynastyManager.set_current_raid_target(null) # Clear the target
+		DynastyManager.set_current_raid_target(null)
 
-# --- MODIFIED: End Year Payout Logic ---
+func _on_subjugate_pressed() -> void:
+	if not selected_region_data:
+		return
+		
+	var success = DynastyManager.spend_authority(calculated_subjugate_cost)
+	
+	if success:
+		DynastyManager.add_conquered_region(selected_region_data.resource_path)
+		print("Region %s successfully subjugated." % selected_region_data.display_name)
+	else:
+		push_error("MacroMap: Subjugate button was pressed but authority check failed.")
+
+func _on_marry_pressed() -> void:
+	"""Handles the 'Marry for Alliance' button press."""
+	if not selected_region_data:
+		return
+		
+	var success = DynastyManager.marry_heir_for_alliance(selected_region_data.resource_path)
+	
+	if success:
+		print("MacroMap: Alliance with %s successful." % selected_region_data.display_name)
+		# The UI will refresh automatically via the jarl_stats_updated signal.
+	else:
+		print("MacroMap: Alliance failed (no available heir).")
+
+func _on_dynasty_pressed() -> void:
+	"""Shows the Dynasty UI panel."""
+	if is_instance_valid(dynasty_ui):
+		dynasty_ui.show()
+
+# --- End Year Payout Logic ---
 func _on_end_year_pressed() -> void:
 	if not is_instance_valid(end_year_popup):
 		push_error("MacroMap: End year popup not instanced. Ending year without payout.")
-		_process_end_year_logic({}) # Process with no payout
+		_process_end_year_logic({})
 		return
 	
-	# 1. Calculate payout
 	var payout = SettlementManager.calculate_payout()
-	
-	# 2. Display payout popup (it will emit signal when "Collect" is pressed)
-	#    The popup will auto-emit if the payout is empty, skipping the UI
 	end_year_popup.display_payout(payout, "End of Year Payout")
 
 func _on_end_year_payout_collected(payout: Dictionary) -> void:
-	# This is now the main logic, called *after* the user clicks "Collect"
+	# This function's ONLY job is to process the end of year logic.
+	# The scene change is now handled by _on_event_system_finished.
 	_process_end_year_logic(payout)
-	
-	# --- MODIFICATION: Check for enemy raid ---
+
+func _on_event_system_finished() -> void:
+	# This is the "all-clear" signal.
+	# NOW we check for raids and change the scene.
 	if randf() < enemy_raid_chance:
 		print("--- ENEMY RAID TRIGGERED ---")
 		DynastyManager.is_defensive_raid = true
 		EventBus.scene_change_requested.emit("raid_mission")
 	else:
 		print("No enemy raid this year.")
-		# Return to settlement as normal
 		EventBus.scene_change_requested.emit("settlement")
-	# --- END MODIFICATION ---
 
 func _process_end_year_logic(payout: Dictionary) -> void:
-	# 1. Deposit resources
 	if not payout.is_empty():
 		SettlementManager.deposit_resources(payout)
 	
-	# 2. Process the end of year for the Jarl
+	# This call is what triggers the EventManager's logic
 	DynastyManager.end_year()
 	
-	# 3. Deselect region as actions may no longer be valid
 	if is_instance_valid(selected_region_node):
 		selected_region_node.is_selected = false
 		selected_region_node.set_visual_state(false)
@@ -4685,14 +5474,12 @@ func _process_end_year_logic(payout: Dictionary) -> void:
 	selected_region_data = null
 	selected_region_node = null
 	region_info_panel.hide()
-# --- END MODIFICATION ---
 
 func _on_settlement_pressed() -> void:
 	EventBus.scene_change_requested.emit("settlement")
 
 func _input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		print("MacroMap received click - this means nothing blocked it yet")
+	pass
 
 --- SCRIPT: res://scenes/world_map/Region.gd ---
 # res://scenes/world_map/Region.gd
@@ -4723,27 +5510,12 @@ func _ready() -> void:
 		queue_free()
 		return
 	
-	# Debug collision shape
+	# Essential error checking for collision shapes
 	var collision_shape = get_node_or_null("CollisionShape2D")
-	if collision_shape:
-		print("Region '%s' - CollisionShape2D found!" % name)
-		print("  Shape: %s" % collision_shape.shape)
-		if collision_shape.shape:
-			print("  Shape type: %s" % collision_shape.shape.get_class())
-			# Check the actual size
-			if collision_shape.shape is RectangleShape2D:
-				print("  Rectangle size: %s" % collision_shape.shape.size)
-			elif collision_shape.shape is CircleShape2D:
-				print("  Circle radius: %s" % collision_shape.shape.radius)
-		else:
-			push_error("  ERROR: Shape is NULL!")
-	else:
+	if not collision_shape:
 		push_error("Region '%s' - CollisionShape2D NOT FOUND!" % name)
-	
-	print("Region '%s' initialized at position: %s" % [name, global_position])
-	print("  - Input Pickable: %s" % input_pickable)
-	print("  - Monitoring: %s" % monitoring)
-	print("  - Monitorable: %s" % monitorable)
+	elif not collision_shape.shape:
+		push_error("Region '%s' - CollisionShape2D shape is NULL!" % name)
 	
 	# Connect to our own signals
 	mouse_entered.connect(_on_mouse_entered)
@@ -4756,20 +5528,6 @@ func _ready() -> void:
 		set_visual_state(false)
 	else:
 		push_warning("Region node '%s' is missing its $Sprite2D child." % name)
-
-# Debug: Track ALL mouse clicks globally
-func _input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		var screen_pos = get_viewport().get_mouse_position()
-		var world_pos = get_global_mouse_position()
-		var canvas_pos = get_canvas_transform().affine_inverse() * screen_pos
-		print("=== LEFT CLICK DETECTED ===")
-		print("  Screen position: %s" % screen_pos)
-		print("  World position (get_global_mouse): %s" % world_pos)
-		print("  Canvas position (corrected): %s" % canvas_pos)
-		print("  Region '%s' position: %s" % [name, global_position])
-		print("  Distance to region (world): %s" % global_position.distance_to(world_pos))
-		print("  Distance to region (canvas): %s" % global_position.distance_to(canvas_pos))
 
 func set_visual_state(is_hovered: bool) -> void:
 	if not sprite:
@@ -4787,26 +5545,16 @@ func set_visual_state(is_hovered: bool) -> void:
 	tween.tween_property(sprite, "modulate", target_color, 0.1).set_trans(Tween.TRANS_SINE)
 
 func _on_mouse_entered() -> void:
-	# --- DEBUGGING CODE ---
-	print("DEBUG: Mouse ENTERED region: %s" % data.display_name)
-	# --- END DEBUGGING ---
-	
 	set_visual_state(true)
 	emit_signal("region_hovered", data, get_global_mouse_position())
 
 func _on_mouse_exited() -> void:
-	# --- DEBUGGING CODE ---
-	print("DEBUG: Mouse EXITED region: %s" % data.display_name)
-	# --- END DEBUGGING ---
-	
 	set_visual_state(false)
 	emit_signal("region_exited")
 
 func _on_input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
-	print("Input event in region: %s, event: %s" % [data.display_name, event])
 	# Check for left mouse button click
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		print("Region clicked: %s" % data.display_name)
 		is_selected = true
 		set_visual_state(true)
 		emit_signal("region_selected", data)
@@ -6556,108 +7304,6 @@ func _ready() -> void:
 	
 	print("GridManager: Local grid initialized: %dx%d cells" % [grid_width, grid_height])
 
---- SCRIPT: res://temp_ai_functions.gd ---
-func _on_target_entered(body: Node2D) -> void:
-	"""Called when a potential target enters detection range"""
-	if not data.is_defensive_structure:
-		return
-	
-	# Add to targets list
-	if body not in targets_in_range:
-		targets_in_range.append(body)
-	
-	# If we don't have a current target, start attacking this one
-	if not current_target and targets_in_range.size() > 0:
-		_select_target()
-
-func _on_target_exited(body: Node2D) -> void:
-	"""Called when a target leaves detection range"""
-	# Remove from targets list
-	targets_in_range.erase(body)
-	
-	# If this was our current target, find a new one
-	if current_target == body:
-		current_target = null
-		_select_target()
-
-func _select_target() -> void:
-	"""Select the closest valid target from the targets_in_range array"""
-	if targets_in_range.is_empty():
-		current_target = null
-		attack_timer.stop()
-		return
-	
-	# Find closest target
-	var closest_target: Node2D = null
-	var closest_distance: float = INF
-	
-	for target in targets_in_range:
-		if is_instance_valid(target):
-			var distance = global_position.distance_to(target.global_position)
-			if distance < closest_distance:
-				closest_distance = distance
-				closest_target = target
-		else:
-			# Remove invalid targets
-			targets_in_range.erase(target)
-	
-	current_target = closest_target
-	if current_target:
-		# Start attacking
-		if attack_timer.is_stopped():
-			attack_timer.start()
-
-func _on_attack_timer_timeout() -> void:
-	"""Called when the attack timer fires"""
-	if not data.is_defensive_structure or not current_target:
-		return
-	
-	# Verify target is still valid and in range
-	if not is_instance_valid(current_target):
-		_select_target()
-		return
-	
-	var distance_to_target = global_position.distance_to(current_target.global_position)
-	if distance_to_target > data.attack_range:
-		_select_target()
-		return
-	
-	# Attack the target
-	if data.projectile_scene:
-		# RANGED: Spawn projectile
-		_spawn_projectile(current_target.global_position)
-	else:
-		# MELEE: Direct damage (buildings shouldn't typically do this, but included for completeness)
-		if current_target.has_method("take_damage"):
-			current_target.take_damage(data.attack_damage)
-
-func _spawn_projectile(target_position_world: Vector2) -> void:
-	"""Spawn a projectile towards the target position"""
-	if not data.projectile_scene:
-		print("Error: No projectile scene assigned to %s" % data.display_name)
-		return
-	
-	# Create the projectile
-	var projectile: Projectile = data.projectile_scene.instantiate()
-	if not projectile:
-		print("Error: Failed to instantiate projectile for %s" % data.display_name)
-		return
-	
-	# Add projectile to the current scene
-	get_tree().current_scene.add_child(projectile)
-	
-	# Set up collision mask to hit player units (Layer 2)
-	var player_collision_mask: int = 1 << 1  # Layer 2 (bit position 1)
-	
-	# Initialize the projectile
-	projectile.setup(
-		global_position,        # start position
-		target_position_world,  # target position
-		data.attack_damage,     # damage
-		400.0,                  # projectile speed
-		player_collision_mask   # what to hit
-	)
-
 --- SCRIPT: res://tools/EnemyBaseEditor.gd ---
 @tool
 extends EditorScript
@@ -6859,6 +7505,120 @@ func save_layout(layout: Array[Dictionary], path: String):
 	else:
 		print("❌ Failed to save layout to: %s" % path)
 
+--- SCRIPT: res://ui/DynastyUI.gd ---
+# res://ui/DynastyUI.gd
+#
+# Manages the "Dynasty" UI panel, which allows the player
+# to spend heirs as a resource for the "Progenitor" pillar.
+class_name DynastyUI
+extends PanelContainer
+
+@onready var title_label: Label = $Margin/VBox/TitleLabel
+@onready var heirs_container: VBoxContainer = $Margin/VBox/HeirsContainer
+@onready var close_button: Button = $Margin/VBox/CloseButton
+
+# Expedition cost from proposal 
+const EXPEDITION_GOLD_COST = 500
+
+func _ready() -> void:
+	close_button.pressed.connect(hide)
+	
+	# Connect to the DynastyManager to refresh when Jarl data changes
+	DynastyManager.jarl_stats_updated.connect(_on_jarl_stats_updated)
+	
+	# Initial population
+	if DynastyManager.current_jarl:
+		_on_jarl_stats_updated(DynastyManager.get_current_jarl())
+	
+	hide() # Start hidden by default
+
+func _on_jarl_stats_updated(jarl: JarlData) -> void:
+	"""Refreshes all UI elements with the latest Jarl data."""
+	if not jarl:
+		return
+		
+	title_label.text = "%s's Dynasty" % jarl.display_name
+	
+	# Clear existing heirs
+	for child in heirs_container.get_children():
+		child.queue_free()
+		
+	# Populate heirs list
+	if jarl.heirs.is_empty():
+		var label = Label.new()
+		label.text = "No valid heirs."
+		heirs_container.add_child(label)
+		return
+
+	# Check current gold for button disabling
+	var current_gold = 0
+	if SettlementManager.current_settlement:
+		current_gold = SettlementManager.current_settlement.treasury.get("gold", 0)
+
+	for heir in jarl.heirs:
+		if not heir: continue
+		
+		var heir_row = HBoxContainer.new()
+		heir_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		
+		var name_label = Label.new()
+		name_label.text = "• %s (%d)" % [heir.display_name, heir.age]
+		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		heir_row.add_child(name_label)
+
+		match heir.status:
+			JarlHeirData.HeirStatus.Available:
+				var expedition_button = Button.new()
+				expedition_button.text = "Send on Expedition"
+				expedition_button.tooltip_text = "Cost: 1 Heir, %d Gold" % EXPEDITION_GOLD_COST
+				
+				if current_gold < EXPEDITION_GOLD_COST:
+					expedition_button.disabled = true
+					expedition_button.tooltip_text += "\n(Not enough Gold)"
+				
+				expedition_button.pressed.connect(_on_expedition_pressed.bind(heir))
+				heir_row.add_child(expedition_button)
+				
+				# TODO: Add "Marry for Alliance" button here
+			
+			JarlHeirData.HeirStatus.OnExpedition:
+				var status_label = Label.new()
+				status_label.text = "On Expedition (%d years)" % heir.expedition_years_remaining
+				status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+				heir_row.add_child(status_label)
+				
+			JarlHeirData.HeirStatus.MarriedOff:
+				var status_label = Label.new()
+				status_label.text = "Married Away"
+				status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+				heir_row.add_child(status_label)
+			
+			_:
+				var status_label = Label.new()
+				status_label.text = "Unavailable"
+				status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+				heir_row.add_child(status_label)
+
+		heirs_container.add_child(heir_row)
+
+
+func _on_expedition_pressed(heir: JarlHeirData) -> void:
+	"""Called when an 'Send on Expedition' button is pressed."""
+	
+	var cost = {"gold": EXPEDITION_GOLD_COST}
+	
+	# 1. Attempt to spend the gold
+	if SettlementManager.attempt_purchase(cost):
+		# 2. If gold spend is successful, spend the heir
+		print("DynastyUI: Spent %d gold. Sending heir %s on expedition." % [EXPEDITION_GOLD_COST, heir.display_name])
+		DynastyManager.start_heir_expedition(heir)
+		
+		# UI will refresh automatically via the jarl_stats_updated signal
+	else:
+		# This shouldn't happen if the button is disabled, but as a fallback.
+		print("DynastyUI: Expedition failed. Not enough gold.")
+		EventBus.purchase_failed.emit("Not enough Gold")
+
 --- SCRIPT: res://ui/EndOfYear_Popup.gd ---
 # res://ui/EndOfYear_Popup.gd
 extends PanelContainer
@@ -6899,6 +7659,94 @@ func display_payout(payout: Dictionary, title: String = "Welcome home!") -> void
 func _on_collect_pressed() -> void:
 	collect_button_pressed.emit(_current_payout)
 	hide()
+
+--- SCRIPT: res://ui/Event_UI.gd ---
+# res://ui/Event_UI.gd
+#
+# Controller script for the modal event window (Event_UI.tscn).
+# This scene is responsible for displaying an EventData resource
+# and returning the player's choice.
+class_name EventUI
+extends CanvasLayer
+
+## Emitted when the player clicks a choice button.
+## Passes the EventData and the chosen EventChoice.
+signal choice_made(event: EventData, choice: EventChoice)
+
+# Node References
+@onready var title_label: Label = $PanelContainer/Margin/VBox/TitleLabel
+@onready var description_label: Label = $PanelContainer/Margin/VBox/HBox/DescriptionLabel
+@onready var portrait: TextureRect = %Portrait
+@onready var choice_buttons_container: VBoxContainer = $PanelContainer/Margin/VBox/ChoiceButtonsContainer
+
+var current_event: EventData
+
+func _ready() -> void:
+	# Start hidden. The EventManager will show this UI.
+	hide()
+	
+	# Set process mode to "When Paused" so it works even if
+	# the EventManager pauses the game to show the event.
+	process_mode = Node.PROCESS_MODE_WHEN_PAUSED
+
+func display_event(event_data: EventData) -> void:
+	"""
+	Configures and displays the event window based on an EventData resource.
+	"""
+	if not event_data:
+		push_error("EventUI: Cannot display a null EventData resource.")
+		return
+		
+	current_event = event_data
+	
+	# 1. Populate Text
+	title_label.text = event_data.title
+	description_label.text = event_data.description
+	
+	# 2. Populate Portrait
+	if event_data.portrait:
+		portrait.texture = event_data.portrait
+		portrait.show()
+	else:
+		portrait.texture = null
+		portrait.hide()
+		
+	# 3. Clear and Create Choice Buttons
+	for child in choice_buttons_container.get_children():
+		child.queue_free()
+		
+	if event_data.choices.is_empty():
+		# Create a default "OK" button if no choices are provided
+		var ok_button = Button.new()
+		ok_button.text = "OK"
+		ok_button.pressed.connect(_on_choice_button_pressed.bind(null))
+		choice_buttons_container.add_child(ok_button)
+	else:
+		# Create a button for each choice
+		for choice in event_data.choices:
+			var choice_button = Button.new()
+			choice_button.text = choice.choice_text
+			choice_button.tooltip_text = choice.tooltip_text
+			choice_button.pressed.connect(_on_choice_button_pressed.bind(choice))
+			choice_buttons_container.add_child(choice_button)
+			
+	# 4. Show the UI
+	show()
+	
+	# Grab focus so gamepad/keyboard input works
+	# A CanvasLayer can't grab focus, so we focus the first button
+	var first_button = choice_buttons_container.get_child(0) as Button
+	if first_button:
+		first_button.grab_focus()
+
+func _on_choice_button_pressed(choice: EventChoice) -> void:
+	"""
+	Called when any choice button is pressed.
+	Emits the signal and hides the window.
+	"""
+	hide()
+	choice_made.emit(current_event, choice)
+	current_event = null
 
 --- SCRIPT: res://ui/SelectionBox.gd ---
 # res://ui/SelectionBox.gd
@@ -7055,142 +7903,36 @@ func _draw() -> void:
 # res://ui/StorefrontUI.gd (Fully Refactored)
 extends Control
 
+const LegacyUpgradeData = preload("res://data/legacy/LegacyUpgradeData.gd")
 # --- Node References ---
 @onready var gold_label: Label = $PanelContainer/MarginContainer/TabContainer/BuildTab/TreasuryDisplay/GoldLabel
 @onready var wood_label: Label = $PanelContainer/MarginContainer/TabContainer/BuildTab/TreasuryDisplay/WoodLabel
 @onready var food_label: Label = $PanelContainer/MarginContainer/TabContainer/BuildTab/TreasuryDisplay/FoodLabel
 @onready var stone_label: Label = $PanelContainer/MarginContainer/TabContainer/BuildTab/TreasuryDisplay/StoneLabel
 
-# --- REMOVED ---
-# @onready var buy_wall_button: Button = ...
-# @onready var buy_lumber_yard_button: Button = ...
-
-# --- ADDED ---
 @onready var build_buttons_container: VBoxContainer = $PanelContainer/MarginContainer/TabContainer/BuildTab/BuildButtonsContainer
-# --- END ADDED ---
 
 @onready var recruit_buttons_container: VBoxContainer = $PanelContainer/MarginContainer/TabContainer/RecruitTab/RecruitButtons
 @onready var garrison_list_container: VBoxContainer = $PanelContainer/MarginContainer/TabContainer/RecruitTab/GarrisonList
 
+# --- Legacy Tab References ---
+@onready var renown_label: Label = $PanelContainer/MarginContainer/TabContainer/LegacyTab/JarlStatsDisplay/RenownLabel
+@onready var authority_label: Label = $PanelContainer/MarginContainer/TabContainer/LegacyTab/JarlStatsDisplay/AuthorityLabel
+@onready var legacy_buttons_container: VBoxContainer = $PanelContainer/MarginContainer/TabContainer/LegacyTab/LegacyButtonsContainer
+
 # --- Exported Data ---
-@export var available_buildings: Array[BuildingData] = [] # This can now be deprecated or used for manual overrides
+@export var available_buildings: Array[BuildingData] = []
 @export var available_units: Array[UnitData] = []
 @export var default_treasury_display: Dictionary = {"gold": 0, "wood": 0, "food": 0, "stone": 0}
 @export var auto_load_units_from_directory: bool = true
 
-# --- REMOVED ---
-# var wall_data: BuildingData = ...
-# var lumber_yard_data: BuildingData = ...
+# --- Internal state for legacy upgrades ---
+var loaded_legacy_upgrades: Array[LegacyUpgradeData] = []
 
-func _ready() -> void:
-	EventBus.treasury_updated.connect(_update_treasury_display)
-	EventBus.purchase_successful.connect(_on_purchase_successful)
-	
-	if SettlementManager.current_settlement:
-		_update_treasury_display(SettlementManager.current_settlement.treasury)
-	else:
-		_update_treasury_display(default_treasury_display)
 
-	# --- REMOVED ---
-	# buy_wall_button.pressed.connect(...)
-	# buy_lumber_yard_button.pressed.connect(...)
-	
-	# --- ADDED ---
-	_load_building_data()
-	# --- END ADDED ---
+# --- MOVED FUNCTIONS UP TO FIX PARSING ERROR ---
 
-	# Load and setup recruit buttons
-	_load_unit_data()
-	_setup_recruit_buttons()
-	_update_garrison_display()
-
-# --- ADDED NEW FUNCTION ---
-func _load_building_data() -> void:
-	"""Scan res://data/buildings/ for buildable .tres files and create buttons."""
-	var dir = DirAccess.open("res://data/buildings/")
-	if dir:
-		dir.list_dir_begin()
-		var file_name = dir.get_next()
-		while file_name != "":
-			if file_name.ends_with(".tres"):
-				var building_path = "res://data/buildings/" + file_name
-				var building_data = load(building_path) as BuildingData
-				
-				# Check if the building is valid AND flagged for the player
-				if building_data and building_data.is_player_buildable:
-					print("Found player-buildable building: %s" % building_data.display_name)
-					_create_building_button(building_data)
-					
-			file_name = dir.get_next()
-# --- END ADDED ---
-
-# --- ADDED NEW FUNCTION ---
-func _create_building_button(building_data: BuildingData) -> void:
-	"""Creates and connects a single button for the build tab."""
-	var button = Button.new()
-	button.text = "%s (Cost: %s)" % [building_data.display_name, _format_cost(building_data.build_cost)]
-	button.custom_minimum_size = Vector2(200, 36) # Matches GDD spec [cite: 405]
-	button.pressed.connect(_on_buy_button_pressed.bind(building_data))
-	build_buttons_container.add_child(button)
-# --- END ADDED ---
-
-func _load_unit_data() -> void:
-	"""Scan res://data/units/ directory for .tres files and load them as UnitData"""
-	var dir = DirAccess.open("res://data/units/")
-	if dir:
-		dir.list_dir_begin()
-		var file_name = dir.get_next()
-		while file_name != "":
-			if file_name.ends_with(".tres"):
-				var unit_path = "res://data/units/" + file_name
-				var unit_data = load(unit_path) as UnitData
-				if unit_data:
-					# Only load player-appropriate units (exclude enemy-only units)
-					# Player units should have "Player" in their display name or specific naming convention
-					if _is_player_unit(unit_data):
-						available_units.append(unit_data)
-						print("Loaded player unit data: %s" % unit_data.display_name)
-					else:
-						print("Skipped enemy unit data: %s" % unit_data.display_name)
-			file_name = dir.get_next()
-		print("Total player units loaded: %d" % available_units.size())
-
-func _setup_recruit_buttons() -> void:
-	"""Create recruit buttons for each available unit"""
-	for unit_data in available_units:
-		var button = Button.new()
-		button.text = "%s (Cost: %s)" % [unit_data.display_name, _format_cost(unit_data.spawn_cost)]
-		button.custom_minimum_size = Vector2(200, 36)
-		button.pressed.connect(_on_recruit_button_pressed.bind(unit_data))
-		recruit_buttons_container.add_child(button)
-
-func _is_player_unit(unit_data: UnitData) -> bool:
-	"""Check if a unit is appropriate for player recruitment"""
-	if not unit_data:
-		return false
-	
-	# Check if the unit has "Player" in its display name
-	if "Player" in unit_data.display_name:
-		return true
-	
-	# Check if the unit data resource path contains "Player" 
-	if "Player" in unit_data.resource_path:
-		return true
-	
-	# Check if the scene points to a PlayerVikingRaider or other player unit
-	if unit_data.scene_to_spawn:
-		var scene_path = unit_data.scene_to_spawn.resource_path
-		if "Player" in scene_path:
-			return true
-	
-	# Fallback: exclude known enemy units by name
-	var enemy_unit_names = ["Viking Raider"] # This is the enemy version
-	if unit_data.display_name in enemy_unit_names:
-		return false
-	
-	# Default to true for backwards compatibility with existing units
-	return true
-
+# --- Utility Functions ---
 func _format_cost(cost: Dictionary) -> String:
 	"""Format cost dictionary as readable string"""
 	var cost_parts: Array[String] = []
@@ -7198,90 +7940,30 @@ func _format_cost(cost: Dictionary) -> String:
 		cost_parts.append("%d %s" % [cost[resource], resource])
 	return ", ".join(cost_parts)
 
-func _get_safe_placement_position() -> Vector2i:
-	"""Find a safe position to place a building, avoiding overlaps"""
-	if not SettlementManager.current_settlement:
-		return Vector2i(10, 15) # Fallback position
-	
-	# Get grid bounds from SettlementManager
-	var grid_width = SettlementManager.grid_width
-	var grid_height = SettlementManager.grid_height
-	
-	# Create a set of occupied positions for quick lookup
-	var occupied_positions: Array[Vector2i] = []
-	for building_entry in SettlementManager.current_settlement.placed_buildings:
-		occupied_positions.append(building_entry["grid_position"])
-	
-	# Find the first available position using a spiral search pattern
-	var center_x = grid_width / 2.0
-	var center_y = grid_height / 2.0
-	var max_radius = min(grid_width, grid_height) / 2.0
-	
-	# Start from center and spiral outward
-	for radius in range(1, int(max_radius) + 1):
-		for angle_step in range(8 * radius): # More points for larger radii
-			var angle = (angle_step * 2.0 * PI) / (8 * radius)
-			var test_x = center_x + int(radius * cos(angle))
-			var test_y = center_y + int(radius * sin(angle))
-			var test_pos = Vector2i(test_x, test_y)
-			
-			# Check bounds
-			if test_pos.x < 0 or test_pos.x >= grid_width or test_pos.y < 0 or test_pos.y >= grid_height:
-				continue
-			
-			# Check if position is free
-			if not test_pos in occupied_positions:
-				print("Found safe placement position: %s" % test_pos)
-				return test_pos
-	
-	# If no free position found, use a fallback with warning
-	push_warning("No free placement position found, using fallback")
-	return Vector2i(10, 15)
-
 func _update_treasury_display(new_treasury: Dictionary) -> void:
 	gold_label.text = "Gold: %d" % new_treasury.get("gold", 0)
 	wood_label.text = "Wood: %d" % new_treasury.get("wood", 0)
 	food_label.text = "Food: %d" % new_treasury.get("food", 0)
 	stone_label.text = "Stone: %d" % new_treasury.get("stone", 0)
 
-func _on_buy_button_pressed(item_data: BuildingData) -> void:
-	if not item_data:
-		return
-	
-	print("UI attempting to purchase '%s'." % item_data.display_name)
-	var purchase_successful: bool = SettlementManager.attempt_purchase(item_data.build_cost)
-	
-	if purchase_successful:
-		print("UI received purchase confirmation for '%s'." % item_data.display_name)
-		# Emit signal for cursor-based placement instead of auto-placing
-		EventBus.building_ready_for_placement.emit(item_data)
-	else:
-		print("UI received purchase failure for '%s'." % item_data.display_name)
-
-func _on_recruit_button_pressed(unit_data: UnitData) -> void:
-	"""Handle recruit button press"""
-	if not unit_data:
-		return
-	
-	print("UI attempting to recruit '%s'." % unit_data.display_name)
-	var purchase_successful: bool = SettlementManager.attempt_purchase(unit_data.spawn_cost)
-	
-	if purchase_successful:
-		print("UI received purchase confirmation for '%s'." % unit_data.display_name)
-		SettlementManager.recruit_unit(unit_data)
-	else:
-		print("UI received purchase failure for '%s'." % unit_data.display_name)
-
 func _on_purchase_successful(item_name: String) -> void:
 	"""Handle purchase success event - refresh garrison display"""
-	_update_garrison_display()
+	# Check if the item was a unit to avoid unnecessary UI churn
+	# A bit of a hack, but good for performance.
+	if item_name.contains("Raider") or item_name.contains("Unit"):
+		_update_garrison_display()
+	
+	# If a legacy upgrade was purchased, the jarl_stats_updated signal
+	# will handle refreshing the legacy button list.
+	
+	# We don't need to refresh the build list, as it's static for now.
+	pass
 
 func _update_garrison_display() -> void:
 	"""Update the garrison list display with current garrisoned units"""
 	if not garrison_list_container:
 		return
 	
-	# Clear existing display
 	for child in garrison_list_container.get_children():
 		child.queue_free()
 	
@@ -7299,13 +7981,11 @@ func _update_garrison_display() -> void:
 		garrison_list_container.add_child(empty_garrison_label)
 		return
 	
-	# Add header
 	var header_label = Label.new()
 	header_label.text = "Current Garrison:"
 	header_label.add_theme_font_size_override("font_size", 16)
 	garrison_list_container.add_child(header_label)
 	
-	# Display each unit type and count
 	for unit_path in garrison:
 		var unit_count: int = garrison[unit_path]
 		var unit_data: UnitData = load(unit_path)
@@ -7319,7 +7999,6 @@ func _update_garrison_display() -> void:
 			error_label.text = "• Unknown unit x%d" % unit_count
 			garrison_list_container.add_child(error_label)
 	
-	# Add total count
 	var total_units = 0
 	for unit_path in garrison:
 		total_units += garrison[unit_path]
@@ -7328,6 +8007,309 @@ func _update_garrison_display() -> void:
 	total_label.text = "Total units: %d" % total_units
 	total_label.add_theme_font_size_override("font_size", 12)
 	garrison_list_container.add_child(total_label)
+
+# --- END MOVED FUNCTIONS ---
+
+
+func _ready() -> void:
+	# Connect to SettlementManager for treasury
+	EventBus.treasury_updated.connect(_update_treasury_display)
+	EventBus.purchase_successful.connect(_on_purchase_successful)
+	
+	if SettlementManager.current_settlement:
+		_update_treasury_display(SettlementManager.current_settlement.treasury)
+	else:
+		_update_treasury_display(default_treasury_display)
+
+	# Connect to DynastyManager for Jarl stats
+	DynastyManager.jarl_stats_updated.connect(_update_jarl_stats_display)
+	
+	# Initial load
+	_load_building_data()
+	_load_unit_data()
+	_load_legacy_upgrades() # Load the data first
+	
+	# Setup UI
+	if DynastyManager.current_jarl:
+		_update_jarl_stats_display(DynastyManager.get_current_jarl())
+	
+	_setup_recruit_buttons()
+	_update_garrison_display()
+	_populate_legacy_buttons() # Populate buttons after data is loaded
+
+# --- Jarl Stats UI ---
+func _update_jarl_stats_display(jarl_data: JarlData) -> void:
+	"""Updates the Renown and Authority labels in the Legacy tab."""
+	if not jarl_data:
+		return
+	renown_label.text = "Renown: %d" % jarl_data.renown
+	authority_label.text = "Authority: %d / %d" % [jarl_data.current_authority, jarl_data.max_authority]
+	
+	# This ensures buttons are enabled/disabled when stats change (e.g., End Year)
+	_populate_legacy_buttons()
+
+# --- Legacy Upgrade Functions ---
+func _load_legacy_upgrades() -> void:
+	"""Scan res://data/legacy/ for .tres files."""
+	loaded_legacy_upgrades.clear()
+	
+	var dir = DirAccess.open("res://data/legacy/")
+	if dir:
+		dir.list_dir_begin()
+		var file_name = dir.get_next()
+		while file_name != "":
+			if file_name.ends_with(".tres"):
+				var path = "res://data/legacy/" + file_name
+				var upgrade_data = load(path) as LegacyUpgradeData
+				
+				if upgrade_data:
+					# We create a local instance/duplicate of the resource.
+					# This prevents the "soft-guide" cost change from
+					# modifying the actual .tres file on disk.
+					var unique_upgrade = upgrade_data.duplicate()
+					
+					# Check if already purchased
+					unique_upgrade.is_purchased = DynastyManager.has_purchased_upgrade(unique_upgrade.effect_key)
+					loaded_legacy_upgrades.append(unique_upgrade)
+					
+			file_name = dir.get_next()
+	print("Loaded %d legacy upgrades." % loaded_legacy_upgrades.size())
+
+func _populate_legacy_buttons() -> void:
+	"""
+	Populate the Legacy tab with available upgrades.
+	This function now creates real buttons from loaded data.
+	"""
+	for child in legacy_buttons_container.get_children():
+		child.queue_free()
+	
+	if loaded_legacy_upgrades.is_empty():
+		var placeholder_label = Label.new()
+		placeholder_label.text = "No legacy upgrades found."
+		legacy_buttons_container.add_child(placeholder_label)
+		return
+	
+	var jarl = DynastyManager.get_current_jarl()
+	if not jarl:
+		push_error("StorefrontUI: Cannot get Jarl from DynastyManager!")
+		return
+
+	# --- "SOFT-GUIDE" LITMUS TEST ---
+	# Check for traits that modify costs
+	var is_pious = jarl.has_trait("Pious")
+	# ---------------------------------
+
+	# Create a button for each loaded upgrade
+	for upgrade_data in loaded_legacy_upgrades:
+		
+		# --- "SOFT-GUIDE" LOGIC ---
+		# This is the core mechanic of the proposal in action.
+		var current_renown_cost = upgrade_data.renown_cost
+		var trait_modifier_text = ""
+		
+		if is_pious and upgrade_data.effect_key == "UPG_BUILD_CHAPEL":
+			# Example: "Pious" trait gives a 25 Renown discount
+			current_renown_cost = max(0, upgrade_data.renown_cost - 25)
+			trait_modifier_text = " (-25 Pious)"
+		# --------------------------
+
+		var button = Button.new()
+		var cost_text = "Cost: %d Renown%s, %d Auth" % [current_renown_cost, trait_modifier_text, upgrade_data.authority_cost]
+		
+		# Set the text (without the name, as the icon is present)
+		button.text = "%s\n%s" % [upgrade_data.display_name, cost_text]
+		button.tooltip_text = upgrade_data.description
+		
+		# --- NEW: Set Icon ---
+		if upgrade_data.icon:
+			button.icon = upgrade_data.icon
+			# Optional: Align text to the left if an icon is present
+			button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+			button.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		# --- END NEW ---
+		
+		# --- Check affordability and purchase status ---
+		var can_buy_renown = jarl.renown >= current_renown_cost # Use modified cost
+		var can_buy_auth = jarl.current_authority >= upgrade_data.authority_cost
+		
+		if upgrade_data.is_purchased:
+			button.disabled = true
+			button.text = "%s (Purchased)" % upgrade_data.display_name
+		elif not can_buy_renown:
+			button.disabled = true
+			button.text += "\n(Not enough Renown)"
+		elif not can_buy_auth:
+			button.disabled = true
+			button.text += "\n(Not enough Authority)"
+		
+		# We must bind the *original* upgrade_data (which holds the modified cost)
+		# to the pressed signal.
+		button.pressed.connect(_on_legacy_upgrade_pressed.bind(upgrade_data, current_renown_cost))
+		legacy_buttons_container.add_child(button)
+
+func _on_legacy_upgrade_pressed(upgrade_data: LegacyUpgradeData, final_renown_cost: int) -> void:
+	"""
+	Handles the purchase logic for a Legacy Upgrade.
+	Uses the dynamically calculated final_renown_cost.
+	"""
+	print("Attempting to purchase legacy upgrade: %s" % upgrade_data.display_name)
+	
+	# 1. Double-check costs using the calculated cost
+	if not DynastyManager.can_spend_renown(final_renown_cost):
+		print("Purchase failed: Not enough Renown.")
+		EventBus.purchase_failed.emit("Not enough Renown")
+		return
+		
+	if not DynastyManager.can_spend_authority(upgrade_data.authority_cost):
+		print("Purchase failed: Not enough Authority.")
+		EventBus.purchase_failed.emit("Not enough Authority")
+		return
+	
+	# 2. Spend resources
+	var spent_renown = DynastyManager.spend_renown(final_renown_cost)
+	var spent_auth = DynastyManager.spend_authority(upgrade_data.authority_cost)
+	
+	if not (spent_renown and spent_auth):
+		push_error("Legacy purchase failed mid-transaction! This should not happen.")
+		if spent_renown: DynastyManager.award_renown(final_renown_cost) # Refund
+		return
+	
+	# 3. Mark as purchased
+	upgrade_data.is_purchased = true
+	DynastyManager.purchase_legacy_upgrade(upgrade_data.effect_key)
+	
+	# 4. Apply the effect
+	_apply_legacy_upgrade_effect(upgrade_data.effect_key)
+	
+	# 5. Refresh the UI
+	_populate_legacy_buttons() # This will now show the button as "Purchased"
+	EventBus.purchase_successful.emit(upgrade_data.display_name)
+
+func _apply_legacy_upgrade_effect(effect_key: String) -> void:
+	"""
+	Applies the permanent game-state change for a purchased upgrade.
+	"""
+	match effect_key:
+		"UPG_TRELLEBORG":
+			if SettlementManager.current_settlement:
+				SettlementManager.current_settlement.max_garrison_bonus += 10 # Example value
+				SettlementManager.save_settlement()
+				print("Applied UPG_TRELLEBORG: Max garrison bonus +10")
+			else:
+				push_error("Cannot apply Trelleborg upgrade: No current settlement!")
+				
+		"UPG_JELLING_STONE":
+			var jarl = DynastyManager.get_current_jarl()
+			if jarl:
+				jarl.heir_starting_renown_bonus += 50 # Example value
+				print("Applied UPG_JELLING_STONE: Heir starting renown +50")
+			else:
+				push_error("Cannot apply Jelling Stone upgrade: No current Jarl!")
+		
+		"UPG_BUILD_CHAPEL":
+			# For this test, we just log the success.
+			# A real implementation might add a modifier to SettlementManager.
+			print("Applied UPG_BUILD_CHAPEL: Dynasty's piety increased.")
+		
+		_:
+			push_warning("Unknown legacy upgrade effect key: %s" % effect_key)
+
+# --- Building Tab Functions ---
+func _load_building_data() -> void:
+	"""Scan res://data/buildings/ for buildable .tres files and create buttons."""
+	var dir = DirAccess.open("res://data/buildings/")
+	if dir:
+		dir.list_dir_begin()
+		var file_name = dir.get_next()
+		while file_name != "":
+			if file_name.ends_with(".tres"):
+				var building_path = "res://data/buildings/" + file_name
+				var building_data = load(building_path) as BuildingData
+				
+				if building_data and building_data.is_player_buildable:
+					_create_building_button(building_data)
+					
+			file_name = dir.get_next()
+
+func _create_building_button(building_data: BuildingData) -> void:
+	"""Creates and connects a single button for the build tab."""
+	var button = Button.new()
+	button.text = "%s (Cost: %s)" % [building_data.display_name, _format_cost(building_data.build_cost)]
+	
+	# --- Set Icon for Build Tab ---
+	if building_data.icon:
+		button.icon = building_data.icon
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		button.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	
+	button.pressed.connect(_on_buy_button_pressed.bind(building_data))
+	build_buttons_container.add_child(button)
+
+func _on_buy_button_pressed(item_data: BuildingData) -> void:
+	if not item_data:
+		return
+	
+	print("UI attempting to purchase '%s'." % item_data.display_name)
+	var purchase_successful: bool = SettlementManager.attempt_purchase(item_data.build_cost)
+	
+	if purchase_successful:
+		print("UI received purchase confirmation for '%s'." % item_data.display_name)
+		EventBus.building_ready_for_placement.emit(item_data)
+	else:
+		print("UI received purchase failure for '%s'." % item_data.display_name)
+
+# --- Recruit Tab Functions ---
+func _load_unit_data() -> void:
+	"""Scan res://data/units/ directory for .tres files and load them as UnitData"""
+	var dir = DirAccess.open("res://data/units/")
+	if dir:
+		dir.list_dir_begin()
+		var file_name = dir.get_next()
+		while file_name != "":
+			if file_name.ends_with(".tres"):
+				var unit_path = "res://data/units/" + file_name
+				var unit_data = load(unit_path) as UnitData
+				if unit_data:
+					if _is_player_unit(unit_data):
+						available_units.append(unit_data)
+			file_name = dir.get_next()
+
+func _setup_recruit_buttons() -> void:
+	"""Create recruit buttons for each available unit"""
+	for unit_data in available_units:
+		var button = Button.new()
+		button.text = "%s (Cost: %s)" % [unit_data.display_name, _format_cost(unit_data.spawn_cost)]
+		
+		# --- Set Icon for Recruit Tab ---
+		if unit_data.icon:
+			button.icon = unit_data.icon
+			button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+			button.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
+
+		button.pressed.connect(_on_recruit_button_pressed.bind(unit_data))
+		recruit_buttons_container.add_child(button)
+
+func _is_player_unit(unit_data: UnitData) -> bool:
+	if not unit_data: return false
+	if "Player" in unit_data.display_name: return true
+	if "Player" in unit_data.resource_path: return true
+	if unit_data.scene_to_spawn and "Player" in unit_data.scene_to_spawn.resource_path: return true
+	if unit_data.display_name in ["Viking Raider"]: return false
+	return true
+
+func _on_recruit_button_pressed(unit_data: UnitData) -> void:
+	"""Handle recruit button press"""
+	if not unit_data:
+		return
+	
+	print("UI attempting to recruit '%s'." % unit_data.display_name)
+	var purchase_successful: bool = SettlementManager.attempt_purchase(unit_data.spawn_cost)
+	
+	if purchase_successful:
+		print("UI received purchase confirmation for '%s'." % unit_data.display_name)
+		SettlementManager.recruit_unit(unit_data)
+	else:
+		print("UI received purchase failure for '%s'." % unit_data.display_name)
 --- END OF CODEBASE ---
 
 ---
