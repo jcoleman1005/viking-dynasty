@@ -58,7 +58,8 @@ func load_settlement(data: SettlementData) -> void:
 			current_settlement.resource_path = data.resource_path
 		else:
 			current_settlement.resource_path = "res://data/settlements/home_base_fixed.tres"
-			print("SettlementManager: Set fallback resource_path to: %s" % current_settlement.resource_path)
+			# Changed print to push_warning for setting fallback path
+			push_warning("SettlementManager: Set fallback resource_path to: %s" % current_settlement.resource_path)
 	
 	print("SettlementManager: Settlement data loaded - %s" % current_settlement.resource_path)
 	print("SettlementManager: Garrison units: %s" % current_settlement.garrisoned_units)
@@ -97,7 +98,7 @@ func deposit_resources(loot: Dictionary) -> void:
 		else:
 			current_settlement.treasury[resource_type] = loot[resource_type]
 	EventBus.treasury_updated.emit(current_settlement.treasury)
-	print("Loot deposited. New treasury: %s" % current_settlement.treasury)
+	# Removed print("Loot deposited. New treasury: %s" % current_settlement.treasury)
 	save_settlement()
 
 func attempt_purchase(item_cost: Dictionary) -> bool:
@@ -116,7 +117,7 @@ func attempt_purchase(item_cost: Dictionary) -> bool:
 	
 	EventBus.treasury_updated.emit(current_settlement.treasury)
 	EventBus.purchase_successful.emit("Unnamed Item") # Placeholder
-	print("Purchase successful. New treasury: %s" % current_settlement.treasury)
+	# Removed print("Purchase successful. New treasury: %s" % current_settlement.treasury)
 	return true
 
 # --- MODIFIED: Added Stewardship Bonus Logic ---
@@ -135,7 +136,7 @@ func calculate_payout() -> Dictionary:
 		stewardship_bonus = 1.0 + (stewardship_skill - 10) * 0.05
 		# Ensure bonus can't be negative (e.g., stewardship below 10)
 		stewardship_bonus = max(0.5, stewardship_bonus) # Cap negative bonus at -50%
-		print("Jarl Stewardship: %d. Payout Multiplier: %s" % [stewardship_skill, stewardship_bonus])
+		# Removed: print("Jarl Stewardship: %d. Payout Multiplier: %s" % [stewardship_skill, stewardship_bonus])
 	else:
 		push_warning("SettlementManager: Could not get Jarl to calculate stewardship bonus.")
 
@@ -171,11 +172,10 @@ func calculate_payout() -> Dictionary:
 				# Apply stewardship bonus to region income as well
 				var final_income = int(round(income_amount * stewardship_bonus))
 				total_payout[resource_type] += final_income
-				print("Added %d %s from conquered region: %s" % [final_income, resource_type, region_data.display_name])
+				# Removed: print("Added %d %s from conquered region: %s" % [final_income, resource_type, region_data.display_name])
 	# --- END NEW ---
 
-	if not total_payout.is_empty():
-		print("Calculated fixed payout (with bonus): %s" % total_payout)
+	# Removed: if not total_payout.is_empty(): print("Calculated fixed payout (with bonus): %s" % total_payout)
 	return total_payout
 
 func recruit_unit(unit_data: UnitData) -> void:

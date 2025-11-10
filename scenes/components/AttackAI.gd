@@ -17,7 +17,12 @@ signal about_to_attack(target: Node2D, damage: int)
 @export var attack_range: float = 200.0
 @export var attack_speed: float = 1.0  # attacks per second
 @export var projectile_scene: PackedScene
-@export var target_collision_mask: int = 0  # What layers to target
+
+# --- FIXED: MISSING DECLARATION ---
+# The variable was being assigned in set_target_mask but was never
+# declared at the class level, causing the "not declared" error.
+var target_collision_mask: int = 0
+# --- END FIXED ---
 
 # --- NEW: Added projectile speed ---
 var projectile_speed: float = 400.0
@@ -261,19 +266,16 @@ func _on_attack_timer_timeout() -> void:
 func _spawn_projectile(target_position_world: Vector2) -> void:
 	"""Spawn a projectile towards the target position"""
 	if not projectile_scene:
-		print("Error: No projectile scene assigned to AttackAI")
+		# Changed to push_warning as this is a configuration error, not a runtime crash
+		push_warning("AttackAI: No projectile scene assigned. Cannot fire.")
 		return
 	
 	# Create the projectile
 	var projectile: Projectile = projectile_scene.instantiate()
 	if not projectile:
-		print("Error: Failed to instantiate projectile for AttackAI")
+		# Changed to push_error, as failed instantiation is a critical error
+		push_error("AttackAI: Failed to instantiate projectile for %s" % parent_node.name)
 		return
-	
-	# --- DEBUGGING ---
-	print("--- AttackAI DEBUG ---")
-	print("'%s' spawning projectile. Target Mask being sent: %s" % [parent_node.name, target_collision_mask])
-	print("----------------------")
 	
 	# 1. Initialize the projectile
 	projectile.setup(

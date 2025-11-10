@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="JarlTraitData" load_steps=2 format=3 uid="uid://wo43cpcxhf4i"]
+
+[ext_resource type="Script" uid="uid://dwh8olikns4xw" path="res://data/traits/JarlTraitData.gd" id="1_jarl_trait"]
+
+[resource]
+script = ExtResource("1_jarl_trait")
+display_name = "Ambitious"
+description = "This Jarl is driven by a burning desire for power and glory, and inspires the same in their children."
+command_modifier = 2
+stewardship_modifier = -1
+intrigue_modifier = 1
+metadata/_custom_type_script = "uid://dwh8olikns4xw"

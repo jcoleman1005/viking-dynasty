@@ -21,6 +21,7 @@ SettlementManager="*res://autoload/SettlementManager.gd"
 PauseManager="*res://autoload/PauseManager.tscn"
 DynastyManager="*res://autoload/DynastyManager.gd"
 SceneManager="*res://autoload/SceneManager.tscn"
+EventManager="*res://autoload/EventManager.tscn"
 
 [editor]
 

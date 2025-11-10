@@ -29,11 +29,6 @@ func _ready() -> void:
 		push_warning("BaseBuilding: Node is missing its 'BuildingData' resource. Cannot initialize.")
 		return
 	
-	# --- DEBUGGING ---
-	print("--- BaseBuilding DEBUG ---")
-	print("'%s' SPAWNED. Collision Layer: %s, Collision Mask: %s" % [name, collision_layer, collision_mask])
-	print("--------------------------")
-	
 	current_health = data.max_health
 	
 	# --- Create core nodes ---
@@ -55,10 +50,6 @@ func _ready() -> void:
 	_create_dev_visuals()
 	_setup_defensive_ai()
 
-	# --- REMOVED ---
-	# connect("area_entered", _on_area_entered) # This was incorrect
-	# --- END REMOVED ---
-
 # --- NEW FUNCTION ---
 func _create_hitbox() -> void:
 	"""Creates an Area2D child to act as a detectable hitbox for projectiles."""
@@ -78,12 +69,7 @@ func _create_hitbox() -> void:
 	hitbox_area.add_child(hitbox_shape)
 	
 	add_child(hitbox_area)
-	print("'%s' created Area2D Hitbox on Layer %s" % [name, hitbox_area.collision_layer])
 # --- END NEW FUNCTION ---
-
-# --- REMOVED ---
-# func _on_area_entered(area: Area2D) -> void: ...
-# --- END REMOVED ---
 
 func _apply_data_and_scale() -> void:
 	if not SettlementManager:
@@ -117,9 +103,6 @@ func _apply_data_and_scale() -> void:
 	# --- END NEW ---
 
 func take_damage(amount: int) -> void:
-	# --- DEBUGGING ---
-	print("'%s' TOOK %d DAMAGE. Health: %d/%d" % [name, amount, current_health - amount, data.max_health])
-	# --- END DEBUGGING ---
 	
 	current_health = max(0, current_health - amount)
 	
@@ -234,11 +217,8 @@ func _setup_defensive_ai() -> void:
 	if attack_ai.has_method("configure_from_data"):
 		attack_ai.configure_from_data(data)
 	
-	# --- DEBUGGING ---
 	# For defensive buildings, the target mask is set in Base_Building.gd
 	var player_collision_mask: int = 1 << 1  # Layer 2 (bit position 1)
-	print("'%s' (Defensive) AI: Setting target mask to %s (Player Units)" % [name, player_collision_mask])
-	# --- END DEBUGGING ---
 	
 	if attack_ai.has_method("set_target_mask"):
 		attack_ai.set_target_mask(player_collision_mask)

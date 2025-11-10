@@ -97,7 +97,9 @@ func _recalculate_path() -> void:
 	path = SettlementManager.get_astar_path(unit.global_position, target_position, allow_partial)
 	
 	if path.is_empty():
-		print("Unit at %s failed to find a path to %s." % [unit.global_position, target_position])
+		# --- CLEANUP: Replaced print with push_warning ---
+		push_warning("Unit at %s failed to find a path to %s." % [unit.global_position, target_position])
+		# --- END CLEANUP ---
 		if unit and unit.has_method("flash_error_color"):
 			unit.flash_error_color()
 		
@@ -202,7 +204,6 @@ func _move_state(delta: float) -> void:
 	# The AttackAI is scanning automatically.
 	# If it finds a target, it will interrupt this state
 	# via the _on_ai_attack_started signal.
-	
 	var target_node = current_target if is_instance_valid(current_target) else objective_target
 
 	if not is_instance_valid(target_node):
@@ -281,22 +282,18 @@ func _on_ai_attack_started(target: Node2D) -> void:
 	if current_state == State.ATTACKING and target == current_target:
 		return
 		
-	print("UnitFSM: Interrupted! AttackAI found new target: %s" % target.name)
 	current_target = target # Set as our immediate target
 	change_state(State.ATTACKING)
 
 func _on_ai_attack_stopped() -> void:
 	# The AttackAI has stopped (e.g., target died, or moved out of range)
 	if current_state == State.ATTACKING:
-		print("UnitFSM: Attack finished.")
 		current_target = null
 		
 		# Check if we have a long-term objective to resume
 		if is_instance_valid(objective_target):
-			print("UnitFSM: Resuming objective: %s" % objective_target.name)
 			current_target = objective_target # Set our current target back to the objective
 			change_state(State.MOVING) # Go back to moving
 		else:
 			# No objective, just go idle
-			print("UnitFSM: No objective. Going IDLE.")
 			change_state(State.IDLE)

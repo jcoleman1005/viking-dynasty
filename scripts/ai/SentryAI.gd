@@ -58,13 +58,13 @@ func _on_body_entered(body: Node2D) -> void:
 	if body.is_in_group("player_units") and not current_target:
 		current_target = body
 		enemy_detected.emit(body)
-		print("%s detected enemy: %s" % [get_parent().name, body.name])
+		# Removed print: print("%s detected enemy: %s" % [get_parent().name, body.name])
 
 func _on_body_exited(body: Node2D) -> void:
 	"""Handle player units leaving detection range"""
 	if body == current_target:
 		current_target = null
-		print("%s lost target: %s" % [get_parent().name, body.name])
+		# Removed print: print("%s lost target: %s" % [get_parent().name, body.name])
 
 func _attack_target(target: Node2D) -> void:
 	"""Execute attack on target"""
@@ -77,7 +77,7 @@ func _attack_target(target: Node2D) -> void:
 		current_target = null
 		return
 	
-	print("%s attacking %s for %d damage" % [get_parent().name, target.name, attack_damage])
+	# Removed print: print("%s attacking %s for %d damage" % [get_parent().name, target.name, attack_damage])
 	
 	# Apply damage if target has take_damage method
 	if target.has_method("take_damage"):
@@ -86,7 +86,7 @@ func _attack_target(target: Node2D) -> void:
 		target.receive_damage(attack_damage)
 	else:
 		# Fallback: just remove the target for demo purposes
-		print("Target %s destroyed by sentry attack" % target.name)
+		push_warning("SentryAI: Target %s has no damage method; removing for demo purposes." % target.name)
 		target.queue_free()
 	
 	attack_executed.emit(target, attack_damage)

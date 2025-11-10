@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="EventData" load_steps=5 format=3 uid="uid://ddjwe73h3diq5"]
+
+[ext_resource type="Script" uid="uid://c7lxr02yr1fn6" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" uid="uid://dvc7gumtvwaal" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="EventChoice_accept"]
+script = ExtResource("2_event_choice")
+choice_text = "Here is 100 Renown. Bring us glory!"
+tooltip_text = "Spend 100 Renown."
+effect_key = "accept"
+
+[sub_resource type="Resource" id="EventChoice_decline"]
+script = ExtResource("2_event_choice")
+choice_text = "We cannot spare it. Be patient."
+tooltip_text = "Your heir will be displeased and gain the 'Rival' trait."
+effect_key = "decline"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "An Ambitious Heir"
+description = "Your heir, Ragnar, approaches you. \"My Jarl, I am bored! I wish to lead an expedition to prove my worth. Please fund it so I may bring glory to our dynasty!\""
+event_id = "ambitious_heir_1"
+base_chance = 1.0
+must_have_trait = "Ambitious"
+min_available_heirs = 1
+choices = Array[ExtResource("2_event_choice")]([SubResource("EventChoice_accept"), SubResource("EventChoice_decline")])
+metadata/_custom_type_script = "uid://c7lxr02yr1fn6"

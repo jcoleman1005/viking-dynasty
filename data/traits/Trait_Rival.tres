@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="JarlTraitData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/traits/JarlTraitData.gd" id="1_jarl_trait"]
+
+[resource]
+script = ExtResource("1_jarl_trait")
+display_name = "Rival"
+description = "This character has developed a bitter rivalry with their liege."
+is_visible = true
+command_modifier = 1
+stewardship_modifier = 0
+intrigue_modifier = 2
+vassal_opinion_modifier = -15

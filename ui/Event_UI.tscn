@@ -1,0 +1,75 @@
+[gd_scene load_steps=3 format=3 uid="uid://ih62qkde7dru"]
+
+[ext_resource type="Script" uid="uid://dk2fbryop7524" path="res://ui/Event_UI.gd" id="1_event_ui"]
+[ext_resource type="Texture2D" uid="uid://pwi4bv5ch827" path="res://textures/placeholders/unit_placeholder.png" id="2_xtfdx"]
+
+[node name="Event_UI" type="CanvasLayer"]
+process_mode = 2
+layer = 20
+script = ExtResource("1_event_ui")
+
+[node name="PanelContainer" type="PanelContainer" parent="."]
+custom_minimum_size = Vector2(500, 300)
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -78.5
+offset_top = -105.5
+offset_right = 78.5
+offset_bottom = 105.5
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="PanelContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="VBox" type="VBoxContainer" parent="PanelContainer/Margin"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="PanelContainer/Margin/VBox"]
+custom_minimum_size = Vector2(300, 30)
+layout_mode = 2
+size_flags_vertical = 1
+text = "Event Title"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="HSeparator" type="HSeparator" parent="PanelContainer/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="HBox" type="HBoxContainer" parent="PanelContainer/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Portrait" type="TextureRect" parent="PanelContainer/Margin/VBox/HBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 2
+texture = ExtResource("2_xtfdx")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="DescriptionLabel" type="Label" parent="PanelContainer/Margin/VBox/HBox"]
+custom_minimum_size = Vector2(200, 100)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+text = "This is the event description text. It will be multiple lines long and explain the situation to the player, presenting them with a difficult choice."
+autowrap_mode = 3
+clip_text = true
+
+[node name="HSeparator2" type="HSeparator" parent="PanelContainer/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="ChoiceButtonsContainer" type="VBoxContainer" parent="PanelContainer/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 10
+alignment = 2
