@@ -1,19 +1,22 @@
-[gd_resource type="Resource" script_class="JarlData" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="JarlData" load_steps=5 format=3]
 
+[ext_resource type="Script" path="res://data/characters/JarlHeirData.gd" id="1_0xpic"]
 [ext_resource type="Script" path="res://data/characters/JarlData.gd" id="1_jarl_data"]
-[ext_resource type="Script" path="res://data/traits/JarlTraitData.gd" id="2_3vd45"]
+[ext_resource type="Resource" path="res://data/traits/Trait_Pious.tres" id="2_pious_trait"]
+[ext_resource type="Script" path="res://data/traits/JarlTraitData.gd" id="3_4gouw"]
 
 [resource]
 script = ExtResource("1_jarl_data")
 display_name = "Jarl Bjorn"
 age = 30
 renown = 25
+current_authority = 1
 command = 12
 stewardship = 11
 learning = 9
 prowess = 14
+traits = Array[ExtResource("3_4gouw")]([ExtResource("2_pious_trait")])
 spouse_name = "Lagertha"
-heirs = Array[String](["Ragnar"])
 has_valid_heir = true
 children_count = 1
 battles_fought = 2

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="LegacyUpgradeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/legacy/LegacyUpgradeData.gd" id="1_trelleborg"]
+
+[resource]
+script = ExtResource("1_trelleborg")
+display_name = "Upgrade Trelleborg"
+description = "Invest in the Trelleborg's defenses, permanently increasing the max garrison size for your home settlement."
+renown_cost = 100
+authority_cost = 3
+effect_key = "UPG_TRELLEBORG"
+prerequisite_key = ""

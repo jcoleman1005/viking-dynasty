@@ -131,6 +131,7 @@ is_player_buildable = true
 
 [resource]
 script = ExtResource("1_abcde")
+fixed_payout_amount = 50
 display_name = "Lumber Yard"
 scene_to_spawn = ExtResource("2_fghij")
 building_texture = ExtResource("1_plclm")
@@ -226,10 +227,12 @@ max_health = 70
 grid_size = Vector2i(2, 2)
 
 --- RESOURCE: res://data/buildings/Monastery_Watchtower.tres ---
-[gd_resource type="Resource" script_class="BuildingData" load_steps=3 format=3 uid="uid://ckedcnw210a8k"]
+[gd_resource type="Resource" script_class="BuildingData" load_steps=5 format=3 uid="uid://ckedcnw210a8k"]
 
 [ext_resource type="Script" uid="uid://js4bbqgeyd6c" path="res://data/buildings/BuildingData.gd" id="1_i2pmy"]
 [ext_resource type="PackedScene" uid="uid://cws6xle5x52g4" path="res://scenes/buildings/Base_Building.tscn" id="2_hptna"]
+[ext_resource type="PackedScene" path="res://scenes/components/AttackAI.tscn" id="3_ai"]
+[ext_resource type="PackedScene" path="res://scenes/effects/Projectile.tscn" id="4_proj"]
 
 [resource]
 script = ExtResource("1_i2pmy")
@@ -246,6 +249,9 @@ is_defensive_structure = true
 attack_damage = 15
 attack_range = 250.0
 attack_speed = 1.5
+ai_component_scene = ExtResource("3_ai")
+projectile_scene = ExtResource("4_proj")
+projectile_speed = 500.0
 
 --- RESOURCE: res://data/buildings/Player_Barracks.tres ---
 [gd_resource type="Resource" script_class="BuildingData" load_steps=4 format=3 uid="uid://c0ih7mriv2h1g"]
@@ -322,7 +328,7 @@ script = ExtResource("1_jarl_data")
 display_name = "Jarl Bjorn"
 age = 30
 renown = 25
-current_authority = 1
+current_authority = 2
 command = 12
 stewardship = 11
 learning = 9
@@ -445,17 +451,17 @@ garrisoned_units = {
 }
 
 --- RESOURCE: res://data/settlements/home_base_fixed.tres ---
-[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://bfswp6ebxx4kf"]
+[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://bt5fttgseqrg7"]
 
 [ext_resource type="Script" uid="uid://hlb8s5g0yp6k" path="res://data/settlements/SettlementData.gd" id="1_settlement_data"]
 
 [resource]
 script = ExtResource("1_settlement_data")
 treasury = {
-"food": 170,
-"gold": 3715,
-"stone": 600,
-"wood": 100
+"food": 3504,
+"gold": 6615,
+"stone": 500,
+"wood": 5383
 }
 placed_buildings = Array[Dictionary]([{
 "grid_position": Vector2i(11, 7),
@@ -484,9 +490,42 @@ placed_buildings = Array[Dictionary]([{
 }, {
 "grid_position": Vector2i(22, 7),
 "resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(22, 9),
+"resource_path": "res://data/buildings/Player_Farm.tres"
+}, {
+"grid_position": Vector2i(20, 9),
+"resource_path": "res://data/buildings/Player_Farm.tres"
+}, {
+"grid_position": Vector2i(20, 5),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(22, 5),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(20, 3),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(22, 3),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(8, 5),
+"resource_path": "res://data/buildings/Player_Barracks.tres"
+}, {
+"grid_position": Vector2i(17, 12),
+"resource_path": "res://data/buildings/Test_Large_Building.tres"
+}, {
+"grid_position": Vector2i(24, 13),
+"resource_path": "res://data/buildings/GreatHall.tres"
+}, {
+"grid_position": Vector2i(19, 0),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(20, 0),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
 }])
 garrisoned_units = {
-"res://data/units/Unit_PlayerRaider.tres": 8
+"res://data/units/Unit_PlayerRaider.tres": 12
 }
 metadata/_custom_type_script = "uid://hlb8s5g0yp6k"
 
@@ -764,11 +803,12 @@ is_wounded_trait = true
 is_dishonorable_trait = false
 
 --- RESOURCE: res://data/units/Unit_PlayerRaider.tres ---
-[gd_resource type="Resource" script_class="UnitData" load_steps=4 format=3 uid="uid://ejxn3hg8xcu6"]
+[gd_resource type="Resource" script_class="UnitData" load_steps=5 format=3 uid="uid://ejxn3hg8xcu6"]
 
-[ext_resource type="Script" path="res://data/units/UnitData.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://cfanwutbtfcp2" path="res://scenes/units/PlayerVikingRaider.tscn" id="2_spawn_scene"]
 [ext_resource type="Texture2D" uid="uid://pwi4bv5ch827" path="res://textures/placeholders/unit_placeholder.png" id="3_6go6j"]
+[ext_resource type="PackedScene" uid="uid://de3nko6b1rqyg" path="res://scenes/components/AttackAI.tscn" id="4_ai"]
 
 [resource]
 script = ExtResource("1_script")
@@ -784,19 +824,19 @@ move_speed = 100.0
 attack_damage = 15
 attack_range = 80.0
 attack_speed = 1.0
-ai_component_scene = null
-projectile_scene = null
+ai_component_scene = ExtResource("4_ai")
 visual_texture = ExtResource("3_6go6j")
-target_pixel_size = Vector2(32, 32)
 acceleration = 12.0
 linear_damping = 6.0
 
 --- RESOURCE: res://data/units/Unit_Raider.tres ---
-[gd_resource type="Resource" script_class="UnitData" load_steps=4 format=3 uid="uid://brnbvjwnoyh3j"]
+[gd_resource type="Resource" script_class="UnitData" load_steps=6 format=3 uid="uid://brnbvjwnoyh3j"]
 
 [ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://dsv0s4yq8c8m5" path="res://scenes/units/VikingRaider.tscn" id="2_spawn_scene"]
 [ext_resource type="Texture2D" uid="uid://pwi4bv5ch827" path="res://textures/placeholders/unit_placeholder.png" id="3_6go6j"]
+[ext_resource type="PackedScene" path="res://scenes/components/AttackAI.tscn" id="4_ai"]
+[ext_resource type="PackedScene" path="res://scenes/effects/Projectile.tscn" id="5_proj"]
 
 [resource]
 script = ExtResource("1_script")
@@ -807,11 +847,14 @@ spawn_cost = {
 "food": 30,
 "gold": 15
 }
-max_health = 60
+max_health = 45
 move_speed = 100.0
-attack_damage = 15
-attack_range = 50.0
-attack_speed = 1.0
+attack_damage = 10
+attack_range = 200.0
+attack_speed = 0.8
+ai_component_scene = ExtResource("4_ai")
+projectile_scene = ExtResource("5_proj")
+projectile_speed = 450.0
 visual_texture = ExtResource("3_6go6j")
 
 --- RESOURCE: res://data/world_map/Region_Monastery.tres ---
@@ -831,7 +874,7 @@ metadata/_custom_type_script = "uid://dqlbgeegli821"
 [gd_resource type="RectangleShape2D" format=3 uid="uid://bvjkr2ny3hnvo"]
 
 [resource]
-size = Vector2(4, 12)
+size = Vector2(25, 3)
 
 --- RESOURCE: res://resources/separation_circle_shape.tres ---
 [gd_resource type="CircleShape2D" format=3 uid="uid://bda7xb0judu2h"]
@@ -861,6 +904,7 @@ size = Vector2(64, 64)
 [gd_resource type="PlaceholderTexture2D" format=3 uid="uid://cybqs3wt5wpg3"]
 
 [resource]
+size = Vector2(10, 2)
 
 --- RESOURCE: res://ui/themes/VikingDynastyTheme.tres ---
 [gd_resource type="Theme" load_steps=0 format=3 uid="uid://63duv3n1vwhg"]
@@ -909,15 +953,16 @@ AttackAI (Node2D)
 > AttackTimer (Timer)
 
 --- SCENE: res://scenes/effects/Projectile.tscn ---
-Main (Area2D)
+Projectile (Area2D)
 > script: res://scenes/effects/Projectile.gd
 > scene: res://scenes/effects/Projectile.tscn
+> scale = (2.0, 2.0)
 > collision_layer = 1024
 > collision_mask = 0
 > monitorable = false
 > Sprite2D (Sprite2D)
-> > scale = (0.1, 0.3)
-> > texture = res://textures/placeholders/unit_texture.tres
+> > scale = (0.024707, 0.00293)
+> > texture = res://textures/placeholders/unit_placeholder.png
 > CollisionShape2D (CollisionShape2D)
 > > shape = res://resources/rectangleshape2d_879319.tres
 > LifetimeTimer (Timer)
@@ -934,6 +979,8 @@ DefensiveMicro (Node2D)
 > player_spawn_formation = {"units_per_row":5,"spacing":40}
 > mission_difficulty = 1.0
 > allow_retreat = true
+> is_defensive_mission = true
+> enemy_spawn_position = 
 > TileMap (TileMap)
 > > tile_set = res://scenes/levels/DefensiveMicro.tscn::TileSet_m5xuc
 > PlayerStartPosition (Marker2D)
@@ -950,13 +997,26 @@ DefensiveMicro (Node2D)
 > > enable_wasd_movement = true
 > > bounds_enabled = false
 > > bounds_rect = [P: (-500.0, -500.0), S: (1500.0, 1200.0)]
+> GridManager (Node)
+>   script: res://scripts/utility/GridManager.gd
+> > grid_width = 60
+> > grid_height = 40
+> > cell_size = 32
+> BuildingContainer (Node2D)
+> RaidObjectiveManager (Node)
+>   script: res://scenes/missions/RaidObjectiveManager.gd
+> > victory_bonus_loot = {"gold":200}
+> > settlement_bridge_scene_path = "res://scenes/levels/SettlementBridge.tscn"
+> > is_defensive_mission = false
+> EnemySpawnPosition (Marker2D)
+> > position = (700.0, 100.0)
 
 --- SCENE: res://scenes/levels/SettlementBridge.tscn ---
 SettlementBridge (Node)
 > script: res://scripts/buildings/SettlementBridge.gd
 > scene: res://scenes/levels/SettlementBridge.tscn
 > home_base_data = res://data/settlements/home_base_fixed.tres
-> welcome_popup_scene = res://ui/WelcomeHome_Popup.tscn
+> end_of_year_popup_scene = res://ui/EndOfYear_Popup.tscn
 > world_map_scene_path = "res://scenes/world_map/MacroMap.tscn"
 > UnitContainer (Node2D)
 > UI (CanvasLayer)
@@ -1023,6 +1083,15 @@ SettlementBridge (Node)
 >             > layout_mode = 2
 >             GarrisonList (VBoxContainer)
 >             > layout_mode = 2
+>     DebugRaidButton (Button)
+>     > layout_mode = 1
+>     > anchors_preset = -1
+>     > anchor_left = 1.0
+>     > anchor_right = 1.0
+>     > offset_left = -143.0
+>     > offset_bottom = 27.0
+>     > grow_horizontal = 0
+>     > text = "DEBUG: Start Raid"
 >   RestartButton (Button)
 >   > visible = false
 >   > anchors_preset = -1
@@ -1067,8 +1136,12 @@ RaidMission (Node2D)
 > player_spawn_formation = {"units_per_row":5,"spacing":40}
 > mission_difficulty = 1.0
 > allow_retreat = true
+> is_defensive_mission = false
+> enemy_spawn_position = EnemySpawnPosition
 > PlayerStartPosition (Marker2D)
-> > position = (100.0, 400.0)
+> > position = (-161.0, 606.0)
+> EnemySpawnPosition (Marker2D)
+> > position = (382.0, 38.0)
 > RTSController (Node)
 >   script: res://player/RTSController.gd
 >   scene: res://player/RTSController.tscn
@@ -1103,28 +1176,6 @@ RaidMission (Node2D)
 > > victory_bonus_loot = {"gold":200}
 > > settlement_bridge_scene_path = "res://scenes/levels/SettlementBridge.tscn"
 > > is_defensive_mission = false
-> VikingRaider (CharacterBody2D)
->   script: res://scripts/units/EnemyVikingRaider.gd
->   scene: res://scenes/units/VikingRaider.tscn
-> > position = (945.0, 79.0)
-> > collision_layer = 4
-> > separation_enabled = true
-> > separation_force = 30.0
-> > separation_radius = 40.0
->   Sprite2D (Sprite2D)
->   > modulate = (0.5464, 0.0, 0.0, 1.0)
->   > self_modulate = (1.0, 0.0, 0.0, 1.0)
->   > scale = (0.059, 0.062)
->   > texture = res://textures/placeholders/unit_placeholder.png
->   CollisionShape2D (CollisionShape2D)
->   > shape = res://scenes/units/Base_Unit.tscn::RectangleShape2D_n6s0a
->   AttackTimer (Timer)
->   SeparationArea (Area2D)
->   > collision_layer = 0
->   > collision_mask = 2
->   > monitorable = false
->     CollisionShape2D (CollisionShape2D)
->     > shape = res://resources/separation_circle_shape.tres
 
 --- SCENE: res://scenes/units/Base_Unit.tscn ---
 Base_Unit (CharacterBody2D)
@@ -1205,6 +1256,8 @@ MacroMap (Node2D)
 > position = (131.0, 23.0)
 > raid_mission_scene_path = "res://scenes/missions/RaidMission.tscn"
 > settlement_bridge_scene_path = "res://scenes/levels/SettlementBridge.tscn"
+> end_year_popup_scene = res://ui/EndOfYear_Popup.tscn
+> enemy_raid_chance = 0.25
 > MapBackground (ColorRect)
 > > modulate = (0.7354, 0.7354, 0.7354, 1.0)
 > > custom_minimum_size = (1920.0, 1080.0)
@@ -1403,6 +1456,37 @@ BuildingPreviewCursor (Node2D)
 > script: res://scripts/ui/BuildingPreviewCursor.gd
 > scene: res://ui/BuildingPreviewCursor.tscn
 
+--- SCENE: res://ui/EndOfYear_Popup.tscn ---
+Main (PanelContainer)
+> script: res://ui/EndOfYear_Popup.gd
+> scene: res://ui/EndOfYear_Popup.tscn
+> anchor_left = 0.5
+> anchor_top = 0.5
+> anchor_right = 0.5
+> anchor_bottom = 0.5
+> offset_left = -150.0
+> offset_top = -75.0
+> offset_right = 150.0
+> offset_bottom = 75.0
+> grow_horizontal = 2
+> grow_vertical = 2
+> size_flags_horizontal = 4
+> size_flags_vertical = 4
+> theme = res://ui/themes/VikingDynastyTheme.tres
+> MarginContainer (MarginContainer)
+> > layout_mode = 2
+>   VBoxContainer (VBoxContainer)
+>   > layout_mode = 2
+>     PayoutLabel (Label)
+>     > layout_mode = 2
+>     > text = "Welcome home! ..."
+>     > horizontal_alignment = 1
+>     > vertical_alignment = 1
+>     CollectButton (Button)
+>     > custom_minimum_size = (120.0, 40.0)
+>     > layout_mode = 2
+>     > text = "Collect"
+
 --- SCENE: res://ui/SelectionBox.tscn ---
 SelectionBox (Control)
 > script: res://ui/SelectionBox.gd
@@ -1468,37 +1552,6 @@ Main (Control)
 >         > layout_mode = 2
 >         GarrisonList (VBoxContainer)
 >         > layout_mode = 2
-
---- SCENE: res://ui/WelcomeHome_Popup.tscn ---
-Main (PanelContainer)
-> script: res://ui/WelcomeHomePopup.gd
-> scene: res://ui/WelcomeHome_Popup.tscn
-> anchor_left = 0.5
-> anchor_top = 0.5
-> anchor_right = 0.5
-> anchor_bottom = 0.5
-> offset_left = -150.0
-> offset_top = -75.0
-> offset_right = 150.0
-> offset_bottom = 75.0
-> grow_horizontal = 2
-> grow_vertical = 2
-> size_flags_horizontal = 4
-> size_flags_vertical = 4
-> theme = res://ui/themes/VikingDynastyTheme.tres
-> MarginContainer (MarginContainer)
-> > layout_mode = 2
->   VBoxContainer (VBoxContainer)
->   > layout_mode = 2
->     PayoutLabel (Label)
->     > layout_mode = 2
->     > text = "Welcome home! ..."
->     > horizontal_alignment = 1
->     > vertical_alignment = 1
->     CollectButton (Button)
->     > custom_minimum_size = (120.0, 40.0)
->     > layout_mode = 2
->     > text = "Collect"
 --- END OF SCENE STRUCTURES ---
 
 #### **2.4. Codebase**
@@ -1613,7 +1666,6 @@ func _spawn_projectile(target_position_world: Vector2) -> void:
 # for the player's Jarl and dynasty state.
 # This is the "Core Pacing Engine" as defined in the GDD.
 # It is the single source of truth for all Jarl data.
-
 extends Node
 
 ## Emitted when Jarl data changes (e.g., spent Authority, ended year)
@@ -1621,6 +1673,10 @@ signal jarl_stats_updated(jarl_data: JarlData)
 
 var current_jarl: JarlData
 var current_raid_target: SettlementData
+
+# --- NEW: Flag for defensive missions ---
+var is_defensive_raid: bool = false
+# -------------------------------------
 
 # Path to the player's persistent Jarl data
 const PLAYER_JARL_PATH = "res://data/characters/PlayerJarl.tres"
@@ -1967,12 +2023,27 @@ func attempt_purchase(item_cost: Dictionary) -> bool:
 	print("Purchase successful. New treasury: %s" % current_settlement.treasury)
 	return true
 
+# --- MODIFIED: Added Stewardship Bonus Logic ---
 func calculate_payout() -> Dictionary:
 	if not current_settlement:
 		return {}
 
 	var total_payout: Dictionary = {}
+	
+	# 1. Get the Jarl's stewardship bonus
+	var stewardship_bonus: float = 1.0
+	var jarl = DynastyManager.get_current_jarl()
+	if jarl:
+		# Logic: +5% bonus for every point of stewardship above 10
+		var stewardship_skill = jarl.get_effective_skill("stewardship")
+		stewardship_bonus = 1.0 + (stewardship_skill - 10) * 0.05
+		# Ensure bonus can't be negative (e.g., stewardship below 10)
+		stewardship_bonus = max(0.5, stewardship_bonus) # Cap negative bonus at -50%
+		print("Jarl Stewardship: %d. Payout Multiplier: %s" % [stewardship_skill, stewardship_bonus])
+	else:
+		push_warning("SettlementManager: Could not get Jarl to calculate stewardship bonus.")
 
+	# 2. Calculate payout for each building
 	for building_entry in current_settlement.placed_buildings:
 		var building_data: BuildingData = load(building_entry["resource_path"])
 		if building_data is EconomicBuildingData:
@@ -1982,11 +2053,16 @@ func calculate_payout() -> Dictionary:
 			if not total_payout.has(resource_type):
 				total_payout[resource_type] = 0
 			
-			total_payout[resource_type] += eco_data.fixed_payout_amount
+			# 3. Apply the bonus and round to the nearest integer
+			var base_payout = eco_data.fixed_payout_amount
+			var final_payout = int(round(base_payout * stewardship_bonus))
+			
+			total_payout[resource_type] += final_payout
 
 	if not total_payout.is_empty():
-		print("Calculated fixed payout: %s" % total_payout)
+		print("Calculated fixed payout (with bonus): %s" % total_payout)
 	return total_payout
+# --- END MODIFICATION ---
 
 # --- Unit Management ---
 
@@ -2090,7 +2166,7 @@ func _is_cell_within_bounds(grid_position: Vector2i) -> bool:
 	return grid_position.x >= bounds.position.x and grid_position.x < bounds.end.x and \
 		   grid_position.y >= bounds.position.y and grid_position.y < bounds.end.y
 
-func get_astar_path(start_pos: Vector2, end_pos: Vector2) -> PackedVector2Array:
+func get_astar_path(start_pos: Vector2, end_pos: Vector2, allow_partial_path: bool = false) -> PackedVector2Array:
 	if not is_instance_valid(active_astar_grid):
 		push_error("AStarGrid is not registered!")
 		return PackedVector2Array()
@@ -2107,10 +2183,11 @@ func get_astar_path(start_pos: Vector2, end_pos: Vector2) -> PackedVector2Array:
 		return PackedVector2Array()
 	
 	if not _is_cell_within_bounds(end_id):
-		push_error("End position (%s) -> grid_id (%s) is out of bounds." % [end_pos, end_id])
-		return PackedVector2Array()
+		# Don't error if the end_id is out of bounds, a partial path might still work
+		pass
 	
-	return active_astar_grid.get_point_path(start_id, end_id)
+	# Pass the allow_partial_path flag to the real AStarGrid2D function
+	return active_astar_grid.get_point_path(start_id, end_id, allow_partial_path)
 
 func set_astar_point_solid(grid_position: Vector2i, solid: bool) -> void:
 	if not is_instance_valid(active_astar_grid):
@@ -2129,7 +2206,6 @@ func set_astar_point_solid(grid_position: Vector2i, solid: bool) -> void:
 # This script is attached to the Base_Building.tscn scene.
 # It procedurally creates its own visual nodes
 # and instances its AI component from its 'data' resource.
-
 class_name BaseBuilding
 extends StaticBody2D
 
@@ -2142,6 +2218,7 @@ var current_health: int = 100
 var background: ColorRect
 var label: Label
 var collision_shape: CollisionShape2D
+var hitbox_area: Area2D # --- NEW ---
 
 # Development visual enhancements
 var health_bar: ProgressBar
@@ -2154,6 +2231,11 @@ func _ready() -> void:
 	if not data:
 		push_warning("BaseBuilding: Node is missing its 'BuildingData' resource. Cannot initialize.")
 		return
+	
+	# --- DEBUGGING ---
+	print("--- BaseBuilding DEBUG ---")
+	print("'%s' SPAWNED. Collision Layer: %s, Collision Mask: %s" % [name, collision_layer, collision_mask])
+	print("--------------------------")
 	
 	current_health = data.max_health
 	
@@ -2168,9 +2250,43 @@ func _ready() -> void:
 	add_child(background)
 	# -------------------------
 	
+	# --- NEW: Create the Hitbox ---
+	_create_hitbox()
+	# --- END NEW ---
+	
 	_apply_data_and_scale()
 	_create_dev_visuals()
 	_setup_defensive_ai()
+
+	# --- REMOVED ---
+	# connect("area_entered", _on_area_entered) # This was incorrect
+	# --- END REMOVED ---
+
+# --- NEW FUNCTION ---
+func _create_hitbox() -> void:
+	"""Creates an Area2D child to act as a detectable hitbox for projectiles."""
+	hitbox_area = Area2D.new()
+	hitbox_area.name = "Hitbox"
+	
+	# This is the "Player Buildings" layer (Layer 1)
+	hitbox_area.collision_layer = 1
+	hitbox_area.collision_mask = 0 # Doesn't need to detect anything
+	
+	hitbox_area.monitoring = false # Doesn't need to detect bodies or areas
+	hitbox_area.monitorable = true # CAN BE detected by other areas (projectiles)
+	
+	# Create a shape for the hitbox
+	var hitbox_shape = CollisionShape2D.new()
+	hitbox_shape.shape = RectangleShape2D.new()
+	hitbox_area.add_child(hitbox_shape)
+	
+	add_child(hitbox_area)
+	print("'%s' created Area2D Hitbox on Layer %s" % [name, hitbox_area.collision_layer])
+# --- END NEW FUNCTION ---
+
+# --- REMOVED ---
+# func _on_area_entered(area: Area2D) -> void: ...
+# --- END REMOVED ---
 
 func _apply_data_and_scale() -> void:
 	if not SettlementManager:
@@ -2195,10 +2311,19 @@ func _apply_data_and_scale() -> void:
 
 	if collision_shape and collision_shape.shape is RectangleShape2D:
 		collision_shape.shape.size = target_size
-	else:
-		push_warning("BaseBuilding: '%s' is missing its CollisionShape2D node or its shape is not a RectangleShape2D. Collision will not match visuals." % [data.display_name])
+	
+	# --- NEW: Scale the hitbox shape ---
+	if hitbox_area:
+		var hitbox_shape = hitbox_area.get_child(0) as CollisionShape2D
+		if hitbox_shape and hitbox_shape.shape is RectangleShape2D:
+			hitbox_shape.shape.size = target_size
+	# --- END NEW ---
 
 func take_damage(amount: int) -> void:
+	# --- DEBUGGING ---
+	print("'%s' TOOK %d DAMAGE. Health: %d/%d" % [name, amount, current_health - amount, data.max_health])
+	# --- END DEBUGGING ---
+	
 	current_health = max(0, current_health - amount)
 	
 	if health_bar:
@@ -2312,8 +2437,12 @@ func _setup_defensive_ai() -> void:
 	if attack_ai.has_method("configure_from_data"):
 		attack_ai.configure_from_data(data)
 	
-	# Set target mask to hit player units (Layer 2)
+	# --- DEBUGGING ---
+	# For defensive buildings, the target mask is set in Base_Building.gd
 	var player_collision_mask: int = 1 << 1  # Layer 2 (bit position 1)
+	print("'%s' (Defensive) AI: Setting target mask to %s (Player Units)" % [name, player_collision_mask])
+	# --- END DEBUGGING ---
+	
 	if attack_ai.has_method("set_target_mask"):
 		attack_ai.set_target_mask(player_collision_mask)
 	
@@ -2387,6 +2516,9 @@ extends Resource
 
 ## The projectile scene to spawn when this building attacks (for defensive structures).
 @export var projectile_scene: PackedScene
+
+## The speed of the projectile, in pixels per second.
+@export var projectile_speed: float = 400.0
 
 --- SCRIPT: res://data/buildings/EconomicBuildingData.gd ---
 # res://data/buildings/EconomicBuildingData.gd
@@ -2822,6 +2954,9 @@ extends Resource
 ## The projectile scene to spawn when this unit attacks (for ranged units).
 @export var projectile_scene: PackedScene
 
+## The speed of the projectile, in pixels per second.
+@export var projectile_speed: float = 400.0
+
 
 @export_group("Visuals")
 ## The texture to use for the unit's sprite.
@@ -3208,7 +3343,6 @@ func _select_control_group(num: int) -> void:
 #
 # A modular AI component that provides attack behavior for any unit or building.
 # Simply instance this as a child of units or buildings that need to attack.
-
 class_name AttackAI
 extends Node2D
 
@@ -3225,6 +3359,10 @@ signal about_to_attack(target: Node2D, damage: int)
 @export var attack_speed: float = 1.0  # attacks per second
 @export var projectile_scene: PackedScene
 @export var target_collision_mask: int = 0  # What layers to target
+
+# --- NEW: Added projectile speed ---
+var projectile_speed: float = 400.0
+# ---------------------------------
 
 # Node references
 @onready var detection_area: Area2D = $DetectionArea
@@ -3259,11 +3397,17 @@ func _setup_ai() -> void:
 		
 		# Connect detection signals
 		detection_area.body_entered.connect(_on_target_entered)
+		detection_area.area_entered.connect(_on_target_entered) # Also check for areas (building hitboxes)
 		detection_area.body_exited.connect(_on_target_exited)
+		detection_area.area_exited.connect(_on_target_exited) # Also check for areas
 	
 	# Configure attack timer
 	if attack_timer:
-		attack_timer.wait_time = 1.0 / attack_speed
+		if attack_speed > 0:
+			attack_timer.wait_time = 1.0 / attack_speed
+		else:
+			attack_timer.wait_time = 999.0 # Effectively disable timer if speed is 0
+	
 		attack_timer.timeout.connect(_on_attack_timer_timeout)
 
 func configure_from_data(data_resource) -> void:
@@ -3281,9 +3425,17 @@ func configure_from_data(data_resource) -> void:
 	if "projectile_scene" in data_resource:
 		projectile_scene = data_resource.projectile_scene
 	
+	# --- NEW: Read projectile speed ---
+	if "projectile_speed" in data_resource:
+		projectile_speed = data_resource.projectile_speed
+	# ----------------------------------
+	
 	# Update attack timer if it exists
 	if attack_timer:
-		attack_timer.wait_time = 1.0 / attack_speed
+		if attack_speed > 0:
+			attack_timer.wait_time = 1.0 / attack_speed
+		else:
+			attack_timer.wait_time = 999.0 # Effectively disable timer if speed is 0
 	
 	# Update detection radius if it exists
 	if detection_area and detection_area.get_child(0) is CollisionShape2D:
@@ -3302,16 +3454,24 @@ func force_target(target: Node2D) -> void:
 	if not is_instance_valid(target):
 		return
 	
-	current_target = target
-	if target not in targets_in_range:
-		targets_in_range.append(target)
+	# --- MODIFIED ---
+	# If the target is a BaseBuilding, target its 'Hitbox' child instead
+	if target is BaseBuilding and target.has_node("Hitbox"):
+		current_target = target.get_node("Hitbox")
+	else:
+		current_target = target
+	# --- END MODIFIED ---
+	
+	if current_target not in targets_in_range:
+		targets_in_range.append(current_target)
 	
 	_start_attacking()
 
 func stop_attacking() -> void:
 	"""Stop all attack behavior"""
 	current_target = null
-	targets_in_range.clear()
+	# Don't clear targets_in_range, as _on_target_exited handles that.
+	# If we clear it, units that are still in range won't be re-acquired.
 	_stop_attacking()
 
 func _on_target_entered(body: Node2D) -> void:
@@ -3335,29 +3495,57 @@ func _on_target_exited(body: Node2D) -> void:
 		_select_target()
 
 func _select_target() -> void:
-	"""Select the closest valid target from the targets_in_range array"""
+	"""Select the closest valid target, prioritizing units over buildings."""
 	if targets_in_range.is_empty():
 		current_target = null
 		_stop_attacking()
 		return
 	
-	# Find closest target
+	# --- NEW PRIORITY LOGIC ---
+	var unit_targets: Array[Node2D] = []
+	var building_targets: Array[Node2D] = []
+
+	# 1. Prune invalid targets and sort into lists
+	for target in targets_in_range:
+		if not is_instance_valid(target):
+			targets_in_range.erase(target)
+			continue
+		
+		# Layer 2 is Player_Units
+		if target.collision_layer & (1 << 1): 
+			unit_targets.append(target)
+		# Layer 1 is Player_Buildings (hitbox)
+		elif target.collision_layer & (1 << 0): 
+			building_targets.append(target)
+
 	var closest_target: Node2D = null
 	var closest_distance: float = INF
 	
-	for target in targets_in_range:
-		if is_instance_valid(target):
+	# 2. Prioritize Units: Find the closest unit
+	if not unit_targets.is_empty():
+		for target in unit_targets:
 			var distance = parent_node.global_position.distance_to(target.global_position)
 			if distance < closest_distance:
 				closest_distance = distance
 				closest_target = target
-		else:
-			# Remove invalid targets
-			targets_in_range.erase(target)
 	
+	# 3. Fallback to Buildings: If no units, find the closest building
+	elif not building_targets.is_empty():
+		for target in building_targets:
+			var distance = parent_node.global_position.distance_to(target.global_position)
+			if distance < closest_distance:
+				closest_distance = distance
+				closest_target = target
+	
+	# 4. Set the target
 	current_target = closest_target
+	# --- END NEW PRIORITY LOGIC ---
+	
 	if current_target:
 		_start_attacking()
+	else:
+		# No valid targets were found
+		_stop_attacking()
 
 func _start_attacking() -> void:
 	"""Begin attacking the current target"""
@@ -3388,7 +3576,8 @@ func _on_attack_timer_timeout() -> void:
 		return
 	
 	var distance_to_target = parent_node.global_position.distance_to(current_target.global_position)
-	if distance_to_target > attack_range:
+	# Use a small buffer (e.g., 10 pixels) for range check
+	if distance_to_target > attack_range + 10.0:
 		_select_target()
 		return
 	
@@ -3401,8 +3590,14 @@ func _on_attack_timer_timeout() -> void:
 		_spawn_projectile(current_target.global_position)
 	else:
 		# MELEE: Direct damage
-		if current_target.has_method("take_damage"):
-			current_target.take_damage(attack_damage)
+		var target_to_damage = current_target
+		
+		# If the target is a hitbox, damage its parent building
+		if target_to_damage.name == "Hitbox":
+			target_to_damage = target_to_damage.get_parent()
+		
+		if target_to_damage.has_method("take_damage"):
+			target_to_damage.take_damage(attack_damage)
 
 func _spawn_projectile(target_position_world: Vector2) -> void:
 	"""Spawn a projectile towards the target position"""
@@ -3416,17 +3611,22 @@ func _spawn_projectile(target_position_world: Vector2) -> void:
 		print("Error: Failed to instantiate projectile for AttackAI")
 		return
 	
-	# Add projectile to the current scene
-	parent_node.get_tree().current_scene.add_child(projectile)
+	# --- DEBUGGING ---
+	print("--- AttackAI DEBUG ---")
+	print("'%s' spawning projectile. Target Mask being sent: %s" % [parent_node.name, target_collision_mask])
+	print("----------------------")
 	
-	# Initialize the projectile
+	# 1. Initialize the projectile
 	projectile.setup(
 		parent_node.global_position,  # start position
 		target_position_world,        # target position
 		attack_damage,                # damage
-		400.0,                        # projectile speed
+		projectile_speed,             # Use configured speed
 		target_collision_mask         # what to hit
 	)
+	
+	# 2. Add projectile to the current scene
+	parent_node.get_tree().current_scene.add_child(projectile)
 
 --- SCRIPT: res://scenes/effects/Projectile.gd ---
 # res://scenes/effects/Projectile.gd
@@ -3441,13 +3641,16 @@ extends Area2D
 var damage: int = 0
 var speed: float = 400.0
 var direction: Vector2 = Vector2.RIGHT
-var valid_collision_mask: int = 0  # Set by the firing unit to determine what to hit
 
 @onready var lifetime_timer: Timer = $LifetimeTimer
 
 func _ready() -> void:
-	# Connect signals in code
+	# --- THIS IS THE FIX (Part 1) ---
+	# We now connect to 'area_entered' to detect the building's Hitbox
+	area_entered.connect(_on_area_entered)
+	# We also keep body_entered for the Watchtower's projectiles
 	body_entered.connect(_on_body_entered)
+	# --- END FIX ---
 	lifetime_timer.timeout.connect(_on_lifetime_timeout)
 
 func _physics_process(delta: float) -> void:
@@ -3457,7 +3660,6 @@ func _physics_process(delta: float) -> void:
 func setup(start_position: Vector2, target_position: Vector2, projectile_damage: int, projectile_speed: float = 400.0, collision_mask: int = 0) -> void:
 	"""
 	Initialize the projectile with all necessary parameters.
-	
 	Args:
 		start_position: Where the projectile starts
 		target_position: Where to aim (calculates direction)
@@ -3469,32 +3671,79 @@ func setup(start_position: Vector2, target_position: Vector2, projectile_damage:
 	direction = (target_position - start_position).normalized()
 	damage = projectile_damage
 	speed = projectile_speed
-	valid_collision_mask = collision_mask
 	
 	# Set the collision mask on the Area2D
-	collision_mask = collision_mask
+	self.collision_mask = collision_mask
+	
+	# --- THIS IS THE FIX (Part 2) ---
+	# Set 'monitoring' to true. This tells the Area2D to
+	# detect 'monitorable' areas AND bodies.
+	self.monitoring = true
+	
+	# Set 'monitorable' to false. This projectile doesn't
+	# need to be detected by other areas.
+	self.monitorable = false
+	# --- END FIX ---
+	
+	# --- DEBUGGING ---
+	print("--- Projectile DEBUG ---")
+	print("Projectile spawned. Mask: %s, monitoring: %s" % [self.collision_mask, self.monitoring])
+	print("------------------------")
 	
 	# Point the projectile in the direction of travel (for visual rotation)
 	if direction != Vector2.ZERO:
+		# Sprite is horizontal, so just angle() is correct.
 		rotation = direction.angle()
 
+# --- NEW FUNCTION (for hitting buildings) ---
+func _on_area_entered(area: Area2D) -> void:
+	"""Called when this Area2D detects a 'monitorable' Area2D (like our Hitbox)."""
+	
+	# --- DEBUGGING ---
+	print("--- Projectile HIT Area ---")
+	print("Projectile hit area '%s' on layer %s!" % [area.name, area.collision_layer])
+	print("  > My mask is: %s" % self.collision_mask)
+	
+	# Check if the area's layer matches our mask
+	if area.collision_layer & self.collision_mask:
+		print("  > SUCCESS: Layer matches mask.")
+		# Find the building, which is the parent of the Hitbox
+		var parent_body = area.get_parent()
+		if parent_body and parent_body.has_method("take_damage"):
+			parent_body.take_damage(damage)
+			queue_free() # Destroy projectile
+		else:
+			print("  > ERROR: Hitbox parent is not a building or cannot take damage.")
+	else:
+		print("  > FAILURE: Layer does not match mask.")
+	print("---------------------------")
+# --- END NEW FUNCTION ---
+
+# --- EXISTING FUNCTION (for hitting units) ---
 func _on_body_entered(body: Node2D) -> void:
-	# Check if this body is on a layer we're supposed to hit
-	if body is CharacterBody2D or body is RigidBody2D or body is StaticBody2D:
-		var body_layer = 0
-		if body.has_method("get_collision_layer"):
-			body_layer = body.get_collision_layer()
-		elif "collision_layer" in body:
-			body_layer = body.collision_layer
+	"""Called when this Area2D detects a 'monitorable' PhysicsBody (like a unit)."""
+	
+	if not body is CollisionObject2D:
+		return
+	
+	# --- DEBUGGING ---
+	print("--- Projectile HIT Body ---")
+	print("Projectile hit body '%s' on layer %s!" % [body.name, body.collision_layer])
+	print("  > My mask is: %s" % self.collision_mask)
+
+	# Check if the body's layer matches our mask
+	if body.collision_layer & self.collision_mask:
+		print("  > SUCCESS: Layer matches mask.")
+		# Deal damage if the body can take it
+		if body.has_method("take_damage"):
+			body.take_damage(damage)
 		
-		# Check if this body's layer matches our collision mask
-		if body_layer & valid_collision_mask:
-			# Deal damage if the body can take it
-			if body.has_method("take_damage"):
-				body.take_damage(damage)
-			
-			# Destroy the projectile
-			queue_free()
+		# Destroy the projectile
+		queue_free()
+	else:
+		print("  > FAILURE: Layer does not match mask.")
+	print("---------------------------")
+# --- END EXISTING FUNCTION ---
 
 func _on_lifetime_timeout() -> void:
 	# Projectile flew for too long, destroy self
@@ -3509,7 +3758,6 @@ func _on_lifetime_timeout() -> void:
 # This script is now just a "level loader."
 # It loads the map, spawns buildings/units, and then
 # passes control to the RaidObjectiveManager node.
-
 extends Node2D
 
 # --- Exported Mission Configuration ---
@@ -3524,24 +3772,31 @@ extends Node2D
 @export var mission_difficulty: float = 1.0
 @export var allow_retreat: bool = true
 
-# --- REMOVED: These vars were moved to RaidObjectiveManager ---
-# @export var settlement_bridge_scene_path: String
-# @export var is_defensive_mission: bool
-# @export var victory_bonus_loot: Dictionary
+# --- NEW: Defensive Mission ---
+@export var is_defensive_mission: bool = false
+@export var enemy_spawn_position: NodePath
+# -----------------------------
 
 # --- Node References ---
 @onready var player_spawn_pos: Marker2D = $PlayerStartPosition
 @onready var rts_controller: RTSController = $RTSController
 @onready var grid_manager: Node = $GridManager
 @onready var building_container: Node2D = $BuildingContainer
-@onready var objective_manager: Node = $RaidObjectiveManager # New reference
+@onready var objective_manager: RaidObjectiveManager = $RaidObjectiveManager # New reference
 
 # --- State Variables ---
-var enemy_hall: BaseBuilding = null
-# --- REMOVED: var raid_loot: RaidLootData = null ---
+var objective_building: BaseBuilding = null # Renamed from enemy_hall
+var enemy_units: Array[BaseUnit] = []
 
 
 func _ready() -> void:
+	# --- NEW: Check for defensive raid flag ---
+	if DynastyManager.is_defensive_raid:
+		self.is_defensive_mission = true
+		objective_manager.is_defensive_mission = true
+		DynastyManager.is_defensive_raid = false # Reset flag
+	# ----------------------------------------
+	
 	EventBus.settlement_loaded.connect(_on_settlement_ready_for_mission)
 	
 	if not SettlementManager.has_current_settlement():
@@ -3572,7 +3827,6 @@ func _load_test_settlement() -> void:
 
 func _on_settlement_ready_for_mission(_settlement_data: SettlementData) -> void:
 	"""Called when settlement is loaded - only initialize if we haven't already"""
-	# Check if objective_manager has been initialized (as a proxy for mission start)
 	if not is_instance_valid(objective_manager.rts_controller): 
 		print("RaidMission: Settlement loaded - initializing mission")
 		initialize_mission()
@@ -3586,12 +3840,6 @@ func initialize_mission() -> void:
 		get_tree().quit()
 		return
 	
-	if not enemy_base_data:
-		enemy_base_data = load(default_enemy_base_path)
-		if not enemy_base_data:
-			push_error("Could not load enemy base data from default path.")
-			return
-	
 	# 1. Register local grid
 	if not is_instance_valid(grid_manager) or not "astar_grid" in grid_manager:
 		push_error("RaidMission: GridManager node is missing or invalid!")
@@ -3599,22 +3847,85 @@ func initialize_mission() -> void:
 	var local_astar_grid = grid_manager.astar_grid
 	SettlementManager.register_active_scene_nodes(local_astar_grid, building_container)
 	
-	# 2. Load buildings and grid
-	_load_enemy_base()
-	_update_astar_grid_for_enemy_base()
-	
-	# 3. Spawn units
-	_spawn_player_garrison()
+	# --- MODIFIED: Load correct base based on mission type ---
+	if is_defensive_mission:
+		_load_player_base_for_defense()
+		_spawn_player_garrison() # Spawn defenders
+		_spawn_enemy_wave() # Spawn attackers
+	else:
+		# Standard offensive raid
+		if not enemy_base_data:
+			enemy_base_data = load(default_enemy_base_path)
+			if not enemy_base_data:
+				push_error("Could not load enemy base data from default path.")
+				return
+		_load_enemy_base()
+		_spawn_player_garrison() # Spawn attackers
+	# --- END MODIFICATION ---
 	
 	# 4. Hand off to Objective Manager
-	if is_instance_valid(enemy_hall):
-		objective_manager.initialize(rts_controller, enemy_hall, building_container)
+	if is_instance_valid(objective_building):
+		# Pass enemy unit array for defensive win condition
+		objective_manager.initialize(rts_controller, objective_building, building_container, enemy_units)
 	else:
-		push_error("RaidMission: Could not find Enemy Hall! Objectives will not function.")
+		push_error("RaidMission: Could not find Objective Building (Great Hall)! Objectives will not function.")
+
+
+func _load_player_base_for_defense() -> void:
+	print("Loading PLAYER base for defense...")
+	var settlement = SettlementManager.current_settlement
+	if not settlement:
+		push_error("Defensive Mission: Cannot load player base, SettlementManager.current_settlement is null.")
+		return
+		
+	for building_entry in settlement.placed_buildings:
+		var building_res_path: String = building_entry["resource_path"]
+		var grid_pos: Vector2i = building_entry["grid_position"]
+		
+		var building_data: BuildingData = load(building_res_path)
+		if not building_data or not building_data.scene_to_spawn:
+			push_error("Failed to load building: %s" % building_res_path)
+			continue
+		
+		var building_instance: BaseBuilding = building_data.scene_to_spawn.instantiate()
+		building_instance.name = building_data.display_name + "_Player"
+		building_instance.data = building_data
+		
+		# --- MODIFICATION: Correct Building Placement Logic ---
+		var world_pos_top_left: Vector2 = Vector2(grid_pos) * grid_manager.cell_size
+		var building_footprint_size: Vector2 = Vector2(building_data.grid_size) * grid_manager.cell_size
+		var building_center_offset: Vector2 = building_footprint_size / 2.0
+		building_instance.global_position = world_pos_top_left + building_center_offset
+		# --- END MODIFICATION ---
+		
+		# --- SET PLAYER BUILDING COLLISION LAYER ---
+		# This sets the StaticBody2D's layer (for pathfinding, etc.)
+		building_instance.set_collision_layer(1)
+		# The StaticBody2D itself doesn't need to detect anything.
+		building_instance.set_collision_mask(0) 
+		
+		# --- REMOVED ---
+		# The following lines were incorrect and caused the crash.
+		# The Base_Building.gd script now handles its own hitbox setup.
+		# building_instance.set_collision_mask(1 << 10) 
+		# building_instance.monitoring = true
+		# --- END REMOVED ---
+		
+		if building_data.display_name.to_lower().contains("hall"):
+			objective_building = building_instance
+			print("Found player's Great Hall for objective.")
+			
+		# Connect signal for GRID CLEARING
+		if building_instance.has_signal("building_destroyed"):
+			building_instance.building_destroyed.connect(_on_enemy_building_destroyed_grid_clear)
+		
+		building_container.add_child(building_instance)
+	
+	_update_astar_grid_for_base(settlement.placed_buildings)
+
 
 func _load_enemy_base() -> void:
-	print("Loading enemy base...")
-	
+	print("Loading ENEMY base for offense...")
 	if not enemy_base_data:
 		push_error("No enemy base data provided")
 		return
@@ -3638,21 +3949,30 @@ func _load_enemy_base() -> void:
 		if "data" in building_instance:
 			building_instance.data = building_data
 		
-		var world_pos: Vector2 = Vector2(grid_pos) * grid_manager.cell_size + (Vector2.ONE * grid_manager.cell_size / 2.0)
-		building_instance.global_position = world_pos
+		# --- MODIFICATION: Correct Building Placement Logic ---
+		var world_pos_top_left: Vector2 = Vector2(grid_pos) * grid_manager.cell_size
+		var building_footprint_size: Vector2 = Vector2(building_data.grid_size) * grid_manager.cell_size
+		var building_center_offset: Vector2 = building_footprint_size / 2.0
+		building_instance.global_position = world_pos_top_left + building_center_offset
+		# --- END MODIFICATION ---
 		
 		building_instance.add_to_group("enemy_buildings")
 		
-		if building_instance.has_method("set_collision_layer"):
-			building_instance.set_collision_layer(4)
-			building_instance.set_collision_mask(0)
+		# SET ENEMY BUILDING COLLISION LAYER
+		building_instance.set_collision_layer(1 << 3) # Layer 4
+		building_instance.set_collision_mask(0)
+		
+		# --- REMOVED ---
+		# building_instance.set_collision_mask(1 << 10)
+		# building_instance.monitoring = true
+		# --- END REMOVED ---
 		
 		building_instance.set_meta("building_data", building_data)
 		building_instance.set_meta("is_enemy_building", true)
 		
 		# Find the hall
 		if building_data.display_name.to_lower().contains("hall"):
-			enemy_hall = building_instance
+			objective_building = building_instance
 			print("Found enemy hall: %s" % building_data.display_name)
 		
 		# Connect signal for GRID CLEARING (loot is handled by objective manager)
@@ -3660,14 +3980,13 @@ func _load_enemy_base() -> void:
 			building_instance.building_destroyed.connect(_on_enemy_building_destroyed_grid_clear)
 		
 		building_container.add_child(building_instance)
+	
+	_update_astar_grid_for_base(enemy_base_data.placed_buildings)
 
-func _update_astar_grid_for_enemy_base() -> void:
-	print("Updating A* grid for enemy base...")
+func _update_astar_grid_for_base(placed_buildings: Array) -> void:
+	print("Updating A* grid for base...")
 	
-	if not enemy_base_data:
-		return
-	
-	for building_entry in enemy_base_data.placed_buildings:
+	for building_entry in placed_buildings:
 		var building_data: BuildingData = load(building_entry["resource_path"])
 		if not building_data:
 			continue
@@ -3683,7 +4002,8 @@ func _update_astar_grid_for_enemy_base() -> void:
 	
 	if is_instance_valid(grid_manager) and is_instance_valid(grid_manager.astar_grid):
 		grid_manager.astar_grid.update()
-		print("A* grid updated for enemy base with %d buildings" % enemy_base_data.placed_buildings.size())
+		print("A* grid updated for base with %d buildings" % placed_buildings.size())
+
 
 func _spawn_player_garrison() -> void:
 	print("=== SPAWNING PLAYER GARRISON ===")
@@ -3696,8 +4016,7 @@ func _spawn_player_garrison() -> void:
 	var garrison = SettlementManager.current_settlement.garrisoned_units
 	if garrison.is_empty():
 		print("No units in garrison to spawn")
-		# We must still check for a loss condition
-		if not objective_manager.is_defensive_mission:
+		if not is_defensive_mission:
 			# Defer the call to the objective manager
 			objective_manager.call_deferred("_check_loss_condition")
 		return
@@ -3727,6 +4046,11 @@ func _spawn_player_garrison() -> void:
 				unit_instance.data = unit_data
 			
 			var spawn_pos: Vector2 = player_spawn_pos.global_position
+			
+			# --- MODIFICATION: Spawn near hall in defense ---
+			if is_defensive_mission and is_instance_valid(objective_building):
+				spawn_pos = objective_building.global_position + Vector2(100, 100) # Offset from hall
+			
 			spawn_pos.x += current_col * spacing
 			spawn_pos.y += current_row * spacing
 			unit_instance.global_position = spawn_pos
@@ -3740,6 +4064,46 @@ func _spawn_player_garrison() -> void:
 				current_col = 0
 				current_row += 1
 
+# --- NEW FUNCTION ---
+func _spawn_enemy_wave() -> void:
+	print("=== SPAWNING ENEMY WAVE ===")
+	var enemy_spawner = get_node_or_null(enemy_spawn_position)
+	if not is_instance_valid(enemy_spawner):
+		push_error("Defensive Mission: Invalid or missing 'Enemy Spawn Position' node!")
+		return
+		
+	var enemy_data_path = "res://data/units/Unit_Raider.tres"
+	var enemy_data: UnitData = load(enemy_data_path)
+	if not enemy_data or not enemy_data.scene_to_spawn:
+		push_error("Failed to load enemy unit data: %s" % enemy_data_path)
+		return
+
+	var enemy_count = 5 # TODO: Make this scale with difficulty
+	for i in range(enemy_count):
+		var enemy_unit: BaseUnit = enemy_data.scene_to_spawn.instantiate()
+		enemy_unit.name = enemy_data.display_name + "_Enemy_" + str(i)
+		enemy_unit.data = enemy_data
+		
+		# --- SET ENEMY UNIT COLLISION LAYER ---
+		enemy_unit.collision_layer = 4  # Layer 3 (bit position 2) for Enemy Units
+		print("RaidMission: Enemy unit '%s' set to Layer 3 (Enemy Units)" % enemy_unit.name)
+		# --- END COLLISION LAYER SETUP ---
+		
+		# Spawn in a line
+		var spawn_pos = enemy_spawner.global_position + Vector2(i * 40, 0)
+		enemy_unit.global_position = spawn_pos
+		
+		enemy_unit.add_to_group("enemy_units")
+		enemy_units.append(enemy_unit) # Add to array for tracking
+		add_child(enemy_unit)
+		
+		# Command enemy to attack the player's hall
+		if is_instance_valid(objective_building):
+			enemy_unit.fsm.command_attack(objective_building)
+	
+	print("Spawned %d enemy raiders." % enemy_count)
+
+# --- END NEW FUNCTION ---
 
 func _spawn_test_units() -> void:
 	# This function is for debug only and does not need refactoring
@@ -3803,10 +4167,12 @@ func _clear_building_from_pathfinding_grid(building: BaseBuilding) -> void:
 		return
 		
 	var cell_size = grid_manager.cell_size
-	var half_cell = Vector2.ONE * cell_size / 2.0
 	
-	var world_pos = building.global_position
-	var grid_pos = Vector2i((world_pos - half_cell) / cell_size) 
+	# --- FIX: Calculate grid_pos from top-left, not center ---
+	var size_in_pixels = Vector2(building.data.grid_size) * cell_size
+	var top_left_pos = building.global_position - (size_in_pixels / 2.0)
+	var grid_pos = Vector2i(top_left_pos / cell_size)
+	# --- END FIX ---
 	var grid_size = building.data.grid_size
 	
 	for x in range(grid_size.x):
@@ -3818,13 +4184,6 @@ func _clear_building_from_pathfinding_grid(building: BaseBuilding) -> void:
 		grid_manager.astar_grid.update()
 		print("RaidMission: Cleared pathfinding for destroyed building at %s (size: %s)" % [grid_pos, grid_size])
 
-# --- ALL WIN/LOSS FUNCTIONS REMOVED ---
-# _setup_win_loss_conditions()
-# _check_loss_condition()
-# _on_mission_failed()
-# _show_failure_message()
-# _on_enemy_hall_destroyed()
-
 --- SCRIPT: res://scenes/missions/RaidObjectiveManager.gd ---
 # res://scenes/missions/RaidObjectiveManager.gd
 #
@@ -3832,7 +4191,7 @@ func _clear_building_from_pathfinding_grid(building: BaseBuilding) -> void:
 # loot, win conditions, and loss conditions.
 # Decoupled from RaidMission.gd (which is now just a level loader).
 extends Node
-
+class_name RaidObjectiveManager
 # --- Mission Configuration ---
 # These will be set in the Inspector on this node.
 @export var victory_bonus_loot: Dictionary = {"gold": 200}
@@ -3843,17 +4202,20 @@ extends Node
 # --- Internal State ---
 var raid_loot: RaidLootData
 var rts_controller: RTSController
-var enemy_hall: BaseBuilding
+var objective_building: BaseBuilding
 var building_container: Node2D
+var enemy_units: Array[BaseUnit] = [] # For defensive win condition
 var is_initialized: bool = false
+var mission_over: bool = false
 
 func _ready() -> void:
 	raid_loot = RaidLootData.new()
 
 func initialize(
 	p_rts_controller: RTSController, 
-	p_enemy_hall: BaseBuilding, 
-	p_building_container: Node2D
+	p_objective_building: BaseBuilding, 
+	p_building_container: Node2D,
+	p_enemy_units: Array[BaseUnit] = []
 ) -> void:
 	"""
 	Called by RaidMission.gd after the level is loaded
@@ -3865,11 +4227,12 @@ func initialize(
 		return
 		
 	self.rts_controller = p_rts_controller
-	self.enemy_hall = p_enemy_hall
+	self.objective_building = p_objective_building
 	self.building_container = p_building_container
+	self.enemy_units = p_enemy_units
 	
 	if not is_instance_valid(rts_controller) or \
-	   not is_instance_valid(enemy_hall) or \
+	   not is_instance_valid(objective_building) or \
 	   not is_instance_valid(building_container):
 		push_error("RaidObjectiveManager: Failed to initialize. Received invalid node references.")
 		return
@@ -3877,7 +4240,9 @@ func initialize(
 	print("RaidObjectiveManager: Initialized and tracking objectives.")
 	
 	# Connect to all necessary signals
-	_connect_to_building_signals()
+	if not is_defensive_mission:
+		_connect_to_building_signals()
+		
 	_setup_win_loss_conditions()
 	
 	# Mark as initialized
@@ -3886,9 +4251,9 @@ func initialize(
 
 func _connect_to_building_signals() -> void:
 	# Connect to the Great Hall for the win condition
-	if enemy_hall.has_signal("building_destroyed"):
-		if not enemy_hall.building_destroyed.is_connected(_on_enemy_hall_destroyed):
-			enemy_hall.building_destroyed.connect(_on_enemy_hall_destroyed)
+	if objective_building.has_signal("building_destroyed"):
+		if not objective_building.building_destroyed.is_connected(_on_enemy_hall_destroyed):
+			objective_building.building_destroyed.connect(_on_enemy_hall_destroyed)
 	
 	# Connect to *all* buildings for loot collection
 	for building in building_container.get_children():
@@ -3900,6 +4265,8 @@ func _connect_to_building_signals() -> void:
 
 func _on_enemy_building_destroyed_for_loot(building: BaseBuilding) -> void:
 	"""Called when any enemy building is destroyed - collect loot."""
+	if mission_over: return
+	
 	var building_data = building.data as BuildingData
 	
 	if raid_loot and building_data:
@@ -3912,46 +4279,90 @@ func _on_enemy_building_destroyed_for_loot(building: BaseBuilding) -> void:
 
 func _setup_win_loss_conditions() -> void:
 	"""Setup win/loss condition monitoring"""
-	if not is_defensive_mission:
-		# Start periodic check for loss condition
-		_check_loss_condition()
+	if is_defensive_mission:
+		# --- DEFENSIVE MISSION ---
+		# Lose if Hall is destroyed
+		if objective_building.has_signal("building_destroyed"):
+			objective_building.building_destroyed.connect(_on_player_hall_destroyed)
+		# Win if all enemies are defeated
+		_check_defensive_win_condition()
 	else:
-		print("RaidObjectiveManager: Skipping 'all units destroyed' loss check for defensive mission.")
+		# --- OFFENSIVE MISSION ---
+		# Lose if all player units are destroyed
+		_check_loss_condition()
+		# Win if Enemy Hall is destroyed (handled by _connect_to_building_signals)
+
 
 func _check_loss_condition() -> void:
-	"""Check if all player units are destroyed (loss condition)"""
+	"""Check if all player units are destroyed (OFFENSIVE loss condition)"""
+	if mission_over: return
 	await get_tree().create_timer(1.0).timeout
 	
 	var remaining_units = 0
 	if is_instance_valid(rts_controller):
 		remaining_units = rts_controller.controllable_units.size()
 	
-	print("Loss check: %d units remaining" % remaining_units)
+	print("Loss check: %d player units remaining" % remaining_units)
 	
 	if remaining_units == 0:
-		_on_mission_failed()
+		_on_mission_failed("All units destroyed")
 		return # Stop the loop
 	
 	# Continue checking if mission is still active
-	if is_instance_valid(enemy_hall):
-		_check_loss_condition()
-	else:
-		print("Loss condition checking stopped - enemy hall destroyed")
+	_check_loss_condition()
 
-func _on_mission_failed() -> void:
-	"""Called when all player units are destroyed"""
-	print("Mission Failed! All units destroyed.")
+# --- NEW: Defensive Win/Loss ---
+func _check_defensive_win_condition() -> void:
+	"""Check if all enemy units are destroyed (DEFENSIVE win condition)"""
+	if mission_over: return
+	await get_tree().create_timer(1.0).timeout
+
+	# Prune dead/invalid units
+	enemy_units = enemy_units.filter(func(unit): return is_instance_valid(unit))
+	var remaining_enemies = enemy_units.size()
 	
-	_show_failure_message()
+	print("Win check: %d enemy units remaining" % remaining_enemies)
+
+	if remaining_enemies == 0:
+		_on_defensive_mission_won()
+		return # Stop the loop
+
+	# Continue checking
+	_check_defensive_win_condition()
+
+func _on_player_hall_destroyed(_building: BaseBuilding) -> void:
+	"""LOSE CONDITION for defensive mission"""
+	if mission_over: return
+	_on_mission_failed("Your Great Hall was destroyed!")
+
+func _on_defensive_mission_won() -> void:
+	"""WIN CONDITION for defensive mission"""
+	if mission_over: return
+	mission_over = true
+	print("Mission Success! All attackers defeated.")
+	
+	# TODO: Add popup message
+	
+	# No loot for defense, just return home
+	await get_tree().create_timer(3.0).timeout
+	EventBus.scene_change_requested.emit("settlement")
+# --- END NEW ---
+
+func _on_mission_failed(reason: String) -> void:
+	"""Called when player fails the mission"""
+	if mission_over: return
+	mission_over = true
+	
+	print("Mission Failed! %s" % reason)
+	
+	_show_failure_message(reason)
 	
 	await get_tree().create_timer(3.0).timeout
 	
-	# --- MODIFICATION ---
 	EventBus.scene_change_requested.emit("settlement")
-	# --- END MODIFICATION ---
 
 
-func _show_failure_message() -> void:
+func _show_failure_message(reason: String) -> void:
 	"""Display the mission failure message to the player"""
 	var failure_popup = Control.new()
 	failure_popup.name = "FailurePopup"
@@ -3971,7 +4382,7 @@ func _show_failure_message() -> void:
 	message_container.add_child(failure_label)
 	
 	var subtitle_label = Label.new()
-	subtitle_label.text = "All units destroyed"
+	subtitle_label.text = reason
 	subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	message_container.add_child(subtitle_label)
 	
@@ -3986,7 +4397,10 @@ func _show_failure_message() -> void:
 	print("Failure message displayed")
 
 func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
-	"""Called when the enemy's Great Hall is destroyed"""
+	"""Called when the enemy's Great Hall is destroyed (OFFENSIVE win condition)"""
+	if mission_over: return
+	mission_over = true
+	
 	print("Enemy Hall destroyed! Mission success!")
 	
 	# Add bonus loot
@@ -3998,9 +4412,7 @@ func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	
 	await get_tree().create_timer(2.0).timeout
 	
-	# --- MODIFICATION ---
 	EventBus.scene_change_requested.emit("settlement")
-	# --- END MODIFICATION ---
 
 --- SCRIPT: res://scenes/world_map/MacroCamera.gd ---
 # res://scenes/world_map/MacroCamera.gd
@@ -4065,74 +4477,101 @@ func _clamp_camera_to_bounds() -> void:
 --- SCRIPT: res://scenes/world_map/MacroMap.gd ---
 # res://scenes/world_map/MacroMap.gd
 #
-# Main controller for the Macro Map scene.
+# Main controller for the MacroMap scene.
 # Connects UI to the DynastyManager and handles region selection.
-extends Node2D # [cite: 164]
+extends Node2D
 
 # Scene paths for navigation (DEPRECATED, but kept to avoid breaking .tscn)
 @export var raid_mission_scene_path: String = "res://scenes/missions/RaidMission.tscn"
 @export var settlement_bridge_scene_path: String = "res://scenes/levels/SettlementBridge.tscn"
 
+# --- NEW: Popup Scene ---
+@export var end_year_popup_scene: PackedScene
+var end_year_popup: PanelContainer
+# ----------------------
+
+# --- NEW: Raid Chance ---
+@export var enemy_raid_chance: float = 0.25 # 25% chance
+# ------------------------
+
 # UI Node References
-@onready var authority_label: Label = $UI/JarlInfo/VBoxContainer/AuthorityLabel # [cite: 164]
-@onready var renown_label: Label = $UI/JarlInfo/VBoxContainer/RenownLabel # [cite: 164]
-@onready var end_year_button: Button = $UI/Actions/VBoxContainer/EndYearButton # [cite: 164]
-@onready var region_info_panel: PanelContainer = $UI/RegionInfo # [cite: 164]
-@onready var region_name_label: Label = $UI/RegionInfo/VBoxContainer/RegionNameLabel # [cite: 164]
-@onready var launch_raid_button: Button = $UI/RegionInfo/VBoxContainer/LaunchRaidButton # [cite: 164]
-@onready var settlement_button: Button = $UI/Actions/VBoxContainer/SettlementButton # [cite: 164]
-@onready var tooltip: PanelContainer = $UI/Tooltip # [cite: 164]
+@onready var authority_label: Label = $UI/JarlInfo/VBoxContainer/AuthorityLabel
+@onready var renown_label: Label = $UI/JarlInfo/VBoxContainer/RenownLabel
+@onready var end_year_button: Button = $UI/Actions/VBoxContainer/EndYearButton
+@onready var region_info_panel: PanelContainer = $UI/RegionInfo
+@onready var region_name_label: Label = $UI/RegionInfo/VBoxContainer/RegionNameLabel
+@onready var launch_raid_button: Button = $UI/RegionInfo/VBoxContainer/LaunchRaidButton
+@onready var settlement_button: Button = $UI/Actions/VBoxContainer/SettlementButton
+@onready var tooltip: PanelContainer = $UI/Tooltip
 @onready var tooltip_label: Label = $UI/Tooltip/Label
 
-@onready var regions_container: Node2D = $Regions # [cite: 165]
+@onready var regions_container: Node2D = $Regions
 
-var selected_region_data: WorldRegionData # [cite: 165]
+var selected_region_data: WorldRegionData
 var selected_region_node: Region = null
+
+# --- MODIFICATION ---
+# Stores the calculated cost after applying Jarl stats
+var calculated_final_cost: int = 1
+# --- END MODIFICATION ---
 
 func _ready() -> void:
 	# Connect to the DynastyManager
-	DynastyManager.jarl_stats_updated.connect(_update_jarl_ui) # [cite: 165]
+	DynastyManager.jarl_stats_updated.connect(_update_jarl_ui)
 	
-	# Connect to all child regions [cite: 165]
+	# Connect to all child regions
 	for region in regions_container.get_children():
 		if region is Region:
 			region.region_hovered.connect(_on_region_hovered)
 			region.region_exited.connect(_on_region_exited)
 			region.region_selected.connect(_on_region_selected)
 			
-	# Connect local UI buttons [cite: 165]
+	# Connect local UI buttons
 	launch_raid_button.pressed.connect(_on_launch_raid_pressed)
 	end_year_button.pressed.connect(_on_end_year_pressed)
 	settlement_button.pressed.connect(_on_settlement_pressed)
 	
+	# --- NEW: Setup Payout Popup ---
+	if end_year_popup_scene:
+		end_year_popup = end_year_popup_scene.instantiate()
+		add_child(end_year_popup) # Add to MacroMap, not $UI (CanvasLayer)
+		end_year_popup.collect_button_pressed.connect(_on_end_year_payout_collected)
+		end_year_popup.hide()
+	else:
+		push_warning("MacroMap: 'end_year_popup_scene' is not set in the Inspector!")
+	# -----------------------------
+	
 	# Initialize UI
-	_update_jarl_ui(DynastyManager.get_current_jarl()) # [cite: 165]
+	_update_jarl_ui(DynastyManager.get_current_jarl())
 	region_info_panel.hide()
 	tooltip.hide()
 
-func _update_jarl_ui(jarl: JarlData) -> void: # [cite: 165]
+func _update_jarl_ui(jarl: JarlData) -> void:
 	if not jarl:
 		return
 		
-	authority_label.text = "Authority: %d / %d" % [jarl.current_authority, jarl.max_authority] # [cite: 165]
-	renown_label.text = "Renown: %d" % jarl.renown # [cite: 165]
+	authority_label.text = "Authority: %d / %d" % [jarl.current_authority, jarl.max_authority]
+	renown_label.text = "Renown: %d" % jarl.renown
 	
 	# Re-check if we can still afford the selected raid
 	if selected_region_data:
+		# --- MODIFICATION ---
+		# Re-run the selection logic to update cost based on new stats
 		_on_region_selected(selected_region_data)
+		# --- END MODIFICATION ---
 
 # --- Region Signal Handlers ---
 
-func _on_region_hovered(data: WorldRegionData, _screen_position: Vector2) -> void: # [cite: 165]
-	tooltip_label.text = data.display_name # [cite: 165]
+func _on_region_hovered(data: WorldRegionData, _screen_position: Vector2) -> void:
+	tooltip_label.text = data.display_name
 	var mouse_pos = get_viewport().get_mouse_position()
 	tooltip.position = mouse_pos + Vector2(15, 15)
 	tooltip.show()
 
-func _on_region_exited() -> void: # [cite: 166]
-	tooltip.hide() # [cite: 166]
+func _on_region_exited() -> void:
+	tooltip.hide()
 
-func _on_region_selected(data: WorldRegionData) -> void: # [cite: 166]
+func _on_region_selected(data: WorldRegionData) -> void:
 	# De-select the previously selected region, if any
 	if is_instance_valid(selected_region_node):
 		selected_region_node.is_selected = false
@@ -4146,14 +4585,32 @@ func _on_region_selected(data: WorldRegionData) -> void: # [cite: 166]
 			selected_region_node.set_visual_state(false) # Update visual state (hover will be false)
 			break
 			
-	selected_region_data = data # [cite: 166]
+	selected_region_data = data
 	
-	# Update the UI panel [cite: 166]
+	# --- MODIFICATION: Calculate cost based on Jarl's Command skill ---
+	var jarl = DynastyManager.get_current_jarl()
+	if not jarl:
+		push_error("MacroMap: Cannot get Jarl from DynastyManager!")
+		return
+
+	# Calculate cost reduction: -1 Authority for every 10 Command
+	var command_skill = jarl.get_effective_skill("command")
+	var cost_reduction = int(floor(command_skill / 10.0))
+	
+	# Final cost is base cost minus reduction, with a minimum of 1
+	calculated_final_cost = max(1, data.base_authority_cost - cost_reduction)
+	# --- END MODIFICATION ---
+	
+	# Update the UI panel
 	region_name_label.text = data.display_name
-	launch_raid_button.text = "Raid: %s (Cost: %d)" % [data.display_name, data.base_authority_cost] # [cite: 166]
 	
-	# Check if Jarl can afford this action [cite: 166]
-	var can_afford = DynastyManager.can_spend_authority(data.base_authority_cost)
+	# --- MODIFICATION: Update button text with final cost ---
+	launch_raid_button.text = "Raid: %s (Cost: %d)" % [data.display_name, calculated_final_cost]
+	
+	# Check if Jarl can afford this action
+	var can_afford = DynastyManager.can_spend_authority(calculated_final_cost)
+	# --- END MODIFICATION ---
+	
 	launch_raid_button.disabled = not can_afford
 	
 	if not can_afford:
@@ -4163,30 +4620,64 @@ func _on_region_selected(data: WorldRegionData) -> void: # [cite: 166]
 
 # --- UI Button Handlers ---
 
-func _on_launch_raid_pressed() -> void: # [cite: 167]
+func _on_launch_raid_pressed() -> void:
 	if not selected_region_data:
 		return
 		
-	# 1. Set the target for the RaidMission [cite: 167]
+	# 1. Set the target for the RaidMission
 	DynastyManager.set_current_raid_target(selected_region_data.target_settlement_data)
 	
-	# 2. Spend the Authority [cite: 167]
-	var success = DynastyManager.spend_authority(selected_region_data.base_authority_cost)
+	# --- MODIFICATION: Use the calculated_final_cost ---
+	# 2. Spend the Authority
+	var success = DynastyManager.spend_authority(calculated_final_cost)
+	# --- END MODIFICATION ---
 	
 	# 3. Change scene 
 	if success:
-		# --- MODIFICATION ---
-		EventBus.scene_change_requested.emit("raid_mission") # [cite: 167]
-		# --- END MODIFICATION ---
+		EventBus.scene_change_requested.emit("raid_mission")
 	else:
 		# This shouldn't happen if the button is disabled, but as a fallback:
 		push_error("MacroMap: LaunchRaid button was pressed but authority check failed.")
 		DynastyManager.set_current_raid_target(null) # Clear the target
 
-func _on_end_year_pressed() -> void: # [cite: 167]
-	DynastyManager.end_year() # [cite: 167]
+# --- MODIFIED: End Year Payout Logic ---
+func _on_end_year_pressed() -> void:
+	if not is_instance_valid(end_year_popup):
+		push_error("MacroMap: End year popup not instanced. Ending year without payout.")
+		_process_end_year_logic({}) # Process with no payout
+		return
 	
-	# Deselect region as actions may no longer be valid
+	# 1. Calculate payout
+	var payout = SettlementManager.calculate_payout()
+	
+	# 2. Display payout popup (it will emit signal when "Collect" is pressed)
+	#    The popup will auto-emit if the payout is empty, skipping the UI
+	end_year_popup.display_payout(payout, "End of Year Payout")
+
+func _on_end_year_payout_collected(payout: Dictionary) -> void:
+	# This is now the main logic, called *after* the user clicks "Collect"
+	_process_end_year_logic(payout)
+	
+	# --- MODIFICATION: Check for enemy raid ---
+	if randf() < enemy_raid_chance:
+		print("--- ENEMY RAID TRIGGERED ---")
+		DynastyManager.is_defensive_raid = true
+		EventBus.scene_change_requested.emit("raid_mission")
+	else:
+		print("No enemy raid this year.")
+		# Return to settlement as normal
+		EventBus.scene_change_requested.emit("settlement")
+	# --- END MODIFICATION ---
+
+func _process_end_year_logic(payout: Dictionary) -> void:
+	# 1. Deposit resources
+	if not payout.is_empty():
+		SettlementManager.deposit_resources(payout)
+	
+	# 2. Process the end of year for the Jarl
+	DynastyManager.end_year()
+	
+	# 3. Deselect region as actions may no longer be valid
 	if is_instance_valid(selected_region_node):
 		selected_region_node.is_selected = false
 		selected_region_node.set_visual_state(false)
@@ -4194,13 +4685,12 @@ func _on_end_year_pressed() -> void: # [cite: 167]
 	selected_region_data = null
 	selected_region_node = null
 	region_info_panel.hide()
+# --- END MODIFICATION ---
 
-func _on_settlement_pressed() -> void: # [cite: 167]
-	# --- MODIFICATION ---
-	EventBus.scene_change_requested.emit("settlement") # [cite: 167]
-	# --- END MODIFICATION ---
+func _on_settlement_pressed() -> void:
+	EventBus.scene_change_requested.emit("settlement")
 
-func _input(event: InputEvent) -> void: # [cite: 167]
+func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		print("MacroMap received click - this means nothing blocked it yet")
 
@@ -4521,8 +5011,12 @@ var path: Array = []
 
 # Target Data
 var target_position: Vector2 = Vector2.ZERO
-var target_unit: Node2D = null
 var move_command_position: Vector2 = Vector2.ZERO
+
+# --- MODIFIED: Split target into "objective" and "current" ---
+var objective_target: Node2D = null # The long-term goal (e.g., Great Hall)
+var current_target: Node2D = null # The immediate threat (e.g., nearby unit)
+# --- END MODIFIED ---
 
 func _init(p_unit: BaseUnit, p_attack_ai: AttackAI) -> void:
 	unit = p_unit
@@ -4554,12 +5048,11 @@ func _enter_state(state: State) -> void:
 		State.FORMATION_MOVING:
 			pass
 		
-		# --- NEW: Handle entering ATTACKING state ---
 		State.ATTACKING:
 			unit.velocity = Vector2.ZERO
-			if attack_ai and is_instance_valid(target_unit):
-				attack_ai.force_target(target_unit)
-		# ------------------------------------------
+			# Let the AttackAI component handle the forced attack
+			if attack_ai and is_instance_valid(current_target):
+				attack_ai.force_target(current_target)
 
 func _exit_state(state: State) -> void:
 	match state:
@@ -4568,33 +5061,52 @@ func _exit_state(state: State) -> void:
 		State.FORMATION_MOVING:
 			path.clear()
 		
-		# --- NEW: Handle exiting ATTACKING state ---
 		State.ATTACKING:
+			# If we were attacking, stop the AI component
 			if attack_ai:
 				attack_ai.stop_attacking()
-		# -----------------------------------------
+			# Clear the *current* target, but not the objective
+			current_target = null
 
 func _recalculate_path() -> void:
-	path = SettlementManager.get_astar_path(unit.global_position, target_position)
+	# --- MODIFIED: Pathfind to the correct target ---
+	# If we have an immediate target, path to it.
+	# Otherwise, path to our long-term objective.
+	var target_node = current_target if is_instance_valid(current_target) else objective_target
+	
+	if not is_instance_valid(target_node):
+		change_state(State.IDLE)
+		return
+		
+	target_position = target_node.global_position
+	# --- END MODIFIED ---
+	
+	# Determine if we should allow a partial path.
+	# We allow it if we are pathing to any attack target.
+	var allow_partial = is_instance_valid(target_node)
+	
+	path = SettlementManager.get_astar_path(unit.global_position, target_position, allow_partial)
+	
 	if path.is_empty():
 		print("Unit at %s failed to find a path to %s." % [unit.global_position, target_position])
 		if unit and unit.has_method("flash_error_color"):
 			unit.flash_error_color()
 		
 		# If we can't find a path but have a target, just attack
-		if is_instance_valid(target_unit):
+		if is_instance_valid(target_node):
 			change_state(State.ATTACKING)
 		else:
 			change_state(State.IDLE)
-	else:
-		pass
 
 # --- RTS Command Functions ---
 
 func command_move_to_formation_pos(target_pos: Vector2) -> void:
 	target_position = target_pos
 	move_command_position = target_pos
-	target_unit = null # Clear any attack target
+	
+	# Clear both targets
+	current_target = null 
+	objective_target = null
 	
 	if attack_ai:
 		attack_ai.stop_attacking()
@@ -4607,7 +5119,10 @@ func command_move_to_formation_pos(target_pos: Vector2) -> void:
 func command_move_to(target_pos: Vector2) -> void:
 	target_position = target_pos
 	move_command_position = target_pos
-	target_unit = null # Clear any attack target
+
+	# Clear both targets
+	current_target = null
+	objective_target = null
 	
 	if attack_ai:
 		attack_ai.stop_attacking()
@@ -4620,18 +5135,19 @@ func command_attack(target: Node2D) -> void:
 		if unit and unit.has_method("flash_error_color"):
 			unit.flash_error_color()
 		return
-		
-	target_unit = target
+	
+	# Set both targets. The objective is the commanded target.
+	# The current target is also the commanded target, until interrupted.
+	objective_target = target
+	current_target = target
 	target_position = target.global_position
 	
 	var distance: float = unit.global_position.distance_to(target.global_position)
 	
-	# --- MODIFIED: Transition to ATTACKING ---
 	if distance <= unit.data.attack_range:
 		change_state(State.ATTACKING)
 	else:
 		change_state(State.MOVING)
-	# ---------------------------------------
 
 # --- State Machine Update ---
 
@@ -4643,15 +5159,16 @@ func update(delta: float) -> void:
 			_move_state(delta)
 		State.FORMATION_MOVING:
 			_formation_move_state(delta)
-		# --- NEW: Call attack state logic ---
 		State.ATTACKING:
 			_attack_state(delta)
-		# ----------------------------------
 
 # --- State Logic Functions ---
 
 func _idle_state(_delta: float) -> void:
 	unit.velocity = Vector2.ZERO
+	# Note: The AttackAI is still scanning.
+	# If it finds a target, _on_ai_attack_started will fire
+	# and pull the unit out of IDLE.
 
 func _formation_move_state(delta: float) -> void:
 	if path.is_empty():
@@ -4673,30 +5190,34 @@ func _formation_move_state(delta: float) -> void:
 			change_state(State.IDLE)
 
 func _move_state(delta: float) -> void:
-	# Check if we have an attack target and are now in range
-	if is_instance_valid(target_unit):
-		var distance_to_target: float = unit.global_position.distance_to(target_unit.global_position)
-		
-		# --- MODIFIED: Transition to ATTACKING ---
+	# The AttackAI is scanning automatically.
+	# If it finds a target, it will interrupt this state
+	# via the _on_ai_attack_started signal.
+	
+	var target_node = current_target if is_instance_valid(current_target) else objective_target
+
+	if not is_instance_valid(target_node):
+		# Our objective was destroyed or we had no objective
+		change_state(State.IDLE)
+		return
+	
+	# Check if we are in range of our *current* target
+	if is_instance_valid(current_target):
+		var distance_to_target: float = unit.global_position.distance_to(current_target.global_position)
 		if distance_to_target <= unit.data.attack_range:
 			change_state(State.ATTACKING)
 			return
-		# ---------------------------------------
-		else:
-			target_position = target_unit.global_position
-	
-	if stance == Stance.DEFENSIVE:
-		_check_defensive_response()
 	
 	if path.is_empty():
-		if is_instance_valid(target_unit):
-			_recalculate_path()
-			return
+		# Path is empty, but we're not in range.
+		# This means we've arrived at the closest point.
+		if is_instance_valid(target_node):
+			change_state(State.ATTACKING)
 		else:
-			print("Unit reached destination.")
 			change_state(State.IDLE)
-			return
+		return
 	
+	# Standard path following
 	var next_waypoint: Vector2 = path[0]
 	var direction: Vector2 = (next_waypoint - unit.global_position).normalized()
 	var velocity: Vector2 = direction * unit.data.move_speed
@@ -4709,48 +5230,67 @@ func _move_state(delta: float) -> void:
 		path.pop_front()
 		
 		if path.is_empty():
-			if is_instance_valid(target_unit):
-				var distance_to_target: float = unit.global_position.distance_to(target_unit.global_position)
-				# --- MODIFIED: Transition to ATTACKING ---
-				if distance_to_target <= unit.data.attack_range:
-					change_state(State.ATTACKING)
-				# ---------------------------------------
-				else:
-					_recalculate_path()
+			# We've reached the end of the path
+			if is_instance_valid(target_node):
+				change_state(State.ATTACKING)
 			else:
 				change_state(State.IDLE)
 
-# --- NEW: Attack State Logic ---
 func _attack_state(_delta: float) -> void:
 	# This state just monitors the target.
 	# The AttackAI component handles the actual firing.
-	
-	if not is_instance_valid(target_unit):
+	if not is_instance_valid(current_target):
 		# Target is dead or gone
-		change_state(State.IDLE)
+		# _on_ai_attack_stopped will handle resuming the objective
+		change_state(State.IDLE) # Go to idle temporarily
 		return
 	
-	var distance_to_target: float = unit.global_position.distance_to(target_unit.global_position)
+	var distance_to_target: float = unit.global_position.distance_to(current_target.global_position)
 	if distance_to_target > unit.data.attack_range + 10: # +10 pixel buffer
 		# Target moved out of range
-		change_state(State.MOVING)
+		current_target = null # Lose the target
+		
+		# Resume objective
+		if is_instance_valid(objective_target):
+			change_state(State.MOVING)
+		else:
+			change_state(State.IDLE)
 		return
 	
 	# Otherwise, stay in ATTACKING state
 	unit.velocity = Vector2.ZERO
-# --- END NEW ---
 
 func _check_defensive_response() -> void:
 	pass
 
 # --- AI Signal Callbacks ---
-func _on_ai_attack_started(_target: Node2D) -> void:
-	pass
+func _on_ai_attack_started(target: Node2D) -> void:
+	# The AttackAI found a target of opportunity!
+	# Interrupt whatever we're doing.
+	
+	# Don't switch if we are already attacking this target
+	if current_state == State.ATTACKING and target == current_target:
+		return
+		
+	print("UnitFSM: Interrupted! AttackAI found new target: %s" % target.name)
+	current_target = target # Set as our immediate target
+	change_state(State.ATTACKING)
 
 func _on_ai_attack_stopped() -> void:
-	# If our AI stops for any reason, go back to IDLE
+	# The AttackAI has stopped (e.g., target died, or moved out of range)
 	if current_state == State.ATTACKING:
-		change_state(State.IDLE)
+		print("UnitFSM: Attack finished.")
+		current_target = null
+		
+		# Check if we have a long-term objective to resume
+		if is_instance_valid(objective_target):
+			print("UnitFSM: Resuming objective: %s" % objective_target.name)
+			current_target = objective_target # Set our current target back to the objective
+			change_state(State.MOVING) # Go back to moving
+		else:
+			# No objective, just go idle
+			print("UnitFSM: No objective. Going IDLE.")
+			change_state(State.IDLE)
 
 --- SCRIPT: res://scripts/buildings/SettlementBridge.gd ---
 # res://scripts/buildings/SettlementBridge.gd
@@ -4758,14 +5298,15 @@ func _on_ai_attack_stopped() -> void:
 # --- REFACTORED (The "Proper Fix" + GridManager) ---
 # This scene now instances a GridManager node for all grid logic.
 # It gets the grid from that child and registers it with the SettlementManager.
-
 extends Node
 
 # --- Exported Resources ---
 @export var home_base_data: SettlementData
 @export var test_building_data: BuildingData
 @export var raider_scene: PackedScene
-@export var welcome_popup_scene: PackedScene
+# --- MODIFICATION: Renamed export ---
+@export var end_of_year_popup_scene: PackedScene
+# --- END MODIFICATION ---
 @export var world_map_scene_path: String = "res://scenes/world_map/WorldMap_Stub.tscn"
 
 # --- DEPRECATED: Grid config is now on the GridManager node ---
@@ -4776,7 +5317,10 @@ extends Node
 # --- Default Assets (fallback) ---
 var default_test_building: BuildingData = preload("res://data/buildings/Bldg_Wall.tres")
 var default_raider_scene: PackedScene 
-var default_welcome_popup: PackedScene = preload("res://ui/WelcomeHome_Popup.tscn")
+
+# --- MODIFICATION: Renamed preload path and variable ---
+var default_end_of_year_popup: PackedScene = preload("res://ui/EndOfYear_Popup.tscn")
+# --- END MODIFICATION ---
 
 # --- Scene Node References ---
 @onready var unit_container: Node2D = $UnitContainer
@@ -4785,7 +5329,13 @@ var default_welcome_popup: PackedScene = preload("res://ui/WelcomeHome_Popup.tsc
 @onready var start_raid_button: Button = $UI/StartRaidButton
 @onready var storefront_ui: Control = $UI/Storefront_UI
 @onready var building_cursor: Node2D = $BuildingCursor
-var welcome_popup: PanelContainer
+# --- MODIFICATION: Renamed variable ---
+var end_of_year_popup: PanelContainer
+# --- END MODIFICATION ---
+
+# --- NEW: Debug Button ---
+@onready var debug_raid_button: Button = $UI/Storefront_UI/DebugRaidButton
+# -----------------------
 
 # --- Local Node References ---
 @onready var building_container: Node2D = $BuildingContainer
@@ -4802,7 +5352,15 @@ func _ready() -> void:
 	_initialize_settlement() 
 	_setup_ui()
 	_connect_signals()
-	_handle_welcome_payout()
+	
+	# --- MODIFICATION ---
+	# We no longer handle the payout here.
+	# _handle_welcome_payout()
+	# Instead, we just show the storefront immediately.
+	storefront_ui.show()
+	if end_of_year_popup:
+		end_of_year_popup.hide()
+	# --- END MODIFICATION ---
 
 func _exit_tree() -> void:
 	SettlementManager.unregister_active_scene_nodes()
@@ -4812,8 +5370,10 @@ func _setup_default_resources() -> void:
 		test_building_data = default_test_building
 	if not raider_scene:
 		raider_scene = load("res://scenes/units/VikingRaider.tscn")
-	if not welcome_popup_scene: 
-		welcome_popup_scene = default_welcome_popup
+	# --- MODIFICATION: Renamed variables ---
+	if not end_of_year_popup_scene: 
+		end_of_year_popup_scene = default_end_of_year_popup
+	# --- END MODIFICATION ---
 
 func _initialize_settlement() -> void:
 	"""Initialize data, then grid, then spawn buildings."""
@@ -4893,9 +5453,14 @@ func _create_default_settlement() -> SettlementData:
 	return settlement
 
 func _setup_ui() -> void:
-	welcome_popup = welcome_popup_scene.instantiate()
-	ui_layer.add_child(welcome_popup)
-	welcome_popup.collect_button_pressed.connect(_on_payout_collected)
+	# --- MODIFICATION: Renamed variables ---
+	end_of_year_popup = end_of_year_popup_scene.instantiate()
+	ui_layer.add_child(end_of_year_popup)
+	end_of_year_popup.collect_button_pressed.connect(_on_payout_collected)
+	# --- END MODIFICATION ---
+	
+	# We hide the storefront here initially
+	storefront_ui.hide()
 
 func _connect_signals() -> void:
 	restart_button.pressed.connect(_on_restart_pressed)
@@ -4909,28 +5474,36 @@ func _connect_signals() -> void:
 		building_cursor.placement_completed.connect(_on_building_placement_completed)
 		building_cursor.placement_cancelled.connect(_on_building_placement_cancelled_by_cursor)
 
+	# --- NEW: Connect Debug Button ---
+	if is_instance_valid(debug_raid_button):
+		debug_raid_button.pressed.connect(_on_debug_raid_pressed)
+	# --- END NEW ---
+
 func _handle_welcome_payout() -> void:
 	var payout = SettlementManager.calculate_payout()
+	# --- MODIFICATION: Renamed variable ---
 	if not payout.is_empty():
-		welcome_popup.display_payout(payout)
+		end_of_year_popup.display_payout(payout)
 		storefront_ui.hide()
+	else:
+		# If no payout, just show the store
+		storefront_ui.show()
+		end_of_year_popup.hide()
+	# --- END MODIFICATION ---
 
 func _on_settlement_loaded(_settlement_data: SettlementData) -> void:
 	pass
 
-func _unhandled_input(event: InputEvent) -> void:
-	if game_is_over or (welcome_popup and welcome_popup.visible):
-		return
-	
-	if event.is_action_pressed("ui_accept") and not awaiting_placement:
-		if is_instance_valid(grid_manager) and "astar_grid" in grid_manager:
-			var mouse_pos = get_viewport().get_mouse_position()
-			var cell_size = grid_manager.cell_size
-			var grid_coord = Vector2i(int(mouse_pos.x / cell_size), int(mouse_pos.y / cell_size)) 
-			print("CLICKED GRID COORDINATE: ", grid_coord)
-			get_viewport().set_input_as_handled()
-		else:
-			print("Cannot find coordinate: GridManager not initialized")
+# --- MODIFICATION: Removed _unhandled_input ---
+# func _unhandled_input(event: InputEvent) -> void: ...
+# --- END MODIFICATION ---
+
+# --- NEW: Debug Button Function ---
+func _on_debug_raid_pressed() -> void:
+	print("DEBUG: Forcing defensive raid mission!")
+	DynastyManager.is_defensive_raid = true
+	EventBus.scene_change_requested.emit("raid_mission")
+# --- END NEW ---
 
 func _on_payout_collected(payout: Dictionary) -> void:
 	SettlementManager.deposit_resources(payout)
@@ -5697,7 +6270,7 @@ const ERROR_COLOR := Color(0.7, 0.3, 1.0)
 
 func _ready() -> void:
 	if not data:
-		push_warning("BaseUnit: Node is missing its 'UnitData' resource. Cannot initialize.")
+		push_warning("BaseUnit: Node '%s' is missing its 'UnitData' resource. Cannot initialize." % name)
 		return
 	
 	current_health = data.max_health
@@ -5708,7 +6281,23 @@ func _ready() -> void:
 		if attack_ai:
 			add_child(attack_ai)
 			attack_ai.configure_from_data(data)
-			attack_ai.set_target_mask(0b1100) # Layers 3 & 4
+			
+			# --- MODIFICATION: Dynamically set target mask ---
+			var target_mask = 0
+			# self.collision_layer is a bitmask, check with `&`
+			if self.collision_layer & 2: # Player unit (Layer 2)
+				# Target Layer 3 (Enemy Units) and 4 (Enemy Buildings)
+				target_mask = (1 << 2) | (1 << 3) # 0b1100
+			elif self.collision_layer & 4: # Enemy unit (Layer 3)
+				# Target Layer 1 (Player Buildings) and 2 (Player Units)
+				target_mask = (1 << 0) | (1 << 1) # 0b0011
+			
+			if target_mask == 0:
+				push_warning("BaseUnit: '%s' is on an unhandled collision layer (%s). AI will not target anything." % [name, self.collision_layer])
+			
+			attack_ai.set_target_mask(target_mask)
+			# --- END MODIFICATION ---
+
 		else:
 			push_error("BaseUnit: Failed to instantiate ai_component_scene for %s" % data.display_name)
 	
@@ -5860,11 +6449,11 @@ func _draw() -> void:
 		draw_circle(Vector2.ZERO, radius, color, false, 3.0)
 
 --- SCRIPT: res://scripts/units/EnemyVikingRaider.gd ---
-# res://scripts/units/VikingRaider.gd
+# res://scripts/units/EnemyVikingRaider.gd
 #
 # Concrete implementation of the Viking Raider enemy unit.
 #
-# --- MODIFIED: Target position is now adjacent to the Hall ---
+# --- MODIFIED: Target position is now set correctly ---
 
 extends BaseUnit
 
@@ -5881,10 +6470,10 @@ func set_attack_target(target: BaseBuilding) -> void:
 	fsm.target_unit = target
 	
 	# --- THIS IS THE FIX ---
-	# Set the position (for moving) to be one tile *below*
-	# the Hall's center. This is a walkable tile, so
-	# pathfinding will succeed.
-	fsm.target_position = target.global_position + Vector2(0, 32)
+	# Target the building's actual center.
+	# The FSM will find the closest walkable spot.
+	fsm.target_position = target.global_position
+	# --- END FIX ---
 	
 	# Start the FSM
 	fsm.change_state(UnitFSM.State.MOVING)
@@ -6269,6 +6858,47 @@ func save_layout(layout: Array[Dictionary], path: String):
 		print("✅ Saved layout to: %s" % path)
 	else:
 		print("❌ Failed to save layout to: %s" % path)
+
+--- SCRIPT: res://ui/EndOfYear_Popup.gd ---
+# res://ui/EndOfYear_Popup.gd
+extends PanelContainer
+
+signal collect_button_pressed(payout: Dictionary)
+
+@onready var payout_label: Label = $MarginContainer/VBoxContainer/PayoutLabel
+@onready var collect_button: Button = $MarginContainer/VBoxContainer/CollectButton
+
+var _current_payout: Dictionary = {}
+
+func _ready() -> void:
+	collect_button.pressed.connect(_on_collect_pressed)
+	
+	# --- MODIFICATION ---
+	# Update the button text as requested
+	collect_button.text = "Collect and return to settlement"
+	# --- END MODIFICATION ---
+	
+	hide()
+
+func display_payout(payout: Dictionary, title: String = "Welcome home!") -> void:
+	if payout.is_empty():
+		# If there's no payout, just emit the signal and don't show
+		collect_button_pressed.emit({})
+		return
+
+	_current_payout = payout
+	
+	# Use the new title parameter
+	var payout_text: String = "%s\n\nResources gathered:\n" % title
+	for resource_type in payout:
+		payout_text += "- %s: %d\n" % [resource_type.capitalize(), payout[resource_type]]
+	
+	payout_label.text = payout_text
+	show()
+
+func _on_collect_pressed() -> void:
+	collect_button_pressed.emit(_current_payout)
+	hide()
 
 --- SCRIPT: res://ui/SelectionBox.gd ---
 # res://ui/SelectionBox.gd
@@ -6698,37 +7328,6 @@ func _update_garrison_display() -> void:
 	total_label.text = "Total units: %d" % total_units
 	total_label.add_theme_font_size_override("font_size", 12)
 	garrison_list_container.add_child(total_label)
-
---- SCRIPT: res://ui/WelcomeHomePopup.gd ---
-# res://ui/WelcomeHomePopup.gd
-extends PanelContainer
-
-signal collect_button_pressed(payout: Dictionary)
-
-@onready var payout_label: Label = $MarginContainer/VBoxContainer/PayoutLabel
-@onready var collect_button: Button = $MarginContainer/VBoxContainer/CollectButton
-
-var _current_payout: Dictionary = {}
-
-func _ready() -> void:
-	collect_button.pressed.connect(_on_collect_pressed)
-	hide()
-
-func display_payout(payout: Dictionary) -> void:
-	if payout.is_empty():
-		return
-
-	_current_payout = payout
-	var payout_text: String = "Welcome home!\n\nResources gathered:\n"
-	for resource_type in payout:
-		payout_text += "- %s: %d\n" % [resource_type.capitalize(), payout[resource_type]]
-	
-	payout_label.text = payout_text
-	show()
-
-func _on_collect_pressed() -> void:
-	collect_button_pressed.emit(_current_payout)
-	hide()
 --- END OF CODEBASE ---
 
 ---

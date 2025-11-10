@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="LegacyUpgradeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/legacy/LegacyUpgradeData.gd" id="1_longships"]
+
+[resource]
+script = ExtResource("1_longships")
+display_name = "Viking Longships"
+description = "Improve shipbuilding techniques, allowing for faster raids and more loot."
+renown_cost = 150
+authority_cost = 1
+effect_key = "UPG_LONGSHIPS"
+prerequisite_key = ""

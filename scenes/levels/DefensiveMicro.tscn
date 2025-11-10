@@ -1,9 +1,11 @@
-[gd_scene load_steps=7 format=3 uid="uid://cpe46srqjmdh6"]
+[gd_scene load_steps=9 format=3 uid="uid://cpe46srqjmdh6"]
 
-[ext_resource type="Texture2D" uid="uid://c6v2d1q8q7e3j" path="res://placeholder_tile.tres" id="1_a64e3"]
+[ext_resource type="Texture2D" uid="uid://c6v2d1q8q7e3j" path="res://assets/placeholder_tile.tres" id="1_a64e3"]
 [ext_resource type="Script" uid="uid://cuw68f180xbui" path="res://scenes/missions/RaidMission.gd" id="1_vwpxa"]
 [ext_resource type="PackedScene" uid="uid://cyp3t7gbdg0wx" path="res://player/RTSController.tscn" id="3_mb7gn"]
 [ext_resource type="Script" uid="uid://bxbqkyp1d6750" path="res://player/RTSCamera.gd" id="4_5s02u"]
+[ext_resource type="Script" uid="uid://dv4ktmb4jw6n6" path="res://scripts/utility/GridManager.gd" id="5_lg3bi"]
+[ext_resource type="Script" uid="uid://by77ij2ft60cp" path="res://scenes/missions/RaidObjectiveManager.gd" id="6_o6jak"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_vwpxa"]
 texture = ExtResource("1_a64e3")
@@ -30,3 +32,14 @@ position = Vector2(100, 400)
 [node name="RTSCamera" type="Camera2D" parent="."]
 position = Vector2(400, 300)
 script = ExtResource("4_5s02u")
+
+[node name="GridManager" type="Node" parent="."]
+script = ExtResource("5_lg3bi")
+
+[node name="BuildingContainer" type="Node2D" parent="."]
+
+[node name="RaidObjectiveManager" type="Node" parent="."]
+script = ExtResource("6_o6jak")
+
+[node name="EnemySpawnPosition" type="Marker2D" parent="."]
+position = Vector2(700, 100)

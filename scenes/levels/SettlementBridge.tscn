@@ -2,7 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://dqh0xu88khxct" path="res://ui/EndOfYear_Popup.tscn" id="2_5el12"]
 [ext_resource type="Script" uid="uid://dafjxa85ci2rx" path="res://scripts/buildings/SettlementBridge.gd" id="2_c48a7"]
-[ext_resource type="Resource" uid="uid://d2lkilmydvgkd" path="res://data/settlements/home_base_fixed.tres" id="2_oq6tm"]
+[ext_resource type="Resource" uid="uid://b07no1uvu4s6w" path="res://data/settlements/home_base_fixed.tres" id="2_oq6tm"]
 [ext_resource type="PackedScene" uid="uid://btovbm7r6nern" path="res://ui/Storefront_UI.tscn" id="3_vj45l"]
 [ext_resource type="PackedScene" uid="uid://dsrvmutqo7g3h" path="res://scripts/utility/GridManager.tscn" id="6_b34qi"]
 [ext_resource type="Script" uid="uid://c4bv8okjkvtt7" path="res://scripts/ui/BuildingPreviewCursor.gd" id="6_cursor"]
@@ -29,6 +29,19 @@ text = "Purchase buildings from the storefront below, then place them on your se
 horizontal_alignment = 1
 
 [node name="Storefront_UI" parent="UI" instance=ExtResource("3_vj45l")]
+available_buildings = null
+available_units = null
+auto_load_units_from_directory = null
+
+[node name="DebugRaidButton" type="Button" parent="UI/Storefront_UI"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -143.0
+offset_bottom = 27.0
+grow_horizontal = 0
+text = "DEBUG: Start Raid"
 
 [node name="RestartButton" type="Button" parent="UI"]
 visible = false

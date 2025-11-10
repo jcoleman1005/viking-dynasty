@@ -1,6 +1,6 @@
 # Viking Dynasty
 
-A strategic Viking settlement and raid management game built with Godot 4.x. Command Viking raiders, build and manage settlements, and expand your dynasty across the medieval world.
+A strategic Viking settlement and raid management game built with Godot 4.5. Command Viking raiders, build and manage settlements, and expand your dynasty across the medieval world.
 
 ## Game Overview
 
@@ -18,7 +18,7 @@ Viking Dynasty combines real-time strategy elements with settlement building and
 ## Technical Architecture
 
 ### Built With
-- **Engine**: Godot 4.x
+- **Engine**: Godot 4.5
 - **Language**: GDScript 4.x with full static typing
 - **Architecture**: Modular component-based design with signal-driven communication
 - **AI Integration**: GodotAiSuite addon for development assistance
@@ -38,6 +38,7 @@ Viking Dynasty combines real-time strategy elements with settlement building and
 - **Settlements**: Persistent settlement data with resource tracking and save/load functionality
 - **World Map**: Regional data, campaign progression, and strategic layer management
 - **Characters**: Jarl traits, dynasty lineage system, and character progression
+- **Missions**: Raid configuration, loot systems, and mission parameters
 
 #### Game Modes
 - **Settlement Bridge**: Home base building and management with economic systems
@@ -46,10 +47,11 @@ Viking Dynasty combines real-time strategy elements with settlement building and
 - **Defensive Micro**: Base defense scenarios with tower defense elements
 
 ### Recent Architecture Improvements
-- **Refactored SettlementManager**: Now acts as pure data manager with scene-based node registration
-- **Improved Pathfinding**: Centralized AStarGrid2D management with proper bounds checking
-- **Enhanced Building System**: Dynamic placement validation and grid-based positioning
-- **Better Error Handling**: Comprehensive validation and logging throughout core systems
+- **Enhanced Unit System**: PlayerVikingRaider and VikingRaider prefabs with specialized behaviors
+- **Improved Combat**: AttackAI component system with projectile-based combat
+- **Refined Grid Management**: Comprehensive pathfinding with proper bounds checking
+- **Better Scene Organization**: Clear separation of concerns with scene-specific components
+- **Advanced Input Mapping**: Custom input actions including debug features
 
 ## Project Structure
 
@@ -87,21 +89,28 @@ res://
 ## Getting Started
 
 ### Prerequisites
-- **Godot 4.3+** (Recommended: Latest stable version)
+- **Godot 4.5+** (Recommended: Latest stable version)
 - **GodotAiSuite addon** (included in project)
 
 ### Setup
 1. Clone or download the project repository
-2. Open in Godot 4.3 or later
+2. Open in Godot 4.5 or later
 3. The project includes the GodotAiSuite addon for AI-assisted development
 4. Run the main scene to start development/testing
 5. All scripts use modern GDScript 4.x syntax with static typing
 
 ### Development Tools
-- **Phase1TestRunner**: Automated testing for core systems
 - **GridManager**: Visual grid editing for settlement layouts
 - **Building Preview Cursor**: Real-time building placement system with validation
 - **Runtime Inspector**: Debug runtime properties and behaviors during gameplay
+- **Pause Menu**: Runtime game control and debugging interface
+
+### Input Configuration
+The project includes several configured input actions:
+- **UI Controls**: Standard UI navigation and interaction
+- **Debug Tools**: Time travel debugging (T key) for development
+- **Pause System**: Escape key for pause menu access
+- **Combat Controls**: Unit selection, movement, and attack commands
 
 ## Game Systems
 
@@ -118,6 +127,12 @@ res://
 - **Real-time Physics**: CharacterBody2D-based unit movement with collision handling
 - **AI Systems**: Finite state machine-based unit behaviors and decision making
 - **Combat Mechanics**: Projectile system with damage calculation and visual effects
+
+### World Map & Campaign
+- **Regional Exploration**: Navigate different map areas and plan campaigns
+- **MacroCamera System**: Strategic overview with zoom and pan controls
+- **Mission Selection**: Choose from various raid and defensive scenarios
+- **Progress Tracking**: Persistent world state and campaign advancement
 
 ### Event & Signal Architecture
 - **EventBus System**: Centralized communication hub for all game systems
@@ -142,17 +157,17 @@ signal unit_died(unit: VikingRaider)
 signal health_changed(new_health: int, max_health: int)
 
 var health: int = 100:
-    set(value):
-        health = clamp(value, 0, max_health)
-        health_changed.emit(health, max_health)
-        if health <= 0:
-            unit_died.emit(self)
+	set(value):
+		health = clamp(value, 0, max_health)
+		health_changed.emit(health, max_health)
+		if health <= 0:
+			unit_died.emit(self)
 
 # Modern Godot 4.x physics
 func _physics_process(delta: float) -> void:
-    if target_position != Vector2.ZERO:
-        velocity = global_position.direction_to(target_position) * move_speed
-        move_and_slide()
+	if target_position != Vector2.ZERO:
+		velocity = global_position.direction_to(target_position) * move_speed
+		move_and_slide()
 ```
 
 ### Architecture Principles
@@ -168,6 +183,14 @@ func _physics_process(delta: float) -> void:
 - **Signal Architecture**: Prefer signals over direct method calls for system communication
 - **Resource Management**: Proper cleanup with queue_free() and null checking
 - **Documentation**: Self-documenting code with clear variable names and comments
+
+## Layer Organization
+
+The project uses a well-defined collision layer system:
+- **Layer 1**: Environment (static obstacles and terrain)
+- **Layer 2**: Player_Units (player-controlled units)
+- **Layer 3**: Enemy_Units (AI-controlled units)
+- **Layer 4**: Enemy_Buildings (defensive structures and targets)
 
 ## Contributing
 
@@ -193,13 +216,16 @@ func _physics_process(delta: float) -> void:
 - Resource management and economy with save/load
 - Basic combat system with projectiles and damage
 - Event-driven architecture with comprehensive signal system
+- Unit prefab system with PlayerVikingRaider and VikingRaider variants
+- AttackAI component for automated combat behaviors
+- World map foundation with region-based exploration
 
 ### Active Development 🚧
-- World map and campaign progression systems
 - Advanced AI behaviors and tactical decision making
 - UI/UX polish and game balance improvements
 - Performance optimization and code quality enhancements
 - Extended building types and economic complexity
+- Mission system expansion with varied objectives
 
 ### Planned Features 📋
 - Dynasty progression and character development
@@ -214,6 +240,6 @@ func _physics_process(delta: float) -> void:
 
 ---
 
-**Built with Godot 4.x and modern game development practices**
+**Built with Godot 4.5 and modern game development practices**
 
 *This project demonstrates professional-grade architecture with signal-driven communication, static typing, and modular component design suitable for commercial game development.*

@@ -4,7 +4,7 @@
 # loot, win conditions, and loss conditions.
 # Decoupled from RaidMission.gd (which is now just a level loader).
 extends Node
-
+class_name RaidObjectiveManager
 # --- Mission Configuration ---
 # These will be set in the Inspector on this node.
 @export var victory_bonus_loot: Dictionary = {"gold": 200}
@@ -15,17 +15,20 @@ extends Node
 # --- Internal State ---
 var raid_loot: RaidLootData
 var rts_controller: RTSController
-var enemy_hall: BaseBuilding
+var objective_building: BaseBuilding
 var building_container: Node2D
+var enemy_units: Array[BaseUnit] = [] # For defensive win condition
 var is_initialized: bool = false
+var mission_over: bool = false
 
 func _ready() -> void:
 	raid_loot = RaidLootData.new()
 
 func initialize(
 	p_rts_controller: RTSController, 
-	p_enemy_hall: BaseBuilding, 
-	p_building_container: Node2D
+	p_objective_building: BaseBuilding, 
+	p_building_container: Node2D,
+	p_enemy_units: Array[BaseUnit] = []
 ) -> void:
 	"""
 	Called by RaidMission.gd after the level is loaded
@@ -37,11 +40,12 @@ func initialize(
 		return
 		
 	self.rts_controller = p_rts_controller
-	self.enemy_hall = p_enemy_hall
+	self.objective_building = p_objective_building
 	self.building_container = p_building_container
+	self.enemy_units = p_enemy_units
 	
 	if not is_instance_valid(rts_controller) or \
-	   not is_instance_valid(enemy_hall) or \
+	   not is_instance_valid(objective_building) or \
 	   not is_instance_valid(building_container):
 		push_error("RaidObjectiveManager: Failed to initialize. Received invalid node references.")
 		return
@@ -49,7 +53,9 @@ func initialize(
 	print("RaidObjectiveManager: Initialized and tracking objectives.")
 	
 	# Connect to all necessary signals
-	_connect_to_building_signals()
+	if not is_defensive_mission:
+		_connect_to_building_signals()
+		
 	_setup_win_loss_conditions()
 	
 	# Mark as initialized
@@ -58,9 +64,9 @@ func initialize(
 
 func _connect_to_building_signals() -> void:
 	# Connect to the Great Hall for the win condition
-	if enemy_hall.has_signal("building_destroyed"):
-		if not enemy_hall.building_destroyed.is_connected(_on_enemy_hall_destroyed):
-			enemy_hall.building_destroyed.connect(_on_enemy_hall_destroyed)
+	if objective_building.has_signal("building_destroyed"):
+		if not objective_building.building_destroyed.is_connected(_on_enemy_hall_destroyed):
+			objective_building.building_destroyed.connect(_on_enemy_hall_destroyed)
 	
 	# Connect to *all* buildings for loot collection
 	for building in building_container.get_children():
@@ -72,6 +78,8 @@ func _connect_to_building_signals() -> void:
 
 func _on_enemy_building_destroyed_for_loot(building: BaseBuilding) -> void:
 	"""Called when any enemy building is destroyed - collect loot."""
+	if mission_over: return
+	
 	var building_data = building.data as BuildingData
 	
 	if raid_loot and building_data:
@@ -84,46 +92,90 @@ func _on_enemy_building_destroyed_for_loot(building: BaseBuilding) -> void:
 
 func _setup_win_loss_conditions() -> void:
 	"""Setup win/loss condition monitoring"""
-	if not is_defensive_mission:
-		# Start periodic check for loss condition
-		_check_loss_condition()
+	if is_defensive_mission:
+		# --- DEFENSIVE MISSION ---
+		# Lose if Hall is destroyed
+		if objective_building.has_signal("building_destroyed"):
+			objective_building.building_destroyed.connect(_on_player_hall_destroyed)
+		# Win if all enemies are defeated
+		_check_defensive_win_condition()
 	else:
-		print("RaidObjectiveManager: Skipping 'all units destroyed' loss check for defensive mission.")
+		# --- OFFENSIVE MISSION ---
+		# Lose if all player units are destroyed
+		_check_loss_condition()
+		# Win if Enemy Hall is destroyed (handled by _connect_to_building_signals)
+
 
 func _check_loss_condition() -> void:
-	"""Check if all player units are destroyed (loss condition)"""
+	"""Check if all player units are destroyed (OFFENSIVE loss condition)"""
+	if mission_over: return
 	await get_tree().create_timer(1.0).timeout
 	
 	var remaining_units = 0
 	if is_instance_valid(rts_controller):
 		remaining_units = rts_controller.controllable_units.size()
 	
-	print("Loss check: %d units remaining" % remaining_units)
+	print("Loss check: %d player units remaining" % remaining_units)
 	
 	if remaining_units == 0:
-		_on_mission_failed()
+		_on_mission_failed("All units destroyed")
 		return # Stop the loop
 	
 	# Continue checking if mission is still active
-	if is_instance_valid(enemy_hall):
-		_check_loss_condition()
-	else:
-		print("Loss condition checking stopped - enemy hall destroyed")
+	_check_loss_condition()
 
-func _on_mission_failed() -> void:
-	"""Called when all player units are destroyed"""
-	print("Mission Failed! All units destroyed.")
+# --- NEW: Defensive Win/Loss ---
+func _check_defensive_win_condition() -> void:
+	"""Check if all enemy units are destroyed (DEFENSIVE win condition)"""
+	if mission_over: return
+	await get_tree().create_timer(1.0).timeout
+
+	# Prune dead/invalid units
+	enemy_units = enemy_units.filter(func(unit): return is_instance_valid(unit))
+	var remaining_enemies = enemy_units.size()
 	
-	_show_failure_message()
+	print("Win check: %d enemy units remaining" % remaining_enemies)
+
+	if remaining_enemies == 0:
+		_on_defensive_mission_won()
+		return # Stop the loop
+
+	# Continue checking
+	_check_defensive_win_condition()
+
+func _on_player_hall_destroyed(_building: BaseBuilding) -> void:
+	"""LOSE CONDITION for defensive mission"""
+	if mission_over: return
+	_on_mission_failed("Your Great Hall was destroyed!")
+
+func _on_defensive_mission_won() -> void:
+	"""WIN CONDITION for defensive mission"""
+	if mission_over: return
+	mission_over = true
+	print("Mission Success! All attackers defeated.")
+	
+	# TODO: Add popup message
+	
+	# No loot for defense, just return home
+	await get_tree().create_timer(3.0).timeout
+	EventBus.scene_change_requested.emit("settlement")
+# --- END NEW ---
+
+func _on_mission_failed(reason: String) -> void:
+	"""Called when player fails the mission"""
+	if mission_over: return
+	mission_over = true
+	
+	print("Mission Failed! %s" % reason)
+	
+	_show_failure_message(reason)
 	
 	await get_tree().create_timer(3.0).timeout
 	
-	# --- MODIFICATION ---
 	EventBus.scene_change_requested.emit("settlement")
-	# --- END MODIFICATION ---
 
 
-func _show_failure_message() -> void:
+func _show_failure_message(reason: String) -> void:
 	"""Display the mission failure message to the player"""
 	var failure_popup = Control.new()
 	failure_popup.name = "FailurePopup"
@@ -143,7 +195,7 @@ func _show_failure_message() -> void:
 	message_container.add_child(failure_label)
 	
 	var subtitle_label = Label.new()
-	subtitle_label.text = "All units destroyed"
+	subtitle_label.text = reason
 	subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	message_container.add_child(subtitle_label)
 	
@@ -158,7 +210,10 @@ func _show_failure_message() -> void:
 	print("Failure message displayed")
 
 func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
-	"""Called when the enemy's Great Hall is destroyed"""
+	"""Called when the enemy's Great Hall is destroyed (OFFENSIVE win condition)"""
+	if mission_over: return
+	mission_over = true
+	
 	print("Enemy Hall destroyed! Mission success!")
 	
 	# Add bonus loot
@@ -170,6 +225,4 @@ func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	
 	await get_tree().create_timer(2.0).timeout
 	
-	# --- MODIFICATION ---
 	EventBus.scene_change_requested.emit("settlement")
-	# --- END MODIFICATION ---

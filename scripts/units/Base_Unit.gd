@@ -49,14 +49,14 @@ func _ready() -> void:
 			attack_ai.configure_from_data(data)
 			
 			# --- MODIFICATION: Dynamically set target mask ---
-			# This fixes the bug where enemies targeted other enemies.
 			var target_mask = 0
-			if self.collision_layer == 2: # Player unit (Layer 2)
+			# self.collision_layer is a bitmask, check with `&`
+			if self.collision_layer & 2: # Player unit (Layer 2)
 				# Target Layer 3 (Enemy Units) and 4 (Enemy Buildings)
 				target_mask = (1 << 2) | (1 << 3) # 0b1100
-			elif self.collision_layer == 4: # Enemy unit (Layer 3)
-				# Target Layer 2 (Player Units)
-				target_mask = (1 << 1) # 0b0010
+			elif self.collision_layer & 4: # Enemy unit (Layer 3)
+				# Target Layer 1 (Player Buildings) and 2 (Player Units)
+				target_mask = (1 << 0) | (1 << 1) # 0b0011
 			
 			if target_mask == 0:
 				push_warning("BaseUnit: '%s' is on an unhandled collision layer (%s). AI will not target anything." % [name, self.collision_layer])

@@ -20,8 +20,12 @@ var path: Array = []
 
 # Target Data
 var target_position: Vector2 = Vector2.ZERO
-var target_unit: Node2D = null
 var move_command_position: Vector2 = Vector2.ZERO
+
+# --- MODIFIED: Split target into "objective" and "current" ---
+var objective_target: Node2D = null # The long-term goal (e.g., Great Hall)
+var current_target: Node2D = null # The immediate threat (e.g., nearby unit)
+# --- END MODIFIED ---
 
 func _init(p_unit: BaseUnit, p_attack_ai: AttackAI) -> void:
 	unit = p_unit
@@ -53,12 +57,11 @@ func _enter_state(state: State) -> void:
 		State.FORMATION_MOVING:
 			pass
 		
-		# --- NEW: Handle entering ATTACKING state ---
 		State.ATTACKING:
 			unit.velocity = Vector2.ZERO
-			if attack_ai and is_instance_valid(target_unit):
-				attack_ai.force_target(target_unit)
-		# ------------------------------------------
+			# Let the AttackAI component handle the forced attack
+			if attack_ai and is_instance_valid(current_target):
+				attack_ai.force_target(current_target)
 
 func _exit_state(state: State) -> void:
 	match state:
@@ -67,20 +70,31 @@ func _exit_state(state: State) -> void:
 		State.FORMATION_MOVING:
 			path.clear()
 		
-		# --- NEW: Handle exiting ATTACKING state ---
 		State.ATTACKING:
+			# If we were attacking, stop the AI component
 			if attack_ai:
 				attack_ai.stop_attacking()
-		# -----------------------------------------
+			# Clear the *current* target, but not the objective
+			current_target = null
 
 func _recalculate_path() -> void:
-	# --- MODIFICATION ---
+	# --- MODIFIED: Pathfind to the correct target ---
+	# If we have an immediate target, path to it.
+	# Otherwise, path to our long-term objective.
+	var target_node = current_target if is_instance_valid(current_target) else objective_target
+	
+	if not is_instance_valid(target_node):
+		change_state(State.IDLE)
+		return
+		
+	target_position = target_node.global_position
+	# --- END MODIFIED ---
+	
 	# Determine if we should allow a partial path.
-	# We allow it if we have an attack target (target_unit).
-	var allow_partial = is_instance_valid(target_unit)
+	# We allow it if we are pathing to any attack target.
+	var allow_partial = is_instance_valid(target_node)
 	
 	path = SettlementManager.get_astar_path(unit.global_position, target_position, allow_partial)
-	# --- END MODIFICATION ---
 	
 	if path.is_empty():
 		print("Unit at %s failed to find a path to %s." % [unit.global_position, target_position])
@@ -88,19 +102,20 @@ func _recalculate_path() -> void:
 			unit.flash_error_color()
 		
 		# If we can't find a path but have a target, just attack
-		if is_instance_valid(target_unit):
+		if is_instance_valid(target_node):
 			change_state(State.ATTACKING)
 		else:
 			change_state(State.IDLE)
-	else:
-		pass
 
 # --- RTS Command Functions ---
 
 func command_move_to_formation_pos(target_pos: Vector2) -> void:
 	target_position = target_pos
 	move_command_position = target_pos
-	target_unit = null # Clear any attack target
+	
+	# Clear both targets
+	current_target = null 
+	objective_target = null
 	
 	if attack_ai:
 		attack_ai.stop_attacking()
@@ -113,7 +128,10 @@ func command_move_to_formation_pos(target_pos: Vector2) -> void:
 func command_move_to(target_pos: Vector2) -> void:
 	target_position = target_pos
 	move_command_position = target_pos
-	target_unit = null # Clear any attack target
+
+	# Clear both targets
+	current_target = null
+	objective_target = null
 	
 	if attack_ai:
 		attack_ai.stop_attacking()
@@ -126,14 +144,12 @@ func command_attack(target: Node2D) -> void:
 		if unit and unit.has_method("flash_error_color"):
 			unit.flash_error_color()
 		return
-		
-	target_unit = target
 	
-	# --- THIS IS THE FIX ---
-	# Target the building's actual center.
-	# _recalculate_path will handle finding the closest spot.
+	# Set both targets. The objective is the commanded target.
+	# The current target is also the commanded target, until interrupted.
+	objective_target = target
+	current_target = target
 	target_position = target.global_position
-	# --- END FIX ---
 	
 	var distance: float = unit.global_position.distance_to(target.global_position)
 	
@@ -159,6 +175,9 @@ func update(delta: float) -> void:
 
 func _idle_state(_delta: float) -> void:
 	unit.velocity = Vector2.ZERO
+	# Note: The AttackAI is still scanning.
+	# If it finds a target, _on_ai_attack_started will fire
+	# and pull the unit out of IDLE.
 
 func _formation_move_state(delta: float) -> void:
 	if path.is_empty():
@@ -180,30 +199,34 @@ func _formation_move_state(delta: float) -> void:
 			change_state(State.IDLE)
 
 func _move_state(delta: float) -> void:
-	# Check if we have an attack target and are now in range
-	if is_instance_valid(target_unit):
-		var distance_to_target: float = unit.global_position.distance_to(target_unit.global_position)
-		
+	# The AttackAI is scanning automatically.
+	# If it finds a target, it will interrupt this state
+	# via the _on_ai_attack_started signal.
+	
+	var target_node = current_target if is_instance_valid(current_target) else objective_target
+
+	if not is_instance_valid(target_node):
+		# Our objective was destroyed or we had no objective
+		change_state(State.IDLE)
+		return
+	
+	# Check if we are in range of our *current* target
+	if is_instance_valid(current_target):
+		var distance_to_target: float = unit.global_position.distance_to(current_target.global_position)
 		if distance_to_target <= unit.data.attack_range:
 			change_state(State.ATTACKING)
 			return
-		else:
-			# --- MODIFIED: Target the actual center ---
-			# The pathfinder will get as close as possible.
-			target_position = target_unit.global_position
-	
-	if stance == Stance.DEFENSIVE:
-		_check_defensive_response()
 	
 	if path.is_empty():
-		if is_instance_valid(target_unit):
-			_recalculate_path()
-			return
+		# Path is empty, but we're not in range.
+		# This means we've arrived at the closest point.
+		if is_instance_valid(target_node):
+			change_state(State.ATTACKING)
 		else:
-			print("Unit reached destination.")
 			change_state(State.IDLE)
-			return
+		return
 	
+	# Standard path following
 	var next_waypoint: Vector2 = path[0]
 	var direction: Vector2 = (next_waypoint - unit.global_position).normalized()
 	var velocity: Vector2 = direction * unit.data.move_speed
@@ -216,27 +239,31 @@ func _move_state(delta: float) -> void:
 		path.pop_front()
 		
 		if path.is_empty():
-			if is_instance_valid(target_unit):
-				var distance_to_target: float = unit.global_position.distance_to(target_unit.global_position)
-				if distance_to_target <= unit.data.attack_range:
-					change_state(State.ATTACKING)
-				else:
-					_recalculate_path()
+			# We've reached the end of the path
+			if is_instance_valid(target_node):
+				change_state(State.ATTACKING)
 			else:
 				change_state(State.IDLE)
 
 func _attack_state(_delta: float) -> void:
 	# This state just monitors the target.
 	# The AttackAI component handles the actual firing.
-	if not is_instance_valid(target_unit):
+	if not is_instance_valid(current_target):
 		# Target is dead or gone
-		change_state(State.IDLE)
+		# _on_ai_attack_stopped will handle resuming the objective
+		change_state(State.IDLE) # Go to idle temporarily
 		return
 	
-	var distance_to_target: float = unit.global_position.distance_to(target_unit.global_position)
+	var distance_to_target: float = unit.global_position.distance_to(current_target.global_position)
 	if distance_to_target > unit.data.attack_range + 10: # +10 pixel buffer
 		# Target moved out of range
-		change_state(State.MOVING)
+		current_target = null # Lose the target
+		
+		# Resume objective
+		if is_instance_valid(objective_target):
+			change_state(State.MOVING)
+		else:
+			change_state(State.IDLE)
 		return
 	
 	# Otherwise, stay in ATTACKING state
@@ -246,10 +273,30 @@ func _check_defensive_response() -> void:
 	pass
 
 # --- AI Signal Callbacks ---
-func _on_ai_attack_started(_target: Node2D) -> void:
-	pass
+func _on_ai_attack_started(target: Node2D) -> void:
+	# The AttackAI found a target of opportunity!
+	# Interrupt whatever we're doing.
+	
+	# Don't switch if we are already attacking this target
+	if current_state == State.ATTACKING and target == current_target:
+		return
+		
+	print("UnitFSM: Interrupted! AttackAI found new target: %s" % target.name)
+	current_target = target # Set as our immediate target
+	change_state(State.ATTACKING)
 
 func _on_ai_attack_stopped() -> void:
-	# If our AI stops for any reason, go back to IDLE
+	# The AttackAI has stopped (e.g., target died, or moved out of range)
 	if current_state == State.ATTACKING:
-		change_state(State.IDLE)
+		print("UnitFSM: Attack finished.")
+		current_target = null
+		
+		# Check if we have a long-term objective to resume
+		if is_instance_valid(objective_target):
+			print("UnitFSM: Resuming objective: %s" % objective_target.name)
+			current_target = objective_target # Set our current target back to the objective
+			change_state(State.MOVING) # Go back to moving
+		else:
+			# No objective, just go idle
+			print("UnitFSM: No objective. Going IDLE.")
+			change_state(State.IDLE)

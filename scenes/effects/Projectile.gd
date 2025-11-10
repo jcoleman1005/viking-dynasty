@@ -10,15 +10,16 @@ extends Area2D
 var damage: int = 0
 var speed: float = 400.0
 var direction: Vector2 = Vector2.RIGHT
-# --- REMOVED: This variable was causing the bug ---
-# var valid_collision_mask: int = 0
-# --------------------------------------------------
 
 @onready var lifetime_timer: Timer = $LifetimeTimer
 
 func _ready() -> void:
-	# Connect signals in code
+	# --- THIS IS THE FIX (Part 1) ---
+	# We now connect to 'area_entered' to detect the building's Hitbox
+	area_entered.connect(_on_area_entered)
+	# We also keep body_entered for the Watchtower's projectiles
 	body_entered.connect(_on_body_entered)
+	# --- END FIX ---
 	lifetime_timer.timeout.connect(_on_lifetime_timeout)
 
 func _physics_process(delta: float) -> void:
@@ -28,7 +29,6 @@ func _physics_process(delta: float) -> void:
 func setup(start_position: Vector2, target_position: Vector2, projectile_damage: int, projectile_speed: float = 400.0, collision_mask: int = 0) -> void:
 	"""
 	Initialize the projectile with all necessary parameters.
-	
 	Args:
 		start_position: Where the projectile starts
 		target_position: Where to aim (calculates direction)
@@ -44,31 +44,75 @@ func setup(start_position: Vector2, target_position: Vector2, projectile_damage:
 	# Set the collision mask on the Area2D
 	self.collision_mask = collision_mask
 	
+	# --- THIS IS THE FIX (Part 2) ---
+	# Set 'monitoring' to true. This tells the Area2D to
+	# detect 'monitorable' areas AND bodies.
+	self.monitoring = true
+	
+	# Set 'monitorable' to false. This projectile doesn't
+	# need to be detected by other areas.
+	self.monitorable = false
+	# --- END FIX ---
+	
+	# --- DEBUGGING ---
+	print("--- Projectile DEBUG ---")
+	print("Projectile spawned. Mask: %s, monitoring: %s" % [self.collision_mask, self.monitoring])
+	print("------------------------")
+	
 	# Point the projectile in the direction of travel (for visual rotation)
 	if direction != Vector2.ZERO:
+		# Sprite is horizontal, so just angle() is correct.
 		rotation = direction.angle()
 
+# --- NEW FUNCTION (for hitting buildings) ---
+func _on_area_entered(area: Area2D) -> void:
+	"""Called when this Area2D detects a 'monitorable' Area2D (like our Hitbox)."""
+	
+	# --- DEBUGGING ---
+	print("--- Projectile HIT Area ---")
+	print("Projectile hit area '%s' on layer %s!" % [area.name, area.collision_layer])
+	print("  > My mask is: %s" % self.collision_mask)
+	
+	# Check if the area's layer matches our mask
+	if area.collision_layer & self.collision_mask:
+		print("  > SUCCESS: Layer matches mask.")
+		# Find the building, which is the parent of the Hitbox
+		var parent_body = area.get_parent()
+		if parent_body and parent_body.has_method("take_damage"):
+			parent_body.take_damage(damage)
+			queue_free() # Destroy projectile
+		else:
+			print("  > ERROR: Hitbox parent is not a building or cannot take damage.")
+	else:
+		print("  > FAILURE: Layer does not match mask.")
+	print("---------------------------")
+# --- END NEW FUNCTION ---
+
+# --- EXISTING FUNCTION (for hitting units) ---
 func _on_body_entered(body: Node2D) -> void:
-	# Check if this body is on a layer we're supposed to hit
-	if body is CharacterBody2D or body is RigidBody2D or body is StaticBody2D:
-		var body_layer = 0
-		if body.has_method("get_collision_layer"):
-			body_layer = body.get_collision_layer()
-		elif "collision_layer" in body:
-			body_layer = body.collision_layer
+	"""Called when this Area2D detects a 'monitorable' PhysicsBody (like a unit)."""
+	
+	if not body is CollisionObject2D:
+		return
+	
+	# --- DEBUGGING ---
+	print("--- Projectile HIT Body ---")
+	print("Projectile hit body '%s' on layer %s!" % [body.name, body.collision_layer])
+	print("  > My mask is: %s" % self.collision_mask)
+
+	# Check if the body's layer matches our mask
+	if body.collision_layer & self.collision_mask:
+		print("  > SUCCESS: Layer matches mask.")
+		# Deal damage if the body can take it
+		if body.has_method("take_damage"):
+			body.take_damage(damage)
 		
-		# --- THIS IS THE FIX ---
-		# We check against self.collision_mask, which was set in setup(),
-		# not the old, uninitialized 'valid_collision_mask' variable.
-		if body_layer & self.collision_mask:
-		# --- END FIX ---
-			
-			# Deal damage if the body can take it
-			if body.has_method("take_damage"):
-				body.take_damage(damage)
-			
-			# Destroy the projectile
-			queue_free()
+		# Destroy the projectile
+		queue_free()
+	else:
+		print("  > FAILURE: Layer does not match mask.")
+	print("---------------------------")
+# --- END EXISTING FUNCTION ---
 
 func _on_lifetime_timeout() -> void:
 	# Projectile flew for too long, destroy self

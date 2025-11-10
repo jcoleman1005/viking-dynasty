@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="WorldRegionData" load_steps=3 format=3 uid="uid://dbhfg3lfhe6tw"]
+[gd_resource type="Resource" script_class="WorldRegionData" load_steps=3 format=3 uid="uid://bk6wv22mknptc"]
 
 [ext_resource type="Resource" uid="uid://okf2novkg804" path="res://data/settlements/monastery_base.tres" id="1_settlement"]
 [ext_resource type="Script" uid="uid://dqlbgeegli821" path="res://data/world_map/WorldRegionData.gd" id="2_world_region"]
@@ -8,4 +8,9 @@ script = ExtResource("2_world_region")
 display_name = "Nearby Monastery"
 description = "A wealthy but poorly-defended monastery. An easy target for a quick grab."
 target_settlement_data = ExtResource("1_settlement")
+region_type_tag = "Monastery"
+yearly_income = {
+"food": 10,
+"gold": 25
+}
 metadata/_custom_type_script = "uid://dqlbgeegli821"

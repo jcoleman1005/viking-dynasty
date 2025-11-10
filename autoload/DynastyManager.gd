@@ -4,7 +4,6 @@
 # for the player's Jarl and dynasty state.
 # This is the "Core Pacing Engine" as defined in the GDD.
 # It is the single source of truth for all Jarl data.
-
 extends Node
 
 ## Emitted when Jarl data changes (e.g., spent Authority, ended year)
@@ -12,6 +11,8 @@ signal jarl_stats_updated(jarl_data: JarlData)
 
 var current_jarl: JarlData
 var current_raid_target: SettlementData
+
+var is_defensive_raid: bool = false
 
 # Path to the player's persistent Jarl data
 const PLAYER_JARL_PATH = "res://data/characters/PlayerJarl.tres"
@@ -42,7 +43,7 @@ func get_current_jarl() -> JarlData:
 func can_spend_authority(cost: int) -> bool:
 	if not current_jarl:
 		return false
-	return current_jarl.can_take_action(cost) #
+	return current_jarl.can_take_action(cost)
 
 func spend_authority(cost: int) -> bool:
 	if not current_jarl:
@@ -50,26 +51,177 @@ func spend_authority(cost: int) -> bool:
 		
 	if current_jarl.spend_authority(cost):
 		_save_jarl_data()
-		jarl_stats_updated.emit(current_jarl) #
+		jarl_stats_updated.emit(current_jarl)
 		print("DynastyManager: Spent %d authority. %d remaining." % [cost, current_jarl.current_authority])
 		return true
 	
 	print("DynastyManager: Failed to spend %d authority. %d remaining." % [cost, current_jarl.current_authority])
 	return false
 
+func can_spend_renown(cost: int) -> bool:
+	"""Check if the Jarl has enough Renown."""
+	if not current_jarl:
+		return false
+	return current_jarl.renown >= cost
+
+func spend_renown(cost: int) -> bool:
+	"""Spend the Jarl's Renown."""
+	if not can_spend_renown(cost):
+		print("DynastyManager: Failed to spend %d renown. %d available." % [cost, current_jarl.renown])
+		return false
+	
+	current_jarl.renown -= cost
+	_save_jarl_data()
+	jarl_stats_updated.emit(current_jarl)
+	print("DynastyManager: Spent %d renown. %d remaining." % [cost, current_jarl.renown])
+	return true
+
+func purchase_legacy_upgrade(upgrade_key: String) -> void:
+	"""Mark a legacy upgrade as purchased on the Jarl's data."""
+	if not current_jarl:
+		return
+	if not upgrade_key in current_jarl.purchased_legacy_upgrades:
+		current_jarl.purchased_legacy_upgrades.append(upgrade_key)
+		_save_jarl_data()
+		print("DynastyManager: Legacy upgrade '%s' purchased and saved." % upgrade_key)
+
+func has_purchased_upgrade(upgrade_key: String) -> bool:
+	"""Check if a legacy upgrade has already been purchased."""
+	if not current_jarl:
+		return false
+	return upgrade_key in current_jarl.purchased_legacy_upgrades
+
+# --- NEW: Unifier Pillar Functions ---
+func add_conquered_region(region_path: String) -> void:
+	"""Adds a region's path to the Jarl's list of conquered territories."""
+	if not current_jarl:
+		return
+	if not region_path in current_jarl.conquered_regions:
+		current_jarl.conquered_regions.append(region_path)
+		_save_jarl_data()
+		print("DynastyManager: Region '%s' conquered and saved." % region_path)
+		# We don't emit jarl_stats_updated here because spending authority
+		# will have already triggered the UI refresh.
+
+func has_conquered_region(region_path: String) -> bool:
+	"""Checks if a region has been conquered."""
+	if not current_jarl:
+		return false
+	return region_path in current_jarl.conquered_regions
+
+# --- NEW: Progenitor Pillar Functions ---
+
+func get_available_heir_count() -> int:
+	if not current_jarl:
+		return 0
+	return current_jarl.get_available_heir_count()
+
+func start_heir_expedition(heir: JarlHeirData, expedition_duration: int = 5) -> void:
+	"""
+	Sends an heir on an expedition.
+	This marks them as unavailable and starts a timer.
+	"""
+	if not current_jarl or not heir in current_jarl.heirs:
+		push_error("DynastyManager: Tried to send an invalid heir on expedition.")
+		return
+	
+	heir.status = JarlHeirData.HeirStatus.OnExpedition
+	heir.expedition_years_remaining = expedition_duration
+	_save_jarl_data()
+	jarl_stats_updated.emit(current_jarl)
+	print("Heir %s sent on expedition for %d years." % [heir.display_name, expedition_duration])
+
+func process_heir_expeditions() -> Array[String]:
+	"""
+	Called at the End of Year.
+	Processes all heirs on expedition, returning results.
+	"""
+	if not current_jarl:
+		return []
+
+	var results: Array[String] = []
+	var heirs_to_remove: Array[JarlHeirData] = []
+	
+	for heir in current_jarl.heirs:
+		if heir.status == JarlHeirData.HeirStatus.OnExpedition:
+			heir.expedition_years_remaining -= 1
+			
+			if heir.expedition_years_remaining <= 0:
+				# Expedition is over, run probability check
+				var roll = randf()
+				if roll <= 0.7: # 70% success 
+					var renown_gain = randi_range(100, 300)
+					award_renown(renown_gain)
+					results.append("Heir %s returned from their expedition with %d Renown!" % [heir.display_name, renown_gain])
+					heir.status = JarlHeirData.HeirStatus.Available
+				else: # 30% failure 
+					results.append("Tragic news! Heir %s was lost at sea during their expedition." % heir.display_name)
+					heir.status = JarlHeirData.HeirStatus.LostAtSea
+					heirs_to_remove.append(heir) # Queue for removal
+	
+	# Remove lost heirs
+	for heir in heirs_to_remove:
+		current_jarl.remove_heir(heir)
+
+	if not results.is_empty():
+		_save_jarl_data()
+		jarl_stats_updated.emit(current_jarl)
+		
+	return results
+
+# --- NEW: Marry for Alliance ---
+func marry_heir_for_alliance(region_path: String) -> bool:
+	"""
+	Spends the first available heir to form an alliance with a region.
+	Returns true on success, false if no heir is available.
+	"""
+	if not current_jarl:
+		return false
+		
+	var heir_to_marry = current_jarl.get_first_available_heir()
+	if not heir_to_marry:
+		print("DynastyManager: Marriage failed. No available heir.")
+		return false
+	
+	# "Spend" the heir
+	heir_to_marry.status = JarlHeirData.HeirStatus.MarriedOff
+	
+	# Add the alliance
+	if not region_path in current_jarl.allied_regions:
+		current_jarl.allied_regions.append(region_path)
+	
+	print("Heir %s married off to form alliance with %s" % [heir_to_marry.display_name, region_path])
+	_save_jarl_data()
+	jarl_stats_updated.emit(current_jarl)
+	return true
+
+func is_allied_region(region_path: String) -> bool:
+	"""Checks if a region is allied."""
+	if not current_jarl:
+		return false
+	return region_path in current_jarl.allied_regions
+# --- END NEW ---
+
 func end_year() -> void:
 	if not current_jarl:
 		return
 		
-	current_jarl.reset_authority() #
-	# TODO: Hook in Renown Decay and other end-of-year events here
+	current_jarl.reset_authority()
+	
+	# --- NEW: Process Expeditions ---
+	var expedition_results = process_heir_expeditions()
+	if not expedition_results.is_empty():
+		print("Expedition Results: %s" % expedition_results)
+		# TODO: We will need a way to show these results to the player,
+		# likely by modifying the EndOfYear_Popup.
+	# --- END NEW ---
 	
 	_save_jarl_data()
 	jarl_stats_updated.emit(current_jarl)
 	print("DynastyManager: Year ended. Authority reset to %d." % current_jarl.max_authority)
-
+	
 func set_current_raid_target(data: SettlementData) -> void:
-	current_raid_target = data #
+	current_raid_target = data
 	print("DynastyManager: Raid target set to %s" % data.resource_path)
 
 func get_current_raid_target() -> SettlementData:
@@ -95,7 +247,7 @@ func award_renown(amount: int) -> void:
 	if not current_jarl:
 		return
 	
-	current_jarl.award_renown(amount) #
+	current_jarl.award_renown(amount)
 	_save_jarl_data()
 	jarl_stats_updated.emit(current_jarl)
 	print("DynastyManager: Awarded %d renown. Total: %d" % [amount, current_jarl.renown])

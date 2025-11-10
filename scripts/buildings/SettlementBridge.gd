@@ -22,6 +22,7 @@ extends Node
 # --- Default Assets (fallback) ---
 var default_test_building: BuildingData = preload("res://data/buildings/Bldg_Wall.tres")
 var default_raider_scene: PackedScene 
+
 # --- MODIFICATION: Renamed preload path and variable ---
 var default_end_of_year_popup: PackedScene = preload("res://ui/EndOfYear_Popup.tscn")
 # --- END MODIFICATION ---
@@ -36,6 +37,10 @@ var default_end_of_year_popup: PackedScene = preload("res://ui/EndOfYear_Popup.t
 # --- MODIFICATION: Renamed variable ---
 var end_of_year_popup: PanelContainer
 # --- END MODIFICATION ---
+
+# --- NEW: Debug Button ---
+@onready var debug_raid_button: Button = $UI/Storefront_UI/DebugRaidButton
+# -----------------------
 
 # --- Local Node References ---
 @onready var building_container: Node2D = $BuildingContainer
@@ -174,6 +179,11 @@ func _connect_signals() -> void:
 		building_cursor.placement_completed.connect(_on_building_placement_completed)
 		building_cursor.placement_cancelled.connect(_on_building_placement_cancelled_by_cursor)
 
+	# --- NEW: Connect Debug Button ---
+	if is_instance_valid(debug_raid_button):
+		debug_raid_button.pressed.connect(_on_debug_raid_pressed)
+	# --- END NEW ---
+
 func _handle_welcome_payout() -> void:
 	var payout = SettlementManager.calculate_payout()
 	# --- MODIFICATION: Renamed variable ---
@@ -189,21 +199,16 @@ func _handle_welcome_payout() -> void:
 func _on_settlement_loaded(_settlement_data: SettlementData) -> void:
 	pass
 
-func _unhandled_input(event: InputEvent) -> void:
-	# --- MODIFICATION: Renamed variable ---
-	if game_is_over or (end_of_year_popup and end_of_year_popup.visible):
-	# --- END MODIFICATION ---
-		return
-	
-	if event.is_action_pressed("ui_accept") and not awaiting_placement:
-		if is_instance_valid(grid_manager) and "astar_grid" in grid_manager:
-			var mouse_pos = get_viewport().get_mouse_position()
-			var cell_size = grid_manager.cell_size
-			var grid_coord = Vector2i(int(mouse_pos.x / cell_size), int(mouse_pos.y / cell_size)) 
-			print("CLICKED GRID COORDINATE: ", grid_coord)
-			get_viewport().set_input_as_handled()
-		else:
-			print("Cannot find coordinate: GridManager not initialized")
+# --- MODIFICATION: Removed _unhandled_input ---
+# func _unhandled_input(event: InputEvent) -> void: ...
+# --- END MODIFICATION ---
+
+# --- NEW: Debug Button Function ---
+func _on_debug_raid_pressed() -> void:
+	print("DEBUG: Forcing defensive raid mission!")
+	DynastyManager.is_defensive_raid = true
+	EventBus.scene_change_requested.emit("raid_mission")
+# --- END NEW ---
 
 func _on_payout_collected(payout: Dictionary) -> void:
 	SettlementManager.deposit_resources(payout)
