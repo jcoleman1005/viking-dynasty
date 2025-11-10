@@ -139,31 +139,18 @@ func _load_player_base_for_defense() -> void:
 		building_instance.name = building_data.display_name + "_Player"
 		building_instance.data = building_data
 		
-		# --- MODIFICATION: Correct Building Placement Logic ---
 		var world_pos_top_left: Vector2 = Vector2(grid_pos) * grid_manager.cell_size
 		var building_footprint_size: Vector2 = Vector2(building_data.grid_size) * grid_manager.cell_size
 		var building_center_offset: Vector2 = building_footprint_size / 2.0
 		building_instance.global_position = world_pos_top_left + building_center_offset
-		# --- END MODIFICATION ---
 		
-		# --- SET PLAYER BUILDING COLLISION LAYER ---
-		# This sets the StaticBody2D's layer (for pathfinding, etc.)
-		building_instance.set_collision_layer(1)
-		# The StaticBody2D itself doesn't need to detect anything.
+		building_instance.set_collision_layer(1) # Player Buildings (L1)
 		building_instance.set_collision_mask(0) 
-		
-		# --- REMOVED ---
-		# The following lines were incorrect and caused the crash.
-		# The Base_Building.gd script now handles its own hitbox setup.
-		# building_instance.set_collision_mask(1 << 10) 
-		# building_instance.monitoring = true
-		# --- END REMOVED ---
 		
 		if building_data.display_name.to_lower().contains("hall"):
 			objective_building = building_instance
 			print("Found player's Great Hall for objective.")
 			
-		# Connect signal for GRID CLEARING
 		if building_instance.has_signal("building_destroyed"):
 			building_instance.building_destroyed.connect(_on_enemy_building_destroyed_grid_clear)
 		
@@ -197,33 +184,23 @@ func _load_enemy_base() -> void:
 		if "data" in building_instance:
 			building_instance.data = building_data
 		
-		# --- MODIFICATION: Correct Building Placement Logic ---
 		var world_pos_top_left: Vector2 = Vector2(grid_pos) * grid_manager.cell_size
 		var building_footprint_size: Vector2 = Vector2(building_data.grid_size) * grid_manager.cell_size
 		var building_center_offset: Vector2 = building_footprint_size / 2.0
 		building_instance.global_position = world_pos_top_left + building_center_offset
-		# --- END MODIFICATION ---
 		
 		building_instance.add_to_group("enemy_buildings")
 		
-		# SET ENEMY BUILDING COLLISION LAYER
 		building_instance.set_collision_layer(1 << 3) # Layer 4
 		building_instance.set_collision_mask(0)
-		
-		# --- REMOVED ---
-		# building_instance.set_collision_mask(1 << 10)
-		# building_instance.monitoring = true
-		# --- END REMOVED ---
 		
 		building_instance.set_meta("building_data", building_data)
 		building_instance.set_meta("is_enemy_building", true)
 		
-		# Find the hall
 		if building_data.display_name.to_lower().contains("hall"):
 			objective_building = building_instance
 			print("Found enemy hall: %s" % building_data.display_name)
 		
-		# Connect signal for GRID CLEARING (loot is handled by objective manager)
 		if building_instance.has_signal("building_destroyed"):
 			building_instance.building_destroyed.connect(_on_enemy_building_destroyed_grid_clear)
 		
@@ -265,7 +242,6 @@ func _spawn_player_garrison() -> void:
 	if garrison.is_empty():
 		print("No units in garrison to spawn")
 		if not is_defensive_mission:
-			# Defer the call to the objective manager
 			objective_manager.call_deferred("_check_loss_condition")
 		return
 	
@@ -295,7 +271,6 @@ func _spawn_player_garrison() -> void:
 			
 			var spawn_pos: Vector2 = player_spawn_pos.global_position
 			
-			# --- MODIFICATION: Spawn near hall in defense ---
 			if is_defensive_mission and is_instance_valid(objective_building):
 				spawn_pos = objective_building.global_position + Vector2(100, 100) # Offset from hall
 			
@@ -328,30 +303,54 @@ func _spawn_enemy_wave() -> void:
 
 	var enemy_count = 5 # TODO: Make this scale with difficulty
 	for i in range(enemy_count):
-		var enemy_unit: BaseUnit = enemy_data.scene_to_spawn.instantiate()
+		
+		# --- THIS IS THE FIX ---
+		
+		# 1. Instantiate the scene and add it to the tree
+		# This calls _ready() and creates the fsm and attack_ai
+		var enemy_node = enemy_data.scene_to_spawn.instantiate()
+		add_child(enemy_node) 
+		
+		# 2. Cast the node to BaseUnit so we can access its members
+		var enemy_unit = enemy_node as BaseUnit
+		if not enemy_unit:
+			push_error("Spawned enemy node is not a BaseUnit!")
+			enemy_node.queue_free()
+			continue
+		
+		# 3. Now we can safely set data and properties
 		enemy_unit.name = enemy_data.display_name + "_Enemy_" + str(i)
 		enemy_unit.data = enemy_data
 		
 		# --- SET ENEMY UNIT COLLISION LAYER ---
 		enemy_unit.collision_layer = 4  # Layer 3 (bit position 2) for Enemy Units
-		print("RaidMission: Enemy unit '%s' set to Layer 3 (Enemy Units)" % enemy_unit.name)
-		# --- END COLLISION LAYER SETUP ---
 		
-		# Spawn in a line
+		# --- SET AI MODE (This is now safe to do) ---
+		if enemy_unit.attack_ai:
+			enemy_unit.attack_ai.ai_mode = AttackAI.AI_Mode.DEFENSIVE_SIEGE
+		else:
+			push_warning("Enemy unit %s has no AttackAI node!" % enemy_unit.name)
+		# --- END SET ---
+		
 		var spawn_pos = enemy_spawner.global_position + Vector2(i * 40, 0)
 		enemy_unit.global_position = spawn_pos
 		
 		enemy_unit.add_to_group("enemy_units")
-		enemy_units.append(enemy_unit) # Add to array for tracking
-		add_child(enemy_unit)
+		enemy_units.append(enemy_unit)
 		
-		# Command enemy to attack the player's hall
+		# 4. Now we can safely access the FSM
 		if is_instance_valid(objective_building):
-			enemy_unit.fsm.command_attack(objective_building)
+			if enemy_unit.fsm:
+				enemy_unit.fsm.command_attack(objective_building)
+			else:
+				push_error("Enemy unit %s FSM is null after _ready()!" % enemy_unit.name)
+		
+		# --- END FIX ---
 	
 	print("Spawned %d enemy raiders." % enemy_count)
 
-# --- END NEW FUNCTION ---
+# --- 
+# END NEW FUNCTION ---
 
 func _spawn_test_units() -> void:
 	# This function is for debug only and does not need refactoring
@@ -416,11 +415,9 @@ func _clear_building_from_pathfinding_grid(building: BaseBuilding) -> void:
 		
 	var cell_size = grid_manager.cell_size
 	
-	# --- FIX: Calculate grid_pos from top-left, not center ---
 	var size_in_pixels = Vector2(building.data.grid_size) * cell_size
 	var top_left_pos = building.global_position - (size_in_pixels / 2.0)
 	var grid_pos = Vector2i(top_left_pos / cell_size)
-	# --- END FIX ---
 	var grid_size = building.data.grid_size
 	
 	for x in range(grid_size.x):

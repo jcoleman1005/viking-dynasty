@@ -7,7 +7,8 @@ extends CharacterBody2D
 signal destroyed
 
 @export var data: UnitData
-var fsm: UnitFSM
+# Removed the : UnitFSM type hint to break the circular dependency.
+var fsm
 var current_health: int = 50
 var attack_ai: AttackAI = null
 
@@ -24,14 +25,15 @@ var attack_ai: AttackAI = null
 
 # Visual state system
 var _color_tween: Tween
-# --- AI FIX: Added ATTACKING state back to match the FSM ---
+# --- THIS IS THE FIX ---
+# Changed all references from UnitFSM.State to UnitAIConstants.State
 const STATE_COLORS := {
-	UnitFSM.State.IDLE: Color(0.3, 0.6, 1.0),     # Blue
-	UnitFSM.State.MOVING: Color(0.4, 1.0, 0.4),   # Green
-	UnitFSM.State.FORMATION_MOVING: Color(0.4, 1.0, 0.4), # Green
-	UnitFSM.State.ATTACKING: Color(1.0, 0.3, 0.3) # Red
+	UnitAIConstants.State.IDLE: Color(0.3, 0.6, 1.0),     # Blue
+	UnitAIConstants.State.MOVING: Color(0.4, 1.0, 0.4),   # Green
+	UnitAIConstants.State.FORMATION_MOVING: Color(0.4, 1.0, 0.4), # Green
+	UnitAIConstants.State.ATTACKING: Color(1.0, 0.3, 0.3) # Red
 }
-# -----------------------------------------------------------
+# --- END FIX ---
 const ERROR_COLOR := Color(0.7, 0.3, 1.0)
 
 func _ready() -> void:
@@ -48,28 +50,24 @@ func _ready() -> void:
 			add_child(attack_ai)
 			attack_ai.configure_from_data(data)
 			
-			# --- MODIFICATION: Dynamically set target mask ---
 			var target_mask = 0
-			# self.collision_layer is a bitmask, check with `&`
 			if self.collision_layer & 2: # Player unit (Layer 2)
-				# Target Layer 3 (Enemy Units) and 4 (Enemy Buildings)
-				target_mask = (1 << 2) | (1 << 3) # 0b1100
+				target_mask = (1 << 2) | (1 << 3) # Target Enemy Units (L3) & Enemy Buildings (L4)
 			elif self.collision_layer & 4: # Enemy unit (Layer 3)
-				# Target Layer 1 (Player Buildings) and 2 (Player Units)
-				target_mask = (1 << 0) | (1 << 1) # 0b0011
+				target_mask = (1 << 0) | (1 << 1) # Target Player Buildings (L1) & Player Units (L2)
 			
 			if target_mask == 0:
 				push_warning("BaseUnit: '%s' is on an unhandled collision layer (%s). AI will not target anything." % [name, self.collision_layer])
 			
 			attack_ai.set_target_mask(target_mask)
-			# --- END MODIFICATION ---
-
 		else:
 			push_error("BaseUnit: Failed to instantiate ai_component_scene for %s" % data.display_name)
 	
 	fsm = UnitFSM.new(self, attack_ai)
 	
-	sprite.modulate = STATE_COLORS.get(UnitFSM.State.IDLE, Color.WHITE)
+	# --- THIS IS THE FIX ---
+	sprite.modulate = STATE_COLORS.get(UnitAIConstants.State.IDLE, Color.WHITE)
+	# --- END FIX ---
 	
 	EventBus.pathfinding_grid_updated.connect(_on_grid_updated)
 	
@@ -110,7 +108,9 @@ func _exit_tree() -> void:
 		EventBus.pathfinding_grid_updated.disconnect(_on_grid_updated)
 
 func _on_grid_updated(_grid_pos: Vector2i) -> void:
-	if fsm and fsm.current_state == UnitFSM.State.MOVING:
+	# --- THIS IS THE FIX ---
+	if fsm and fsm.current_state == UnitAIConstants.State.MOVING:
+	# --- END FIX ---
 		fsm._recalculate_path()
 
 func _physics_process(delta: float) -> void:
@@ -125,7 +125,9 @@ func _physics_process(delta: float) -> void:
 	
 	var target_fsm_velocity = Vector2.ZERO
 	
-	if fsm and (fsm.current_state == UnitFSM.State.MOVING or fsm.current_state == UnitFSM.State.FORMATION_MOVING):
+	# --- THIS IS THE FIX ---
+	if fsm and (fsm.current_state == UnitAIConstants.State.MOVING or fsm.current_state == UnitAIConstants.State.FORMATION_MOVING):
+	# --- END FIX ---
 		target_fsm_velocity = fsm_velocity
 	
 	if target_fsm_velocity.length() > 0.1:
@@ -158,7 +160,9 @@ func _calculate_separation_push(delta: float) -> Vector2:
 			
 	return push_vector * separation_force * delta
 
-func on_state_changed(state: UnitFSM.State) -> void:
+# --- THIS IS THE FIX ---
+func on_state_changed(state: UnitAIConstants.State) -> void:
+# --- END FIX ---
 	var to_color: Color = STATE_COLORS.get(state, Color.WHITE)
 	_tween_color(to_color, 0.2)
 
@@ -174,8 +178,16 @@ func _tween_color(to_color: Color, duration: float = 0.2) -> void:
 	_color_tween = create_tween()
 	_color_tween.tween_property(sprite, "modulate", to_color, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
-func take_damage(amount: int) -> void:
+# --- MODIFIED: Added attacker parameter ---
+func take_damage(amount: int, attacker: Node2D = null) -> void:
 	current_health = max(0, current_health - amount)
+	
+	# --- NEW: Retaliation Logic ---
+	if fsm and is_instance_valid(attacker):
+		# Tell the FSM we are being attacked
+		fsm.command_defensive_attack(attacker)
+	# --- END NEW ---
+	
 	if current_health == 0:
 		die()
 

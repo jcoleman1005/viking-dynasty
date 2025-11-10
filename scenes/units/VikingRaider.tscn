@@ -11,3 +11,6 @@ script = ExtResource("2_script")
 modulate = Color(0.5464087, 3.85046e-07, 2.4065375e-07, 1)
 self_modulate = Color(1, 0, 0, 1)
 scale = Vector2(0.059, 0.062)
+
+[node name="CollisionShape2D" parent="." index="1"]
+position = Vector2(-1, 0)

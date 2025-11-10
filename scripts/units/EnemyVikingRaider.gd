@@ -25,5 +25,8 @@ func set_attack_target(target: BaseBuilding) -> void:
 	# --- END FIX ---
 	
 	# Start the FSM
-	fsm.change_state(UnitFSM.State.MOVING)
+	# --- THIS IS THE FINAL FIX ---
+	# Updated to use the new constants script
+	fsm.change_state(UnitAIConstants.State.MOVING)
+	# --- END FIX ---
 	print("Viking Raider initialized and moving to target: %s" % target.data.display_name)
