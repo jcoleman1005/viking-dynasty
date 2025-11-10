@@ -15,7 +15,7 @@ enemy_spawn_position = NodePath("EnemySpawnPosition")
 position = Vector2(-161, 606)
 
 [node name="EnemySpawnPosition" type="Marker2D" parent="."]
-position = Vector2(680, 404)
+position = Vector2(383, -21)
 
 [node name="RTSController" parent="." instance=ExtResource("2_8icmc")]
 

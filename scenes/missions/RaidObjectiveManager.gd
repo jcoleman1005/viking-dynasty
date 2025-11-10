@@ -191,7 +191,7 @@ func _show_failure_message(reason: String) -> void:
 	message_container.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	
 	var failure_label = Label.new()
-	failure_label.text = "RAID FAILED!"
+	failure_label.text = "DEFENSE FAILED!"
 	failure_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	# --- FIX: Add theme overrides for visibility ---
 	failure_label.add_theme_font_size_override("font_size", 32)

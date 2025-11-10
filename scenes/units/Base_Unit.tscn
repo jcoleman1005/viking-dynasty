@@ -5,7 +5,7 @@
 [ext_resource type="Shape2D" uid="uid://bda7xb0judu2h" path="res://resources/separation_circle_shape.tres" id="3_b08re"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_n6s0a"]
-size = Vector2(16, 16)
+size = Vector2(72, 72)
 
 [node name="Base_Unit" type="CharacterBody2D"]
 collision_layer = 2

@@ -56,8 +56,18 @@ func _create_hitbox() -> void:
 	hitbox_area = Area2D.new()
 	hitbox_area.name = "Hitbox"
 	
-	# This is the "Player Buildings" layer (Layer 1)
-	hitbox_area.collision_layer = 1
+	# --- MODIFIED: Set Correct Layer ---
+	# Check if this is a player building or enemy building
+	# This assumes the Base_Building node itself has its layer set correctly
+	if self.collision_layer & (1 << 0): # Layer 1 (Player Building)
+		hitbox_area.collision_layer = 1 << 0
+	elif self.collision_layer & (1 << 3): # Layer 4 (Enemy Building)
+		hitbox_area.collision_layer = 1 << 3
+	else:
+		push_warning("BaseBuilding: %s on unhandled collision layer %s. Setting hitbox to Layer 1." % [name, self.collision_layer])
+		hitbox_area.collision_layer = 1 << 0 # Default to Player Building
+	# --- END MODIFIED ---
+	
 	hitbox_area.collision_mask = 0 # Doesn't need to detect anything
 	
 	hitbox_area.monitoring = false # Doesn't need to detect bodies or areas
@@ -102,7 +112,9 @@ func _apply_data_and_scale() -> void:
 			hitbox_shape.shape.size = target_size
 	# --- END NEW ---
 
-func take_damage(amount: int) -> void:
+# --- THIS IS THE FIX ---
+func take_damage(amount: int, _attacker: Node2D = null) -> void:
+# --- END FIX ---
 	
 	current_health = max(0, current_health - amount)
 	

@@ -24,14 +24,12 @@ var attack_ai: AttackAI = null
 
 # Visual state system
 var _color_tween: Tween
-# --- AI FIX: Added ATTACKING state back to match the FSM ---
 const STATE_COLORS := {
 	UnitFSM.State.IDLE: Color(0.3, 0.6, 1.0),     # Blue
 	UnitFSM.State.MOVING: Color(0.4, 1.0, 0.4),   # Green
 	UnitFSM.State.FORMATION_MOVING: Color(0.4, 1.0, 0.4), # Green
 	UnitFSM.State.ATTACKING: Color(1.0, 0.3, 0.3) # Red
 }
-# -----------------------------------------------------------
 const ERROR_COLOR := Color(0.7, 0.3, 1.0)
 
 func _ready() -> void:
@@ -48,22 +46,16 @@ func _ready() -> void:
 			add_child(attack_ai)
 			attack_ai.configure_from_data(data)
 			
-			# --- MODIFICATION: Dynamically set target mask ---
 			var target_mask = 0
-			# self.collision_layer is a bitmask, check with `&`
 			if self.collision_layer & 2: # Player unit (Layer 2)
-				# Target Layer 3 (Enemy Units) and 4 (Enemy Buildings)
-				target_mask = (1 << 2) | (1 << 3) # 0b1100
+				target_mask = (1 << 2) | (1 << 3) # Target Enemy Units (L3) & Enemy Buildings (L4)
 			elif self.collision_layer & 4: # Enemy unit (Layer 3)
-				# Target Layer 1 (Player Buildings) and 2 (Player Units)
-				target_mask = (1 << 0) | (1 << 1) # 0b0011
+				target_mask = (1 << 0) | (1 << 1) # Target Player Buildings (L1) & Player Units (L2)
 			
 			if target_mask == 0:
 				push_warning("BaseUnit: '%s' is on an unhandled collision layer (%s). AI will not target anything." % [name, self.collision_layer])
 			
 			attack_ai.set_target_mask(target_mask)
-			# --- END MODIFICATION ---
-
 		else:
 			push_error("BaseUnit: Failed to instantiate ai_component_scene for %s" % data.display_name)
 	
@@ -174,8 +166,16 @@ func _tween_color(to_color: Color, duration: float = 0.2) -> void:
 	_color_tween = create_tween()
 	_color_tween.tween_property(sprite, "modulate", to_color, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
-func take_damage(amount: int) -> void:
+# --- MODIFIED: Added attacker parameter ---
+func take_damage(amount: int, attacker: Node2D = null) -> void:
 	current_health = max(0, current_health - amount)
+	
+	# --- NEW: Retaliation Logic ---
+	if fsm and is_instance_valid(attacker):
+		# Tell the FSM we are being attacked
+		fsm.command_defensive_attack(attacker)
+	# --- END NEW ---
+	
 	if current_health == 0:
 		die()
 
