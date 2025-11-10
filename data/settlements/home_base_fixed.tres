@@ -5,10 +5,10 @@
 [resource]
 script = ExtResource("1_settlement_data")
 treasury = {
-"food": 6287,
-"gold": 10260,
+"food": 6565,
+"gold": 10920,
 "stone": 450,
-"wood": 10962
+"wood": 11333
 }
 placed_buildings = Array[Dictionary]([{
 "grid_position": Vector2i(11, 7),

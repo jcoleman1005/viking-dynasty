@@ -249,10 +249,8 @@ func _start_attacking() -> void:
 		is_attacking = true
 		attack_started.emit(current_target)
 	
-	# --- THIS IS THE FIX ---
 	# Fire the first attack immediately instead of waiting for the timer.
 	_on_attack_timer_timeout()
-	# --- END FIX ---
 	
 	if attack_timer and attack_timer.is_stopped():
 		attack_timer.start()
@@ -268,10 +266,8 @@ func _stop_attacking() -> void:
 func _on_attack_timer_timeout() -> void:
 	"""Called when the attack timer fires"""
 	if not current_target:
-		# --- MODIFICATION ---
 		# If our target is null, we should stop attacking
 		_stop_attacking()
-		# --- END MODIFICATION ---
 		return
 	
 	# Verify target is still valid and in range
@@ -281,10 +277,8 @@ func _on_attack_timer_timeout() -> void:
 	
 	var distance_to_target = parent_node.global_position.distance_to(current_target.global_position)
 	
-	# --- MODIFICATION ---
 	# Added a +10 buffer to prevent units from stopping if target is *just* at the edge
 	if distance_to_target > attack_range + 10.0:
-	# --- END MODIFICATION ---
 		_stop_attacking() 
 		return
 	
@@ -312,10 +306,13 @@ func _spawn_projectile(target_position_world: Vector2) -> void:
 		push_warning("AttackAI: No projectile scene assigned. Cannot fire.")
 		return
 	
-	var projectile: Projectile = projectile_scene.instantiate()
+	# --- THIS IS THE FIX ---
+	# 1. Get a projectile from the pool
+	var projectile: Projectile = ProjectilePoolManager.get_projectile()
 	if not projectile:
-		push_error("AttackAI: Failed to instantiate projectile for %s" % parent_node.name)
+		push_error("AttackAI: ProjectilePoolManager failed to provide a projectile.")
 		return
+	# --- END FIX ---
 	
 	# We set our new 'firer' variable instead of the 'owner' property
 	projectile.firer = parent_node
@@ -329,4 +326,5 @@ func _spawn_projectile(target_position_world: Vector2) -> void:
 	)
 	
 	# 2. Add projectile to the current scene
-	parent_node.get_tree().current_scene.add_child(projectile)
+	# This is no longer needed, as the projectile is already in the scene.
+	# parent_node.get_tree().current_scene.add_child(projectile)
