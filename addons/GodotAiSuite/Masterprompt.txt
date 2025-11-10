@@ -349,6 +349,7 @@ script = ExtResource("1_jarl_data")
 display_name = "Bjorn"
 age = 30
 renown = 25
+current_authority = 2
 command = 12
 stewardship = 11
 learning = 9
@@ -554,17 +555,17 @@ garrisoned_units = {
 }
 
 --- RESOURCE: res://data/settlements/home_base_fixed.tres ---
-[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://8pdoupqyb5qq"]
 
-[ext_resource type="Script" path="res://data/settlements/SettlementData.gd" id="1_settlement_data"]
+[ext_resource type="Script" uid="uid://hlb8s5g0yp6k" path="res://data/settlements/SettlementData.gd" id="1_settlement_data"]
 
 [resource]
 script = ExtResource("1_settlement_data")
 treasury = {
-"food": 5551,
-"gold": 7430,
-"stone": 475,
-"wood": 10220
+"food": 5927,
+"gold": 8400,
+"stone": 450,
+"wood": 10962
 }
 placed_buildings = Array[Dictionary]([{
 "grid_position": Vector2i(11, 7),
@@ -628,6 +629,9 @@ placed_buildings = Array[Dictionary]([{
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
 }, {
 "grid_position": Vector2i(12, 5),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(16, 7),
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
 }])
 garrisoned_units = {
@@ -1101,6 +1105,11 @@ Base_Building (StaticBody2D)
 AttackAI (Node2D)
 > script: res://scenes/components/AttackAI.gd
 > scene: res://scenes/components/AttackAI.tscn
+> ai_mode = 0
+> great_hall_los_range = 600.0
+> attack_damage = 10
+> attack_range = 200.0
+> attack_speed = 1.0
 > DetectionArea (Area2D)
 >   CollisionShape2D (CollisionShape2D)
 >   > shape = res://scenes/components/AttackAI.tscn::CircleShape2D_2baay
@@ -1311,7 +1320,7 @@ RaidMission (Node2D)
 > PlayerStartPosition (Marker2D)
 > > position = (-161.0, 606.0)
 > EnemySpawnPosition (Marker2D)
-> > position = (382.0, 38.0)
+> > position = (383.0, -21.0)
 > RTSController (Node)
 >   script: res://player/RTSController.gd
 >   scene: res://player/RTSController.tscn
@@ -1402,6 +1411,7 @@ VikingRaider (CharacterBody2D)
 > > scale = (0.059, 0.062)
 > > texture = res://textures/placeholders/unit_placeholder.png
 > CollisionShape2D (CollisionShape2D)
+> > position = (-1.0, 0.0)
 > > shape = res://scenes/units/Base_Unit.tscn::RectangleShape2D_n6s0a
 > AttackTimer (Timer)
 > SeparationArea (Area2D)
@@ -1942,9 +1952,10 @@ func spend_authority(cost: int) -> bool:
 	if current_jarl.spend_authority(cost):
 		_save_jarl_data()
 		jarl_stats_updated.emit(current_jarl)
-		print("DynastyManager: Spent %d authority. %d remaining." % [cost, current_jarl.current_authority])
+		# REMOVED: print("DynastyManager: Spent %d authority. %d remaining." % [cost, current_jarl.current_authority])
 		return true
 	
+	# RETAINED: Failure is important
 	print("DynastyManager: Failed to spend %d authority. %d remaining." % [cost, current_jarl.current_authority])
 	return false
 
@@ -1957,13 +1968,14 @@ func can_spend_renown(cost: int) -> bool:
 func spend_renown(cost: int) -> bool:
 	"""Spend the Jarl's Renown."""
 	if not can_spend_renown(cost):
+		# RETAINED: Failure is important
 		print("DynastyManager: Failed to spend %d renown. %d available." % [cost, current_jarl.renown])
 		return false
 	
 	current_jarl.renown -= cost
 	_save_jarl_data()
 	jarl_stats_updated.emit(current_jarl)
-	print("DynastyManager: Spent %d renown. %d remaining." % [cost, current_jarl.renown])
+	# REMOVED: print("DynastyManager: Spent %d renown. %d remaining." % [cost, current_jarl.renown])
 	return true
 
 func purchase_legacy_upgrade(upgrade_key: String) -> void:
@@ -1989,6 +2001,7 @@ func add_conquered_region(region_path: String) -> void:
 	if not region_path in current_jarl.conquered_regions:
 		current_jarl.conquered_regions.append(region_path)
 		_save_jarl_data()
+		# RETAINED: This is a major game state change
 		print("DynastyManager: Region '%s' conquered and saved." % region_path)
 		# We don't emit jarl_stats_updated here because spending authority
 		# will have already triggered the UI refresh.
@@ -2022,8 +2035,7 @@ func start_heir_expedition(heir: JarlHeirData, expedition_duration: int = 5) -> 
 
 func process_heir_expeditions() -> Array[String]:
 	"""
-	Called at the End of Year.
-	Processes all heirs on expedition, returning results.
+	Called at the End of Year. Processes all heirs on expedition, returning results.
 	"""
 	if not current_jarl:
 		return []
@@ -2123,7 +2135,7 @@ func end_year() -> void:
 	
 func set_current_raid_target(data: SettlementData) -> void:
 	current_raid_target = data
-	print("DynastyManager: Raid target set to %s" % data.resource_path)
+	# REMOVED: print("DynastyManager: Raid target set to %s" % data.resource_path)
 
 func get_current_raid_target() -> SettlementData:
 	var target = current_raid_target
@@ -2533,7 +2545,8 @@ func load_settlement(data: SettlementData) -> void:
 			current_settlement.resource_path = data.resource_path
 		else:
 			current_settlement.resource_path = "res://data/settlements/home_base_fixed.tres"
-			print("SettlementManager: Set fallback resource_path to: %s" % current_settlement.resource_path)
+			# Changed print to push_warning for setting fallback path
+			push_warning("SettlementManager: Set fallback resource_path to: %s" % current_settlement.resource_path)
 	
 	print("SettlementManager: Settlement data loaded - %s" % current_settlement.resource_path)
 	print("SettlementManager: Garrison units: %s" % current_settlement.garrisoned_units)
@@ -2572,7 +2585,7 @@ func deposit_resources(loot: Dictionary) -> void:
 		else:
 			current_settlement.treasury[resource_type] = loot[resource_type]
 	EventBus.treasury_updated.emit(current_settlement.treasury)
-	print("Loot deposited. New treasury: %s" % current_settlement.treasury)
+	# Removed print("Loot deposited. New treasury: %s" % current_settlement.treasury)
 	save_settlement()
 
 func attempt_purchase(item_cost: Dictionary) -> bool:
@@ -2591,7 +2604,7 @@ func attempt_purchase(item_cost: Dictionary) -> bool:
 	
 	EventBus.treasury_updated.emit(current_settlement.treasury)
 	EventBus.purchase_successful.emit("Unnamed Item") # Placeholder
-	print("Purchase successful. New treasury: %s" % current_settlement.treasury)
+	# Removed print("Purchase successful. New treasury: %s" % current_settlement.treasury)
 	return true
 
 # --- MODIFIED: Added Stewardship Bonus Logic ---
@@ -2610,7 +2623,7 @@ func calculate_payout() -> Dictionary:
 		stewardship_bonus = 1.0 + (stewardship_skill - 10) * 0.05
 		# Ensure bonus can't be negative (e.g., stewardship below 10)
 		stewardship_bonus = max(0.5, stewardship_bonus) # Cap negative bonus at -50%
-		print("Jarl Stewardship: %d. Payout Multiplier: %s" % [stewardship_skill, stewardship_bonus])
+		# Removed: print("Jarl Stewardship: %d. Payout Multiplier: %s" % [stewardship_skill, stewardship_bonus])
 	else:
 		push_warning("SettlementManager: Could not get Jarl to calculate stewardship bonus.")
 
@@ -2646,11 +2659,10 @@ func calculate_payout() -> Dictionary:
 				# Apply stewardship bonus to region income as well
 				var final_income = int(round(income_amount * stewardship_bonus))
 				total_payout[resource_type] += final_income
-				print("Added %d %s from conquered region: %s" % [final_income, resource_type, region_data.display_name])
+				# Removed: print("Added %d %s from conquered region: %s" % [final_income, resource_type, region_data.display_name])
 	# --- END NEW ---
 
-	if not total_payout.is_empty():
-		print("Calculated fixed payout (with bonus): %s" % total_payout)
+	# Removed: if not total_payout.is_empty(): print("Calculated fixed payout (with bonus): %s" % total_payout)
 	return total_payout
 
 func recruit_unit(unit_data: UnitData) -> void:
@@ -2846,8 +2858,18 @@ func _create_hitbox() -> void:
 	hitbox_area = Area2D.new()
 	hitbox_area.name = "Hitbox"
 	
-	# This is the "Player Buildings" layer (Layer 1)
-	hitbox_area.collision_layer = 1
+	# --- MODIFIED: Set Correct Layer ---
+	# Check if this is a player building or enemy building
+	# This assumes the Base_Building node itself has its layer set correctly
+	if self.collision_layer & (1 << 0): # Layer 1 (Player Building)
+		hitbox_area.collision_layer = 1 << 0
+	elif self.collision_layer & (1 << 3): # Layer 4 (Enemy Building)
+		hitbox_area.collision_layer = 1 << 3
+	else:
+		push_warning("BaseBuilding: %s on unhandled collision layer %s. Setting hitbox to Layer 1." % [name, self.collision_layer])
+		hitbox_area.collision_layer = 1 << 0 # Default to Player Building
+	# --- END MODIFIED ---
+	
 	hitbox_area.collision_mask = 0 # Doesn't need to detect anything
 	
 	hitbox_area.monitoring = false # Doesn't need to detect bodies or areas
@@ -2892,7 +2914,9 @@ func _apply_data_and_scale() -> void:
 			hitbox_shape.shape.size = target_size
 	# --- END NEW ---
 
-func take_damage(amount: int) -> void:
+# --- THIS IS THE FIX ---
+func take_damage(amount: int, _attacker: Node2D = null) -> void:
+# --- END FIX ---
 	
 	current_health = max(0, current_health - amount)
 	
@@ -4116,68 +4140,74 @@ signal attack_stopped()
 ## Emitted just before firing a projectile or dealing damage
 signal about_to_attack(target: Node2D, damage: int)
 
+# --- NEW: AI Behavior Modes ---
+enum AI_Mode {
+	DEFAULT,         # Default behavior: Prioritize closest enemy units, then buildings.
+	DEFENSIVE_SIEGE  # Enemy AI behavior: Prioritize Great Hall, then closest building.
+}
+@export var ai_mode: AI_Mode = AI_Mode.DEFAULT
+@export var great_hall_los_range: float = 600.0 # Arbitrary LOS value
+# --- END NEW ---
+
 # Configuration - set these from the parent
 @export var attack_damage: int = 10
 @export var attack_range: float = 200.0
 @export var attack_speed: float = 1.0  # attacks per second
 @export var projectile_scene: PackedScene
 
-# --- NEW: Added projectile speed ---
+var target_collision_mask: int = 0
 var projectile_speed: float = 400.0
-# ---------------------------------
 
 # Node references
 @onready var detection_area: Area2D = $DetectionArea
 @onready var attack_timer: Timer = $AttackTimer
 
 # AI state
-var parent_node: Node2D
+# --- THIS IS THE FIX (Line 42) ---
+var parent_node: Node2D # Changed back to Node2D
+# --- END FIX ---
 var current_target: Node2D = null
 var targets_in_range: Array[Node2D] = []
 var is_attacking: bool = false
 
 func _ready() -> void:
-	parent_node = get_parent() as Node2D
+	# --- THIS IS THE FIX (Line 49) ---
+	parent_node = get_parent() as Node2D # Check for Node2D
 	if not parent_node:
 		push_error("AttackAI: Parent must be a Node2D")
+	# --- END FIX ---
 		return
 	
 	_setup_ai()
 
 func _setup_ai() -> void:
 	"""Initialize the AI components"""
-	# Configure detection area
 	if detection_area:
-		detection_area.collision_layer = 0  # AI components don't need to be on any layer
+		detection_area.collision_layer = 0
 		detection_area.collision_mask = target_collision_mask
 		
-		# Scale detection area to match attack range
 		if detection_area.get_child(0) is CollisionShape2D:
 			var detection_shape = detection_area.get_child(0) as CollisionShape2D
 			if detection_shape.shape is CircleShape2D:
 				(detection_shape.shape as CircleShape2D).radius = attack_range
 		
-		# Connect detection signals
 		detection_area.body_entered.connect(_on_target_entered)
-		detection_area.area_entered.connect(_on_target_entered) # Also check for areas (building hitboxes)
+		detection_area.area_entered.connect(_on_target_entered)
 		detection_area.body_exited.connect(_on_target_exited)
-		detection_area.area_exited.connect(_on_target_exited) # Also check for areas
+		detection_area.area_exited.connect(_on_target_exited)
 	
-	# Configure attack timer
 	if attack_timer:
 		if attack_speed > 0:
 			attack_timer.wait_time = 1.0 / attack_speed
 		else:
-			attack_timer.wait_time = 999.0 # Effectively disable timer if speed is 0
+			attack_timer.wait_time = 999.0
 	
 		attack_timer.timeout.connect(_on_attack_timer_timeout)
 
 func configure_from_data(data_resource) -> void:
-	"""Configure the AI from a unit or building data resource"""
 	if not data_resource:
 		return
 	
-	# Extract common properties that both UnitData and BuildingData should have
 	if "attack_damage" in data_resource:
 		attack_damage = data_resource.attack_damage
 	if "attack_range" in data_resource:
@@ -4186,43 +4216,33 @@ func configure_from_data(data_resource) -> void:
 		attack_speed = data_resource.attack_speed
 	if "projectile_scene" in data_resource:
 		projectile_scene = data_resource.projectile_scene
-	
-	# --- NEW: Read projectile speed ---
 	if "projectile_speed" in data_resource:
 		projectile_speed = data_resource.projectile_speed
-	# ----------------------------------
 	
-	# Update attack timer if it exists
 	if attack_timer:
 		if attack_speed > 0:
 			attack_timer.wait_time = 1.0 / attack_speed
 		else:
-			attack_timer.wait_time = 999.0 # Effectively disable timer if speed is 0
+			attack_timer.wait_time = 999.0
 	
-	# Update detection radius if it exists
 	if detection_area and detection_area.get_child(0) is CollisionShape2D:
 		var detection_shape = detection_area.get_child(0) as CollisionShape2D
 		if detection_shape.shape is CircleShape2D:
 			(detection_shape.shape as CircleShape2D).radius = attack_range
 
 func set_target_mask(mask: int) -> void:
-	"""Set what collision layers this AI should target"""
 	target_collision_mask = mask
 	if detection_area:
 		detection_area.collision_mask = mask
 
 func force_target(target: Node2D) -> void:
-	"""Force the AI to target a specific node (useful for player commands)"""
 	if not is_instance_valid(target):
 		return
 	
-	# --- MODIFIED ---
-	# If the target is a BaseBuilding, target its 'Hitbox' child instead
 	if target is BaseBuilding and target.has_node("Hitbox"):
 		current_target = target.get_node("Hitbox")
 	else:
 		current_target = target
-	# --- END MODIFIED ---
 	
 	if current_target not in targets_in_range:
 		targets_in_range.append(current_target)
@@ -4230,68 +4250,68 @@ func force_target(target: Node2D) -> void:
 	_start_attacking()
 
 func stop_attacking() -> void:
-	"""Stop all attack behavior"""
 	current_target = null
-	# Don't clear targets_in_range, as _on_target_exited handles that.
-	# If we clear it, units that are still in range won't be re-acquired.
 	_stop_attacking()
 
 func _on_target_entered(body: Node2D) -> void:
-	"""Called when a potential target enters detection range"""
-	# Add to targets list
 	if body not in targets_in_range:
 		targets_in_range.append(body)
 	
-	# If we don't have a current target, start attacking this one
 	if not current_target and targets_in_range.size() > 0:
 		_select_target()
 
 func _on_target_exited(body: Node2D) -> void:
-	"""Called when a target leaves detection range"""
-	# Remove from targets list
 	targets_in_range.erase(body)
 	
-	# If this was our current target, find a new one
 	if current_target == body:
 		current_target = null
 		_select_target()
 
 func _select_target() -> void:
+	"""Selects a target based on the current AI_Mode."""
+	match ai_mode:
+		AI_Mode.DEFAULT:
+			_select_target_default()
+		AI_Mode.DEFENSIVE_SIEGE:
+			_select_target_defensive_siege()
+
+func _select_target_default() -> void:
 	"""Select the closest valid target, prioritizing units over buildings."""
 	if targets_in_range.is_empty():
 		current_target = null
 		_stop_attacking()
 		return
 	
-	# --- NEW PRIORITY LOGIC ---
 	var unit_targets: Array[Node2D] = []
 	var building_targets: Array[Node2D] = []
 
-	# 1. Prune invalid targets and sort into lists
 	for target in targets_in_range:
 		if not is_instance_valid(target):
 			targets_in_range.erase(target)
 			continue
 		
-		# Layer 2 is Player_Units
-		if target.collision_layer & (1 << 1): 
+		# Check all enemy layers. This logic assumes this AI is for players.
+		# A more robust AI would check against its *own* collision layer.
+		if target.collision_layer & (1 << 2): # Layer 3 (Enemy Units)
 			unit_targets.append(target)
-		# Layer 1 is Player_Buildings (hitbox)
-		elif target.collision_layer & (1 << 0): 
+		elif target.collision_layer & (1 << 3): # Layer 4 (Enemy Buildings)
 			building_targets.append(target)
+		# --- FIX: Ensure buildings check their enemy layers too ---
+		elif target.collision_layer & (1 << 1): # Layer 2 (Player Units)
+			unit_targets.append(target)
+		elif target.collision_layer & (1 << 0): # Layer 1 (Player Buildings)
+			building_targets.append(target)
+		# --- END FIX ---
 
 	var closest_target: Node2D = null
 	var closest_distance: float = INF
 	
-	# 2. Prioritize Units: Find the closest unit
 	if not unit_targets.is_empty():
 		for target in unit_targets:
 			var distance = parent_node.global_position.distance_to(target.global_position)
 			if distance < closest_distance:
 				closest_distance = distance
 				closest_target = target
-	
-	# 3. Fallback to Buildings: If no units, find the closest building
 	elif not building_targets.is_empty():
 		for target in building_targets:
 			var distance = parent_node.global_position.distance_to(target.global_position)
@@ -4299,18 +4319,66 @@ func _select_target() -> void:
 				closest_distance = distance
 				closest_target = target
 	
-	# 4. Set the target
 	current_target = closest_target
-	# --- END NEW PRIORITY LOGIC ---
 	
 	if current_target:
 		_start_attacking()
 	else:
-		# No valid targets were found
 		_stop_attacking()
 
+# --- NEW SIEGE AI LOGIC ---
+func _select_target_defensive_siege() -> void:
+	"""
+	Enemy AI logic:
+	1. Prioritize the Great Hall if it's in LOS.
+	2. Otherwise, attack the closest building.
+	"""
+	# --- THIS IS THE FIX (Line 210) ---
+	# Only access FSM if parent is a BaseUnit
+	var unit_parent = parent_node as BaseUnit
+	if not is_instance_valid(unit_parent) or not unit_parent.fsm:
+	# --- END FIX ---
+		_stop_attacking()
+		return
+
+	# 1. Check for Great Hall (Priority 1)
+	var great_hall = unit_parent.fsm.objective_target
+	if is_instance_valid(great_hall):
+		var hall_pos = great_hall.global_position
+		var distance_to_hall = parent_node.global_position.distance_to(hall_pos)
+		
+		if distance_to_hall <= great_hall_los_range:
+			# If Hall is in LOS, override all other targets
+			current_target = great_hall
+			_start_attacking()
+			return # Found our priority target
+
+	# 2. Find Closest Building (Priority 2)
+	var closest_building: Node2D = null
+	var closest_distance: float = INF
+	
+	for target in targets_in_range:
+		if not is_instance_valid(target):
+			targets_in_range.erase(target)
+			continue
+		
+		# Target Layer 1 (Player Buildings)
+		if target.collision_layer & (1 << 0):
+			var distance = parent_node.global_position.distance_to(target.global_position)
+			if distance < closest_distance:
+				closest_distance = distance
+				closest_building = target
+	
+	current_target = closest_building
+	
+	if current_target:
+		_start_attacking()
+	else:
+		# No buildings in range, stop attacking
+		_stop_attacking()
+# --- END NEW ---
+
 func _start_attacking() -> void:
-	"""Begin attacking the current target"""
 	if not is_attacking:
 		is_attacking = true
 		attack_started.emit(current_target)
@@ -4319,7 +4387,6 @@ func _start_attacking() -> void:
 		attack_timer.start()
 
 func _stop_attacking() -> void:
-	"""Stop attacking"""
 	if is_attacking:
 		is_attacking = false
 		attack_stopped.emit()
@@ -4338,9 +4405,9 @@ func _on_attack_timer_timeout() -> void:
 		return
 	
 	var distance_to_target = parent_node.global_position.distance_to(current_target.global_position)
-	# Use a small buffer (e.g., 10 pixels) for range check
+	
 	if distance_to_target > attack_range + 10.0:
-		_select_target()
+		_stop_attacking() 
 		return
 	
 	# Emit signal before attacking
@@ -4354,28 +4421,27 @@ func _on_attack_timer_timeout() -> void:
 		# MELEE: Direct damage
 		var target_to_damage = current_target
 		
-		# If the target is a hitbox, damage its parent building
 		if target_to_damage.name == "Hitbox":
 			target_to_damage = target_to_damage.get_parent()
 		
 		if target_to_damage.has_method("take_damage"):
-			target_to_damage.take_damage(attack_damage)
+			# Pass parent_node as the attacker for retaliation logic
+			target_to_damage.take_damage(attack_damage, parent_node)
 
 func _spawn_projectile(target_position_world: Vector2) -> void:
 	"""Spawn a projectile towards the target position"""
 	if not projectile_scene:
-		# Changed to push_warning as this is a configuration error, not a runtime crash
 		push_warning("AttackAI: No projectile scene assigned. Cannot fire.")
 		return
 	
-	# Create the projectile
 	var projectile: Projectile = projectile_scene.instantiate()
 	if not projectile:
-		# Changed to push_error, as failed instantiation is a critical error
 		push_error("AttackAI: Failed to instantiate projectile for %s" % parent_node.name)
 		return
 	
-	# 1. Initialize the projectile
+	# We set our new 'firer' variable instead of the 'owner' property
+	projectile.firer = parent_node
+	
 	projectile.setup(
 		parent_node.global_position,  # start position
 		target_position_world,        # target position
@@ -4400,58 +4466,41 @@ extends Area2D
 var damage: int = 0
 var speed: float = 400.0
 var direction: Vector2 = Vector2.RIGHT
+var firer: Node2D = null # --- NEW: This replaces using 'owner' ---
 
 @onready var lifetime_timer: Timer = $LifetimeTimer
 
 func _ready() -> void:
-	# We now connect to 'area_entered' to detect the building's Hitbox
 	area_entered.connect(_on_area_entered)
-	# We also keep body_entered for the Watchtower's projectiles
 	body_entered.connect(_on_body_entered)
-	# --- THIS IS THE FIX (Part 2) ---
-	# Set 'monitoring' to true. This tells the Area2D to
-	# detect 'monitorable' areas AND bodies.
 	self.monitoring = true
-	
-	# Set 'monitorable' to false. This projectile doesn't
-	# need to be detected by other areas.
 	self.monitorable = false
-	# --- END FIX ---
 	lifetime_timer.timeout.connect(_on_lifetime_timeout)
 
 func _physics_process(delta: float) -> void:
-	# Move in straight line
 	global_position += direction * speed * delta
 
 func setup(start_position: Vector2, target_position: Vector2, projectile_damage: int, projectile_speed: float = 400.0, collision_mask: int = 0) -> void:
-	"""
-	Initialize the projectile with all necessary parameters.
-	"""
 	global_position = start_position
 	direction = (target_position - start_position).normalized()
 	damage = projectile_damage
 	speed = projectile_speed
-	
-	# Set the collision mask on the Area2D
 	self.collision_mask = collision_mask
 	
-	# Point the projectile in the direction of travel (for visual rotation)
 	if direction != Vector2.ZERO:
 		rotation = direction.angle()
 
 func _on_area_entered(area: Area2D) -> void:
 	"""Called when this Area2D detects a 'monitorable' Area2D (like our Hitbox)."""
 	
-	# Check if the area's layer matches our mask
 	if area.collision_layer & self.collision_mask:
-		# Find the building, which is the parent of the Hitbox
 		var parent_body = area.get_parent()
 		if parent_body and parent_body.has_method("take_damage"):
-			parent_body.take_damage(damage)
-			queue_free() # Destroy projectile
+			# --- MODIFIED: Pass 'firer' instead of 'owner' ---
+			parent_body.take_damage(damage, firer)
+			queue_free()
 		else:
 			push_warning("Projectile hit non-damagable Area: '%s'." % area.name)
-	# else: We hit an Area we don't care about (e.g. SeparationArea), just ignore.
 
 func _on_body_entered(body: Node2D) -> void:
 	"""Called when this Area2D detects a 'monitorable' PhysicsBody (like a unit)."""
@@ -4459,18 +4508,14 @@ func _on_body_entered(body: Node2D) -> void:
 	if not body is CollisionObject2D:
 		return
 	
-	# Check if the body's layer matches our mask
 	if body.collision_layer & self.collision_mask:
-		# Deal damage if the body can take it
 		if body.has_method("take_damage"):
-			body.take_damage(damage)
+			# --- MODIFIED: Pass 'firer' instead of 'owner' ---
+			body.take_damage(damage, firer)
 		
-		# Destroy the projectile
 		queue_free()
-	# else: We hit a body we don't care about, just ignore.
 
 func _on_lifetime_timeout() -> void:
-	# Projectile flew for too long, destroy self
 	queue_free()
 
 --- SCRIPT: res://scenes/missions/RaidMission.gd ---
@@ -4615,31 +4660,18 @@ func _load_player_base_for_defense() -> void:
 		building_instance.name = building_data.display_name + "_Player"
 		building_instance.data = building_data
 		
-		# --- MODIFICATION: Correct Building Placement Logic ---
 		var world_pos_top_left: Vector2 = Vector2(grid_pos) * grid_manager.cell_size
 		var building_footprint_size: Vector2 = Vector2(building_data.grid_size) * grid_manager.cell_size
 		var building_center_offset: Vector2 = building_footprint_size / 2.0
 		building_instance.global_position = world_pos_top_left + building_center_offset
-		# --- END MODIFICATION ---
 		
-		# --- SET PLAYER BUILDING COLLISION LAYER ---
-		# This sets the StaticBody2D's layer (for pathfinding, etc.)
-		building_instance.set_collision_layer(1)
-		# The StaticBody2D itself doesn't need to detect anything.
+		building_instance.set_collision_layer(1) # Player Buildings (L1)
 		building_instance.set_collision_mask(0) 
-		
-		# --- REMOVED ---
-		# The following lines were incorrect and caused the crash.
-		# The Base_Building.gd script now handles its own hitbox setup.
-		# building_instance.set_collision_mask(1 << 10) 
-		# building_instance.monitoring = true
-		# --- END REMOVED ---
 		
 		if building_data.display_name.to_lower().contains("hall"):
 			objective_building = building_instance
 			print("Found player's Great Hall for objective.")
 			
-		# Connect signal for GRID CLEARING
 		if building_instance.has_signal("building_destroyed"):
 			building_instance.building_destroyed.connect(_on_enemy_building_destroyed_grid_clear)
 		
@@ -4673,33 +4705,23 @@ func _load_enemy_base() -> void:
 		if "data" in building_instance:
 			building_instance.data = building_data
 		
-		# --- MODIFICATION: Correct Building Placement Logic ---
 		var world_pos_top_left: Vector2 = Vector2(grid_pos) * grid_manager.cell_size
 		var building_footprint_size: Vector2 = Vector2(building_data.grid_size) * grid_manager.cell_size
 		var building_center_offset: Vector2 = building_footprint_size / 2.0
 		building_instance.global_position = world_pos_top_left + building_center_offset
-		# --- END MODIFICATION ---
 		
 		building_instance.add_to_group("enemy_buildings")
 		
-		# SET ENEMY BUILDING COLLISION LAYER
 		building_instance.set_collision_layer(1 << 3) # Layer 4
 		building_instance.set_collision_mask(0)
-		
-		# --- REMOVED ---
-		# building_instance.set_collision_mask(1 << 10)
-		# building_instance.monitoring = true
-		# --- END REMOVED ---
 		
 		building_instance.set_meta("building_data", building_data)
 		building_instance.set_meta("is_enemy_building", true)
 		
-		# Find the hall
 		if building_data.display_name.to_lower().contains("hall"):
 			objective_building = building_instance
 			print("Found enemy hall: %s" % building_data.display_name)
 		
-		# Connect signal for GRID CLEARING (loot is handled by objective manager)
 		if building_instance.has_signal("building_destroyed"):
 			building_instance.building_destroyed.connect(_on_enemy_building_destroyed_grid_clear)
 		
@@ -4741,7 +4763,6 @@ func _spawn_player_garrison() -> void:
 	if garrison.is_empty():
 		print("No units in garrison to spawn")
 		if not is_defensive_mission:
-			# Defer the call to the objective manager
 			objective_manager.call_deferred("_check_loss_condition")
 		return
 	
@@ -4771,7 +4792,6 @@ func _spawn_player_garrison() -> void:
 			
 			var spawn_pos: Vector2 = player_spawn_pos.global_position
 			
-			# --- MODIFICATION: Spawn near hall in defense ---
 			if is_defensive_mission and is_instance_valid(objective_building):
 				spawn_pos = objective_building.global_position + Vector2(100, 100) # Offset from hall
 			
@@ -4810,18 +4830,19 @@ func _spawn_enemy_wave() -> void:
 		
 		# --- SET ENEMY UNIT COLLISION LAYER ---
 		enemy_unit.collision_layer = 4  # Layer 3 (bit position 2) for Enemy Units
-		print("RaidMission: Enemy unit '%s' set to Layer 3 (Enemy Units)" % enemy_unit.name)
-		# --- END COLLISION LAYER SETUP ---
 		
-		# Spawn in a line
+		# --- SET AI MODE ---
+		if enemy_unit.attack_ai:
+			enemy_unit.attack_ai.ai_mode = AttackAI.AI_Mode.DEFENSIVE_SIEGE
+		# --- END SET ---
+		
 		var spawn_pos = enemy_spawner.global_position + Vector2(i * 40, 0)
 		enemy_unit.global_position = spawn_pos
 		
 		enemy_unit.add_to_group("enemy_units")
-		enemy_units.append(enemy_unit) # Add to array for tracking
+		enemy_units.append(enemy_unit)
 		add_child(enemy_unit)
 		
-		# Command enemy to attack the player's hall
 		if is_instance_valid(objective_building):
 			enemy_unit.fsm.command_attack(objective_building)
 	
@@ -4892,11 +4913,9 @@ func _clear_building_from_pathfinding_grid(building: BaseBuilding) -> void:
 		
 	var cell_size = grid_manager.cell_size
 	
-	# --- FIX: Calculate grid_pos from top-left, not center ---
 	var size_in_pixels = Vector2(building.data.grid_size) * cell_size
 	var top_left_pos = building.global_position - (size_in_pixels / 2.0)
 	var grid_pos = Vector2i(top_left_pos / cell_size)
-	# --- END FIX ---
 	var grid_size = building.data.grid_size
 	
 	for x in range(grid_size.x):
@@ -4931,6 +4950,9 @@ var building_container: Node2D
 var enemy_units: Array[BaseUnit] = [] # For defensive win condition
 var is_initialized: bool = false
 var mission_over: bool = false
+
+# --- NEW: Preload the theme ---
+const UI_THEME = preload("res://ui/themes/VikingDynastyTheme.tres")
 
 func _ready() -> void:
 	raid_loot = RaidLootData.new()
@@ -4999,7 +5021,6 @@ func _on_enemy_building_destroyed_for_loot(building: BaseBuilding) -> void:
 	
 	# Count remaining buildings for mission tracking
 	var remaining_buildings = building_container.get_children().size() - 1 # -1 for the one just destroyed
-	print("RaidObjectiveManager: Buildings remaining: %d" % remaining_buildings)
 
 func _setup_win_loss_conditions() -> void:
 	"""Setup win/loss condition monitoring"""
@@ -5026,8 +5047,6 @@ func _check_loss_condition() -> void:
 	if is_instance_valid(rts_controller):
 		remaining_units = rts_controller.controllable_units.size()
 	
-	print("Loss check: %d player units remaining" % remaining_units)
-	
 	if remaining_units == 0:
 		_on_mission_failed("All units destroyed")
 		return # Stop the loop
@@ -5045,8 +5064,6 @@ func _check_defensive_win_condition() -> void:
 	enemy_units = enemy_units.filter(func(unit): return is_instance_valid(unit))
 	var remaining_enemies = enemy_units.size()
 	
-	print("Win check: %d enemy units remaining" % remaining_enemies)
-
 	if remaining_enemies == 0:
 		_on_defensive_mission_won()
 		return # Stop the loop
@@ -5065,7 +5082,8 @@ func _on_defensive_mission_won() -> void:
 	mission_over = true
 	print("Mission Success! All attackers defeated.")
 	
-	# TODO: Add popup message
+	# --- NEW: Show Victory Popup ---
+	_show_victory_message("VICTORY!", "All attackers have been defeated.")
 	
 	# No loot for defense, just return home
 	await get_tree().create_timer(3.0).timeout
@@ -5091,6 +5109,8 @@ func _show_failure_message(reason: String) -> void:
 	var failure_popup = Control.new()
 	failure_popup.name = "FailurePopup"
 	failure_popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# --- FIX: Apply theme ---
+	failure_popup.theme = UI_THEME
 	
 	var bg_panel = Panel.new()
 	bg_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -5101,8 +5121,11 @@ func _show_failure_message(reason: String) -> void:
 	message_container.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	
 	var failure_label = Label.new()
-	failure_label.text = "RAID FAILED!"
+	failure_label.text = "DEFENSE FAILED!"
 	failure_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	# --- FIX: Add theme overrides for visibility ---
+	failure_label.add_theme_font_size_override("font_size", 32)
+	failure_label.add_theme_color_override("font_color", Color.CRIMSON)
 	message_container.add_child(failure_label)
 	
 	var subtitle_label = Label.new()
@@ -5116,9 +5139,60 @@ func _show_failure_message(reason: String) -> void:
 	message_container.add_child(return_label)
 	
 	failure_popup.add_child(message_container)
-	# Add to the root of the scene tree to ensure it's visible
-	get_tree().current_scene.add_child(failure_popup)
-	print("Failure message displayed")
+	
+	# --- FIX: Add to CanvasLayer, not scene root ---
+	var canvas = get_parent().get_node_or_null("CanvasLayer")
+	if canvas:
+		canvas.add_child(failure_popup)
+	else:
+		push_error("RaidObjectiveManager: Could not find 'CanvasLayer' to show failure message!")
+		get_tree().current_scene.add_child(failure_popup) # Fallback
+
+# --- NEW: VICTORY POPUP FUNCTION ---
+func _show_victory_message(title: String, subtitle: String) -> void:
+	"""Displays a generic victory message popup."""
+	var victory_popup = Control.new()
+	victory_popup.name = "VictoryPopup"
+	victory_popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# --- FIX: Apply theme ---
+	victory_popup.theme = UI_THEME
+	
+	var bg_panel = Panel.new()
+	bg_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	bg_panel.modulate = Color(0.1, 0.1, 0.1, 0.7) # Darker background
+	victory_popup.add_child(bg_panel)
+	
+	var message_container = VBoxContainer.new()
+	message_container.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	
+	var title_label = Label.new()
+	title_label.text = title
+	# --- FIX: Add theme overrides for visibility ---
+	title_label.add_theme_font_size_override("font_size", 32)
+	title_label.add_theme_color_override("font_color", Color.GOLD)
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	message_container.add_child(title_label)
+	
+	var subtitle_label = Label.new()
+	subtitle_label.text = subtitle
+	subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	message_container.add_child(subtitle_label)
+	
+	var return_label = Label.new()
+	return_label.text = "Returning to settlement..."
+	return_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	message_container.add_child(return_label)
+	
+	victory_popup.add_child(message_container)
+	
+	# --- FIX: Add to CanvasLayer, not scene root ---
+	var canvas = get_parent().get_node_or_null("CanvasLayer")
+	if canvas:
+		canvas.add_child(victory_popup)
+	else:
+		push_error("RaidObjectiveManager: Could not find 'CanvasLayer' to show victory message!")
+		get_tree().current_scene.add_child(victory_popup) # Fallback
+# --- END NEW ---
 
 func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	"""Called when the enemy's Great Hall is destroyed (OFFENSIVE win condition)"""
@@ -5134,7 +5208,11 @@ func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	SettlementManager.deposit_resources(total_loot)
 	print("Mission Complete! %s" % raid_loot.get_loot_summary())
 	
-	await get_tree().create_timer(2.0).timeout
+	# --- NEW: Show Victory Popup ---
+	var subtitle = "The enemy's Great Hall is in ruins.\nLoot: %s" % raid_loot.get_loot_summary()
+	_show_victory_message("VICTORY!", subtitle)
+	
+	await get_tree().create_timer(3.0).timeout # Increased timer to 3s to read
 	
 	EventBus.scene_change_requested.emit("settlement")
 
@@ -5687,13 +5765,13 @@ func _on_body_entered(body: Node2D) -> void:
 	if body.is_in_group("player_units") and not current_target:
 		current_target = body
 		enemy_detected.emit(body)
-		print("%s detected enemy: %s" % [get_parent().name, body.name])
+		# Removed print: print("%s detected enemy: %s" % [get_parent().name, body.name])
 
 func _on_body_exited(body: Node2D) -> void:
 	"""Handle player units leaving detection range"""
 	if body == current_target:
 		current_target = null
-		print("%s lost target: %s" % [get_parent().name, body.name])
+		# Removed print: print("%s lost target: %s" % [get_parent().name, body.name])
 
 func _attack_target(target: Node2D) -> void:
 	"""Execute attack on target"""
@@ -5706,7 +5784,7 @@ func _attack_target(target: Node2D) -> void:
 		current_target = null
 		return
 	
-	print("%s attacking %s for %d damage" % [get_parent().name, target.name, attack_damage])
+	# Removed print: print("%s attacking %s for %d damage" % [get_parent().name, target.name, attack_damage])
 	
 	# Apply damage if target has take_damage method
 	if target.has_method("take_damage"):
@@ -5715,7 +5793,7 @@ func _attack_target(target: Node2D) -> void:
 		target.receive_damage(attack_damage)
 	else:
 		# Fallback: just remove the target for demo purposes
-		print("Target %s destroyed by sentry attack" % target.name)
+		push_warning("SentryAI: Target %s has no damage method; removing for demo purposes." % target.name)
 		target.queue_free()
 	
 	attack_executed.emit(target, attack_damage)
@@ -5744,7 +5822,6 @@ func is_actively_defending() -> bool:
 
 class_name UnitFSM
 
-# --- MODIFIED: Added ATTACKING state back ---
 enum State { IDLE, MOVING, FORMATION_MOVING, ATTACKING }
 enum Stance { DEFENSIVE, HOLD_POSITION }
 
@@ -5756,15 +5833,19 @@ var attack_ai: AttackAI  # Reference to the AttackAI component
 var current_state: State = State.IDLE
 var stance: Stance = Stance.DEFENSIVE
 var path: Array = []
+var stuck_timer: float = 0.0
+
+# --- THIS IS THE FIX ---
+# Add the missing class-level variable
+var los_range: float = 450.0 # Player unit "Line of Sight"
+# --- END FIX ---
 
 # Target Data
 var target_position: Vector2 = Vector2.ZERO
 var move_command_position: Vector2 = Vector2.ZERO
 
-# --- MODIFIED: Split target into "objective" and "current" ---
 var objective_target: Node2D = null # The long-term goal (e.g., Great Hall)
 var current_target: Node2D = null # The immediate threat (e.g., nearby unit)
-# --- END MODIFIED ---
 
 func _init(p_unit: BaseUnit, p_attack_ai: AttackAI) -> void:
 	unit = p_unit
@@ -5778,11 +5859,15 @@ func change_state(new_state: State) -> void:
 	if current_state == new_state:
 		return
 	
+	# print_debug("UnitFSM (%s): State change %s -> %s" % [unit.name, State.keys()[current_state], State.keys()[new_state]])
+	
 	_exit_state(current_state)
 	current_state = new_state
 	
-	if unit and unit.has_method("on_state_changed"):
-		unit.on_state_changed(current_state)
+	# Use call() to avoid circular dependency error
+	if is_instance_valid(unit):
+		unit.call("on_state_changed", current_state)
+	
 	_enter_state(current_state)
 
 func _enter_state(state: State) -> void:
@@ -5798,7 +5883,6 @@ func _enter_state(state: State) -> void:
 		
 		State.ATTACKING:
 			unit.velocity = Vector2.ZERO
-			# Let the AttackAI component handle the forced attack
 			if attack_ai and is_instance_valid(current_target):
 				attack_ai.force_target(current_target)
 
@@ -5806,20 +5890,17 @@ func _exit_state(state: State) -> void:
 	match state:
 		State.MOVING:
 			path.clear()
+			stuck_timer = 0.0
 		State.FORMATION_MOVING:
 			path.clear()
 		
 		State.ATTACKING:
-			# If we were attacking, stop the AI component
 			if attack_ai:
 				attack_ai.stop_attacking()
 			# Clear the *current* target, but not the objective
 			current_target = null
 
 func _recalculate_path() -> void:
-	# --- MODIFIED: Pathfind to the correct target ---
-	# If we have an immediate target, path to it.
-	# Otherwise, path to our long-term objective.
 	var target_node = current_target if is_instance_valid(current_target) else objective_target
 	
 	if not is_instance_valid(target_node):
@@ -5827,32 +5908,110 @@ func _recalculate_path() -> void:
 		return
 		
 	target_position = target_node.global_position
-	# --- END MODIFIED ---
 	
-	# Determine if we should allow a partial path.
-	# We allow it if we are pathing to any attack target.
 	var allow_partial = is_instance_valid(target_node)
 	
+	# print_debug("UnitFSM (%s): Recalculating path to %s" % [unit.name, target_node.name])
 	path = SettlementManager.get_astar_path(unit.global_position, target_position, allow_partial)
 	
 	if path.is_empty():
-		print("Unit at %s failed to find a path to %s." % [unit.global_position, target_position])
+		push_warning("Unit at %s failed to find a path to %s." % [unit.global_position, target_position])
 		if unit and unit.has_method("flash_error_color"):
 			unit.flash_error_color()
 		
-		# If we can't find a path but have a target, just attack
+		# --- OBSTRUCTION LOGIC (CASE 1: A* fails) ---
 		if is_instance_valid(target_node):
-			change_state(State.ATTACKING)
+			# print_debug("UnitFSM (%s): Path empty (A* fail). Finding obstruction." % unit.name)
+			var blocking_building = _find_closest_blocking_building()
+			if is_instance_valid(blocking_building):
+				push_warning("Path blocked. Attacking obstruction: %s" % blocking_building.name)
+				command_attack_obstruction(blocking_building)
+			else:
+				# print_debug("UnitFSM (%s): No obstruction found. Idling." % unit.name)
+				change_state(State.IDLE)
+		# --- END LOGIC ---
 		else:
 			change_state(State.IDLE)
 
+# --- Find Obstruction ---
+func _find_closest_blocking_building() -> Node2D:
+	var mission_node = unit.get_parent()
+	if not is_instance_valid(mission_node) or not mission_node.has_node("BuildingContainer"):
+		push_error("UnitFSM: Cannot find BuildingContainer to check for obstructions.")
+		return null
+
+	var building_container = mission_node.get_node("BuildingContainer")
+	var buildings = building_container.get_children()
+	
+	var closest_building: Node2D = null
+	var min_dist_sq = INF
+	
+	if not is_instance_valid(objective_target):
+		# print_debug("UnitFSM (%s): Cannot find obstruction, no objective_target." % unit.name)
+		return null
+
+	var unit_pos = unit.global_position
+	# print_debug("UnitFSM (%s): Scanning for closest obstruction to %s" % [unit.name, unit_pos])
+
+	for building in buildings:
+		if not building is BaseBuilding:
+			continue
+			
+		var dist_sq = unit_pos.distance_squared_to(building.global_position)
+		if dist_sq < min_dist_sq:
+			min_dist_sq = dist_sq
+			closest_building = building
+				
+	if is_instance_valid(closest_building):
+		# print_debug("UnitFSM (%s): Found closest obstruction: %s" % [unit.name, closest_building.name])
+		pass
+	else:
+		# print_debug("UnitFSM (%s): No valid obstructions found." % unit.name)
+		pass
+				
+	return closest_building
+# --- END NEW ---
+
+
 # --- RTS Command Functions ---
+
+func command_defensive_attack(attacker: Node2D) -> void:
+	"""
+	Called by BaseUnit.take_damage().
+	This is an individual-only response and does not change the objective_target.
+	"""
+	if not is_instance_valid(attacker):
+		return
+	
+	if current_state == State.ATTACKING and current_target == attacker:
+		return
+	
+	# print_debug("UnitFSM (%s): Retaliating against %s" % [unit.name, attacker.name])
+	current_target = attacker 
+	change_state(State.ATTACKING)
+
+func command_attack_obstruction(target: Node2D) -> void:
+	"""
+	Attack a target (like a wall) without losing the main objective_target.
+	"""
+	if not is_instance_valid(target):
+		return
+		
+	# print_debug("UnitFSM (%s): Attacking obstruction %s" % [unit.name, target.name])
+	current_target = target
+	target_position = target.global_position
+	
+	var distance: float = unit.global_position.distance_to(target.global_position)
+	
+	if distance <= unit.data.attack_range:
+		change_state(State.ATTACKING)
+	else:
+		change_state(State.MOVING) # Move to the obstruction
 
 func command_move_to_formation_pos(target_pos: Vector2) -> void:
 	target_position = target_pos
 	move_command_position = target_pos
 	
-	# Clear both targets
 	current_target = null 
 	objective_target = null
 	
@@ -5868,7 +6027,6 @@ func command_move_to(target_pos: Vector2) -> void:
 	target_position = target_pos
 	move_command_position = target_pos
 
-	# Clear both targets
 	current_target = null
 	objective_target = null
 	
@@ -5884,8 +6042,7 @@ func command_attack(target: Node2D) -> void:
 			unit.flash_error_color()
 		return
 	
-	# Set both targets. The objective is the commanded target.
-	# The current target is also the commanded target, until interrupted.
+	# print_debug("UnitFSM (%s): Commanded to attack %s" % [unit.name, target.name])
 	objective_target = target
 	current_target = target
 	target_position = target.global_position
@@ -5914,9 +6071,6 @@ func update(delta: float) -> void:
 
 func _idle_state(_delta: float) -> void:
 	unit.velocity = Vector2.ZERO
-	# Note: The AttackAI is still scanning.
-	# If it finds a target, _on_ai_attack_started will fire
-	# and pull the unit out of IDLE.
 
 func _formation_move_state(delta: float) -> void:
 	if path.is_empty():
@@ -5938,18 +6092,12 @@ func _formation_move_state(delta: float) -> void:
 			change_state(State.IDLE)
 
 func _move_state(delta: float) -> void:
-	# The AttackAI is scanning automatically.
-	# If it finds a target, it will interrupt this state
-	# via the _on_ai_attack_started signal.
-	
 	var target_node = current_target if is_instance_valid(current_target) else objective_target
 
 	if not is_instance_valid(target_node):
-		# Our objective was destroyed or we had no objective
 		change_state(State.IDLE)
 		return
 	
-	# Check if we are in range of our *current* target
 	if is_instance_valid(current_target):
 		var distance_to_target: float = unit.global_position.distance_to(current_target.global_position)
 		if distance_to_target <= unit.data.attack_range:
@@ -5957,10 +6105,23 @@ func _move_state(delta: float) -> void:
 			return
 	
 	if path.is_empty():
-		# Path is empty, but we're not in range.
-		# This means we've arrived at the closest point.
+		# print_debug("UnitFSM (%s): Path is empty." % unit.name)
+		# Path is empty, check if we're at our destination or stuck.
 		if is_instance_valid(target_node):
-			change_state(State.ATTACKING)
+			var distance_to_target: float = unit.global_position.distance_to(target_node.global_position)
+			if distance_to_target <= unit.data.attack_range + 10: # +10 buffer
+				# print_debug("UnitFSM (%s): Path empty, in range. Attacking." % unit.name)
+				change_state(State.ATTACKING)
+			else:
+				# --- OBSTRUCTION LOGIC (CASE 2: Path ends) ---
+				# print_debug("UnitFSM (%s): Path empty, NOT in range. Stuck. Finding obstruction." % unit.name)
+				var blocking_building = _find_closest_blocking_building()
+				if is_instance_valid(blocking_building):
+					push_warning("Path ended, but not in range. Attacking obstruction: %s" % blocking_building.name)
+					command_attack_obstruction(blocking_building)
+				else:
+					# print_debug("UnitFSM (%s): Path empty, stuck, but no obstruction found. Idling." % unit.name)
+					change_state(State.IDLE)
 		else:
 			change_state(State.IDLE)
 		return
@@ -5978,67 +6139,116 @@ func _move_state(delta: float) -> void:
 		path.pop_front()
 		
 		if path.is_empty():
-			# We've reached the end of the path
-			if is_instance_valid(target_node):
-				change_state(State.ATTACKING)
+			# print_debug("UnitFSM (%s): Reached end of path." % unit.name)
+			pass
+	
+	# --- Stuck Timer Logic ---
+	if unit.velocity.length_squared() < 1.0: # 1.0 is a good "stuck" threshold
+		stuck_timer += delta
+		if stuck_timer > 1.5: # Stuck for 1.5 seconds
+			# print_debug("UnitFSM (%s): STUCK (velocity is zero). Finding obstruction." % unit.name)
+			var blocking_building = _find_closest_blocking_building()
+			if is_instance_valid(blocking_building):
+				command_attack_obstruction(blocking_building)
 			else:
-				change_state(State.IDLE)
+				change_state(State.IDLE) # Give up
+			stuck_timer = 0.0 # Reset timer
+	else:
+		stuck_timer = 0.0 # Not stuck, reset timer
 
 func _attack_state(_delta: float) -> void:
-	# This state just monitors the target.
-	# The AttackAI component handles the actual firing.
 	if not is_instance_valid(current_target):
 		# Target is dead or gone
-		# _on_ai_attack_stopped will handle resuming the objective
-		change_state(State.IDLE) # Go to idle temporarily
+		_resume_objective()
 		return
 	
 	var distance_to_target: float = unit.global_position.distance_to(current_target.global_position)
 	if distance_to_target > unit.data.attack_range + 10: # +10 pixel buffer
 		# Target moved out of range
-		current_target = null # Lose the target
-		
-		# Resume objective
-		if is_instance_valid(objective_target):
-			change_state(State.MOVING)
-		else:
-			change_state(State.IDLE)
+		# print_debug("UnitFSM (%s): Target %s moved out of range." % [unit.name, current_target.name])
+		_resume_objective()
 		return
 	
 	# Otherwise, stay in ATTACKING state
 	unit.velocity = Vector2.ZERO
+
+func _resume_objective() -> void:
+	"""
+	Called when an attack is finished.
+	Forces the FSM to re-evaluate its main objective OR find a new one.
+	"""
+	# print_debug("UnitFSM (%s): Resuming main objective." % unit.name)
+	current_target = null
+		
+	if is_instance_valid(objective_target):
+		# print_debug("UnitFSM (%s): Objective %s is valid. Recalculating path." % [unit.name, objective_target.name])
+		current_target = objective_target
+		change_state(State.MOVING)
+	else:
+		# --- NEW PLAYER AI LOGIC ---
+		# If we are a player unit (DEFAULT AI), find a new target.
+		if attack_ai and attack_ai.ai_mode == AttackAI.AI_Mode.DEFAULT:
+			var new_target = _find_closest_enemy_building_in_los()
+			if is_instance_valid(new_target):
+				print_debug("UnitFSM (%s): Player unit auto-acquiring new building target: %s" % [unit.name, new_target.name])
+				command_attack(new_target) # This sets both objective and current target
+			else:
+				# print_debug("UnitFSM (%s): No valid objective or new targets. Idling." % unit.name)
+				change_state(State.IDLE)
+		else:
+			# If we are an enemy AI, just idle.
+			# print_debug("UnitFSM (%s): No valid objective. Idling." % unit.name)
+			change_state(State.IDLE)
+# --- END NEW LOGIC ---
+
+# --- NEW: Find Target in LOS ---
+func _find_closest_enemy_building_in_los() -> Node2D:
+	var mission_node = unit.get_parent()
+	if not is_instance_valid(mission_node) or not mission_node.has_node("BuildingContainer"):
+		push_error("UnitFSM: Cannot find BuildingContainer to check for targets.")
+		return null
+
+	var building_container = mission_node.get_node("BuildingContainer")
+	var buildings = building_container.get_children()
+	
+	var closest_building: Node2D = null
+	var min_dist_sq = los_range * los_range # Max range
+	
+	var unit_pos = unit.global_position
+
+	for building in buildings:
+		# Must be a building and must be an enemy (Layer 4)
+		if not building is BaseBuilding or not (building.collision_layer & (1 << 3)):
+			continue
+			
+		var dist_sq = unit_pos.distance_squared_to(building.global_position)
+		if dist_sq < min_dist_sq:
+			min_dist_sq = dist_sq
+			closest_building = building
+				
+	return closest_building
+# --- END NEW ---
 
 func _check_defensive_response() -> void:
 	pass
 
 # --- AI Signal Callbacks ---
 func _on_ai_attack_started(target: Node2D) -> void:
-	# The AttackAI found a target of opportunity!
-	# Interrupt whatever we're doing.
-	
-	# Don't switch if we are already attacking this target
 	if current_state == State.ATTACKING and target == current_target:
 		return
 		
-	print("UnitFSM: Interrupted! AttackAI found new target: %s" % target.name)
-	current_target = target # Set as our immediate target
+	if attack_ai.ai_mode == AttackAI.AI_Mode.DEFENSIVE_SIEGE:
+		return
+		
+	# print_debug("UnitFSM (%s): AI auto-attack started on %s" % [unit.name, target.name])
+	current_target = target
 	change_state(State.ATTACKING)
 
 func _on_ai_attack_stopped() -> void:
-	# The AttackAI has stopped (e.g., target died, or moved out of range)
+	# The AttackAI has stopped (e.g., target out of range)
 	if current_state == State.ATTACKING:
-		print("UnitFSM: Attack finished.")
-		current_target = null
-		
-		# Check if we have a long-term objective to resume
-		if is_instance_valid(objective_target):
-			print("UnitFSM: Resuming objective: %s" % objective_target.name)
-			current_target = objective_target # Set our current target back to the objective
-			change_state(State.MOVING) # Go back to moving
-		else:
-			# No objective, just go idle
-			print("UnitFSM: No objective. Going IDLE.")
-			change_state(State.IDLE)
+		# print_debug("UnitFSM (%s): AI attack on %s stopped." % [unit.name, current_target.name if is_instance_valid(current_target) else "null"])
+		_resume_objective()
 
 --- SCRIPT: res://scripts/buildings/SettlementBridge.gd ---
 # res://scripts/buildings/SettlementBridge.gd
@@ -7006,14 +7216,12 @@ var attack_ai: AttackAI = null
 
 # Visual state system
 var _color_tween: Tween
-# --- AI FIX: Added ATTACKING state back to match the FSM ---
 const STATE_COLORS := {
 	UnitFSM.State.IDLE: Color(0.3, 0.6, 1.0),     # Blue
 	UnitFSM.State.MOVING: Color(0.4, 1.0, 0.4),   # Green
 	UnitFSM.State.FORMATION_MOVING: Color(0.4, 1.0, 0.4), # Green
 	UnitFSM.State.ATTACKING: Color(1.0, 0.3, 0.3) # Red
 }
-# -----------------------------------------------------------
 const ERROR_COLOR := Color(0.7, 0.3, 1.0)
 
 func _ready() -> void:
@@ -7030,22 +7238,16 @@ func _ready() -> void:
 			add_child(attack_ai)
 			attack_ai.configure_from_data(data)
 			
-			# --- MODIFICATION: Dynamically set target mask ---
 			var target_mask = 0
-			# self.collision_layer is a bitmask, check with `&`
 			if self.collision_layer & 2: # Player unit (Layer 2)
-				# Target Layer 3 (Enemy Units) and 4 (Enemy Buildings)
-				target_mask = (1 << 2) | (1 << 3) # 0b1100
+				target_mask = (1 << 2) | (1 << 3) # Target Enemy Units (L3) & Enemy Buildings (L4)
 			elif self.collision_layer & 4: # Enemy unit (Layer 3)
-				# Target Layer 1 (Player Buildings) and 2 (Player Units)
-				target_mask = (1 << 0) | (1 << 1) # 0b0011
+				target_mask = (1 << 0) | (1 << 1) # Target Player Buildings (L1) & Player Units (L2)
 			
 			if target_mask == 0:
 				push_warning("BaseUnit: '%s' is on an unhandled collision layer (%s). AI will not target anything." % [name, self.collision_layer])
 			
 			attack_ai.set_target_mask(target_mask)
-			# --- END MODIFICATION ---
-
 		else:
 			push_error("BaseUnit: Failed to instantiate ai_component_scene for %s" % data.display_name)
 	
@@ -7156,8 +7358,16 @@ func _tween_color(to_color: Color, duration: float = 0.2) -> void:
 	_color_tween = create_tween()
 	_color_tween.tween_property(sprite, "modulate", to_color, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
-func take_damage(amount: int) -> void:
+# --- MODIFIED: Added attacker parameter ---
+func take_damage(amount: int, attacker: Node2D = null) -> void:
 	current_health = max(0, current_health - amount)
+	
+	# --- NEW: Retaliation Logic ---
+	if fsm and is_instance_valid(attacker):
+		# Tell the FSM we are being attacked
+		fsm.command_defensive_attack(attacker)
+	# --- END NEW ---
+	
 	if current_health == 0:
 		die()
 

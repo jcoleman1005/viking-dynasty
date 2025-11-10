@@ -40,13 +40,20 @@ func _on_area_entered(area: Area2D) -> void:
 	if area.collision_layer & self.collision_mask:
 		var parent_body = area.get_parent()
 		if parent_body and parent_body.has_method("take_damage"):
-			# --- MODIFIED: Pass 'firer' instead of 'owner' ---
-			parent_body.take_damage(damage, firer)
+			
+			# --- THIS IS THE FIX ---
+			# Check if the 'firer' is still valid before passing it.
+			if is_instance_valid(firer):
+				parent_body.take_damage(damage, firer)
+			else:
+				parent_body.take_damage(damage, null) # Pass null if firer is dead
+			# --- END FIX ---
+			
 			queue_free()
 		else:
 			push_warning("Projectile hit non-damagable Area: '%s'." % area.name)
 
-func _on_body_entered(body: Node2D) -> void:
+func _on_body_entered(body: Node2D) -> void: 
 	"""Called when this Area2D detects a 'monitorable' PhysicsBody (like a unit)."""
 	
 	if not body is CollisionObject2D:
@@ -54,8 +61,14 @@ func _on_body_entered(body: Node2D) -> void:
 	
 	if body.collision_layer & self.collision_mask:
 		if body.has_method("take_damage"):
-			# --- MODIFIED: Pass 'firer' instead of 'owner' ---
-			body.take_damage(damage, firer)
+
+			# --- THIS IS THE FIX ---
+			# Check if the 'firer' is still valid before passing it.
+			if is_instance_valid(firer):
+				body.take_damage(damage, firer)
+			else:
+				body.take_damage(damage, null) # Pass null if firer is dead
+			# --- END FIX ---
 		
 		queue_free()
 

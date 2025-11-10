@@ -35,15 +35,15 @@ var projectile_speed: float = 400.0
 @onready var attack_timer: Timer = $AttackTimer
 
 # AI state
-var parent_node: BaseUnit # Changed to BaseUnit for FSM access
+var parent_node: Node2D
 var current_target: Node2D = null
 var targets_in_range: Array[Node2D] = []
 var is_attacking: bool = false
 
 func _ready() -> void:
-	parent_node = get_parent() as BaseUnit
+	parent_node = get_parent() as Node2D
 	if not parent_node:
-		push_error("AttackAI: Parent must be a BaseUnit")
+		push_error("AttackAI: Parent must be a Node2D")
 		return
 	
 	_setup_ai()
@@ -158,11 +158,18 @@ func _select_target_default() -> void:
 			targets_in_range.erase(target)
 			continue
 		
-		# Layer 3 (Enemy Units) or 4 (Enemy Buildings)
-		if target.collision_layer & (1 << 2): 
+		# Check all enemy layers. This logic assumes this AI is for players.
+		# A more robust AI would check against its *own* collision layer.
+		if target.collision_layer & (1 << 2): # Layer 3 (Enemy Units)
 			unit_targets.append(target)
-		elif target.collision_layer & (1 << 3): 
+		elif target.collision_layer & (1 << 3): # Layer 4 (Enemy Buildings)
 			building_targets.append(target)
+		# --- FIX: Ensure buildings check their enemy layers too ---
+		elif target.collision_layer & (1 << 1): # Layer 2 (Player Units)
+			unit_targets.append(target)
+		elif target.collision_layer & (1 << 0): # Layer 1 (Player Buildings)
+			building_targets.append(target)
+		# --- END FIX ---
 
 	var closest_target: Node2D = null
 	var closest_distance: float = INF
@@ -194,12 +201,14 @@ func _select_target_defensive_siege() -> void:
 	1. Prioritize the Great Hall if it's in LOS.
 	2. Otherwise, attack the closest building.
 	"""
-	if not is_instance_valid(parent_node) or not parent_node.fsm:
+	# Only access FSM if parent is a BaseUnit
+	var unit_parent = parent_node as BaseUnit
+	if not is_instance_valid(unit_parent) or not unit_parent.fsm:
 		_stop_attacking()
 		return
 
 	# 1. Check for Great Hall (Priority 1)
-	var great_hall = parent_node.fsm.objective_target
+	var great_hall = unit_parent.fsm.objective_target
 	if is_instance_valid(great_hall):
 		var hall_pos = great_hall.global_position
 		var distance_to_hall = parent_node.global_position.distance_to(hall_pos)
@@ -240,6 +249,11 @@ func _start_attacking() -> void:
 		is_attacking = true
 		attack_started.emit(current_target)
 	
+	# --- THIS IS THE FIX ---
+	# Fire the first attack immediately instead of waiting for the timer.
+	_on_attack_timer_timeout()
+	# --- END FIX ---
+	
 	if attack_timer and attack_timer.is_stopped():
 		attack_timer.start()
 
@@ -254,6 +268,10 @@ func _stop_attacking() -> void:
 func _on_attack_timer_timeout() -> void:
 	"""Called when the attack timer fires"""
 	if not current_target:
+		# --- MODIFICATION ---
+		# If our target is null, we should stop attacking
+		_stop_attacking()
+		# --- END MODIFICATION ---
 		return
 	
 	# Verify target is still valid and in range
@@ -263,7 +281,10 @@ func _on_attack_timer_timeout() -> void:
 	
 	var distance_to_target = parent_node.global_position.distance_to(current_target.global_position)
 	
+	# --- MODIFICATION ---
+	# Added a +10 buffer to prevent units from stopping if target is *just* at the edge
 	if distance_to_target > attack_range + 10.0:
+	# --- END MODIFICATION ---
 		_stop_attacking() 
 		return
 	
@@ -296,10 +317,8 @@ func _spawn_projectile(target_position_world: Vector2) -> void:
 		push_error("AttackAI: Failed to instantiate projectile for %s" % parent_node.name)
 		return
 	
-	# --- THIS IS THE FIX ---
 	# We set our new 'firer' variable instead of the 'owner' property
 	projectile.firer = parent_node
-	# --- END FIX ---
 	
 	projectile.setup(
 		parent_node.global_position,  # start position

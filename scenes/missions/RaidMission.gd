@@ -303,16 +303,33 @@ func _spawn_enemy_wave() -> void:
 
 	var enemy_count = 5 # TODO: Make this scale with difficulty
 	for i in range(enemy_count):
-		var enemy_unit: BaseUnit = enemy_data.scene_to_spawn.instantiate()
+		
+		# --- THIS IS THE FIX ---
+		
+		# 1. Instantiate the scene and add it to the tree
+		# This calls _ready() and creates the fsm and attack_ai
+		var enemy_node = enemy_data.scene_to_spawn.instantiate()
+		add_child(enemy_node) 
+		
+		# 2. Cast the node to BaseUnit so we can access its members
+		var enemy_unit = enemy_node as BaseUnit
+		if not enemy_unit:
+			push_error("Spawned enemy node is not a BaseUnit!")
+			enemy_node.queue_free()
+			continue
+		
+		# 3. Now we can safely set data and properties
 		enemy_unit.name = enemy_data.display_name + "_Enemy_" + str(i)
 		enemy_unit.data = enemy_data
 		
 		# --- SET ENEMY UNIT COLLISION LAYER ---
 		enemy_unit.collision_layer = 4  # Layer 3 (bit position 2) for Enemy Units
 		
-		# --- SET AI MODE ---
+		# --- SET AI MODE (This is now safe to do) ---
 		if enemy_unit.attack_ai:
 			enemy_unit.attack_ai.ai_mode = AttackAI.AI_Mode.DEFENSIVE_SIEGE
+		else:
+			push_warning("Enemy unit %s has no AttackAI node!" % enemy_unit.name)
 		# --- END SET ---
 		
 		var spawn_pos = enemy_spawner.global_position + Vector2(i * 40, 0)
@@ -320,14 +337,20 @@ func _spawn_enemy_wave() -> void:
 		
 		enemy_unit.add_to_group("enemy_units")
 		enemy_units.append(enemy_unit)
-		add_child(enemy_unit)
 		
+		# 4. Now we can safely access the FSM
 		if is_instance_valid(objective_building):
-			enemy_unit.fsm.command_attack(objective_building)
+			if enemy_unit.fsm:
+				enemy_unit.fsm.command_attack(objective_building)
+			else:
+				push_error("Enemy unit %s FSM is null after _ready()!" % enemy_unit.name)
+		
+		# --- END FIX ---
 	
 	print("Spawned %d enemy raiders." % enemy_count)
 
-# --- END NEW FUNCTION ---
+# --- 
+# END NEW FUNCTION ---
 
 func _spawn_test_units() -> void:
 	# This function is for debug only and does not need refactoring
