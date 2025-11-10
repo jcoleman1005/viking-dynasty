@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="LegacyUpgradeData" load_steps=2 format=3 uid="uid://c4qpn4hvsgkvh"]
+
+[ext_resource type="Script" uid="uid://bot3rirdcml6f" path="res://data/legacy/LegacyUpgradeData.gd" id="1_chapel"]
+
+[resource]
+script = ExtResource("1_chapel")
+display_name = "Build Chapel"
+description = "Erect a small chapel, honoring the gods and securing their favor for your dynasty."
+renown_cost = 50
+effect_key = "UPG_BUILD_CHAPEL"
+metadata/_custom_type_script = "uid://bot3rirdcml6f"

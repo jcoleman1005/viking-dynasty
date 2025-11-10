@@ -37,6 +37,22 @@ extends Resource
 ## Years since last offensive action (for Renown Decay calculations)
 @export var years_since_action: int = 0
 
+# --- Builder Pillar Upgrade Properties ---
+## Bonus starting renown for all future heirs (from "Erect Jelling Stone")
+@export var heir_starting_renown_bonus: int = 0
+
+## An array of unique effect_keys for one-time legacy upgrades
+## (e.g., ["UPG_TRELLEBORG", "UPG_JELLING_STONE"])
+@export var purchased_legacy_upgrades: Array[String] = []
+
+# --- Unifier Pillar Property ---
+## An array of resource paths to WorldRegionData files that have been subjugated.
+@export var conquered_regions: Array[String] = []
+
+# --- NEW: Progenitor Pillar Property ---
+## An array of resource paths to WorldRegionData files that are allied.
+@export var allied_regions: Array[String] = []
+# --- END NEW ---
 
 @export_group("Base Skills")
 ## Combat leadership and personal prowess
@@ -71,19 +87,55 @@ extends Resource
 ## Number of turns remaining for wound recovery
 @export var wound_recovery_turns: int = 0
 
+# --- HELPER FUNCTIONS ---
+# These must be defined *before* the properties that use them.
+
+## Get the number of *available* heirs (not on expedition, etc.)
+func get_available_heir_count() -> int:
+	var count = 0
+	for heir in heirs:
+		if heir and heir.status == JarlHeirData.HeirStatus.Available:
+			count += 1
+	return count
+
+## Get the first available heir resource
+func get_first_available_heir() -> JarlHeirData:
+	for heir in heirs:
+		if heir and heir.status == JarlHeirData.HeirStatus.Available:
+			return heir
+	return null
+
+## Remove an heir from the dynasty (e.g., married off or lost)
+## Returns false if the heir could not be found.
+func remove_heir(heir_to_remove: JarlHeirData) -> bool:
+	if heir_to_remove in heirs:
+		heirs.erase(heir_to_remove)
+		return true
+	return false
+
+## Check if the Jarl has at least one valid, available heir
+func check_has_valid_heir() -> bool:
+	return get_first_available_heir() != null
+
+# --- END HELPER FUNCTIONS ---
+
 
 @export_group("Family & Succession")
 ## The Jarl's spouse (if any)
 @export var spouse_name: String = ""
 
-## Array of heir names in order of succession priority
-@export var heirs: Array[String] = []
+## Array of JarlHeirData resources in order of succession priority
+@export var heirs: Array[JarlHeirData] = []
 
-## Whether this Jarl has a designated heir
-@export var has_valid_heir: bool = false
+## DEPRECATED: Replaced with a read-only property that calls check_has_valid_heir()
+var has_valid_heir: bool:
+	get:
+		return check_has_valid_heir()
 
-## Number of living children
-@export var children_count: int = 0
+## DEPRECATED: Replaced with a read-only property that calls get_available_heir_count()
+var children_count: int:
+	get:
+		return get_available_heir_count()
 
 
 @export_group("Political Status")

@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3 uid="uid://ba41qxyi1a30u"]
+[gd_scene load_steps=7 format=3 uid="uid://ba41qxyi1a30u"]
 
 [ext_resource type="Script" uid="uid://dmq8s5ifmd1dx" path="res://scenes/world_map/MacroMap.gd" id="1_macro_map"]
 [ext_resource type="PackedScene" uid="uid://dqh0xu88khxct" path="res://ui/EndOfYear_Popup.tscn" id="2_okptj"]
 [ext_resource type="PackedScene" uid="uid://cuyni4y77q51q" path="res://scenes/world_map/Region.tscn" id="2_region"]
-[ext_resource type="Resource" uid="uid://dbhfg3lfhe6tw" path="res://data/world_map/Region_Monastery.tres" id="3_monastery_data"]
+[ext_resource type="Resource" uid="uid://bk6wv22mknptc" path="res://data/world_map/Region_Monastery.tres" id="3_monastery_data"]
 [ext_resource type="PackedScene" uid="uid://lpxvj8dvfbnl" path="res://scenes/world_map/MacroCamera.tscn" id="5_okptj"]
+[ext_resource type="PackedScene" uid="uid://c5qg2j1qa4g0b" path="res://ui/Dynasty_UI.tscn" id="6_tcdvw"]
 
 [node name="MacroMap" type="Node2D"]
 position = Vector2(131, 23)
@@ -85,6 +86,10 @@ text = "End Year"
 layout_mode = 2
 text = "Return to Settlement"
 
+[node name="DynastyButton" type="Button" parent="UI/Actions/VBoxContainer"]
+layout_mode = 2
+text = "Dynasty"
+
 [node name="RegionInfo" type="PanelContainer" parent="UI"]
 visible = false
 anchors_preset = -1
@@ -111,6 +116,16 @@ layout_mode = 2
 disabled = true
 text = "Launch Raid"
 
+[node name="SubjugateButton" type="Button" parent="UI/RegionInfo/VBoxContainer"]
+layout_mode = 2
+disabled = true
+text = "Subjugate"
+
+[node name="MarryButton" type="Button" parent="UI/RegionInfo/VBoxContainer"]
+layout_mode = 2
+disabled = true
+text = "Marry for Alliance"
+
 [node name="Tooltip" type="PanelContainer" parent="UI"]
 visible = false
 anchors_preset = -1
@@ -130,5 +145,8 @@ mouse_filter = 2
 layout_mode = 2
 text = "Region Name"
 horizontal_alignment = 1
+
+[node name="Dynasty_UI" parent="UI" instance=ExtResource("6_tcdvw")]
+anchors_preset = -1
 
 [editable path="Regions/Region"]

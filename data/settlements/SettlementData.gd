@@ -10,3 +10,8 @@ class_name SettlementData
 # Stores unit type (path) and count (int)
 # Example: {"res://data/units/Unit_Raider.tres": 3}
 @export var garrisoned_units: Dictionary = {}
+
+# --- NEW: Builder Pillar Upgrade Property ---
+## Bonus max garrison size from Legacy Upgrades (e.g., "Upgrade Trelleborg")
+@export var max_garrison_bonus: int = 0
+# --- END NEW ---

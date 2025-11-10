@@ -155,12 +155,28 @@ func calculate_payout() -> Dictionary:
 			
 			total_payout[resource_type] += final_payout
 
+	# --- NEW: Add income from Conquered Regions ---
+	if jarl:
+		for region_path in jarl.conquered_regions:
+			var region_data: WorldRegionData = load(region_path)
+			if not region_data:
+				push_warning("Could not load conquered region data from path: %s" % region_path)
+				continue
+			
+			for resource_type in region_data.yearly_income:
+				var income_amount = region_data.yearly_income[resource_type]
+				if not total_payout.has(resource_type):
+					total_payout[resource_type] = 0
+				
+				# Apply stewardship bonus to region income as well
+				var final_income = int(round(income_amount * stewardship_bonus))
+				total_payout[resource_type] += final_income
+				print("Added %d %s from conquered region: %s" % [final_income, resource_type, region_data.display_name])
+	# --- END NEW ---
+
 	if not total_payout.is_empty():
 		print("Calculated fixed payout (with bonus): %s" % total_payout)
 	return total_payout
-# --- END MODIFICATION ---
-
-# --- Unit Management ---
 
 func recruit_unit(unit_data: UnitData) -> void:
 	if not current_settlement:

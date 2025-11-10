@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="LegacyUpgradeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/legacy/LegacyUpgradeData.gd" id="1_jelling"]
+
+[resource]
+script = ExtResource("1_jelling")
+display_name = "Erect Jelling Stone"
+description = "Commission a great rune stone to proclaim your dynasty's glory. All future heirs will begin their rule with bonus Renown."
+renown_cost = 200
+authority_cost = 2
+effect_key = "UPG_JELLING_STONE"
+prerequisite_key = ""

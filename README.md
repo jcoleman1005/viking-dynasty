@@ -157,17 +157,17 @@ signal unit_died(unit: VikingRaider)
 signal health_changed(new_health: int, max_health: int)
 
 var health: int = 100:
-    set(value):
-        health = clamp(value, 0, max_health)
-        health_changed.emit(health, max_health)
-        if health <= 0:
-            unit_died.emit(self)
+	set(value):
+		health = clamp(value, 0, max_health)
+		health_changed.emit(health, max_health)
+		if health <= 0:
+			unit_died.emit(self)
 
 # Modern Godot 4.x physics
 func _physics_process(delta: float) -> void:
-    if target_position != Vector2.ZERO:
-        velocity = global_position.direction_to(target_position) * move_speed
-        move_and_slide()
+	if target_position != Vector2.ZERO:
+		velocity = global_position.direction_to(target_position) * move_speed
+		move_and_slide()
 ```
 
 ### Architecture Principles

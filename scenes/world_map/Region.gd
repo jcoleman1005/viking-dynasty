@@ -66,13 +66,7 @@ func _input(event: InputEvent) -> void:
 		var screen_pos = get_viewport().get_mouse_position()
 		var world_pos = get_global_mouse_position()
 		var canvas_pos = get_canvas_transform().affine_inverse() * screen_pos
-		print("=== LEFT CLICK DETECTED ===")
-		print("  Screen position: %s" % screen_pos)
-		print("  World position (get_global_mouse): %s" % world_pos)
-		print("  Canvas position (corrected): %s" % canvas_pos)
-		print("  Region '%s' position: %s" % [name, global_position])
-		print("  Distance to region (world): %s" % global_position.distance_to(world_pos))
-		print("  Distance to region (canvas): %s" % global_position.distance_to(canvas_pos))
+		
 
 func set_visual_state(is_hovered: bool) -> void:
 	if not sprite:

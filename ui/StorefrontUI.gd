@@ -1,142 +1,36 @@
 # res://ui/StorefrontUI.gd (Fully Refactored)
 extends Control
 
+const LegacyUpgradeData = preload("res://data/legacy/LegacyUpgradeData.gd")
 # --- Node References ---
 @onready var gold_label: Label = $PanelContainer/MarginContainer/TabContainer/BuildTab/TreasuryDisplay/GoldLabel
 @onready var wood_label: Label = $PanelContainer/MarginContainer/TabContainer/BuildTab/TreasuryDisplay/WoodLabel
 @onready var food_label: Label = $PanelContainer/MarginContainer/TabContainer/BuildTab/TreasuryDisplay/FoodLabel
 @onready var stone_label: Label = $PanelContainer/MarginContainer/TabContainer/BuildTab/TreasuryDisplay/StoneLabel
 
-# --- REMOVED ---
-# @onready var buy_wall_button: Button = ...
-# @onready var buy_lumber_yard_button: Button = ...
-
-# --- ADDED ---
 @onready var build_buttons_container: VBoxContainer = $PanelContainer/MarginContainer/TabContainer/BuildTab/BuildButtonsContainer
-# --- END ADDED ---
 
 @onready var recruit_buttons_container: VBoxContainer = $PanelContainer/MarginContainer/TabContainer/RecruitTab/RecruitButtons
 @onready var garrison_list_container: VBoxContainer = $PanelContainer/MarginContainer/TabContainer/RecruitTab/GarrisonList
 
+# --- Legacy Tab References ---
+@onready var renown_label: Label = $PanelContainer/MarginContainer/TabContainer/LegacyTab/JarlStatsDisplay/RenownLabel
+@onready var authority_label: Label = $PanelContainer/MarginContainer/TabContainer/LegacyTab/JarlStatsDisplay/AuthorityLabel
+@onready var legacy_buttons_container: VBoxContainer = $PanelContainer/MarginContainer/TabContainer/LegacyTab/LegacyButtonsContainer
+
 # --- Exported Data ---
-@export var available_buildings: Array[BuildingData] = [] # This can now be deprecated or used for manual overrides
+@export var available_buildings: Array[BuildingData] = []
 @export var available_units: Array[UnitData] = []
 @export var default_treasury_display: Dictionary = {"gold": 0, "wood": 0, "food": 0, "stone": 0}
 @export var auto_load_units_from_directory: bool = true
 
-# --- REMOVED ---
-# var wall_data: BuildingData = ...
-# var lumber_yard_data: BuildingData = ...
+# --- Internal state for legacy upgrades ---
+var loaded_legacy_upgrades: Array[LegacyUpgradeData] = []
 
-func _ready() -> void:
-	EventBus.treasury_updated.connect(_update_treasury_display)
-	EventBus.purchase_successful.connect(_on_purchase_successful)
-	
-	if SettlementManager.current_settlement:
-		_update_treasury_display(SettlementManager.current_settlement.treasury)
-	else:
-		_update_treasury_display(default_treasury_display)
 
-	# --- REMOVED ---
-	# buy_wall_button.pressed.connect(...)
-	# buy_lumber_yard_button.pressed.connect(...)
-	
-	# --- ADDED ---
-	_load_building_data()
-	# --- END ADDED ---
+# --- MOVED FUNCTIONS UP TO FIX PARSING ERROR ---
 
-	# Load and setup recruit buttons
-	_load_unit_data()
-	_setup_recruit_buttons()
-	_update_garrison_display()
-
-# --- ADDED NEW FUNCTION ---
-func _load_building_data() -> void:
-	"""Scan res://data/buildings/ for buildable .tres files and create buttons."""
-	var dir = DirAccess.open("res://data/buildings/")
-	if dir:
-		dir.list_dir_begin()
-		var file_name = dir.get_next()
-		while file_name != "":
-			if file_name.ends_with(".tres"):
-				var building_path = "res://data/buildings/" + file_name
-				var building_data = load(building_path) as BuildingData
-				
-				# Check if the building is valid AND flagged for the player
-				if building_data and building_data.is_player_buildable:
-					print("Found player-buildable building: %s" % building_data.display_name)
-					_create_building_button(building_data)
-					
-			file_name = dir.get_next()
-# --- END ADDED ---
-
-# --- ADDED NEW FUNCTION ---
-func _create_building_button(building_data: BuildingData) -> void:
-	"""Creates and connects a single button for the build tab."""
-	var button = Button.new()
-	button.text = "%s (Cost: %s)" % [building_data.display_name, _format_cost(building_data.build_cost)]
-	button.custom_minimum_size = Vector2(200, 36) # Matches GDD spec [cite: 405]
-	button.pressed.connect(_on_buy_button_pressed.bind(building_data))
-	build_buttons_container.add_child(button)
-# --- END ADDED ---
-
-func _load_unit_data() -> void:
-	"""Scan res://data/units/ directory for .tres files and load them as UnitData"""
-	var dir = DirAccess.open("res://data/units/")
-	if dir:
-		dir.list_dir_begin()
-		var file_name = dir.get_next()
-		while file_name != "":
-			if file_name.ends_with(".tres"):
-				var unit_path = "res://data/units/" + file_name
-				var unit_data = load(unit_path) as UnitData
-				if unit_data:
-					# Only load player-appropriate units (exclude enemy-only units)
-					# Player units should have "Player" in their display name or specific naming convention
-					if _is_player_unit(unit_data):
-						available_units.append(unit_data)
-						print("Loaded player unit data: %s" % unit_data.display_name)
-					else:
-						print("Skipped enemy unit data: %s" % unit_data.display_name)
-			file_name = dir.get_next()
-		print("Total player units loaded: %d" % available_units.size())
-
-func _setup_recruit_buttons() -> void:
-	"""Create recruit buttons for each available unit"""
-	for unit_data in available_units:
-		var button = Button.new()
-		button.text = "%s (Cost: %s)" % [unit_data.display_name, _format_cost(unit_data.spawn_cost)]
-		button.custom_minimum_size = Vector2(200, 36)
-		button.pressed.connect(_on_recruit_button_pressed.bind(unit_data))
-		recruit_buttons_container.add_child(button)
-
-func _is_player_unit(unit_data: UnitData) -> bool:
-	"""Check if a unit is appropriate for player recruitment"""
-	if not unit_data:
-		return false
-	
-	# Check if the unit has "Player" in its display name
-	if "Player" in unit_data.display_name:
-		return true
-	
-	# Check if the unit data resource path contains "Player" 
-	if "Player" in unit_data.resource_path:
-		return true
-	
-	# Check if the scene points to a PlayerVikingRaider or other player unit
-	if unit_data.scene_to_spawn:
-		var scene_path = unit_data.scene_to_spawn.resource_path
-		if "Player" in scene_path:
-			return true
-	
-	# Fallback: exclude known enemy units by name
-	var enemy_unit_names = ["Viking Raider"] # This is the enemy version
-	if unit_data.display_name in enemy_unit_names:
-		return false
-	
-	# Default to true for backwards compatibility with existing units
-	return true
-
+# --- Utility Functions ---
 func _format_cost(cost: Dictionary) -> String:
 	"""Format cost dictionary as readable string"""
 	var cost_parts: Array[String] = []
@@ -144,90 +38,30 @@ func _format_cost(cost: Dictionary) -> String:
 		cost_parts.append("%d %s" % [cost[resource], resource])
 	return ", ".join(cost_parts)
 
-func _get_safe_placement_position() -> Vector2i:
-	"""Find a safe position to place a building, avoiding overlaps"""
-	if not SettlementManager.current_settlement:
-		return Vector2i(10, 15) # Fallback position
-	
-	# Get grid bounds from SettlementManager
-	var grid_width = SettlementManager.grid_width
-	var grid_height = SettlementManager.grid_height
-	
-	# Create a set of occupied positions for quick lookup
-	var occupied_positions: Array[Vector2i] = []
-	for building_entry in SettlementManager.current_settlement.placed_buildings:
-		occupied_positions.append(building_entry["grid_position"])
-	
-	# Find the first available position using a spiral search pattern
-	var center_x = grid_width / 2.0
-	var center_y = grid_height / 2.0
-	var max_radius = min(grid_width, grid_height) / 2.0
-	
-	# Start from center and spiral outward
-	for radius in range(1, int(max_radius) + 1):
-		for angle_step in range(8 * radius): # More points for larger radii
-			var angle = (angle_step * 2.0 * PI) / (8 * radius)
-			var test_x = center_x + int(radius * cos(angle))
-			var test_y = center_y + int(radius * sin(angle))
-			var test_pos = Vector2i(test_x, test_y)
-			
-			# Check bounds
-			if test_pos.x < 0 or test_pos.x >= grid_width or test_pos.y < 0 or test_pos.y >= grid_height:
-				continue
-			
-			# Check if position is free
-			if not test_pos in occupied_positions:
-				print("Found safe placement position: %s" % test_pos)
-				return test_pos
-	
-	# If no free position found, use a fallback with warning
-	push_warning("No free placement position found, using fallback")
-	return Vector2i(10, 15)
-
 func _update_treasury_display(new_treasury: Dictionary) -> void:
 	gold_label.text = "Gold: %d" % new_treasury.get("gold", 0)
 	wood_label.text = "Wood: %d" % new_treasury.get("wood", 0)
 	food_label.text = "Food: %d" % new_treasury.get("food", 0)
 	stone_label.text = "Stone: %d" % new_treasury.get("stone", 0)
 
-func _on_buy_button_pressed(item_data: BuildingData) -> void:
-	if not item_data:
-		return
-	
-	print("UI attempting to purchase '%s'." % item_data.display_name)
-	var purchase_successful: bool = SettlementManager.attempt_purchase(item_data.build_cost)
-	
-	if purchase_successful:
-		print("UI received purchase confirmation for '%s'." % item_data.display_name)
-		# Emit signal for cursor-based placement instead of auto-placing
-		EventBus.building_ready_for_placement.emit(item_data)
-	else:
-		print("UI received purchase failure for '%s'." % item_data.display_name)
-
-func _on_recruit_button_pressed(unit_data: UnitData) -> void:
-	"""Handle recruit button press"""
-	if not unit_data:
-		return
-	
-	print("UI attempting to recruit '%s'." % unit_data.display_name)
-	var purchase_successful: bool = SettlementManager.attempt_purchase(unit_data.spawn_cost)
-	
-	if purchase_successful:
-		print("UI received purchase confirmation for '%s'." % unit_data.display_name)
-		SettlementManager.recruit_unit(unit_data)
-	else:
-		print("UI received purchase failure for '%s'." % unit_data.display_name)
-
 func _on_purchase_successful(item_name: String) -> void:
 	"""Handle purchase success event - refresh garrison display"""
-	_update_garrison_display()
+	# Check if the item was a unit to avoid unnecessary UI churn
+	# A bit of a hack, but good for performance.
+	if item_name.contains("Raider") or item_name.contains("Unit"):
+		_update_garrison_display()
+	
+	# If a legacy upgrade was purchased, the jarl_stats_updated signal
+	# will handle refreshing the legacy button list.
+	
+	# We don't need to refresh the build list, as it's static for now.
+	pass
 
 func _update_garrison_display() -> void:
 	"""Update the garrison list display with current garrisoned units"""
 	if not garrison_list_container:
 		return
 	
-	# Clear existing display
 	for child in garrison_list_container.get_children():
 		child.queue_free()
 	
@@ -245,13 +79,11 @@ func _update_garrison_display() -> void:
 		garrison_list_container.add_child(empty_garrison_label)
 		return
 	
-	# Add header
 	var header_label = Label.new()
 	header_label.text = "Current Garrison:"
 	header_label.add_theme_font_size_override("font_size", 16)
 	garrison_list_container.add_child(header_label)
 	
-	# Display each unit type and count
 	for unit_path in garrison:
 		var unit_count: int = garrison[unit_path]
 		var unit_data: UnitData = load(unit_path)
@@ -265,7 +97,6 @@ func _update_garrison_display() -> void:
 			error_label.text = "• Unknown unit x%d" % unit_count
 			garrison_list_container.add_child(error_label)
 	
-	# Add total count
 	var total_units = 0
 	for unit_path in garrison:
 		total_units += garrison[unit_path]
@@ -274,3 +105,306 @@ func _update_garrison_display() -> void:
 	total_label.text = "Total units: %d" % total_units
 	total_label.add_theme_font_size_override("font_size", 12)
 	garrison_list_container.add_child(total_label)
+
+# --- END MOVED FUNCTIONS ---
+
+
+func _ready() -> void:
+	# Connect to SettlementManager for treasury
+	EventBus.treasury_updated.connect(_update_treasury_display)
+	EventBus.purchase_successful.connect(_on_purchase_successful)
+	
+	if SettlementManager.current_settlement:
+		_update_treasury_display(SettlementManager.current_settlement.treasury)
+	else:
+		_update_treasury_display(default_treasury_display)
+
+	# Connect to DynastyManager for Jarl stats
+	DynastyManager.jarl_stats_updated.connect(_update_jarl_stats_display)
+	
+	# Initial load
+	_load_building_data()
+	_load_unit_data()
+	_load_legacy_upgrades() # Load the data first
+	
+	# Setup UI
+	if DynastyManager.current_jarl:
+		_update_jarl_stats_display(DynastyManager.get_current_jarl())
+	
+	_setup_recruit_buttons()
+	_update_garrison_display()
+	_populate_legacy_buttons() # Populate buttons after data is loaded
+
+# --- Jarl Stats UI ---
+func _update_jarl_stats_display(jarl_data: JarlData) -> void:
+	"""Updates the Renown and Authority labels in the Legacy tab."""
+	if not jarl_data:
+		return
+	renown_label.text = "Renown: %d" % jarl_data.renown
+	authority_label.text = "Authority: %d / %d" % [jarl_data.current_authority, jarl_data.max_authority]
+	
+	# This ensures buttons are enabled/disabled when stats change (e.g., End Year)
+	_populate_legacy_buttons()
+
+# --- Legacy Upgrade Functions ---
+func _load_legacy_upgrades() -> void:
+	"""Scan res://data/legacy/ for .tres files."""
+	loaded_legacy_upgrades.clear()
+	
+	var dir = DirAccess.open("res://data/legacy/")
+	if dir:
+		dir.list_dir_begin()
+		var file_name = dir.get_next()
+		while file_name != "":
+			if file_name.ends_with(".tres"):
+				var path = "res://data/legacy/" + file_name
+				var upgrade_data = load(path) as LegacyUpgradeData
+				
+				if upgrade_data:
+					# We create a local instance/duplicate of the resource.
+					# This prevents the "soft-guide" cost change from
+					# modifying the actual .tres file on disk.
+					var unique_upgrade = upgrade_data.duplicate()
+					
+					# Check if already purchased
+					unique_upgrade.is_purchased = DynastyManager.has_purchased_upgrade(unique_upgrade.effect_key)
+					loaded_legacy_upgrades.append(unique_upgrade)
+					
+			file_name = dir.get_next()
+	print("Loaded %d legacy upgrades." % loaded_legacy_upgrades.size())
+
+func _populate_legacy_buttons() -> void:
+	"""
+	Populate the Legacy tab with available upgrades.
+	This function now creates real buttons from loaded data.
+	"""
+	for child in legacy_buttons_container.get_children():
+		child.queue_free()
+	
+	if loaded_legacy_upgrades.is_empty():
+		var placeholder_label = Label.new()
+		placeholder_label.text = "No legacy upgrades found."
+		legacy_buttons_container.add_child(placeholder_label)
+		return
+	
+	var jarl = DynastyManager.get_current_jarl()
+	if not jarl:
+		push_error("StorefrontUI: Cannot get Jarl from DynastyManager!")
+		return
+
+	# --- "SOFT-GUIDE" LITMUS TEST ---
+	# Check for traits that modify costs
+	var is_pious = jarl.has_trait("Pious")
+	# ---------------------------------
+
+	# Create a button for each loaded upgrade
+	for upgrade_data in loaded_legacy_upgrades:
+		
+		# --- "SOFT-GUIDE" LOGIC ---
+		# This is the core mechanic of the proposal in action.
+		var current_renown_cost = upgrade_data.renown_cost
+		var trait_modifier_text = ""
+		
+		if is_pious and upgrade_data.effect_key == "UPG_BUILD_CHAPEL":
+			# Example: "Pious" trait gives a 25 Renown discount
+			current_renown_cost = max(0, upgrade_data.renown_cost - 25)
+			trait_modifier_text = " (-25 Pious)"
+		# --------------------------
+
+		var button = Button.new()
+		var cost_text = "Cost: %d Renown%s, %d Auth" % [current_renown_cost, trait_modifier_text, upgrade_data.authority_cost]
+		
+		# Set the text (without the name, as the icon is present)
+		button.text = "%s\n%s" % [upgrade_data.display_name, cost_text]
+		button.tooltip_text = upgrade_data.description
+		
+		# --- NEW: Set Icon ---
+		if upgrade_data.icon:
+			button.icon = upgrade_data.icon
+			# Optional: Align text to the left if an icon is present
+			button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+			button.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		# --- END NEW ---
+		
+		# --- Check affordability and purchase status ---
+		var can_buy_renown = jarl.renown >= current_renown_cost # Use modified cost
+		var can_buy_auth = jarl.current_authority >= upgrade_data.authority_cost
+		
+		if upgrade_data.is_purchased:
+			button.disabled = true
+			button.text = "%s (Purchased)" % upgrade_data.display_name
+		elif not can_buy_renown:
+			button.disabled = true
+			button.text += "\n(Not enough Renown)"
+		elif not can_buy_auth:
+			button.disabled = true
+			button.text += "\n(Not enough Authority)"
+		
+		# We must bind the *original* upgrade_data (which holds the modified cost)
+		# to the pressed signal.
+		button.pressed.connect(_on_legacy_upgrade_pressed.bind(upgrade_data, current_renown_cost))
+		legacy_buttons_container.add_child(button)
+
+func _on_legacy_upgrade_pressed(upgrade_data: LegacyUpgradeData, final_renown_cost: int) -> void:
+	"""
+	Handles the purchase logic for a Legacy Upgrade.
+	Uses the dynamically calculated final_renown_cost.
+	"""
+	print("Attempting to purchase legacy upgrade: %s" % upgrade_data.display_name)
+	
+	# 1. Double-check costs using the calculated cost
+	if not DynastyManager.can_spend_renown(final_renown_cost):
+		print("Purchase failed: Not enough Renown.")
+		EventBus.purchase_failed.emit("Not enough Renown")
+		return
+		
+	if not DynastyManager.can_spend_authority(upgrade_data.authority_cost):
+		print("Purchase failed: Not enough Authority.")
+		EventBus.purchase_failed.emit("Not enough Authority")
+		return
+	
+	# 2. Spend resources
+	var spent_renown = DynastyManager.spend_renown(final_renown_cost)
+	var spent_auth = DynastyManager.spend_authority(upgrade_data.authority_cost)
+	
+	if not (spent_renown and spent_auth):
+		push_error("Legacy purchase failed mid-transaction! This should not happen.")
+		if spent_renown: DynastyManager.award_renown(final_renown_cost) # Refund
+		return
+	
+	# 3. Mark as purchased
+	upgrade_data.is_purchased = true
+	DynastyManager.purchase_legacy_upgrade(upgrade_data.effect_key)
+	
+	# 4. Apply the effect
+	_apply_legacy_upgrade_effect(upgrade_data.effect_key)
+	
+	# 5. Refresh the UI
+	_populate_legacy_buttons() # This will now show the button as "Purchased"
+	EventBus.purchase_successful.emit(upgrade_data.display_name)
+
+func _apply_legacy_upgrade_effect(effect_key: String) -> void:
+	"""
+	Applies the permanent game-state change for a purchased upgrade.
+	"""
+	match effect_key:
+		"UPG_TRELLEBORG":
+			if SettlementManager.current_settlement:
+				SettlementManager.current_settlement.max_garrison_bonus += 10 # Example value
+				SettlementManager.save_settlement()
+				print("Applied UPG_TRELLEBORG: Max garrison bonus +10")
+			else:
+				push_error("Cannot apply Trelleborg upgrade: No current settlement!")
+				
+		"UPG_JELLING_STONE":
+			var jarl = DynastyManager.get_current_jarl()
+			if jarl:
+				jarl.heir_starting_renown_bonus += 50 # Example value
+				print("Applied UPG_JELLING_STONE: Heir starting renown +50")
+			else:
+				push_error("Cannot apply Jelling Stone upgrade: No current Jarl!")
+		
+		"UPG_BUILD_CHAPEL":
+			# For this test, we just log the success.
+			# A real implementation might add a modifier to SettlementManager.
+			print("Applied UPG_BUILD_CHAPEL: Dynasty's piety increased.")
+		
+		_:
+			push_warning("Unknown legacy upgrade effect key: %s" % effect_key)
+
+# --- Building Tab Functions ---
+func _load_building_data() -> void:
+	"""Scan res://data/buildings/ for buildable .tres files and create buttons."""
+	var dir = DirAccess.open("res://data/buildings/")
+	if dir:
+		dir.list_dir_begin()
+		var file_name = dir.get_next()
+		while file_name != "":
+			if file_name.ends_with(".tres"):
+				var building_path = "res://data/buildings/" + file_name
+				var building_data = load(building_path) as BuildingData
+				
+				if building_data and building_data.is_player_buildable:
+					_create_building_button(building_data)
+					
+			file_name = dir.get_next()
+
+func _create_building_button(building_data: BuildingData) -> void:
+	"""Creates and connects a single button for the build tab."""
+	var button = Button.new()
+	button.text = "%s (Cost: %s)" % [building_data.display_name, _format_cost(building_data.build_cost)]
+	
+	# --- Set Icon for Build Tab ---
+	if building_data.icon:
+		button.icon = building_data.icon
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		button.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	
+	button.pressed.connect(_on_buy_button_pressed.bind(building_data))
+	build_buttons_container.add_child(button)
+
+func _on_buy_button_pressed(item_data: BuildingData) -> void:
+	if not item_data:
+		return
+	
+	print("UI attempting to purchase '%s'." % item_data.display_name)
+	var purchase_successful: bool = SettlementManager.attempt_purchase(item_data.build_cost)
+	
+	if purchase_successful:
+		print("UI received purchase confirmation for '%s'." % item_data.display_name)
+		EventBus.building_ready_for_placement.emit(item_data)
+	else:
+		print("UI received purchase failure for '%s'." % item_data.display_name)
+
+# --- Recruit Tab Functions ---
+func _load_unit_data() -> void:
+	"""Scan res://data/units/ directory for .tres files and load them as UnitData"""
+	var dir = DirAccess.open("res://data/units/")
+	if dir:
+		dir.list_dir_begin()
+		var file_name = dir.get_next()
+		while file_name != "":
+			if file_name.ends_with(".tres"):
+				var unit_path = "res://data/units/" + file_name
+				var unit_data = load(unit_path) as UnitData
+				if unit_data:
+					if _is_player_unit(unit_data):
+						available_units.append(unit_data)
+			file_name = dir.get_next()
+
+func _setup_recruit_buttons() -> void:
+	"""Create recruit buttons for each available unit"""
+	for unit_data in available_units:
+		var button = Button.new()
+		button.text = "%s (Cost: %s)" % [unit_data.display_name, _format_cost(unit_data.spawn_cost)]
+		
+		# --- Set Icon for Recruit Tab ---
+		if unit_data.icon:
+			button.icon = unit_data.icon
+			button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+			button.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
+
+		button.pressed.connect(_on_recruit_button_pressed.bind(unit_data))
+		recruit_buttons_container.add_child(button)
+
+func _is_player_unit(unit_data: UnitData) -> bool:
+	if not unit_data: return false
+	if "Player" in unit_data.display_name: return true
+	if "Player" in unit_data.resource_path: return true
+	if unit_data.scene_to_spawn and "Player" in unit_data.scene_to_spawn.resource_path: return true
+	if unit_data.display_name in ["Viking Raider"]: return false
+	return true
+
+func _on_recruit_button_pressed(unit_data: UnitData) -> void:
+	"""Handle recruit button press"""
+	if not unit_data:
+		return
+	
+	print("UI attempting to recruit '%s'." % unit_data.display_name)
+	var purchase_successful: bool = SettlementManager.attempt_purchase(unit_data.spawn_cost)
+	
+	if purchase_successful:
+		print("UI received purchase confirmation for '%s'." % unit_data.display_name)
+		SettlementManager.recruit_unit(unit_data)
+	else:
+		print("UI received purchase failure for '%s'." % unit_data.display_name)

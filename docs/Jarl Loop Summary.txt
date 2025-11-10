@@ -1,0 +1,96 @@
+Proposal Summary: The Systemic Jarl Loop
+This document proposes a "systemic investment" model for the Jarl dynasty loop. The primary purpose is to move away from rigid, linear "paths" and instead create three interconnected "Investment Pillars" (Builder, Unifier, and Progenitor) that are always available for the player to "mix-and-match".
+The central goal is to generate deep, emergent narratives and high replayability by making the Jarls themselves the core mechanic. This is achieved through a "soft-guide" system, where a Jarl's skills and traits (from JarlData.gd ) dynamically modify the cost, reward, and probability of success for actions within each pillar.
+This design gives players true agency—they are never locked out of an option, but they are incentivized to adapt to their current Jarl's strengths and weaknesses. This creates compelling, unique challenges with each succession. A key strength of this proposal is that it builds directly on our existing data-driven architecture, leveraging DynastyManager.gd and MacroMap.gd as the foundations for this system.
+We acknowledge this systemic approach presents significant challenges. It is inherently more complex to balance than linear paths and will require a very clear UI to prevent player confusion. Furthermore, the "Progenitor" pillar is heavily dependent on a future event system. Therefore, this proposal strongly advocates for a phased implementation (starting with the "Builder" pillar) to manage this complexity.
+:
+🌍 Strengths
+Creates True Player Agency: This model gives players real, meaningful choices. Instead of picking a "Builder Path," a player chooses to invest in "Builder" options, often at the strategic expense of "Unifier" or "Progenitor" actions. This is systemic, not linear.
+Generates Emergent Narrative: This is the GDD's "procedural story" goal in action. The game's story isn't one we write; it's the collision of these systems. The player's long-term plan will be challenged by their new heir's traits, forcing them to adapt. This "player vs. their own Jarl" dynamic is the drama.
+Makes Jarls & Heirs Matter: This system forces the player to care deeply about their Jarl's traits and their heir's education. A new Jarl isn't just a new portrait; it's a new set of costs, benefits, and strategic opportunities.
+Drives Replayability: No two playthroughs will be the same. A player who gets a high-Stewardship Jarl will have a totally different game from one who gets a high-Prowess Jarl, even though all options are available to both.
+Builds on Existing Architecture: This model leverages all our existing systems:
+DynastyManager.gd holds the Jarl.
+JarlData.gd holds the traits and skills that modify costs.
+SettlementManager.gd receives the "Builder" benefits.
+MacroMap.gd is the UI layer that presents the "Unifier" costs.
+Storefront_UI.gd is the UI layer that presents the "Builder" options.
+
+⚠️ Potential Flaws & Challenges
+Player Confusion ("What do I do?"): A "path" is an easy-to-understand goal. A "system" is a sandbox, which can be confusing. We must ensure the UI is exceptionally clear about the options and consequences of investing in each pillar.
+Balancing Complexity: Balancing three interconnected, systemic pillars is far more difficult than balancing three linear paths. If the "Builder" options are always the best long-term-investment, players will just grind that. Each pillar must have compelling, unique rewards and equally dangerous "neglect penalties."
+Event System Dependency: The "Progenitor" pillar, and many of the "soft-guide" trait effects, are heavily dependent on a robust, data-driven event system. This is a major technical hurdle we have not built yet, which is why it's last on the roadmap.
+
+💡 Suggestions & Alternatives (The Proposal)
+This is the detailed proposal. We redefine our "paths" as three "Investment Pillars" that are always available. The player's Jarl's traits modify the cost/benefit of investing in each.
+Pillar 1: The "Builder" System (Stewardship Focus)
+Core Loop: The Jarl spends Renown + Authority in a new "Legacy" tab on the Storefront_UI to purchase permanent, dynasty-wide upgrades for their settlement.
+GDD Alignment: This is the "Reinvestment" pillar. It uses the Jarl's Stewardship skill.
+Example Options:
+Upgrade Trelleborg: Costs 100 Renown + 3 Authority. Modifies SettlementManager to permanently increase max_garrison in home_base_fixed.tres.
+Erect Jelling Stone: Costs 200 Renown + 2 Authority. Places a monument and adds a new property to PlayerJarl.tres (e.g., starting_renown_bonus = 50) for all future heirs.
+Pillar 2: The "Unifier" System (Command Focus)
+Core Loop: The Jarl spends Authority on the Macro Map to permanently conquer regions, fulfilling the GDD's "Conquest" loop (GDD 4.D).
+GDD Alignment: This is the "Conquest" pillar. It uses the Jarl's Command skill.
+Example Options:
+Launch Raid: The standard, repeatable action for loot.
+Subjugate (Legacy Unlock): Costs 5 Authority. Triggers a harder "War" RaidMission. Success sets is_conquered = true on the WorldRegionData.tres.
+Systemic Interaction: A "Vassalized" region is removed from the raid map and now provides a passive yearly income, which feeds back into the "Builder" pillar's economy (SettlementManager.calculate_payout).
+Pillar 3: The "Progenitor" System (Prowess Focus)
+Core Loop: The Jarl uses their family and heirs as a strategic resource for high-risk, high-reward missions.
+GDD Alignment: This is the "Dynasty" pillar. It uses the Jarl's Prowess skill.
+Example Options:
+Heir's Expedition (Legacy Unlock): Costs 1 Heir + 500 Gold. The heir is "off-map" for 5 "years." Returns with Renown or is "lost at sea".
+Marry for Alliance: Costs 1 Heir. You lose them as a resource, but it might prevent an "Enemy Raid" event or lower the Authority cost of a Subjugate action on an allied region.
+
+The Engine: How "Soft-Guide" Traits Work
+This is the core mechanic. Jarl Traits (from JarlData.gd ) dynamically modify the cost, reward, or probability of success for actions in each pillar.
+Example 1: The "Pious" Jarl
+Player's Goal: Subjugate the "Nearby Monastery" region.
+Jarl's Trait: Pious (a JarlTraitData.tres).
+The "Soft-Guide": The player can still attack. But when the MacroMap.gd UI loads, the Pious trait is detected.
+The Subjugate cost is dynamically changed: Cost: 5 Authority (Base) + 3 (Pious Trait) = 8 Authority.
+At the same time, in the Storefront_UI, the Build Chapel (from "Monastery" assets) "Legacy" option is now Cost: 50 Renown (Base) - 25 (Pious Trait) = 25 Renown.
+The Player's Choice: The player is forced to adapt. "Do I spend my entire dynasty's actions on this one out-of-character move? Or... do I lean into my Jarl's strength and build up my economy cheaply?"
+Example 2: The "Ambitious" Jarl
+Player's Goal: Save Renown for the "Builder" Upgrade Trelleborg action.
+Jarl's Trait: Ambitious and High Prowess.
+The "Soft-Guide": The Jarl's children, who have inherited this trait, trigger a "Progenitor" event: "My Jarl, I am bored! I wish to lead an expedition. Please fund it."
+The Player's Choice: Do I refuse the event, risking that my "Ambitious" son gains the "Rival" trait? Or do I spend my precious Renown on his mission, delaying my "Builder" plans?
+
+Proposed Implementation Roadmap
+We roll this out in phases, building on our existing tech.
+Updated Roadmap: The Systemic Jarl Loop
+Prerequisites (Status: ✅ COMPLETE)
+Authority Resource: The core "strategic action" currency is implemented.
+"End Year" / Turn Mechanic: The game has a "turn" structure for refreshing resources and pacing actions.
+Phase 1: The "Builder" Foundation (Current Priority)
+This phase is focused on implementing the "Builder" pillar and, most critically, proving the "soft-guide" mechanic works.
+UI Implementation: Create the "Legacy" tab in the Storefront_UI.
+Add Core Upgrades: Implement the first 1-2 "Builder" options:
+"Upgrade Trelleborg" : This will test the system's ability to spend Renown + Authority and modify SettlementManager data (like max_garrison).
+"Erect Jelling Stone" : This will test the system's ability to add permanent modifiers for future heirs (like starting_renown_bonus).
+The "Soft-Guide" Litmus Test:
+Implement one Jarl Trait (e.g., Pious ).
+Implement one related "Legacy" option (e.g., "Build Chapel").
+Success Condition: The Storefront_UI must dynamically read the active Jarl's trait from JarlData.gd and visibly modify the cost of that action. This proves the core mechanic of the entire proposal.
+Phase 2: The "Unifier" Loop
+This phase brings the MacroMap.gd into the systemic loop and fulfills the GDD's "Conquest" goal.
+Implement "Subjugate" Action: Add the "Subjugate" legacy unlock to the MacroMap.gd UI. This action will cost Authority.
+Update Map Data: Add the is_conquered boolean to the WorldRegionData.gd (or .tres) file.
+Create Feedback Loop: Ensure that a "conquered" region is removed from the raid pool and provides a passive income, feeding back into the SettlementManager economy.
+"Soft-Guide" Expansion: Implement the "Unifier" version of the soft-guide.
+Test Case: A Jarl with the Pious trait should see the Authority cost to "Subjugate" a "Monastery" region dynamically increase in the MacroMap.gd UI.
+Phase 3a: The "Lite" Progenitor (Decoupled)
+This is the key change from our discussion. We implement the "Progenitor" pillar without the "Event System" dependency. We get the "heirs as a resource" mechanic first.
+UI Implementation: Create a new "Dynasty" UI (or add a tab to an existing manager).
+Implement Direct Actions: Add direct-action buttons that spend heirs as a resource.
+"Marry for Alliance" : This action costs 1 Heir. Its effect is a direct data change (e.g., lowers the Authority cost of a "Subjugate" action on that region ).
+"Heir's Expedition" : This action costs 1 Heir and Gold. It runs a simple, self-contained probability check on a timer (e.g., 70% chance to return with Renown, 30% chance to be "lost at sea").
+Phase 3b: The "Full" Event System (Future Tech)
+This is the original "Phase 3," now correctly re-scoped as a future system that will enhance the "Progenitor" pillar rather than block it.
+Scope & Build Core Tech: Build the data-driven EventManager singleton, the EventData.tres resource definitions, and the modal Event_UI.tscn.
+Test Full Loop: Implement the "Ambitious" Jarl example. This will test the system's ability to:
+Read game state (Jarl has trait, has an adult son).
+Trigger an event with choices.
+Apply consequences (e.g., spend Renown OR apply "Rival" trait to the heir
