@@ -214,7 +214,54 @@ func recruit_unit(unit_data: UnitData) -> void:
 
 
 # --- Building & Pathfinding (Delegated) ---
+func remove_building(building_instance: BaseBuilding) -> void:
+	"""
+	Removes a building from the scene, data model, and grid.
+	"""
+	if not current_settlement or not is_instance_valid(building_instance):
+		return
+		
+	if not is_instance_valid(active_astar_grid):
+		push_warning("SettlementManager: Removing building but grid not registered.")
 
+	# 1. Calculate Grid Position
+	var cell_size = get_active_grid_cell_size()
+	var building_pos = building_instance.global_position
+	# We need the top-left grid position to match the data
+	var size_pixels = Vector2(building_instance.data.grid_size) * cell_size
+	var top_left_pixels = building_pos - (size_pixels / 2.0)
+	var grid_pos = Vector2i(top_left_pixels / cell_size)
+	
+	# 2. Clear A* Grid (Make cells walkable again)
+	if is_instance_valid(active_astar_grid) and building_instance.data.blocks_pathfinding:
+		for x in range(building_instance.data.grid_size.x):
+			for y in range(building_instance.data.grid_size.y):
+				var cell = grid_pos + Vector2i(x, y)
+				if _is_cell_within_bounds(cell):
+					active_astar_grid.set_point_solid(cell, false)
+		active_astar_grid.update()
+		# Notify systems (like visualizer) that grid changed
+		EventBus.pathfinding_grid_updated.emit(grid_pos)
+
+	# 3. Remove from Data Model (placed_buildings array)
+	var index_to_remove = -1
+	for i in range(current_settlement.placed_buildings.size()):
+		var entry = current_settlement.placed_buildings[i]
+		# We match approximately, as floating point positions might vary slightly
+		if entry["grid_position"] == grid_pos:
+			index_to_remove = i
+			break
+	
+	if index_to_remove != -1:
+		current_settlement.placed_buildings.remove_at(index_to_remove)
+		save_settlement() # Save the state immediately
+		print("SettlementManager: Removed %s from data at %s." % [building_instance.data.display_name, grid_pos])
+	else:
+		push_warning("SettlementManager: Could not find data entry for building at %s" % grid_pos)
+
+	# 4. Remove Instance
+	building_instance.queue_free()
+	
 func get_active_grid_cell_size() -> Vector2:
 	"""
 	Returns the cell size of the currently registered AStarGrid.

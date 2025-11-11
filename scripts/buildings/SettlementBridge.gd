@@ -174,6 +174,7 @@ func _connect_signals() -> void:
 	EventBus.settlement_loaded.connect(_on_settlement_loaded)
 	EventBus.building_ready_for_placement.connect(_on_building_ready_for_placement)
 	EventBus.building_placement_cancelled.connect(_on_building_placement_cancelled)
+	EventBus.building_right_clicked.connect(_on_building_right_clicked)
 	
 	if building_cursor:
 		building_cursor.placement_completed.connect(_on_building_placement_completed)
@@ -293,3 +294,31 @@ func _on_building_placement_cancelled_by_cursor() -> void:
 		print("Building placement cancelled by cursor, refunded: %s" % awaiting_placement.build_cost)
 		
 		awaiting_placement = null
+func _on_building_right_clicked(building: BaseBuilding) -> void:
+	"""
+	Handles the 'Move' logic: Refund -> Remove -> Re-buy -> Place
+	"""
+	# 1. Ignore if we are already holding a building (Cursor Active)
+	# The cursor handles its own right-click (cancel), so we shouldn't interfere.
+	if building_cursor.is_active:
+		return
+		
+	print("SettlementBridge: Move requested for %s" % building.data.display_name)
+	
+	var data = building.data
+	var cost = data.build_cost
+	
+	# 2. Refund the cost (so the player has funds to 're-buy' it)
+	SettlementManager.deposit_resources(cost)
+	
+	# 3. Remove the building
+	SettlementManager.remove_building(building)
+	
+	# 4. Immediately 'Re-buy' it to start placement
+	# This deducts the cost we just refunded. 
+	# If the player cancels placement later, the standard cancel logic will refund them again.
+	# This effectively turns "Right Click" into "Sell & Move".
+	if SettlementManager.attempt_purchase(cost):
+		EventBus.building_ready_for_placement.emit(data)
+	else:
+		push_error("SettlementBridge: Failed to re-purchase moved building. This shouldn't happen after refund.")

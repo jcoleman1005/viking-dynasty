@@ -41,7 +41,7 @@ func _ready() -> void:
 	background.add_child(label)
 	add_child(background)
 	# -------------------------
-	
+	input_pickable = true
 	# --- NEW: Create the Hitbox ---
 	_create_hitbox()
 	# --- END NEW ---
@@ -50,7 +50,14 @@ func _ready() -> void:
 	_create_dev_visuals()
 	_setup_defensive_ai()
 
-# --- NEW FUNCTION ---
+
+func _input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_RIGHT:
+			# Emit signal to EventBus so the Settlement controller can handle it
+			EventBus.building_right_clicked.emit(self)
+
+
 func _create_hitbox() -> void:
 	"""Creates an Area2D child to act as a detectable hitbox for projectiles."""
 	hitbox_area = Area2D.new()
