@@ -92,7 +92,7 @@ func _gui_input(event: InputEvent) -> void:
 			queue_redraw()
 			accept_event()
 
-func _handle_smart_command(screen_pos: Vector2) -> void:
+func _handle_smart_command(_screen_pos: Vector2) -> void:
 	# This function determines if a right-click
 	# is a "move" or "attack" command.
 	var world_space: PhysicsDirectSpaceState2D = get_world_2d().direct_space_state

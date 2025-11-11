@@ -84,7 +84,7 @@ func _initialize_settlement() -> void:
 		return
 	var local_astar_grid = grid_manager.astar_grid
 	
-	SettlementManager.register_active_scene_nodes(local_astar_grid, building_container)
+	SettlementManager.register_active_scene_nodes(local_astar_grid, building_container, grid_manager)
 	
 	_spawn_placed_buildings()
 	

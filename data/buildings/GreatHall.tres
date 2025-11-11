@@ -11,6 +11,7 @@ build_cost = {
 "gold": 100,
 "wood": 250
 }
-max_health = 50
 grid_size = Vector2i(4, 4)
 is_player_buildable = true
+is_territory_hub = true
+territory_radius = 8

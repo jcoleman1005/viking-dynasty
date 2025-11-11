@@ -81,7 +81,7 @@ func _create_slider_row(category: String) -> void:
 func _on_slider_changed(value: float, category: String) -> void:
 	var new_val = int(value)
 	var old_val = temp_assignments[category]
-	var diff = new_val - old_val
+	var _diff = new_val - old_val
 	
 	# Calculate current usage EXCLUDING this category's *new* potential value
 	var current_usage = 0

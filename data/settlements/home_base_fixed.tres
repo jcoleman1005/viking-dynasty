@@ -7,8 +7,8 @@ script = ExtResource("1_settlement_data")
 treasury = {
 "food": 500,
 "gold": 500,
-"stone": 275,
-"wood": 237
+"stone": 200,
+"wood": 187
 }
 placed_buildings = Array[Dictionary]([{
 "grid_position": Vector2i(41, 17),
@@ -28,25 +28,48 @@ placed_buildings = Array[Dictionary]([{
 }, {
 "grid_position": Vector2(36, 13),
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
-}])
-pending_construction_buildings = [{
+}, {
 "grid_position": Vector2(37, 13),
-"progress": 25,
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
 }, {
 "grid_position": Vector2(38, 13),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(42, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(41, 9),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}])
+pending_construction_buildings = [{
+"grid_position": Vector2i(52, 11),
 "progress": 0,
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
 }, {
-"grid_position": Vector2i(48, 15),
+"grid_position": Vector2i(40, 9),
 "progress": 0,
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
 }, {
-"grid_position": Vector2i(49, 15),
+"grid_position": Vector2i(51, 11),
+"progress": 0,
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(50, 11),
+"progress": 0,
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(49, 11),
 "progress": 0,
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
 }]
 garrisoned_units = {
 "res://data/units/Unit_PlayerRaider.tres": 16
+}
+worker_assignments = {
+"construction": 10,
+"food": 0,
+"gold": 0,
+"stone": 0,
+"wood": 0
 }
 metadata/_custom_type_script = "uid://hlb8s5g0yp6k"
