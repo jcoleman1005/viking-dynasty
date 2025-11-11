@@ -21,6 +21,12 @@ extends Resource
 ## The cost in Jarl's Authority.
 @export var authority_cost: int = 1
 
+# --- NEW: Progress System ---
+@export_group("Progress")
+@export var required_progress: int = 1
+@export var current_progress: int = 0
+# --- END NEW ---
+
 ## A unique key to identify this upgrade's effect in code.
 ## e.g., "UPG_TRELLEBORG", "UPG_JELLING_STONE"
 @export var effect_key: String = ""
@@ -28,5 +34,7 @@ extends Resource
 ## A key to check if a prerequisite upgrade has been purchased.
 @export var prerequisite_key: String = ""
 
-## Used by the UI to disable the button after purchase.
-var is_purchased: bool = false
+## 'is_purchased' is now a calculated variable, not stored.
+var is_purchased: bool:
+	get:
+		return current_progress >= required_progress

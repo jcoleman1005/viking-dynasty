@@ -37,6 +37,12 @@ extends Resource
 ## Years since last offensive action (for Renown Decay calculations)
 @export var years_since_action: int = 0
 
+## Legitimacy score affecting succession and stability (0-100 scale)
+@export var legitimacy: int = 20
+
+## Years remaining in succession debuff (reduced Authority generation)
+@export var succession_debuff_years_remaining: int = 0
+
 # --- Builder Pillar Upgrade Properties ---
 ## Bonus starting renown for all future heirs (from "Erect Jelling Stone")
 @export var heir_starting_renown_bonus: int = 0
@@ -266,7 +272,25 @@ func _update_renown_tier() -> void:
 ## Reset Authority at the start of a new year
 func reset_authority() -> void:
 	max_authority = get_authority_cap()
-	current_authority = max_authority
+	
+	if succession_debuff_years_remaining > 0:
+		# Jarl is still consolidating power
+		
+		# 1. Calculate the legitimacy multiplier (e.g., 20 Legitimacy -> 0.2)
+		var legit_multiplier = legitimacy / 100.0
+		
+		# 2. Calculate the authority to gain (e.g., 5 * 0.2 = 1.0)
+		var authority_gained = int(round(max_authority * legit_multiplier))
+		
+		# 3. Enforce the "min 1" rule
+		current_authority = max(1, authority_gained)
+		
+		# 4. Count down the debuff timer
+		succession_debuff_years_remaining -= 1
+		
+	else:
+		# The Jarl is stable. Reset to normal max.
+		current_authority = max_authority
 
 
 ## Apply aging effects to the Jarl

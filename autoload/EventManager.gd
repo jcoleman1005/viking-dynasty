@@ -7,6 +7,7 @@ extends Node
 
 # Assign res://ui/Event_UI.tscn in the Autoload settings in Godot
 @export var event_ui_scene: PackedScene
+@export var succession_crisis_scene: PackedScene # Add this in the Inspector
 
 var event_ui: EventUI
 var available_events: Array[EventData] = []
@@ -131,10 +132,28 @@ func _check_conditions(event: EventData, jarl: JarlData) -> bool:
 
 func _trigger_event(event: EventData) -> void:
 	"""Pauses the game and displays the event UI."""
-	print("EventManager: Triggering event '%s'" % event.event_id)
 	
-	get_tree().paused = true
-	event_ui.display_event(event)
+	# --- NEW: Special Case for Succession ---
+	if event.event_id == "succession_crisis":
+		if not succession_crisis_scene:
+			push_error("EventManager: succession_crisis_scene is not set!")
+			return
+		
+		var crisis_ui = succession_crisis_scene.instantiate()
+		add_child(crisis_ui)
+		
+		var jarl = DynastyManager.get_current_jarl()
+		var settlement = SettlementManager.current_settlement
+		crisis_ui.display_crisis(jarl, settlement)
+		
+		# The crisis UI will emit 'succession_choices_made' on its own
+		# and then call EventBus.event_system_finished when it closes.
+	else:
+	# --- END NEW ---
+		print("EventManager: Triggering event '%s'" % event.event_id)
+		
+		get_tree().paused = true
+		event_ui.display_event(event)
 	
 	if event.is_unique:
 		fired_unique_events.append(event.event_id)

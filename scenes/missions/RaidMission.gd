@@ -295,7 +295,7 @@ func _spawn_enemy_wave() -> void:
 		push_error("Defensive Mission: Invalid or missing 'Enemy Spawn Position' node!")
 		return
 		
-	var enemy_data_path = "res://data/units/Unit_Raider.tres"
+	var enemy_data_path = "res://data/units/EnemyVikingRaider_Data.tres"
 	var enemy_data: UnitData = load(enemy_data_path)
 	if not enemy_data or not enemy_data.scene_to_spawn:
 		push_error("Failed to load enemy unit data: %s" % enemy_data_path)

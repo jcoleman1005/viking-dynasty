@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="JarlTraitData" load_steps=2 format=3 uid="uid://bvgxc8k7j2rqp"]
+
+[ext_resource type="Script" uid="uid://dwh8olikns4xw" path="res://data/traits/JarlTraitData.gd" id="1_jarl_trait"]
+
+[resource]
+script = ExtResource("1_jarl_trait")
+display_name = "Seasoned"
+description = "This character has experience from successful expeditions, granting improved combat and leadership abilities."
+command_modifier = 2
+stewardship_modifier = 1
+metadata/_custom_type_script = "uid://dwh8olikns4xw"

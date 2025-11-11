@@ -54,3 +54,6 @@ signal building_placement_cancelled(building_data: BuildingData)
 
 # --- NEW: Event System Flow Control ---
 signal event_system_finished()
+
+# --- NEW: Succession Crisis System ---
+signal succession_choices_made(renown_choice: String, gold_choice: String)

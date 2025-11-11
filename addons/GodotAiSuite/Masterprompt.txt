@@ -38,6 +38,7 @@ PauseManager="*res://autoload/PauseManager.tscn"
 DynastyManager="*res://autoload/DynastyManager.gd"
 SceneManager="*res://autoload/SceneManager.tscn"
 EventManager="*res://autoload/EventManager.tscn"
+ProjectilePoolManager="*res://autoload/ProjectilePoolManager.gd"
 
 [editor]
 
@@ -349,7 +350,8 @@ script = ExtResource("1_jarl_data")
 display_name = "Bjorn"
 age = 30
 renown = 25
-current_authority = 2
+legitimacy = 30
+allied_regions = Array[String](["res://data/world_map/Region_Monastery.tres"])
 command = 12
 stewardship = 11
 learning = 9
@@ -555,17 +557,17 @@ garrisoned_units = {
 }
 
 --- RESOURCE: res://data/settlements/home_base_fixed.tres ---
-[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://8pdoupqyb5qq"]
+[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://1dnknjyrfvxe"]
 
 [ext_resource type="Script" uid="uid://hlb8s5g0yp6k" path="res://data/settlements/SettlementData.gd" id="1_settlement_data"]
 
 [resource]
 script = ExtResource("1_settlement_data")
 treasury = {
-"food": 5927,
-"gold": 8400,
+"food": 6723,
+"gold": 10920,
 "stone": 450,
-"wood": 10962
+"wood": 11704
 }
 placed_buildings = Array[Dictionary]([{
 "grid_position": Vector2i(11, 7),
@@ -953,6 +955,47 @@ stewardship_modifier = 0
 intrigue_modifier = 2
 vassal_opinion_modifier = -15
 
+--- RESOURCE: res://data/traits/Trait_Seasoned.tres ---
+[gd_resource type="Resource" script_class="JarlTraitData" load_steps=2 format=3 uid="uid://bvgxc8k7j2rqp"]
+
+[ext_resource type="Script" uid="uid://dwh8olikns4xw" path="res://data/traits/JarlTraitData.gd" id="1_jarl_trait"]
+
+[resource]
+script = ExtResource("1_jarl_trait")
+display_name = "Seasoned"
+description = "This character has experience from successful expeditions, granting improved combat and leadership abilities."
+command_modifier = 2
+stewardship_modifier = 1
+metadata/_custom_type_script = "uid://dwh8olikns4xw"
+
+--- RESOURCE: res://data/units/EnemyVikingRaider_Data.tres ---
+[gd_resource type="Resource" script_class="UnitData" load_steps=6 format=3 uid="uid://brnbvjwnoyh3j"]
+
+[ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://dsv0s4yq8c8m5" path="res://scenes/units/EnemyVikingRaider.tscn" id="2_spawn_scene"]
+[ext_resource type="Texture2D" uid="uid://pwi4bv5ch827" path="res://textures/placeholders/unit_placeholder.png" id="3_6go6j"]
+[ext_resource type="PackedScene" uid="uid://de3nko6b1rqyg" path="res://scenes/components/AttackAI.tscn" id="4_ai"]
+[ext_resource type="PackedScene" uid="uid://d10havsaesr6i" path="res://scenes/effects/Projectile.tscn" id="5_proj"]
+
+[resource]
+script = ExtResource("1_script")
+display_name = "Viking Raider"
+scene_to_spawn = ExtResource("2_spawn_scene")
+icon = ExtResource("3_6go6j")
+spawn_cost = {
+"food": 30,
+"gold": 15
+}
+max_health = 45
+move_speed = 100.0
+attack_damage = 10
+attack_range = 200.0
+attack_speed = 0.5
+ai_component_scene = ExtResource("4_ai")
+projectile_scene = ExtResource("5_proj")
+projectile_speed = 450.0
+visual_texture = ExtResource("3_6go6j")
+
 --- RESOURCE: res://data/units/Unit_PlayerRaider.tres ---
 [gd_resource type="Resource" script_class="UnitData" load_steps=5 format=3 uid="uid://ejxn3hg8xcu6"]
 
@@ -974,39 +1017,11 @@ max_health = 60
 move_speed = 100.0
 attack_damage = 15
 attack_range = 80.0
-attack_speed = 1.0
+attack_speed = 0.6000000000058208
 ai_component_scene = ExtResource("4_ai")
 visual_texture = ExtResource("3_6go6j")
 acceleration = 12.0
 linear_damping = 6.0
-
---- RESOURCE: res://data/units/Unit_Raider.tres ---
-[gd_resource type="Resource" script_class="UnitData" load_steps=6 format=3 uid="uid://brnbvjwnoyh3j"]
-
-[ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://dsv0s4yq8c8m5" path="res://scenes/units/VikingRaider.tscn" id="2_spawn_scene"]
-[ext_resource type="Texture2D" uid="uid://pwi4bv5ch827" path="res://textures/placeholders/unit_placeholder.png" id="3_6go6j"]
-[ext_resource type="PackedScene" path="res://scenes/components/AttackAI.tscn" id="4_ai"]
-[ext_resource type="PackedScene" path="res://scenes/effects/Projectile.tscn" id="5_proj"]
-
-[resource]
-script = ExtResource("1_script")
-display_name = "Viking Raider"
-scene_to_spawn = ExtResource("2_spawn_scene")
-icon = ExtResource("3_6go6j")
-spawn_cost = {
-"food": 30,
-"gold": 15
-}
-max_health = 45
-move_speed = 100.0
-attack_damage = 10
-attack_range = 200.0
-attack_speed = 0.8
-ai_component_scene = ExtResource("4_ai")
-projectile_scene = ExtResource("5_proj")
-projectile_speed = 450.0
-visual_texture = ExtResource("3_6go6j")
 
 --- RESOURCE: res://data/world_map/Region_Monastery.tres ---
 [gd_resource type="Resource" script_class="WorldRegionData" load_steps=3 format=3 uid="uid://bk6wv22mknptc"]
@@ -1076,6 +1091,7 @@ EventManager (Node)
 > script: res://autoload/EventManager.gd
 > scene: res://autoload/EventManager.tscn
 > event_ui_scene = res://ui/Event_UI.tscn
+> succession_crisis_scene = res://ui/Succession_Crisis_UI.tscn
 
 --- SCENE: res://autoload/PauseManager.tscn ---
 PauseManager (Node)
@@ -1093,12 +1109,10 @@ SceneManager (Node)
 
 --- SCENE: res://player/RTSController.tscn ---
 RTSController (Node)
-> script: res://player/RTSController.gd
 > scene: res://player/RTSController.tscn
 
 --- SCENE: res://scenes/buildings/Base_Building.tscn ---
 Base_Building (StaticBody2D)
-> script: res://data/buildings/Base_Building.gd
 > scene: res://scenes/buildings/Base_Building.tscn
 
 --- SCENE: res://scenes/components/AttackAI.tscn ---
@@ -1149,7 +1163,6 @@ DefensiveMicro (Node2D)
 > PlayerStartPosition (Marker2D)
 > > position = (100.0, 400.0)
 > RTSController (Node)
->   script: res://player/RTSController.gd
 >   scene: res://player/RTSController.tscn
 > RTSCamera (Camera2D)
 >   script: res://player/RTSCamera.gd
@@ -1322,7 +1335,6 @@ RaidMission (Node2D)
 > EnemySpawnPosition (Marker2D)
 > > position = (383.0, -21.0)
 > RTSController (Node)
->   script: res://player/RTSController.gd
 >   scene: res://player/RTSController.tscn
 > CanvasLayer (CanvasLayer)
 >   SelectionBox (Control)
@@ -1351,7 +1363,6 @@ RaidMission (Node2D)
 > > cell_size = 32
 > BuildingContainer (Node2D)
 > RaidObjectiveManager (Node)
->   script: res://scenes/missions/RaidObjectiveManager.gd
 > > victory_bonus_loot = {"gold":200}
 > > settlement_bridge_scene_path = "res://scenes/levels/SettlementBridge.tscn"
 > > is_defensive_mission = false
@@ -1361,9 +1372,6 @@ Base_Unit (CharacterBody2D)
 > script: res://scripts/units/Base_Unit.gd
 > scene: res://scenes/units/Base_Unit.tscn
 > collision_layer = 2
-> separation_enabled = true
-> separation_force = 30.0
-> separation_radius = 40.0
 > Sprite2D (Sprite2D)
 > > texture = res://textures/placeholders/unit_placeholder.png
 > CollisionShape2D (CollisionShape2D)
@@ -1375,43 +1383,19 @@ Base_Unit (CharacterBody2D)
 > > monitorable = false
 >   CollisionShape2D (CollisionShape2D)
 >   > shape = res://resources/separation_circle_shape.tres
+
+--- SCENE: res://scenes/units/EnemyVikingRaider.tscn ---
+
 
 --- SCENE: res://scenes/units/PlayerVikingRaider.tscn ---
 PlayerVikingRaider (CharacterBody2D)
 > script: res://scripts/units/PlayerVikingRaider.gd
 > scene: res://scenes/units/PlayerVikingRaider.tscn
 > collision_layer = 2
-> separation_enabled = true
-> separation_force = 30.0
-> separation_radius = 40.0
 > Sprite2D (Sprite2D)
 > > scale = (0.058594, 0.061523)
 > > texture = res://textures/placeholders/unit_placeholder.png
 > CollisionShape2D (CollisionShape2D)
-> > shape = res://scenes/units/Base_Unit.tscn::RectangleShape2D_n6s0a
-> AttackTimer (Timer)
-> SeparationArea (Area2D)
-> > collision_layer = 0
-> > collision_mask = 2
-> > monitorable = false
->   CollisionShape2D (CollisionShape2D)
->   > shape = res://resources/separation_circle_shape.tres
-
---- SCENE: res://scenes/units/VikingRaider.tscn ---
-VikingRaider (CharacterBody2D)
-> script: res://scripts/units/EnemyVikingRaider.gd
-> scene: res://scenes/units/VikingRaider.tscn
-> collision_layer = 4
-> separation_enabled = true
-> separation_force = 30.0
-> separation_radius = 40.0
-> Sprite2D (Sprite2D)
-> > modulate = (0.5464, 0.0, 0.0, 1.0)
-> > self_modulate = (1.0, 0.0, 0.0, 1.0)
-> > scale = (0.059, 0.062)
-> > texture = res://textures/placeholders/unit_placeholder.png
-> CollisionShape2D (CollisionShape2D)
-> > position = (-1.0, 0.0)
 > > shape = res://scenes/units/Base_Unit.tscn::RectangleShape2D_n6s0a
 > AttackTimer (Timer)
 > SeparationArea (Area2D)
@@ -1890,6 +1874,80 @@ Main (Control)
 >         > layout_mode = 2
 >         LegacyButtonsContainer (VBoxContainer)
 >         > layout_mode = 2
+
+--- SCENE: res://ui/Succession_Crisis_UI.tscn ---
+Succession_Crisis_UI (CanvasLayer)
+> script: res://ui/Succession_Crisis_UI.gd
+> scene: res://ui/Succession_Crisis_UI.tscn
+> PanelContainer (PanelContainer)
+> > anchors_preset = -1
+> > anchor_left = 0.5
+> > anchor_top = 0.5
+> > anchor_right = 0.5
+> > anchor_bottom = 0.5
+> > offset_left = -255.5
+> > offset_top = -151.0
+> > offset_right = 255.5
+> > offset_bottom = 249.0
+> > grow_horizontal = 2
+> > grow_vertical = 2
+>   MarginContainer (MarginContainer)
+>   > layout_mode = 2
+>     VBoxContainer (VBoxContainer)
+>     > layout_mode = 2
+>       TitleLabel (Label)
+>       > layout_mode = 2
+>       > text = "Succession Crisis"
+>       DescriptionLabel (Label)
+>       > layout_mode = 2
+>       > text = "The Jarl is dead. Your rule is fragile..."
+>       LegitimacyLabel (Label)
+>       > layout_mode = 2
+>       > text = "New Legitimacy: 20/100"
+>       HSeparator (HSeparator)
+>       > layout_mode = 2
+>       RenownTaxTitle (Label)
+>       > layout_mode = 2
+>       > text = "Legacy Projects"
+>       RenownTaxDescription (Label)
+>       > layout_mode = 2
+>       > text = "Pay 50 Renown to protect your legacy, or refuse and risk setbacks."
+>       RenownTaxButtons (HBoxContainer)
+>       > layout_mode = 2
+>         PayRenownButton (Button)
+>         > layout_mode = 2
+>         > toggle_mode = true
+>         > text = "Pay Renown"
+>         RefuseRenownButton (Button)
+>         > layout_mode = 2
+>         > toggle_mode = true
+>         > text = "Refuse"
+>       HSeparator2 (HSeparator)
+>       > layout_mode = 2
+>       GoldTaxTitle (Label)
+>       > layout_mode = 2
+>       > text = "Garrison Stability"
+>       GoldTaxDescription (Label)
+>       > layout_mode = 2
+>       > text = "Pay 1000 Gold to ensure loyalty, or refuse and risk instability."
+>       GoldTaxButtons (HBoxContainer)
+>       > layout_mode = 2
+>         PayGoldButton (Button)
+>         > layout_mode = 2
+>         > toggle_mode = true
+>         > text = "Pay Gold"
+>         RefuseGoldButton (Button)
+>         > layout_mode = 2
+>         > toggle_mode = true
+>         > text = "Refuse"
+>       HSeparator3 (HSeparator)
+>       > layout_mode = 2
+>       ConfirmButton (Button)
+>       > layout_mode = 2
+>       > text = "Confirm"
+>       DebugKillButton (Button)
+>       > layout_mode = 2
+>       > text = "Debug: Kill the Current Jarl\n"
 --- END OF SCENE STRUCTURES ---
 
 #### **2.4. Codebase**
@@ -1913,11 +1971,53 @@ var current_raid_target: SettlementData
 
 var is_defensive_raid: bool = false
 
+# --- NEW: Succession System ---
+var minimum_inherited_legitimacy: int = 0
+var loaded_legacy_upgrades: Array[LegacyUpgradeData] = []
+# --- END NEW ---
+
 # Path to the player's persistent Jarl data
 const PLAYER_JARL_PATH = "res://data/characters/PlayerJarl.tres"
 
 func _ready() -> void:
 	_load_player_jarl()
+	_load_legacy_upgrades_from_disk() # <-- THIS IS THE FIX
+	EventBus.succession_choices_made.connect(_on_succession_choices_made) # Connect to UI
+
+# --- THIS IS THE NEW FUNCTION ---
+func _load_legacy_upgrades_from_disk() -> void:
+	"""
+	Scans res://data/legacy/ for .tres files and loads them.
+	This manager is now the single source of truth for this data.
+	"""
+	loaded_legacy_upgrades.clear()
+	
+	var dir = DirAccess.open("res://data/legacy/")
+	if dir:
+		dir.list_dir_begin()
+		var file_name = dir.get_next()
+		while file_name != "":
+			if file_name.ends_with(".tres"):
+				var path = "res://data/legacy/" + file_name
+				var upgrade_data = load(path) as LegacyUpgradeData
+				
+				if upgrade_data:
+					# We create a local instance/duplicate of the resource.
+					# This prevents cost changes from modifying the .tres file.
+					var unique_upgrade = upgrade_data.duplicate()
+					
+					# Check if already purchased
+					if has_purchased_upgrade(unique_upgrade.effect_key):
+						# This logic needs to be based on progress, not just key
+						# We will need to load progress from JarlData in the future.
+						# For now, this is fine, but we need to load progress *from* jarl data.
+						pass
+					
+					loaded_legacy_upgrades.append(unique_upgrade)
+					
+			file_name = dir.get_next()
+	print("DynastyManager: Loaded %d legacy upgrades." % loaded_legacy_upgrades.size())
+# --- END NEW FUNCTION ---
 
 func _load_player_jarl() -> void:
 	if ResourceLoader.exists(PLAYER_JARL_PATH):
@@ -2005,6 +2105,7 @@ func add_conquered_region(region_path: String) -> void:
 		print("DynastyManager: Region '%s' conquered and saved." % region_path)
 		# We don't emit jarl_stats_updated here because spending authority
 		# will have already triggered the UI refresh.
+
 func has_conquered_region(region_path: String) -> bool:
 	"""Checks if a region has been conquered."""
 	if not current_jarl:
@@ -2035,7 +2136,8 @@ func start_heir_expedition(heir: JarlHeirData, expedition_duration: int = 5) -> 
 
 func process_heir_expeditions() -> Array[String]:
 	"""
-	Called at the End of Year. Processes all heirs on expedition, returning results.
+	Called at the End of Year.
+	Processes all heirs on expedition, returning results.
 	"""
 	if not current_jarl:
 		return []
@@ -2055,8 +2157,19 @@ func process_heir_expeditions() -> Array[String]:
 					award_renown(renown_gain)
 					results.append("Heir %s returned from their expedition with %d Renown!" % [heir.display_name, renown_gain])
 					heir.status = JarlHeirData.HeirStatus.Available
+					
+					# --- NEW: Add Trait to Heir ---
+					var seasoned_trait = load("res://data/traits/Trait_Seasoned.tres") # Load the trait we created
+					if seasoned_trait:
+						heir.traits.append(seasoned_trait)
+					# --- END NEW ---
+					
+					# --- NEW: Add Legitimacy Boost ---
+					current_jarl.legitimacy = min(100, current_jarl.legitimacy + 5) # +5 Legitimacy for successful expedition
+					# --- END NEW ---
 				else: # 30% failure 
-					results.append("Tragic news! Heir %s was lost at sea during their expedition." % heir.display_name)
+					results.append("Tragic news!
+Heir %s was lost at sea during their expedition." % heir.display_name)
 					heir.status = JarlHeirData.HeirStatus.LostAtSea
 					heirs_to_remove.append(heir) # Queue for removal
 	
@@ -2091,6 +2204,10 @@ func marry_heir_for_alliance(region_path: String) -> bool:
 	if not region_path in current_jarl.allied_regions:
 		current_jarl.allied_regions.append(region_path)
 	
+	# --- NEW: Add Legitimacy Boost ---
+	current_jarl.legitimacy = min(100, current_jarl.legitimacy + 10) # +10 Legitimacy
+	# --- END NEW ---
+
 	print("Heir %s married off to form alliance with %s" % [heir_to_marry.display_name, region_path])
 	_save_jarl_data()
 	jarl_stats_updated.emit(current_jarl)
@@ -2116,10 +2233,18 @@ func end_year() -> void:
 	if not current_jarl:
 		push_error("DynastyManager: Cannot end year, current Jarl is null.")
 		return
-		
-	current_jarl.reset_authority()
 	
-	# --- NEW: Process Expeditions ---
+	# --- MODIFIED: Death check happens *before* reset ---
+	var jarl_died = _check_for_jarl_death()
+	if jarl_died:
+		# Succession crisis is triggered, which will emit 'event_system_finished'
+		# when it's done. We stop 'end_year' here.
+		return
+	# --- END MODIFIED ---
+	
+	# Jarl did not die, proceed as normal
+	current_jarl.reset_authority() # This now contains the debuff logic
+	
 	var expedition_results = process_heir_expeditions()
 	if not expedition_results.is_empty():
 		print("Expedition Results: %s" % expedition_results)
@@ -2164,7 +2289,116 @@ func award_renown(amount: int) -> void:
 	current_jarl.award_renown(amount)
 	_save_jarl_data()
 	jarl_stats_updated.emit(current_jarl)
-	print("DynastyManager: Awarded %d renown. Total: %d" % [amount, current_jarl.renown])
+	print("DynastyManager: Awarded %d renown.
+Total: %d" % [amount, current_jarl.renown])
+
+# --- NEW: Succession System Functions ---
+func debug_kill_jarl() -> void:
+	"""
+	Public-facing debug function to immediately trigger succession.
+	Bypasses all age and 'end_year' checks.
+	"""
+	print("DEBUG: debug_kill_jarl() called. Forcing succession...")
+	_trigger_succession()
+
+
+func _check_for_jarl_death() -> bool:
+	"""Rolls for Jarl's death.
+Returns true if Jarl died."""
+	var jarl = get_current_jarl()
+	var death_chance = 0.0
+	
+	if jarl.age > 80:
+		death_chance = 0.5
+	elif jarl.age > 65:
+		death_chance = 0.25
+	elif jarl.age > 50:
+		death_chance = 0.1
+	
+	if randf() < death_chance:
+		print("The Jarl has died at age %d!" % jarl.age)
+		_trigger_succession()
+		return true
+	
+	return false
+
+func _trigger_succession() -> void:
+	"""Manages the promotion of an heir and triggers the crisis event."""
+	var old_jarl = current_jarl
+	var heir = current_jarl.get_first_available_heir()
+	
+	if not heir:
+		print("GAME OVER: The Jarl died with no available heir!")
+		# TODO: Add game over logic
+		get_tree().quit() # Placeholder
+		return
+	
+	# Promote heir to Jarl
+	var new_jarl = _promote_heir_to_jarl(heir, old_jarl)
+	current_jarl.heirs.erase(heir) # Remove heir from list
+	current_jarl = new_jarl
+	
+	# Trigger the event
+	var succession_event_data = EventData.new() # Create a dummy event
+	succession_event_data.event_id = "succession_crisis"
+	EventManager._trigger_event(succession_event_data)
+
+func _promote_heir_to_jarl(heir: JarlHeirData, predecessor: JarlData) -> JarlData:
+	"""Creates a new JarlData resource from an heir."""
+	var new_jarl = JarlData.new()
+	new_jarl.display_name = heir.display_name
+	new_jarl.age = heir.age
+	new_jarl.command = heir.command
+	new_jarl.stewardship = heir.stewardship
+	new_jarl.learning = heir.learning
+	new_jarl.prowess = heir.prowess
+	new_jarl.traits = heir.traits
+	
+	# Calculate Legitimacy
+	var new_legit = int(predecessor.legitimacy * 0.8) # Inherit 80%
+	
+	# Apply trait/skill penalties
+	var penalty = (10 - new_jarl.get_effective_skill("stewardship")) * 2 # Example
+	penalty += (10 - new_jarl.get_effective_skill("prowess")) # Example
+	
+	new_legit = max(0, new_legit - penalty)
+	
+	# Apply floor from Jelling Stone 
+	new_legit = max(new_legit, minimum_inherited_legitimacy) 
+	
+	new_jarl.legitimacy = new_legit
+	new_jarl.succession_debuff_years_remaining = 3 # Start the 3-year debuff
+	
+	return new_jarl
+
+func _on_succession_choices_made(renown_choice: String, gold_choice: String) -> void:
+	"""Applies the consequences of the succession crisis choices."""
+	if renown_choice == "refuse":
+		# Apply Renown Tax Consequence
+		var setback_applied = false
+		
+		# --- THIS IS THE FIX ---
+		# We iterate over our own 'loaded_legacy_upgrades' array,
+		# not one from another scene.
+		for upgrade in loaded_legacy_upgrades:
+		# --- END FIX ---
+			if not upgrade.is_purchased and upgrade.current_progress > 0:
+				upgrade.current_progress = max(0, upgrade.current_progress - 2) # -2 Progress
+				setback_applied = true
+				break
+		if setback_applied:
+			print("A legacy project has lost progress!")
+	
+	if gold_choice == "refuse":
+		# Apply Gold Tax Consequence 
+		if SettlementManager.current_settlement:
+			SettlementManager.current_settlement.has_stability_debuff = true
+			print("Settlement instability debuff applied!")
+	
+	# This is the "all-clear" signal
+	EventBus.event_system_finished.emit()
+
+# --- END NEW ---
 
 --- SCRIPT: res://autoload/EventBus.gd ---
 # res://autoload/EventBus.gd
@@ -2224,6 +2458,9 @@ signal building_placement_cancelled(building_data: BuildingData)
 # --- NEW: Event System Flow Control ---
 signal event_system_finished()
 
+# --- NEW: Succession Crisis System ---
+signal succession_choices_made(renown_choice: String, gold_choice: String)
+
 --- SCRIPT: res://autoload/EventManager.gd ---
 # res://autoload/EventManager.gd
 #
@@ -2234,6 +2471,7 @@ extends Node
 
 # Assign res://ui/Event_UI.tscn in the Autoload settings in Godot
 @export var event_ui_scene: PackedScene
+@export var succession_crisis_scene: PackedScene # Add this in the Inspector
 
 var event_ui: EventUI
 var available_events: Array[EventData] = []
@@ -2358,10 +2596,28 @@ func _check_conditions(event: EventData, jarl: JarlData) -> bool:
 
 func _trigger_event(event: EventData) -> void:
 	"""Pauses the game and displays the event UI."""
-	print("EventManager: Triggering event '%s'" % event.event_id)
 	
-	get_tree().paused = true
-	event_ui.display_event(event)
+	# --- NEW: Special Case for Succession ---
+	if event.event_id == "succession_crisis":
+		if not succession_crisis_scene:
+			push_error("EventManager: succession_crisis_scene is not set!")
+			return
+		
+		var crisis_ui = succession_crisis_scene.instantiate()
+		add_child(crisis_ui)
+		
+		var jarl = DynastyManager.get_current_jarl()
+		var settlement = SettlementManager.current_settlement
+		crisis_ui.display_crisis(jarl, settlement)
+		
+		# The crisis UI will emit 'succession_choices_made' on its own
+		# and then call EventBus.event_system_finished when it closes.
+	else:
+	# --- END NEW ---
+		print("EventManager: Triggering event '%s'" % event.event_id)
+		
+		get_tree().paused = true
+		event_ui.display_event(event)
 	
 	if event.is_unique:
 		fired_unique_events.append(event.event_id)
@@ -2435,6 +2691,61 @@ func _unhandled_input(event: InputEvent) -> void:
 		# Create the menu
 		var menu = pause_menu_scene.instantiate()
 		get_tree().root.add_child(menu)
+
+--- SCRIPT: res://autoload/ProjectilePoolManager.gd ---
+# res://autoload/ProjectilePoolManager.gd
+#
+# Manages an object pool of projectiles to avoid the performance
+# cost of instantiating and freeing them during gameplay.
+
+extends Node
+
+# Set this to the scene your game uses for projectiles.
+@export var projectile_scene: PackedScene = preload("res://scenes/effects/Projectile.tscn")
+@export var initial_pool_size: int = 50
+
+# This array holds the projectiles that are "on the shelf" and ready to be used.
+var available_projectiles: Array[Projectile] = []
+
+# This node just holds all projectiles so they exist in the scene tree.
+var projectile_container: Node
+
+func _ready() -> void:
+	projectile_container = Node.new()
+	projectile_container.name = "ProjectileContainer"
+	add_child(projectile_container)
+	
+	# Pre-load the pool with an initial batch of projectiles
+	for i in range(initial_pool_size):
+		var p = projectile_scene.instantiate() as Projectile
+		projectile_container.add_child(p)
+		p.return_to_pool() # Deactivate it and move it off-screen
+		available_projectiles.append(p)
+	
+	print("ProjectilePoolManager: Initialized with %d projectiles." % initial_pool_size)
+
+func get_projectile() -> Projectile:
+	"""
+	Retrieves an available projectile from the pool.
+	If the pool is empty, it creates a new one.
+	"""
+	if not available_projectiles.is_empty():
+		# Get a projectile from the "shelf"
+		return available_projectiles.pop_front()
+	else:
+		# The "shelf" is empty. This isn't ideal, but we can
+		# create a new one on-the-fly to prevent errors.
+		push_warning("ProjectilePoolManager: Pool depleted! Creating a new projectile.")
+		var p = projectile_scene.instantiate() as Projectile
+		projectile_container.add_child(p)
+		return p
+
+func return_projectile(projectile: Projectile) -> void:
+	"""
+	Returns a projectile to the pool, making it available again.
+	"""
+	projectile.return_to_pool()
+	available_projectiles.append(projectile)
 
 --- SCRIPT: res://autoload/SceneManager.gd ---
 # res://autoload/SceneManager.gd
@@ -2660,6 +2971,16 @@ func calculate_payout() -> Dictionary:
 				var final_income = int(round(income_amount * stewardship_bonus))
 				total_payout[resource_type] += final_income
 				# Removed: print("Added %d %s from conquered region: %s" % [final_income, resource_type, region_data.display_name])
+	# --- END NEW ---
+
+	# --- NEW: Apply Stability Debuff ---
+	if jarl:
+		if current_settlement.has_stability_debuff:
+			if total_payout.has("gold"):
+				total_payout["gold"] = int(total_payout["gold"] * 0.75) # -25% Gold income
+			# We also need to clear the debuff after it's applied
+			current_settlement.has_stability_debuff = false
+			save_settlement()
 	# --- END NEW ---
 
 	# Removed: if not total_payout.is_empty(): print("Calculated fixed payout (with bonus): %s" % total_payout)
@@ -3166,6 +3487,12 @@ extends Resource
 ## Years since last offensive action (for Renown Decay calculations)
 @export var years_since_action: int = 0
 
+## Legitimacy score affecting succession and stability (0-100 scale)
+@export var legitimacy: int = 20
+
+## Years remaining in succession debuff (reduced Authority generation)
+@export var succession_debuff_years_remaining: int = 0
+
 # --- Builder Pillar Upgrade Properties ---
 ## Bonus starting renown for all future heirs (from "Erect Jelling Stone")
 @export var heir_starting_renown_bonus: int = 0
@@ -3395,7 +3722,25 @@ func _update_renown_tier() -> void:
 ## Reset Authority at the start of a new year
 func reset_authority() -> void:
 	max_authority = get_authority_cap()
-	current_authority = max_authority
+	
+	if succession_debuff_years_remaining > 0:
+		# Jarl is still consolidating power
+		
+		# 1. Calculate the legitimacy multiplier (e.g., 20 Legitimacy -> 0.2)
+		var legit_multiplier = legitimacy / 100.0
+		
+		# 2. Calculate the authority to gain (e.g., 5 * 0.2 = 1.0)
+		var authority_gained = int(round(max_authority * legit_multiplier))
+		
+		# 3. Enforce the "min 1" rule
+		current_authority = max(1, authority_gained)
+		
+		# 4. Count down the debuff timer
+		succession_debuff_years_remaining -= 1
+		
+	else:
+		# The Jarl is stable. Reset to normal max.
+		current_authority = max_authority
 
 
 ## Apply aging effects to the Jarl
@@ -3471,6 +3816,15 @@ enum HeirStatus {
 
 ## If on expedition, how many "years" remain.
 @export var expedition_years_remaining: int = 0
+
+# --- NEW: Heir Skills & Traits ---
+@export_group("Skills & Traits")
+@export var command: int = 8
+@export var stewardship: int = 8
+@export var learning: int = 8
+@export var prowess: int = 8
+@export var traits: Array[JarlTraitData] = []
+# --- END NEW ---
 
 --- SCRIPT: res://data/events/EventChoice.gd ---
 # res://data/events/EventChoice.gd
@@ -3564,6 +3918,12 @@ extends Resource
 ## The cost in Jarl's Authority.
 @export var authority_cost: int = 1
 
+# --- NEW: Progress System ---
+@export_group("Progress")
+@export var required_progress: int = 1
+@export var current_progress: int = 0
+# --- END NEW ---
+
 ## A unique key to identify this upgrade's effect in code.
 ## e.g., "UPG_TRELLEBORG", "UPG_JELLING_STONE"
 @export var effect_key: String = ""
@@ -3571,8 +3931,10 @@ extends Resource
 ## A key to check if a prerequisite upgrade has been purchased.
 @export var prerequisite_key: String = ""
 
-## Used by the UI to disable the button after purchase.
-var is_purchased: bool = false
+## 'is_purchased' is now a calculated variable, not stored.
+var is_purchased: bool:
+	get:
+		return current_progress >= required_progress
 
 --- SCRIPT: res://data/missions/RaidLootData.gd ---
 # res://data/missions/RaidLootData.gd
@@ -3650,6 +4012,10 @@ class_name SettlementData
 # Stores unit type (path) and count (int)
 # Example: {"res://data/units/Unit_Raider.tres": 3}
 @export var garrisoned_units: Dictionary = {}
+
+# --- NEW: Stability Debuff ---
+@export var has_stability_debuff: bool = false
+# --- END NEW ---
 
 # --- NEW: Builder Pillar Upgrade Property ---
 ## Bonus max garrison size from Legacy Upgrades (e.g., "Upgrade Trelleborg")
@@ -4163,19 +4529,15 @@ var projectile_speed: float = 400.0
 @onready var attack_timer: Timer = $AttackTimer
 
 # AI state
-# --- THIS IS THE FIX (Line 42) ---
-var parent_node: Node2D # Changed back to Node2D
-# --- END FIX ---
+var parent_node: Node2D
 var current_target: Node2D = null
 var targets_in_range: Array[Node2D] = []
 var is_attacking: bool = false
 
 func _ready() -> void:
-	# --- THIS IS THE FIX (Line 49) ---
-	parent_node = get_parent() as Node2D # Check for Node2D
+	parent_node = get_parent() as Node2D
 	if not parent_node:
 		push_error("AttackAI: Parent must be a Node2D")
-	# --- END FIX ---
 		return
 	
 	_setup_ai()
@@ -4333,11 +4695,9 @@ func _select_target_defensive_siege() -> void:
 	1. Prioritize the Great Hall if it's in LOS.
 	2. Otherwise, attack the closest building.
 	"""
-	# --- THIS IS THE FIX (Line 210) ---
 	# Only access FSM if parent is a BaseUnit
 	var unit_parent = parent_node as BaseUnit
 	if not is_instance_valid(unit_parent) or not unit_parent.fsm:
-	# --- END FIX ---
 		_stop_attacking()
 		return
 
@@ -4383,6 +4743,9 @@ func _start_attacking() -> void:
 		is_attacking = true
 		attack_started.emit(current_target)
 	
+	# Fire the first attack immediately instead of waiting for the timer.
+	_on_attack_timer_timeout()
+	
 	if attack_timer and attack_timer.is_stopped():
 		attack_timer.start()
 
@@ -4397,6 +4760,8 @@ func _stop_attacking() -> void:
 func _on_attack_timer_timeout() -> void:
 	"""Called when the attack timer fires"""
 	if not current_target:
+		# If our target is null, we should stop attacking
+		_stop_attacking()
 		return
 	
 	# Verify target is still valid and in range
@@ -4406,6 +4771,7 @@ func _on_attack_timer_timeout() -> void:
 	
 	var distance_to_target = parent_node.global_position.distance_to(current_target.global_position)
 	
+	# Added a +10 buffer to prevent units from stopping if target is *just* at the edge
 	if distance_to_target > attack_range + 10.0:
 		_stop_attacking() 
 		return
@@ -4434,10 +4800,13 @@ func _spawn_projectile(target_position_world: Vector2) -> void:
 		push_warning("AttackAI: No projectile scene assigned. Cannot fire.")
 		return
 	
-	var projectile: Projectile = projectile_scene.instantiate()
+	# --- THIS IS THE FIX ---
+	# 1. Get a projectile from the pool
+	var projectile: Projectile = ProjectilePoolManager.get_projectile()
 	if not projectile:
-		push_error("AttackAI: Failed to instantiate projectile for %s" % parent_node.name)
+		push_error("AttackAI: ProjectilePoolManager failed to provide a projectile.")
 		return
+	# --- END FIX ---
 	
 	# We set our new 'firer' variable instead of the 'owner' property
 	projectile.firer = parent_node
@@ -4451,13 +4820,14 @@ func _spawn_projectile(target_position_world: Vector2) -> void:
 	)
 	
 	# 2. Add projectile to the current scene
-	parent_node.get_tree().current_scene.add_child(projectile)
+	# This is no longer needed, as the projectile is already in the scene.
+	# parent_node.get_tree().current_scene.add_child(projectile)
 
 --- SCRIPT: res://scenes/effects/Projectile.gd ---
 # res://scenes/effects/Projectile.gd
 #
 # A simple, straight-line projectile that applies damage on impact.
-# More performant than homing projectiles.
+# Now integrated with ProjectilePoolManager.
 
 class_name Projectile
 extends Area2D
@@ -4466,14 +4836,17 @@ extends Area2D
 var damage: int = 0
 var speed: float = 400.0
 var direction: Vector2 = Vector2.RIGHT
-var firer: Node2D = null # --- NEW: This replaces using 'owner' ---
+var firer: Node2D = null
 
 @onready var lifetime_timer: Timer = $LifetimeTimer
 
 func _ready() -> void:
 	area_entered.connect(_on_area_entered)
 	body_entered.connect(_on_body_entered)
-	self.monitoring = true
+	
+	# We must defer setting physics properties
+	set_deferred("monitoring", true)
+	
 	self.monitorable = false
 	lifetime_timer.timeout.connect(_on_lifetime_timeout)
 
@@ -4481,6 +4854,7 @@ func _physics_process(delta: float) -> void:
 	global_position += direction * speed * delta
 
 func setup(start_position: Vector2, target_position: Vector2, projectile_damage: int, projectile_speed: float = 400.0, collision_mask: int = 0) -> void:
+	# This function now "wakes up" the projectile
 	global_position = start_position
 	direction = (target_position - start_position).normalized()
 	damage = projectile_damage
@@ -4489,6 +4863,22 @@ func setup(start_position: Vector2, target_position: Vector2, projectile_damage:
 	
 	if direction != Vector2.ZERO:
 		rotation = direction.angle()
+	
+	# Activate the projectile
+	show()
+	set_physics_process(true)
+	set_deferred("monitoring", true)
+	lifetime_timer.start()
+
+func return_to_pool() -> void:
+	"""
+	Deactivates the projectile and hides it, returning it to the pool.
+	"""
+	hide()
+	set_physics_process(false)
+	set_deferred("monitoring", false)
+	lifetime_timer.stop()
+	global_position = Vector2(-1000, -1000) # Move it off-screen
 
 func _on_area_entered(area: Area2D) -> void:
 	"""Called when this Area2D detects a 'monitorable' Area2D (like our Hitbox)."""
@@ -4496,9 +4886,13 @@ func _on_area_entered(area: Area2D) -> void:
 	if area.collision_layer & self.collision_mask:
 		var parent_body = area.get_parent()
 		if parent_body and parent_body.has_method("take_damage"):
-			# --- MODIFIED: Pass 'firer' instead of 'owner' ---
-			parent_body.take_damage(damage, firer)
-			queue_free()
+			
+			if is_instance_valid(firer):
+				parent_body.take_damage(damage, firer)
+			else:
+				parent_body.take_damage(damage, null)
+			
+			ProjectilePoolManager.return_projectile(self)
 		else:
 			push_warning("Projectile hit non-damagable Area: '%s'." % area.name)
 
@@ -4510,13 +4904,15 @@ func _on_body_entered(body: Node2D) -> void:
 	
 	if body.collision_layer & self.collision_mask:
 		if body.has_method("take_damage"):
-			# --- MODIFIED: Pass 'firer' instead of 'owner' ---
-			body.take_damage(damage, firer)
+			if is_instance_valid(firer):
+				body.take_damage(damage, firer)
+			else:
+				body.take_damage(damage, null)
 		
-		queue_free()
+		ProjectilePoolManager.return_projectile(self)
 
 func _on_lifetime_timeout() -> void:
-	queue_free()
+	ProjectilePoolManager.return_projectile(self)
 
 --- SCRIPT: res://scenes/missions/RaidMission.gd ---
 # res://scenes/missions/RaidMission.gd
@@ -4816,7 +5212,7 @@ func _spawn_enemy_wave() -> void:
 		push_error("Defensive Mission: Invalid or missing 'Enemy Spawn Position' node!")
 		return
 		
-	var enemy_data_path = "res://data/units/Unit_Raider.tres"
+	var enemy_data_path = "res://data/units/EnemyVikingRaider_Data.tres"
 	var enemy_data: UnitData = load(enemy_data_path)
 	if not enemy_data or not enemy_data.scene_to_spawn:
 		push_error("Failed to load enemy unit data: %s" % enemy_data_path)
@@ -4824,16 +5220,33 @@ func _spawn_enemy_wave() -> void:
 
 	var enemy_count = 5 # TODO: Make this scale with difficulty
 	for i in range(enemy_count):
-		var enemy_unit: BaseUnit = enemy_data.scene_to_spawn.instantiate()
+		
+		# --- THIS IS THE FIX ---
+		
+		# 1. Instantiate the scene and add it to the tree
+		# This calls _ready() and creates the fsm and attack_ai
+		var enemy_node = enemy_data.scene_to_spawn.instantiate()
+		add_child(enemy_node) 
+		
+		# 2. Cast the node to BaseUnit so we can access its members
+		var enemy_unit = enemy_node as BaseUnit
+		if not enemy_unit:
+			push_error("Spawned enemy node is not a BaseUnit!")
+			enemy_node.queue_free()
+			continue
+		
+		# 3. Now we can safely set data and properties
 		enemy_unit.name = enemy_data.display_name + "_Enemy_" + str(i)
 		enemy_unit.data = enemy_data
 		
 		# --- SET ENEMY UNIT COLLISION LAYER ---
 		enemy_unit.collision_layer = 4  # Layer 3 (bit position 2) for Enemy Units
 		
-		# --- SET AI MODE ---
+		# --- SET AI MODE (This is now safe to do) ---
 		if enemy_unit.attack_ai:
 			enemy_unit.attack_ai.ai_mode = AttackAI.AI_Mode.DEFENSIVE_SIEGE
+		else:
+			push_warning("Enemy unit %s has no AttackAI node!" % enemy_unit.name)
 		# --- END SET ---
 		
 		var spawn_pos = enemy_spawner.global_position + Vector2(i * 40, 0)
@@ -4841,14 +5254,20 @@ func _spawn_enemy_wave() -> void:
 		
 		enemy_unit.add_to_group("enemy_units")
 		enemy_units.append(enemy_unit)
-		add_child(enemy_unit)
 		
+		# 4. Now we can safely access the FSM
 		if is_instance_valid(objective_building):
-			enemy_unit.fsm.command_attack(objective_building)
+			if enemy_unit.fsm:
+				enemy_unit.fsm.command_attack(objective_building)
+			else:
+				push_error("Enemy unit %s FSM is null after _ready()!" % enemy_unit.name)
+		
+		# --- END FIX ---
 	
 	print("Spawned %d enemy raiders." % enemy_count)
 
-# --- END NEW FUNCTION ---
+# --- 
+# END NEW FUNCTION ---
 
 func _spawn_test_units() -> void:
 	# This function is for debug only and does not need refactoring
@@ -5490,6 +5909,13 @@ func _on_subjugate_pressed() -> void:
 	
 	if success:
 		DynastyManager.add_conquered_region(selected_region_data.resource_path)
+		
+		# --- NEW: Add Legitimacy Boost ---
+		var jarl = DynastyManager.get_current_jarl()
+		jarl.legitimacy = min(100, jarl.legitimacy + 5) # +5 Legitimacy
+		DynastyManager.jarl_stats_updated.emit(jarl) # Force UI/data refresh
+		# --- END NEW ---
+		
 		print("Region %s successfully subjugated." % selected_region_data.display_name)
 	else:
 		push_error("MacroMap: Subjugate button was pressed but authority check failed.")
@@ -5556,7 +5982,7 @@ func _process_end_year_logic(payout: Dictionary) -> void:
 func _on_settlement_pressed() -> void:
 	EventBus.scene_change_requested.emit("settlement")
 
-func _input(event: InputEvent) -> void:
+func _unhandled_input(event: InputEvent) -> void:
 	pass
 
 --- SCRIPT: res://scenes/world_map/Region.gd ---
@@ -5814,6 +6240,16 @@ func is_actively_defending() -> bool:
 	"""Check if sentry is currently engaged with a target"""
 	return current_target != null and is_instance_valid(current_target)
 
+--- SCRIPT: res://scripts/ai/UnitAIConstants.gd ---
+# res://scripts/ai/UnitAIConstants.gd
+#
+# Holds shared enums for the Unit AI system to break
+# circular dependencies between BaseUnit and UnitFSM.
+class_name UnitAIConstants
+
+enum State { IDLE, MOVING, FORMATION_MOVING, ATTACKING }
+enum Stance { DEFENSIVE, HOLD_POSITION }
+
 --- SCRIPT: res://scripts/ai/UnitFSM.gd ---
 # res://scripts/ai/UnitFSM.gd
 # Refactored UnitFSM for Phase 3 RTS commands
@@ -5822,23 +6258,20 @@ func is_actively_defending() -> bool:
 
 class_name UnitFSM
 
-enum State { IDLE, MOVING, FORMATION_MOVING, ATTACKING }
-enum Stance { DEFENSIVE, HOLD_POSITION }
+# Enums are now defined in UnitAIConstants.gd to break circular dependency
 
 # Unit References
-var unit: BaseUnit
+# Removed the : BaseUnit type hint to break the circular dependency.
+var unit
 var attack_ai: AttackAI  # Reference to the AttackAI component
 
 # State Data
-var current_state: State = State.IDLE
-var stance: Stance = Stance.DEFENSIVE
+var current_state: UnitAIConstants.State = UnitAIConstants.State.IDLE
+var stance: UnitAIConstants.Stance = UnitAIConstants.Stance.DEFENSIVE
 var path: Array = []
 var stuck_timer: float = 0.0
 
-# --- THIS IS THE FIX ---
-# Add the missing class-level variable
 var los_range: float = 450.0 # Player unit "Line of Sight"
-# --- END FIX ---
 
 # Target Data
 var target_position: Vector2 = Vector2.ZERO
@@ -5847,7 +6280,8 @@ var move_command_position: Vector2 = Vector2.ZERO
 var objective_target: Node2D = null # The long-term goal (e.g., Great Hall)
 var current_target: Node2D = null # The immediate threat (e.g., nearby unit)
 
-func _init(p_unit: BaseUnit, p_attack_ai: AttackAI) -> void:
+# Removed the : BaseUnit type hint from p_unit.
+func _init(p_unit, p_attack_ai: AttackAI) -> void:
 	unit = p_unit
 	attack_ai = p_attack_ai
 	
@@ -5855,7 +6289,7 @@ func _init(p_unit: BaseUnit, p_attack_ai: AttackAI) -> void:
 		attack_ai.attack_started.connect(_on_ai_attack_started)
 		attack_ai.attack_stopped.connect(_on_ai_attack_stopped)
 
-func change_state(new_state: State) -> void:
+func change_state(new_state: UnitAIConstants.State) -> void:
 	if current_state == new_state:
 		return
 	
@@ -5870,31 +6304,31 @@ func change_state(new_state: State) -> void:
 	
 	_enter_state(current_state)
 
-func _enter_state(state: State) -> void:
+func _enter_state(state: UnitAIConstants.State) -> void:
 	match state:
-		State.IDLE:
+		UnitAIConstants.State.IDLE:
 			unit.velocity = Vector2.ZERO
 			
-		State.MOVING:
+		UnitAIConstants.State.MOVING:
 			_recalculate_path() 
 		
-		State.FORMATION_MOVING:
+		UnitAIConstants.State.FORMATION_MOVING:
 			pass
 		
-		State.ATTACKING:
+		UnitAIConstants.State.ATTACKING:
 			unit.velocity = Vector2.ZERO
 			if attack_ai and is_instance_valid(current_target):
 				attack_ai.force_target(current_target)
 
-func _exit_state(state: State) -> void:
+func _exit_state(state: UnitAIConstants.State) -> void:
 	match state:
-		State.MOVING:
+		UnitAIConstants.State.MOVING:
 			path.clear()
 			stuck_timer = 0.0
-		State.FORMATION_MOVING:
+		UnitAIConstants.State.FORMATION_MOVING:
 			path.clear()
 		
-		State.ATTACKING:
+		UnitAIConstants.State.ATTACKING:
 			if attack_ai:
 				attack_ai.stop_attacking()
 			# Clear the *current* target, but not the objective
@@ -5904,7 +6338,7 @@ func _recalculate_path() -> void:
 	var target_node = current_target if is_instance_valid(current_target) else objective_target
 	
 	if not is_instance_valid(target_node):
-		change_state(State.IDLE)
+		change_state(UnitAIConstants.State.IDLE)
 		return
 		
 	target_position = target_node.global_position
@@ -5915,23 +6349,10 @@ func _recalculate_path() -> void:
 	path = SettlementManager.get_astar_path(unit.global_position, target_position, allow_partial)
 	
 	if path.is_empty():
+		# This warning is fine, it only happens once when A* fails
 		push_warning("Unit at %s failed to find a path to %s." % [unit.global_position, target_position])
 		if unit and unit.has_method("flash_error_color"):
 			unit.flash_error_color()
-		
-		# --- OBSTRUCTION LOGIC (CASE 1: A* fails) ---
-		if is_instance_valid(target_node):
-			# print_debug("UnitFSM (%s): Path empty (A* fail). Finding obstruction." % unit.name)
-			var blocking_building = _find_closest_blocking_building()
-			if is_instance_valid(blocking_building):
-				push_warning("Path blocked. Attacking obstruction: %s" % blocking_building.name)
-				command_attack_obstruction(blocking_building)
-			else:
-				# print_debug("UnitFSM (%s): No obstruction found. Idling." % unit.name)
-				change_state(State.IDLE)
-		# --- END LOGIC ---
-		else:
-			change_state(State.IDLE)
 
 # --- Find Obstruction ---
 func _find_closest_blocking_building() -> Node2D:
@@ -5983,12 +6404,12 @@ func command_defensive_attack(attacker: Node2D) -> void:
 	if not is_instance_valid(attacker):
 		return
 	
-	if current_state == State.ATTACKING and current_target == attacker:
+	if current_state == UnitAIConstants.State.ATTACKING and current_target == attacker:
 		return
 	
 	# print_debug("UnitFSM (%s): Retaliating against %s" % [unit.name, attacker.name])
 	current_target = attacker 
-	change_state(State.ATTACKING)
+	change_state(UnitAIConstants.State.ATTACKING)
 
 func command_attack_obstruction(target: Node2D) -> void:
 	"""
@@ -6004,9 +6425,9 @@ func command_attack_obstruction(target: Node2D) -> void:
 	var distance: float = unit.global_position.distance_to(target.global_position)
 	
 	if distance <= unit.data.attack_range:
-		change_state(State.ATTACKING)
+		change_state(UnitAIConstants.State.ATTACKING)
 	else:
-		change_state(State.MOVING) # Move to the obstruction
+		change_state(UnitAIConstants.State.MOVING) # Move to the obstruction
 
 func command_move_to_formation_pos(target_pos: Vector2) -> void:
 	target_position = target_pos
@@ -6021,7 +6442,7 @@ func command_move_to_formation_pos(target_pos: Vector2) -> void:
 	path.clear()
 	path.append(target_pos)
 	
-	change_state(State.FORMATION_MOVING)
+	change_state(UnitAIConstants.State.FORMATION_MOVING)
 
 func command_move_to(target_pos: Vector2) -> void:
 	target_position = target_pos
@@ -6033,7 +6454,7 @@ func command_move_to(target_pos: Vector2) -> void:
 	if attack_ai:
 		attack_ai.stop_attacking()
 	
-	change_state(State.MOVING)
+	change_state(UnitAIConstants.State.MOVING)
 
 func command_attack(target: Node2D) -> void:
 	if not is_instance_valid(target):
@@ -6050,21 +6471,21 @@ func command_attack(target: Node2D) -> void:
 	var distance: float = unit.global_position.distance_to(target.global_position)
 	
 	if distance <= unit.data.attack_range:
-		change_state(State.ATTACKING)
+		change_state(UnitAIConstants.State.ATTACKING)
 	else:
-		change_state(State.MOVING)
+		change_state(UnitAIConstants.State.MOVING)
 
 # --- State Machine Update ---
 
 func update(delta: float) -> void:
 	match current_state:
-		State.IDLE:
+		UnitAIConstants.State.IDLE:
 			_idle_state(delta)
-		State.MOVING:
+		UnitAIConstants.State.MOVING:
 			_move_state(delta)
-		State.FORMATION_MOVING:
+		UnitAIConstants.State.FORMATION_MOVING:
 			_formation_move_state(delta)
-		State.ATTACKING:
+		UnitAIConstants.State.ATTACKING:
 			_attack_state(delta)
 
 # --- State Logic Functions ---
@@ -6074,7 +6495,7 @@ func _idle_state(_delta: float) -> void:
 
 func _formation_move_state(delta: float) -> void:
 	if path.is_empty():
-		change_state(State.IDLE)
+		change_state(UnitAIConstants.State.IDLE)
 		return
 
 	var next_waypoint: Vector2 = path[0]
@@ -6089,72 +6510,88 @@ func _formation_move_state(delta: float) -> void:
 		path.pop_front()
 		
 		if path.is_empty():
-			change_state(State.IDLE)
+			change_state(UnitAIConstants.State.IDLE)
 
 func _move_state(delta: float) -> void:
 	var target_node = current_target if is_instance_valid(current_target) else objective_target
 
 	if not is_instance_valid(target_node):
-		change_state(State.IDLE)
+		change_state(UnitAIConstants.State.IDLE)
 		return
 	
-	if is_instance_valid(current_target):
-		var distance_to_target: float = unit.global_position.distance_to(current_target.global_position)
-		if distance_to_target <= unit.data.attack_range:
-			change_state(State.ATTACKING)
-			return
+	# Check if we are in range to attack our current target
+	var distance_to_target: float = unit.global_position.distance_to(target_node.global_position)
+	if distance_to_target <= unit.data.attack_range:
+		change_state(UnitAIConstants.State.ATTACKING)
+		return
 	
-	if path.is_empty():
-		# print_debug("UnitFSM (%s): Path is empty." % unit.name)
-		# Path is empty, check if we're at our destination or stuck.
-		if is_instance_valid(target_node):
-			var distance_to_target: float = unit.global_position.distance_to(target_node.global_position)
-			if distance_to_target <= unit.data.attack_range + 10: # +10 buffer
-				# print_debug("UnitFSM (%s): Path empty, in range. Attacking." % unit.name)
-				change_state(State.ATTACKING)
-			else:
-				# --- OBSTRUCTION LOGIC (CASE 2: Path ends) ---
-				# print_debug("UnitFSM (%s): Path empty, NOT in range. Stuck. Finding obstruction." % unit.name)
+	# If we have a path, follow it
+	if not path.is_empty():
+		var next_waypoint: Vector2 = path[0]
+		var direction: Vector2 = (next_waypoint - unit.global_position).normalized()
+		var velocity: Vector2 = direction * unit.data.move_speed
+		
+		unit.velocity = velocity
+		unit.move_and_slide()
+		
+		var arrival_radius: float = 8.0 
+		if unit.global_position.distance_to(next_waypoint) < arrival_radius:
+			path.pop_front()
+		
+		# Stuck Timer Logic (for when path is valid but blocked by units)
+		if unit.velocity.length_squared() < 1.0:
+			stuck_timer += delta
+			if stuck_timer > 1.5: # Stuck for 1.5 seconds
 				var blocking_building = _find_closest_blocking_building()
 				if is_instance_valid(blocking_building):
-					push_warning("Path ended, but not in range. Attacking obstruction: %s" % blocking_building.name)
+					push_warning("Unit is stuck. Attacking obstruction: %s" % blocking_building.name)
 					command_attack_obstruction(blocking_building)
 				else:
-					# print_debug("UnitFSM (%s): Path empty, stuck, but no obstruction found. Idling." % unit.name)
-					change_state(State.IDLE)
+					change_state(UnitAIConstants.State.IDLE) # Give up
+				stuck_timer = 0.0 # Reset timer
 		else:
-			change_state(State.IDLE)
-		return
+			stuck_timer = 0.0 # Not stuck, reset timer
+			
+		return # We are pathfollowing, logic is done for this frame
 	
-	# Standard path following
-	var next_waypoint: Vector2 = path[0]
-	var direction: Vector2 = (next_waypoint - unit.global_position).normalized()
-	var velocity: Vector2 = direction * unit.data.move_speed
+	# --- Path is Empty Logic ---
+	# If we are here, path is empty AND we are not in attack range.
+	# This means A* failed or the path ended prematurely.
 	
-	unit.velocity = velocity
-	unit.move_and_slide()
-	
-	var arrival_radius: float = 8.0 
-	if unit.global_position.distance_to(next_waypoint) < arrival_radius:
-		path.pop_front()
-		
-		if path.is_empty():
-			# print_debug("UnitFSM (%s): Reached end of path." % unit.name)
-			pass
-	
-	# --- Stuck Timer Logic ---
-	if unit.velocity.length_squared() < 1.0: # 1.0 is a good "stuck" threshold
-		stuck_timer += delta
-		if stuck_timer > 1.5: # Stuck for 1.5 seconds
-			# print_debug("UnitFSM (%s): STUCK (velocity is zero). Finding obstruction." % unit.name)
-			var blocking_building = _find_closest_blocking_building()
-			if is_instance_valid(blocking_building):
-				command_attack_obstruction(blocking_building)
-			else:
-				change_state(State.IDLE) # Give up
-			stuck_timer = 0.0 # Reset timer
+	# Check if our target is the main objective (e.g. Great Hall)
+	if target_node == objective_target and is_instance_valid(objective_target):
+		# Yes. This means we are stuck. Find an obstruction.
+		var blocking_building = _find_closest_blocking_building()
+		if is_instance_valid(blocking_building):
+			
+			# --- THIS IS THE FIX ---
+			# We remove the noisy warning. The logic is working,
+			# but we don't need to be told about it every frame.
+			# The "Unit is stuck" warning above is more useful.
+			# push_warning("Path to %s blocked. Attacking obstruction: %s" % [objective_target.name, blocking_building.name])
+			# --- END FIX ---
+			
+			command_attack_obstruction(blocking_building)
+		else:
+			# Truly stuck, no obstructions found
+			change_state(UnitAIConstants.State.IDLE)
 	else:
-		stuck_timer = 0.0 # Not stuck, reset timer
+		# No. This means our target IS the obstruction (e.g. the Wall).
+		# A* pathfinding failed, so we must move in a straight line.
+		var direction: Vector2 = (target_node.global_position - unit.global_position).normalized()
+		var velocity: Vector2 = direction * unit.data.move_speed
+		unit.velocity = velocity
+		unit.move_and_slide()
+		
+		# We are now B-lining the target. If we get stuck...
+		if unit.velocity.length_squared() < 1.0:
+			stuck_timer += delta
+			if stuck_timer > 0.5: # Shorter timer for B-line stuck
+				# We are probably stuck on another unit
+				change_state(UnitAIConstants.State.IDLE) # Give up
+				stuck_timer = 0.0
+		else:
+			stuck_timer = 0.0
 
 func _attack_state(_delta: float) -> void:
 	if not is_instance_valid(current_target):
@@ -6183,58 +6620,81 @@ func _resume_objective() -> void:
 	if is_instance_valid(objective_target):
 		# print_debug("UnitFSM (%s): Objective %s is valid. Recalculating path." % [unit.name, objective_target.name])
 		current_target = objective_target
-		change_state(State.MOVING)
+		change_state(UnitAIConstants.State.MOVING)
 	else:
-		# --- NEW PLAYER AI LOGIC ---
+		# --- MODIFIED PLAYER AI LOGIC ---
 		# If we are a player unit (DEFAULT AI), find a new target.
 		if attack_ai and attack_ai.ai_mode == AttackAI.AI_Mode.DEFAULT:
-			var new_target = _find_closest_enemy_building_in_los()
+			var new_target = _find_closest_enemy_in_los()
 			if is_instance_valid(new_target):
-				print_debug("UnitFSM (%s): Player unit auto-acquiring new building target: %s" % [unit.name, new_target.name])
+				print_debug("UnitFSM (%s): Player unit auto-acquiring new target: %s" % [unit.name, new_target.name])
 				command_attack(new_target) # This sets both objective and current target
 			else:
 				# print_debug("UnitFSM (%s): No valid objective or new targets. Idling." % unit.name)
-				change_state(State.IDLE)
+				change_state(UnitAIConstants.State.IDLE)
 		else:
 			# If we are an enemy AI, just idle.
 			# print_debug("UnitFSM (%s): No valid objective. Idling." % unit.name)
-			change_state(State.IDLE)
-# --- END NEW LOGIC ---
+			change_state(UnitAIConstants.State.IDLE)
+# --- END MODIFIED LOGIC ---
 
-# --- NEW: Find Target in LOS ---
-func _find_closest_enemy_building_in_los() -> Node2D:
+# --- MODIFIED: Find Target in LOS (Units + Buildings) ---
+func _find_closest_enemy_in_los() -> Node2D:
 	var mission_node = unit.get_parent()
-	if not is_instance_valid(mission_node) or not mission_node.has_node("BuildingContainer"):
-		push_error("UnitFSM: Cannot find BuildingContainer to check for targets.")
+	if not is_instance_valid(mission_node):
+		push_error("UnitFSM: Cannot find mission node to check for targets.")
 		return null
 
-	var building_container = mission_node.get_node("BuildingContainer")
-	var buildings = building_container.get_children()
-	
-	var closest_building: Node2D = null
+	var closest_target: Node2D = null
 	var min_dist_sq = los_range * los_range # Max range
-	
 	var unit_pos = unit.global_position
 
-	for building in buildings:
-		# Must be a building and must be an enemy (Layer 4)
-		if not building is BaseBuilding or not (building.collision_layer & (1 << 3)):
+	# 1. Check Enemy Buildings (Layer 4)
+	var building_container = mission_node.get_node_or_null("BuildingContainer")
+	if is_instance_valid(building_container):
+		for building in building_container.get_children():
+			# Must be a building and must be an enemy (Layer 4)
+			if not building is BaseBuilding or not (building.collision_layer & (1 << 3)):
+				continue
+				
+			var dist_sq = unit_pos.distance_squared_to(building.global_position)
+			if dist_sq < min_dist_sq:
+				min_dist_sq = dist_sq
+				closest_target = building
+	else:
+		push_warning("UnitFSM: Could not find BuildingContainer to check for building targets.")
+
+	# 2. Check Enemy Units (Layer 3)
+	# We use get_tree() for groups, as units might not be under a single container
+	var enemy_units = unit.get_tree().get_nodes_in_group("enemy_units")
+	for enemy_unit in enemy_units:
+		if not is_instance_valid(enemy_unit) or not enemy_unit is Node2D:
 			continue
-			
-		var dist_sq = unit_pos.distance_squared_to(building.global_position)
+
+		var dist_sq = unit_pos.distance_squared_to(enemy_unit.global_position)
 		if dist_sq < min_dist_sq:
 			min_dist_sq = dist_sq
-			closest_building = building
-				
-	return closest_building
-# --- END NEW ---
+			closest_target = enemy_unit
+			
+	return closest_target
+# --- END MODIFIED ---
 
 func _check_defensive_response() -> void:
 	pass
 
 # --- AI Signal Callbacks ---
 func _on_ai_attack_started(target: Node2D) -> void:
-	if current_state == State.ATTACKING and target == current_target:
+	
+	# If the FSM is not IDLE, it means it's busy with a player
+	# command (MOVING or ATTACKING). In this case, we must
+	# ignore the AttackAI's auto-target suggestions.
+	if current_state != UnitAIConstants.State.IDLE:
+		return
+		
+	# If we ARE idle, an enemy wandered into range.
+	# This is a valid "attack of opportunity."
+	
+	if current_state == UnitAIConstants.State.ATTACKING and target == current_target:
 		return
 		
 	if attack_ai.ai_mode == AttackAI.AI_Mode.DEFENSIVE_SIEGE:
@@ -6242,11 +6702,11 @@ func _on_ai_attack_started(target: Node2D) -> void:
 		
 	# print_debug("UnitFSM (%s): AI auto-attack started on %s" % [unit.name, target.name])
 	current_target = target
-	change_state(State.ATTACKING)
+	change_state(UnitAIConstants.State.ATTACKING)
 
 func _on_ai_attack_stopped() -> void:
 	# The AttackAI has stopped (e.g., target out of range)
-	if current_state == State.ATTACKING:
+	if current_state == UnitAIConstants.State.ATTACKING:
 		# print_debug("UnitFSM (%s): AI attack on %s stopped." % [unit.name, current_target.name if is_instance_valid(current_target) else "null"])
 		_resume_objective()
 
@@ -6327,7 +6787,7 @@ func _setup_default_resources() -> void:
 	if not test_building_data:
 		test_building_data = default_test_building
 	if not raider_scene:
-		raider_scene = load("res://scenes/units/VikingRaider.tscn")
+		raider_scene = load("res://scenes/units/EnemyVikingRaider.tscn")
 	# --- MODIFICATION: Renamed variables ---
 	if not end_of_year_popup_scene: 
 		end_of_year_popup_scene = default_end_of_year_popup
@@ -6501,7 +6961,7 @@ func _on_start_raid_pressed() -> void:
 	
 	if SettlementManager.current_settlement.garrisoned_units.is_empty():
 		print("Warning: No units in garrison. Adding test unit.")
-		var test_unit_path = "res://data/units/Unit_Raider.tres"
+		var test_unit_path = "res://data/units/EnemyVikingRaider_Data.tres"
 		SettlementManager.current_settlement.garrisoned_units[test_unit_path] = 2
 		SettlementManager.save_settlement()
 	
@@ -7199,7 +7659,8 @@ extends CharacterBody2D
 signal destroyed
 
 @export var data: UnitData
-var fsm: UnitFSM
+# Removed the : UnitFSM type hint to break the circular dependency.
+var fsm
 var current_health: int = 50
 var attack_ai: AttackAI = null
 
@@ -7216,12 +7677,15 @@ var attack_ai: AttackAI = null
 
 # Visual state system
 var _color_tween: Tween
+# --- THIS IS THE FIX ---
+# Changed all references from UnitFSM.State to UnitAIConstants.State
 const STATE_COLORS := {
-	UnitFSM.State.IDLE: Color(0.3, 0.6, 1.0),     # Blue
-	UnitFSM.State.MOVING: Color(0.4, 1.0, 0.4),   # Green
-	UnitFSM.State.FORMATION_MOVING: Color(0.4, 1.0, 0.4), # Green
-	UnitFSM.State.ATTACKING: Color(1.0, 0.3, 0.3) # Red
+	UnitAIConstants.State.IDLE: Color(0.3, 0.6, 1.0),     # Blue
+	UnitAIConstants.State.MOVING: Color(0.4, 1.0, 0.4),   # Green
+	UnitAIConstants.State.FORMATION_MOVING: Color(0.4, 1.0, 0.4), # Green
+	UnitAIConstants.State.ATTACKING: Color(1.0, 0.3, 0.3) # Red
 }
+# --- END FIX ---
 const ERROR_COLOR := Color(0.7, 0.3, 1.0)
 
 func _ready() -> void:
@@ -7253,7 +7717,9 @@ func _ready() -> void:
 	
 	fsm = UnitFSM.new(self, attack_ai)
 	
-	sprite.modulate = STATE_COLORS.get(UnitFSM.State.IDLE, Color.WHITE)
+	# --- THIS IS THE FIX ---
+	sprite.modulate = STATE_COLORS.get(UnitAIConstants.State.IDLE, Color.WHITE)
+	# --- END FIX ---
 	
 	EventBus.pathfinding_grid_updated.connect(_on_grid_updated)
 	
@@ -7294,7 +7760,9 @@ func _exit_tree() -> void:
 		EventBus.pathfinding_grid_updated.disconnect(_on_grid_updated)
 
 func _on_grid_updated(_grid_pos: Vector2i) -> void:
-	if fsm and fsm.current_state == UnitFSM.State.MOVING:
+	# --- THIS IS THE FIX ---
+	if fsm and fsm.current_state == UnitAIConstants.State.MOVING:
+	# --- END FIX ---
 		fsm._recalculate_path()
 
 func _physics_process(delta: float) -> void:
@@ -7309,7 +7777,9 @@ func _physics_process(delta: float) -> void:
 	
 	var target_fsm_velocity = Vector2.ZERO
 	
-	if fsm and (fsm.current_state == UnitFSM.State.MOVING or fsm.current_state == UnitFSM.State.FORMATION_MOVING):
+	# --- THIS IS THE FIX ---
+	if fsm and (fsm.current_state == UnitAIConstants.State.MOVING or fsm.current_state == UnitAIConstants.State.FORMATION_MOVING):
+	# --- END FIX ---
 		target_fsm_velocity = fsm_velocity
 	
 	if target_fsm_velocity.length() > 0.1:
@@ -7342,7 +7812,9 @@ func _calculate_separation_push(delta: float) -> Vector2:
 			
 	return push_vector * separation_force * delta
 
-func on_state_changed(state: UnitFSM.State) -> void:
+# --- THIS IS THE FIX ---
+func on_state_changed(state: UnitAIConstants.State) -> void:
+# --- END FIX ---
 	var to_color: Color = STATE_COLORS.get(state, Color.WHITE)
 	_tween_color(to_color, 0.2)
 
@@ -7434,7 +7906,10 @@ func set_attack_target(target: BaseBuilding) -> void:
 	# --- END FIX ---
 	
 	# Start the FSM
-	fsm.change_state(UnitFSM.State.MOVING)
+	# --- THIS IS THE FINAL FIX ---
+	# Updated to use the new constants script
+	fsm.change_state(UnitAIConstants.State.MOVING)
+	# --- END FIX ---
 	print("Viking Raider initialized and moving to target: %s" % target.data.display_name)
 
 --- SCRIPT: res://scripts/units/PlayerVikingRaider.gd ---
@@ -8137,7 +8612,10 @@ const LegacyUpgradeData = preload("res://data/legacy/LegacyUpgradeData.gd")
 @export var auto_load_units_from_directory: bool = true
 
 # --- Internal state for legacy upgrades ---
-var loaded_legacy_upgrades: Array[LegacyUpgradeData] = []
+# --- THIS IS THE FIX: This variable is no longer needed here ---
+# var loaded_legacy_upgrades: Array[LegacyUpgradeData] = []
+# --- END FIX ---
+var minimum_inherited_legitimacy: int = 0 # This will be set by the upgrade
 
 
 # --- MOVED FUNCTIONS UP TO FIX PARSING ERROR ---
@@ -8165,7 +8643,6 @@ func _on_purchase_successful(item_name: String) -> void:
 	
 	# If a legacy upgrade was purchased, the jarl_stats_updated signal
 	# will handle refreshing the legacy button list.
-	
 	# We don't need to refresh the build list, as it's static for now.
 	pass
 
@@ -8202,11 +8679,11 @@ func _update_garrison_display() -> void:
 		
 		if unit_data:
 			var unit_label = Label.new()
-			unit_label.text = "• %s x%d" % [unit_data.display_name, unit_count]
+			unit_label.text = "â€¢ %s x%d" % [unit_data.display_name, unit_count]
 			garrison_list_container.add_child(unit_label)
 		else:
 			var error_label = Label.new()
-			error_label.text = "• Unknown unit x%d" % unit_count
+			error_label.text = "â€¢ Unknown unit x%d" % unit_count
 			garrison_list_container.add_child(error_label)
 	
 	var total_units = 0
@@ -8237,7 +8714,10 @@ func _ready() -> void:
 	# Initial load
 	_load_building_data()
 	_load_unit_data()
-	_load_legacy_upgrades() # Load the data first
+	
+	# --- THIS IS THE FIX: Removed local call ---
+	# _load_legacy_upgrades() # Load the data first
+	# --- END FIX ---
 	
 	# Setup UI
 	if DynastyManager.current_jarl:
@@ -8259,31 +8739,8 @@ func _update_jarl_stats_display(jarl_data: JarlData) -> void:
 	_populate_legacy_buttons()
 
 # --- Legacy Upgrade Functions ---
-func _load_legacy_upgrades() -> void:
-	"""Scan res://data/legacy/ for .tres files."""
-	loaded_legacy_upgrades.clear()
-	
-	var dir = DirAccess.open("res://data/legacy/")
-	if dir:
-		dir.list_dir_begin()
-		var file_name = dir.get_next()
-		while file_name != "":
-			if file_name.ends_with(".tres"):
-				var path = "res://data/legacy/" + file_name
-				var upgrade_data = load(path) as LegacyUpgradeData
-				
-				if upgrade_data:
-					# We create a local instance/duplicate of the resource.
-					# This prevents the "soft-guide" cost change from
-					# modifying the actual .tres file on disk.
-					var unique_upgrade = upgrade_data.duplicate()
-					
-					# Check if already purchased
-					unique_upgrade.is_purchased = DynastyManager.has_purchased_upgrade(unique_upgrade.effect_key)
-					loaded_legacy_upgrades.append(unique_upgrade)
-					
-			file_name = dir.get_next()
-	print("Loaded %d legacy upgrades." % loaded_legacy_upgrades.size())
+# --- THIS IS THE FIX: Removed _load_legacy_upgrades() function ---
+# --- END FIX ---
 
 func _populate_legacy_buttons() -> void:
 	"""
@@ -8293,7 +8750,10 @@ func _populate_legacy_buttons() -> void:
 	for child in legacy_buttons_container.get_children():
 		child.queue_free()
 	
-	if loaded_legacy_upgrades.is_empty():
+	# --- THIS IS THE FIX ---
+	# Read the list from the manager, not our internal variable
+	if DynastyManager.loaded_legacy_upgrades.is_empty():
+	# --- END FIX ---
 		var placeholder_label = Label.new()
 		placeholder_label.text = "No legacy upgrades found."
 		legacy_buttons_container.add_child(placeholder_label)
@@ -8309,8 +8769,10 @@ func _populate_legacy_buttons() -> void:
 	var is_pious = jarl.has_trait("Pious")
 	# ---------------------------------
 
+	# --- THIS IS THE FIX ---
 	# Create a button for each loaded upgrade
-	for upgrade_data in loaded_legacy_upgrades:
+	for upgrade_data in DynastyManager.loaded_legacy_upgrades:
+	# --- END FIX ---
 		
 		# --- "SOFT-GUIDE" LOGIC ---
 		# This is the core mechanic of the proposal in action.
@@ -8327,7 +8789,13 @@ func _populate_legacy_buttons() -> void:
 		var cost_text = "Cost: %d Renown%s, %d Auth" % [current_renown_cost, trait_modifier_text, upgrade_data.authority_cost]
 		
 		# Set the text (without the name, as the icon is present)
-		button.text = "%s\n%s" % [upgrade_data.display_name, cost_text]
+		# --- MODIFIED: Show Progress ---
+		var title_text = upgrade_data.display_name
+		if upgrade_data.required_progress > 1:
+			title_text += " (%d/%d)" % [upgrade_data.current_progress, upgrade_data.required_progress]
+		
+		button.text = "%s\\n%s" % [title_text, cost_text]
+		# --- END MODIFIED ---
 		button.tooltip_text = upgrade_data.description
 		
 		# --- NEW: Set Icon ---
@@ -8338,13 +8806,18 @@ func _populate_legacy_buttons() -> void:
 			button.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		# --- END NEW ---
 		
-		# --- Check affordability and purchase status ---
+		# --- MODIFIED: Check affordability and purchase status ---
 		var can_buy_renown = jarl.renown >= current_renown_cost # Use modified cost
 		var can_buy_auth = jarl.current_authority >= upgrade_data.authority_cost
 		
+		# --- THIS IS THE FIX ---
+		# We must check the Jarl's *data*, not the local copy
+		var is_purchased = DynastyManager.has_purchased_upgrade(upgrade_data.effect_key)
+		# We should also check the progress on the *manager's* copy
 		if upgrade_data.is_purchased:
+		# --- END FIX ---
 			button.disabled = true
-			button.text = "%s (Purchased)" % upgrade_data.display_name
+			button.text = "%s (Completed)" % upgrade_data.display_name
 		elif not can_buy_renown:
 			button.disabled = true
 			button.text += "\n(Not enough Renown)"
@@ -8384,12 +8857,13 @@ func _on_legacy_upgrade_pressed(upgrade_data: LegacyUpgradeData, final_renown_co
 		if spent_renown: DynastyManager.award_renown(final_renown_cost) # Refund
 		return
 	
-	# 3. Mark as purchased
-	upgrade_data.is_purchased = true
-	DynastyManager.purchase_legacy_upgrade(upgrade_data.effect_key)
+	# 3. Mark as purchased (This is now progress)
+	upgrade_data.current_progress += 1
 	
-	# 4. Apply the effect
-	_apply_legacy_upgrade_effect(upgrade_data.effect_key)
+	# 4. Apply the effect ONLY if progress is complete
+	if upgrade_data.is_purchased: # This check now works
+		DynastyManager.purchase_legacy_upgrade(upgrade_data.effect_key)
+		_apply_legacy_upgrade_effect(upgrade_data.effect_key)
 	
 	# 5. Refresh the UI
 	_populate_legacy_buttons() # This will now show the button as "Purchased"
@@ -8411,8 +8885,13 @@ func _apply_legacy_upgrade_effect(effect_key: String) -> void:
 		"UPG_JELLING_STONE":
 			var jarl = DynastyManager.get_current_jarl()
 			if jarl:
-				jarl.heir_starting_renown_bonus += 50 # Example value
-				print("Applied UPG_JELLING_STONE: Heir starting renown +50")
+				jarl.heir_starting_renown_bonus += 50
+				# --- NEW: Set Minimum Legitimacy ---
+				# --- THIS IS THE FIX ---
+				# We set this on the *manager*, not a local var
+				DynastyManager.minimum_inherited_legitimacy = 25 # Example: 25
+				# --- END FIX ---
+				print("Applied UPG_JELLING_STONE: Heir renown +50, Min Legitimacy set to 25")
 			else:
 				push_error("Cannot apply Jelling Stone upgrade: No current Jarl!")
 		
@@ -8520,6 +8999,106 @@ func _on_recruit_button_pressed(unit_data: UnitData) -> void:
 		SettlementManager.recruit_unit(unit_data)
 	else:
 		print("UI received purchase failure for '%s'." % unit_data.display_name)
+
+--- SCRIPT: res://ui/Succession_Crisis_UI.gd ---
+# res://ui/Succession_Crisis_UI.gd
+extends CanvasLayer
+
+# --- Node Refs ---
+@onready var desc_label = $PanelContainer/MarginContainer/VBoxContainer/DescriptionLabel
+@onready var legit_label = $PanelContainer/MarginContainer/VBoxContainer/LegitimacyLabel
+@onready var renown_desc = $PanelContainer/MarginContainer/VBoxContainer/RenownTaxDescription
+@onready var gold_desc = $PanelContainer/MarginContainer/VBoxContainer/GoldTaxDescription
+@onready var pay_renown_btn = $PanelContainer/MarginContainer/VBoxContainer/RenownTaxButtons/PayRenownButton
+@onready var refuse_renown_btn = $PanelContainer/MarginContainer/VBoxContainer/RenownTaxButtons/RefuseRenownButton
+@onready var pay_gold_btn = $PanelContainer/MarginContainer/VBoxContainer/GoldTaxButtons/PayGoldButton
+@onready var refuse_gold_btn = $PanelContainer/MarginContainer/VBoxContainer/GoldTaxButtons/RefuseGoldButton
+@onready var confirm_btn = $PanelContainer/MarginContainer/VBoxContainer/ConfirmButton
+
+# --- State ---
+var renown_tax: int = 0
+var gold_tax: int = 0
+var renown_choice: String = "pay"
+var gold_choice: String = "pay"
+
+func _ready() -> void:
+	# Create ButtonGroups
+	var renown_group = ButtonGroup.new()
+	pay_renown_btn.button_group = renown_group
+	refuse_renown_btn.button_group = renown_group
+	
+	var gold_group = ButtonGroup.new()
+	pay_gold_btn.button_group = gold_group
+	refuse_gold_btn.button_group = gold_group
+	
+	pay_renown_btn.pressed.connect(_on_renown_choice.bind("pay"))
+	refuse_renown_btn.pressed.connect(_on_renown_choice.bind("refuse"))
+	pay_gold_btn.pressed.connect(_on_gold_choice.bind("pay"))
+	refuse_gold_btn.pressed.connect(_on_gold_choice.bind("refuse"))
+	confirm_btn.pressed.connect(_on_confirm)
+
+func display_crisis(jarl: JarlData, settlement: SettlementData) -> void:
+	var legitimacy = jarl.legitimacy
+	legit_label.text = "New Legitimacy: %d/100" % legitimacy
+	
+	# --- Calculate Taxes (Higher legitimacy = lower taxes) ---
+	var tax_multiplier = 1.0 - (legitimacy / 100.0) # 100 legit = 0x, 20 legit = 0.8x
+	
+	# Renown Tax
+	renown_tax = int(max(50, DynastyManager.get_current_jarl().renown * 0.2) * tax_multiplier)
+	pay_renown_btn.text = "Pay %d Renown" % renown_tax
+	refuse_renown_btn.text = "Refuse (Risk Project Setbacks)"
+	
+	# --- FIX: Update Description Text Dynamically ---
+	renown_desc.text = "Pay %d Renown to protect your legacy, or refuse and risk setbacks." % renown_tax
+	# -----------------------------------------------
+	
+	# Gold Tax
+	gold_tax = int(max(200, settlement.treasury.get("gold", 0) * 0.3) * tax_multiplier)
+	pay_gold_btn.text = "Pay %d Gold" % gold_tax
+	refuse_gold_btn.text = "Refuse (Risk Instability)"
+	
+	# --- FIX: Update Description Text Dynamically ---
+	gold_desc.text = "Pay %d Gold to ensure loyalty, or refuse and risk instability." % gold_tax
+	# -----------------------------------------------
+	
+	# Check affordability
+	if jarl.renown < renown_tax:
+		pay_renown_btn.disabled = true
+		refuse_renown_btn.button_pressed = true
+		renown_choice = "refuse"
+	else:
+		pay_renown_btn.button_pressed = true
+		renown_choice = "pay"
+	
+	if settlement.treasury.get("gold", 0) < gold_tax:
+		pay_gold_btn.disabled = true
+		refuse_gold_btn.button_pressed = true
+		gold_choice = "refuse"
+	else:
+		pay_gold_btn.button_pressed = true
+		gold_choice = "pay"
+	
+	show()
+
+func _on_renown_choice(choice: String) -> void:
+	renown_choice = choice
+
+func _on_gold_choice(choice: String) -> void:
+	gold_choice = choice
+
+func _on_confirm() -> void:
+	# 1. Apply costs
+	if renown_choice == "pay":
+		DynastyManager.spend_renown(renown_tax)
+	if gold_choice == "pay":
+		SettlementManager.attempt_purchase({"gold": gold_tax})
+	
+	# 2. Emit choices to EventManager/DynastyManager for consequences
+	EventBus.succession_choices_made.emit(renown_choice, gold_choice)
+	
+	# 3. Close the window
+	queue_free()
 --- END OF CODEBASE ---
 
 ---
