@@ -557,87 +557,42 @@ garrisoned_units = {
 }
 
 --- RESOURCE: res://data/settlements/home_base_fixed.tres ---
-[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://1dnknjyrfvxe"]
+[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://iu6ffhq2su3t"]
 
 [ext_resource type="Script" uid="uid://hlb8s5g0yp6k" path="res://data/settlements/SettlementData.gd" id="1_settlement_data"]
 
 [resource]
 script = ExtResource("1_settlement_data")
 treasury = {
-"food": 6723,
-"gold": 10920,
-"stone": 450,
-"wood": 11704
+"food": 6698,
+"gold": 10910,
+"stone": 750,
+"wood": 12079
 }
 placed_buildings = Array[Dictionary]([{
-"grid_position": Vector2i(11, 7),
-"resource_path": "res://data/buildings/Bldg_Wall.tres"
-}, {
-"grid_position": Vector2i(12, 7),
-"resource_path": "res://data/buildings/Bldg_Wall.tres"
-}, {
-"grid_position": Vector2i(13, 7),
-"resource_path": "res://data/buildings/Bldg_Wall.tres"
-}, {
-"grid_position": Vector2i(14, 7),
-"resource_path": "res://data/buildings/Bldg_Wall.tres"
-}, {
-"grid_position": Vector2i(11, 17),
-"resource_path": "res://data/buildings/Bldg_Wall.tres"
-}, {
-"grid_position": Vector2i(17, 8),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(20, 7),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(15, 7),
-"resource_path": "res://data/buildings/Bldg_Wall.tres"
-}, {
-"grid_position": Vector2i(22, 7),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(22, 9),
-"resource_path": "res://data/buildings/Player_Farm.tres"
-}, {
-"grid_position": Vector2i(20, 9),
-"resource_path": "res://data/buildings/Player_Farm.tres"
-}, {
-"grid_position": Vector2i(20, 5),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(22, 5),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(20, 3),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(22, 3),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(8, 5),
-"resource_path": "res://data/buildings/Player_Barracks.tres"
-}, {
-"grid_position": Vector2i(17, 12),
-"resource_path": "res://data/buildings/Test_Large_Building.tres"
-}, {
-"grid_position": Vector2i(24, 13),
+"grid_position": Vector2i(41, 17),
 "resource_path": "res://data/buildings/GreatHall.tres"
 }, {
-"grid_position": Vector2i(19, 0),
-"resource_path": "res://data/buildings/Bldg_Wall.tres"
+"grid_position": Vector2i(33, 18),
+"resource_path": "res://data/buildings/LumberYard.tres"
 }, {
-"grid_position": Vector2i(20, 0),
-"resource_path": "res://data/buildings/Bldg_Wall.tres"
+"grid_position": Vector2i(35, 18),
+"resource_path": "res://data/buildings/LumberYard.tres"
 }, {
-"grid_position": Vector2i(12, 5),
-"resource_path": "res://data/buildings/Bldg_Wall.tres"
+"grid_position": Vector2i(31, 18),
+"resource_path": "res://data/buildings/LumberYard.tres"
 }, {
-"grid_position": Vector2i(16, 7),
-"resource_path": "res://data/buildings/Bldg_Wall.tres"
+"grid_position": Vector2i(29, 18),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(42, 15),
+"resource_path": "res://data/buildings/Player_Farm.tres"
+}, {
+"grid_position": Vector2i(31, 16),
+"resource_path": "res://data/buildings/LumberYard.tres"
 }])
 garrisoned_units = {
-"res://data/units/Unit_PlayerRaider.tres": 15
+"res://data/units/Unit_PlayerRaider.tres": 16
 }
 metadata/_custom_type_script = "uid://hlb8s5g0yp6k"
 
@@ -1174,8 +1129,13 @@ DefensiveMicro (Node2D)
 > > edge_pan_margin = 20.0
 > > enable_edge_panning = true
 > > enable_wasd_movement = true
-> > bounds_enabled = false
-> > bounds_rect = [P: (-500.0, -500.0), S: (1500.0, 1200.0)]
+> > enable_drag_panning = true
+> > min_zoom = 0.5
+> > max_zoom = 2.0
+> > zoom_speed = 0.1
+> > zoom_smoothing = 10.0
+> > bounds_enabled = true
+> > bounds_rect = [P: (-1000.0, -1000.0), S: (3000.0, 2500.0)]
 > GridManager (Node)
 >   script: res://scripts/utility/GridManager.gd
 > > grid_width = 60
@@ -1217,7 +1177,10 @@ SettlementBridge (Node)
 >   > anchor_bottom = 1.0
 >   > grow_horizontal = 2
 >   > grow_vertical = 2
+>   > available_buildings = []
+>   > available_units = []
 >   > default_treasury_display = {"food":100,"gold":100,"stone":100,"wood":100}
+>   > auto_load_units_from_directory = true
 >     PanelContainer (PanelContainer)
 >     > layout_mode = 1
 >     > anchors_preset = -1
@@ -1321,6 +1284,23 @@ SettlementBridge (Node)
 > > grid_width = 60
 > > grid_height = 40
 > > cell_size = 32
+> GridVisualizer (Node2D)
+>   script: res://scripts/utility/GridVisualizer.gd
+>   scene: res://scripts/utility/GridVisualizer.tscn
+> Camera2D (Camera2D)
+>   script: res://player/RTSCamera.gd
+> > position = (1000.0, 400.0)
+> > camera_speed = 400.0
+> > edge_pan_margin = 20.0
+> > enable_edge_panning = true
+> > enable_wasd_movement = true
+> > enable_drag_panning = true
+> > min_zoom = 0.5
+> > max_zoom = 2.0
+> > zoom_speed = 0.1
+> > zoom_smoothing = 10.0
+> > bounds_enabled = true
+> > bounds_rect = [P: (-1000.0, -1000.0), S: (3000.0, 2500.0)]
 
 --- SCENE: res://scenes/missions/RaidMission.tscn ---
 RaidMission (Node2D)
@@ -1357,14 +1337,22 @@ RaidMission (Node2D)
 > > edge_pan_margin = 20.0
 > > enable_edge_panning = true
 > > enable_wasd_movement = true
-> > bounds_enabled = false
-> > bounds_rect = [P: (-500.0, -500.0), S: (1500.0, 1200.0)]
+> > enable_drag_panning = true
+> > min_zoom = 0.5
+> > max_zoom = 2.0
+> > zoom_speed = 0.1
+> > zoom_smoothing = 10.0
+> > bounds_enabled = true
+> > bounds_rect = [P: (-1000.0, -1000.0), S: (3000.0, 2500.0)]
 > GridManager (Node)
 >   script: res://scripts/utility/GridManager.gd
 >   scene: res://scripts/utility/GridManager.tscn
 > > grid_width = 120
 > > grid_height = 80
 > > cell_size = 32
+> GridVisualizer (Node2D)
+>   script: res://scripts/utility/GridVisualizer.gd
+>   scene: res://scripts/utility/GridVisualizer.tscn
 > BuildingContainer (Node2D)
 > RaidObjectiveManager (Node)
 >   script: res://scenes/missions/RaidObjectiveManager.gd
@@ -1399,6 +1387,7 @@ EnemyVikingRaider (CharacterBody2D)
 > separation_force = 30.0
 > separation_radius = 40.0
 > Sprite2D (Sprite2D)
+> > scale = (0.06543, 0.068359)
 > > texture = res://textures/placeholders/unit_placeholder.png
 > CollisionShape2D (CollisionShape2D)
 > > shape = res://scenes/units/Base_Unit.tscn::RectangleShape2D_n6s0a
@@ -1433,7 +1422,7 @@ VikingRaider (CharacterBody2D)
 > script: res://scripts/units/EnemyVikingRaider.gd
 > scene: res://scenes/units/VikingRaider.tscn
 > collision_layer = 4
-> data = 
+> data = res://data/units/EnemyVikingRaider_Data.tres
 > separation_enabled = false
 > Sprite2D (Sprite2D)
 > > modulate = (0.5464, 0.0, 0.0, 1.0)
@@ -1706,6 +1695,11 @@ GridManager (Node)
 > grid_width = 60
 > grid_height = 40
 > cell_size = 32
+
+--- SCENE: res://scripts/utility/GridVisualizer.tscn ---
+GridVisualizer (Node2D)
+> script: res://scripts/utility/GridVisualizer.gd
+> scene: res://scripts/utility/GridVisualizer.tscn
 
 --- SCENE: res://ui/BuildingPreviewCursor.tscn ---
 BuildingPreviewCursor (Node2D)
@@ -2453,8 +2447,13 @@ extends Node
 
 # --- Build System Signals ---
 # TODO: Connect this signal when implementing advanced building system
+signal building_right_clicked(building: Node2D) # Emitted when a placed building is right-clicked
 # @warning_ignore("unused_signal")
 signal build_request_made(building_data: BuildingData, grid_position: Vector2i)
+# Emitted when a building is purchased and ready for cursor placement
+signal building_ready_for_placement(building_data: BuildingData)
+# Emitted when building placement is cancelled (should refund cost)
+signal building_placement_cancelled(building_data: BuildingData)
 
 # --- Pathfinding Signals ---
 signal pathfinding_grid_updated(grid_position: Vector2i)
@@ -2492,11 +2491,7 @@ signal attack_command(target_node: Node2D)
 signal formation_move_command(target_position: Vector2, direction_vector: Vector2)
 
 # --- NEW: Building Cursor System Signals ---
-# Emitted when a building is purchased and ready for cursor placement
-signal building_ready_for_placement(building_data: BuildingData)
 
-# Emitted when building placement is cancelled (should refund cost)
-signal building_placement_cancelled(building_data: BuildingData)
 
 # --- NEW: Event System Flow Control ---
 signal event_system_finished()
@@ -3055,7 +3050,54 @@ func recruit_unit(unit_data: UnitData) -> void:
 
 
 # --- Building & Pathfinding (Delegated) ---
+func remove_building(building_instance: BaseBuilding) -> void:
+	"""
+	Removes a building from the scene, data model, and grid.
+	"""
+	if not current_settlement or not is_instance_valid(building_instance):
+		return
+		
+	if not is_instance_valid(active_astar_grid):
+		push_warning("SettlementManager: Removing building but grid not registered.")
 
+	# 1. Calculate Grid Position
+	var cell_size = get_active_grid_cell_size()
+	var building_pos = building_instance.global_position
+	# We need the top-left grid position to match the data
+	var size_pixels = Vector2(building_instance.data.grid_size) * cell_size
+	var top_left_pixels = building_pos - (size_pixels / 2.0)
+	var grid_pos = Vector2i(top_left_pixels / cell_size)
+	
+	# 2. Clear A* Grid (Make cells walkable again)
+	if is_instance_valid(active_astar_grid) and building_instance.data.blocks_pathfinding:
+		for x in range(building_instance.data.grid_size.x):
+			for y in range(building_instance.data.grid_size.y):
+				var cell = grid_pos + Vector2i(x, y)
+				if _is_cell_within_bounds(cell):
+					active_astar_grid.set_point_solid(cell, false)
+		active_astar_grid.update()
+		# Notify systems (like visualizer) that grid changed
+		EventBus.pathfinding_grid_updated.emit(grid_pos)
+
+	# 3. Remove from Data Model (placed_buildings array)
+	var index_to_remove = -1
+	for i in range(current_settlement.placed_buildings.size()):
+		var entry = current_settlement.placed_buildings[i]
+		# We match approximately, as floating point positions might vary slightly
+		if entry["grid_position"] == grid_pos:
+			index_to_remove = i
+			break
+	
+	if index_to_remove != -1:
+		current_settlement.placed_buildings.remove_at(index_to_remove)
+		save_settlement() # Save the state immediately
+		print("SettlementManager: Removed %s from data at %s." % [building_instance.data.display_name, grid_pos])
+	else:
+		push_warning("SettlementManager: Could not find data entry for building at %s" % grid_pos)
+
+	# 4. Remove Instance
+	building_instance.queue_free()
+	
 func get_active_grid_cell_size() -> Vector2:
 	"""
 	Returns the cell size of the currently registered AStarGrid.
@@ -3207,7 +3249,7 @@ func _ready() -> void:
 	background.add_child(label)
 	add_child(background)
 	# -------------------------
-	
+	input_pickable = true
 	# --- NEW: Create the Hitbox ---
 	_create_hitbox()
 	# --- END NEW ---
@@ -3216,7 +3258,14 @@ func _ready() -> void:
 	_create_dev_visuals()
 	_setup_defensive_ai()
 
-# --- NEW FUNCTION ---
+
+func _input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_RIGHT:
+			# Emit signal to EventBus so the Settlement controller can handle it
+			EventBus.building_right_clicked.emit(self)
+
+
 func _create_hitbox() -> void:
 	"""Creates an Area2D child to act as a detectable hitbox for projectiles."""
 	hitbox_area = Area2D.new()
@@ -4196,29 +4245,93 @@ extends Resource
 --- SCRIPT: res://player/RTSCamera.gd ---
 # res://player/RTSCamera.gd
 # Basic RTS-style camera controller for Phase 3
-# Provides WASD movement and mouse edge panning
-# Keeps camera controls simple and focused on tactical gameplay
+# Provides WASD movement, mouse edge panning, drag panning, and zooming.
+# Keeps camera controls simple and focused on tactical gameplay.
 
 extends Camera2D
 class_name RTSCamera
 
+# --- Movement Settings ---
+@export_group("Movement")
 @export var camera_speed: float = 400.0
 @export var edge_pan_margin: float = 20.0
 @export var enable_edge_panning: bool = true
 @export var enable_wasd_movement: bool = true
+@export var enable_drag_panning: bool = true
 
-# Movement bounds to keep camera on battlefield
-@export var bounds_enabled: bool = false
-@export var bounds_rect: Rect2 = Rect2(-500, -500, 1500, 1200)
+# --- Zoom Settings ---
+@export_group("Zoom")
+@export var min_zoom: float = 0.5  # Far away
+@export var max_zoom: float = 2.0  # Close up
+@export var zoom_speed: float = 0.1
+@export var zoom_smoothing: float = 10.0
+
+# --- Bounds Settings ---
+@export_group("Bounds")
+@export var bounds_enabled: bool = true
+@export var bounds_rect: Rect2 = Rect2(-1000, -1000, 3000, 2500)
+
+# Internal State
+var target_zoom: Vector2 = Vector2.ONE
+var is_dragging: bool = false
+var drag_start_mouse_pos: Vector2 = Vector2.ZERO
+var drag_start_camera_pos: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
-	# Make this the current camera
+	print("RTS Camera Initialized") # Check your Output tab for this!
+	# Initialize target zoom to current zoom
+	target_zoom = zoom
 	make_current()
 
+func _unhandled_input(event: InputEvent) -> void:
+	# --- Zoom Control (Mouse Wheel) ---
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			_zoom_in()
+			get_viewport().set_input_as_handled()
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_zoom_out()
+			get_viewport().set_input_as_handled()
+			
+		# --- Drag Panning (Middle Mouse) ---
+		elif event.button_index == MOUSE_BUTTON_MIDDLE and enable_drag_panning:
+			if event.is_pressed():
+				is_dragging = true
+				drag_start_mouse_pos = get_viewport().get_mouse_position()
+				drag_start_camera_pos = global_position
+				get_viewport().set_input_as_handled()
+			else:
+				is_dragging = false
+				get_viewport().set_input_as_handled()
+
+	# --- Handle Drag Motion ---
+	if event is InputEventMouseMotion and is_dragging:
+		var current_mouse_pos = get_viewport().get_mouse_position()
+		var mouse_delta = drag_start_mouse_pos - current_mouse_pos
+		
+		# Scale delta by zoom so dragging feels consistent at all zoom levels
+		global_position = drag_start_camera_pos + (mouse_delta / zoom.x)
+		
+		_clamp_position()
+		get_viewport().set_input_as_handled()
+
 func _process(delta: float) -> void:
-	var movement_vector := Vector2.ZERO
+	# 1. Apply Smooth Zoom
+	zoom = zoom.lerp(target_zoom, zoom_smoothing * delta)
 	
-	# WASD camera movement (as specified in GDD Phase 3)
+	# 2. Handle Keyboard/Edge Movement (Only if not dragging)
+	if not is_dragging:
+		_handle_keyboard_movement(delta)
+
+	# 3. Clamp Bounds
+	_clamp_position()
+
+func _handle_keyboard_movement(delta: float) -> void:
+	var movement_vector := Vector2.ZERO
+	var viewport_size = get_viewport().get_visible_rect().size
+	var mouse_pos = get_viewport().get_mouse_position()
+	
+	# WASD Movement
 	if enable_wasd_movement:
 		if Input.is_action_pressed("ui_left") or Input.is_key_pressed(KEY_A):
 			movement_vector.x -= 1
@@ -4229,30 +4342,43 @@ func _process(delta: float) -> void:
 		if Input.is_action_pressed("ui_down") or Input.is_key_pressed(KEY_S):
 			movement_vector.y += 1
 	
-	# Mouse edge panning (common RTS feature)
+	# Edge Panning
 	if enable_edge_panning:
-		var mouse_pos = get_viewport().get_mouse_position()
-		var viewport_size = get_viewport().get_visible_rect().size
-		
+		# Check X axis
 		if mouse_pos.x <= edge_pan_margin:
 			movement_vector.x -= 1
 		elif mouse_pos.x >= viewport_size.x - edge_pan_margin:
 			movement_vector.x += 1
 			
+		# Check Y axis
 		if mouse_pos.y <= edge_pan_margin:
 			movement_vector.y -= 1
 		elif mouse_pos.y >= viewport_size.y - edge_pan_margin:
 			movement_vector.y += 1
 	
-	# Apply movement
+	# Apply Movement
 	if movement_vector != Vector2.ZERO:
 		movement_vector = movement_vector.normalized()
-		global_position += movement_vector * camera_speed * delta
-		
-		# Apply bounds if enabled
-		if bounds_enabled:
-			global_position.x = clamp(global_position.x, bounds_rect.position.x, bounds_rect.position.x + bounds_rect.size.x)
-			global_position.y = clamp(global_position.y, bounds_rect.position.y, bounds_rect.position.y + bounds_rect.size.y)
+		# Adjust speed based on zoom level (faster when zoomed out)
+		var zoom_multiplier = 1.0 / zoom.x
+		global_position += movement_vector * camera_speed * zoom_multiplier * delta
+
+func _zoom_in() -> void:
+	target_zoom += Vector2(zoom_speed, zoom_speed)
+	_clamp_zoom()
+
+func _zoom_out() -> void:
+	target_zoom -= Vector2(zoom_speed, zoom_speed)
+	_clamp_zoom()
+
+func _clamp_zoom() -> void:
+	target_zoom.x = clamp(target_zoom.x, min_zoom, max_zoom)
+	target_zoom.y = clamp(target_zoom.y, min_zoom, max_zoom)
+
+func _clamp_position() -> void:
+	if bounds_enabled:
+		global_position.x = clamp(global_position.x, bounds_rect.position.x, bounds_rect.end.x)
+		global_position.y = clamp(global_position.y, bounds_rect.position.y, bounds_rect.end.y)
 
 --- SCRIPT: res://player/RTSController.gd ---
 # res://player/RTSController.gd
@@ -4965,6 +5091,7 @@ func _on_lifetime_timeout() -> void:
 # --- REFACTORED ---
 # Fixed initialization order: 'data' is now assigned BEFORE add_child().
 # This ensures BaseUnit._ready() has the data needed to create the FSM.
+# Fixed race condition in enemy spawning by using fsm_ready signal.
 # ------------------
 extends Node2D
 
@@ -5093,7 +5220,8 @@ func _load_player_base_for_defense() -> void:
 		var building_center_offset: Vector2 = building_footprint_size / 2.0
 		building_instance.global_position = world_pos_top_left + building_center_offset
 		
-		building_instance.set_collision_layer(1) # Player Buildings
+		# CLEANED: Whitespace removed
+		building_instance.set_collision_layer(1) # Player Buildings (Layer 1)
 		building_instance.set_collision_mask(0) 
 		
 		if building_data.display_name.to_lower().contains("hall"):
@@ -5231,8 +5359,6 @@ func _spawn_enemy_wave() -> void:
 	var enemy_count = 5
 	for i in range(enemy_count):
 		
-		# --- FIX: Logic Order ---
-		
 		# 1. Instantiate
 		var enemy_node = enemy_data.scene_to_spawn.instantiate()
 		
@@ -5243,20 +5369,14 @@ func _spawn_enemy_wave() -> void:
 			enemy_node.queue_free()
 			continue
 		
-		# --- CRITICAL FIX: Assign data before adding to tree ---
+		# Assign data before adding to tree
 		enemy_unit.data = enemy_data
 		enemy_unit.name = enemy_data.display_name + "_Enemy_" + str(i)
-		enemy_unit.collision_layer = 4  # Enemy Units = Layer 3
-		# ------------------------------------------------------
+		# Use bit-shift for clarity (Layer 3 = 1 << 2, value 4)
+		enemy_unit.collision_layer = 1 << 2 
 		
 		# 3. Add to Tree (Triggers _ready(), which now finds 'data')
 		add_child(enemy_node) 
-		
-		# 4. Configure AI (Safe because FSM and AttackAI are created in _ready)
-		if enemy_unit.attack_ai:
-			enemy_unit.attack_ai.ai_mode = AttackAI.AI_Mode.DEFENSIVE_SIEGE
-		else:
-			push_warning("Enemy unit %s has no AttackAI node!" % enemy_unit.name)
 		
 		var spawn_pos = enemy_spawner.global_position + Vector2(i * 40, 0)
 		enemy_unit.global_position = spawn_pos
@@ -5264,15 +5384,31 @@ func _spawn_enemy_wave() -> void:
 		enemy_unit.add_to_group("enemy_units")
 		enemy_units.append(enemy_unit)
 		
-		# 5. Command Attack
-		if is_instance_valid(objective_building) and enemy_unit.fsm:
-			enemy_unit.fsm.command_attack(objective_building)
-		elif not enemy_unit.fsm:
-			push_error("Enemy unit %s FSM is still null!" % enemy_unit.name)
-		# --- END FIX ---
+		# 4. Connect to the FSM ready signal
+		# We DO NOT access FSM or AttackAI here. We wait for the signal.
+		if is_instance_valid(objective_building):
+			enemy_unit.fsm_ready.connect(_on_enemy_fsm_ready.bind(objective_building))
 	
 	print("Spawned %d enemy raiders." % enemy_count)
 
+# --- UPDATED SIGNAL HANDLER: Handles ALL post-spawn configuration ---
+func _on_enemy_fsm_ready(enemy_unit: BaseUnit, target: BaseBuilding) -> void:
+	"""
+	Called by the enemy unit when its FSM is fully set up via _deferred_setup.
+	This ensures we only issue the command when the unit is ready to receive it.
+	"""
+	if not is_instance_valid(target) or not is_instance_valid(enemy_unit):
+		return
+
+	# 1. Configure the AttackAI mode (NOW SAFE)
+	if enemy_unit.attack_ai:
+		enemy_unit.attack_ai.ai_mode = AttackAI.AI_Mode.DEFENSIVE_SIEGE
+		
+	# 2. Command Attack (NOW SAFE)
+	if enemy_unit.fsm:
+		enemy_unit.fsm.command_attack(target)
+	else:
+		push_error("Enemy unit %s FSM is still null after signal! FSM setup failed." % enemy_unit.name)
 
 func _spawn_test_units() -> void:
 	# (Test unit spawning code omitted for brevity - unchanged)
@@ -6768,6 +6904,7 @@ func _connect_signals() -> void:
 	EventBus.settlement_loaded.connect(_on_settlement_loaded)
 	EventBus.building_ready_for_placement.connect(_on_building_ready_for_placement)
 	EventBus.building_placement_cancelled.connect(_on_building_placement_cancelled)
+	EventBus.building_right_clicked.connect(_on_building_right_clicked)
 	
 	if building_cursor:
 		building_cursor.placement_completed.connect(_on_building_placement_completed)
@@ -6887,6 +7024,34 @@ func _on_building_placement_cancelled_by_cursor() -> void:
 		print("Building placement cancelled by cursor, refunded: %s" % awaiting_placement.build_cost)
 		
 		awaiting_placement = null
+func _on_building_right_clicked(building: BaseBuilding) -> void:
+	"""
+	Handles the 'Move' logic: Refund -> Remove -> Re-buy -> Place
+	"""
+	# 1. Ignore if we are already holding a building (Cursor Active)
+	# The cursor handles its own right-click (cancel), so we shouldn't interfere.
+	if building_cursor.is_active:
+		return
+		
+	print("SettlementBridge: Move requested for %s" % building.data.display_name)
+	
+	var data = building.data
+	var cost = data.build_cost
+	
+	# 2. Refund the cost (so the player has funds to 're-buy' it)
+	SettlementManager.deposit_resources(cost)
+	
+	# 3. Remove the building
+	SettlementManager.remove_building(building)
+	
+	# 4. Immediately 'Re-buy' it to start placement
+	# This deducts the cost we just refunded. 
+	# If the player cancels placement later, the standard cancel logic will refund them again.
+	# This effectively turns "Right Click" into "Sell & Move".
+	if SettlementManager.attempt_purchase(cost):
+		EventBus.building_ready_for_placement.emit(data)
+	else:
+		push_error("SettlementBridge: Failed to re-purchase moved building. This shouldn't happen after refund.")
 
 --- SCRIPT: res://scripts/formations/SquadFormation.gd ---
 # res://scripts/formations/SquadFormation.gd
@@ -7538,6 +7703,7 @@ class_name BaseUnit
 extends CharacterBody2D
 
 signal destroyed
+signal fsm_ready(unit)
 
 @export var data: UnitData
 # Removed the : UnitFSM type hint to break the circular dependency.
@@ -7571,11 +7737,31 @@ const ERROR_COLOR := Color(0.7, 0.3, 1.0)
 
 func _ready() -> void:
 	if not data:
-		push_warning("BaseUnit: Node '%s' is missing its 'UnitData' resource. Cannot initialize." % name)
+		push_warning("BaseUnit: Node '%s' is missing its 'UnitData' resource.
+Cannot initialize." % name)
 		return
 	
 	current_health = data.max_health
 	_apply_texture_and_scale()
+	
+	# --- MODIFIED: DEFER ALL AI/FSM SETUP ---
+	call_deferred("_deferred_setup")
+	# ----------------------------------------
+	
+	sprite.modulate = STATE_COLORS.get(UnitAIConstants.State.IDLE, Color.WHITE)
+	
+	EventBus.pathfinding_grid_updated.connect(_on_grid_updated)
+	
+	separation_area.collision_mask = 2
+	
+	var area_shape = separation_area.get_node_or_null("CollisionShape2D")
+	if area_shape and area_shape.shape is CircleShape2D:
+		area_shape.shape.radius = separation_radius
+	else:
+		push_warning("'%s' has no 'SeparationArea/CollisionShape2D' with a CircleShape!" % name)
+		
+func _deferred_setup() -> void:
+	"""Initializes AttackAI and FSM after all children are guaranteed to be in the tree."""
 	
 	if data.ai_component_scene:
 		attack_ai = data.ai_component_scene.instantiate() as AttackAI
@@ -7596,22 +7782,10 @@ func _ready() -> void:
 		else:
 			push_error("BaseUnit: Failed to instantiate ai_component_scene for %s" % data.display_name)
 	
+	# FSM relies on attack_ai being valid, so we run this last.
 	fsm = UnitFSM.new(self, attack_ai)
+	fsm_ready.emit(self)
 	
-	# --- THIS IS THE FIX ---
-	sprite.modulate = STATE_COLORS.get(UnitAIConstants.State.IDLE, Color.WHITE)
-	# --- END FIX ---
-	
-	EventBus.pathfinding_grid_updated.connect(_on_grid_updated)
-	
-	separation_area.collision_mask = 2
-	
-	var area_shape = separation_area.get_node_or_null("CollisionShape2D")
-	if area_shape and area_shape.shape is CircleShape2D:
-		area_shape.shape.radius = separation_radius
-	else:
-		push_warning("'%s' has no 'SeparationArea/CollisionShape2D' with a CircleShape!" % name)
-
 func _apply_texture_and_scale() -> void:
 	if data.target_pixel_size.x <= 0 or data.target_pixel_size.y <= 0:
 		push_warning("BaseUnit: '%s' has a target_pixel_size of %s, which is invalid." % [data.display_name, data.target_pixel_size])
@@ -7869,6 +8043,99 @@ func _ready() -> void:
 	astar_grid.update()
 	
 	print("GridManager: Local grid initialized: %dx%d cells" % [grid_width, grid_height])
+
+--- SCRIPT: res://scripts/utility/GridVisualizer.gd ---
+# res://scripts/utility/GridVisualizer.gd
+#
+# A simple visualizer that draws the AStarGrid lines and solid points
+# for debugging purposes in scenes that use the GridManager.
+class_name GridVisualizer
+extends Node2D
+
+const GRID_LINE_COLOR := Color(1.0, 1.0, 1.0, 0.1) # White, 10% opacity
+const SOLID_CELL_COLOR := Color(1.0, 0.0, 0.0, 0.4) # Red, 40% opacity
+const LINE_WIDTH := 1.0
+const SOLID_CELL_SIZE := 0.6 # Percentage of cell size for the red square
+
+# Configuration populated in _ready()
+var grid_width: int = 0
+var grid_height: int = 0
+var cell_size: int = 0
+var astar_grid: AStarGrid2D = null
+
+
+func _ready() -> void:
+	# 1. Find the GridManager in the local scene tree
+	var grid_manager = get_parent().get_node_or_null("GridManager")
+	if not grid_manager:
+		push_error("GridVisualizer: Could not find 'GridManager' child node.")
+		queue_free()
+		return
+
+	# 2. Get configuration from the GridManager
+	grid_width = grid_manager.grid_width
+	grid_height = grid_manager.grid_height
+	cell_size = grid_manager.cell_size
+	
+	# 3. Get the AStarGrid2D reference
+	if "astar_grid" in grid_manager:
+		astar_grid = grid_manager.astar_grid
+	else:
+		push_error("GridVisualizer: GridManager does not have 'astar_grid' property.")
+
+	# 4. Connect to the event bus to update when the grid pathing changes
+	EventBus.pathfinding_grid_updated.connect(_on_pathfinding_grid_updated)
+	
+	# Tell the engine we will be drawing every frame (only for debugging, turn off in production)
+	set_process_mode(Node.PROCESS_MODE_ALWAYS)
+	set_process(true)
+	
+	print("GridVisualizer initialized for %dx%d grid with %d cell size." % [grid_width, grid_height, cell_size])
+
+
+func _exit_tree() -> void:
+	if EventBus.is_connected("pathfinding_grid_updated", _on_pathfinding_grid_updated):
+		EventBus.pathfinding_grid_updated.disconnect(_on_pathfinding_grid_updated)
+
+func _draw() -> void:
+	if cell_size <= 0: return
+
+	var map_width = grid_width * cell_size
+	var map_height = grid_height * cell_size
+
+	# Draw horizontal lines
+	for i in range(grid_height + 1):
+		var y = float(i) * cell_size
+		draw_line(Vector2(0, y), Vector2(map_width, y), GRID_LINE_COLOR, LINE_WIDTH)
+
+	# Draw vertical lines
+	for j in range(grid_width + 1):
+		var x = float(j) * cell_size
+		draw_line(Vector2(x, 0), Vector2(x, map_height), GRID_LINE_COLOR, LINE_WIDTH)
+
+	# Draw solid cells if AStarGrid is available
+	if is_instance_valid(astar_grid) and astar_grid.is_connected:
+		_draw_solid_cells()
+
+func _draw_solid_cells() -> void:
+	if not is_instance_valid(astar_grid): return
+
+	var cell_draw_size = cell_size * SOLID_CELL_SIZE
+	var cell_offset = cell_size * (1.0 - SOLID_CELL_SIZE) * 0.5
+	
+	for i in range(grid_width):
+		for j in range(grid_height):
+			var cell_pos = Vector2i(i, j)
+			
+			if astar_grid.is_point_solid(cell_pos):
+				var rect_top_left = Vector2(float(i * cell_size) + cell_offset, float(j * cell_size) + cell_offset)
+				var rect_size = Vector2(cell_draw_size, cell_draw_size)
+				
+				draw_rect(Rect2(rect_top_left, rect_size), SOLID_CELL_COLOR)
+
+func _on_pathfinding_grid_updated(_grid_position: Vector2i) -> void:
+	# A building was placed or destroyed, so redraw the grid to show the change.
+	queue_redraw()
 
 --- SCRIPT: res://tools/EnemyBaseEditor.gd ---
 @tool
@@ -8326,16 +8593,13 @@ extends Control
 
 var is_dragging := false
 var start_pos := Vector2.ZERO
-
-# --- NEW: Formation Drag ---
 var is_command_dragging := false
 var command_start_pos := Vector2.ZERO
 # ---------------------------
 
 func _ready() -> void:
-	# This node handles its own input via _gui_input,
-	# so it doesn't need to connect to the EventRouter.
-	pass
+	#Allow unused mouse events (like Zoom) to pass to the Camera
+	mouse_filter = Control.MOUSE_FILTER_PASS
 
 func _gui_input(event: InputEvent) -> void:
 	# We use _gui_input, which is only called if the mouse
@@ -8492,94 +8756,14 @@ const LegacyUpgradeData = preload("res://data/legacy/LegacyUpgradeData.gd")
 @export var default_treasury_display: Dictionary = {"gold": 0, "wood": 0, "food": 0, "stone": 0}
 @export var auto_load_units_from_directory: bool = true
 
-# --- Internal state for legacy upgrades ---
-# --- THIS IS THE FIX: This variable is no longer needed here ---
-# var loaded_legacy_upgrades: Array[LegacyUpgradeData] = []
-# --- END FIX ---
-var minimum_inherited_legitimacy: int = 0 # This will be set by the upgrade
-
-
-# --- MOVED FUNCTIONS UP TO FIX PARSING ERROR ---
-
-# --- Utility Functions ---
-func _format_cost(cost: Dictionary) -> String:
-	"""Format cost dictionary as readable string"""
-	var cost_parts: Array[String] = []
-	for resource in cost:
-		cost_parts.append("%d %s" % [cost[resource], resource])
-	return ", ".join(cost_parts)
-
-func _update_treasury_display(new_treasury: Dictionary) -> void:
-	gold_label.text = "Gold: %d" % new_treasury.get("gold", 0)
-	wood_label.text = "Wood: %d" % new_treasury.get("wood", 0)
-	food_label.text = "Food: %d" % new_treasury.get("food", 0)
-	stone_label.text = "Stone: %d" % new_treasury.get("stone", 0)
-
-func _on_purchase_successful(item_name: String) -> void:
-	"""Handle purchase success event - refresh garrison display"""
-	# Check if the item was a unit to avoid unnecessary UI churn
-	# A bit of a hack, but good for performance.
-	if item_name.contains("Raider") or item_name.contains("Unit"):
-		_update_garrison_display()
-	
-	# If a legacy upgrade was purchased, the jarl_stats_updated signal
-	# will handle refreshing the legacy button list.
-	# We don't need to refresh the build list, as it's static for now.
-	pass
-
-func _update_garrison_display() -> void:
-	"""Update the garrison list display with current garrisoned units"""
-	if not garrison_list_container:
-		return
-	
-	for child in garrison_list_container.get_children():
-		child.queue_free()
-	
-	if not SettlementManager.current_settlement:
-		var no_settlement_label = Label.new()
-		no_settlement_label.text = "No settlement loaded"
-		garrison_list_container.add_child(no_settlement_label)
-		return
-	
-	var garrison = SettlementManager.current_settlement.garrisoned_units
-	
-	if garrison.is_empty():
-		var empty_garrison_label = Label.new()
-		empty_garrison_label.text = "No units in garrison"
-		garrison_list_container.add_child(empty_garrison_label)
-		return
-	
-	var header_label = Label.new()
-	header_label.text = "Current Garrison:"
-	header_label.add_theme_font_size_override("font_size", 16)
-	garrison_list_container.add_child(header_label)
-	
-	for unit_path in garrison:
-		var unit_count: int = garrison[unit_path]
-		var unit_data: UnitData = load(unit_path)
-		
-		if unit_data:
-			var unit_label = Label.new()
-			unit_label.text = "â€¢ %s x%d" % [unit_data.display_name, unit_count]
-			garrison_list_container.add_child(unit_label)
-		else:
-			var error_label = Label.new()
-			error_label.text = "â€¢ Unknown unit x%d" % unit_count
-			garrison_list_container.add_child(error_label)
-	
-	var total_units = 0
-	for unit_path in garrison:
-		total_units += garrison[unit_path]
-	
-	var total_label = Label.new()
-	total_label.text = "Total units: %d" % total_units
-	total_label.add_theme_font_size_override("font_size", 12)
-	garrison_list_container.add_child(total_label)
-
-# --- END MOVED FUNCTIONS ---
-
+# --- Internal state ---
+var minimum_inherited_legitimacy: int = 0 
 
 func _ready() -> void:
+	# --- FIX: Allow unused mouse events to pass to the Camera ---
+	mouse_filter = Control.MOUSE_FILTER_PASS
+	# ------------------------------------------------------------
+
 	# Connect to SettlementManager for treasury
 	EventBus.treasury_updated.connect(_update_treasury_display)
 	EventBus.purchase_successful.connect(_on_purchase_successful)
@@ -8596,107 +8780,121 @@ func _ready() -> void:
 	_load_building_data()
 	_load_unit_data()
 	
-	# --- THIS IS THE FIX: Removed local call ---
-	# _load_legacy_upgrades() # Load the data first
-	# --- END FIX ---
-	
 	# Setup UI
 	if DynastyManager.current_jarl:
 		_update_jarl_stats_display(DynastyManager.get_current_jarl())
 	
 	_setup_recruit_buttons()
 	_update_garrison_display()
-	_populate_legacy_buttons() # Populate buttons after data is loaded
+	_populate_legacy_buttons() 
+
+# --- Utility Functions ---
+func _format_cost(cost: Dictionary) -> String:
+	var cost_parts: Array[String] = []
+	for resource in cost:
+		cost_parts.append("%d %s" % [cost[resource], resource])
+	return ", ".join(cost_parts)
+
+func _update_treasury_display(new_treasury: Dictionary) -> void:
+	gold_label.text = "Gold: %d" % new_treasury.get("gold", 0)
+	wood_label.text = "Wood: %d" % new_treasury.get("wood", 0)
+	food_label.text = "Food: %d" % new_treasury.get("food", 0)
+	stone_label.text = "Stone: %d" % new_treasury.get("stone", 0)
+
+func _on_purchase_successful(item_name: String) -> void:
+	if item_name.contains("Raider") or item_name.contains("Unit"):
+		_update_garrison_display()
+
+func _update_garrison_display() -> void:
+	if not garrison_list_container: return
+	
+	for child in garrison_list_container.get_children():
+		child.queue_free()
+	
+	if not SettlementManager.current_settlement: return
+	
+	var garrison = SettlementManager.current_settlement.garrisoned_units
+	if garrison.is_empty():
+		var empty_garrison_label = Label.new()
+		empty_garrison_label.text = "No units in garrison"
+		garrison_list_container.add_child(empty_garrison_label)
+		return
+	
+	var header_label = Label.new()
+	header_label.text = "Current Garrison:"
+	header_label.add_theme_font_size_override("font_size", 16)
+	garrison_list_container.add_child(header_label)
+	
+	for unit_path in garrison:
+		var unit_count: int = garrison[unit_path]
+		var unit_data: UnitData = load(unit_path)
+		if unit_data:
+			var unit_label = Label.new()
+			unit_label.text = "• %s x%d" % [unit_data.display_name, unit_count]
+			garrison_list_container.add_child(unit_label)
+	
+	var total_units = 0
+	for unit_path in garrison:
+		total_units += garrison[unit_path]
+	
+	var total_label = Label.new()
+	total_label.text = "Total units: %d" % total_units
+	total_label.add_theme_font_size_override("font_size", 12)
+	garrison_list_container.add_child(total_label)
 
 # --- Jarl Stats UI ---
 func _update_jarl_stats_display(jarl_data: JarlData) -> void:
-	"""Updates the Renown and Authority labels in the Legacy tab."""
-	if not jarl_data:
-		return
+	if not jarl_data: return
 	renown_label.text = "Renown: %d" % jarl_data.renown
 	authority_label.text = "Authority: %d / %d" % [jarl_data.current_authority, jarl_data.max_authority]
-	
-	# This ensures buttons are enabled/disabled when stats change (e.g., End Year)
 	_populate_legacy_buttons()
 
-# --- Legacy Upgrade Functions ---
-# --- THIS IS THE FIX: Removed _load_legacy_upgrades() function ---
-# --- END FIX ---
-
 func _populate_legacy_buttons() -> void:
-	"""
-	Populate the Legacy tab with available upgrades.
-	This function now creates real buttons from loaded data.
-	"""
 	for child in legacy_buttons_container.get_children():
 		child.queue_free()
 	
-	# --- THIS IS THE FIX ---
-	# Read the list from the manager, not our internal variable
 	if DynastyManager.loaded_legacy_upgrades.is_empty():
-	# --- END FIX ---
 		var placeholder_label = Label.new()
 		placeholder_label.text = "No legacy upgrades found."
 		legacy_buttons_container.add_child(placeholder_label)
 		return
 	
 	var jarl = DynastyManager.get_current_jarl()
-	if not jarl:
-		push_error("StorefrontUI: Cannot get Jarl from DynastyManager!")
-		return
+	if not jarl: return
 
-	# --- "SOFT-GUIDE" LITMUS TEST ---
-	# Check for traits that modify costs
 	var is_pious = jarl.has_trait("Pious")
-	# ---------------------------------
 
-	# --- THIS IS THE FIX ---
-	# Create a button for each loaded upgrade
 	for upgrade_data in DynastyManager.loaded_legacy_upgrades:
-	# --- END FIX ---
-		
-		# --- "SOFT-GUIDE" LOGIC ---
-		# This is the core mechanic of the proposal in action.
 		var current_renown_cost = upgrade_data.renown_cost
 		var trait_modifier_text = ""
 		
 		if is_pious and upgrade_data.effect_key == "UPG_BUILD_CHAPEL":
-			# Example: "Pious" trait gives a 25 Renown discount
 			current_renown_cost = max(0, upgrade_data.renown_cost - 25)
 			trait_modifier_text = " (-25 Pious)"
-		# --------------------------
 
 		var button = Button.new()
 		var cost_text = "Cost: %d Renown%s, %d Auth" % [current_renown_cost, trait_modifier_text, upgrade_data.authority_cost]
 		
-		# Set the text (without the name, as the icon is present)
-		# --- MODIFIED: Show Progress ---
 		var title_text = upgrade_data.display_name
 		if upgrade_data.required_progress > 1:
 			title_text += " (%d/%d)" % [upgrade_data.current_progress, upgrade_data.required_progress]
 		
-		button.text = "%s\\n%s" % [title_text, cost_text]
-		# --- END MODIFIED ---
+		button.text = "%s\n%s" % [title_text, cost_text]
 		button.tooltip_text = upgrade_data.description
 		
-		# --- NEW: Set Icon ---
+		# --- FIX: Constrain Legacy Button Icons too ---
 		if upgrade_data.icon:
 			button.icon = upgrade_data.icon
-			# Optional: Align text to the left if an icon is present
+			button.expand_icon = true
+			button.custom_minimum_size = Vector2(0, 64)
 			button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 			button.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
-		# --- END NEW ---
+		# ---------------------------------------------
 		
-		# --- MODIFIED: Check affordability and purchase status ---
-		var can_buy_renown = jarl.renown >= current_renown_cost # Use modified cost
+		var can_buy_renown = jarl.renown >= current_renown_cost
 		var can_buy_auth = jarl.current_authority >= upgrade_data.authority_cost
 		
-		# --- THIS IS THE FIX ---
-		# We must check the Jarl's *data*, not the local copy
-		var is_purchased = DynastyManager.has_purchased_upgrade(upgrade_data.effect_key)
-		# We should also check the progress on the *manager's* copy
 		if upgrade_data.is_purchased:
-		# --- END FIX ---
 			button.disabled = true
 			button.text = "%s (Completed)" % upgrade_data.display_name
 		elif not can_buy_renown:
@@ -8706,87 +8904,44 @@ func _populate_legacy_buttons() -> void:
 			button.disabled = true
 			button.text += "\n(Not enough Authority)"
 		
-		# We must bind the *original* upgrade_data (which holds the modified cost)
-		# to the pressed signal.
 		button.pressed.connect(_on_legacy_upgrade_pressed.bind(upgrade_data, current_renown_cost))
 		legacy_buttons_container.add_child(button)
 
 func _on_legacy_upgrade_pressed(upgrade_data: LegacyUpgradeData, final_renown_cost: int) -> void:
-	"""
-	Handles the purchase logic for a Legacy Upgrade.
-	Uses the dynamically calculated final_renown_cost.
-	"""
-	print("Attempting to purchase legacy upgrade: %s" % upgrade_data.display_name)
-	
-	# 1. Double-check costs using the calculated cost
 	if not DynastyManager.can_spend_renown(final_renown_cost):
-		print("Purchase failed: Not enough Renown.")
 		EventBus.purchase_failed.emit("Not enough Renown")
 		return
-		
 	if not DynastyManager.can_spend_authority(upgrade_data.authority_cost):
-		print("Purchase failed: Not enough Authority.")
 		EventBus.purchase_failed.emit("Not enough Authority")
 		return
 	
-	# 2. Spend resources
 	var spent_renown = DynastyManager.spend_renown(final_renown_cost)
 	var spent_auth = DynastyManager.spend_authority(upgrade_data.authority_cost)
 	
-	if not (spent_renown and spent_auth):
-		push_error("Legacy purchase failed mid-transaction! This should not happen.")
-		if spent_renown: DynastyManager.award_renown(final_renown_cost) # Refund
-		return
-	
-	# 3. Mark as purchased (This is now progress)
-	upgrade_data.current_progress += 1
-	
-	# 4. Apply the effect ONLY if progress is complete
-	if upgrade_data.is_purchased: # This check now works
-		DynastyManager.purchase_legacy_upgrade(upgrade_data.effect_key)
-		_apply_legacy_upgrade_effect(upgrade_data.effect_key)
-	
-	# 5. Refresh the UI
-	_populate_legacy_buttons() # This will now show the button as "Purchased"
-	EventBus.purchase_successful.emit(upgrade_data.display_name)
+	if spent_renown and spent_auth:
+		upgrade_data.current_progress += 1
+		if upgrade_data.is_purchased:
+			DynastyManager.purchase_legacy_upgrade(upgrade_data.effect_key)
+			_apply_legacy_upgrade_effect(upgrade_data.effect_key)
+		_populate_legacy_buttons()
+		EventBus.purchase_successful.emit(upgrade_data.display_name)
 
 func _apply_legacy_upgrade_effect(effect_key: String) -> void:
-	"""
-	Applies the permanent game-state change for a purchased upgrade.
-	"""
 	match effect_key:
 		"UPG_TRELLEBORG":
 			if SettlementManager.current_settlement:
-				SettlementManager.current_settlement.max_garrison_bonus += 10 # Example value
+				SettlementManager.current_settlement.max_garrison_bonus += 10
 				SettlementManager.save_settlement()
-				print("Applied UPG_TRELLEBORG: Max garrison bonus +10")
-			else:
-				push_error("Cannot apply Trelleborg upgrade: No current settlement!")
-				
 		"UPG_JELLING_STONE":
 			var jarl = DynastyManager.get_current_jarl()
 			if jarl:
 				jarl.heir_starting_renown_bonus += 50
-				# --- NEW: Set Minimum Legitimacy ---
-				# --- THIS IS THE FIX ---
-				# We set this on the *manager*, not a local var
-				DynastyManager.minimum_inherited_legitimacy = 25 # Example: 25
-				# --- END FIX ---
-				print("Applied UPG_JELLING_STONE: Heir renown +50, Min Legitimacy set to 25")
-			else:
-				push_error("Cannot apply Jelling Stone upgrade: No current Jarl!")
-		
+				DynastyManager.minimum_inherited_legitimacy = 25
 		"UPG_BUILD_CHAPEL":
-			# For this test, we just log the success.
-			# A real implementation might add a modifier to SettlementManager.
 			print("Applied UPG_BUILD_CHAPEL: Dynasty's piety increased.")
-		
-		_:
-			push_warning("Unknown legacy upgrade effect key: %s" % effect_key)
 
 # --- Building Tab Functions ---
 func _load_building_data() -> void:
-	"""Scan res://data/buildings/ for buildable .tres files and create buttons."""
 	var dir = DirAccess.open("res://data/buildings/")
 	if dir:
 		dir.list_dir_begin()
@@ -8795,42 +8950,35 @@ func _load_building_data() -> void:
 			if file_name.ends_with(".tres"):
 				var building_path = "res://data/buildings/" + file_name
 				var building_data = load(building_path) as BuildingData
-				
 				if building_data and building_data.is_player_buildable:
 					_create_building_button(building_data)
-					
 			file_name = dir.get_next()
 
 func _create_building_button(building_data: BuildingData) -> void:
-	"""Creates and connects a single button for the build tab."""
 	var button = Button.new()
 	button.text = "%s (Cost: %s)" % [building_data.display_name, _format_cost(building_data.build_cost)]
 	
-	# --- Set Icon for Build Tab ---
+	# --- FIX: Constrain Building Icons ---
 	if building_data.icon:
 		button.icon = building_data.icon
+		button.expand_icon = true # Force icon to scale
+		button.custom_minimum_size = Vector2(0, 64) # Force button height
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	# -------------------------------------
 	
 	button.pressed.connect(_on_buy_button_pressed.bind(building_data))
 	build_buttons_container.add_child(button)
 
 func _on_buy_button_pressed(item_data: BuildingData) -> void:
-	if not item_data:
-		return
-	
-	print("UI attempting to purchase '%s'." % item_data.display_name)
-	var purchase_successful: bool = SettlementManager.attempt_purchase(item_data.build_cost)
-	
-	if purchase_successful:
-		print("UI received purchase confirmation for '%s'." % item_data.display_name)
+	if not item_data: return
+	if SettlementManager.attempt_purchase(item_data.build_cost):
 		EventBus.building_ready_for_placement.emit(item_data)
 	else:
 		print("UI received purchase failure for '%s'." % item_data.display_name)
 
 # --- Recruit Tab Functions ---
 func _load_unit_data() -> void:
-	"""Scan res://data/units/ directory for .tres files and load them as UnitData"""
 	var dir = DirAccess.open("res://data/units/")
 	if dir:
 		dir.list_dir_begin()
@@ -8839,22 +8987,23 @@ func _load_unit_data() -> void:
 			if file_name.ends_with(".tres"):
 				var unit_path = "res://data/units/" + file_name
 				var unit_data = load(unit_path) as UnitData
-				if unit_data:
-					if _is_player_unit(unit_data):
-						available_units.append(unit_data)
+				if unit_data and _is_player_unit(unit_data):
+					available_units.append(unit_data)
 			file_name = dir.get_next()
 
 func _setup_recruit_buttons() -> void:
-	"""Create recruit buttons for each available unit"""
 	for unit_data in available_units:
 		var button = Button.new()
 		button.text = "%s (Cost: %s)" % [unit_data.display_name, _format_cost(unit_data.spawn_cost)]
 		
-		# --- Set Icon for Recruit Tab ---
+		# --- FIX: Constrain Recruit Icons ---
 		if unit_data.icon:
 			button.icon = unit_data.icon
+			button.expand_icon = true # Force icon to scale
+			button.custom_minimum_size = Vector2(0, 64) # Force button height
 			button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 			button.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		# ------------------------------------
 
 		button.pressed.connect(_on_recruit_button_pressed.bind(unit_data))
 		recruit_buttons_container.add_child(button)
@@ -8868,18 +9017,9 @@ func _is_player_unit(unit_data: UnitData) -> bool:
 	return true
 
 func _on_recruit_button_pressed(unit_data: UnitData) -> void:
-	"""Handle recruit button press"""
-	if not unit_data:
-		return
-	
-	print("UI attempting to recruit '%s'." % unit_data.display_name)
-	var purchase_successful: bool = SettlementManager.attempt_purchase(unit_data.spawn_cost)
-	
-	if purchase_successful:
-		print("UI received purchase confirmation for '%s'." % unit_data.display_name)
+	if not unit_data: return
+	if SettlementManager.attempt_purchase(unit_data.spawn_cost):
 		SettlementManager.recruit_unit(unit_data)
-	else:
-		print("UI received purchase failure for '%s'." % unit_data.display_name)
 
 --- SCRIPT: res://ui/Succession_Crisis_UI.gd ---
 # res://ui/Succession_Crisis_UI.gd

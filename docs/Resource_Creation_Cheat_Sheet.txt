@@ -1,0 +1,300 @@
+## Resource Creation Cheat Sheet
+
+Viking Dynasty uses a comprehensive `.tres` resource system for game objects. This cheat sheet provides templates and workflows for creating new content.
+
+### 🏗️ **Creating Buildings**
+
+#### **1. Create BuildingData Resource**
+```bash
+# File: data/buildings/YourBuilding.tres
+```
+
+**Template:**
+```tres
+[gd_resource type="Resource" script_class="BuildingData" load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://textures/buildings/your_building.png" id="1_texture"]
+[ext_resource type="PackedScene" path="res://scenes/buildings/Base_Building.tscn" id="2_scene"]
+[ext_resource type="Script" path="res://data/buildings/BuildingData.gd" id="3_script"]
+
+[resource]
+script = ExtResource("3_script")
+display_name = "Your Building"
+scene_to_spawn = ExtResource("2_scene")
+building_texture = ExtResource("1_texture")
+build_cost = {"wood": 50, "stone": 25}
+max_health = 100
+grid_size = Vector2i(2, 2)
+dev_color = Color(0.5, 0.5, 0.8, 1)
+is_player_buildable = true
+construction_effort_required = 150
+base_labor_capacity = 4
+```
+
+**For Economic Buildings (extends BuildingData):**
+```tres
+[ext_resource type="Script" path="res://data/buildings/EconomicBuildingData.gd" id="3_script"]
+
+[resource]
+script = ExtResource("3_script")
+resource_type = "food"  # or "wood", "stone", "gold"
+fixed_payout_amount = 75
+# ... plus all BuildingData properties
+```
+
+**For Defensive Buildings:**
+```tres
+[resource]
+is_defensive_structure = true
+attack_damage = 20
+attack_range = 300.0
+attack_speed = 1.0
+projectile_scene = preload("res://scenes/effects/Arrow.tscn")
+projectile_speed = 500.0
+```
+
+#### **2. Required Properties Breakdown**
+- **display_name**: UI display text
+- **scene_to_spawn**: Must use `Base_Building.tscn` or inherit from it
+- **building_texture**: Visual representation
+- **build_cost**: Dictionary `{"resource": amount}`
+- **grid_size**: Building footprint on AStarGrid2D
+- **is_player_buildable**: Appears in Storefront UI
+
+### ⚔️ **Creating Units**
+
+#### **1. Create UnitData Resource**
+```bash
+# File: data/units/YourUnit.tres
+```
+
+**Template:**
+```tres
+[gd_resource type="Resource" script_class="UnitData" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://data/units/UnitData.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://scenes/units/YourUnit.tscn" id="2_scene"]
+[ext_resource type="Texture2D" path="res://textures/units/your_unit.png" id="3_texture"]
+[ext_resource type="PackedScene" path="res://scenes/components/AttackAI.tscn" id="4_ai"]
+
+[resource]
+script = ExtResource("1_script")
+display_name = "Your Unit"
+scene_to_spawn = ExtResource("2_scene")
+icon = ExtResource("3_texture")
+spawn_cost = {"food": 25, "gold": 15}
+max_health = 75
+move_speed = 120.0
+attack_damage = 18
+attack_range = 50.0
+attack_speed = 0.8
+ai_component_scene = ExtResource("4_ai")
+visual_texture = ExtResource("3_texture")
+target_pixel_size = Vector2(32, 32)
+acceleration = 15.0
+linear_damping = 7.0
+```
+
+**For Ranged Units:**
+```tres
+[ext_resource type="PackedScene" path="res://scenes/effects/Arrow.tscn" id="5_projectile"]
+
+[resource]
+attack_range = 250.0
+projectile_scene = ExtResource("5_projectile")
+projectile_speed = 400.0
+```
+
+#### **2. Unit Scene Setup**
+Your unit scene should inherit from or be based on `Base_Unit.tscn`:
+- Add `UnitData` resource to the `data` property
+- AttackAI component will auto-configure from UnitData
+- Use collision layers: Layer 2 (Player) or Layer 3 (Enemy)
+
+### 📜 **Creating Events**
+
+#### **1. Create EventData Resource**
+```bash
+# File: data/events/your_event.tres
+```
+
+**Template:**
+```tres
+[gd_resource type="Resource" script_class="EventData" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://data/events/EventData.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://textures/events/event_portrait.png" id="2_portrait"]
+[ext_resource type="Resource" script_class="EventChoice" path="res://data/events/choice_accept.tres" id="3_choice1"]
+[ext_resource type="Resource" script_class="EventChoice" path="res://data/events/choice_decline.tres" id="4_choice2"]
+
+[resource]
+script = ExtResource("1_script")
+title = "Your Event Title"
+description = "A detailed description of what happens in this event..."
+portrait = ExtResource("2_portrait")
+event_id = "unique_event_id_your_event"
+is_unique = true
+base_chance = 0.7
+prerequisites = ["previous_event_id"]
+min_stewardship = 5
+must_have_trait = "ambitious"
+min_available_heirs = 1
+choices = [ExtResource("3_choice1"), ExtResource("4_choice2")]
+```
+
+#### **2. Create EventChoice Resources**
+```bash
+# File: data/events/choice_accept.tres
+```
+
+```tres
+[gd_resource type="Resource" script_class="EventChoice" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/events/EventChoice.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+choice_text = "Accept the challenge"
+tooltip_text = "Gain renown but risk injury"
+effect_key = "CHOICE_ACCEPT_CHALLENGE"
+```
+
+### 🎭 **Creating Traits**
+
+#### **1. Create JarlTraitData Resource**
+```bash
+# File: data/traits/Trait_YourTrait.tres
+```
+
+**Template:**
+```tres
+[gd_resource type="Resource" script_class="JarlTraitData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/traits/JarlTraitData.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+display_name = "Your Trait"
+description = "Description of what this trait does"
+is_visible = true
+command_modifier = 2
+stewardship_modifier = -1
+intrigue_modifier = 0
+renown_per_year_modifier = 1.0
+vassal_opinion_modifier = 5
+alliance_cost_modifier = 0.9
+is_wounded_trait = false
+is_dishonorable_trait = false
+```
+
+### 🏰 **Creating Legacy Upgrades**
+
+#### **1. Create LegacyUpgradeData Resource**
+```bash
+# File: data/legacy/YourUpgrade.tres
+```
+
+**Template:**
+```tres
+[gd_resource type="Resource" script_class="LegacyUpgradeData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://data/legacy/LegacyUpgradeData.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://textures/legacy/upgrade_icon.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_script")
+display_name = "Your Legacy Upgrade"
+icon = ExtResource("2_icon")
+description = "A permanent improvement to your dynasty."
+renown_cost = 250
+authority_cost = 2
+required_progress = 1
+current_progress = 0
+effect_key = "UPG_YOUR_UPGRADE"
+prerequisite_key = "UPG_PREREQUISITE"
+```
+
+### 🗺️ **Creating World Regions**
+
+#### **1. Create WorldRegionData Resource**
+```bash
+# File: data/world_map/Region_YourRegion.tres
+```
+
+**Template:**
+```tres
+[gd_resource type="Resource" script_class="WorldRegionData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/world_map/WorldRegionData.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+region_name = "Your Region"
+region_description = "A description of this region"
+region_id = "region_your_region"
+difficulty_tier = 1
+base_loot_value = 100
+is_conquered = false
+```
+
+### 🎯 **Best Practices & Workflows**
+
+#### **Resource Naming Conventions:**
+- **Buildings**: `data/buildings/BuildingName.tres`
+- **Units**: `data/units/Unit_ClassName.tres`
+- **Events**: `data/events/event_name.tres`
+- **Traits**: `data/traits/Trait_TraitName.tres`
+- **Legacy**: `data/legacy/UpgradeName.tres`
+
+#### **Development Workflow:**
+1. **Create the .gd script** first (if extending existing classes)
+2. **Create the .tres resource** using the template
+3. **Test in Godot Editor** Inspector
+4. **Reference in scenes** via export variables
+5. **Hook into game systems** (Storefront, EventManager, etc.)
+
+#### **Resource Integration:**
+- **Buildings**: Add to Storefront via `is_player_buildable = true`
+- **Units**: Reference in Barracks or training systems
+- **Events**: Register with EventManager
+- **Traits**: Apply via JarlData or event systems
+- **Legacy**: Add to Dynasty progression UI
+
+#### **Testing Resources:**
+```gdscript
+# Quick test script for resources
+@tool
+extends EditorScript
+
+func _run():
+	var resource = load("res://data/buildings/YourBuilding.tres")
+	print("Resource loaded: ", resource.display_name)
+	print("Build cost: ", resource.build_cost)
+```
+
+#### **Performance Tips:**
+- **Preload resources** when possible: `preload("res://data/...")`
+- **Use UIDs** for resource references in .tres files
+- **Keep descriptions under 500 characters** for UI performance
+- **Batch resource loading** in managers rather than individual scripts
+
+#### **AttackAI Integration:**
+For combat-capable buildings or units:
+```tres
+ai_component_scene = preload("res://scenes/components/AttackAI.tscn")
+projectile_scene = preload("res://scenes/effects/Projectile.tscn")  # or null for melee
+```
+
+The AttackAI component auto-configures from resource data. See `ATTACKAI_USAGE.md` for detailed configuration.
+
+#### **Common Pitfalls:**
+❌ **Avoid**: Hardcoded values in scenes  
+✅ **Use**: Resource-driven configuration  
+
+❌ **Avoid**: Missing UIDs in .tres files  
+✅ **Use**: `uid://` references for proper loading  
+
+❌ **Avoid**: Circular resource dependencies  
+✅ **Use**: Clear resource hierarchy  
+
+This resource system provides data-driven development, enabling designers to create content without touching code while maintaining type safety and performance.

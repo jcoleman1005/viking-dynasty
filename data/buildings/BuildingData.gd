@@ -1,8 +1,7 @@
 # res://data/buildings/BuildingData.gd
 #
 # Defines the core data for any building in the game.
-#
-# --- MODIFIED: Added 'class_name BuildingData' ---
+# --- MODIFIED: Added Construction Stats for Phase 1.1 ---
 
 class_name BuildingData
 extends Resource
@@ -36,6 +35,15 @@ extends Resource
 
 ## If true, this building will appear in the player's Storefront UI.
 @export var is_player_buildable: bool = false
+
+# --- NEW: Phase 1.1 Construction Stats ---
+@export_group("Construction")
+## Total work points required to finish construction.
+@export var construction_effort_required: int = 100
+
+## Max workers allowed to build this at once (prevents zerging small buildings).
+@export var base_labor_capacity: int = 3
+# -----------------------------------------
 
 @export_group("Defensive Stats")
 ## If true, this building can attack enemies (e.g., Watchtower).

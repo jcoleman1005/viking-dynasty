@@ -248,8 +248,8 @@ func place_building() -> bool:
 	
 	print("Attempting to place %s at grid position %s" % [current_building_data.display_name, grid_pos])
 	
-	# This call still works!
-	var new_building = SettlementManager.place_building(current_building_data, grid_pos)
+	# This call still works! - FIXED: Now passes is_new_construction=true
+	var new_building = SettlementManager.place_building(current_building_data, grid_pos, true)
 	
 	if new_building:
 		print("Successfully placed building: %s" % current_building_data.display_name)

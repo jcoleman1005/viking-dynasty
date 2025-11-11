@@ -109,14 +109,23 @@ func initialize_mission() -> void:
 		push_error("RaidMission: Could not find Objective Building (Great Hall)!")
 
 
+# --- MODIFIED: Updated to load PENDING buildings too ---
 func _load_player_base_for_defense() -> void:
 	print("Loading PLAYER base for defense...")
 	var settlement = SettlementManager.current_settlement
 	if not settlement:
 		push_error("Defensive Mission: Cannot load player base.")
 		return
-		
-	for building_entry in settlement.placed_buildings:
+	
+	# 1. Load Completed Buildings
+	_spawn_building_list(settlement.placed_buildings, false)
+	
+	# 2. Load Blueprints (New Fix)
+	_spawn_building_list(settlement.pending_construction_buildings, true)
+	
+	_update_astar_grid_for_base(settlement.placed_buildings)
+func _spawn_building_list(list: Array, is_blueprint: bool) -> void:
+	for building_entry in list:
 		var building_res_path: String = building_entry["resource_path"]
 		var grid_pos: Vector2i = building_entry["grid_position"]
 		
@@ -133,20 +142,17 @@ func _load_player_base_for_defense() -> void:
 		var building_center_offset: Vector2 = building_footprint_size / 2.0
 		building_instance.global_position = world_pos_top_left + building_center_offset
 		
-		# CLEANED: Whitespace removed
-		building_instance.set_collision_layer(1) # Player Buildings (Layer 1)
+		building_instance.set_collision_layer(1)
 		building_instance.set_collision_mask(0) 
 		
 		if building_data.display_name.to_lower().contains("hall"):
 			objective_building = building_instance
 			
-		if building_instance.has_signal("building_destroyed"):
-			building_instance.building_destroyed.connect(_on_enemy_building_destroyed_grid_clear)
-		
 		building_container.add_child(building_instance)
-	
-	_update_astar_grid_for_base(settlement.placed_buildings)
-
+		
+		# Apply Blueprint State if needed
+		if is_blueprint:
+			building_instance.set_state(BaseBuilding.BuildingState.BLUEPRINT)
 
 func _load_enemy_base() -> void:
 	print("Loading ENEMY base for offense...")

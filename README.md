@@ -32,6 +32,8 @@ Viking Dynasty combines real-time strategy elements with settlement building and
 - **DynastyManager**: Dynasty progression, character management, trait systems, and legacy tracking (253 lines)
 - **SceneManager**: Scene transitions, state management, and level loading coordination
 - **PauseManager**: Game pause, time control, and runtime debugging interface
+- **EventManager**: Event system coordination and management
+- **ProjectilePoolManager**: Performance-optimized projectile spawning and recycling system
 
 #### Advanced Systems
 - **Unit AI**: Comprehensive finite state machine with 302-line UnitFSM for tactical behaviors
@@ -55,7 +57,8 @@ Viking Dynasty combines real-time strategy elements with settlement building and
 
 ### Recent Architecture Improvements
 - **Enhanced AI Systems**: Advanced UnitFSM with state-based behaviors and tactical decision making
-- **Improved Combat**: Projectile-based combat system with sophisticated damage calculation
+- **Modular Combat System**: AttackAI component-based architecture for reusable attack behaviors across units and buildings
+- **Improved Combat**: Projectile-based combat system with sophisticated damage calculation and ProjectilePoolManager optimization
 - **Squad Formations**: Coordinated unit movement with formation maintenance and tactical positioning
 - **Building Preview**: Real-time building placement with visual validation (301 lines)
 - **UI Systems**: Comprehensive StorefrontUI (410 lines) and DynastyUI for player interaction
@@ -67,11 +70,13 @@ res://
 ├── addons/           # Editor plugins and AI assistance
 │   └── GodotAiSuite/ # AI-powered development tools
 ├── autoload/         # Global singleton systems
-│   ├── DynastyManager.gd    # Dynasty and character progression
-│   ├── EventBus.gd          # Central signal communication
-│   ├── SettlementManager.gd # Building and pathfinding
-│   ├── SceneManager.gd      # Scene state management
-│   └── PauseManager.gd      # Runtime control
+│   ├── DynastyManager.gd        # Dynasty and character progression
+│   ├── EventBus.gd              # Central signal communication
+│   ├── EventManager.gd          # Event system coordination
+│   ├── PauseManager.gd          # Runtime control and debugging
+│   ├── ProjectilePoolManager.gd # Performance-optimized projectile management
+│   ├── SceneManager.gd          # Scene state management
+│   └── SettlementManager.gd     # Building and pathfinding
 ├── data/             # Game data resources and configurations
 │   ├── buildings/    # Building definitions and economic data
 │   ├── characters/   # Jarl data, traits, and heir management
@@ -191,21 +196,21 @@ signal health_changed(new_health: int, max_health: int)
 signal combat_state_changed(in_combat: bool)
 
 var health: int = 100:
-    set(value):
-        health = clamp(value, 0, max_health)
-        health_changed.emit(health, max_health)
-        if health <= 0:
-            unit_died.emit(self)
+	set(value):
+		health = clamp(value, 0, max_health)
+		health_changed.emit(health, max_health)
+		if health <= 0:
+			unit_died.emit(self)
 
 # Modern Godot 4.x physics with formation support
 func _physics_process(delta: float) -> void:
-    if target_position != Vector2.ZERO:
-        var direction: Vector2 = global_position.direction_to(target_position)
-        velocity = direction * move_speed
-        move_and_slide()
-        
-        if global_position.distance_to(target_position) < 5.0:
-            target_position = Vector2.ZERO
+	if target_position != Vector2.ZERO:
+		var direction: Vector2 = global_position.direction_to(target_position)
+		velocity = direction * move_speed
+		move_and_slide()
+		
+		if global_position.distance_to(target_position) < 5.0:
+			target_position = Vector2.ZERO
 ```
 
 ### Architecture Principles
@@ -253,7 +258,7 @@ The project uses a comprehensive collision layer system:
 - **Core Settlement**: Complete building mechanics with grid-based placement and pathfinding
 - **Advanced RTS**: Unit selection, movement, formation combat with sophisticated AI
 - **Resource Economy**: Comprehensive management with persistent save/load functionality
-- **Combat Systems**: Projectile-based combat with AttackAI component and tactical depth
+- **Combat Systems**: Projectile-based combat with AttackAI component and tactical depth (see `ATTACKAI_USAGE.md` for detailed guide)
 - **Event Architecture**: Complete signal-driven communication with EventBus coordination
 - **AI Systems**: Multi-state finite state machines with tactical decision making
 - **Dynasty Management**: Character progression with traits, heirs, and legacy systems
@@ -275,12 +280,14 @@ The project uses a comprehensive collision layer system:
 
 ## Development Statistics
 
-- **Total Scripts**: 45+ GDScript files with comprehensive static typing
-- **Core Systems**: 5 autoloaded singletons managing global game state
+- **Total Scripts**: 50+ GDScript files with comprehensive static typing
+- **Core Systems**: 7 autoloaded singletons managing global game state
 - **Major Components**: AttackAI (288 lines), UnitFSM (302 lines), SquadFormation (290 lines)
 - **Data Systems**: Comprehensive character system with 316-line JarlData implementation
 - **UI Systems**: Advanced interfaces including 410-line StorefrontUI
 - **Architecture**: Signal-driven design with EventBus coordination across all systems
+
+
 
 ## License
 
