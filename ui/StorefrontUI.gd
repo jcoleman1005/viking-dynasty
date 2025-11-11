@@ -25,7 +25,10 @@ const LegacyUpgradeData = preload("res://data/legacy/LegacyUpgradeData.gd")
 @export var auto_load_units_from_directory: bool = true
 
 # --- Internal state for legacy upgrades ---
-var loaded_legacy_upgrades: Array[LegacyUpgradeData] = []
+# --- THIS IS THE FIX: This variable is no longer needed here ---
+# var loaded_legacy_upgrades: Array[LegacyUpgradeData] = []
+# --- END FIX ---
+var minimum_inherited_legitimacy: int = 0 # This will be set by the upgrade
 
 
 # --- MOVED FUNCTIONS UP TO FIX PARSING ERROR ---
@@ -53,7 +56,6 @@ func _on_purchase_successful(item_name: String) -> void:
 	
 	# If a legacy upgrade was purchased, the jarl_stats_updated signal
 	# will handle refreshing the legacy button list.
-	
 	# We don't need to refresh the build list, as it's static for now.
 	pass
 
@@ -90,11 +92,11 @@ func _update_garrison_display() -> void:
 		
 		if unit_data:
 			var unit_label = Label.new()
-			unit_label.text = "• %s x%d" % [unit_data.display_name, unit_count]
+			unit_label.text = "â€¢ %s x%d" % [unit_data.display_name, unit_count]
 			garrison_list_container.add_child(unit_label)
 		else:
 			var error_label = Label.new()
-			error_label.text = "• Unknown unit x%d" % unit_count
+			error_label.text = "â€¢ Unknown unit x%d" % unit_count
 			garrison_list_container.add_child(error_label)
 	
 	var total_units = 0
@@ -125,7 +127,10 @@ func _ready() -> void:
 	# Initial load
 	_load_building_data()
 	_load_unit_data()
-	_load_legacy_upgrades() # Load the data first
+	
+	# --- THIS IS THE FIX: Removed local call ---
+	# _load_legacy_upgrades() # Load the data first
+	# --- END FIX ---
 	
 	# Setup UI
 	if DynastyManager.current_jarl:
@@ -147,31 +152,8 @@ func _update_jarl_stats_display(jarl_data: JarlData) -> void:
 	_populate_legacy_buttons()
 
 # --- Legacy Upgrade Functions ---
-func _load_legacy_upgrades() -> void:
-	"""Scan res://data/legacy/ for .tres files."""
-	loaded_legacy_upgrades.clear()
-	
-	var dir = DirAccess.open("res://data/legacy/")
-	if dir:
-		dir.list_dir_begin()
-		var file_name = dir.get_next()
-		while file_name != "":
-			if file_name.ends_with(".tres"):
-				var path = "res://data/legacy/" + file_name
-				var upgrade_data = load(path) as LegacyUpgradeData
-				
-				if upgrade_data:
-					# We create a local instance/duplicate of the resource.
-					# This prevents the "soft-guide" cost change from
-					# modifying the actual .tres file on disk.
-					var unique_upgrade = upgrade_data.duplicate()
-					
-					# Check if already purchased
-					unique_upgrade.is_purchased = DynastyManager.has_purchased_upgrade(unique_upgrade.effect_key)
-					loaded_legacy_upgrades.append(unique_upgrade)
-					
-			file_name = dir.get_next()
-	print("Loaded %d legacy upgrades." % loaded_legacy_upgrades.size())
+# --- THIS IS THE FIX: Removed _load_legacy_upgrades() function ---
+# --- END FIX ---
 
 func _populate_legacy_buttons() -> void:
 	"""
@@ -181,7 +163,10 @@ func _populate_legacy_buttons() -> void:
 	for child in legacy_buttons_container.get_children():
 		child.queue_free()
 	
-	if loaded_legacy_upgrades.is_empty():
+	# --- THIS IS THE FIX ---
+	# Read the list from the manager, not our internal variable
+	if DynastyManager.loaded_legacy_upgrades.is_empty():
+	# --- END FIX ---
 		var placeholder_label = Label.new()
 		placeholder_label.text = "No legacy upgrades found."
 		legacy_buttons_container.add_child(placeholder_label)
@@ -197,8 +182,10 @@ func _populate_legacy_buttons() -> void:
 	var is_pious = jarl.has_trait("Pious")
 	# ---------------------------------
 
+	# --- THIS IS THE FIX ---
 	# Create a button for each loaded upgrade
-	for upgrade_data in loaded_legacy_upgrades:
+	for upgrade_data in DynastyManager.loaded_legacy_upgrades:
+	# --- END FIX ---
 		
 		# --- "SOFT-GUIDE" LOGIC ---
 		# This is the core mechanic of the proposal in action.
@@ -215,7 +202,13 @@ func _populate_legacy_buttons() -> void:
 		var cost_text = "Cost: %d Renown%s, %d Auth" % [current_renown_cost, trait_modifier_text, upgrade_data.authority_cost]
 		
 		# Set the text (without the name, as the icon is present)
-		button.text = "%s\n%s" % [upgrade_data.display_name, cost_text]
+		# --- MODIFIED: Show Progress ---
+		var title_text = upgrade_data.display_name
+		if upgrade_data.required_progress > 1:
+			title_text += " (%d/%d)" % [upgrade_data.current_progress, upgrade_data.required_progress]
+		
+		button.text = "%s\\n%s" % [title_text, cost_text]
+		# --- END MODIFIED ---
 		button.tooltip_text = upgrade_data.description
 		
 		# --- NEW: Set Icon ---
@@ -226,13 +219,18 @@ func _populate_legacy_buttons() -> void:
 			button.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		# --- END NEW ---
 		
-		# --- Check affordability and purchase status ---
+		# --- MODIFIED: Check affordability and purchase status ---
 		var can_buy_renown = jarl.renown >= current_renown_cost # Use modified cost
 		var can_buy_auth = jarl.current_authority >= upgrade_data.authority_cost
 		
+		# --- THIS IS THE FIX ---
+		# We must check the Jarl's *data*, not the local copy
+		var is_purchased = DynastyManager.has_purchased_upgrade(upgrade_data.effect_key)
+		# We should also check the progress on the *manager's* copy
 		if upgrade_data.is_purchased:
+		# --- END FIX ---
 			button.disabled = true
-			button.text = "%s (Purchased)" % upgrade_data.display_name
+			button.text = "%s (Completed)" % upgrade_data.display_name
 		elif not can_buy_renown:
 			button.disabled = true
 			button.text += "\n(Not enough Renown)"
@@ -272,12 +270,13 @@ func _on_legacy_upgrade_pressed(upgrade_data: LegacyUpgradeData, final_renown_co
 		if spent_renown: DynastyManager.award_renown(final_renown_cost) # Refund
 		return
 	
-	# 3. Mark as purchased
-	upgrade_data.is_purchased = true
-	DynastyManager.purchase_legacy_upgrade(upgrade_data.effect_key)
+	# 3. Mark as purchased (This is now progress)
+	upgrade_data.current_progress += 1
 	
-	# 4. Apply the effect
-	_apply_legacy_upgrade_effect(upgrade_data.effect_key)
+	# 4. Apply the effect ONLY if progress is complete
+	if upgrade_data.is_purchased: # This check now works
+		DynastyManager.purchase_legacy_upgrade(upgrade_data.effect_key)
+		_apply_legacy_upgrade_effect(upgrade_data.effect_key)
 	
 	# 5. Refresh the UI
 	_populate_legacy_buttons() # This will now show the button as "Purchased"
@@ -299,8 +298,13 @@ func _apply_legacy_upgrade_effect(effect_key: String) -> void:
 		"UPG_JELLING_STONE":
 			var jarl = DynastyManager.get_current_jarl()
 			if jarl:
-				jarl.heir_starting_renown_bonus += 50 # Example value
-				print("Applied UPG_JELLING_STONE: Heir starting renown +50")
+				jarl.heir_starting_renown_bonus += 50
+				# --- NEW: Set Minimum Legitimacy ---
+				# --- THIS IS THE FIX ---
+				# We set this on the *manager*, not a local var
+				DynastyManager.minimum_inherited_legitimacy = 25 # Example: 25
+				# --- END FIX ---
+				print("Applied UPG_JELLING_STONE: Heir renown +50, Min Legitimacy set to 25")
 			else:
 				push_error("Cannot apply Jelling Stone upgrade: No current Jarl!")
 		

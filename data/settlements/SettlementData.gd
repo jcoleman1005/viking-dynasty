@@ -11,6 +11,10 @@ class_name SettlementData
 # Example: {"res://data/units/Unit_Raider.tres": 3}
 @export var garrisoned_units: Dictionary = {}
 
+# --- NEW: Stability Debuff ---
+@export var has_stability_debuff: bool = false
+# --- END NEW ---
+
 # --- NEW: Builder Pillar Upgrade Property ---
 ## Bonus max garrison size from Legacy Upgrades (e.g., "Upgrade Trelleborg")
 @export var max_garrison_bonus: int = 0

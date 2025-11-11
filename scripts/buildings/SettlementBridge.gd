@@ -74,7 +74,7 @@ func _setup_default_resources() -> void:
 	if not test_building_data:
 		test_building_data = default_test_building
 	if not raider_scene:
-		raider_scene = load("res://scenes/units/VikingRaider.tscn")
+		raider_scene = load("res://scenes/units/EnemyVikingRaider.tscn")
 	# --- MODIFICATION: Renamed variables ---
 	if not end_of_year_popup_scene: 
 		end_of_year_popup_scene = default_end_of_year_popup
@@ -248,7 +248,7 @@ func _on_start_raid_pressed() -> void:
 	
 	if SettlementManager.current_settlement.garrisoned_units.is_empty():
 		print("Warning: No units in garrison. Adding test unit.")
-		var test_unit_path = "res://data/units/Unit_Raider.tres"
+		var test_unit_path = "res://data/units/EnemyVikingRaider_Data.tres"
 		SettlementManager.current_settlement.garrisoned_units[test_unit_path] = 2
 		SettlementManager.save_settlement()
 	

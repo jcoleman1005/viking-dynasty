@@ -1,8 +1,10 @@
-[gd_scene load_steps=3 format=3 uid="uid://cq2g5hvpthjwi"]
+[gd_scene load_steps=4 format=3 uid="uid://cq2g5hvpthjwi"]
 
 [ext_resource type="Script" uid="uid://c2t14tumhq5xl" path="res://autoload/EventManager.gd" id="1_vx76l"]
 [ext_resource type="PackedScene" uid="uid://ih62qkde7dru" path="res://ui/Event_UI.tscn" id="2_qahc7"]
+[ext_resource type="PackedScene" uid="uid://c4itkcu7ufe5j" path="res://ui/Succession_Crisis_UI.tscn" id="3_qahc7"]
 
 [node name="EventManager" type="Node"]
 script = ExtResource("1_vx76l")
 event_ui_scene = ExtResource("2_qahc7")
+succession_crisis_scene = ExtResource("3_qahc7")

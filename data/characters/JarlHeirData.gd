@@ -24,3 +24,12 @@ enum HeirStatus {
 
 ## If on expedition, how many "years" remain.
 @export var expedition_years_remaining: int = 0
+
+# --- NEW: Heir Skills & Traits ---
+@export_group("Skills & Traits")
+@export var command: int = 8
+@export var stewardship: int = 8
+@export var learning: int = 8
+@export var prowess: int = 8
+@export var traits: Array[JarlTraitData] = []
+# --- END NEW ---

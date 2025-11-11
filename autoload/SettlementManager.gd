@@ -175,6 +175,16 @@ func calculate_payout() -> Dictionary:
 				# Removed: print("Added %d %s from conquered region: %s" % [final_income, resource_type, region_data.display_name])
 	# --- END NEW ---
 
+	# --- NEW: Apply Stability Debuff ---
+	if jarl:
+		if current_settlement.has_stability_debuff:
+			if total_payout.has("gold"):
+				total_payout["gold"] = int(total_payout["gold"] * 0.75) # -25% Gold income
+			# We also need to clear the debuff after it's applied
+			current_settlement.has_stability_debuff = false
+			save_settlement()
+	# --- END NEW ---
+
 	# Removed: if not total_payout.is_empty(): print("Calculated fixed payout (with bonus): %s" % total_payout)
 	return total_payout
 

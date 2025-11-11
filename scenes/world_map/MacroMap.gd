@@ -211,6 +211,13 @@ func _on_subjugate_pressed() -> void:
 	
 	if success:
 		DynastyManager.add_conquered_region(selected_region_data.resource_path)
+		
+		# --- NEW: Add Legitimacy Boost ---
+		var jarl = DynastyManager.get_current_jarl()
+		jarl.legitimacy = min(100, jarl.legitimacy + 5) # +5 Legitimacy
+		DynastyManager.jarl_stats_updated.emit(jarl) # Force UI/data refresh
+		# --- END NEW ---
+		
 		print("Region %s successfully subjugated." % selected_region_data.display_name)
 	else:
 		push_error("MacroMap: Subjugate button was pressed but authority check failed.")
@@ -277,5 +284,5 @@ func _process_end_year_logic(payout: Dictionary) -> void:
 func _on_settlement_pressed() -> void:
 	EventBus.scene_change_requested.emit("settlement")
 
-func _input(event: InputEvent) -> void:
+func _unhandled_input(event: InputEvent) -> void:
 	pass
