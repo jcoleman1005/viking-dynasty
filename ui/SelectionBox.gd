@@ -9,16 +9,13 @@ extends Control
 
 var is_dragging := false
 var start_pos := Vector2.ZERO
-
-# --- NEW: Formation Drag ---
 var is_command_dragging := false
 var command_start_pos := Vector2.ZERO
 # ---------------------------
 
 func _ready() -> void:
-	# This node handles its own input via _gui_input,
-	# so it doesn't need to connect to the EventRouter.
-	pass
+	#Allow unused mouse events (like Zoom) to pass to the Camera
+	mouse_filter = Control.MOUSE_FILTER_PASS
 
 func _gui_input(event: InputEvent) -> void:
 	# We use _gui_input, which is only called if the mouse

@@ -112,6 +112,8 @@ func _update_garrison_display() -> void:
 
 
 func _ready() -> void:
+	# Allow unused mouse events to pass to the Camera ---
+	mouse_filter = Control.MOUSE_FILTER_PASS
 	# Connect to SettlementManager for treasury
 	EventBus.treasury_updated.connect(_update_treasury_display)
 	EventBus.purchase_successful.connect(_on_purchase_successful)
