@@ -9,6 +9,10 @@ extends Node
 # --- Configuration Constants ---
 const BUILDER_EFFICIENCY: int = 25 # Construction progress per worker per year
 const GATHERER_EFFICIENCY: int = 10 # Resources produced per worker per year
+const BASE_GATHERING_CAPACITY: int = 2
+
+#Define a Save Path
+const USER_SAVE_PATH = "user://savegame.tres"
 
 var current_settlement: SettlementData
 
@@ -44,48 +48,76 @@ func _trigger_territory_update() -> void:
 # --- Settlement Data ---
 
 func load_settlement(data: SettlementData) -> void:
-	if not data:
-		push_error("SettlementManager: load_settlement called with null data.")
-		return
-	
-	current_settlement = data
-	
-	if not current_settlement.resource_path or current_settlement.resource_path.is_empty():
-		if data.resource_path and not data.resource_path.is_empty():
-			current_settlement.resource_path = data.resource_path
+	# 1. Try to load from User Save first (Persistence)
+	if ResourceLoader.exists(USER_SAVE_PATH):
+		var saved_data = load(USER_SAVE_PATH)
+		if saved_data is SettlementData:
+			current_settlement = saved_data
+			print("SettlementManager: Loaded user save from %s" % USER_SAVE_PATH)
 		else:
-			current_settlement.resource_path = "res://data/settlements/home_base_fixed.tres"
-			push_warning("SettlementManager: Set fallback resource_path to: %s" % current_settlement.resource_path)
+			_load_fallback_data(data)
+	else:
+		_load_fallback_data(data)
 	
-	print("SettlementManager: Settlement data loaded - %s" % current_settlement.resource_path)
 	EventBus.settlement_loaded.emit(current_settlement)
 	_trigger_territory_update()
 
-func save_settlement() -> void:
-	if not current_settlement:
-		push_error("Attempted to save a null settlement.")
-		return
-	
-	var count = 0
-	if current_settlement.pending_construction_buildings:
-		count = current_settlement.pending_construction_buildings.size()
-		
-	print("SettlementManager: Saving... Pending Buildings Count: %d" % count)
-	
-	if current_settlement.resource_path and not current_settlement.resource_path.is_empty():
-		if not current_settlement.get_script():
-			current_settlement.set_script(preload("res://data/settlements/SettlementData.gd"))
-		
-		var error = ResourceSaver.save(current_settlement, current_settlement.resource_path)
-		if error != OK:
-			push_error("Failed to save settlement data. Error code: %s" % error)
+func _load_fallback_data(data: SettlementData) -> void:
+	if data:
+		# Duplicate data so we don't overwrite the .tres template in memory
+		current_settlement = data.duplicate(true)
+		print("SettlementManager: Loaded default template.")
 	else:
-		push_warning("SettlementData has no resource_path, cannot save settlement.")
+		push_error("SettlementManager: No data provided and no save file found.")
+
+func save_settlement() -> void:
+	if not current_settlement: return
+	
+	# --- FIX: Save to user:// instead of res:// ---
+	var error = ResourceSaver.save(current_settlement, USER_SAVE_PATH)
+	
+	if error == OK:
+		var count = current_settlement.pending_construction_buildings.size()
+		print("SettlementManager: Saved to %s (Pending: %d)" % [USER_SAVE_PATH, count])
+	else:
+		push_error("Failed to save to %s. Error code: %s" % [USER_SAVE_PATH, error])
 
 func has_current_settlement() -> bool:
 	return current_settlement != null
 
 # --- Treasury & Economy ---
+func get_labor_capacities() -> Dictionary:
+	"""
+	Returns the maximum workers allowed for each category.
+	Based on Active Buildings (Gathering) and Blueprints (Construction).
+	"""
+	var capacities = {
+		"construction": 0,
+		"food": BASE_GATHERING_CAPACITY,
+		"wood": BASE_GATHERING_CAPACITY,
+		"stone": BASE_GATHERING_CAPACITY
+		# Gold is removed (Raiding only)
+	}
+	
+	if not current_settlement:
+		return capacities
+
+	# 1. Gathering Capacity (From Active Buildings)
+	for entry in current_settlement.placed_buildings:
+		var b_data = load(entry["resource_path"])
+		if b_data is EconomicBuildingData:
+			var type = b_data.resource_type
+			if capacities.has(type):
+				capacities[type] += b_data.max_workers
+	
+	# 2. Construction Capacity (From Blueprints)
+	# Limits how many people can crowd around a construction site
+	for entry in current_settlement.pending_construction_buildings:
+		var b_data = load(entry["resource_path"]) as BuildingData
+		if b_data:
+			capacities["construction"] += b_data.base_labor_capacity
+			
+	return capacities
 
 func deposit_resources(loot: Dictionary) -> void:
 	if not current_settlement: return
@@ -116,67 +148,51 @@ func attempt_purchase(item_cost: Dictionary) -> bool:
 	return true
 
 func calculate_payout() -> Dictionary:
-	if not current_settlement:
-		return {}
+	if not current_settlement: return {}
 
 	_process_construction_labor()
 
 	var total_payout: Dictionary = {}
-	
-	var stewardship_bonus: float = 1.0
+	var stewardship_bonus = 1.0
 	var jarl = DynastyManager.get_current_jarl()
 	if jarl:
-		var stewardship_skill = jarl.get_effective_skill("stewardship")
-		stewardship_bonus = 1.0 + (stewardship_skill - 10) * 0.05
+		var skill = jarl.get_effective_skill("stewardship")
+		stewardship_bonus = 1.0 + (skill - 10) * 0.05
 		stewardship_bonus = max(0.5, stewardship_bonus)
 
-	# Labor Output
+	# 1. Labor Output (Gold Removed)
 	if current_settlement.worker_assignments:
-		for resource_type in ["food", "wood", "stone", "gold"]:
-			var assigned_workers = current_settlement.worker_assignments.get(resource_type, 0)
-			if assigned_workers > 0:
-				if not total_payout.has(resource_type):
-					total_payout[resource_type] = 0
-				
-				var labor_yield = int(assigned_workers * GATHERER_EFFICIENCY * stewardship_bonus)
+		for resource_type in ["food", "wood", "stone"]: # Gold removed
+			var assigned = current_settlement.worker_assignments.get(resource_type, 0)
+			if assigned > 0:
+				if not total_payout.has(resource_type): total_payout[resource_type] = 0
+				var labor_yield = int(assigned * GATHERER_EFFICIENCY * stewardship_bonus)
 				total_payout[resource_type] += labor_yield
-				print("Labor added %d %s (%d workers)" % [labor_yield, resource_type, assigned_workers])
+				print("Labor added %d %s" % [labor_yield, resource_type])
 
-	# Building Output
-	for building_entry in current_settlement.placed_buildings:
-		var building_data: BuildingData = load(building_entry["resource_path"])
-		if building_data is EconomicBuildingData:
-			var eco_data: EconomicBuildingData = building_data
-			var resource_type: String = eco_data.resource_type
-			
-			if not total_payout.has(resource_type):
-				total_payout[resource_type] = 0
-			
-			var base_payout = eco_data.fixed_payout_amount
-			var final_payout = int(round(base_payout * stewardship_bonus))
-			total_payout[resource_type] += final_payout
+	# 2. Passive Building Output (Gold allowed here, e.g. Markets/Mints)
+	for entry in current_settlement.placed_buildings:
+		var b_data = load(entry["resource_path"])
+		if b_data is EconomicBuildingData:
+			var type = b_data.resource_type
+			if not total_payout.has(type): total_payout[type] = 0
+			total_payout[type] += int(b_data.fixed_payout_amount * stewardship_bonus)
 
-	# Region Income
+	# 3. Region Income
 	if jarl:
 		for region_path in jarl.conquered_regions:
-			var region_data: WorldRegionData = load(region_path)
-			if not region_data: continue
-			
-			for resource_type in region_data.yearly_income:
-				var income_amount = region_data.yearly_income[resource_type]
-				if not total_payout.has(resource_type):
-					total_payout[resource_type] = 0
-				
-				var final_income = int(round(income_amount * stewardship_bonus))
-				total_payout[resource_type] += final_income
+			var r_data = load(region_path)
+			if r_data:
+				for res in r_data.yearly_income:
+					if not total_payout.has(res): total_payout[res] = 0
+					total_payout[res] += int(r_data.yearly_income[res] * stewardship_bonus)
 
-	# Debuffs
-	if jarl:
-		if current_settlement.has_stability_debuff:
-			if total_payout.has("gold"):
-				total_payout["gold"] = int(total_payout["gold"] * 0.75)
-			current_settlement.has_stability_debuff = false
-			save_settlement()
+	# 4. Debuffs
+	if jarl and current_settlement.has_stability_debuff:
+		if total_payout.has("gold"):
+			total_payout["gold"] = int(total_payout["gold"] * 0.75)
+		current_settlement.has_stability_debuff = false
+		save_settlement()
 
 	return total_payout
 
@@ -320,7 +336,6 @@ func remove_building(building_instance: BaseBuilding) -> void:
 
 	building_instance.queue_free()
 
-# --- BUG FIX: Handle mixed Vector2/Vector2i types ---
 func _remove_from_list(list: Array, grid_pos: Vector2i) -> bool:
 	for i in range(list.size()):
 		var entry = list[i]
@@ -334,13 +349,12 @@ func _remove_from_list(list: Array, grid_pos: Vector2i) -> bool:
 		elif entry_pos is Vector2i:
 			current_pos_i = entry_pos
 		else:
-			continue # Unknown type, skip
+			continue 
 			
 		if current_pos_i == grid_pos:
 			list.remove_at(i)
 			return true
 	return false
-# ----------------------------------------------------
 
 func get_active_grid_cell_size() -> Vector2:
 	if is_instance_valid(active_astar_grid): return active_astar_grid.cell_size
@@ -429,68 +443,51 @@ func set_astar_point_solid(grid_position: Vector2i, solid: bool) -> void:
 # --- Phase 4.1: The Prediction Engine ---
 
 func simulate_turn(simulated_assignments: Dictionary) -> Dictionary:
-	"""
-	Runs a 'dry run' of the end year logic.
-	Returns a Dictionary containing:
-	- resources_gained: Dictionary {type: amount}
-	- buildings_completing: Array [building_names]
-	"""
-	if not current_settlement:
-		return {}
+	if not current_settlement: return {}
 
 	var result = {
 		"resources_gained": { "food": 0, "wood": 0, "stone": 0, "gold": 0 },
 		"buildings_completing": []
 	}
 
-	# --- 1. Simulate Construction ---
+	# 1. Simulate Construction
 	var assigned_builders = simulated_assignments.get("construction", 0)
-	var total_labor_points = assigned_builders * BUILDER_EFFICIENCY
+	var total_points = assigned_builders * BUILDER_EFFICIENCY
 	
-	# We simulate progress by looking at the current data without modifying it
 	for entry in current_settlement.pending_construction_buildings:
-		if total_labor_points <= 0: break
-		
+		if total_points <= 0: break
 		var b_data = load(entry["resource_path"]) as BuildingData
 		if not b_data: continue
 		
-		var current = entry.get("progress", 0)
-		var required = b_data.construction_effort_required
-		var needed = required - current
+		var needed = b_data.construction_effort_required - entry.get("progress", 0)
+		var applied = min(total_points, needed)
+		total_points -= applied
 		
-		var applied = min(total_labor_points, needed)
-		total_labor_points -= applied
-		
-		if (current + applied) >= required:
+		if (entry.get("progress", 0) + applied) >= b_data.construction_effort_required:
 			result["buildings_completing"].append(b_data.display_name)
 
-	# --- 2. Simulate Economy ---
+	# 2. Simulate Economy
 	var stewardship_bonus = 1.0
 	var jarl = DynastyManager.get_current_jarl()
 	if jarl:
-		var stewardship_skill = jarl.get_effective_skill("stewardship")
-		stewardship_bonus = 1.0 + (stewardship_skill - 10) * 0.05
-		stewardship_bonus = max(0.5, stewardship_bonus)
+		var skill = jarl.get_effective_skill("stewardship")
+		stewardship_bonus = 1.0 + (skill - 10) * 0.05
 
-	# A. From Labor
-	for res in ["food", "wood", "stone", "gold"]:
+	# Labor (Gold Removed)
+	for res in ["food", "wood", "stone"]:
 		var count = simulated_assignments.get(res, 0)
 		if count > 0:
-			var labor_yield = int(count * GATHERER_EFFICIENCY * stewardship_bonus)
-			result["resources_gained"][res] += labor_yield
+			result["resources_gained"][res] += int(count * GATHERER_EFFICIENCY * stewardship_bonus)
 
-	# B. From Buildings (Passive)
-	for b_entry in current_settlement.placed_buildings:
-		var b_data = load(b_entry["resource_path"]) as BuildingData
+	# Passive Buildings & Regions (Keep Gold)
+	for entry in current_settlement.placed_buildings:
+		var b_data = load(entry["resource_path"])
 		if b_data is EconomicBuildingData:
-			var eco = b_data as EconomicBuildingData
-			var base = eco.fixed_payout_amount
-			result["resources_gained"][eco.resource_type] += int(base * stewardship_bonus)
-
-	# C. From Region Income
+			result["resources_gained"][b_data.resource_type] += int(b_data.fixed_payout_amount * stewardship_bonus)
+			
 	if jarl:
-		for region_path in jarl.conquered_regions:
-			var r_data = load(region_path) as WorldRegionData
+		for path in jarl.conquered_regions:
+			var r_data = load(path)
 			if r_data:
 				for res in r_data.yearly_income:
 					result["resources_gained"][res] += int(r_data.yearly_income[res] * stewardship_bonus)

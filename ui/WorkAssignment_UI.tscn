@@ -33,7 +33,7 @@ layout_mode = 2
 [node name="TotalPopLabel" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer/Header"]
 layout_mode = 2
 
-[node name="AvailablePopLevel" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer/Header"]
+[node name="AvailablePopLabel" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer/Header"]
 layout_mode = 2
 
 [node name="HSeparator" type="HSeparator" parent="PanelContainer/MarginContainer/VBoxContainer"]

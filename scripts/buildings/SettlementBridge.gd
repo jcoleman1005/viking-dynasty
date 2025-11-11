@@ -280,8 +280,14 @@ func _on_building_placement_cancelled_by_cursor() -> void:
 		awaiting_placement = null
 
 func _on_building_right_clicked(building: BaseBuilding) -> void:
+	# Move/Sell logic
 	if building_cursor.is_active:
 		return
+	
+	# --- REVERTED: Lock Removed ---
+	# We now allow deleting the Hub because the Cursor logic 
+	# permits placing it back down on empty land.
+	# ------------------------------
 		
 	print("SettlementBridge: Move requested for %s" % building.data.display_name)
 	

@@ -119,22 +119,29 @@ func _can_place_at_position(grid_pos: Vector2i) -> bool:
 	if not SettlementManager or not current_building_data:
 		return false
 	
-	# 1. Check Collision (Is the ground solid?)
+	# 1. Check Collision (Is the ground solid/occupied?)
+	# This applies to EVERYTHING. You can't build inside a rock.
 	if not SettlementManager.is_placement_valid(grid_pos, current_building_data.grid_size):
 		return false
 		
 	# 2. Check Territory (Is it in the Green Zone?)
+	# EXCEPTION: If this building IS a Hub (Great Hall), it generates the zone.
+	# Therefore, it does not need to be *inside* an existing zone.
+	if current_building_data.is_territory_hub:
+		return true
+	
+	# Standard check for non-hubs (Walls, Farms, etc.)
 	if grid_manager and grid_manager.has_method("is_cell_buildable"):
 		# We check every tile in the building's footprint
 		for x in range(current_building_data.grid_size.x):
 			for y in range(current_building_data.grid_size.y):
 				var check_pos = grid_pos + Vector2i(x, y)
+				
 				# If ANY part of the building is outside territory, deny placement
 				if not grid_manager.is_cell_buildable(check_pos):
 					return false
 	
 	return true
-# -----------------------------------------------------
 
 func _update_visual_feedback() -> void:
 	if not preview_sprite: return

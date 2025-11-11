@@ -1,19 +1,16 @@
-[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://dsgbqyqqlvlwn"]
 
-[ext_resource type="Script" path="res://data/settlements/SettlementData.gd" id="1_settlement_data"]
+[ext_resource type="Script" uid="uid://hlb8s5g0yp6k" path="res://data/settlements/SettlementData.gd" id="1_settlement_data"]
 
 [resource]
 script = ExtResource("1_settlement_data")
 treasury = {
-"food": 579,
-"gold": 500,
-"stone": 175,
-"wood": 910
+"food": 657,
+"gold": 600,
+"stone": 125,
+"wood": 1547
 }
 placed_buildings = Array[Dictionary]([{
-"grid_position": Vector2i(41, 17),
-"resource_path": "res://data/buildings/GreatHall.tres"
-}, {
 "grid_position": Vector2i(33, 18),
 "resource_path": "res://data/buildings/LumberYard.tres"
 }, {
@@ -61,11 +58,23 @@ placed_buildings = Array[Dictionary]([{
 }, {
 "grid_position": Vector2i(48, 16),
 "resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(46, 21),
-"resource_path": "res://data/buildings/Player_Farm.tres"
 }])
+pending_construction_buildings = [{
+"grid_position": Vector2i(43, 11),
+"progress": 25,
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(36, 26),
+"progress": 0,
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}]
 garrisoned_units = {
 "res://data/units/Unit_PlayerRaider.tres": 16
+}
+worker_assignments = {
+"construction": 1,
+"food": 0,
+"stone": 0,
+"wood": 0
 }
 metadata/_custom_type_script = "uid://hlb8s5g0yp6k"
