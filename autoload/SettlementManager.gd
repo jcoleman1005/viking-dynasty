@@ -2,9 +2,14 @@
 #
 # A global Singleton (Autoload) that acts as a pure data manager
 # for the player's current settlement.
-# --- MODIFIED: Phase 1.3 Blueprint Logic ---
+# --- MODIFIED: Phase 2.3 Economic Engine Integration ---
 
 extends Node
+
+# --- Configuration Constants ---
+# Tweak these to balance the game pacing
+const BUILDER_EFFICIENCY: int = 25 # Construction progress per worker per year
+const GATHERER_EFFICIENCY: int = 10 # Resources produced per worker per year
 
 var current_settlement: SettlementData
 
@@ -51,51 +56,28 @@ func save_settlement() -> void:
 		push_error("Attempted to save a null settlement.")
 		return
 	
-	print("SettlementManager: Saving... Pending Buildings Count: %d" % current_settlement.pending_construction_buildings.size())
-	
-	# Debug: Print pending buildings before save
-	_debug_print_pending_buildings()
+	var count = 0
+	if current_settlement.pending_construction_buildings:
+		count = current_settlement.pending_construction_buildings.size()
+		
+	print("SettlementManager: Saving... Pending Buildings Count: %d" % count)
 	
 	if current_settlement.resource_path and not current_settlement.resource_path.is_empty():
 		if not current_settlement.get_script():
 			current_settlement.set_script(preload("res://data/settlements/SettlementData.gd"))
 		
-		# Force resource to be marked as changed
-		current_settlement.changed.emit()
-		current_settlement.take_over_path(current_settlement.resource_path)
-		
-		var error = ResourceSaver.save(current_settlement, current_settlement.resource_path, ResourceSaver.FLAG_CHANGE_PATH)
+		var error = ResourceSaver.save(current_settlement, current_settlement.resource_path)
 		if error == OK:
-			print("Settlement data saved successfully to %s" % current_settlement.resource_path)
-			# Verify save by reloading and checking
-			_debug_verify_save()
+			print("Settlement data saved successfully.")
 		else:
 			push_error("Failed to save settlement data. Error code: %s" % error)
 	else:
 		push_warning("SettlementData has no resource_path, cannot save settlement.")
 
-func _debug_print_pending_buildings() -> void:
-	print("DEBUG: Current pending_construction_buildings:")
-	for i in range(current_settlement.pending_construction_buildings.size()):
-		var entry = current_settlement.pending_construction_buildings[i]
-		print("  [%d]: %s" % [i, entry])
-
-func _debug_verify_save() -> void:
-	# Try to reload the resource and check if pending buildings were saved
-	if current_settlement.resource_path:
-		var reloaded_settlement: SettlementData = load(current_settlement.resource_path)
-		if reloaded_settlement:
-			print("DEBUG: Verification - Reloaded settlement has %d pending buildings" % reloaded_settlement.pending_construction_buildings.size())
-			for i in range(reloaded_settlement.pending_construction_buildings.size()):
-				var entry = reloaded_settlement.pending_construction_buildings[i]
-				print("  Reloaded [%d]: %s" % [i, entry])
-		else:
-			print("DEBUG: Failed to reload settlement for verification")
-
 func has_current_settlement() -> bool:
 	return current_settlement != null
 
-# --- Treasury & Economy ---
+# --- Treasury & Economy (Phase 2.3 Updated) ---
 
 func deposit_resources(loot: Dictionary) -> void:
 	if not current_settlement: return
@@ -126,35 +108,61 @@ func attempt_purchase(item_cost: Dictionary) -> bool:
 	return true
 
 func calculate_payout() -> Dictionary:
+	"""
+	Calculates total resource gain based on:
+	1. Assigned Workers (Labor) -> The Core Engine
+	2. Active Economic Buildings (Passive Bonus)
+	3. Jarl Stewardship Bonus
+	Also processes construction progress immediately.
+	"""
 	if not current_settlement:
 		return {}
 
+	# --- 1. Process Construction First ---
+	# We do this before calculating payout so newly finished buildings don't produce immediately (optional design choice)
+	_process_construction_labor()
+
 	var total_payout: Dictionary = {}
+	
+	# --- 2. Jarl Bonus Calculation ---
 	var stewardship_bonus: float = 1.0
 	var jarl = DynastyManager.get_current_jarl()
 	if jarl:
 		var stewardship_skill = jarl.get_effective_skill("stewardship")
+		# 5% bonus per point over 10
 		stewardship_bonus = 1.0 + (stewardship_skill - 10) * 0.05
 		stewardship_bonus = max(0.5, stewardship_bonus)
 
-	# Only ACTIVE buildings generate resources (explicitly exclude blueprints/construction)
-	# Loop through building instances in the scene to check their state
-	if is_instance_valid(active_building_container):
-		for child in active_building_container.get_children():
-			if child is BaseBuilding:
-				var building: BaseBuilding = child
-				# Only ACTIVE buildings contribute to economy
-				if building.is_active() and building.data is EconomicBuildingData:
-					var eco_data: EconomicBuildingData = building.data
-					var resource_type: String = eco_data.resource_type
-					
-					if not total_payout.has(resource_type):
-						total_payout[resource_type] = 0
-					
-					var base_payout = eco_data.fixed_payout_amount
-					var final_payout = int(round(base_payout * stewardship_bonus))
-					total_payout[resource_type] += final_payout
+	# --- 3. Labor Output (Active) ---
+	# This is now the primary source of income
+	if current_settlement.worker_assignments:
+		for resource_type in ["food", "wood", "stone", "gold"]:
+			var assigned_workers = current_settlement.worker_assignments.get(resource_type, 0)
+			if assigned_workers > 0:
+				if not total_payout.has(resource_type):
+					total_payout[resource_type] = 0
+				
+				# Workers provide base yield * efficiency * stewardship
+				var labor_yield = int(assigned_workers * GATHERER_EFFICIENCY * stewardship_bonus)
+				total_payout[resource_type] += labor_yield
+				print("Labor added %d %s (%d workers)" % [labor_yield, resource_type, assigned_workers])
 
+	# --- 4. Building Output (Passive) ---
+	# Active buildings act as multipliers or static bonuses
+	for building_entry in current_settlement.placed_buildings:
+		var building_data: BuildingData = load(building_entry["resource_path"])
+		if building_data is EconomicBuildingData:
+			var eco_data: EconomicBuildingData = building_data
+			var resource_type: String = eco_data.resource_type
+			
+			if not total_payout.has(resource_type):
+				total_payout[resource_type] = 0
+			
+			var base_payout = eco_data.fixed_payout_amount
+			var final_payout = int(round(base_payout * stewardship_bonus))
+			total_payout[resource_type] += final_payout
+
+	# --- 5. Region Income ---
 	if jarl:
 		for region_path in jarl.conquered_regions:
 			var region_data: WorldRegionData = load(region_path)
@@ -168,6 +176,7 @@ func calculate_payout() -> Dictionary:
 				var final_income = int(round(income_amount * stewardship_bonus))
 				total_payout[resource_type] += final_income
 
+	# --- 6. Debuffs ---
 	if jarl:
 		if current_settlement.has_stability_debuff:
 			if total_payout.has("gold"):
@@ -179,7 +188,6 @@ func calculate_payout() -> Dictionary:
 
 func recruit_unit(unit_data: UnitData) -> void:
 	if not current_settlement or not unit_data: return
-	
 	var unit_path: String = unit_data.resource_path
 	if unit_path.is_empty(): return
 	
@@ -192,26 +200,90 @@ func recruit_unit(unit_data: UnitData) -> void:
 	save_settlement()
 	EventBus.purchase_successful.emit(unit_data.display_name)
 
+# --- Building Construction Logic (Phase 2.3) ---
+
+func _process_construction_labor() -> void:
+	"""
+	Applies assigned construction labor to pending blueprints.
+	Moves completed buildings to the active list.
+	"""
+	if not current_settlement: return
+	
+	# 1. Calculate Total Work Available
+	var assigned_builders = current_settlement.worker_assignments.get("construction", 0)
+	if assigned_builders <= 0:
+		print("End Year: No builders assigned. Construction stalled.")
+		return
+		
+	var total_labor_points = assigned_builders * BUILDER_EFFICIENCY
+	print("End Year: Processing Construction. Available Labor: %d" % total_labor_points)
+	
+	var completed_indices: Array[int] = []
+	
+	# 2. Apply Work to Blueprints
+	# We iterate cleanly through the pending list
+	for i in range(current_settlement.pending_construction_buildings.size()):
+		if total_labor_points <= 0:
+			break # Run out of labor
+			
+		var entry = current_settlement.pending_construction_buildings[i]
+		var building_data = load(entry["resource_path"]) as BuildingData
+		
+		if not building_data: continue
+		
+		# Determine effort needed
+		var current_progress = entry.get("progress", 0)
+		var effort_needed = building_data.construction_effort_required
+		var effort_remaining = effort_needed - current_progress
+		
+		# Apply points (capped by remaining effort for this building)
+		var points_to_apply = min(total_labor_points, effort_remaining)
+		
+		# Update Data
+		entry["progress"] = current_progress + points_to_apply
+		total_labor_points -= points_to_apply
+		
+		print("  > Applied %d points to %s (Progress: %d/%d)" % [points_to_apply, building_data.display_name, entry["progress"], effort_needed])
+		
+		# 3. Check Completion
+		if entry["progress"] >= effort_needed:
+			print("  >>> Construction COMPLETE: %s" % building_data.display_name)
+			completed_indices.append(i)
+			
+			# Add to placed buildings (ACTIVE)
+			var new_placed_entry = {
+				"resource_path": entry["resource_path"],
+				"grid_position": entry["grid_position"]
+			}
+			current_settlement.placed_buildings.append(new_placed_entry)
+	
+	# 4. Cleanup Completed Blueprints
+	# Iterate backwards to remove safely
+	completed_indices.sort()
+	completed_indices.reverse()
+	
+	for i in completed_indices:
+		current_settlement.pending_construction_buildings.remove_at(i)
+		
+	# 5. Save changes
+	save_settlement()
+	
+	# 6. Reload Scene if needed (Optional, but safe)
+	# If we just finished a building, we want to see it turn solid immediately
+	if not completed_indices.is_empty():
+		EventBus.scene_change_requested.emit("settlement") # Reloads the scene to refresh visuals
 
 # --- Building & Pathfinding ---
 
 func remove_building(building_instance: BaseBuilding) -> void:
-	"""
-	Removes a building from the scene, data model, and grid.
-	Handles both 'placed' and 'pending' buildings.
-	"""
-	if not current_settlement or not is_instance_valid(building_instance):
-		return
+	if not current_settlement or not is_instance_valid(building_instance): return
 
-	# 1. Calculate Grid Position
 	var cell_size = get_active_grid_cell_size()
 	var building_pos = building_instance.global_position
 	var size_pixels = Vector2(building_instance.data.grid_size) * cell_size
 	var top_left_pixels = building_pos - (size_pixels / 2.0)
 	var grid_pos = Vector2i(top_left_pixels / cell_size)
 	
-	# 2. Clear A* Grid (if it was blocking)
-	# Blueprints might not block pathfinding yet, but good to clear anyway
 	if is_instance_valid(active_astar_grid):
 		for x in range(building_instance.data.grid_size.x):
 			for y in range(building_instance.data.grid_size.y):
@@ -221,11 +293,8 @@ func remove_building(building_instance: BaseBuilding) -> void:
 		active_astar_grid.update()
 		EventBus.pathfinding_grid_updated.emit(grid_pos)
 
-	# 3. Remove from Data Model
-	# Check placed_buildings
 	var removed = _remove_from_list(current_settlement.placed_buildings, grid_pos)
 	if not removed:
-		# Check pending_construction_buildings
 		removed = _remove_from_list(current_settlement.pending_construction_buildings, grid_pos)
 	
 	if removed:
@@ -234,7 +303,6 @@ func remove_building(building_instance: BaseBuilding) -> void:
 	else:
 		push_warning("SettlementManager: Could not find data entry for building at %s" % grid_pos)
 
-	# 4. Remove Instance
 	building_instance.queue_free()
 
 func _remove_from_list(list: Array, grid_pos: Vector2i) -> bool:
@@ -249,22 +317,10 @@ func _remove_from_list(list: Array, grid_pos: Vector2i) -> bool:
 	return false
 
 func get_active_grid_cell_size() -> Vector2:
-	if is_instance_valid(active_astar_grid):
-		return active_astar_grid.cell_size
+	if is_instance_valid(active_astar_grid): return active_astar_grid.cell_size
 	return Vector2(32, 32)
 
-# --- MODIFIED: Updated for Phase 1.3 Blueprint Logic ---
 func place_building(building_data: BuildingData, grid_position: Vector2i, is_new_construction: bool = false) -> BaseBuilding:
-	"""
-	Instantiates and places a building.
-	If is_new_construction is true:
-		- Sets state to BLUEPRINT 
-		- Adds to pending_construction_buildings 
-		- Saves data
-	If false (loading from save):
-		- Sets state to ACTIVE (default assumption for legacy saves)
-		- Does NOT save data (assumes it came from data)
-	"""
 	if not is_instance_valid(active_astar_grid) or not is_instance_valid(active_building_container):
 		push_error("Place building failed: Active scene nodes are not registered.")
 		return null
@@ -277,11 +333,9 @@ func place_building(building_data: BuildingData, grid_position: Vector2i, is_new
 		push_error("Cannot place building at %s: Invalid position." % grid_position)
 		return null
 	
-	# Instantiate
 	var new_building: BaseBuilding = building_data.scene_to_spawn.instantiate()
 	new_building.data = building_data
 	
-	# Position
 	var world_pos_top_left: Vector2 = Vector2(grid_position) * active_astar_grid.cell_size
 	var building_footprint_size: Vector2 = Vector2(building_data.grid_size) * active_astar_grid.cell_size
 	var building_center_offset: Vector2 = building_footprint_size / 2.0
@@ -289,7 +343,6 @@ func place_building(building_data: BuildingData, grid_position: Vector2i, is_new
 	
 	active_building_container.add_child(new_building)
 	
-	# Update Grid (Blueprints reserve the space)
 	if building_data.blocks_pathfinding:
 		for x in range(building_data.grid_size.x):
 			for y in range(building_data.grid_size.y):
@@ -300,36 +353,33 @@ func place_building(building_data: BuildingData, grid_position: Vector2i, is_new
 		active_astar_grid.update()
 		EventBus.pathfinding_grid_updated.emit(grid_position)
 
-	# --- Phase 1.3 Logic ---
 	if is_new_construction:
-		# 1. Set State to Blueprint 
 		new_building.set_state(BaseBuilding.BuildingState.BLUEPRINT)
 		
-		# 2. Save to Pending List 
 		var entry = {
 			"resource_path": building_data.resource_path,
-			"grid_position": Vector2(grid_position), # Convert Vector2i to Vector2 for better serialization
-			"progress": 0 # Track construction progress
+			"grid_position": grid_position,
+			"progress": 0
 		}
+		if current_settlement.pending_construction_buildings == null:
+			current_settlement.pending_construction_buildings = []
+			
 		current_settlement.pending_construction_buildings.append(entry)
-		save_settlement()
-		print("SettlementManager: New blueprint placed at %s." % grid_position)
+		save_settlement() 
+		print("SettlementManager: New blueprint placed and saved at %s." % grid_position)
 	else:
-		# Loading existing building, assume Active for now
 		new_building.set_state(BaseBuilding.BuildingState.ACTIVE)
 		
 	return new_building
 
 func is_placement_valid(grid_position: Vector2i, building_size: Vector2i) -> bool:
-	if not is_instance_valid(active_astar_grid):
-		return false
+	if not is_instance_valid(active_astar_grid): return false
 	
 	for x in range(building_size.x):
 		for y in range(building_size.y):
 			var cell_pos = grid_position + Vector2i(x, y)
 			if not _is_cell_within_bounds(cell_pos): return false
 			if active_astar_grid.is_point_solid(cell_pos): return false
-	
 	return true
 
 func _is_cell_within_bounds(grid_position: Vector2i) -> bool:
@@ -340,73 +390,11 @@ func _is_cell_within_bounds(grid_position: Vector2i) -> bool:
 
 func get_astar_path(start_pos: Vector2, end_pos: Vector2, allow_partial_path: bool = false) -> PackedVector2Array:
 	if not is_instance_valid(active_astar_grid): return PackedVector2Array()
-	
 	var start_id: Vector2i = Vector2i(start_pos / active_astar_grid.cell_size)
 	var end_id: Vector2i = Vector2i(end_pos / active_astar_grid.cell_size)
-	
 	if not _is_cell_within_bounds(start_id): return PackedVector2Array()
-	
 	return active_astar_grid.get_point_path(start_id, end_id, allow_partial_path)
 
 func set_astar_point_solid(grid_position: Vector2i, solid: bool) -> void:
 	if is_instance_valid(active_astar_grid) and _is_cell_within_bounds(grid_position):
 		active_astar_grid.set_point_solid(grid_position, solid)
-
-# --- Phase 1: Blueprint Construction Methods ---
-
-func complete_building_construction(building: BaseBuilding) -> void:
-	"""
-	Called when a building transitions from BLUEPRINT/UNDER_CONSTRUCTION to ACTIVE.
-	Moves the building from pending_construction_buildings to placed_buildings.
-	"""
-	if not current_settlement or not is_instance_valid(building): return
-	
-	# Calculate the building's grid position
-	var cell_size = get_active_grid_cell_size()
-	var building_pos = building.global_position
-	var size_pixels = Vector2(building.data.grid_size) * cell_size
-	var top_left_pixels = building_pos - (size_pixels / 2.0)
-	var grid_pos = Vector2i(top_left_pixels / cell_size)
-	
-	# Find and remove from pending list
-	for i in range(current_settlement.pending_construction_buildings.size()):
-		var entry = current_settlement.pending_construction_buildings[i]
-		if entry["grid_position"] == grid_pos:
-			# Move to placed buildings
-			var placed_entry = {
-				"resource_path": building.data.resource_path,
-				"grid_position": grid_pos
-			}
-			current_settlement.placed_buildings.append(placed_entry)
-			current_settlement.pending_construction_buildings.remove_at(i)
-			save_settlement()
-			print("SettlementManager: Building construction completed at %s" % grid_pos)
-			return
-	
-	push_warning("SettlementManager: Could not find pending construction entry for building at %s" % grid_pos)
-
-func get_pending_construction_buildings() -> Array:
-	"""Returns a copy of the pending construction buildings array."""
-	if not current_settlement: return []
-	return current_settlement.pending_construction_buildings.duplicate()
-
-func update_construction_progress(grid_pos: Vector2i, progress: int) -> void:
-	"""Updates the progress of a building under construction."""
-	if not current_settlement: return
-	
-	for entry in current_settlement.pending_construction_buildings:
-		if entry["grid_position"] == grid_pos:
-			entry["progress"] = progress
-			return
-	
-	push_warning("SettlementManager: Could not find pending construction at %s to update progress" % grid_pos)
-
-func get_construction_progress(grid_pos: Vector2i) -> int:
-	"""Gets the current construction progress for a building at the given position."""
-	if not current_settlement: return 0
-	
-	for entry in current_settlement.pending_construction_buildings:
-		if entry["grid_position"] == grid_pos:
-			return entry.get("progress", 0)
-	
-	return 0

@@ -24,6 +24,7 @@ var default_end_of_year_popup: PackedScene = preload("res://ui/EndOfYear_Popup.t
 @onready var start_raid_button: Button = $UI/StartRaidButton
 @onready var storefront_ui: Control = $UI/Storefront_UI
 @onready var building_cursor: Node2D = $BuildingCursor
+@onready var instruction_label: Label = $UI/Label
 var end_of_year_popup: PanelContainer
 
 # --- Debug Button ---
@@ -48,6 +49,9 @@ func _ready() -> void:
 	storefront_ui.show()
 	if end_of_year_popup:
 		end_of_year_popup.hide()
+	
+	# Show instruction popup on scene load
+	_show_instruction_popup()
 
 func _exit_tree() -> void:
 	SettlementManager.unregister_active_scene_nodes()
@@ -211,6 +215,104 @@ func _on_start_raid_pressed() -> void:
 	
 	if not world_map_scene_path.is_empty():
 		EventBus.scene_change_requested.emit("world_map")
+
+# --- Instruction Popup Animation ---
+
+func _show_instruction_popup() -> void:
+	"""Create a smooth popup animation for the instruction label."""
+	if not instruction_label:
+		return
+	
+	# Create background panel for the popup
+	_create_popup_background()
+	
+	# Set initial styling and position
+	instruction_label.modulate = Color(1.0, 1.0, 1.0, 0.0)  # Start transparent
+	instruction_label.scale = Vector2(0.9, 0.9)  # Start slightly smaller
+	instruction_label.z_index = 101  # Ensure it's on top of background
+	
+	# Create a single tween chain for the entire animation sequence
+	var tween: Tween = create_tween()
+	
+	# Phase 1: Fade in and scale up (0.6 seconds)
+	tween.parallel().tween_property(instruction_label, "modulate", Color(1.0, 1.0, 1.0, 1.0), 0.6)
+	tween.parallel().tween_property(instruction_label, "scale", Vector2(1.0, 1.0), 0.6)
+	
+	# Phase 2: Wait/display time (3.0 seconds)
+	tween.tween_interval(3.0)
+	
+	# Phase 3: Fade out (0.8 seconds)
+	tween.parallel().tween_property(instruction_label, "modulate", Color(1.0, 1.0, 1.0, 0.0), 0.8)
+	
+	# Phase 4: Reset properties when done
+	tween.tween_callback(_reset_instruction_label)
+
+var popup_background: Panel = null
+
+func _create_popup_background() -> void:
+	"""Create a background panel behind the instruction label."""
+	if popup_background:
+		popup_background.queue_free()
+	
+	popup_background = Panel.new()
+	popup_background.name = "InstructionPopupBackground"
+	
+	# Position it behind the label with some padding
+	var label_rect: Rect2 = instruction_label.get_rect()
+	var padding: float = 20.0
+	
+	popup_background.position = Vector2(
+		instruction_label.position.x - padding,
+		instruction_label.position.y - padding
+	)
+	popup_background.size = Vector2(
+		label_rect.size.x + padding * 2,
+		label_rect.size.y + padding * 2
+	)
+	
+	# Set z-index to be behind the label but above other UI
+	popup_background.z_index = 100
+	
+	# Style the background
+	var style_box = StyleBoxFlat.new()
+	style_box.bg_color = Color(0.1, 0.1, 0.15, 0.9)  # Dark semi-transparent background
+	style_box.corner_radius_top_left = 8
+	style_box.corner_radius_top_right = 8
+	style_box.corner_radius_bottom_left = 8
+	style_box.corner_radius_bottom_right = 8
+	style_box.border_color = Color(0.6, 0.8, 1.0, 0.8)  # Light blue border
+	style_box.border_width_top = 2
+	style_box.border_width_bottom = 2
+	style_box.border_width_left = 2
+	style_box.border_width_right = 2
+	
+	popup_background.add_theme_stylebox_override("panel", style_box)
+	
+	# Start invisible for animation
+	popup_background.modulate = Color(1.0, 1.0, 1.0, 0.0)
+	
+	# Add to UI layer
+	ui_layer.add_child(popup_background)
+	
+	# Animate the background alongside the label
+	var bg_tween: Tween = create_tween()
+	bg_tween.tween_property(popup_background, "modulate", Color(1.0, 1.0, 1.0, 1.0), 0.6)
+	bg_tween.tween_interval(3.0)
+	bg_tween.tween_property(popup_background, "modulate", Color(1.0, 1.0, 1.0, 0.0), 0.8)
+	bg_tween.tween_callback(_cleanup_popup_background)
+
+func _cleanup_popup_background() -> void:
+	"""Remove the popup background after animation."""
+	if popup_background:
+		popup_background.queue_free()
+		popup_background = null
+
+func _reset_instruction_label() -> void:
+	"""Reset the instruction label to its default state."""
+	if instruction_label:
+		instruction_label.modulate = Color(1.0, 1.0, 1.0, 1.0)
+		instruction_label.scale = Vector2(1.0, 1.0)
+		instruction_label.z_index = 0
 
 # --- Building Cursor System Functions ---
 

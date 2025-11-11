@@ -1,14 +1,14 @@
-[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://c6snrpfulfwe7"]
+[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3]
 
-[ext_resource type="Script" uid="uid://hlb8s5g0yp6k" path="res://data/settlements/SettlementData.gd" id="1_settlement_data"]
+[ext_resource type="Script" path="res://data/settlements/SettlementData.gd" id="1_settlement_data"]
 
 [resource]
 script = ExtResource("1_settlement_data")
 treasury = {
 "food": 500,
 "gold": 500,
-"stone": 325,
-"wood": 25
+"stone": 275,
+"wood": 237
 }
 placed_buildings = Array[Dictionary]([{
 "grid_position": Vector2i(41, 17),
@@ -25,17 +25,24 @@ placed_buildings = Array[Dictionary]([{
 }, {
 "grid_position": Vector2i(31, 16),
 "resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2(36, 13),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
 }])
 pending_construction_buildings = [{
-"grid_position": Vector2(36, 13),
-"progress": 0,
-"resource_path": "res://data/buildings/Bldg_Wall.tres"
-}, {
 "grid_position": Vector2(37, 13),
-"progress": 0,
+"progress": 25,
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
 }, {
 "grid_position": Vector2(38, 13),
+"progress": 0,
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(48, 15),
+"progress": 0,
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(49, 15),
 "progress": 0,
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
 }]

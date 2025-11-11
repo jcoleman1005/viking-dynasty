@@ -2,6 +2,8 @@
 #
 # Main controller for the MacroMap scene.
 # Connects UI to the DynastyManager and handles region selection.
+# --- MODIFIED: Phase 2 Economic Engine Integration ---
+
 extends Node2D
 
 # Scene paths for navigation
@@ -30,7 +32,12 @@ extends Node2D
 @onready var dynasty_button: Button = $UI/Actions/VBoxContainer/DynastyButton
 @onready var dynasty_ui: DynastyUI = $UI/Dynasty_UI
 @onready var marry_button: Button = $UI/RegionInfo/VBoxContainer/MarryButton
-# --- END ---
+
+# --- NEW: Phase 2.2 Worker Assignment UI ---
+# We look for the scene file you created.
+const WORK_ASSIGNMENT_SCENE_PATH = "res://ui/WorkAssignment_UI.tscn"
+var work_assignment_ui: CanvasLayer # Using base type to avoid cyclical dependency issues
+# -------------------------------------------
 
 @onready var regions_container: Node2D = $Regions
 
@@ -40,7 +47,7 @@ var selected_region_node: Region = null
 
 # Stores the calculated cost after applying Jarl stats
 var calculated_raid_cost: int = 1
-var calculated_subjugate_cost: int = 5 # Base cost from proposal
+var calculated_subjugate_cost: int = 5 
 
 func _ready() -> void:
 	# Connect to the DynastyManager
@@ -62,7 +69,6 @@ func _ready() -> void:
 	# --- Phase 3a Connection ---
 	dynasty_button.pressed.connect(_on_dynasty_pressed)
 	marry_button.pressed.connect(_on_marry_pressed)
-	# --- END ---
 	
 	# --- Setup Payout Popup ---
 	if end_year_popup_scene:
@@ -76,6 +82,21 @@ func _ready() -> void:
 	else:
 		push_warning("MacroMap: 'end_year_popup_scene' is not set in the Inspector!")
 	
+	# --- NEW: Setup Worker Assignment UI ---
+	if ResourceLoader.exists(WORK_ASSIGNMENT_SCENE_PATH):
+		var scene = load(WORK_ASSIGNMENT_SCENE_PATH)
+		if scene:
+			work_assignment_ui = scene.instantiate()
+			add_child(work_assignment_ui)
+			# Connect the confirmation signal
+			if work_assignment_ui.has_signal("assignments_confirmed"):
+				work_assignment_ui.assignments_confirmed.connect(_on_worker_assignments_confirmed)
+			else:
+				push_error("MacroMap: WorkAssignment_UI missing 'assignments_confirmed' signal.")
+	else:
+		push_warning("MacroMap: WorkAssignment_UI scene not found at %s. End Year will skip assignment step." % WORK_ASSIGNMENT_SCENE_PATH)
+	# ---------------------------------------
+
 	# Connect to the EventManager's "all-clear" signal
 	EventBus.event_system_finished.connect(_on_event_system_finished)
 	
@@ -142,7 +163,7 @@ func _on_region_selected(data: WorldRegionData) -> void:
 		return
 	
 	# --- 1. CALCULATE RAID COST ---
-	calculated_raid_cost = max(1, data.base_authority_cost) # Placeholder for now
+	calculated_raid_cost = max(1, data.base_authority_cost) 
 	launch_raid_button.text = "Launch Raid (Cost: %d Auth)" % calculated_raid_cost
 	var can_afford_raid = DynastyManager.can_spend_authority(calculated_raid_cost)
 	launch_raid_button.disabled = (not can_afford_raid) or is_allied
@@ -165,7 +186,7 @@ func _on_region_selected(data: WorldRegionData) -> void:
 	
 	# "Marry for Alliance" Bonus
 	if is_allied:
-		alliance_discount = 2 # Example discount
+		alliance_discount = 2 
 		discount_text = " (-2 Alliance)"
 	
 	calculated_subjugate_cost = max(1, base_subjugate_cost + trait_penalty - alliance_discount)
@@ -212,11 +233,9 @@ func _on_subjugate_pressed() -> void:
 	if success:
 		DynastyManager.add_conquered_region(selected_region_data.resource_path)
 		
-		# --- NEW: Add Legitimacy Boost ---
 		var jarl = DynastyManager.get_current_jarl()
-		jarl.legitimacy = min(100, jarl.legitimacy + 5) # +5 Legitimacy
-		DynastyManager.jarl_stats_updated.emit(jarl) # Force UI/data refresh
-		# --- END NEW ---
+		jarl.legitimacy = min(100, jarl.legitimacy + 5) 
+		DynastyManager.jarl_stats_updated.emit(jarl) 
 		
 		print("Region %s successfully subjugated." % selected_region_data.display_name)
 	else:
@@ -231,7 +250,6 @@ func _on_marry_pressed() -> void:
 	
 	if success:
 		print("MacroMap: Alliance with %s successful." % selected_region_data.display_name)
-		# The UI will refresh automatically via the jarl_stats_updated signal.
 	else:
 		print("MacroMap: Alliance failed (no available heir).")
 
@@ -240,15 +258,42 @@ func _on_dynasty_pressed() -> void:
 	if is_instance_valid(dynasty_ui):
 		dynasty_ui.show()
 
-# --- End Year Payout Logic ---
+# --- End Year Logic (Phase 2 Modified) ---
+
 func _on_end_year_pressed() -> void:
+	if not SettlementManager.has_current_settlement():
+		push_warning("MacroMap: No settlement loaded.")
+		return
+	
+	# --- NEW: Open Worker Assignment UI First ---
+	if work_assignment_ui:
+		work_assignment_ui.setup(SettlementManager.current_settlement)
+	else:
+		# Fallback if UI failed to load: Proceed with empty assignments
+		push_error("MacroMap: WorkAssignment_UI missing. Proceeding with default values.")
+		_on_worker_assignments_confirmed({})
+
+func _on_worker_assignments_confirmed(assignments: Dictionary) -> void:
+	"""
+	Called when player confirms sliders in WorkAssignment_UI.
+	This saves the data, then triggers the payout calculation.
+	"""
+	print("MacroMap: Work assignments confirmed: ", assignments)
+	
+	# 1. Save assignments to Settlement Data so Manager can use them
+	if SettlementManager.current_settlement:
+		SettlementManager.current_settlement.worker_assignments = assignments
+		SettlementManager.save_settlement()
+	
+	# 2. Proceed with End Year Calculation (Original Logic)
 	if not is_instance_valid(end_year_popup):
 		push_error("MacroMap: End year popup not instanced. Ending year without payout.")
 		_process_end_year_logic({})
 		return
 	
+	# Calculate payout (Uses the assignments we just saved!)
 	var payout = SettlementManager.calculate_payout()
-	end_year_popup.display_payout(payout, "End of Year Payout")
+	end_year_popup.display_payout(payout, "End of Year Report")
 
 func _on_end_year_payout_collected(payout: Dictionary) -> void:
 	# This function's ONLY job is to process the end of year logic.
@@ -284,5 +329,5 @@ func _process_end_year_logic(payout: Dictionary) -> void:
 func _on_settlement_pressed() -> void:
 	EventBus.scene_change_requested.emit("settlement")
 
-func _unhandled_input(event: InputEvent) -> void:
+func _unhandled_input(_event: InputEvent) -> void:
 	pass
