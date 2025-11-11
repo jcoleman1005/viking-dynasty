@@ -224,11 +224,25 @@ func _process_construction_labor() -> void:
 		
 		var points_to_apply = min(total_labor_points, effort_remaining)
 		
+		# 1. Update Data
 		entry["progress"] = current_progress + points_to_apply
 		total_labor_points -= points_to_apply
 		
 		print("  > Applied %d points to %s (Progress: %d/%d)" % [points_to_apply, building_data.display_name, entry["progress"], effort_needed])
 		
+		# 2. Update Visuals (LIVE SCENE UPDATE)
+		# We must convert the stored position to Vector2i for the lookup
+		var grid_pos = Vector2i(entry["grid_position"]) 
+		var active_instance = _find_building_instance_at(grid_pos)
+		
+		if is_instance_valid(active_instance):
+			# This triggers the visual state change (Blueprint -> Construction)
+			# and updates the health bar/label immediately
+			active_instance.add_construction_progress(points_to_apply)
+		else:
+			print("Warning: Could not find visual instance for building at %s" % grid_pos)
+		
+		# 3. Check Completion
 		if entry["progress"] >= effort_needed:
 			print("  >>> Construction COMPLETE: %s" % building_data.display_name)
 			completed_indices.append(i)
@@ -246,10 +260,33 @@ func _process_construction_labor() -> void:
 		
 	save_settlement()
 	
+	# If anything completed, we might need to reload/refresh territory
 	if not completed_indices.is_empty():
-		EventBus.scene_change_requested.emit("settlement")
 		_trigger_territory_update()
 
+# --- NEW HELPER ---
+func _find_building_instance_at(grid_pos: Vector2i) -> BaseBuilding:
+	"""Finds the actual node in the scene for a given grid position."""
+	if not is_instance_valid(active_building_container):
+		return null
+		
+	# Convert grid pos to world pos logic to match building positions?
+	# Actually, simpler: Iterate children and check their data.
+	# Since we don't have a dictionary map of instances, we loop.
+	# Optimization: Maintain a lookup dict in the future if building count > 100.
+	
+	var cell_size = get_active_grid_cell_size()
+	
+	for child in active_building_container.get_children():
+		if child is BaseBuilding:
+			# Reverse engineer the grid pos from global pos
+			var size_offset = Vector2(child.data.grid_size) * cell_size / 2.0
+			var top_left = child.global_position - size_offset
+			var child_grid_pos = Vector2i(round(top_left.x / cell_size.x), round(top_left.y / cell_size.y))
+			
+			if child_grid_pos == grid_pos:
+				return child
+	return null
 # --- Building & Pathfinding ---
 
 func remove_building(building_instance: BaseBuilding) -> void:
@@ -389,3 +426,73 @@ func get_astar_path(start_pos: Vector2, end_pos: Vector2, allow_partial_path: bo
 func set_astar_point_solid(grid_position: Vector2i, solid: bool) -> void:
 	if is_instance_valid(active_astar_grid) and _is_cell_within_bounds(grid_position):
 		active_astar_grid.set_point_solid(grid_position, solid)
+# --- Phase 4.1: The Prediction Engine ---
+
+func simulate_turn(simulated_assignments: Dictionary) -> Dictionary:
+	"""
+	Runs a 'dry run' of the end year logic.
+	Returns a Dictionary containing:
+	- resources_gained: Dictionary {type: amount}
+	- buildings_completing: Array [building_names]
+	"""
+	if not current_settlement:
+		return {}
+
+	var result = {
+		"resources_gained": { "food": 0, "wood": 0, "stone": 0, "gold": 0 },
+		"buildings_completing": []
+	}
+
+	# --- 1. Simulate Construction ---
+	var assigned_builders = simulated_assignments.get("construction", 0)
+	var total_labor_points = assigned_builders * BUILDER_EFFICIENCY
+	
+	# We simulate progress by looking at the current data without modifying it
+	for entry in current_settlement.pending_construction_buildings:
+		if total_labor_points <= 0: break
+		
+		var b_data = load(entry["resource_path"]) as BuildingData
+		if not b_data: continue
+		
+		var current = entry.get("progress", 0)
+		var required = b_data.construction_effort_required
+		var needed = required - current
+		
+		var applied = min(total_labor_points, needed)
+		total_labor_points -= applied
+		
+		if (current + applied) >= required:
+			result["buildings_completing"].append(b_data.display_name)
+
+	# --- 2. Simulate Economy ---
+	var stewardship_bonus = 1.0
+	var jarl = DynastyManager.get_current_jarl()
+	if jarl:
+		var stewardship_skill = jarl.get_effective_skill("stewardship")
+		stewardship_bonus = 1.0 + (stewardship_skill - 10) * 0.05
+		stewardship_bonus = max(0.5, stewardship_bonus)
+
+	# A. From Labor
+	for res in ["food", "wood", "stone", "gold"]:
+		var count = simulated_assignments.get(res, 0)
+		if count > 0:
+			var labor_yield = int(count * GATHERER_EFFICIENCY * stewardship_bonus)
+			result["resources_gained"][res] += labor_yield
+
+	# B. From Buildings (Passive)
+	for b_entry in current_settlement.placed_buildings:
+		var b_data = load(b_entry["resource_path"]) as BuildingData
+		if b_data is EconomicBuildingData:
+			var eco = b_data as EconomicBuildingData
+			var base = eco.fixed_payout_amount
+			result["resources_gained"][eco.resource_type] += int(base * stewardship_bonus)
+
+	# C. From Region Income
+	if jarl:
+		for region_path in jarl.conquered_regions:
+			var r_data = load(region_path) as WorldRegionData
+			if r_data:
+				for res in r_data.yearly_income:
+					result["resources_gained"][res] += int(r_data.yearly_income[res] * stewardship_bonus)
+
+	return result

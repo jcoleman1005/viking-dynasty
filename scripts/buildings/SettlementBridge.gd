@@ -1,7 +1,5 @@
 # res://scripts/buildings/SettlementBridge.gd
-#
-# --- MODIFIED: Phase 1.3 Integration ---
-# Now delegates save logic to SettlementManager.place_building
+# --- MODIFIED: Added Work Assignment UI & Button ---
 
 extends Node
 
@@ -24,7 +22,6 @@ var default_end_of_year_popup: PackedScene = preload("res://ui/EndOfYear_Popup.t
 @onready var start_raid_button: Button = $UI/StartRaidButton
 @onready var storefront_ui: Control = $UI/Storefront_UI
 @onready var building_cursor: Node2D = $BuildingCursor
-@onready var instruction_label: Label = $UI/Label
 var end_of_year_popup: PanelContainer
 
 # --- Debug Button ---
@@ -33,6 +30,12 @@ var end_of_year_popup: PanelContainer
 # --- Local Node References ---
 @onready var building_container: Node2D = $BuildingContainer
 @onready var grid_manager: Node = $GridManager
+
+# --- NEW: Worker Management UI ---
+const WORK_ASSIGNMENT_SCENE_PATH = "res://ui/WorkAssignment_UI.tscn"
+var work_assignment_ui: CanvasLayer
+var manage_workers_button: Button
+# -------------------------------
 
 # --- State Variables ---
 var great_hall_instance: BaseBuilding = null
@@ -46,15 +49,54 @@ func _ready() -> void:
 	_setup_ui()
 	_connect_signals()
 	
+	# --- NEW: Setup Worker UI ---
+	_setup_worker_ui()
+	# ----------------------------
+	
 	storefront_ui.show()
 	if end_of_year_popup:
 		end_of_year_popup.hide()
-	
-	# Show instruction popup on scene load
-	_show_instruction_popup()
 
 func _exit_tree() -> void:
 	SettlementManager.unregister_active_scene_nodes()
+
+# --- NEW: Worker UI Setup Function ---
+func _setup_worker_ui() -> void:
+	# 1. Load the UI Scene
+	if ResourceLoader.exists(WORK_ASSIGNMENT_SCENE_PATH):
+		var scene = load(WORK_ASSIGNMENT_SCENE_PATH)
+		if scene:
+			work_assignment_ui = scene.instantiate()
+			add_child(work_assignment_ui)
+			if work_assignment_ui.has_signal("assignments_confirmed"):
+				work_assignment_ui.assignments_confirmed.connect(_on_worker_assignments_confirmed)
+	else:
+		push_error("SettlementBridge: WorkAssignment_UI scene missing.")
+
+	# 2. Create the Button
+	manage_workers_button = Button.new()
+	manage_workers_button.text = "Manage Workers"
+	manage_workers_button.pressed.connect(_on_manage_workers_pressed)
+	
+	# Position it Top-Right (below the Start Raid button logic usually, or Top-Left)
+	# Let's put it Top-Left for visibility in the settlement view
+	ui_layer.add_child(manage_workers_button)
+	manage_workers_button.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT, Control.PRESET_MODE_MINSIZE, 20)
+	manage_workers_button.position.y += 60 # Offset down a bit if needed
+
+func _on_manage_workers_pressed() -> void:
+	if not SettlementManager.has_current_settlement():
+		return
+	
+	if work_assignment_ui:
+		work_assignment_ui.setup(SettlementManager.current_settlement)
+
+func _on_worker_assignments_confirmed(assignments: Dictionary) -> void:
+	print("SettlementBridge: Work assignments saved.")
+	if SettlementManager.current_settlement:
+		SettlementManager.current_settlement.worker_assignments = assignments
+		SettlementManager.save_settlement()
+# ----------------------------------------
 
 func _setup_default_resources() -> void:
 	if not test_building_data:
@@ -84,6 +126,7 @@ func _initialize_settlement() -> void:
 		return
 	var local_astar_grid = grid_manager.astar_grid
 	
+	# Pass GridManager for Phase 3
 	SettlementManager.register_active_scene_nodes(local_astar_grid, building_container, grid_manager)
 	
 	_spawn_placed_buildings()
@@ -92,10 +135,6 @@ func _initialize_settlement() -> void:
 
 
 func _spawn_placed_buildings() -> void:
-	"""
-	Instantiates ACTIVE buildings from the loaded settlement data.
-	Also instantiates PENDING buildings (Blueprints).
-	"""
 	if not SettlementManager.current_settlement:
 		return
 	
@@ -104,18 +143,22 @@ func _spawn_placed_buildings() -> void:
 
 	# 1. Spawn Active Buildings
 	for building_entry in SettlementManager.current_settlement.placed_buildings:
-		_spawn_single_building(building_entry, false) # False = Not new, Active
+		_spawn_single_building(building_entry, false) 
 
-	# 2. Spawn Pending Blueprints (New for Phase 1.3)
+	# 2. Spawn Pending Blueprints (Phase 4 Update)
 	for building_entry in SettlementManager.current_settlement.pending_construction_buildings:
 		var b = _spawn_single_building(building_entry, false)
 		if b:
-			b.set_state(BaseBuilding.BuildingState.BLUEPRINT)
-			# Restore progress if we tracked it
-			if "progress" in building_entry:
-				b.construction_progress = building_entry["progress"]
+			var progress = building_entry.get("progress", 0)
+			if progress > 0:
+				b.construction_progress = progress
+				b.set_state(BaseBuilding.BuildingState.UNDER_CONSTRUCTION)
+				# Force visual update for health bar
+				if b.has_method("add_construction_progress"):
+					b.add_construction_progress(0) 
+			else:
+				b.set_state(BaseBuilding.BuildingState.BLUEPRINT)
 	
-	# Update grid
 	if is_instance_valid(SettlementManager.active_astar_grid):
 		SettlementManager.active_astar_grid.update()
 	
@@ -127,13 +170,9 @@ func _spawn_single_building(entry: Dictionary, is_new: bool) -> BaseBuilding:
 	
 	var building_data: BuildingData = load(building_res_path)
 	if building_data:
-		# We use is_new_construction = false here because we are loading data,
-		# not creating *new* data entries.
 		var new_building = SettlementManager.place_building(building_data, grid_pos, is_new)
-		
 		if new_building and new_building.data.display_name == "Great Hall":
 			_setup_great_hall(new_building)
-		
 		return new_building
 	else:
 		push_error("Failed to load building resource from path: %s" % building_res_path)
@@ -144,7 +183,7 @@ func _create_default_settlement() -> SettlementData:
 	var settlement = SettlementData.new()
 	settlement.treasury = {"gold": 1000, "wood": 500, "food": 100, "stone": 200}
 	settlement.placed_buildings = []
-	settlement.pending_construction_buildings = [] # Initialize new list
+	settlement.pending_construction_buildings = [] 
 	settlement.garrisoned_units = {}
 	settlement.resource_path = "res://data/settlements/home_base_fixed.tres"
 	return settlement
@@ -216,104 +255,6 @@ func _on_start_raid_pressed() -> void:
 	if not world_map_scene_path.is_empty():
 		EventBus.scene_change_requested.emit("world_map")
 
-# --- Instruction Popup Animation ---
-
-func _show_instruction_popup() -> void:
-	"""Create a smooth popup animation for the instruction label."""
-	if not instruction_label:
-		return
-	
-	# Create background panel for the popup
-	_create_popup_background()
-	
-	# Set initial styling and position
-	instruction_label.modulate = Color(1.0, 1.0, 1.0, 0.0)  # Start transparent
-	instruction_label.scale = Vector2(0.9, 0.9)  # Start slightly smaller
-	instruction_label.z_index = 101  # Ensure it's on top of background
-	
-	# Create a single tween chain for the entire animation sequence
-	var tween: Tween = create_tween()
-	
-	# Phase 1: Fade in and scale up (0.6 seconds)
-	tween.parallel().tween_property(instruction_label, "modulate", Color(1.0, 1.0, 1.0, 1.0), 0.6)
-	tween.parallel().tween_property(instruction_label, "scale", Vector2(1.0, 1.0), 0.6)
-	
-	# Phase 2: Wait/display time (3.0 seconds)
-	tween.tween_interval(3.0)
-	
-	# Phase 3: Fade out (0.8 seconds)
-	tween.parallel().tween_property(instruction_label, "modulate", Color(1.0, 1.0, 1.0, 0.0), 0.8)
-	
-	# Phase 4: Reset properties when done
-	tween.tween_callback(_reset_instruction_label)
-
-var popup_background: Panel = null
-
-func _create_popup_background() -> void:
-	"""Create a background panel behind the instruction label."""
-	if popup_background:
-		popup_background.queue_free()
-	
-	popup_background = Panel.new()
-	popup_background.name = "InstructionPopupBackground"
-	
-	# Position it behind the label with some padding
-	var label_rect: Rect2 = instruction_label.get_rect()
-	var padding: float = 20.0
-	
-	popup_background.position = Vector2(
-		instruction_label.position.x - padding,
-		instruction_label.position.y - padding
-	)
-	popup_background.size = Vector2(
-		label_rect.size.x + padding * 2,
-		label_rect.size.y + padding * 2
-	)
-	
-	# Set z-index to be behind the label but above other UI
-	popup_background.z_index = 100
-	
-	# Style the background
-	var style_box = StyleBoxFlat.new()
-	style_box.bg_color = Color(0.1, 0.1, 0.15, 0.9)  # Dark semi-transparent background
-	style_box.corner_radius_top_left = 8
-	style_box.corner_radius_top_right = 8
-	style_box.corner_radius_bottom_left = 8
-	style_box.corner_radius_bottom_right = 8
-	style_box.border_color = Color(0.6, 0.8, 1.0, 0.8)  # Light blue border
-	style_box.border_width_top = 2
-	style_box.border_width_bottom = 2
-	style_box.border_width_left = 2
-	style_box.border_width_right = 2
-	
-	popup_background.add_theme_stylebox_override("panel", style_box)
-	
-	# Start invisible for animation
-	popup_background.modulate = Color(1.0, 1.0, 1.0, 0.0)
-	
-	# Add to UI layer
-	ui_layer.add_child(popup_background)
-	
-	# Animate the background alongside the label
-	var bg_tween: Tween = create_tween()
-	bg_tween.tween_property(popup_background, "modulate", Color(1.0, 1.0, 1.0, 1.0), 0.6)
-	bg_tween.tween_interval(3.0)
-	bg_tween.tween_property(popup_background, "modulate", Color(1.0, 1.0, 1.0, 0.0), 0.8)
-	bg_tween.tween_callback(_cleanup_popup_background)
-
-func _cleanup_popup_background() -> void:
-	"""Remove the popup background after animation."""
-	if popup_background:
-		popup_background.queue_free()
-		popup_background = null
-
-func _reset_instruction_label() -> void:
-	"""Reset the instruction label to its default state."""
-	if instruction_label:
-		instruction_label.modulate = Color(1.0, 1.0, 1.0, 1.0)
-		instruction_label.scale = Vector2(1.0, 1.0)
-		instruction_label.z_index = 0
-
 # --- Building Cursor System Functions ---
 
 func _on_building_ready_for_placement(building_data: BuildingData) -> void:
@@ -325,20 +266,11 @@ func _on_building_placement_cancelled(building_data: BuildingData) -> void:
 	print("Building placement cancelled: %s" % building_data.display_name)
 
 func _on_building_placement_completed() -> void:
-	"""
-	Updated for Phase 1.3: Calls place_building with is_new_construction=true.
-	"""
 	if awaiting_placement and SettlementManager.current_settlement:
 		var snapped_grid_pos = Vector2i(building_cursor.global_position / grid_manager.cell_size)
 		
 		print("SettlementBridge: Placing NEW blueprint for %s at %s" % [awaiting_placement.display_name, snapped_grid_pos])
-		
-		# --- CRITICAL FIX IS HERE ---
-		# We MUST pass 'true' as the 3rd argument. 
-		# true = New Construction (Blueprint)
-		# false (default) = Existing Building (Active)
 		SettlementManager.place_building(awaiting_placement, snapped_grid_pos, true)
-		# ----------------------------
 	
 	awaiting_placement = null
 
@@ -348,7 +280,6 @@ func _on_building_placement_cancelled_by_cursor() -> void:
 		awaiting_placement = null
 
 func _on_building_right_clicked(building: BaseBuilding) -> void:
-	# Move/Sell logic
 	if building_cursor.is_active:
 		return
 		

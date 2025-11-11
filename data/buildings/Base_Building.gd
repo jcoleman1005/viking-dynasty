@@ -24,11 +24,16 @@ var health_bar: ProgressBar
 var border_rect: ColorRect
 var attack_ai: Node = null 
 
+# StyleBox references for dynamic coloring
+var style_fill: StyleBoxFlat
+var style_bg: StyleBoxFlat
+
 func _ready() -> void:
 	if not data: return
 	
 	current_health = data.max_health
 	
+	# --- Create core nodes ---
 	collision_shape = CollisionShape2D.new()
 	collision_shape.shape = RectangleShape2D.new()
 	add_child(collision_shape)
@@ -37,14 +42,15 @@ func _ready() -> void:
 	label = Label.new()
 	background.add_child(label)
 	add_child(background)
+	# -------------------------
 	
 	input_pickable = true
 	_create_hitbox()
 	_apply_data_and_scale()
-	_create_dev_visuals()
+	_create_dev_visuals() 
 	_setup_defensive_ai()
 	
-	# Force initial visual state
+	# Apply the initial state visual
 	_update_visual_state()
 
 func _input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
@@ -53,13 +59,11 @@ func _input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
 			EventBus.building_right_clicked.emit(self)
 
 func set_state(new_state: BuildingState) -> void:
-	print("BaseBuilding: State change requested from %s to %s" % [current_state, new_state])
 	var old_state = current_state
 	current_state = new_state
 	_update_visual_state()
 	_update_logic_state()
 	
-	# Connect to SettlementManager for completion handling
 	if current_state == BuildingState.ACTIVE and old_state != BuildingState.ACTIVE:
 		construction_completed.emit(self)
 		if SettlementManager and SettlementManager.has_method("complete_building_construction"):
@@ -70,58 +74,95 @@ func _update_visual_state() -> void:
 
 	match current_state:
 		BuildingState.BLUEPRINT:
-			# Force Blue Tint and 50% Transparency
+			# Ghostly Blue
 			self.modulate = Color(0.4, 0.6, 1.0, 0.5)
+			background.color = Color.WHITE
 			background.color.a = 0.5 
-			if label: label.text = "%s (Blueprint)" % data.display_name
+			if label: label.text = "%s\n(Blueprint)" % data.display_name
 			if health_bar: health_bar.hide()
 			
 		BuildingState.UNDER_CONSTRUCTION:
-			self.modulate = Color(0.8, 0.8, 0.8, 0.8)
-			background.color.a = 0.8
-			if label: label.text = "%s (Building...)" % data.display_name
-			if health_bar: health_bar.hide()
+			# Dark Foundation, Opaque
+			self.modulate = Color.WHITE 
+			background.color = Color(0.2, 0.2, 0.2, 0.9) 
+			
+			# --- CONSTRUCTION BAR CONFIG ---
+			if health_bar: 
+				health_bar.show()
+				# Set correct range
+				var max_effort = max(1, data.construction_effort_required)
+				health_bar.max_value = max_effort
+				health_bar.value = construction_progress
+				
+				# Set Colors Directly on StyleBox (Blue)
+				if style_fill: style_fill.bg_color = Color(0.2, 0.6, 1.0) # Bright Blue
+				
+				# Reset modulation (don't tint the black background)
+				health_bar.modulate = Color.WHITE 
+			
+			_update_percentage_label()
 			
 		BuildingState.ACTIVE:
+			# Standard Colors
 			self.modulate = Color.WHITE
+			_apply_color_coding() 
 			background.color.a = 1.0
 			if label: label.text = data.display_name
-			if health_bar: health_bar.show()
-			# Restore original color
-			_apply_color_coding()
+			
+			# --- HEALTH BAR CONFIG ---
+			if health_bar:
+				health_bar.max_value = data.max_health
+				health_bar.value = current_health
+				
+				# Set Colors Directly on StyleBox (Green)
+				if style_fill: style_fill.bg_color = Color(0.2, 0.8, 0.2) # Green
+				
+				health_bar.modulate = Color.WHITE
+				health_bar.show()
 
 func _update_logic_state() -> void:
 	match current_state:
 		BuildingState.BLUEPRINT, BuildingState.UNDER_CONSTRUCTION:
-			# Disable collision for units to walk through
 			if collision_shape: collision_shape.disabled = true
 			if hitbox_area: hitbox_area.monitorable = false
-			# Disable attack AI completely
 			if attack_ai:
 				attack_ai.process_mode = Node.PROCESS_MODE_DISABLED
 				if attack_ai.has_method("stop_attacking"):
 					attack_ai.stop_attacking()
-			# Signal that economic payouts should be disabled
 			EventBus.building_state_changed.emit(self, current_state)
 			
 		BuildingState.ACTIVE:
-			# Enable collision and interactions
 			if collision_shape: collision_shape.disabled = false
 			if hitbox_area: hitbox_area.monitorable = true
 			if attack_ai: attack_ai.process_mode = Node.PROCESS_MODE_INHERIT
-			# Signal that economic payouts should be enabled
 			EventBus.building_state_changed.emit(self, current_state)
 
 func add_construction_progress(amount: int) -> void:
 	if current_state == BuildingState.ACTIVE: return
+	
+	# Auto-transition state on first progress
+	if current_state == BuildingState.BLUEPRINT:
+		set_state(BuildingState.UNDER_CONSTRUCTION)
+		
 	construction_progress += amount
+	print("Building %s progress: %d / %d" % [name, construction_progress, data.construction_effort_required])
+	
+	# Update the bar immediately
+	if health_bar:
+		health_bar.value = construction_progress
+		
+	_update_percentage_label()
+	
+	# Auto-complete
 	if construction_progress >= data.construction_effort_required:
-		set_state(BuildingState.ACTIVE)
+		# Handled by Manager, but ensures local state is correct
+		pass 
 
-func is_active() -> bool:
-	return current_state == BuildingState.ACTIVE
+func _update_percentage_label() -> void:
+	if label and data.construction_effort_required > 0:
+		var percent = int((float(construction_progress) / data.construction_effort_required) * 100)
+		label.text = "%s\n(%d%%)" % [data.display_name, percent]
 
-# --- Internal Setup Functions (Unchanged logic, just condensed for file completeness) ---
 func _create_hitbox() -> void:
 	hitbox_area = Area2D.new()
 	hitbox_area.name = "Hitbox"
@@ -171,11 +212,23 @@ func _create_dev_visuals() -> void:
 		add_child(border_rect)
 		move_child(border_rect, 0)
 	
+	# --- UPDATED BAR CREATION ---
 	health_bar = ProgressBar.new()
-	health_bar.custom_minimum_size = Vector2(size.x, 6)
-	health_bar.position = Vector2(-size.x/2, -size.y/2 - 10)
+	health_bar.custom_minimum_size = Vector2(size.x * 0.9, 10) # 90% width, 10px height
+	health_bar.position = Vector2(-size.x * 0.45, -size.y/2 - 15) # Centered above
 	health_bar.max_value = data.max_health
 	health_bar.value = current_health
+	health_bar.show_percentage = false
+	
+	# Create StyleBox Resources
+	style_bg = StyleBoxFlat.new()
+	style_bg.bg_color = Color(0, 0, 0, 1) # Black Background
+	health_bar.add_theme_stylebox_override("background", style_bg)
+	
+	style_fill = StyleBoxFlat.new()
+	style_fill.bg_color = Color(1, 1, 1, 1) # White (Default, changed in update)
+	health_bar.add_theme_stylebox_override("fill", style_fill)
+	
 	add_child(health_bar)
 
 func _setup_defensive_ai() -> void:
@@ -188,7 +241,9 @@ func _setup_defensive_ai() -> void:
 func take_damage(amount: int, _attacker: Node2D = null) -> void:
 	if current_state != BuildingState.ACTIVE: return
 	current_health = max(0, current_health - amount)
+	
 	if health_bar: health_bar.value = current_health
+	
 	if current_health == 0: die()
 
 func die() -> void:
