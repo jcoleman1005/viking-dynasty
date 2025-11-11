@@ -158,22 +158,24 @@ func _select_target_default() -> void:
 			targets_in_range.erase(target)
 			continue
 		
-		# Check all enemy layers. This logic assumes this AI is for players.
-		# A more robust AI would check against its *own* collision layer.
-		if target.collision_layer & (1 << 2): # Layer 3 (Enemy Units)
+		# --- FIX: Enforce Collision Mask ---
+		# This prevents Friendly Fire. We check if the target matches our allowed mask.
+		if not (target.collision_layer & target_collision_mask):
+			continue
+		# -----------------------------------
+
+		# Determine type based on layer
+		# Units: Layer 2 (Player) or Layer 3 (Enemy) -> Binary 0110 -> 6
+		if target.collision_layer & 6: 
 			unit_targets.append(target)
-		elif target.collision_layer & (1 << 3): # Layer 4 (Enemy Buildings)
+		# Buildings: Layer 1 (Player) or Layer 4 (Enemy) -> Binary 1001 -> 9
+		elif target.collision_layer & 9: 
 			building_targets.append(target)
-		# --- FIX: Ensure buildings check their enemy layers too ---
-		elif target.collision_layer & (1 << 1): # Layer 2 (Player Units)
-			unit_targets.append(target)
-		elif target.collision_layer & (1 << 0): # Layer 1 (Player Buildings)
-			building_targets.append(target)
-		# --- END FIX ---
 
 	var closest_target: Node2D = null
 	var closest_distance: float = INF
 	
+	# Prioritize Units over Buildings
 	if not unit_targets.is_empty():
 		for target in unit_targets:
 			var distance = parent_node.global_position.distance_to(target.global_position)
@@ -227,9 +229,14 @@ func _select_target_defensive_siege() -> void:
 		if not is_instance_valid(target):
 			targets_in_range.erase(target)
 			continue
+			
+		# --- FIX: Enforce Collision Mask ---
+		if not (target.collision_layer & target_collision_mask):
+			continue
+		# -----------------------------------
 		
-		# Target Layer 1 (Player Buildings)
-		if target.collision_layer & (1 << 0):
+		# Target Layer 1 (Player Buildings) or Layer 4 (Enemy Buildings)
+		if target.collision_layer & 9: 
 			var distance = parent_node.global_position.distance_to(target.global_position)
 			if distance < closest_distance:
 				closest_distance = distance
@@ -306,13 +313,11 @@ func _spawn_projectile(target_position_world: Vector2) -> void:
 		push_warning("AttackAI: No projectile scene assigned. Cannot fire.")
 		return
 	
-	# --- THIS IS THE FIX ---
 	# 1. Get a projectile from the pool
 	var projectile: Projectile = ProjectilePoolManager.get_projectile()
 	if not projectile:
 		push_error("AttackAI: ProjectilePoolManager failed to provide a projectile.")
 		return
-	# --- END FIX ---
 	
 	# We set our new 'firer' variable instead of the 'owner' property
 	projectile.firer = parent_node
@@ -324,7 +329,3 @@ func _spawn_projectile(target_position_world: Vector2) -> void:
 		projectile_speed,             # Use configured speed
 		target_collision_mask         # what to hit
 	)
-	
-	# 2. Add projectile to the current scene
-	# This is no longer needed, as the projectile is already in the scene.
-	# parent_node.get_tree().current_scene.add_child(projectile)
