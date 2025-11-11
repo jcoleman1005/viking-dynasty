@@ -1,15 +1,27 @@
-[gd_scene load_steps=7 format=3 uid="uid://c53k15q2w8c1a"]
+[gd_scene load_steps=10 format=3 uid="uid://c53k15q2w8c1a"]
 
 [ext_resource type="PackedScene" uid="uid://dqh0xu88khxct" path="res://ui/EndOfYear_Popup.tscn" id="2_5el12"]
 [ext_resource type="Script" uid="uid://dafjxa85ci2rx" path="res://scripts/buildings/SettlementBridge.gd" id="2_c48a7"]
-[ext_resource type="Resource" uid="uid://g2423cxlwaao" path="res://data/settlements/home_base_fixed.tres" id="2_oq6tm"]
+[ext_resource type="Script" uid="uid://hlb8s5g0yp6k" path="res://data/settlements/SettlementData.gd" id="2_ggwng"]
 [ext_resource type="PackedScene" uid="uid://btovbm7r6nern" path="res://ui/Storefront_UI.tscn" id="3_vj45l"]
 [ext_resource type="PackedScene" uid="uid://dsrvmutqo7g3h" path="res://scripts/utility/GridManager.tscn" id="6_b34qi"]
 [ext_resource type="Script" uid="uid://c4bv8okjkvtt7" path="res://scripts/ui/BuildingPreviewCursor.gd" id="6_cursor"]
+[ext_resource type="PackedScene" uid="uid://ptujtdi5jtsk" path="res://scripts/utility/GridVisualizer.tscn" id="7_oq6tm"]
+[ext_resource type="Script" uid="uid://bxbqkyp1d6750" path="res://player/RTSCamera.gd" id="8_ggwng"]
+
+[sub_resource type="Resource" id="Resource_vmd61"]
+script = ExtResource("2_ggwng")
+treasury = {
+"food": 100,
+"gold": 100,
+"stone": 100,
+"wood": 250
+}
+metadata/_custom_type_script = "uid://hlb8s5g0yp6k"
 
 [node name="SettlementBridge" type="Node"]
 script = ExtResource("2_c48a7")
-home_base_data = ExtResource("2_oq6tm")
+home_base_data = SubResource("Resource_vmd61")
 end_of_year_popup_scene = ExtResource("2_5el12")
 world_map_scene_path = "res://scenes/world_map/MacroMap.tscn"
 
@@ -29,9 +41,6 @@ text = "Purchase buildings from the storefront below, then place them on your se
 horizontal_alignment = 1
 
 [node name="Storefront_UI" parent="UI" instance=ExtResource("3_vj45l")]
-available_buildings = null
-available_units = null
-auto_load_units_from_directory = null
 
 [node name="DebugRaidButton" type="Button" parent="UI/Storefront_UI"]
 layout_mode = 1
@@ -76,3 +85,9 @@ script = ExtResource("6_cursor")
 [node name="BuildingContainer" type="Node2D" parent="."]
 
 [node name="GridManager" parent="." instance=ExtResource("6_b34qi")]
+
+[node name="GridVisualizer" parent="." instance=ExtResource("7_oq6tm")]
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(1000, 400)
+script = ExtResource("8_ggwng")

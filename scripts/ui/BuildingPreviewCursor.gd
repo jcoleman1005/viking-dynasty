@@ -8,223 +8,143 @@ var preview_sprite: Sprite2D
 var is_active: bool = false
 
 # Grid and placement
-var cell_size: int = 32 # This is now SET by the scene (e.g., SettlementBridge)
+var cell_size: int = 32 
 var grid_overlay: Node2D
 var can_place: bool = false
 
 # Visual feedback
-var valid_color: Color = Color(0.0, 1.0, 0.0, 0.7)    # Green for valid placement
-var invalid_color: Color = Color(1.0, 0.0, 0.0, 0.7)  # Red for invalid placement
+var valid_color: Color = Color(0.0, 1.0, 0.0, 0.7)    # Green
+var invalid_color: Color = Color(1.0, 0.0, 0.0, 0.7)  # Red
 
 signal placement_completed
 signal placement_cancelled
 
+# --- NEW: Reference to GridManager for Phase 3 checks ---
+var grid_manager: Node = null
+
 func _ready() -> void:
-	# Ensure we're always on top for visibility
 	z_index = 100
 	
-	# Create grid overlay for visual feedback
 	grid_overlay = Node2D.new()
 	grid_overlay.name = "GridOverlay"
 	add_child(grid_overlay)
 	
-	# --- THIS IS THE FIX ---
-	# Removed dependency on SettlementManager.tile_size
-	# The 'cell_size' var will be set externally by SettlementBridge.gd
-	# -----------------------
-	print("BuildingPreviewCursor ready. Waiting for cell_size to be set.")
+	# Find GridManager sibling
+	grid_manager = get_parent().get_node_or_null("GridManager")
+	
+	print("BuildingPreviewCursor ready.")
 
 func set_building_preview(building_data: BuildingData) -> void:
-	"""Start building placement mode with the specified building"""
-	if not building_data:
-		print("ERROR: No building data provided to set_building_preview")
-		return
-	
-	if cell_size <= 0:
-		push_error("BuildingPreviewCursor: cell_size is not set! Cannot create preview.")
-		return
+	if not building_data: return
+	if cell_size <= 0: return
 	
 	print("Setting building preview for: %s" % building_data.display_name)
 	current_building_data = building_data
 	
-	# Clean up any existing preview
 	_cleanup_preview()
 	
-	# Create new preview sprite
 	preview_sprite = Sprite2D.new()
 	preview_sprite.name = "PreviewSprite"
 	
-	# Set up the building texture
 	if building_data.building_texture:
 		preview_sprite.texture = building_data.building_texture
 	else:
-		# Create a simple colored rectangle if no texture
 		var texture = _create_building_texture(building_data)
 		preview_sprite.texture = texture
-		print("Created fallback texture for preview")
 	
-	
-	# --- Automatic Scaling Logic ---
-	
-	# 1. Get the target size based on grid
+	# Scale
 	var target_size: Vector2 = Vector2(building_data.grid_size) * cell_size
-	
-	# 2. Scale the Sprite (if texture exists)
 	if preview_sprite.texture:
 		var texture_size: Vector2 = preview_sprite.texture.get_size()
-		
 		if texture_size.x > 0 and texture_size.y > 0:
-			var new_scale: Vector2 = target_size / texture_size
-			preview_sprite.scale = new_scale
-		else:
-			push_warning("BuildingPreviewCursor: Texture for '%s' has invalid size %s. Cannot scale preview." % [building_data.display_name, texture_size])
-	else:
-		push_warning("BuildingPreviewCursor: No texture for '%s' preview." % building_data.display_name)
-			
-	# --- END SCALING LOGIC ---
-
+			preview_sprite.scale = target_size / texture_size
 	
-	# Set semi-transparent
 	preview_sprite.modulate = valid_color
 	add_child(preview_sprite)
 	
-	# Create grid outline to show building footprint
 	_create_grid_outline(building_data.grid_size)
 	
-	# Activate placement mode
 	is_active = true
 	visible = true
 
 func _create_building_texture(building_data: BuildingData) -> ImageTexture:
-	"""Create a simple colored texture for buildings without textures"""
-	var size = Vector2i(
-		building_data.grid_size.x * cell_size,
-		building_data.grid_size.y * cell_size
-	)
-	
+	var size = Vector2i(building_data.grid_size.x * cell_size, building_data.grid_size.y * cell_size)
 	var image = Image.create(size.x, size.y, false, Image.FORMAT_RGBA8)
-	var color = _get_building_color(building_data)
-	image.fill(color)
-	
+	image.fill(Color(0.6, 0.6, 0.6, 1.0))
 	var texture = ImageTexture.new()
 	texture.set_image(image)
 	return texture
 
 func _create_grid_outline(grid_size: Vector2i) -> void:
-	"""Create a visual outline showing the building's grid footprint"""
 	_clear_grid_overlay()
-	
 	var outline_color = Color.WHITE
 	var line_width = 2.0
-	
-	# This var 'rect_size' now correctly uses the synced 'cell_size'
 	var rect_size = Vector2(grid_size.x * cell_size, grid_size.y * cell_size)
 	
-	# Create outline using Line2D nodes for each edge
-	var lines = []
+	var points = [
+		Vector2(0, 0), Vector2(rect_size.x, 0), 
+		Vector2(rect_size.x, rect_size.y), Vector2(0, rect_size.y), 
+		Vector2(0, 0)
+	]
 	
-	# Top line
-	var top_line = Line2D.new()
-	top_line.add_point(Vector2(0, 0))
-	top_line.add_point(Vector2(rect_size.x, 0))
-	top_line.width = line_width
-	top_line.default_color = outline_color
-	lines.append(top_line)
-	
-	# Right line
-	var right_line = Line2D.new()
-	right_line.add_point(Vector2(rect_size.x, 0))
-	right_line.add_point(Vector2(rect_size.x, rect_size.y))
-	right_line.width = line_width
-	right_line.default_color = outline_color
-	lines.append(right_line)
-	
-	# Bottom line
-	var bottom_line = Line2D.new()
-	bottom_line.add_point(Vector2(rect_size.x, rect_size.y))
-	bottom_line.add_point(Vector2(0, rect_size.y))
-	bottom_line.width = line_width
-	bottom_line.default_color = outline_color
-	lines.append(bottom_line)
-	
-	# Left line
-	var left_line = Line2D.new()
-	left_line.add_point(Vector2(0, rect_size.y))
-	left_line.add_point(Vector2(0, 0))
-	left_line.width = line_width
-	left_line.default_color = outline_color
-	lines.append(left_line)
-	
-	# Add lines to grid overlay
-	for line in lines:
-		grid_overlay.add_child(line)
+	var line = Line2D.new()
+	line.points = points
+	line.width = line_width
+	line.default_color = outline_color
+	grid_overlay.add_child(line)
 
 func _clear_grid_overlay() -> void:
-	"""Clear the grid overlay visual elements"""
 	for child in grid_overlay.get_children():
 		child.queue_free()
 
-func _get_building_color(building_data: BuildingData) -> Color:
-	"""Get a representative color for the building type"""
-	var name = building_data.display_name.to_lower()
-	if "wall" in name:
-		return Color(0.7, 0.5, 0.3, 1.0) # Brown
-	elif "hall" in name:
-		return Color(0.8, 0.8, 0.2, 1.0) # Yellow
-	elif "tower" in name or "watchtower" in name:
-		return Color(0.5, 0.5, 0.8, 1.0) # Blue
-	elif "lumber" in name:
-		return Color(0.3, 0.8, 0.3, 1.0) # Green
-	elif "granary" in name:
-		return Color(0.9, 0.6, 0.2, 1.0) # Orange
-	elif "chapel" in name or "library" in name or "scriptorium" in name:
-		return Color(0.8, 0.4, 0.8, 1.0) # Purple
-	else:
-		return Color(0.6, 0.6, 0.6, 1.0) # Gray
-
 func _process(_delta: float) -> void:
-	"""Update cursor position and placement validity"""
-	if not is_active or not current_building_data:
-		return
+	if not is_active or not current_building_data: return
 	
-	# Get mouse position and snap to grid
 	var mouse_pos = get_global_mouse_position()
 	var grid_pos = _world_to_grid(mouse_pos)
-	var snapped_world_pos = _grid_to_world(grid_pos)
+	global_position = _grid_to_world(grid_pos)
 	
-	# Update cursor position
-	global_position = snapped_world_pos
-	
-	# Check placement validity
 	can_place = _can_place_at_position(grid_pos)
-	
-	# Update visual feedback
 	_update_visual_feedback()
 
 func _world_to_grid(world_pos: Vector2) -> Vector2i:
-	"""Convert world position to grid coordinates"""
-	if cell_size <= 0: return Vector2i.ZERO # Safety check
+	if cell_size <= 0: return Vector2i.ZERO
 	return Vector2i(int(world_pos.x / cell_size), int(world_pos.y / cell_size))
 
 func _grid_to_world(grid_pos: Vector2i) -> Vector2:
-	"""Convert grid coordinates to world position (centered on cell)"""
 	return Vector2(grid_pos.x * cell_size, grid_pos.y * cell_size)
 
+# --- MODIFIED: Enforce Phase 3 Territory Constraints ---
 func _can_place_at_position(grid_pos: Vector2i) -> bool:
-	"""Check if building can be placed by asking the SettlementManager."""
 	if not SettlementManager or not current_building_data:
 		return false
 	
-	# This call still works because SettlementManager delegates
-	# to the registered AStarGrid object.
-	return SettlementManager.is_placement_valid(grid_pos, current_building_data.grid_size)
+	# 1. Check Collision (Is the ground solid/occupied?)
+	# This applies to EVERYTHING. You can't build inside a rock.
+	if not SettlementManager.is_placement_valid(grid_pos, current_building_data.grid_size):
+		return false
+		
+	# 2. Check Territory (Is it in the Green Zone?)
+	# EXCEPTION: If this building IS a Hub (Great Hall), it generates the zone.
+	# Therefore, it does not need to be *inside* an existing zone.
+	if current_building_data.is_territory_hub:
+		return true
+	
+	# Standard check for non-hubs (Walls, Farms, etc.)
+	if grid_manager and grid_manager.has_method("is_cell_buildable"):
+		# We check every tile in the building's footprint
+		for x in range(current_building_data.grid_size.x):
+			for y in range(current_building_data.grid_size.y):
+				var check_pos = grid_pos + Vector2i(x, y)
+				
+				# If ANY part of the building is outside territory, deny placement
+				if not grid_manager.is_cell_buildable(check_pos):
+					return false
+	
+	return true
 
 func _update_visual_feedback() -> void:
-	"""Update the visual appearance based on placement validity"""
-	if not preview_sprite:
-		return
-	
-	# Change color based on placement validity
+	if not preview_sprite: return
 	if can_place:
 		preview_sprite.modulate = valid_color
 		_set_grid_overlay_color(Color.GREEN)
@@ -233,69 +153,44 @@ func _update_visual_feedback() -> void:
 		_set_grid_overlay_color(Color.RED)
 
 func _set_grid_overlay_color(color: Color) -> void:
-	"""Set the color of the grid overlay lines"""
 	for child in grid_overlay.get_children():
 		if child is Line2D:
 			child.default_color = color
 
 func place_building() -> bool:
-	"""Attempt to place the building at current position"""
 	if not is_active or not current_building_data or not can_place:
-		print("Cannot place building: not active (%s), no data (%s), or invalid position (%s)" % [is_active, current_building_data != null, can_place])
 		return false
 	
 	var grid_pos = _world_to_grid(global_position)
-	
-	print("Attempting to place %s at grid position %s" % [current_building_data.display_name, grid_pos])
-	
-	# This call still works!
-	var new_building = SettlementManager.place_building(current_building_data, grid_pos)
+	var new_building = SettlementManager.place_building(current_building_data, grid_pos, true)
 	
 	if new_building:
-		print("Successfully placed building: %s" % current_building_data.display_name)
 		placement_completed.emit()
 		cancel_preview()
 		return true
-	else:
-		print("Failed to place building through SettlementManager")
-		return false
+	return false
 
 func cancel_preview() -> void:
-	"""Cancel building placement and clean up"""
-	print("Cancelling building preview")
-	
 	is_active = false
 	visible = false
 	current_building_data = null
 	can_place = false
-	
 	_cleanup_preview()
 	placement_cancelled.emit()
 
 func _cleanup_preview() -> void:
-	"""Clean up preview visual elements"""
 	if preview_sprite:
 		preview_sprite.queue_free()
 		preview_sprite = null
-	
 	_clear_grid_overlay()
 
 func _input(event: InputEvent) -> void:
-	"""Handle input for building placement"""
-	if not is_active:
-		return
+	if not is_active: return
 	
 	if event is InputEventMouseButton and event.is_pressed():
 		if event.button_index == MOUSE_BUTTON_LEFT:
-			# Attempt to place building
-			if place_building():
-				print("Building placed successfully")
-			else:
-				print("Failed to place building")
+			place_building()
 			get_viewport().set_input_as_handled()
-		
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
-			# Cancel placement
-			print("Building placement cancelled by right click")
 			cancel_preview()
 			get_viewport().set_input_as_handled()

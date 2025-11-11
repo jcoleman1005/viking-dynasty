@@ -5,6 +5,7 @@ class_name BaseUnit
 extends CharacterBody2D
 
 signal destroyed
+signal fsm_ready(unit)
 
 @export var data: UnitData
 # Removed the : UnitFSM type hint to break the circular dependency.
@@ -38,11 +39,31 @@ const ERROR_COLOR := Color(0.7, 0.3, 1.0)
 
 func _ready() -> void:
 	if not data:
-		push_warning("BaseUnit: Node '%s' is missing its 'UnitData' resource. Cannot initialize." % name)
+		push_warning("BaseUnit: Node '%s' is missing its 'UnitData' resource.
+Cannot initialize." % name)
 		return
 	
 	current_health = data.max_health
 	_apply_texture_and_scale()
+	
+	# --- MODIFIED: DEFER ALL AI/FSM SETUP ---
+	call_deferred("_deferred_setup")
+	# ----------------------------------------
+	
+	sprite.modulate = STATE_COLORS.get(UnitAIConstants.State.IDLE, Color.WHITE)
+	
+	EventBus.pathfinding_grid_updated.connect(_on_grid_updated)
+	
+	separation_area.collision_mask = 2
+	
+	var area_shape = separation_area.get_node_or_null("CollisionShape2D")
+	if area_shape and area_shape.shape is CircleShape2D:
+		area_shape.shape.radius = separation_radius
+	else:
+		push_warning("'%s' has no 'SeparationArea/CollisionShape2D' with a CircleShape!" % name)
+		
+func _deferred_setup() -> void:
+	"""Initializes AttackAI and FSM after all children are guaranteed to be in the tree."""
 	
 	if data.ai_component_scene:
 		attack_ai = data.ai_component_scene.instantiate() as AttackAI
@@ -63,22 +84,10 @@ func _ready() -> void:
 		else:
 			push_error("BaseUnit: Failed to instantiate ai_component_scene for %s" % data.display_name)
 	
+	# FSM relies on attack_ai being valid, so we run this last.
 	fsm = UnitFSM.new(self, attack_ai)
+	fsm_ready.emit(self)
 	
-	# --- THIS IS THE FIX ---
-	sprite.modulate = STATE_COLORS.get(UnitAIConstants.State.IDLE, Color.WHITE)
-	# --- END FIX ---
-	
-	EventBus.pathfinding_grid_updated.connect(_on_grid_updated)
-	
-	separation_area.collision_mask = 2
-	
-	var area_shape = separation_area.get_node_or_null("CollisionShape2D")
-	if area_shape and area_shape.shape is CircleShape2D:
-		area_shape.shape.radius = separation_radius
-	else:
-		push_warning("'%s' has no 'SeparationArea/CollisionShape2D' with a CircleShape!" % name)
-
 func _apply_texture_and_scale() -> void:
 	if data.target_pixel_size.x <= 0 or data.target_pixel_size.y <= 0:
 		push_warning("BaseUnit: '%s' has a target_pixel_size of %s, which is invalid." % [data.display_name, data.target_pixel_size])

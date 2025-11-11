@@ -7,8 +7,14 @@ extends Node
 
 # --- Build System Signals ---
 # TODO: Connect this signal when implementing advanced building system
+signal building_right_clicked(building: Node2D) # Emitted when a placed building is right-clicked
+signal building_state_changed(building: BaseBuilding, new_state: int) # Emitted when building state changes
 # @warning_ignore("unused_signal")
 signal build_request_made(building_data: BuildingData, grid_position: Vector2i)
+# Emitted when a building is purchased and ready for cursor placement
+signal building_ready_for_placement(building_data: BuildingData)
+# Emitted when building placement is cancelled (should refund cost)
+signal building_placement_cancelled(building_data: BuildingData)
 
 # --- Pathfinding Signals ---
 signal pathfinding_grid_updated(grid_position: Vector2i)
@@ -46,11 +52,7 @@ signal attack_command(target_node: Node2D)
 signal formation_move_command(target_position: Vector2, direction_vector: Vector2)
 
 # --- NEW: Building Cursor System Signals ---
-# Emitted when a building is purchased and ready for cursor placement
-signal building_ready_for_placement(building_data: BuildingData)
 
-# Emitted when building placement is cancelled (should refund cost)
-signal building_placement_cancelled(building_data: BuildingData)
 
 # --- NEW: Event System Flow Control ---
 signal event_system_finished()

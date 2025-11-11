@@ -4,6 +4,7 @@
 # --- REFACTORED ---
 # Fixed initialization order: 'data' is now assigned BEFORE add_child().
 # This ensures BaseUnit._ready() has the data needed to create the FSM.
+# Fixed race condition in enemy spawning by using fsm_ready signal.
 # ------------------
 extends Node2D
 
@@ -108,14 +109,23 @@ func initialize_mission() -> void:
 		push_error("RaidMission: Could not find Objective Building (Great Hall)!")
 
 
+# --- MODIFIED: Updated to load PENDING buildings too ---
 func _load_player_base_for_defense() -> void:
 	print("Loading PLAYER base for defense...")
 	var settlement = SettlementManager.current_settlement
 	if not settlement:
 		push_error("Defensive Mission: Cannot load player base.")
 		return
-		
-	for building_entry in settlement.placed_buildings:
+	
+	# 1. Load Completed Buildings
+	_spawn_building_list(settlement.placed_buildings, false)
+	
+	# 2. Load Blueprints (New Fix)
+	_spawn_building_list(settlement.pending_construction_buildings, true)
+	
+	_update_astar_grid_for_base(settlement.placed_buildings)
+func _spawn_building_list(list: Array, is_blueprint: bool) -> void:
+	for building_entry in list:
 		var building_res_path: String = building_entry["resource_path"]
 		var grid_pos: Vector2i = building_entry["grid_position"]
 		
@@ -132,19 +142,17 @@ func _load_player_base_for_defense() -> void:
 		var building_center_offset: Vector2 = building_footprint_size / 2.0
 		building_instance.global_position = world_pos_top_left + building_center_offset
 		
-		building_instance.set_collision_layer(1) # Player Buildings
+		building_instance.set_collision_layer(1)
 		building_instance.set_collision_mask(0) 
 		
 		if building_data.display_name.to_lower().contains("hall"):
 			objective_building = building_instance
 			
-		if building_instance.has_signal("building_destroyed"):
-			building_instance.building_destroyed.connect(_on_enemy_building_destroyed_grid_clear)
-		
 		building_container.add_child(building_instance)
-	
-	_update_astar_grid_for_base(settlement.placed_buildings)
-
+		
+		# Apply Blueprint State if needed
+		if is_blueprint:
+			building_instance.set_state(BaseBuilding.BuildingState.BLUEPRINT)
 
 func _load_enemy_base() -> void:
 	print("Loading ENEMY base for offense...")
@@ -270,8 +278,6 @@ func _spawn_enemy_wave() -> void:
 	var enemy_count = 5
 	for i in range(enemy_count):
 		
-		# --- FIX: Logic Order ---
-		
 		# 1. Instantiate
 		var enemy_node = enemy_data.scene_to_spawn.instantiate()
 		
@@ -282,20 +288,14 @@ func _spawn_enemy_wave() -> void:
 			enemy_node.queue_free()
 			continue
 		
-		# --- CRITICAL FIX: Assign data before adding to tree ---
+		# Assign data before adding to tree
 		enemy_unit.data = enemy_data
 		enemy_unit.name = enemy_data.display_name + "_Enemy_" + str(i)
-		enemy_unit.collision_layer = 4  # Enemy Units = Layer 3
-		# ------------------------------------------------------
+		# Use bit-shift for clarity (Layer 3 = 1 << 2, value 4)
+		enemy_unit.collision_layer = 1 << 2 
 		
 		# 3. Add to Tree (Triggers _ready(), which now finds 'data')
 		add_child(enemy_node) 
-		
-		# 4. Configure AI (Safe because FSM and AttackAI are created in _ready)
-		if enemy_unit.attack_ai:
-			enemy_unit.attack_ai.ai_mode = AttackAI.AI_Mode.DEFENSIVE_SIEGE
-		else:
-			push_warning("Enemy unit %s has no AttackAI node!" % enemy_unit.name)
 		
 		var spawn_pos = enemy_spawner.global_position + Vector2(i * 40, 0)
 		enemy_unit.global_position = spawn_pos
@@ -303,15 +303,31 @@ func _spawn_enemy_wave() -> void:
 		enemy_unit.add_to_group("enemy_units")
 		enemy_units.append(enemy_unit)
 		
-		# 5. Command Attack
-		if is_instance_valid(objective_building) and enemy_unit.fsm:
-			enemy_unit.fsm.command_attack(objective_building)
-		elif not enemy_unit.fsm:
-			push_error("Enemy unit %s FSM is still null!" % enemy_unit.name)
-		# --- END FIX ---
+		# 4. Connect to the FSM ready signal
+		# We DO NOT access FSM or AttackAI here. We wait for the signal.
+		if is_instance_valid(objective_building):
+			enemy_unit.fsm_ready.connect(_on_enemy_fsm_ready.bind(objective_building))
 	
 	print("Spawned %d enemy raiders." % enemy_count)
 
+# --- UPDATED SIGNAL HANDLER: Handles ALL post-spawn configuration ---
+func _on_enemy_fsm_ready(enemy_unit: BaseUnit, target: BaseBuilding) -> void:
+	"""
+	Called by the enemy unit when its FSM is fully set up via _deferred_setup.
+	This ensures we only issue the command when the unit is ready to receive it.
+	"""
+	if not is_instance_valid(target) or not is_instance_valid(enemy_unit):
+		return
+
+	# 1. Configure the AttackAI mode (NOW SAFE)
+	if enemy_unit.attack_ai:
+		enemy_unit.attack_ai.ai_mode = AttackAI.AI_Mode.DEFENSIVE_SIEGE
+		
+	# 2. Command Attack (NOW SAFE)
+	if enemy_unit.fsm:
+		enemy_unit.fsm.command_attack(target)
+	else:
+		push_error("Enemy unit %s FSM is still null after signal! FSM setup failed." % enemy_unit.name)
 
 func _spawn_test_units() -> void:
 	# (Test unit spawning code omitted for brevity - unchanged)

@@ -1,9 +1,9 @@
 # res://scenes/world_map/MacroCamera.gd
 #
 # Camera controller for the Macro Map.
-# Implements WASD and Middle-Mouse-Drag panning [cite: 471, 472]
+# Implements WASD and Middle-Mouse-Drag panning
 # with boundaries.
-extends Camera2D # [cite: 468]
+extends Camera2D 
 class_name MacroCamera
 
 @export var camera_speed: float = 500.0

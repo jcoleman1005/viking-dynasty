@@ -10,3 +10,6 @@ script = ExtResource("2_script")
 separation_enabled = true
 separation_force = 30.0
 separation_radius = 40.0
+
+[node name="Sprite2D" parent="." index="0"]
+scale = Vector2(0.06542969, 0.068359375)

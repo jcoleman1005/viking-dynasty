@@ -1,83 +1,80 @@
-[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://1dnknjyrfvxe"]
+[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://dsgbqyqqlvlwn"]
 
 [ext_resource type="Script" uid="uid://hlb8s5g0yp6k" path="res://data/settlements/SettlementData.gd" id="1_settlement_data"]
 
 [resource]
 script = ExtResource("1_settlement_data")
 treasury = {
-"food": 6723,
-"gold": 10920,
-"stone": 450,
-"wood": 11704
+"food": 657,
+"gold": 600,
+"stone": 125,
+"wood": 1547
 }
 placed_buildings = Array[Dictionary]([{
-"grid_position": Vector2i(11, 7),
-"resource_path": "res://data/buildings/Bldg_Wall.tres"
-}, {
-"grid_position": Vector2i(12, 7),
-"resource_path": "res://data/buildings/Bldg_Wall.tres"
-}, {
-"grid_position": Vector2i(13, 7),
-"resource_path": "res://data/buildings/Bldg_Wall.tres"
-}, {
-"grid_position": Vector2i(14, 7),
-"resource_path": "res://data/buildings/Bldg_Wall.tres"
-}, {
-"grid_position": Vector2i(11, 17),
-"resource_path": "res://data/buildings/Bldg_Wall.tres"
-}, {
-"grid_position": Vector2i(17, 8),
+"grid_position": Vector2i(33, 18),
 "resource_path": "res://data/buildings/LumberYard.tres"
 }, {
-"grid_position": Vector2i(20, 7),
+"grid_position": Vector2i(31, 18),
 "resource_path": "res://data/buildings/LumberYard.tres"
 }, {
-"grid_position": Vector2i(15, 7),
+"grid_position": Vector2i(29, 18),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(31, 16),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2(36, 13),
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
 }, {
-"grid_position": Vector2i(22, 7),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(22, 9),
-"resource_path": "res://data/buildings/Player_Farm.tres"
-}, {
-"grid_position": Vector2i(20, 9),
-"resource_path": "res://data/buildings/Player_Farm.tres"
-}, {
-"grid_position": Vector2i(20, 5),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(22, 5),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(20, 3),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(22, 3),
-"resource_path": "res://data/buildings/LumberYard.tres"
-}, {
-"grid_position": Vector2i(8, 5),
-"resource_path": "res://data/buildings/Player_Barracks.tres"
-}, {
-"grid_position": Vector2i(17, 12),
-"resource_path": "res://data/buildings/Test_Large_Building.tres"
-}, {
-"grid_position": Vector2i(24, 13),
-"resource_path": "res://data/buildings/GreatHall.tres"
-}, {
-"grid_position": Vector2i(19, 0),
+"grid_position": Vector2(37, 13),
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
 }, {
-"grid_position": Vector2i(20, 0),
+"grid_position": Vector2(38, 13),
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
 }, {
-"grid_position": Vector2i(12, 5),
+"grid_position": Vector2i(42, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(41, 9),
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
 }, {
-"grid_position": Vector2i(16, 7),
+"grid_position": Vector2i(52, 11),
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(40, 9),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(51, 11),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(50, 11),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(49, 11),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(32, 9),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(48, 16),
+"resource_path": "res://data/buildings/LumberYard.tres"
 }])
+pending_construction_buildings = [{
+"grid_position": Vector2i(43, 11),
+"progress": 25,
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(36, 26),
+"progress": 0,
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}]
 garrisoned_units = {
-"res://data/units/Unit_PlayerRaider.tres": 15
+"res://data/units/Unit_PlayerRaider.tres": 16
+}
+worker_assignments = {
+"construction": 1,
+"food": 0,
+"stone": 0,
+"wood": 0
 }
 metadata/_custom_type_script = "uid://hlb8s5g0yp6k"

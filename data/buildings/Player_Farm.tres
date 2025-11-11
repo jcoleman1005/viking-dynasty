@@ -18,3 +18,4 @@ max_health = 75
 grid_size = Vector2i(2, 2)
 dev_color = Color(0.2, 0.8, 0.2, 1)
 is_player_buildable = true
+territory_radius = 0

@@ -2,7 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://bky4c6y8fkk8g" path="res://scenes/units/Base_Unit.tscn" id="1_base"]
 [ext_resource type="Script" uid="uid://cavpq2rrgln2v" path="res://scripts/units/EnemyVikingRaider.gd" id="2_script"]
-[ext_resource type="Resource" path="res://data/units/Unit_Raider.tres" id="3_s66tq"]
+[ext_resource type="Resource" uid="uid://brnbvjwnoyh3j" path="res://data/units/EnemyVikingRaider_Data.tres" id="3_s66tq"]
 
 [node name="VikingRaider" instance=ExtResource("1_base")]
 collision_layer = 4
