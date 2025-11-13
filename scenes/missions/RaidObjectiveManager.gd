@@ -264,24 +264,32 @@ func _show_victory_message(title: String, subtitle: String) -> void:
 		get_tree().current_scene.add_child(victory_popup) # Fallback
 # --- END NEW ---
 
+# res://scenes/missions/RaidObjectiveManager.gd
+
 func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	"""Called when the enemy's Great Hall is destroyed (OFFENSIVE win condition)"""
 	if mission_over: return
 	mission_over = true
 	
-	print("Enemy Hall destroyed! Mission success!")
+	print("RaidObjectiveManager: Enemy Hall destroyed! Preparing report...")
 	
-	# Add bonus loot
-	raid_loot.add_loot("gold", victory_bonus_loot.get("gold", 200))
-	var total_loot = raid_loot.get_total_loot()
+	# 1. Gather Raw Stats
+	# We only track what physically happened (gold picked up, win state)
+	var raw_gold = raid_loot.collected_loot.get("gold", 0)
 	
-	SettlementManager.deposit_resources(total_loot)
-	print("Mission Complete! %s" % raid_loot.get_loot_summary())
+	# 2. Package the Result
+	var result = {
+		"outcome": "victory",
+		"gold_looted": raw_gold,
+		# We can add more stats here later (e.g. "units_lost")
+	}
 	
-	# --- NEW: Show Victory Popup ---
-	var subtitle = "The enemy's Great Hall is in ruins.\nLoot: %s" % raid_loot.get_loot_summary()
-	_show_victory_message("VICTORY!", subtitle)
+	# 3. Send to Courier
+	DynastyManager.pending_raid_result = result
 	
-	await get_tree().create_timer(3.0).timeout # Increased timer to 3s to read
+	# 4. Show simple feedback and leave
+	# (We purposely do NOT show the full loot popup here anymore)
+	_show_victory_message("VICTORY!", "The settlement lies in ruins.\nReturning to ships...")
 	
+	await get_tree().create_timer(3.0).timeout
 	EventBus.scene_change_requested.emit("settlement")

@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="WorldRegionData" load_steps=2 format=3 uid="uid://rb575376gmgd"]
+
+[ext_resource type="Script" uid="uid://dqlbgeegli821" path="res://data/world_map/WorldRegionData.gd" id="1_8hjpx"]
+
+[resource]
+script = ExtResource("1_8hjpx")
+metadata/_custom_type_script = "uid://dqlbgeegli821"

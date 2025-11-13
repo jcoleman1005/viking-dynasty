@@ -1,46 +1,180 @@
-[gd_scene load_steps=7 format=3 uid="uid://ba41qxyi1a30u"]
+[gd_scene load_steps=18 format=3 uid="uid://ba41qxyi1a30u"]
 
 [ext_resource type="Script" uid="uid://dmq8s5ifmd1dx" path="res://scenes/world_map/MacroMap.gd" id="1_macro_map"]
 [ext_resource type="PackedScene" uid="uid://dqh0xu88khxct" path="res://ui/EndOfYear_Popup.tscn" id="2_okptj"]
 [ext_resource type="PackedScene" uid="uid://cuyni4y77q51q" path="res://scenes/world_map/Region.tscn" id="2_region"]
-[ext_resource type="Resource" uid="uid://bk6wv22mknptc" path="res://data/world_map/Region_Monastery.tres" id="3_monastery_data"]
+[ext_resource type="Texture2D" uid="uid://c32ymtbiceoe8" path="res://assets/Viking Dynasty Game Map.png" id="3_qn6r3"]
 [ext_resource type="PackedScene" uid="uid://lpxvj8dvfbnl" path="res://scenes/world_map/MacroCamera.tscn" id="5_okptj"]
+[ext_resource type="Script" uid="uid://4osy61evbgf0" path="res://data/world_map/RaidTargetData.gd" id="5_qn6r3"]
+[ext_resource type="Script" uid="uid://dqlbgeegli821" path="res://data/world_map/WorldRegionData.gd" id="6_aeufb"]
 [ext_resource type="PackedScene" uid="uid://c5qg2j1qa4g0b" path="res://ui/Dynasty_UI.tscn" id="6_tcdvw"]
 
+[sub_resource type="Resource" id="Resource_seg4e"]
+script = ExtResource("6_aeufb")
+display_name = "Agdir"
+description = "Southern Norway"
+raid_targets = Array[ExtResource("5_qn6r3")]([null])
+yearly_income = {
+"gold": 250
+}
+metadata/_custom_type_script = "uid://dqlbgeegli821"
+
+[sub_resource type="Resource" id="Resource_qn6r3"]
+script = ExtResource("6_aeufb")
+metadata/_custom_type_script = "uid://dqlbgeegli821"
+
+[sub_resource type="Resource" id="Resource_aeufb"]
+script = ExtResource("6_aeufb")
+metadata/_custom_type_script = "uid://dqlbgeegli821"
+
+[sub_resource type="Resource" id="Resource_3epe4"]
+script = ExtResource("6_aeufb")
+metadata/_custom_type_script = "uid://dqlbgeegli821"
+
+[sub_resource type="Resource" id="Resource_37xpq"]
+script = ExtResource("6_aeufb")
+metadata/_custom_type_script = "uid://dqlbgeegli821"
+
+[sub_resource type="Resource" id="Resource_n4r4f"]
+script = ExtResource("6_aeufb")
+metadata/_custom_type_script = "uid://dqlbgeegli821"
+
+[sub_resource type="Resource" id="Resource_47i7n"]
+script = ExtResource("6_aeufb")
+metadata/_custom_type_script = "uid://dqlbgeegli821"
+
+[sub_resource type="Resource" id="Resource_uahyi"]
+script = ExtResource("6_aeufb")
+metadata/_custom_type_script = "uid://dqlbgeegli821"
+
+[sub_resource type="Resource" id="Resource_jetqj"]
+script = ExtResource("6_aeufb")
+metadata/_custom_type_script = "uid://dqlbgeegli821"
+
 [node name="MacroMap" type="Node2D"]
-position = Vector2(131, 23)
 script = ExtResource("1_macro_map")
 end_year_popup_scene = ExtResource("2_okptj")
 
-[node name="MapBackground" type="ColorRect" parent="."]
-modulate = Color(0.735357, 0.735357, 0.735357, 1)
-custom_minimum_size = Vector2(1920, 1080)
-anchors_preset = -1
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -703.00006
-offset_top = -262.0
-offset_right = 1217.0
-offset_bottom = 818.0
-grow_horizontal = 2
-grow_vertical = 2
-scale = Vector2(60, 34)
-mouse_filter = 2
-color = Color(0.83137256, 0.77254903, 0.627451, 1)
+[node name="TextureRect" type="TextureRect" parent="."]
+offset_left = 2.0
+offset_top = -4.0
+offset_right = 1022.0
+offset_bottom = 771.0
+texture = ExtResource("3_qn6r3")
 
 [node name="Regions" type="Node2D" parent="."]
 
-[node name="Region" parent="Regions" instance=ExtResource("2_region")]
-position = Vector2(392, 139)
-data = ExtResource("3_monastery_data")
+[node name="Region_Southern_Sweden" parent="Regions" instance=ExtResource("2_region")]
+data = SubResource("Resource_seg4e")
+
+[node name="HighlightPoly" parent="Regions/Region_Southern_Sweden" index="0"]
+color = Color(1, 1, 1, 0.19607843)
+polygon = PackedVector2Array(539, 493, 542, 507, 548, 519, 550, 534, 564, 561, 571, 570, 569, 574, 568, 577, 566, 580, 566, 587, 569, 591, 574, 596, 574, 603, 574, 607, 578, 609, 584, 609, 590, 606, 596, 607, 600, 604, 597, 597, 598, 586, 611, 581, 622, 579, 625, 580, 628, 580, 628, 573, 632, 564, 634, 560, 633, 545, 635, 535, 634, 524, 635, 515, 635, 509, 630, 505, 626, 505, 606, 489, 591, 478, 570, 465, 564, 456, 558, 453, 556, 457, 555, 459, 550, 461, 549, 466, 546, 471, 548, 477, 549, 482, 546, 488, 546, 492, 541, 491)
+
+[node name="CollisionPolygon2D" parent="Regions/Region_Southern_Sweden" index="1"]
+polygon = PackedVector2Array(0, 0)
+
+[node name="Region_Southern_Norway" parent="Regions" instance=ExtResource("2_region")]
+data = SubResource("Resource_seg4e")
+
+[node name="HighlightPoly" parent="Regions/Region_Southern_Norway" index="0"]
+color = Color(1, 1, 1, 0.19607843)
+polygon = PackedVector2Array(450, 509, 440, 496, 453, 483, 455, 475, 448, 478, 441, 479, 438, 471, 440, 463, 446, 456, 443.3711, 449.4278, 440, 441, 439, 426, 440, 416, 439.49124, 404.80768, 439, 394, 445, 393, 444, 385, 452, 383, 457, 375, 467, 370, 467, 363, 476, 361, 482, 362, 485, 352, 493, 341, 508, 344, 512, 340, 515, 343, 546, 348, 552, 368, 552, 391, 555, 405, 563, 410, 563, 422, 554, 428, 558, 436, 561, 455, 551, 463, 548, 472, 546, 494, 537, 491, 534, 483, 528, 482, 520, 490, 500, 507, 491, 519, 479, 524, 467, 522, 458, 514)
+
+[node name="Region_Northern_Sweden" parent="Regions" instance=ExtResource("2_region")]
+data = SubResource("Resource_seg4e")
+
+[node name="HighlightPoly" parent="Regions/Region_Northern_Sweden" index="0"]
+color = Color(1, 1, 1, 0.19607843)
+polygon = PackedVector2Array(632, 505, 600, 483, 581, 473, 559, 452, 559, 437, 553, 425, 561, 423, 561, 417, 561, 411, 556, 404, 553, 402, 551, 363, 549, 352, 552, 333, 558, 325, 566, 325, 574, 324, 577, 314, 569, 306, 578, 289, 579, 264, 578, 256, 589, 249, 589, 241, 601, 220, 596, 207, 601, 200, 601, 190, 607, 185, 612, 187, 616, 187, 616, 181, 616, 172, 620, 169, 640, 172, 642, 153, 643, 148, 646, 148, 655, 156, 663, 162, 673, 164, 679, 170, 687, 177, 690, 194, 694, 205, 701, 218, 698, 227, 709, 245, 705, 249, 688, 253, 679, 269, 674, 288, 682, 298, 673, 320, 657, 335, 652, 342, 648, 344, 640, 358, 637, 366, 633, 372, 632, 381, 631, 394, 630, 408, 633, 423, 637, 431, 647, 433, 656, 443, 663, 451, 665, 458, 663, 467, 660, 474, 654, 482, 650, 488, 643, 492, 636, 496, 636, 501)
+
+[node name="Region_Northern_Norway" parent="Regions" instance=ExtResource("2_region")]
+data = SubResource("Resource_seg4e")
+
+[node name="HighlightPoly" parent="Regions/Region_Northern_Norway" index="0"]
+color = Color(1, 1, 1, 0.19607843)
+polygon = PackedVector2Array(515, 343, 523, 347, 535, 347, 545, 347, 549, 346, 553, 331, 559, 325, 572, 325, 575, 320, 576, 313, 572, 308, 570, 304, 574, 296, 579, 283, 579, 271, 578, 259, 579, 255, 588, 251, 590, 248, 589, 243, 600, 220, 592, 219, 585, 219, 580, 219, 573, 219, 550, 275, 541, 296, 536, 303, 538, 307, 537, 310, 535, 308, 530, 307, 528, 312, 522, 317, 519, 322, 517, 327, 515, 331, 512, 336, 512, 339)
+
+[node name="Region_Denmark" parent="Regions" instance=ExtResource("2_region")]
+data = SubResource("Resource_seg4e")
+
+[node name="HighlightPoly" parent="Regions/Region_Denmark" index="0"]
+color = Color(1, 1, 1, 0.19607843)
+polygon = PackedVector2Array(528, 533, 526, 537, 527, 540, 528, 545, 527, 551, 525, 556, 525, 560, 524, 564, 524, 567, 525, 569, 527, 572, 529, 572, 534, 572, 536, 575, 535, 578, 529, 588, 519, 597, 518, 608, 518, 620, 543, 625, 552, 626, 551, 618, 538, 612, 538, 604, 541, 596, 547, 592, 559, 590, 561, 596, 566, 600, 571, 605, 571, 610, 567, 611, 563, 614, 563, 619, 563, 623, 560, 628, 555, 635, 549, 634, 546, 634, 530, 633, 514, 628, 511, 628, 504, 627, 499, 627, 494, 624, 490, 621, 492, 615, 493, 611, 486, 606, 484, 604, 483, 600, 488, 592, 485, 581, 483, 577, 483, 571, 486, 565, 488, 559, 490, 556, 492, 554, 496, 553, 501, 553, 505, 553, 509, 551, 513, 546, 516, 541, 520, 538, 525, 537)
+
+[node name="Region_Finland" parent="Regions" instance=ExtResource("2_region")]
+data = SubResource("Resource_seg4e")
+
+[node name="HighlightPoly" parent="Regions/Region_Finland" index="0"]
+color = Color(1, 1, 1, 0.19607843)
+polygon = PackedVector2Array(648, 148, 649, 139, 653, 139, 658, 143, 665, 150, 666, 153, 672, 156, 681, 154, 685, 149, 691, 152, 697, 153, 698, 148, 700, 146, 705, 143, 704, 115, 705, 109, 710, 103, 716, 102, 720, 97, 729, 101, 738, 104, 742, 112, 744, 121, 744, 129, 741, 133, 741, 138, 741, 148, 745, 154, 754, 159, 760, 161, 767, 167, 768, 176, 766, 190, 764, 198, 770, 204, 774, 209, 779, 216, 785, 224, 788, 232, 787, 244, 788, 252, 790, 261, 798, 262, 799, 270, 805, 272, 810, 277, 810, 286, 806, 293, 811, 296, 820, 301, 830, 307, 836, 313, 836, 325, 832, 334, 827, 345, 823, 355, 821, 363, 817, 375, 809, 386, 805, 395, 800, 404, 791, 409, 788, 411, 781, 417, 772, 422, 760, 428, 749, 432, 734, 438, 725, 436, 719, 432, 708, 426, 703, 420, 695, 404, 693, 384, 691, 374, 685, 368, 685, 354, 688, 348, 688, 337, 690, 335, 694, 335, 701, 330, 703, 321, 708, 314, 714, 300, 721, 280, 727, 272, 712, 244, 704, 237, 700, 224, 698, 212, 692, 200, 688, 187, 682, 174, 675, 164, 662, 161, 653, 155)
+
+[node name="Region_Estonia" parent="Regions" instance=ExtResource("2_region")]
+data = SubResource("Resource_qn6r3")
+
+[node name="HighlightPoly" parent="Regions/Region_Estonia" index="0"]
+color = Color(1, 1, 1, 0.19607843)
+polygon = PackedVector2Array(814, 438, 808, 438, 805, 439, 801, 441, 798, 441, 794, 441, 792, 440, 785, 440, 781, 440, 779, 440, 776, 442, 774, 445, 772, 445, 768, 447, 765, 448, 761, 449, 757, 449, 754, 451, 753, 453, 749, 456, 748, 458, 744, 461, 741, 463, 734, 469, 728, 469, 727, 471, 724, 473, 722, 475, 724, 477, 726, 479, 727, 480, 728, 482, 728, 484, 724, 488, 723, 489, 722, 493, 722, 496, 722, 498, 722, 500, 724, 500, 729, 500, 731, 498, 733, 496, 737, 494, 738, 492, 740, 490, 744, 488, 745, 485, 748, 484, 751, 487, 752, 489, 756, 489, 761, 489, 765, 488, 765, 491, 766, 495, 766, 499, 766, 502, 771, 497, 774, 496, 778, 495, 780, 494, 782, 493, 785, 494, 788, 495, 791, 496, 792, 497, 797, 499, 799, 501, 801, 502, 804, 504, 808, 503, 809, 501, 812, 500, 816, 500, 818, 500, 819, 498, 819, 496, 820, 493, 822, 491, 823, 489, 822, 484, 820, 482, 818, 478, 815, 475, 815, 472, 815, 470, 812, 466, 812, 460, 812, 455, 814, 453, 814, 449, 814, 446, 817, 440)
+
+[node name="Region_Northern_Baltics" parent="Regions" instance=ExtResource("2_region")]
+data = SubResource("Resource_aeufb")
+
+[node name="HighlightPoly" parent="Regions/Region_Northern_Baltics" index="0"]
+color = Color(1, 1, 1, 0.19607843)
+polygon = PackedVector2Array(716, 563, 716, 556, 716, 551, 716, 546, 718, 542, 719, 540, 719, 534, 719, 529, 720, 523, 723, 519, 727, 517, 731, 515, 735, 512, 737, 512, 737, 513, 738, 515, 741, 516, 745, 519, 748, 522, 751, 526, 752, 529, 754, 532, 757, 532, 759, 532, 763, 532, 765, 530, 766, 528, 769, 526, 769, 524, 769, 521, 769, 519, 769, 517, 768, 514, 768, 511, 768, 507, 767, 501, 770, 498, 775, 498, 776, 496, 778, 495, 783, 495, 790, 495, 798, 499, 800, 501, 803, 503, 805, 504, 810, 501, 813, 500, 819, 500, 821, 501, 825, 504, 829, 506, 831, 508, 832, 511, 832, 517, 832, 519, 835, 519, 838, 523, 840, 527, 841, 529, 843, 533, 845, 535, 846, 538, 843, 544, 841, 547, 840, 549, 838, 552, 837, 554, 833, 556, 831, 556, 830, 555, 828, 556, 827, 559, 823, 561, 821, 561, 816, 561, 813, 560, 808, 556, 805, 555, 803, 553, 800, 552, 798, 552, 792, 552, 791, 552, 790, 551, 788, 547, 787, 546, 784, 546, 784, 549, 782, 552, 780, 554, 775, 554, 770, 554, 765, 554, 762, 554, 758, 554, 757, 554, 754, 557, 752, 555, 751, 553, 750, 553, 749, 554, 748, 556, 744, 556, 740, 556, 736, 556, 733, 557, 729, 560, 727, 562, 727, 562, 725, 564, 723, 564, 718, 565)
+
+[node name="Region_Southern_Baltics" parent="Regions" instance=ExtResource("2_region")]
+data = SubResource("Resource_3epe4")
+
+[node name="HighlightPoly" parent="Regions/Region_Southern_Baltics" index="0"]
+color = Color(1, 1, 1, 0.19607843)
+polygon = PackedVector2Array(725, 564, 726, 567, 726, 569, 727, 571, 727, 575, 727, 577, 730, 578, 729, 580, 726, 581, 726, 585, 726, 588, 726, 590, 726, 592, 726, 594, 728, 596, 731, 596, 734, 597, 737, 599, 742, 600, 745, 600, 750, 600, 751, 599, 755, 600, 756, 601, 757, 603, 759, 604, 759, 608, 759, 610, 759, 611, 759, 614, 759, 616, 761, 617, 764, 618, 768, 620, 771, 621, 774, 622, 775, 623, 776, 625, 777, 627, 776, 630, 776, 631, 778, 632, 780, 631, 782, 631, 786, 630, 788, 629, 789, 628, 793, 629, 794, 629, 799, 624, 800, 623, 802, 620, 803, 618, 804, 618, 807, 616, 808, 615, 812, 612, 814, 609, 814, 606, 814, 603, 815, 602, 815, 599, 814, 597, 814, 595, 814, 593, 814, 590, 816, 588, 818, 588, 820, 587, 820, 584, 820, 582, 820, 581, 822, 580, 824, 580, 826, 579, 827, 576, 827, 574, 825, 573, 823, 572, 823, 569, 823, 564, 821, 563, 819, 562, 816, 562, 814, 560, 812, 558, 809, 556, 804, 554, 801, 552, 797, 553, 794, 552, 790, 551, 787, 550, 785, 547, 783, 547, 780, 551, 779, 552, 778, 552, 773, 555, 770, 553, 767, 553, 764, 553, 760, 553, 757, 553, 756, 554, 755.0067, 555.48987, 754, 557, 752.81775, 555.81775, 752, 554, 750, 553, 749, 555, 747, 557, 744, 556, 740, 556, 737, 556, 734, 557, 731, 559, 728, 560)
+
+[node name="Region_10" parent="Regions" instance=ExtResource("2_region")]
+data = SubResource("Resource_37xpq")
+
+[node name="HighlightPoly" parent="Regions/Region_10" index="0"]
+color = Color(1, 1, 1, 0.19607843)
+polygon = PackedVector2Array(728, 595, 727, 597, 727, 599, 729, 602, 729, 606, 729, 608, 727, 608, 726, 608, 724, 608, 722, 608, 720, 607, 718, 606, 715, 607, 713, 608, 712, 608, 710, 608, 707, 609, 707, 611, 706, 612, 705, 615, 706, 616, 706, 617, 707, 620, 707, 622, 706, 624, 704, 625, 701, 627, 700, 628, 704, 628, 706, 628, 709, 628, 713, 628, 718, 628, 724, 628, 728, 627, 730, 627, 735, 626, 740, 625, 744, 624, 747, 623, 751, 623, 754, 621, 757, 619, 758, 618, 758, 615, 759, 612, 759, 608, 759, 606, 759, 603, 758, 602, 757, 602, 755, 600, 753, 598, 751, 598, 747, 598, 745, 599, 742, 600, 739, 599, 735, 598, 734, 598, 733, 597, 731, 596, 729, 595)
+
+[node name="Region_Germany_East" parent="Regions" instance=ExtResource("2_region")]
+data = SubResource("Resource_n4r4f")
+
+[node name="HighlightPoly" parent="Regions/Region_Germany_East" index="0"]
+color = Color(1, 1, 1, 0.19607843)
+polygon = PackedVector2Array(690, 631, 694, 631, 698, 629, 701, 627, 705, 628, 710, 628, 715, 628, 721, 628, 728, 626, 734, 626, 743, 624, 749, 623, 756, 621, 759, 619, 761, 617, 766, 619, 770, 619, 772, 621, 775, 626, 777, 629, 780, 634, 782, 640, 785, 645, 787, 649, 790, 655, 793, 659, 794, 670, 794, 671, 791, 675, 788, 677, 785, 680, 784, 682, 785, 684, 787, 686, 792, 690, 793, 694, 793, 700, 793, 705, 794, 709, 796, 713, 800, 717, 804, 721, 807, 726, 809, 729, 810, 735, 810, 738, 809, 741, 806, 745, 799, 756, 796, 763, 793, 769, 737, 767, 739, 762, 744, 759, 747, 757, 755, 753, 757, 750, 759, 745, 762, 740, 762, 736, 762, 731, 760, 726, 759, 721, 760, 716, 753, 713, 748, 708, 746, 704, 744, 699, 742, 696, 737, 692, 734, 690, 728, 690, 724, 691, 716, 692, 712, 691, 708, 691, 703, 690, 697, 687, 693, 683, 685, 679, 685, 677, 682, 676, 677, 673, 678, 669, 680, 665, 682, 664, 685, 661, 689, 654, 689, 653, 688, 646, 687, 644, 687, 638, 688, 633)
+
+[node name="Region_Francia" parent="Regions" instance=ExtResource("2_region")]
+data = SubResource("Resource_47i7n")
+
+[node name="HighlightPoly" parent="Regions/Region_Francia" index="0"]
+color = Color(1, 1, 1, 0.19607843)
+polygon = PackedVector2Array(602, 655, 600, 657, 595, 657, 594, 652, 592, 649, 588, 649, 585, 649, 583, 646, 586, 643, 588, 640, 588, 638, 587, 634, 585, 634, 581, 636, 580, 638, 574, 639, 571, 640, 568, 640, 565, 644, 562, 645, 559, 647, 556, 649, 550, 650, 550, 652, 549, 655, 547, 656, 543, 655, 542, 654, 538, 655, 534, 654, 537, 650, 539, 648, 539, 646, 540, 640, 537, 638, 534, 642, 534, 644, 531, 644, 529, 642, 523, 641, 523, 641, 518, 635, 518, 633, 514, 629, 507, 629, 496, 627, 494, 626, 493, 628, 495, 631, 495, 634, 498, 636, 498, 639, 496, 641, 493, 642, 493, 643, 493, 645, 496, 645, 497, 646, 497, 649, 497, 652, 496, 655, 495, 658, 491, 660, 490, 662, 488, 667, 486, 669, 483, 667, 479, 663, 474, 663, 470, 663, 466, 664, 465, 664, 464, 666, 463, 669, 455, 672, 453, 672, 448, 673, 442, 675, 434, 676, 431, 678, 428, 685, 428, 687, 425, 690, 423, 692, 415, 696, 414, 697, 412, 702, 410, 706, 408, 709, 407, 713, 404, 716, 402, 719, 398, 722, 409, 733, 411, 734, 417, 738, 424, 742, 430, 746, 434, 747, 436, 754, 437, 762, 438, 766, 585, 768, 588, 764, 591, 761, 598, 758, 605, 756, 611, 756, 616, 755, 621, 751, 622, 743, 622, 737, 616, 731, 614, 724, 614, 717, 614, 709, 609, 702, 605, 695, 603, 691, 602, 688, 601, 683, 602, 678, 603, 673, 604, 670, 604, 664)
+
+[node name="Region_Germany_West" parent="Regions" instance=ExtResource("2_region")]
+data = SubResource("Resource_uahyi")
+
+[node name="HighlightPoly" parent="Regions/Region_Germany_West" index="0"]
+color = Color(1, 1, 1, 0.19607843)
+polygon = PackedVector2Array(687, 633, 684, 631, 683, 629, 681, 626, 679, 623, 676, 618, 670, 620, 666, 621, 659, 622, 655, 625, 650, 628, 647, 630, 642, 633, 640, 636, 638, 638, 635, 639, 630, 642, 627, 643, 622, 645, 618, 646, 612, 649, 609, 651, 606, 653, 603, 654, 605, 657, 605, 658, 606, 661, 607, 665, 607, 671, 606, 674, 604, 678, 602, 682, 602, 685, 602, 687, 603, 690, 604, 692, 605, 693, 610, 697, 613, 705, 613, 709, 613, 710, 621, 711, 629, 713, 639, 716, 641, 723, 642, 730, 651, 731, 654, 736, 654, 739, 662, 741, 668, 743, 676, 748, 685, 754, 687, 755, 694, 763, 701, 772, 734, 769, 738, 762, 745, 760, 750, 758, 754, 755, 758, 752, 760, 746, 761, 733, 761, 731, 761, 725, 761, 721, 759, 716, 752, 712, 747, 707, 745, 703, 742, 697, 737, 693, 732, 691, 723, 692, 714, 692, 703, 691, 701, 688, 695, 683, 689, 681, 686, 680, 684, 677, 678, 669, 678, 666, 682, 663, 686, 658, 689, 653, 689, 650, 689, 649, 689, 642, 689, 636)
+
+[node name="Region_Brittain" parent="Regions" instance=ExtResource("2_region")]
+data = SubResource("Resource_jetqj")
+
+[node name="HighlightPoly" parent="Regions/Region_Brittain" index="0"]
+color = Color(1, 1, 1, 0.19607843)
+polygon = PackedVector2Array(264, 478, 270, 483, 272, 484, 276, 484, 281, 484, 290, 484, 297, 485, 296, 487, 296, 490, 296, 492, 293, 494, 290, 496, 285, 499, 280, 501, 277, 503, 277, 504, 278, 506, 277, 509, 272, 513, 271, 514, 279, 514, 285, 514, 292, 515, 299, 516, 303, 517, 308, 518, 310, 522, 309, 530, 304, 536, 301, 542, 298, 549, 292, 554, 287, 558, 287, 560, 288, 568, 292, 572, 297, 578, 303, 588, 305, 594, 306, 603, 305, 616, 306, 617, 312, 623, 316, 628, 319, 634, 322, 642, 323, 654, 324, 660, 327, 664, 331, 668, 330, 672, 326, 679, 326, 683, 329, 684, 332, 680, 335, 678, 351, 682, 356, 685, 359, 691, 358, 697, 354, 703, 343, 717, 337, 722, 327, 725, 333, 733, 345, 734, 342, 739, 333, 744, 323, 746, 307, 746, 291, 746, 276, 745, 260, 745, 252, 739, 246, 739, 242, 744, 237, 750, 231, 752, 226, 747, 220, 744, 207, 747, 201, 751, 195, 748, 202, 742, 210, 738, 216, 732, 221, 727, 226, 723, 231, 721, 242, 721, 252, 721, 264, 714, 254, 714, 246, 713, 236, 706, 230, 702, 219, 699, 214, 693, 223, 688, 233, 684, 242, 682, 245, 673, 245, 664, 240, 665, 233, 665, 236, 662, 240, 658, 238, 653, 239, 647, 244, 649, 248, 651, 257, 652, 267, 655, 269, 657, 268, 651, 268, 646, 270, 641, 270, 635, 275, 634, 274, 628, 267, 628, 266, 620, 265, 615, 265, 607, 270, 603, 269, 601, 261, 602, 255, 603, 250, 600, 249, 605, 248, 606, 242, 602, 242, 604, 239, 596, 237, 590, 245, 586, 247, 583, 251, 576, 247, 566, 243, 570, 241, 578, 237, 581, 229, 582, 228, 579, 234, 573, 235, 569, 230, 564, 228, 564, 226, 568, 217, 568, 218, 562, 222, 558, 230, 556, 234, 553, 237, 550, 232, 549, 226, 549, 228, 537, 241, 531, 242, 522, 236, 522, 231, 518, 229, 511, 217, 519, 208, 517, 216, 499, 221, 495, 225, 484, 232, 482, 240, 479, 245, 479, 240, 490, 236, 495, 236, 504, 238, 510, 241, 503, 248, 499, 255, 499, 255, 493, 261, 493, 261, 486)
 
 [node name="MacroCamera" parent="." instance=ExtResource("5_okptj")]
+zoom = Vector2(1.2, 1.2)
+min_zoom = 1.2
+bounds_rect = Rect2(0, 0, 1020, 775)
 
 [node name="UI" type="CanvasLayer" parent="."]
 layer = 10
 
 [node name="JarlInfo" type="PanelContainer" parent="UI"]
-anchors_preset = -1
+anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
 offset_left = -20.0
@@ -64,7 +198,7 @@ text = "Renown: 25"
 horizontal_alignment = 1
 
 [node name="Actions" type="PanelContainer" parent="UI"]
-anchors_preset = -1
+anchors_preset = 3
 anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
@@ -91,8 +225,7 @@ layout_mode = 2
 text = "Dynasty"
 
 [node name="RegionInfo" type="PanelContainer" parent="UI"]
-visible = false
-anchors_preset = -1
+anchors_preset = 7
 anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
@@ -111,6 +244,10 @@ layout_mode = 2
 layout_mode = 2
 horizontal_alignment = 1
 
+[node name="TargetList" type="VBoxContainer" parent="UI/RegionInfo/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
 [node name="LaunchRaidButton" type="Button" parent="UI/RegionInfo/VBoxContainer"]
 layout_mode = 2
 disabled = true
@@ -127,8 +264,7 @@ disabled = true
 text = "Marry for Alliance"
 
 [node name="Tooltip" type="PanelContainer" parent="UI"]
-visible = false
-anchors_preset = -1
+anchors_preset = 7
 anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
@@ -147,6 +283,21 @@ text = "Region Name"
 horizontal_alignment = 1
 
 [node name="Dynasty_UI" parent="UI" instance=ExtResource("6_tcdvw")]
-anchors_preset = -1
 
-[editable path="Regions/Region"]
+[node name="PlayerHomeMarker" type="Marker2D" parent="."]
+position = Vector2(526, 485)
+
+[editable path="Regions/Region_Southern_Sweden"]
+[editable path="Regions/Region_Southern_Norway"]
+[editable path="Regions/Region_Northern_Sweden"]
+[editable path="Regions/Region_Northern_Norway"]
+[editable path="Regions/Region_Denmark"]
+[editable path="Regions/Region_Finland"]
+[editable path="Regions/Region_Estonia"]
+[editable path="Regions/Region_Northern_Baltics"]
+[editable path="Regions/Region_Southern_Baltics"]
+[editable path="Regions/Region_10"]
+[editable path="Regions/Region_Germany_East"]
+[editable path="Regions/Region_Francia"]
+[editable path="Regions/Region_Germany_West"]
+[editable path="Regions/Region_Brittain"]

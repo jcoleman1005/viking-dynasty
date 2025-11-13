@@ -100,8 +100,9 @@ building_texture = ExtResource("1_n45a8")
 build_cost = {
 "stone": 25
 }
-dev_color = Color(0.4, 0.4, 0.8, 1)
+dev_color = Color(0.050751396, 0.05072763, 0.06304378, 1)
 is_player_buildable = true
+extends_territory = true
 attack_damage = 0
 attack_range = 0.0
 attack_speed = 0.0
@@ -120,9 +121,10 @@ build_cost = {
 "gold": 100,
 "wood": 250
 }
-max_health = 50
 grid_size = Vector2i(4, 4)
 is_player_buildable = true
+is_territory_hub = true
+territory_radius = 8
 
 --- RESOURCE: res://data/buildings/LumberYard.tres ---
 [gd_resource type="Resource" script_class="EconomicBuildingData" load_steps=4 format=3 uid="uid://drx4sih8numo1"]
@@ -143,6 +145,7 @@ build_cost = {
 max_health = 75
 grid_size = Vector2i(2, 2)
 is_player_buildable = true
+territory_radius = 0
 
 --- RESOURCE: res://data/buildings/Monastery_Chapel.tres ---
 [gd_resource type="Resource" script_class="EconomicBuildingData" load_steps=3 format=3 uid="uid://b7p70u4vm3uem"]
@@ -297,6 +300,7 @@ max_health = 75
 grid_size = Vector2i(2, 2)
 dev_color = Color(0.2, 0.8, 0.2, 1)
 is_player_buildable = true
+territory_radius = 0
 
 --- RESOURCE: res://data/buildings/Test_Large_Building.tres ---
 [gd_resource type="Resource" script_class="BuildingData" load_steps=3 format=3 uid="uid://bk4qd2jfm3kgp"]
@@ -350,6 +354,7 @@ script = ExtResource("1_jarl_data")
 display_name = "Bjorn"
 age = 30
 renown = 25
+current_authority = 2
 legitimacy = 30
 allied_regions = Array[String](["res://data/world_map/Region_Monastery.tres"])
 command = 12
@@ -557,22 +562,19 @@ garrisoned_units = {
 }
 
 --- RESOURCE: res://data/settlements/home_base_fixed.tres ---
-[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://c6snrpfulfwe7"]
+[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://dsgbqyqqlvlwn"]
 
 [ext_resource type="Script" uid="uid://hlb8s5g0yp6k" path="res://data/settlements/SettlementData.gd" id="1_settlement_data"]
 
 [resource]
 script = ExtResource("1_settlement_data")
 treasury = {
-"food": 500,
-"gold": 500,
-"stone": 325,
-"wood": 25
+"food": 657,
+"gold": 600,
+"stone": 125,
+"wood": 1547
 }
 placed_buildings = Array[Dictionary]([{
-"grid_position": Vector2i(41, 17),
-"resource_path": "res://data/buildings/GreatHall.tres"
-}, {
 "grid_position": Vector2i(33, 18),
 "resource_path": "res://data/buildings/LumberYard.tres"
 }, {
@@ -584,22 +586,60 @@ placed_buildings = Array[Dictionary]([{
 }, {
 "grid_position": Vector2i(31, 16),
 "resource_path": "res://data/buildings/LumberYard.tres"
-}])
-pending_construction_buildings = [{
+}, {
 "grid_position": Vector2(36, 13),
-"progress": 0,
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
 }, {
 "grid_position": Vector2(37, 13),
-"progress": 0,
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
 }, {
 "grid_position": Vector2(38, 13),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(42, 15),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(41, 9),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(52, 11),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(40, 9),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(51, 11),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(50, 11),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(49, 11),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(32, 9),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(48, 16),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}])
+pending_construction_buildings = [{
+"grid_position": Vector2i(43, 11),
+"progress": 25,
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(36, 26),
 "progress": 0,
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
 }]
 garrisoned_units = {
 "res://data/units/Unit_PlayerRaider.tres": 16
+}
+worker_assignments = {
+"construction": 1,
+"food": 0,
+"stone": 0,
+"wood": 0
 }
 metadata/_custom_type_script = "uid://hlb8s5g0yp6k"
 
@@ -985,6 +1025,15 @@ visual_texture = ExtResource("3_6go6j")
 acceleration = 12.0
 linear_damping = 6.0
 
+--- RESOURCE: res://data/world_map/Region_Agdir.tres ---
+[gd_resource type="Resource" script_class="WorldRegionData" load_steps=2 format=3 uid="uid://rb575376gmgd"]
+
+[ext_resource type="Script" uid="uid://dqlbgeegli821" path="res://data/world_map/WorldRegionData.gd" id="1_8hjpx"]
+
+[resource]
+script = ExtResource("1_8hjpx")
+metadata/_custom_type_script = "uid://dqlbgeegli821"
+
 --- RESOURCE: res://data/world_map/Region_Monastery.tres ---
 [gd_resource type="Resource" script_class="WorldRegionData" load_steps=3 format=3 uid="uid://bk6wv22mknptc"]
 
@@ -1161,13 +1210,13 @@ DefensiveMicro (Node2D)
 SettlementBridge (Node)
 > script: res://scripts/buildings/SettlementBridge.gd
 > scene: res://scenes/levels/SettlementBridge.tscn
-> home_base_data = res://data/settlements/home_base_fixed.tres
+> home_base_data = res://scenes/levels/SettlementBridge.tscn::Resource_vmd61
 > end_of_year_popup_scene = res://ui/EndOfYear_Popup.tscn
 > world_map_scene_path = "res://scenes/world_map/MacroMap.tscn"
 > UnitContainer (Node2D)
 > UI (CanvasLayer)
 >   Label (Label)
->   > anchors_preset = -1
+>   > anchors_preset = 5
 >   > anchor_left = 0.5
 >   > anchor_right = 0.5
 >   > offset_left = -319.0
@@ -1259,7 +1308,7 @@ SettlementBridge (Node)
 >     > text = "DEBUG: Start Raid"
 >   RestartButton (Button)
 >   > visible = false
->   > anchors_preset = -1
+>   > anchors_preset = 8
 >   > anchor_left = 0.5
 >   > anchor_top = 0.5
 >   > anchor_right = 0.5
@@ -1272,7 +1321,7 @@ SettlementBridge (Node)
 >   > grow_vertical = 2
 >   > text = "Return to Settlement"
 >   StartRaidButton (Button)
->   > anchors_preset = -1
+>   > anchors_preset = 3
 >   > anchor_left = 1.0
 >   > anchor_top = 1.0
 >   > anchor_right = 1.0
@@ -1452,6 +1501,13 @@ MacroCamera (Camera2D)
 > script: res://scenes/world_map/MacroCamera.gd
 > scene: res://scenes/world_map/MacroCamera.tscn
 > camera_speed = 500.0
+> edge_pan_margin = 20.0
+> enable_edge_panning = true
+> enable_keyboard_movement = true
+> min_zoom = 0.5
+> max_zoom = 2.0
+> zoom_speed = 0.1
+> zoom_smoothing = 10.0
 > bounds_enabled = true
 > bounds_rect = [P: (0.0, 0.0), S: (1920.0, 1080.0)]
 
@@ -1459,47 +1515,154 @@ MacroCamera (Camera2D)
 MacroMap (Node2D)
 > script: res://scenes/world_map/MacroMap.gd
 > scene: res://scenes/world_map/MacroMap.tscn
-> position = (131.0, 23.0)
 > raid_mission_scene_path = "res://scenes/missions/RaidMission.tscn"
 > settlement_bridge_scene_path = "res://scenes/levels/SettlementBridge.tscn"
 > end_year_popup_scene = res://ui/EndOfYear_Popup.tscn
 > enemy_raid_chance = 0.25
-> MapBackground (ColorRect)
-> > modulate = (0.7354, 0.7354, 0.7354, 1.0)
-> > custom_minimum_size = (1920.0, 1080.0)
-> > anchors_preset = -1
-> > anchor_right = 1.0
-> > anchor_bottom = 1.0
-> > offset_left = -703.000061035156
-> > offset_top = -262.0
-> > offset_right = 1217.0
-> > offset_bottom = 818.0
-> > grow_horizontal = 2
-> > grow_vertical = 2
-> > scale = (60.0, 34.0)
-> > mouse_filter = 2
-> > color = (0.8314, 0.7725, 0.6275, 1.0)
+> player_home_marker_path = PlayerHomeMarker
+> TextureRect (TextureRect)
+> > offset_left = 2.0
+> > offset_top = -4.0
+> > offset_right = 1022.0
+> > offset_bottom = 771.0
+> > texture = res://assets/Viking Dynasty Game Map.png
 > Regions (Node2D)
->   Region (Area2D)
+>   Region_1 (Area2D)
 >     script: res://scenes/world_map/Region.gd
 >     scene: res://scenes/world_map/Region.tscn
->   > position = (392.0, 139.0)
->   > data = res://data/world_map/Region_Monastery.tres
->     Sprite2D (Sprite2D)
->     > modulate = (1.0, 1.0, 1.0, 0.2)
->     > texture = res://assets/placeholder_tile.tres
->     CollisionShape2D (CollisionShape2D)
->     > shape = res://scenes/world_map/Region.tscn::RectangleShape2D_y5hem
+>   > data = res://scenes/world_map/MacroMap.tscn::Resource_seg4e
+>     HighlightPoly (Polygon2D)
+>     > color = (1.0, 1.0, 1.0, 0.1961)
+>     > polygon = [(539.0, 493.0), (542.0, 507.0), (548.0, 519.0), (550.0, 534.0), (564.0, 561.0), (571.0, 570.0), (569.0, 574.0), (568.0, 577.0), (566.0, 580.0), (566.0, 587.0), (569.0, 591.0), (574.0, 596.0), (574.0, 603.0), (574.0, 607.0), (578.0, 609.0), (584.0, 609.0), (590.0, 606.0), (596.0, 607.0), (600.0, 604.0), (597.0, 597.0), (598.0, 586.0), (611.0, 581.0), (622.0, 579.0), (625.0, 580.0), (628.0, 580.0), (628.0, 573.0), (632.0, 564.0), (634.0, 560.0), (633.0, 545.0), (635.0, 535.0), (634.0, 524.0), (635.0, 515.0), (635.0, 509.0), (630.0, 505.0), (626.0, 505.0), (606.0, 489.0), (591.0, 478.0), (570.0, 465.0), (564.0, 456.0), (558.0, 453.0), (556.0, 457.0), (555.0, 459.0), (550.0, 461.0), (549.0, 466.0), (546.0, 471.0), (548.0, 477.0), (549.0, 482.0), (546.0, 488.0), (546.0, 492.0), (541.0, 491.0)]
+>     CollisionPolygon2D (CollisionPolygon2D)
+>     > polygon = [(0.0, 0.0)]
+>   Region_2 (Area2D)
+>     script: res://scenes/world_map/Region.gd
+>     scene: res://scenes/world_map/Region.tscn
+>   > data = res://scenes/world_map/MacroMap.tscn::Resource_seg4e
+>     HighlightPoly (Polygon2D)
+>     > color = (1.0, 1.0, 1.0, 0.1961)
+>     > polygon = [(450.0, 509.0), (440.0, 496.0), (453.0, 483.0), (455.0, 475.0), (448.0, 478.0), (441.0, 479.0), (438.0, 471.0), (440.0, 463.0), (446.0, 456.0), (443.3711, 449.4278), (440.0, 441.0), (439.0, 426.0), (440.0, 416.0), (439.4912, 404.8077), (439.0, 394.0), (445.0, 393.0), (444.0, 385.0), (452.0, 383.0), (457.0, 375.0), (467.0, 370.0), (467.0, 363.0), (476.0, 361.0), (482.0, 362.0), (485.0, 352.0), (493.0, 341.0), (508.0, 344.0), (512.0, 340.0), (515.0, 343.0), (546.0, 348.0), (552.0, 368.0), (552.0, 391.0), (555.0, 405.0), (563.0, 410.0), (563.0, 422.0), (554.0, 428.0), (558.0, 436.0), (561.0, 455.0), (551.0, 463.0), (548.0, 472.0), (546.0, 494.0), (537.0, 491.0), (534.0, 483.0), (528.0, 482.0), (520.0, 490.0), (500.0, 507.0), (491.0, 519.0), (479.0, 524.0), (467.0, 522.0), (458.0, 514.0)]
+>     CollisionPolygon2D (CollisionPolygon2D)
+>   Region_3 (Area2D)
+>     script: res://scenes/world_map/Region.gd
+>     scene: res://scenes/world_map/Region.tscn
+>   > data = res://scenes/world_map/MacroMap.tscn::Resource_seg4e
+>     HighlightPoly (Polygon2D)
+>     > color = (1.0, 1.0, 1.0, 0.1961)
+>     > polygon = [(632.0, 505.0), (600.0, 483.0), (581.0, 473.0), (559.0, 452.0), (559.0, 437.0), (553.0, 425.0), (561.0, 423.0), (561.0, 417.0), (561.0, 411.0), (556.0, 404.0), (553.0, 402.0), (551.0, 363.0), (549.0, 352.0), (552.0, 333.0), (558.0, 325.0), (566.0, 325.0), (574.0, 324.0), (577.0, 314.0), (569.0, 306.0), (578.0, 289.0), (579.0, 264.0), (578.0, 256.0), (589.0, 249.0), (589.0, 241.0), (601.0, 220.0), (596.0, 207.0), (601.0, 200.0), (601.0, 190.0), (607.0, 185.0), (612.0, 187.0), (616.0, 187.0), (616.0, 181.0), (616.0, 172.0), (620.0, 169.0), (640.0, 172.0), (642.0, 153.0), (643.0, 148.0), (646.0, 148.0), (655.0, 156.0), (663.0, 162.0), (673.0, 164.0), (679.0, 170.0), (687.0, 177.0), (690.0, 194.0), (694.0, 205.0), (701.0, 218.0), (698.0, 227.0), (709.0, 245.0), (705.0, 249.0), (688.0, 253.0), (679.0, 269.0), (674.0, 288.0), (682.0, 298.0), (673.0, 320.0), (657.0, 335.0), (652.0, 342.0), (648.0, 344.0), (640.0, 358.0), (637.0, 366.0), (633.0, 372.0), (632.0, 381.0), (631.0, 394.0), (630.0, 408.0), (633.0, 423.0), (637.0, 431.0), (647.0, 433.0), (656.0, 443.0), (663.0, 451.0), (665.0, 458.0), (663.0, 467.0), (660.0, 474.0), (654.0, 482.0), (650.0, 488.0), (643.0, 492.0), (636.0, 496.0), (636.0, 501.0)]
+>     CollisionPolygon2D (CollisionPolygon2D)
+>   Region_4 (Area2D)
+>     script: res://scenes/world_map/Region.gd
+>     scene: res://scenes/world_map/Region.tscn
+>   > data = res://scenes/world_map/MacroMap.tscn::Resource_seg4e
+>     HighlightPoly (Polygon2D)
+>     > color = (1.0, 1.0, 1.0, 0.1961)
+>     > polygon = [(515.0, 343.0), (523.0, 347.0), (535.0, 347.0), (545.0, 347.0), (549.0, 346.0), (553.0, 331.0), (559.0, 325.0), (572.0, 325.0), (575.0, 320.0), (576.0, 313.0), (572.0, 308.0), (570.0, 304.0), (574.0, 296.0), (579.0, 283.0), (579.0, 271.0), (578.0, 259.0), (579.0, 255.0), (588.0, 251.0), (590.0, 248.0), (589.0, 243.0), (600.0, 220.0), (592.0, 219.0), (585.0, 219.0), (580.0, 219.0), (573.0, 219.0), (550.0, 275.0), (541.0, 296.0), (536.0, 303.0), (538.0, 307.0), (537.0, 310.0), (535.0, 308.0), (530.0, 307.0), (528.0, 312.0), (522.0, 317.0), (519.0, 322.0), (517.0, 327.0), (515.0, 331.0), (512.0, 336.0), (512.0, 339.0)]
+>     CollisionPolygon2D (CollisionPolygon2D)
+>   Region_5 (Area2D)
+>     script: res://scenes/world_map/Region.gd
+>     scene: res://scenes/world_map/Region.tscn
+>   > data = res://scenes/world_map/MacroMap.tscn::Resource_seg4e
+>     HighlightPoly (Polygon2D)
+>     > color = (1.0, 1.0, 1.0, 0.1961)
+>     > polygon = [(528.0, 533.0), (526.0, 537.0), (527.0, 540.0), (528.0, 545.0), (527.0, 551.0), (525.0, 556.0), (525.0, 560.0), (524.0, 564.0), (524.0, 567.0), (525.0, 569.0), (527.0, 572.0), (529.0, 572.0), (534.0, 572.0), (536.0, 575.0), (535.0, 578.0), (529.0, 588.0), (519.0, 597.0), (518.0, 608.0), (518.0, 620.0), (543.0, 625.0), (552.0, 626.0), (551.0, 618.0), (538.0, 612.0), (538.0, 604.0), (541.0, 596.0), (547.0, 592.0), (559.0, 590.0), (561.0, 596.0), (566.0, 600.0), (571.0, 605.0), (571.0, 610.0), (567.0, 611.0), (563.0, 614.0), (563.0, 619.0), (563.0, 623.0), (560.0, 628.0), (555.0, 635.0), (549.0, 634.0), (546.0, 634.0), (530.0, 633.0), (514.0, 628.0), (511.0, 628.0), (504.0, 627.0), (499.0, 627.0), (494.0, 624.0), (490.0, 621.0), (492.0, 615.0), (493.0, 611.0), (486.0, 606.0), (484.0, 604.0), (483.0, 600.0), (488.0, 592.0), (485.0, 581.0), (483.0, 577.0), (483.0, 571.0), (486.0, 565.0), (488.0, 559.0), (490.0, 556.0), (492.0, 554.0), (496.0, 553.0), (501.0, 553.0), (505.0, 553.0), (509.0, 551.0), (513.0, 546.0), (516.0, 541.0), (520.0, 538.0), (525.0, 537.0)]
+>     CollisionPolygon2D (CollisionPolygon2D)
+>   Region_6 (Area2D)
+>     script: res://scenes/world_map/Region.gd
+>     scene: res://scenes/world_map/Region.tscn
+>   > data = res://scenes/world_map/MacroMap.tscn::Resource_seg4e
+>     HighlightPoly (Polygon2D)
+>     > color = (1.0, 1.0, 1.0, 0.1961)
+>     > polygon = [(648.0, 148.0), (649.0, 139.0), (653.0, 139.0), (658.0, 143.0), (665.0, 150.0), (666.0, 153.0), (672.0, 156.0), (681.0, 154.0), (685.0, 149.0), (691.0, 152.0), (697.0, 153.0), (698.0, 148.0), (700.0, 146.0), (705.0, 143.0), (704.0, 115.0), (705.0, 109.0), (710.0, 103.0), (716.0, 102.0), (720.0, 97.0), (729.0, 101.0), (738.0, 104.0), (742.0, 112.0), (744.0, 121.0), (744.0, 129.0), (741.0, 133.0), (741.0, 138.0), (741.0, 148.0), (745.0, 154.0), (754.0, 159.0), (760.0, 161.0), (767.0, 167.0), (768.0, 176.0), (766.0, 190.0), (764.0, 198.0), (770.0, 204.0), (774.0, 209.0), (779.0, 216.0), (785.0, 224.0), (788.0, 232.0), (787.0, 244.0), (788.0, 252.0), (790.0, 261.0), (798.0, 262.0), (799.0, 270.0), (805.0, 272.0), (810.0, 277.0), (810.0, 286.0), (806.0, 293.0), (811.0, 296.0), (820.0, 301.0), (830.0, 307.0), (836.0, 313.0), (836.0, 325.0), (832.0, 334.0), (827.0, 345.0), (823.0, 355.0), (821.0, 363.0), (817.0, 375.0), (809.0, 386.0), (805.0, 395.0), (800.0, 404.0), (791.0, 409.0), (788.0, 411.0), (781.0, 417.0), (772.0, 422.0), (760.0, 428.0), (749.0, 432.0), (734.0, 438.0), (725.0, 436.0), (719.0, 432.0), (708.0, 426.0), (703.0, 420.0), (695.0, 404.0), (693.0, 384.0), (691.0, 374.0), (685.0, 368.0), (685.0, 354.0), (688.0, 348.0), (688.0, 337.0), (690.0, 335.0), (694.0, 335.0), (701.0, 330.0), (703.0, 321.0), (708.0, 314.0), (714.0, 300.0), (721.0, 280.0), (727.0, 272.0), (712.0, 244.0), (704.0, 237.0), (700.0, 224.0), (698.0, 212.0), (692.0, 200.0), (688.0, 187.0), (682.0, 174.0), (675.0, 164.0), (662.0, 161.0), (653.0, 155.0)]
+>     CollisionPolygon2D (CollisionPolygon2D)
+>   Region_7 (Area2D)
+>     script: res://scenes/world_map/Region.gd
+>     scene: res://scenes/world_map/Region.tscn
+>   > data = res://scenes/world_map/MacroMap.tscn::Resource_qn6r3
+>     HighlightPoly (Polygon2D)
+>     > color = (1.0, 1.0, 1.0, 0.1961)
+>     > polygon = [(814.0, 438.0), (808.0, 438.0), (805.0, 439.0), (801.0, 441.0), (798.0, 441.0), (794.0, 441.0), (792.0, 440.0), (785.0, 440.0), (781.0, 440.0), (779.0, 440.0), (776.0, 442.0), (774.0, 445.0), (772.0, 445.0), (768.0, 447.0), (765.0, 448.0), (761.0, 449.0), (757.0, 449.0), (754.0, 451.0), (753.0, 453.0), (749.0, 456.0), (748.0, 458.0), (744.0, 461.0), (741.0, 463.0), (734.0, 469.0), (728.0, 469.0), (727.0, 471.0), (724.0, 473.0), (722.0, 475.0), (724.0, 477.0), (726.0, 479.0), (727.0, 480.0), (728.0, 482.0), (728.0, 484.0), (724.0, 488.0), (723.0, 489.0), (722.0, 493.0), (722.0, 496.0), (722.0, 498.0), (722.0, 500.0), (724.0, 500.0), (729.0, 500.0), (731.0, 498.0), (733.0, 496.0), (737.0, 494.0), (738.0, 492.0), (740.0, 490.0), (744.0, 488.0), (745.0, 485.0), (748.0, 484.0), (751.0, 487.0), (752.0, 489.0), (756.0, 489.0), (761.0, 489.0), (765.0, 488.0), (765.0, 491.0), (766.0, 495.0), (766.0, 499.0), (766.0, 502.0), (771.0, 497.0), (774.0, 496.0), (778.0, 495.0), (780.0, 494.0), (782.0, 493.0), (785.0, 494.0), (788.0, 495.0), (791.0, 496.0), (792.0, 497.0), (797.0, 499.0), (799.0, 501.0), (801.0, 502.0), (804.0, 504.0), (808.0, 503.0), (809.0, 501.0), (812.0, 500.0), (816.0, 500.0), (818.0, 500.0), (819.0, 498.0), (819.0, 496.0), (820.0, 493.0), (822.0, 491.0), (823.0, 489.0), (822.0, 484.0), (820.0, 482.0), (818.0, 478.0), (815.0, 475.0), (815.0, 472.0), (815.0, 470.0), (812.0, 466.0), (812.0, 460.0), (812.0, 455.0), (814.0, 453.0), (814.0, 449.0), (814.0, 446.0), (817.0, 440.0)]
+>     CollisionPolygon2D (CollisionPolygon2D)
+>   Region_8 (Area2D)
+>     script: res://scenes/world_map/Region.gd
+>     scene: res://scenes/world_map/Region.tscn
+>   > data = res://scenes/world_map/MacroMap.tscn::Resource_aeufb
+>     HighlightPoly (Polygon2D)
+>     > visible = false
+>     > color = (1.0, 1.0, 1.0, 0.1961)
+>     > polygon = [(716.0, 563.0), (716.0, 556.0), (716.0, 551.0), (716.0, 546.0), (718.0, 542.0), (719.0, 540.0), (719.0, 534.0), (719.0, 529.0), (720.0, 523.0), (723.0, 519.0), (727.0, 517.0), (731.0, 515.0), (735.0, 512.0), (737.0, 512.0), (737.0, 513.0), (738.0, 515.0), (741.0, 516.0), (745.0, 519.0), (748.0, 522.0), (751.0, 526.0), (752.0, 529.0), (754.0, 532.0), (757.0, 532.0), (759.0, 532.0), (763.0, 532.0), (765.0, 530.0), (766.0, 528.0), (769.0, 526.0), (769.0, 524.0), (769.0, 521.0), (769.0, 519.0), (769.0, 517.0), (768.0, 514.0), (768.0, 511.0), (768.0, 507.0), (767.0, 501.0), (770.0, 498.0), (775.0, 498.0), (776.0, 496.0), (778.0, 495.0), (783.0, 495.0), (790.0, 495.0), (798.0, 499.0), (800.0, 501.0), (803.0, 503.0), (805.0, 504.0), (810.0, 501.0), (813.0, 500.0), (819.0, 500.0), (821.0, 501.0), (825.0, 504.0), (829.0, 506.0), (831.0, 508.0), (832.0, 511.0), (832.0, 517.0), (832.0, 519.0), (835.0, 519.0), (838.0, 523.0), (840.0, 527.0), (841.0, 529.0), (843.0, 533.0), (845.0, 535.0), (846.0, 538.0), (843.0, 544.0), (841.0, 547.0), (840.0, 549.0), (838.0, 552.0), (837.0, 554.0), (833.0, 556.0), (831.0, 556.0), (830.0, 555.0), (828.0, 556.0), (827.0, 559.0), (823.0, 561.0), (821.0, 561.0), (816.0, 561.0), (813.0, 560.0), (808.0, 556.0), (805.0, 555.0), (803.0, 553.0), (800.0, 552.0), (798.0, 552.0), (792.0, 552.0), (791.0, 552.0), (790.0, 551.0), (788.0, 547.0), (787.0, 546.0), (784.0, 546.0), (784.0, 549.0), (782.0, 552.0), (780.0, 554.0), (775.0, 554.0), (770.0, 554.0), (765.0, 554.0), (762.0, 554.0), (758.0, 554.0), (757.0, 554.0), (754.0, 557.0), (752.0, 555.0), (751.0, 553.0), (750.0, 553.0), (749.0, 554.0), (748.0, 556.0), (744.0, 556.0), (740.0, 556.0), (736.0, 556.0), (733.0, 557.0), (729.0, 560.0), (727.0, 562.0), (727.0, 562.0), (725.0, 564.0), (723.0, 564.0), (718.0, 565.0)]
+>     CollisionPolygon2D (CollisionPolygon2D)
+>   Region_9 (Area2D)
+>     script: res://scenes/world_map/Region.gd
+>     scene: res://scenes/world_map/Region.tscn
+>   > data = res://scenes/world_map/MacroMap.tscn::Resource_3epe4
+>     HighlightPoly (Polygon2D)
+>     > color = (1.0, 1.0, 1.0, 0.1961)
+>     > polygon = [(725.0, 564.0), (726.0, 567.0), (726.0, 569.0), (727.0, 571.0), (727.0, 575.0), (727.0, 577.0), (730.0, 578.0), (729.0, 580.0), (726.0, 581.0), (726.0, 585.0), (726.0, 588.0), (726.0, 590.0), (726.0, 592.0), (726.0, 594.0), (728.0, 596.0), (731.0, 596.0), (734.0, 597.0), (737.0, 599.0), (742.0, 600.0), (745.0, 600.0), (750.0, 600.0), (751.0, 599.0), (755.0, 600.0), (756.0, 601.0), (757.0, 603.0), (759.0, 604.0), (759.0, 608.0), (759.0, 610.0), (759.0, 611.0), (759.0, 614.0), (759.0, 616.0), (761.0, 617.0), (764.0, 618.0), (768.0, 620.0), (771.0, 621.0), (774.0, 622.0), (775.0, 623.0), (776.0, 625.0), (777.0, 627.0), (776.0, 630.0), (776.0, 631.0), (778.0, 632.0), (780.0, 631.0), (782.0, 631.0), (786.0, 630.0), (788.0, 629.0), (789.0, 628.0), (793.0, 629.0), (794.0, 629.0), (799.0, 624.0), (800.0, 623.0), (802.0, 620.0), (803.0, 618.0), (804.0, 618.0), (807.0, 616.0), (808.0, 615.0), (812.0, 612.0), (814.0, 609.0), (814.0, 606.0), (814.0, 603.0), (815.0, 602.0), (815.0, 599.0), (814.0, 597.0), (814.0, 595.0), (814.0, 593.0), (814.0, 590.0), (816.0, 588.0), (818.0, 588.0), (820.0, 587.0), (820.0, 584.0), (820.0, 582.0), (820.0, 581.0), (822.0, 580.0), (824.0, 580.0), (826.0, 579.0), (827.0, 576.0), (827.0, 574.0), (825.0, 573.0), (823.0, 572.0), (823.0, 569.0), (823.0, 564.0), (821.0, 563.0), (819.0, 562.0), (816.0, 562.0), (814.0, 560.0), (812.0, 558.0), (809.0, 556.0), (804.0, 554.0), (801.0, 552.0), (797.0, 553.0), (794.0, 552.0), (790.0, 551.0), (787.0, 550.0), (785.0, 547.0), (783.0, 547.0), (780.0, 551.0), (779.0, 552.0), (778.0, 552.0), (773.0, 555.0), (770.0, 553.0), (767.0, 553.0), (764.0, 553.0), (760.0, 553.0), (757.0, 553.0), (756.0, 554.0), (755.0067, 555.4899), (754.0, 557.0), (752.8177, 555.8177), (752.0, 554.0), (750.0, 553.0), (749.0, 555.0), (747.0, 557.0), (744.0, 556.0), (740.0, 556.0), (737.0, 556.0), (734.0, 557.0), (731.0, 559.0), (728.0, 560.0)]
+>     CollisionPolygon2D (CollisionPolygon2D)
+>   Region_10 (Area2D)
+>     script: res://scenes/world_map/Region.gd
+>     scene: res://scenes/world_map/Region.tscn
+>   > data = res://scenes/world_map/MacroMap.tscn::Resource_37xpq
+>     HighlightPoly (Polygon2D)
+>     > color = (1.0, 1.0, 1.0, 0.1961)
+>     > polygon = [(728.0, 595.0), (727.0, 597.0), (727.0, 599.0), (729.0, 602.0), (729.0, 606.0), (729.0, 608.0), (727.0, 608.0), (726.0, 608.0), (724.0, 608.0), (722.0, 608.0), (720.0, 607.0), (718.0, 606.0), (715.0, 607.0), (713.0, 608.0), (712.0, 608.0), (710.0, 608.0), (707.0, 609.0), (707.0, 611.0), (706.0, 612.0), (705.0, 615.0), (706.0, 616.0), (706.0, 617.0), (707.0, 620.0), (707.0, 622.0), (706.0, 624.0), (704.0, 625.0), (701.0, 627.0), (700.0, 628.0), (704.0, 628.0), (706.0, 628.0), (709.0, 628.0), (713.0, 628.0), (718.0, 628.0), (724.0, 628.0), (728.0, 627.0), (730.0, 627.0), (735.0, 626.0), (740.0, 625.0), (744.0, 624.0), (747.0, 623.0), (751.0, 623.0), (754.0, 621.0), (757.0, 619.0), (758.0, 618.0), (758.0, 615.0), (759.0, 612.0), (759.0, 608.0), (759.0, 606.0), (759.0, 603.0), (758.0, 602.0), (757.0, 602.0), (755.0, 600.0), (753.0, 598.0), (751.0, 598.0), (747.0, 598.0), (745.0, 599.0), (742.0, 600.0), (739.0, 599.0), (735.0, 598.0), (734.0, 598.0), (733.0, 597.0), (731.0, 596.0), (729.0, 595.0)]
+>     CollisionPolygon2D (CollisionPolygon2D)
+>   Region_11 (Area2D)
+>     script: res://scenes/world_map/Region.gd
+>     scene: res://scenes/world_map/Region.tscn
+>   > data = res://scenes/world_map/MacroMap.tscn::Resource_n4r4f
+>     HighlightPoly (Polygon2D)
+>     > visible = false
+>     > color = (1.0, 1.0, 1.0, 0.1961)
+>     > polygon = [(690.0, 631.0), (694.0, 631.0), (698.0, 629.0), (701.0, 627.0), (705.0, 628.0), (710.0, 628.0), (715.0, 628.0), (721.0, 628.0), (728.0, 626.0), (734.0, 626.0), (743.0, 624.0), (749.0, 623.0), (756.0, 621.0), (759.0, 619.0), (761.0, 617.0), (766.0, 619.0), (770.0, 619.0), (772.0, 621.0), (775.0, 626.0), (777.0, 629.0), (780.0, 634.0), (782.0, 640.0), (785.0, 645.0), (787.0, 649.0), (790.0, 655.0), (793.0, 659.0), (794.0, 670.0), (794.0, 671.0), (791.0, 675.0), (788.0, 677.0), (785.0, 680.0), (784.0, 682.0), (785.0, 684.0), (787.0, 686.0), (792.0, 690.0), (793.0, 694.0), (793.0, 700.0), (793.0, 705.0), (794.0, 709.0), (796.0, 713.0), (800.0, 717.0), (804.0, 721.0), (807.0, 726.0), (809.0, 729.0), (810.0, 735.0), (810.0, 738.0), (809.0, 741.0), (806.0, 745.0), (799.0, 756.0), (796.0, 763.0), (793.0, 769.0), (737.0, 767.0), (739.0, 762.0), (744.0, 759.0), (747.0, 757.0), (755.0, 753.0), (757.0, 750.0), (759.0, 745.0), (762.0, 740.0), (762.0, 736.0), (762.0, 731.0), (760.0, 726.0), (759.0, 721.0), (760.0, 716.0), (753.0, 713.0), (748.0, 708.0), (746.0, 704.0), (744.0, 699.0), (742.0, 696.0), (737.0, 692.0), (734.0, 690.0), (728.0, 690.0), (724.0, 691.0), (716.0, 692.0), (712.0, 691.0), (708.0, 691.0), (703.0, 690.0), (697.0, 687.0), (693.0, 683.0), (685.0, 679.0), (685.0, 677.0), (682.0, 676.0), (677.0, 673.0), (678.0, 669.0), (680.0, 665.0), (682.0, 664.0), (685.0, 661.0), (689.0, 654.0), (689.0, 653.0), (688.0, 646.0), (687.0, 644.0), (687.0, 638.0), (688.0, 633.0)]
+>     CollisionPolygon2D (CollisionPolygon2D)
+>   Region_12 (Area2D)
+>     script: res://scenes/world_map/Region.gd
+>     scene: res://scenes/world_map/Region.tscn
+>   > data = res://scenes/world_map/MacroMap.tscn::Resource_47i7n
+>     HighlightPoly (Polygon2D)
+>     > visible = false
+>     > color = (1.0, 1.0, 1.0, 0.1961)
+>     > polygon = [(602.0, 655.0), (600.0, 657.0), (595.0, 657.0), (594.0, 652.0), (592.0, 649.0), (588.0, 649.0), (585.0, 649.0), (583.0, 646.0), (586.0, 643.0), (588.0, 640.0), (588.0, 638.0), (587.0, 634.0), (585.0, 634.0), (581.0, 636.0), (580.0, 638.0), (574.0, 639.0), (571.0, 640.0), (568.0, 640.0), (565.0, 644.0), (562.0, 645.0), (559.0, 647.0), (556.0, 649.0), (550.0, 650.0), (550.0, 652.0), (549.0, 655.0), (547.0, 656.0), (543.0, 655.0), (542.0, 654.0), (538.0, 655.0), (534.0, 654.0), (537.0, 650.0), (539.0, 648.0), (539.0, 646.0), (540.0, 640.0), (537.0, 638.0), (534.0, 642.0), (534.0, 644.0), (531.0, 644.0), (529.0, 642.0), (523.0, 641.0), (523.0, 641.0), (518.0, 635.0), (518.0, 633.0), (514.0, 629.0), (507.0, 629.0), (496.0, 627.0), (494.0, 626.0), (493.0, 628.0), (495.0, 631.0), (495.0, 634.0), (498.0, 636.0), (498.0, 639.0), (496.0, 641.0), (493.0, 642.0), (493.0, 643.0), (493.0, 645.0), (496.0, 645.0), (497.0, 646.0), (497.0, 649.0), (497.0, 652.0), (496.0, 655.0), (495.0, 658.0), (491.0, 660.0), (490.0, 662.0), (488.0, 667.0), (486.0, 669.0), (483.0, 667.0), (479.0, 663.0), (474.0, 663.0), (470.0, 663.0), (466.0, 664.0), (465.0, 664.0), (464.0, 666.0), (463.0, 669.0), (455.0, 672.0), (453.0, 672.0), (448.0, 673.0), (442.0, 675.0), (434.0, 676.0), (431.0, 678.0), (428.0, 685.0), (428.0, 687.0), (425.0, 690.0), (423.0, 692.0), (415.0, 696.0), (414.0, 697.0), (412.0, 702.0), (410.0, 706.0), (408.0, 709.0), (407.0, 713.0), (404.0, 716.0), (402.0, 719.0), (398.0, 722.0), (409.0, 733.0), (411.0, 734.0), (417.0, 738.0), (424.0, 742.0), (430.0, 746.0), (434.0, 747.0), (436.0, 754.0), (437.0, 762.0), (438.0, 766.0), (585.0, 768.0), (588.0, 764.0), (591.0, 761.0), (598.0, 758.0), (605.0, 756.0), (611.0, 756.0), (616.0, 755.0), (621.0, 751.0), (622.0, 743.0), (622.0, 737.0), (616.0, 731.0), (614.0, 724.0), (614.0, 717.0), (614.0, 709.0), (609.0, 702.0), (605.0, 695.0), (603.0, 691.0), (602.0, 688.0), (601.0, 683.0), (602.0, 678.0), (603.0, 673.0), (604.0, 670.0), (604.0, 664.0)]
+>     CollisionPolygon2D (CollisionPolygon2D)
+>   Region_13 (Area2D)
+>     script: res://scenes/world_map/Region.gd
+>     scene: res://scenes/world_map/Region.tscn
+>   > data = res://scenes/world_map/MacroMap.tscn::Resource_uahyi
+>     HighlightPoly (Polygon2D)
+>     > visible = false
+>     > color = (1.0, 1.0, 1.0, 0.1961)
+>     > polygon = [(687.0, 633.0), (684.0, 631.0), (683.0, 629.0), (681.0, 626.0), (679.0, 623.0), (676.0, 618.0), (670.0, 620.0), (666.0, 621.0), (659.0, 622.0), (655.0, 625.0), (650.0, 628.0), (647.0, 630.0), (642.0, 633.0), (640.0, 636.0), (638.0, 638.0), (635.0, 639.0), (630.0, 642.0), (627.0, 643.0), (622.0, 645.0), (618.0, 646.0), (612.0, 649.0), (609.0, 651.0), (606.0, 653.0), (603.0, 654.0), (605.0, 657.0), (605.0, 658.0), (606.0, 661.0), (607.0, 665.0), (607.0, 671.0), (606.0, 674.0), (604.0, 678.0), (602.0, 682.0), (602.0, 685.0), (602.0, 687.0), (603.0, 690.0), (604.0, 692.0), (605.0, 693.0), (610.0, 697.0), (613.0, 705.0), (613.0, 709.0), (613.0, 710.0), (621.0, 711.0), (629.0, 713.0), (639.0, 716.0), (641.0, 723.0), (642.0, 730.0), (651.0, 731.0), (654.0, 736.0), (654.0, 739.0), (662.0, 741.0), (668.0, 743.0), (676.0, 748.0), (685.0, 754.0), (687.0, 755.0), (694.0, 763.0), (701.0, 772.0), (734.0, 769.0), (738.0, 762.0), (745.0, 760.0), (750.0, 758.0), (754.0, 755.0), (758.0, 752.0), (760.0, 746.0), (761.0, 733.0), (761.0, 731.0), (761.0, 725.0), (761.0, 721.0), (759.0, 716.0), (752.0, 712.0), (747.0, 707.0), (745.0, 703.0), (742.0, 697.0), (737.0, 693.0), (732.0, 691.0), (723.0, 692.0), (714.0, 692.0), (703.0, 691.0), (701.0, 688.0), (695.0, 683.0), (689.0, 681.0), (686.0, 680.0), (684.0, 677.0), (678.0, 669.0), (678.0, 666.0), (682.0, 663.0), (686.0, 658.0), (689.0, 653.0), (689.0, 650.0), (689.0, 649.0), (689.0, 642.0), (689.0, 636.0)]
+>     CollisionPolygon2D (CollisionPolygon2D)
+>   Region_14 (Area2D)
+>     script: res://scenes/world_map/Region.gd
+>     scene: res://scenes/world_map/Region.tscn
+>   > data = res://scenes/world_map/MacroMap.tscn::Resource_jetqj
+>     HighlightPoly (Polygon2D)
+>     > visible = false
+>     > color = (1.0, 1.0, 1.0, 0.1961)
+>     > polygon = [(264.0, 478.0), (270.0, 483.0), (272.0, 484.0), (276.0, 484.0), (281.0, 484.0), (290.0, 484.0), (297.0, 485.0), (296.0, 487.0), (296.0, 490.0), (296.0, 492.0), (293.0, 494.0), (290.0, 496.0), (285.0, 499.0), (280.0, 501.0), (277.0, 503.0), (277.0, 504.0), (278.0, 506.0), (277.0, 509.0), (272.0, 513.0), (271.0, 514.0), (279.0, 514.0), (285.0, 514.0), (292.0, 515.0), (299.0, 516.0), (303.0, 517.0), (308.0, 518.0), (310.0, 522.0), (309.0, 530.0), (304.0, 536.0), (301.0, 542.0), (298.0, 549.0), (292.0, 554.0), (287.0, 558.0), (287.0, 560.0), (288.0, 568.0), (292.0, 572.0), (297.0, 578.0), (303.0, 588.0), (305.0, 594.0), (306.0, 603.0), (305.0, 616.0), (306.0, 617.0), (312.0, 623.0), (316.0, 628.0), (319.0, 634.0), (322.0, 642.0), (323.0, 654.0), (324.0, 660.0), (327.0, 664.0), (331.0, 668.0), (330.0, 672.0), (326.0, 679.0), (326.0, 683.0), (329.0, 684.0), (332.0, 680.0), (335.0, 678.0), (351.0, 682.0), (356.0, 685.0), (359.0, 691.0), (358.0, 697.0), (354.0, 703.0), (343.0, 717.0), (337.0, 722.0), (327.0, 725.0), (333.0, 733.0), (345.0, 734.0), (342.0, 739.0), (333.0, 744.0), (323.0, 746.0), (307.0, 746.0), (291.0, 746.0), (276.0, 745.0), (260.0, 745.0), (252.0, 739.0), (246.0, 739.0), (242.0, 744.0), (237.0, 750.0), (231.0, 752.0), (226.0, 747.0), (220.0, 744.0), (207.0, 747.0), (201.0, 751.0), (195.0, 748.0), (202.0, 742.0), (210.0, 738.0), (216.0, 732.0), (221.0, 727.0), (226.0, 723.0), (231.0, 721.0), (242.0, 721.0), (252.0, 721.0), (264.0, 714.0), (254.0, 714.0), (246.0, 713.0), (236.0, 706.0), (230.0, 702.0), (219.0, 699.0), (214.0, 693.0), (223.0, 688.0), (233.0, 684.0), (242.0, 682.0), (245.0, 673.0), (245.0, 664.0), (240.0, 665.0), (233.0, 665.0), (236.0, 662.0), (240.0, 658.0), (238.0, 653.0), (239.0, 647.0), (244.0, 649.0), (248.0, 651.0), (257.0, 652.0), (267.0, 655.0), (269.0, 657.0), (268.0, 651.0), (268.0, 646.0), (270.0, 641.0), (270.0, 635.0), (275.0, 634.0), (274.0, 628.0), (267.0, 628.0), (266.0, 620.0), (265.0, 615.0), (265.0, 607.0), (270.0, 603.0), (269.0, 601.0), (261.0, 602.0), (255.0, 603.0), (250.0, 600.0), (249.0, 605.0), (248.0, 606.0), (242.0, 602.0), (242.0, 604.0), (239.0, 596.0), (237.0, 590.0), (245.0, 586.0), (247.0, 583.0), (251.0, 576.0), (247.0, 566.0), (243.0, 570.0), (241.0, 578.0), (237.0, 581.0), (229.0, 582.0), (228.0, 579.0), (234.0, 573.0), (235.0, 569.0), (230.0, 564.0), (228.0, 564.0), (226.0, 568.0), (217.0, 568.0), (218.0, 562.0), (222.0, 558.0), (230.0, 556.0), (234.0, 553.0), (237.0, 550.0), (232.0, 549.0), (226.0, 549.0), (228.0, 537.0), (241.0, 531.0), (242.0, 522.0), (236.0, 522.0), (231.0, 518.0), (229.0, 511.0), (217.0, 519.0), (208.0, 517.0), (216.0, 499.0), (221.0, 495.0), (225.0, 484.0), (232.0, 482.0), (240.0, 479.0), (245.0, 479.0), (240.0, 490.0), (236.0, 495.0), (236.0, 504.0), (238.0, 510.0), (241.0, 503.0), (248.0, 499.0), (255.0, 499.0), (255.0, 493.0), (261.0, 493.0), (261.0, 486.0)]
+>     CollisionPolygon2D (CollisionPolygon2D)
 > MacroCamera (Camera2D)
 >   script: res://scenes/world_map/MacroCamera.gd
 >   scene: res://scenes/world_map/MacroCamera.tscn
+> > zoom = (1.2, 1.2)
 > > camera_speed = 500.0
+> > edge_pan_margin = 20.0
+> > enable_edge_panning = true
+> > enable_keyboard_movement = true
+> > min_zoom = 1.2
+> > max_zoom = 2.0
+> > zoom_speed = 0.1
+> > zoom_smoothing = 10.0
 > > bounds_enabled = true
-> > bounds_rect = [P: (0.0, 0.0), S: (1920.0, 1080.0)]
+> > bounds_rect = [P: (0.0, 0.0), S: (1020.0, 775.0)]
 > UI (CanvasLayer)
 > > layer = 10
 >   JarlInfo (PanelContainer)
->   > anchors_preset = -1
+>   > anchors_preset = 5
 >   > anchor_left = 0.5
 >   > anchor_right = 0.5
 >   > offset_left = -20.0
@@ -1519,7 +1682,7 @@ MacroMap (Node2D)
 >       > text = "Renown: 25"
 >       > horizontal_alignment = 1
 >   Actions (PanelContainer)
->   > anchors_preset = -1
+>   > anchors_preset = 3
 >   > anchor_left = 1.0
 >   > anchor_top = 1.0
 >   > anchor_right = 1.0
@@ -1541,8 +1704,7 @@ MacroMap (Node2D)
 >       > layout_mode = 2
 >       > text = "Dynasty"
 >   RegionInfo (PanelContainer)
->   > visible = false
->   > anchors_preset = -1
+>   > anchors_preset = 7
 >   > anchor_left = 0.5
 >   > anchor_top = 1.0
 >   > anchor_right = 0.5
@@ -1558,6 +1720,9 @@ MacroMap (Node2D)
 >       RegionNameLabel (Label)
 >       > layout_mode = 2
 >       > horizontal_alignment = 1
+>       TargetList (VBoxContainer)
+>       > layout_mode = 2
+>       > size_flags_vertical = 3
 >       LaunchRaidButton (Button)
 >       > layout_mode = 2
 >       > disabled = true
@@ -1571,8 +1736,7 @@ MacroMap (Node2D)
 >       > disabled = true
 >       > text = "Marry for Alliance"
 >   Tooltip (PanelContainer)
->   > visible = false
->   > anchors_preset = -1
+>   > anchors_preset = 7
 >   > anchor_left = 0.5
 >   > anchor_top = 1.0
 >   > anchor_right = 0.5
@@ -1591,7 +1755,7 @@ MacroMap (Node2D)
 >   Dynasty_UI (PanelContainer)
 >     script: res://ui/DynastyUI.gd
 >     scene: res://ui/Dynasty_UI.tscn
->   > anchors_preset = -1
+>   > anchors_preset = 8
 >   > anchor_left = 0.5
 >   > anchor_top = 0.5
 >   > anchor_right = 0.5
@@ -1623,16 +1787,16 @@ MacroMap (Node2D)
 >         CloseButton (Button)
 >         > layout_mode = 2
 >         > text = "Close"
+> PlayerHomeMarker (Marker2D)
+> > position = (526.0, 485.0)
 
 --- SCENE: res://scenes/world_map/Region.tscn ---
 Region (Area2D)
 > script: res://scenes/world_map/Region.gd
 > scene: res://scenes/world_map/Region.tscn
-> Sprite2D (Sprite2D)
-> > modulate = (1.0, 1.0, 1.0, 0.2)
-> > texture = res://assets/placeholder_tile.tres
-> CollisionShape2D (CollisionShape2D)
-> > shape = res://scenes/world_map/Region.tscn::RectangleShape2D_y5hem
+> HighlightPoly (Polygon2D)
+> > visible = false
+> CollisionPolygon2D (CollisionPolygon2D)
 
 --- SCENE: res://scenes/world_map/WorldMap_Stub.tscn ---
 WorldMapStub (Control)
@@ -1672,7 +1836,7 @@ PauseMenu (CanvasLayer)
 > scene: res://scripts/ui/PauseMenu.tscn
 > process_mode = 2
 > PanelContainer (PanelContainer)
-> > anchors_preset = -1
+> > anchors_preset = 8
 > > anchor_left = 0.5
 > > anchor_top = 0.5
 > > anchor_right = 0.5
@@ -1788,7 +1952,7 @@ Event_UI (CanvasLayer)
 > layer = 20
 > PanelContainer (PanelContainer)
 > > custom_minimum_size = (500.0, 300.0)
-> > anchors_preset = -1
+> > anchors_preset = 8
 > > anchor_left = 0.5
 > > anchor_top = 0.5
 > > anchor_right = 0.5
@@ -1927,7 +2091,7 @@ Succession_Crisis_UI (CanvasLayer)
 > script: res://ui/Succession_Crisis_UI.gd
 > scene: res://ui/Succession_Crisis_UI.tscn
 > PanelContainer (PanelContainer)
-> > anchors_preset = -1
+> > anchors_preset = 8
 > > anchor_left = 0.5
 > > anchor_top = 0.5
 > > anchor_right = 0.5
@@ -1992,6 +2156,45 @@ Succession_Crisis_UI (CanvasLayer)
 >       ConfirmButton (Button)
 >       > layout_mode = 2
 >       > text = "Confirm"
+
+--- SCENE: res://ui/WorkAssignment_UI.tscn ---
+WorkAssignment_UI (CanvasLayer)
+> script: res://ui/WorkAssignment_UI.gd
+> scene: res://ui/WorkAssignment_UI.tscn
+> PanelContainer (PanelContainer)
+> > anchors_preset = 8
+> > anchor_left = 0.5
+> > anchor_top = 0.5
+> > anchor_right = 0.5
+> > anchor_bottom = 0.5
+> > offset_left = -20.0
+> > offset_top = -20.0
+> > offset_right = 20.0
+> > offset_bottom = 20.0
+> > grow_horizontal = 2
+> > grow_vertical = 2
+> > size_flags_horizontal = 4
+> > size_flags_vertical = 4
+>   MarginContainer (MarginContainer)
+>   > custom_minimum_size = (20.0, 20.0)
+>   > layout_mode = 2
+>     VBoxContainer (VBoxContainer)
+>     > layout_mode = 2
+>       Header (HBoxContainer)
+>       > layout_mode = 2
+>         TotalPopLabel (Label)
+>         > layout_mode = 2
+>         AvailablePopLabel (Label)
+>         > layout_mode = 2
+>       HSeparator (HSeparator)
+>       > layout_mode = 2
+>       SlidersContainer (VBoxContainer)
+>       > layout_mode = 2
+>       HSeparator2 (HSeparator)
+>       > layout_mode = 2
+>       ConfirmButton (Button)
+>       > layout_mode = 2
+>       > text = "End Year"
 --- END OF SCENE STRUCTURES ---
 
 #### **2.4. Codebase**
@@ -2015,11 +2218,18 @@ var current_raid_target: SettlementData
 
 var is_defensive_raid: bool = false
 
-# --- NEW: Succession System ---
+#Succession System ---
 var minimum_inherited_legitimacy: int = 0
 var loaded_legacy_upgrades: Array[LegacyUpgradeData] = []
-# --- END NEW ---
 
+#Raid Context & Results ---
+# Stores the difficulty (Tier) of the active raid for reward calculation
+var current_raid_difficulty: int = 1 
+
+# Stores the raw outcome from the RTS layer before processing
+# Format: { "outcome": "win", "gold_looted": 0, "buildings_destroyed": 0 }
+var pending_raid_result: Dictionary = {} 
+# -----------------------------------
 # Path to the player's persistent Jarl data
 const PLAYER_JARL_PATH = "res://data/characters/PlayerJarl.tres"
 
@@ -2846,108 +3056,146 @@ func _on_scene_change_requested(scene_key: String) -> void:
 #
 # A global Singleton (Autoload) that acts as a pure data manager
 # for the player's current settlement.
-# --- MODIFIED: Phase 1.3 Blueprint Logic ---
+# --- MODIFIED: Fixed Type Error in _remove_from_list ---
 
 extends Node
+
+# --- Configuration Constants ---
+const BUILDER_EFFICIENCY: int = 25 # Construction progress per worker per year
+const GATHERER_EFFICIENCY: int = 10 # Resources produced per worker per year
+const BASE_GATHERING_CAPACITY: int = 2
+
+#Define a Save Path
+const USER_SAVE_PATH = "user://savegame.tres"
 
 var current_settlement: SettlementData
 
 # --- Scene Registry ---
 var active_astar_grid: AStarGrid2D = null
 var active_building_container: Node2D = null
+var grid_manager_node: Node = null 
 
 # --- Scene Management ---
 
-func register_active_scene_nodes(grid: AStarGrid2D, container: Node2D) -> void:
+func register_active_scene_nodes(grid: AStarGrid2D, container: Node2D, manager_node: Node = null) -> void:
 	if not is_instance_valid(grid) or not is_instance_valid(container):
 		push_error("SettlementManager: Failed to register invalid scene nodes.")
 		return
 	active_astar_grid = grid
 	active_building_container = container
+	grid_manager_node = manager_node 
 	print("SettlementManager: Active scene nodes registered.")
+	
+	_trigger_territory_update()
 
 func unregister_active_scene_nodes() -> void:
 	active_astar_grid = null
 	active_building_container = null
+	grid_manager_node = null 
 	print("SettlementManager: Active scene nodes unregistered.")
+
+func _trigger_territory_update() -> void:
+	if current_settlement and is_instance_valid(grid_manager_node) and grid_manager_node.has_method("recalculate_territory"):
+		var all_buildings = current_settlement.placed_buildings + current_settlement.pending_construction_buildings
+		grid_manager_node.recalculate_territory(all_buildings)
 
 # --- Settlement Data ---
 
 func load_settlement(data: SettlementData) -> void:
-	if not data:
-		push_error("SettlementManager: load_settlement called with null data.")
-		return
-	
-	current_settlement = data
-	
-	if not current_settlement.resource_path or current_settlement.resource_path.is_empty():
-		if data.resource_path and not data.resource_path.is_empty():
-			current_settlement.resource_path = data.resource_path
+	# 1. Try to load from User Save first (Persistence)
+	if ResourceLoader.exists(USER_SAVE_PATH):
+		var saved_data = load(USER_SAVE_PATH)
+		if saved_data is SettlementData:
+			current_settlement = saved_data
+			print("SettlementManager: Loaded user save from %s" % USER_SAVE_PATH)
 		else:
-			current_settlement.resource_path = "res://data/settlements/home_base_fixed.tres"
-			push_warning("SettlementManager: Set fallback resource_path to: %s" % current_settlement.resource_path)
+			_load_fallback_data(data)
+	else:
+		_load_fallback_data(data)
 	
-	print("SettlementManager: Settlement data loaded - %s" % current_settlement.resource_path)
 	EventBus.settlement_loaded.emit(current_settlement)
+	_trigger_territory_update()
+
+func _load_fallback_data(data: SettlementData) -> void:
+	if data:
+		# Duplicate data so we don't overwrite the .tres template in memory
+		current_settlement = data.duplicate(true)
+		print("SettlementManager: Loaded default template.")
+	else:
+		push_error("SettlementManager: No data provided and no save file found.")
 
 func save_settlement() -> void:
-	if not current_settlement:
-		push_error("Attempted to save a null settlement.")
-		return
+	if not current_settlement: return
 	
-	print("SettlementManager: Saving... Pending Buildings Count: %d" % current_settlement.pending_construction_buildings.size())
+	# --- FIX: Save to user:// instead of res:// ---
+	var error = ResourceSaver.save(current_settlement, USER_SAVE_PATH)
 	
-	# Debug: Print pending buildings before save
-	_debug_print_pending_buildings()
-	
-	if current_settlement.resource_path and not current_settlement.resource_path.is_empty():
-		if not current_settlement.get_script():
-			current_settlement.set_script(preload("res://data/settlements/SettlementData.gd"))
-		
-		# Force resource to be marked as changed
-		current_settlement.changed.emit()
-		current_settlement.take_over_path(current_settlement.resource_path)
-		
-		var error = ResourceSaver.save(current_settlement, current_settlement.resource_path, ResourceSaver.FLAG_CHANGE_PATH)
-		if error == OK:
-			print("Settlement data saved successfully to %s" % current_settlement.resource_path)
-			# Verify save by reloading and checking
-			_debug_verify_save()
-		else:
-			push_error("Failed to save settlement data. Error code: %s" % error)
+	if error == OK:
+		var count = current_settlement.pending_construction_buildings.size()
+		print("SettlementManager: Saved to %s (Pending: %d)" % [USER_SAVE_PATH, count])
 	else:
-		push_warning("SettlementData has no resource_path, cannot save settlement.")
-
-func _debug_print_pending_buildings() -> void:
-	print("DEBUG: Current pending_construction_buildings:")
-	for i in range(current_settlement.pending_construction_buildings.size()):
-		var entry = current_settlement.pending_construction_buildings[i]
-		print("  [%d]: %s" % [i, entry])
-
-func _debug_verify_save() -> void:
-	# Try to reload the resource and check if pending buildings were saved
-	if current_settlement.resource_path:
-		var reloaded_settlement: SettlementData = load(current_settlement.resource_path)
-		if reloaded_settlement:
-			print("DEBUG: Verification - Reloaded settlement has %d pending buildings" % reloaded_settlement.pending_construction_buildings.size())
-			for i in range(reloaded_settlement.pending_construction_buildings.size()):
-				var entry = reloaded_settlement.pending_construction_buildings[i]
-				print("  Reloaded [%d]: %s" % [i, entry])
-		else:
-			print("DEBUG: Failed to reload settlement for verification")
+		push_error("Failed to save to %s. Error code: %s" % [USER_SAVE_PATH, error])
 
 func has_current_settlement() -> bool:
 	return current_settlement != null
 
 # --- Treasury & Economy ---
+func get_labor_capacities() -> Dictionary:
+	"""
+	Returns the maximum workers allowed for each category.
+	Based on Active Buildings (Gathering) and Blueprints (Construction).
+	"""
+	var capacities = {
+		"construction": 0,
+		"food": BASE_GATHERING_CAPACITY,
+		"wood": BASE_GATHERING_CAPACITY,
+		"stone": BASE_GATHERING_CAPACITY
+		# Gold is removed (Raiding only)
+	}
+	
+	if not current_settlement:
+		return capacities
+
+	# 1. Gathering Capacity (From Active Buildings)
+	for entry in current_settlement.placed_buildings:
+		var b_data = load(entry["resource_path"])
+		if b_data is EconomicBuildingData:
+			var type = b_data.resource_type
+			if capacities.has(type):
+				capacities[type] += b_data.max_workers
+	
+	# 2. Construction Capacity (From Blueprints)
+	# Limits how many people can crowd around a construction site
+	for entry in current_settlement.pending_construction_buildings:
+		var b_data = load(entry["resource_path"]) as BuildingData
+		if b_data:
+			capacities["construction"] += b_data.base_labor_capacity
+			
+	return capacities
 
 func deposit_resources(loot: Dictionary) -> void:
 	if not current_settlement: return
+	
 	for resource_type in loot:
-		if current_settlement.treasury.has(resource_type):
-			current_settlement.treasury[resource_type] += loot[resource_type]
+		var amount = loot[resource_type]
+		
+		# --- NEW: Handle Population (Thralls) ---
+		if resource_type == "population":
+			# Ensure the variable exists in data (it was added in Phase 2 but let's be safe)
+			if not "population_total" in current_settlement:
+				current_settlement.population_total = 10
+				
+			current_settlement.population_total += amount
+			print("SettlementManager: Acquired %d new thralls. Total Pop: %d" % [amount, current_settlement.population_total])
+		# ----------------------------------------
+		
+		# Handle Standard Resources
+		elif current_settlement.treasury.has(resource_type):
+			current_settlement.treasury[resource_type] += amount
 		else:
-			current_settlement.treasury[resource_type] = loot[resource_type]
+			# Create key if missing (e.g. specialized loot)
+			current_settlement.treasury[resource_type] = amount
+			
 	EventBus.treasury_updated.emit(current_settlement.treasury)
 	save_settlement()
 
@@ -2970,60 +3218,56 @@ func attempt_purchase(item_cost: Dictionary) -> bool:
 	return true
 
 func calculate_payout() -> Dictionary:
-	if not current_settlement:
-		return {}
+	if not current_settlement: return {}
+
+	_process_construction_labor()
 
 	var total_payout: Dictionary = {}
-	var stewardship_bonus: float = 1.0
+	var stewardship_bonus = 1.0
 	var jarl = DynastyManager.get_current_jarl()
 	if jarl:
-		var stewardship_skill = jarl.get_effective_skill("stewardship")
-		stewardship_bonus = 1.0 + (stewardship_skill - 10) * 0.05
+		var skill = jarl.get_effective_skill("stewardship")
+		stewardship_bonus = 1.0 + (skill - 10) * 0.05
 		stewardship_bonus = max(0.5, stewardship_bonus)
 
-	# Only ACTIVE buildings generate resources (explicitly exclude blueprints/construction)
-	# Loop through building instances in the scene to check their state
-	if is_instance_valid(active_building_container):
-		for child in active_building_container.get_children():
-			if child is BaseBuilding:
-				var building: BaseBuilding = child
-				# Only ACTIVE buildings contribute to economy
-				if building.is_active() and building.data is EconomicBuildingData:
-					var eco_data: EconomicBuildingData = building.data
-					var resource_type: String = eco_data.resource_type
-					
-					if not total_payout.has(resource_type):
-						total_payout[resource_type] = 0
-					
-					var base_payout = eco_data.fixed_payout_amount
-					var final_payout = int(round(base_payout * stewardship_bonus))
-					total_payout[resource_type] += final_payout
+	# 1. Labor Output (Gold Removed)
+	if current_settlement.worker_assignments:
+		for resource_type in ["food", "wood", "stone"]: # Gold removed
+			var assigned = current_settlement.worker_assignments.get(resource_type, 0)
+			if assigned > 0:
+				if not total_payout.has(resource_type): total_payout[resource_type] = 0
+				var labor_yield = int(assigned * GATHERER_EFFICIENCY * stewardship_bonus)
+				total_payout[resource_type] += labor_yield
+				print("Labor added %d %s" % [labor_yield, resource_type])
 
+	# 2. Passive Building Output (Gold allowed here, e.g. Markets/Mints)
+	for entry in current_settlement.placed_buildings:
+		var b_data = load(entry["resource_path"])
+		if b_data is EconomicBuildingData:
+			var type = b_data.resource_type
+			if not total_payout.has(type): total_payout[type] = 0
+			total_payout[type] += int(b_data.fixed_payout_amount * stewardship_bonus)
+
+	# 3. Region Income
 	if jarl:
 		for region_path in jarl.conquered_regions:
-			var region_data: WorldRegionData = load(region_path)
-			if not region_data: continue
-			
-			for resource_type in region_data.yearly_income:
-				var income_amount = region_data.yearly_income[resource_type]
-				if not total_payout.has(resource_type):
-					total_payout[resource_type] = 0
-				
-				var final_income = int(round(income_amount * stewardship_bonus))
-				total_payout[resource_type] += final_income
+			var r_data = load(region_path)
+			if r_data:
+				for res in r_data.yearly_income:
+					if not total_payout.has(res): total_payout[res] = 0
+					total_payout[res] += int(r_data.yearly_income[res] * stewardship_bonus)
 
-	if jarl:
-		if current_settlement.has_stability_debuff:
-			if total_payout.has("gold"):
-				total_payout["gold"] = int(total_payout["gold"] * 0.75)
-			current_settlement.has_stability_debuff = false
-			save_settlement()
+	# 4. Debuffs
+	if jarl and current_settlement.has_stability_debuff:
+		if total_payout.has("gold"):
+			total_payout["gold"] = int(total_payout["gold"] * 0.75)
+		current_settlement.has_stability_debuff = false
+		save_settlement()
 
 	return total_payout
 
 func recruit_unit(unit_data: UnitData) -> void:
 	if not current_settlement or not unit_data: return
-	
 	var unit_path: String = unit_data.resource_path
 	if unit_path.is_empty(): return
 	
@@ -3036,26 +3280,110 @@ func recruit_unit(unit_data: UnitData) -> void:
 	save_settlement()
 	EventBus.purchase_successful.emit(unit_data.display_name)
 
+# --- Building Construction Logic ---
 
+func _process_construction_labor() -> void:
+	if not current_settlement: return
+	
+	var assigned_builders = current_settlement.worker_assignments.get("construction", 0)
+	if assigned_builders <= 0:
+		print("End Year: No builders assigned. Construction stalled.")
+		return
+		
+	var total_labor_points = assigned_builders * BUILDER_EFFICIENCY
+	print("End Year: Processing Construction. Available Labor: %d" % total_labor_points)
+	
+	var completed_indices: Array[int] = []
+	
+	for i in range(current_settlement.pending_construction_buildings.size()):
+		if total_labor_points <= 0:
+			break
+			
+		var entry = current_settlement.pending_construction_buildings[i]
+		var building_data = load(entry["resource_path"]) as BuildingData
+		
+		if not building_data: continue
+		
+		var current_progress = entry.get("progress", 0)
+		var effort_needed = building_data.construction_effort_required
+		var effort_remaining = effort_needed - current_progress
+		
+		var points_to_apply = min(total_labor_points, effort_remaining)
+		
+		# 1. Update Data
+		entry["progress"] = current_progress + points_to_apply
+		total_labor_points -= points_to_apply
+		
+		print("  > Applied %d points to %s (Progress: %d/%d)" % [points_to_apply, building_data.display_name, entry["progress"], effort_needed])
+		
+		# 2. Update Visuals (LIVE SCENE UPDATE)
+		# We must convert the stored position to Vector2i for the lookup
+		var grid_pos = Vector2i(entry["grid_position"]) 
+		var active_instance = _find_building_instance_at(grid_pos)
+		
+		if is_instance_valid(active_instance):
+			# This triggers the visual state change (Blueprint -> Construction)
+			# and updates the health bar/label immediately
+			active_instance.add_construction_progress(points_to_apply)
+		else:
+			print("Warning: Could not find visual instance for building at %s" % grid_pos)
+		
+		# 3. Check Completion
+		if entry["progress"] >= effort_needed:
+			print("  >>> Construction COMPLETE: %s" % building_data.display_name)
+			completed_indices.append(i)
+			
+			var new_placed_entry = {
+				"resource_path": entry["resource_path"],
+				"grid_position": entry["grid_position"]
+			}
+			current_settlement.placed_buildings.append(new_placed_entry)
+	
+	completed_indices.sort()
+	completed_indices.reverse()
+	for i in completed_indices:
+		current_settlement.pending_construction_buildings.remove_at(i)
+		
+	save_settlement()
+	
+	# If anything completed, we might need to reload/refresh territory
+	if not completed_indices.is_empty():
+		_trigger_territory_update()
+
+# --- NEW HELPER ---
+func _find_building_instance_at(grid_pos: Vector2i) -> BaseBuilding:
+	"""Finds the actual node in the scene for a given grid position."""
+	if not is_instance_valid(active_building_container):
+		return null
+		
+	# Convert grid pos to world pos logic to match building positions?
+	# Actually, simpler: Iterate children and check their data.
+	# Since we don't have a dictionary map of instances, we loop.
+	# Optimization: Maintain a lookup dict in the future if building count > 100.
+	
+	var cell_size = get_active_grid_cell_size()
+	
+	for child in active_building_container.get_children():
+		if child is BaseBuilding:
+			# Reverse engineer the grid pos from global pos
+			var size_offset = Vector2(child.data.grid_size) * cell_size / 2.0
+			var top_left = child.global_position - size_offset
+			var child_grid_pos = Vector2i(round(top_left.x / cell_size.x), round(top_left.y / cell_size.y))
+			
+			if child_grid_pos == grid_pos:
+				return child
+	return null
 # --- Building & Pathfinding ---
 
 func remove_building(building_instance: BaseBuilding) -> void:
-	"""
-	Removes a building from the scene, data model, and grid.
-	Handles both 'placed' and 'pending' buildings.
-	"""
-	if not current_settlement or not is_instance_valid(building_instance):
-		return
+	if not current_settlement or not is_instance_valid(building_instance): return
 
-	# 1. Calculate Grid Position
 	var cell_size = get_active_grid_cell_size()
 	var building_pos = building_instance.global_position
 	var size_pixels = Vector2(building_instance.data.grid_size) * cell_size
 	var top_left_pixels = building_pos - (size_pixels / 2.0)
 	var grid_pos = Vector2i(top_left_pixels / cell_size)
 	
-	# 2. Clear A* Grid (if it was blocking)
-	# Blueprints might not block pathfinding yet, but good to clear anyway
 	if is_instance_valid(active_astar_grid):
 		for x in range(building_instance.data.grid_size.x):
 			for y in range(building_instance.data.grid_size.y):
@@ -3065,50 +3393,44 @@ func remove_building(building_instance: BaseBuilding) -> void:
 		active_astar_grid.update()
 		EventBus.pathfinding_grid_updated.emit(grid_pos)
 
-	# 3. Remove from Data Model
-	# Check placed_buildings
 	var removed = _remove_from_list(current_settlement.placed_buildings, grid_pos)
 	if not removed:
-		# Check pending_construction_buildings
 		removed = _remove_from_list(current_settlement.pending_construction_buildings, grid_pos)
 	
 	if removed:
 		save_settlement()
 		print("SettlementManager: Removed %s from data at %s." % [building_instance.data.display_name, grid_pos])
+		_trigger_territory_update()
 	else:
 		push_warning("SettlementManager: Could not find data entry for building at %s" % grid_pos)
 
-	# 4. Remove Instance
 	building_instance.queue_free()
 
 func _remove_from_list(list: Array, grid_pos: Vector2i) -> bool:
 	for i in range(list.size()):
 		var entry = list[i]
 		var entry_pos = entry["grid_position"]
-		# Handle both Vector2 and Vector2i for compatibility
-		var compare_pos = Vector2(grid_pos) if entry_pos is Vector2 else Vector2i(entry_pos)
-		if compare_pos == grid_pos or Vector2(entry_pos) == Vector2(grid_pos):
+		
+		# Explicitly cast entry to Vector2i for safe comparison
+		var current_pos_i: Vector2i
+		
+		if entry_pos is Vector2:
+			current_pos_i = Vector2i(entry_pos)
+		elif entry_pos is Vector2i:
+			current_pos_i = entry_pos
+		else:
+			continue 
+			
+		if current_pos_i == grid_pos:
 			list.remove_at(i)
 			return true
 	return false
 
 func get_active_grid_cell_size() -> Vector2:
-	if is_instance_valid(active_astar_grid):
-		return active_astar_grid.cell_size
+	if is_instance_valid(active_astar_grid): return active_astar_grid.cell_size
 	return Vector2(32, 32)
 
-# --- MODIFIED: Updated for Phase 1.3 Blueprint Logic ---
 func place_building(building_data: BuildingData, grid_position: Vector2i, is_new_construction: bool = false) -> BaseBuilding:
-	"""
-	Instantiates and places a building.
-	If is_new_construction is true:
-		- Sets state to BLUEPRINT 
-		- Adds to pending_construction_buildings 
-		- Saves data
-	If false (loading from save):
-		- Sets state to ACTIVE (default assumption for legacy saves)
-		- Does NOT save data (assumes it came from data)
-	"""
 	if not is_instance_valid(active_astar_grid) or not is_instance_valid(active_building_container):
 		push_error("Place building failed: Active scene nodes are not registered.")
 		return null
@@ -3121,11 +3443,9 @@ func place_building(building_data: BuildingData, grid_position: Vector2i, is_new
 		push_error("Cannot place building at %s: Invalid position." % grid_position)
 		return null
 	
-	# Instantiate
 	var new_building: BaseBuilding = building_data.scene_to_spawn.instantiate()
 	new_building.data = building_data
 	
-	# Position
 	var world_pos_top_left: Vector2 = Vector2(grid_position) * active_astar_grid.cell_size
 	var building_footprint_size: Vector2 = Vector2(building_data.grid_size) * active_astar_grid.cell_size
 	var building_center_offset: Vector2 = building_footprint_size / 2.0
@@ -3133,7 +3453,6 @@ func place_building(building_data: BuildingData, grid_position: Vector2i, is_new
 	
 	active_building_container.add_child(new_building)
 	
-	# Update Grid (Blueprints reserve the space)
 	if building_data.blocks_pathfinding:
 		for x in range(building_data.grid_size.x):
 			for y in range(building_data.grid_size.y):
@@ -3144,36 +3463,35 @@ func place_building(building_data: BuildingData, grid_position: Vector2i, is_new
 		active_astar_grid.update()
 		EventBus.pathfinding_grid_updated.emit(grid_position)
 
-	# --- Phase 1.3 Logic ---
 	if is_new_construction:
-		# 1. Set State to Blueprint 
 		new_building.set_state(BaseBuilding.BuildingState.BLUEPRINT)
 		
-		# 2. Save to Pending List 
 		var entry = {
 			"resource_path": building_data.resource_path,
-			"grid_position": Vector2(grid_position), # Convert Vector2i to Vector2 for better serialization
-			"progress": 0 # Track construction progress
+			"grid_position": grid_position,
+			"progress": 0
 		}
+		if current_settlement.pending_construction_buildings == null:
+			current_settlement.pending_construction_buildings = []
+			
 		current_settlement.pending_construction_buildings.append(entry)
-		save_settlement()
-		print("SettlementManager: New blueprint placed at %s." % grid_position)
+		save_settlement() 
+		print("SettlementManager: New blueprint placed and saved at %s." % grid_position)
 	else:
-		# Loading existing building, assume Active for now
 		new_building.set_state(BaseBuilding.BuildingState.ACTIVE)
+	
+	_trigger_territory_update()
 		
 	return new_building
 
 func is_placement_valid(grid_position: Vector2i, building_size: Vector2i) -> bool:
-	if not is_instance_valid(active_astar_grid):
-		return false
+	if not is_instance_valid(active_astar_grid): return false
 	
 	for x in range(building_size.x):
 		for y in range(building_size.y):
 			var cell_pos = grid_position + Vector2i(x, y)
 			if not _is_cell_within_bounds(cell_pos): return false
 			if active_astar_grid.is_point_solid(cell_pos): return false
-	
 	return true
 
 func _is_cell_within_bounds(grid_position: Vector2i) -> bool:
@@ -3184,76 +3502,67 @@ func _is_cell_within_bounds(grid_position: Vector2i) -> bool:
 
 func get_astar_path(start_pos: Vector2, end_pos: Vector2, allow_partial_path: bool = false) -> PackedVector2Array:
 	if not is_instance_valid(active_astar_grid): return PackedVector2Array()
-	
 	var start_id: Vector2i = Vector2i(start_pos / active_astar_grid.cell_size)
 	var end_id: Vector2i = Vector2i(end_pos / active_astar_grid.cell_size)
-	
 	if not _is_cell_within_bounds(start_id): return PackedVector2Array()
-	
 	return active_astar_grid.get_point_path(start_id, end_id, allow_partial_path)
 
 func set_astar_point_solid(grid_position: Vector2i, solid: bool) -> void:
 	if is_instance_valid(active_astar_grid) and _is_cell_within_bounds(grid_position):
 		active_astar_grid.set_point_solid(grid_position, solid)
+# --- Phase 4.1: The Prediction Engine ---
 
-# --- Phase 1: Blueprint Construction Methods ---
+func simulate_turn(simulated_assignments: Dictionary) -> Dictionary:
+	if not current_settlement: return {}
 
-func complete_building_construction(building: BaseBuilding) -> void:
-	"""
-	Called when a building transitions from BLUEPRINT/UNDER_CONSTRUCTION to ACTIVE.
-	Moves the building from pending_construction_buildings to placed_buildings.
-	"""
-	if not current_settlement or not is_instance_valid(building): return
-	
-	# Calculate the building's grid position
-	var cell_size = get_active_grid_cell_size()
-	var building_pos = building.global_position
-	var size_pixels = Vector2(building.data.grid_size) * cell_size
-	var top_left_pixels = building_pos - (size_pixels / 2.0)
-	var grid_pos = Vector2i(top_left_pixels / cell_size)
-	
-	# Find and remove from pending list
-	for i in range(current_settlement.pending_construction_buildings.size()):
-		var entry = current_settlement.pending_construction_buildings[i]
-		if entry["grid_position"] == grid_pos:
-			# Move to placed buildings
-			var placed_entry = {
-				"resource_path": building.data.resource_path,
-				"grid_position": grid_pos
-			}
-			current_settlement.placed_buildings.append(placed_entry)
-			current_settlement.pending_construction_buildings.remove_at(i)
-			save_settlement()
-			print("SettlementManager: Building construction completed at %s" % grid_pos)
-			return
-	
-	push_warning("SettlementManager: Could not find pending construction entry for building at %s" % grid_pos)
+	var result = {
+		"resources_gained": { "food": 0, "wood": 0, "stone": 0, "gold": 0 },
+		"buildings_completing": []
+	}
 
-func get_pending_construction_buildings() -> Array:
-	"""Returns a copy of the pending construction buildings array."""
-	if not current_settlement: return []
-	return current_settlement.pending_construction_buildings.duplicate()
-
-func update_construction_progress(grid_pos: Vector2i, progress: int) -> void:
-	"""Updates the progress of a building under construction."""
-	if not current_settlement: return
+	# 1. Simulate Construction
+	var assigned_builders = simulated_assignments.get("construction", 0)
+	var total_points = assigned_builders * BUILDER_EFFICIENCY
 	
 	for entry in current_settlement.pending_construction_buildings:
-		if entry["grid_position"] == grid_pos:
-			entry["progress"] = progress
-			return
-	
-	push_warning("SettlementManager: Could not find pending construction at %s to update progress" % grid_pos)
+		if total_points <= 0: break
+		var b_data = load(entry["resource_path"]) as BuildingData
+		if not b_data: continue
+		
+		var needed = b_data.construction_effort_required - entry.get("progress", 0)
+		var applied = min(total_points, needed)
+		total_points -= applied
+		
+		if (entry.get("progress", 0) + applied) >= b_data.construction_effort_required:
+			result["buildings_completing"].append(b_data.display_name)
 
-func get_construction_progress(grid_pos: Vector2i) -> int:
-	"""Gets the current construction progress for a building at the given position."""
-	if not current_settlement: return 0
-	
-	for entry in current_settlement.pending_construction_buildings:
-		if entry["grid_position"] == grid_pos:
-			return entry.get("progress", 0)
-	
-	return 0
+	# 2. Simulate Economy
+	var stewardship_bonus = 1.0
+	var jarl = DynastyManager.get_current_jarl()
+	if jarl:
+		var skill = jarl.get_effective_skill("stewardship")
+		stewardship_bonus = 1.0 + (skill - 10) * 0.05
+
+	# Labor (Gold Removed)
+	for res in ["food", "wood", "stone"]:
+		var count = simulated_assignments.get(res, 0)
+		if count > 0:
+			result["resources_gained"][res] += int(count * GATHERER_EFFICIENCY * stewardship_bonus)
+
+	# Passive Buildings & Regions (Keep Gold)
+	for entry in current_settlement.placed_buildings:
+		var b_data = load(entry["resource_path"])
+		if b_data is EconomicBuildingData:
+			result["resources_gained"][b_data.resource_type] += int(b_data.fixed_payout_amount * stewardship_bonus)
+			
+	if jarl:
+		for path in jarl.conquered_regions:
+			var r_data = load(path)
+			if r_data:
+				for res in r_data.yearly_income:
+					result["resources_gained"][res] += int(r_data.yearly_income[res] * stewardship_bonus)
+
+	return result
 
 --- SCRIPT: res://data/buildings/Base_Building.gd ---
 class_name BaseBuilding
@@ -3282,11 +3591,16 @@ var health_bar: ProgressBar
 var border_rect: ColorRect
 var attack_ai: Node = null 
 
+# StyleBox references for dynamic coloring
+var style_fill: StyleBoxFlat
+var style_bg: StyleBoxFlat
+
 func _ready() -> void:
 	if not data: return
 	
 	current_health = data.max_health
 	
+	# --- Create core nodes ---
 	collision_shape = CollisionShape2D.new()
 	collision_shape.shape = RectangleShape2D.new()
 	add_child(collision_shape)
@@ -3295,14 +3609,15 @@ func _ready() -> void:
 	label = Label.new()
 	background.add_child(label)
 	add_child(background)
+	# -------------------------
 	
 	input_pickable = true
 	_create_hitbox()
 	_apply_data_and_scale()
-	_create_dev_visuals()
+	_create_dev_visuals() 
 	_setup_defensive_ai()
 	
-	# Force initial visual state
+	# Apply the initial state visual
 	_update_visual_state()
 
 func _input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
@@ -3311,13 +3626,11 @@ func _input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
 			EventBus.building_right_clicked.emit(self)
 
 func set_state(new_state: BuildingState) -> void:
-	print("BaseBuilding: State change requested from %s to %s" % [current_state, new_state])
 	var old_state = current_state
 	current_state = new_state
 	_update_visual_state()
 	_update_logic_state()
 	
-	# Connect to SettlementManager for completion handling
 	if current_state == BuildingState.ACTIVE and old_state != BuildingState.ACTIVE:
 		construction_completed.emit(self)
 		if SettlementManager and SettlementManager.has_method("complete_building_construction"):
@@ -3328,58 +3641,95 @@ func _update_visual_state() -> void:
 
 	match current_state:
 		BuildingState.BLUEPRINT:
-			# Force Blue Tint and 50% Transparency
+			# Ghostly Blue
 			self.modulate = Color(0.4, 0.6, 1.0, 0.5)
+			background.color = Color.WHITE
 			background.color.a = 0.5 
-			if label: label.text = "%s (Blueprint)" % data.display_name
+			if label: label.text = "%s\n(Blueprint)" % data.display_name
 			if health_bar: health_bar.hide()
 			
 		BuildingState.UNDER_CONSTRUCTION:
-			self.modulate = Color(0.8, 0.8, 0.8, 0.8)
-			background.color.a = 0.8
-			if label: label.text = "%s (Building...)" % data.display_name
-			if health_bar: health_bar.hide()
+			# Dark Foundation, Opaque
+			self.modulate = Color.WHITE 
+			background.color = Color(0.2, 0.2, 0.2, 0.9) 
+			
+			# --- CONSTRUCTION BAR CONFIG ---
+			if health_bar: 
+				health_bar.show()
+				# Set correct range
+				var max_effort = max(1, data.construction_effort_required)
+				health_bar.max_value = max_effort
+				health_bar.value = construction_progress
+				
+				# Set Colors Directly on StyleBox (Blue)
+				if style_fill: style_fill.bg_color = Color(0.2, 0.6, 1.0) # Bright Blue
+				
+				# Reset modulation (don't tint the black background)
+				health_bar.modulate = Color.WHITE 
+			
+			_update_percentage_label()
 			
 		BuildingState.ACTIVE:
+			# Standard Colors
 			self.modulate = Color.WHITE
+			_apply_color_coding() 
 			background.color.a = 1.0
 			if label: label.text = data.display_name
-			if health_bar: health_bar.show()
-			# Restore original color
-			_apply_color_coding()
+			
+			# --- HEALTH BAR CONFIG ---
+			if health_bar:
+				health_bar.max_value = data.max_health
+				health_bar.value = current_health
+				
+				# Set Colors Directly on StyleBox (Green)
+				if style_fill: style_fill.bg_color = Color(0.2, 0.8, 0.2) # Green
+				
+				health_bar.modulate = Color.WHITE
+				health_bar.show()
 
 func _update_logic_state() -> void:
 	match current_state:
 		BuildingState.BLUEPRINT, BuildingState.UNDER_CONSTRUCTION:
-			# Disable collision for units to walk through
 			if collision_shape: collision_shape.disabled = true
 			if hitbox_area: hitbox_area.monitorable = false
-			# Disable attack AI completely
 			if attack_ai:
 				attack_ai.process_mode = Node.PROCESS_MODE_DISABLED
 				if attack_ai.has_method("stop_attacking"):
 					attack_ai.stop_attacking()
-			# Signal that economic payouts should be disabled
 			EventBus.building_state_changed.emit(self, current_state)
 			
 		BuildingState.ACTIVE:
-			# Enable collision and interactions
 			if collision_shape: collision_shape.disabled = false
 			if hitbox_area: hitbox_area.monitorable = true
 			if attack_ai: attack_ai.process_mode = Node.PROCESS_MODE_INHERIT
-			# Signal that economic payouts should be enabled
 			EventBus.building_state_changed.emit(self, current_state)
 
 func add_construction_progress(amount: int) -> void:
 	if current_state == BuildingState.ACTIVE: return
+	
+	# Auto-transition state on first progress
+	if current_state == BuildingState.BLUEPRINT:
+		set_state(BuildingState.UNDER_CONSTRUCTION)
+		
 	construction_progress += amount
+	print("Building %s progress: %d / %d" % [name, construction_progress, data.construction_effort_required])
+	
+	# Update the bar immediately
+	if health_bar:
+		health_bar.value = construction_progress
+		
+	_update_percentage_label()
+	
+	# Auto-complete
 	if construction_progress >= data.construction_effort_required:
-		set_state(BuildingState.ACTIVE)
+		# Handled by Manager, but ensures local state is correct
+		pass 
 
-func is_active() -> bool:
-	return current_state == BuildingState.ACTIVE
+func _update_percentage_label() -> void:
+	if label and data.construction_effort_required > 0:
+		var percent = int((float(construction_progress) / data.construction_effort_required) * 100)
+		label.text = "%s\n(%d%%)" % [data.display_name, percent]
 
-# --- Internal Setup Functions (Unchanged logic, just condensed for file completeness) ---
 func _create_hitbox() -> void:
 	hitbox_area = Area2D.new()
 	hitbox_area.name = "Hitbox"
@@ -3429,11 +3779,23 @@ func _create_dev_visuals() -> void:
 		add_child(border_rect)
 		move_child(border_rect, 0)
 	
+	# --- UPDATED BAR CREATION ---
 	health_bar = ProgressBar.new()
-	health_bar.custom_minimum_size = Vector2(size.x, 6)
-	health_bar.position = Vector2(-size.x/2, -size.y/2 - 10)
+	health_bar.custom_minimum_size = Vector2(size.x * 0.9, 10) # 90% width, 10px height
+	health_bar.position = Vector2(-size.x * 0.45, -size.y/2 - 15) # Centered above
 	health_bar.max_value = data.max_health
 	health_bar.value = current_health
+	health_bar.show_percentage = false
+	
+	# Create StyleBox Resources
+	style_bg = StyleBoxFlat.new()
+	style_bg.bg_color = Color(0, 0, 0, 1) # Black Background
+	health_bar.add_theme_stylebox_override("background", style_bg)
+	
+	style_fill = StyleBoxFlat.new()
+	style_fill.bg_color = Color(1, 1, 1, 1) # White (Default, changed in update)
+	health_bar.add_theme_stylebox_override("fill", style_fill)
+	
 	add_child(health_bar)
 
 func _setup_defensive_ai() -> void:
@@ -3446,7 +3808,9 @@ func _setup_defensive_ai() -> void:
 func take_damage(amount: int, _attacker: Node2D = null) -> void:
 	if current_state != BuildingState.ACTIVE: return
 	current_health = max(0, current_health - amount)
+	
 	if health_bar: health_bar.value = current_health
+	
 	if current_health == 0: die()
 
 func die() -> void:
@@ -3455,72 +3819,44 @@ func die() -> void:
 
 --- SCRIPT: res://data/buildings/BuildingData.gd ---
 # res://data/buildings/BuildingData.gd
-#
 # Defines the core data for any building in the game.
-# --- MODIFIED: Added Construction Stats for Phase 1.1 ---
-
 class_name BuildingData
 extends Resource
 
-## The name displayed in the UI (e.g., "Stone Wall", "Watchtower").
+## The name displayed in the UI.
 @export var display_name: String = "New Building"
-
-## The scene that will be instanced when this building is placed.
 @export var scene_to_spawn: PackedScene
-
-## The icon shown in the build menu.
 @export var icon: Texture2D
-
-## Texture shown on screen
 @export var building_texture: Texture2D
-
-## The cost in 'Resources' (e.g., wood, gold) to build this.
 @export var build_cost: Dictionary
-
-## The building's maximum hit points.
 @export var max_health: int = 100
-
-## If true, this building blocks enemy pathfinding.
 @export var blocks_pathfinding: bool = true
-
-## The size of the building on the AStarGrid2D.
 @export var grid_size: Vector2i = Vector2i.ONE
-
-## Development visual color for the building rectangle.
 @export var dev_color: Color = Color.GRAY
-
-## If true, this building will appear in the player's Storefront UI.
 @export var is_player_buildable: bool = false
 
-# --- NEW: Phase 1.1 Construction Stats ---
 @export_group("Construction")
-## Total work points required to finish construction.
 @export var construction_effort_required: int = 100
-
-## Max workers allowed to build this at once (prevents zerging small buildings).
 @export var base_labor_capacity: int = 3
+
+@export_group("Territory & Expansion")
+## If true, this building generates territory even if not connected to anything (e.g., Great Hall).
+@export var is_territory_hub: bool = false
+
+## If true, this building extends territory if connected to a Hub (e.g., Walls, Roads).
+@export var extends_territory: bool = false
+
+## The radius of buildable land this building provides around itself.
+@export var territory_radius: int = 4
 # -----------------------------------------
 
 @export_group("Defensive Stats")
-## If true, this building can attack enemies (e.g., Watchtower).
 @export var is_defensive_structure: bool = false
-
-## Damage dealt per attack (if defensive).
 @export var attack_damage: int = 5
-
-## Range in pixels (if defensive).
 @export var attack_range: float = 200.0
-
-## Attacks per second (if defensive).
 @export var attack_speed: float = 1.0
-
-## An optional AI scene to instance (e.g., for defensive buildings)
 @export var ai_component_scene: PackedScene
-
-## The projectile scene to spawn when this building attacks (for defensive structures).
 @export var projectile_scene: PackedScene
-
-## The speed of the projectile, in pixels per second.
 @export var projectile_speed: float = 400.0
 
 --- SCRIPT: res://data/buildings/EconomicBuildingData.gd ---
@@ -3529,14 +3865,17 @@ extends BuildingData
 class_name EconomicBuildingData
 
 @export_group("Economic Stats")
-## The type of resource this building generates (e.g., "wood", "food", "gold").
+## The type of resource this building generates (e.g., "wood", "food", "stone").
 @export var resource_type: String = "wood"
 
-## The fixed amount of resources generated after each successful attack.
+## The fixed amount of resources generated passively per turn.
 @export var fixed_payout_amount: int = 10
 
 ## The maximum amount of the resource that can be stored before collection.
 @export var storage_cap: int = 100
+
+## The max number of workers that can be assigned to gather this resource here.
+@export var max_workers: int = 3
 
 --- SCRIPT: res://data/characters/JarlData.gd ---
 # res://data/characters/JarlData.gd
@@ -3596,46 +3935,44 @@ extends Resource
 ## An array of resource paths to WorldRegionData files that have been subjugated.
 @export var conquered_regions: Array[String] = []
 
-# --- NEW: Progenitor Pillar Property ---
+# --- Progenitor Pillar Property ---
 ## An array of resource paths to WorldRegionData files that are allied.
 @export var allied_regions: Array[String] = []
-# --- END NEW ---
+
+
+@export_group("Naval Logistics")
+## The distance (in pixels) a fleet can travel with 0% attrition.
+@export var safe_naval_range: float = 600.0
+
+## Attrition penalty per 100 pixels beyond safe range (e.g., 0.10 = 10% risk).
+@export var attrition_per_100px: float = 0.10
+
 
 @export_group("Base Skills")
 ## Combat leadership and personal prowess
 @export var command: int = 10
-
-## Diplomatic skills and charm
 @export var diplomacy: int = 10
-
-## Strategic planning and administration
 @export var stewardship: int = 10
-
-## Religious knowledge and mysticism
 @export var learning: int = 10
-
-## Personal combat skill and courage
 @export var prowess: int = 10
-
-## Ability to inspire and lead
 @export var charisma: int = 10
 
 
 @export_group("Traits")
 ## Array of JarlTraitData resources that modify the Jarl's abilities and story
 @export var traits: Array[JarlTraitData] = []
-
 ## Legacy trait names for backward compatibility (can be removed later)
 @export var legacy_trait_names: Array[String] = []
-
 ## Whether this Jarl is currently wounded (affects stats temporarily)
 @export var is_wounded: bool = false
-
 ## Number of turns remaining for wound recovery
 @export var wound_recovery_turns: int = 0
 
 # --- HELPER FUNCTIONS ---
-# These must be defined *before* the properties that use them.
+
+func get_safe_range() -> float:
+	# Placeholder for future trait modifiers (e.g. "Seafarer" trait)
+	return safe_naval_range
 
 ## Get the number of *available* heirs (not on expedition, etc.)
 func get_available_heir_count() -> int:
@@ -3664,102 +4001,64 @@ func remove_heir(heir_to_remove: JarlHeirData) -> bool:
 func check_has_valid_heir() -> bool:
 	return get_first_available_heir() != null
 
-# --- END HELPER FUNCTIONS ---
-
 
 @export_group("Family & Succession")
 ## The Jarl's spouse (if any)
 @export var spouse_name: String = ""
-
 ## Array of JarlHeirData resources in order of succession priority
 @export var heirs: Array[JarlHeirData] = []
 
-## DEPRECATED: Replaced with a read-only property that calls check_has_valid_heir()
+## DEPRECATED Properties (kept for compatibility if needed)
 var has_valid_heir: bool:
-	get:
-		return check_has_valid_heir()
-
-## DEPRECATED: Replaced with a read-only property that calls get_available_heir_count()
+	get: return check_has_valid_heir()
 var children_count: int:
-	get:
-		return get_available_heir_count()
+	get: return get_available_heir_count()
 
 
 @export_group("Political Status")
-## Current title/rank in the political hierarchy
 @export var title: String = "Jarl"
-
-## Number of vassals under this Jarl's rule
 @export var vassal_count: int = 0
-
-## Overall diplomatic reputation with other Jarls
 @export var reputation: int = 0
-
-## Whether this Jarl is currently in exile or displaced
 @export var is_in_exile: bool = false
 
 
 @export_group("Combat & Mission State")
-## Whether the Jarl is currently leading a raid (affects vulnerability)
 @export var is_on_mission: bool = false
-
-## Number of battles this Jarl has fought
 @export var battles_fought: int = 0
-
-## Number of battles this Jarl has won
 @export var battles_won: int = 0
-
-## Total successful raids completed
 @export var successful_raids: int = 0
 
 
 ## Get the effective skill value including trait modifiers
 func get_effective_skill(skill_name: String) -> int:
 	var base_value: int = 0
-	
 	match skill_name.to_lower():
-		"command":
-			base_value = command
-		"diplomacy":
-			base_value = diplomacy
-		"stewardship":
-			base_value = stewardship
-		"learning":
-			base_value = learning
-		"prowess":
-			base_value = prowess
-		"charisma":
-			base_value = charisma
-		_:
-			return 0
+		"command": base_value = command
+		"diplomacy": base_value = diplomacy
+		"stewardship": base_value = stewardship
+		"learning": base_value = learning
+		"prowess": base_value = prowess
+		"charisma": base_value = charisma
+		_: return 0
 	
-	# Apply trait modifiers
 	var trait_modifier: int = 0
 	for jarl_trait in traits:
-		if jarl_trait == null:
-			continue
-		
+		if jarl_trait == null: continue
 		match skill_name.to_lower():
-			"command":
-				trait_modifier += jarl_trait.command_modifier
-			"stewardship":
-				trait_modifier += jarl_trait.stewardship_modifier
-			"intrigue":
-				trait_modifier += jarl_trait.intrigue_modifier
+			"command": trait_modifier += jarl_trait.command_modifier
+			"stewardship": trait_modifier += jarl_trait.stewardship_modifier
+			"intrigue": trait_modifier += jarl_trait.intrigue_modifier
 	
 	return base_value + trait_modifier
 
 
 ## Add a trait to the Jarl (if not already present)
 func add_trait(trait_data: JarlTraitData) -> void:
-	if trait_data == null:
-		return
-	# Check if we already have this trait (by display name)
+	if trait_data == null: return
 	for existing_trait in traits:
 		if existing_trait != null and existing_trait.display_name == trait_data.display_name:
 			return
 	traits.append(trait_data)
-
 
 ## Check if Jarl has a specific trait by display name
 func has_trait(trait_name: String) -> bool:
@@ -3768,117 +4067,57 @@ func has_trait(trait_name: String) -> bool:
 			return true
 	return false
 
-
-## Get the Jarl's Authority cap based on Renown Tier (GDD reference)
+## Get the Jarl's Authority cap based on Renown Tier
 func get_authority_cap() -> int:
 	match renown_tier:
-		0: return 3  # Petty Jarl
-		1: return 5  # High Jarl
-		2: return 7  # Kingmaker
-		_: return 3 + renown_tier  # Future tiers
+		0: return 3
+		1: return 5
+		2: return 7
+		_: return 3 + renown_tier
 
-
-## Check if the Jarl can take an action (has Authority remaining)
 func can_take_action(authority_cost: int = 1) -> bool:
 	return current_authority >= authority_cost
 
-
-## Spend Authority for an action
 func spend_authority(cost: int = 1) -> bool:
 	if can_take_action(cost):
 		current_authority -= cost
 		return true
 	return false
 
-
-## Award Renown for completing a major action
 func award_renown(amount: int) -> void:
 	renown += amount
 	years_since_action = 0
 	_update_renown_tier()
 
-
-## Update Renown Tier based on current Renown
 func _update_renown_tier() -> void:
-	if renown >= 1000:
-		renown_tier = 3
-	elif renown >= 500:
-		renown_tier = 2
-	elif renown >= 200:
-		renown_tier = 1
-	else:
-		renown_tier = 0
+	if renown >= 1000: renown_tier = 3
+	elif renown >= 500: renown_tier = 2
+	elif renown >= 200: renown_tier = 1
+	else: renown_tier = 0
 
-
-## Reset Authority at the start of a new year
 func reset_authority() -> void:
 	max_authority = get_authority_cap()
-	
 	if succession_debuff_years_remaining > 0:
-		# Jarl is still consolidating power
-		
-		# 1. Calculate the legitimacy multiplier (e.g., 20 Legitimacy -> 0.2)
 		var legit_multiplier = legitimacy / 100.0
-		
-		# 2. Calculate the authority to gain (e.g., 5 * 0.2 = 1.0)
 		var authority_gained = int(round(max_authority * legit_multiplier))
-		
-		# 3. Enforce the "min 1" rule
 		current_authority = max(1, authority_gained)
-		
-		# 4. Count down the debuff timer
 		succession_debuff_years_remaining -= 1
-		
 	else:
-		# The Jarl is stable. Reset to normal max.
 		current_authority = max_authority
 
-
-## Apply aging effects to the Jarl
 func age_jarl(years: int = 1) -> void:
 	age += years
 	years_since_action += years
-	
-	# Apply age-related skill changes
 	if age > 60:
-		# Older Jarls lose prowess but gain wisdom
 		prowess = max(1, prowess - 1)
 		learning = min(20, learning + 1)
 
-
-## Get a summary string of the Jarl's current status
-func get_status_summary() -> String:
-	var status_parts: Array[String] = []
-	
-	status_parts.append("Age: %d" % age)
-	status_parts.append("Renown: %d (Tier %d)" % [renown, renown_tier])
-	status_parts.append("Authority: %d/%d" % [current_authority, max_authority])
-	
-	if is_wounded:
-		status_parts.append("WOUNDED (%d turns)" % wound_recovery_turns)
-	
-	if is_on_mission:
-		status_parts.append("ON MISSION")
-	
-	return " | ".join(status_parts)
-
-
-## Remove a trait by display name
 func remove_trait(trait_name: String) -> bool:
 	for i in range(traits.size()):
 		if traits[i] != null and traits[i].display_name == trait_name:
 			traits.remove_at(i)
 			return true
 	return false
-
-
-## Get all trait names as a string array (for easy saving/display)
-func get_trait_names() -> Array[String]:
-	var trait_names: Array[String] = []
-	for jarl_trait in traits:
-		if jarl_trait != null:
-			trait_names.append(jarl_trait.display_name)
-	return trait_names
 
 --- SCRIPT: res://data/characters/JarlHeirData.gd ---
 # res://data/characters/JarlHeirData.gd
@@ -4097,21 +4336,32 @@ class_name SettlementData
 @export var treasury: Dictionary = {"gold": 0, "wood": 0, "food": 0, "stone": 0}
 
 # Active Buildings
-# Structure: {"resource_path": "res://...", "grid_position": Vector2i(x, y)}
 @export var placed_buildings: Array[Dictionary] = []
 
-# --- NEW: Phase 1.3 Blueprint Tracking ---
-# Stores buildings that are currently blueprints or under construction
-# Structure: {"resource_path": "res://...", "grid_position": Vector2i(x, y), "progress": 0}
+# Pending Blueprints
 @export var pending_construction_buildings: Array = []
-# -----------------------------------------
 
-# Stores unit type (path) and count (int)
+# Garrison
 @export var garrisoned_units: Dictionary = {}
+@export var max_garrison_bonus: int = 0
+
+# --- NEW: Phase 2 Population Data ---
+@export_group("Population & Labor")
+## Total population available for work assignments.
+@export var population_total: int = 10
+
+## Current worker assignments for the year.
+## Keys: "construction", "food", "wood", "stone", "gold"
+@export var worker_assignments: Dictionary = {
+	"construction": 0,
+	"food": 0,
+	"wood": 0,
+	"stone": 0,
+	"gold": 0
+}
+# ------------------------------------
 
 @export var has_stability_debuff: bool = false
-
-@export var max_garrison_bonus: int = 0
 
 --- SCRIPT: res://data/traits/JarlTraitData.gd ---
 # res://data/traits/JarlTraitData.gd
@@ -4209,37 +4459,47 @@ extends Resource
 @export var linear_damping: float = 5.0
 # ---------------------------------------------
 
+--- SCRIPT: res://data/world_map/MapState.gd ---
+# res://data/world_map/MapState.gd
+class_name MapState
+extends Resource
+
+# Dictionary mapping Region Node Names to their Data
+# Format: { "Region1": WorldRegionData, "Region2": WorldRegionData }
+@export var region_data_map: Dictionary = {}
+
+# We can track global map flags here too
+@export var turns_elapsed: int = 0
+
+--- SCRIPT: res://data/world_map/RaidTargetData.gd ---
+# res://data/world_map/RaidTargetData.gd
+class_name RaidTargetData
+extends Resource
+
+@export var display_name: String = "Monastery"
+@export var description: String = "A small, undefended religious site."
+@export var settlement_data: SettlementData
+@export var raid_cost_authority: int = 1
+@export var difficulty_rating: int = 1 # 1-5 Stars
+
 --- SCRIPT: res://data/world_map/WorldRegionData.gd ---
 # res://data/world_map/WorldRegionData.gd
-#
-# Defines the data for a single clickable region on the Macro Map.
-# This allows the map to be data-driven.
 class_name WorldRegionData
 extends Resource
 
-## The name displayed in tooltips and UI
 @export var display_name: String = "New Region"
-
-## The flavor text description shown when selected
 @export_multiline var description: String = "A description of this region."
 
-## The SettlementData.tres file to load for the RaidMission
-@export var target_settlement_data: SettlementData
+# --- MODIFIED: Now a list of targets ---
+@export var raid_targets: Array[RaidTargetData] = []
+# --------------------------------------
 
-## The base Authority cost to launch a raid here
-@export var base_authority_cost: int = 1
-
-# --- NEW: Phase 2 Properties ---
-
-## A tag for the "soft-guide" system (e.g., "Monastery", "Settlement", "Ruins")
-@export var region_type_tag: String = "Settlement"
-
-## The passive, yearly income this region provides *after* being subjugated.
+@export var region_type_tag: String = "Province"
 @export var yearly_income: Dictionary = {"gold": 10}
 
-# --- REMOVED ---
-# @export var is_conquered: bool = false
-# This is now tracked on JarlData.gd for better persistence.
+# Deprecated (Keep for temporary compatibility if needed, or delete)
+# @export var target_settlement_data: SettlementData 
+@export var base_authority_cost: int = 1
 
 --- SCRIPT: res://player/RTSCamera.gd ---
 # res://player/RTSCamera.gd
@@ -5707,70 +5967,131 @@ func _show_victory_message(title: String, subtitle: String) -> void:
 		get_tree().current_scene.add_child(victory_popup) # Fallback
 # --- END NEW ---
 
+# res://scenes/missions/RaidObjectiveManager.gd
+
 func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	"""Called when the enemy's Great Hall is destroyed (OFFENSIVE win condition)"""
 	if mission_over: return
 	mission_over = true
 	
-	print("Enemy Hall destroyed! Mission success!")
+	print("RaidObjectiveManager: Enemy Hall destroyed! Preparing report...")
 	
-	# Add bonus loot
-	raid_loot.add_loot("gold", victory_bonus_loot.get("gold", 200))
-	var total_loot = raid_loot.get_total_loot()
+	# 1. Gather Raw Stats
+	# We only track what physically happened (gold picked up, win state)
+	var raw_gold = raid_loot.collected_loot.get("gold", 0)
 	
-	SettlementManager.deposit_resources(total_loot)
-	print("Mission Complete! %s" % raid_loot.get_loot_summary())
+	# 2. Package the Result
+	var result = {
+		"outcome": "victory",
+		"gold_looted": raw_gold,
+		# We can add more stats here later (e.g. "units_lost")
+	}
 	
-	# --- NEW: Show Victory Popup ---
-	var subtitle = "The enemy's Great Hall is in ruins.\nLoot: %s" % raid_loot.get_loot_summary()
-	_show_victory_message("VICTORY!", subtitle)
+	# 3. Send to Courier
+	DynastyManager.pending_raid_result = result
 	
-	await get_tree().create_timer(3.0).timeout # Increased timer to 3s to read
+	# 4. Show simple feedback and leave
+	# (We purposely do NOT show the full loot popup here anymore)
+	_show_victory_message("VICTORY!", "The settlement lies in ruins.\nReturning to ships...")
 	
+	await get_tree().create_timer(3.0).timeout
 	EventBus.scene_change_requested.emit("settlement")
 
 --- SCRIPT: res://scenes/world_map/MacroCamera.gd ---
 # res://scenes/world_map/MacroCamera.gd
-#
-# Camera controller for the Macro Map.
-# Implements WASD and Middle-Mouse-Drag panning
-# with boundaries.
+# Upgraded with Zoom and Edge Panning
 extends Camera2D 
 class_name MacroCamera
 
+# --- Movement Settings ---
+@export_group("Movement")
 @export var camera_speed: float = 500.0
+@export var edge_pan_margin: float = 20.0
+@export var enable_edge_panning: bool = true
+@export var enable_keyboard_movement: bool = true
+
+# --- Zoom Settings ---
+@export_group("Zoom")
+@export var min_zoom: float = 0.5  # Far away
+@export var max_zoom: float = 2.0  # Close up
+@export var zoom_speed: float = 0.1
+@export var zoom_smoothing: float = 10.0
+
+# --- Bounds Settings ---
+@export_group("Bounds")
 @export var bounds_enabled: bool = true 
 @export var bounds_rect: Rect2 = Rect2(0, 0, 1920, 1080)
 
+# Internal State
+var target_zoom: Vector2 = Vector2.ONE
 var is_dragging: bool = false
 var drag_start_pos: Vector2
 
 func _ready() -> void:
+	target_zoom = zoom
 	make_current()
 
-func _process(delta: float) -> void:
-	var movement_vector := Vector2.ZERO
-	
-	# WASD camera movement [cite: 471]
-	if Input.is_action_pressed("ui_left") or Input.is_key_pressed(KEY_A):
-		movement_vector.x -= 1
-	if Input.is_action_pressed("ui_right") or Input.is_key_pressed(KEY_D):
-		movement_vector.x += 1
-	if Input.is_action_pressed("ui_up") or Input.is_key_pressed(KEY_W):
-		movement_vector.y -= 1
-	if Input.is_action_pressed("ui_down") or Input.is_key_pressed(KEY_S):
-		movement_vector.y += 1
-	
-	if movement_vector != Vector2.ZERO:
-		global_position += movement_vector.normalized() * camera_speed * delta
-		
-	# Apply clamping
+func snap_to_target(target_position: Vector2) -> void:
+	global_position = target_position
 	_clamp_camera_to_bounds()
 
+func _process(delta: float) -> void:
+	# 1. Apply Smooth Zoom
+	zoom = zoom.lerp(target_zoom, zoom_smoothing * delta)
+	
+	# 2. Handle Movement
+	if not is_dragging:
+		_handle_movement(delta)
+		
+	# 3. Clamp Bounds
+	_clamp_camera_to_bounds()
+
+func _handle_movement(delta: float) -> void:
+	var movement_vector := Vector2.ZERO
+	var viewport_size = get_viewport().get_visible_rect().size
+	var mouse_pos = get_viewport().get_mouse_position()
+	
+	# Keyboard Movement
+	if enable_keyboard_movement:
+		if Input.is_action_pressed("ui_left") or Input.is_key_pressed(KEY_A):
+			movement_vector.x -= 1
+		if Input.is_action_pressed("ui_right") or Input.is_key_pressed(KEY_D):
+			movement_vector.x += 1
+		if Input.is_action_pressed("ui_up") or Input.is_key_pressed(KEY_W):
+			movement_vector.y -= 1
+		if Input.is_action_pressed("ui_down") or Input.is_key_pressed(KEY_S):
+			movement_vector.y += 1
+	
+	# Edge Panning
+	if enable_edge_panning:
+		if mouse_pos.x <= edge_pan_margin:
+			movement_vector.x -= 1
+		elif mouse_pos.x >= viewport_size.x - edge_pan_margin:
+			movement_vector.x += 1
+		if mouse_pos.y <= edge_pan_margin:
+			movement_vector.y -= 1
+		elif mouse_pos.y >= viewport_size.y - edge_pan_margin:
+			movement_vector.y += 1
+	
+	# Apply Movement
+	if movement_vector != Vector2.ZERO:
+		movement_vector = movement_vector.normalized()
+		# Adjust speed based on zoom (move faster when zoomed out)
+		var zoom_multiplier = 1.0 / zoom.x
+		global_position += movement_vector * camera_speed * zoom_multiplier * delta
+
 func _unhandled_input(event: InputEvent) -> void:
-	# Middle-Mouse-Drag Panning [cite: 472]
+	# Zoom Controls
 	if event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_MIDDLE:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			_zoom_in()
+			get_viewport().set_input_as_handled()
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_zoom_out()
+			get_viewport().set_input_as_handled()
+			
+		# Middle-Mouse Drag
+		elif event.button_index == MOUSE_BUTTON_MIDDLE:
 			if event.is_pressed():
 				is_dragging = true
 				drag_start_pos = get_global_mouse_position() - global_position
@@ -5784,126 +6105,226 @@ func _unhandled_input(event: InputEvent) -> void:
 		_clamp_camera_to_bounds()
 		get_viewport().set_input_as_handled()
 
+func _zoom_in() -> void:
+	target_zoom += Vector2(zoom_speed, zoom_speed)
+	_clamp_zoom()
+
+func _zoom_out() -> void:
+	target_zoom -= Vector2(zoom_speed, zoom_speed)
+	_clamp_zoom()
+
+func _clamp_zoom() -> void:
+	target_zoom.x = clamp(target_zoom.x, min_zoom, max_zoom)
+	target_zoom.y = clamp(target_zoom.y, min_zoom, max_zoom)
+
 func _clamp_camera_to_bounds() -> void:
 	if bounds_enabled:
-		global_position.x = clamp(global_position.x, bounds_rect.position.x, bounds_rect.end.x)
-		global_position.y = clamp(global_position.y, bounds_rect.position.y, bounds_rect.end.y)
+		# Adjust bounds based on zoom to prevent seeing outside the map
+		var view_size = get_viewport_rect().size / zoom
+		var min_x = bounds_rect.position.x + view_size.x / 2
+		var max_x = bounds_rect.end.x - view_size.x / 2
+		var min_y = bounds_rect.position.y + view_size.y / 2
+		var max_y = bounds_rect.end.y - view_size.y / 2
+		
+		# Only clamp if the map is larger than the view
+		if min_x < max_x: global_position.x = clamp(global_position.x, min_x, max_x)
+		if min_y < max_y: global_position.y = clamp(global_position.y, min_y, max_y)
 
 --- SCRIPT: res://scenes/world_map/MacroMap.gd ---
 # res://scenes/world_map/MacroMap.gd
-#
-# Main controller for the MacroMap scene.
-# Connects UI to the DynastyManager and handles region selection.
 extends Node2D
 
-# Scene paths for navigation
+# --- Scene Configuration ---
 @export var raid_mission_scene_path: String = "res://scenes/missions/RaidMission.tscn"
 @export var settlement_bridge_scene_path: String = "res://scenes/levels/SettlementBridge.tscn"
 @export var end_year_popup_scene: PackedScene
+@export var enemy_raid_chance: float = 0.25
 
-# Raid Chance
-@export var enemy_raid_chance: float = 0.25 # 25% chance
+# --- Phase 5.1: Geography Anchor ---
+@export var player_home_marker_path: NodePath = "PlayerHomeMarker"
+@onready var player_home_marker: Marker2D = get_node_or_null(player_home_marker_path)
+@onready var macro_camera: MacroCamera = $MacroCamera
 
-# UI Node References
+# --- UI References ---
 @onready var authority_label: Label = $UI/JarlInfo/VBoxContainer/AuthorityLabel
 @onready var renown_label: Label = $UI/JarlInfo/VBoxContainer/RenownLabel
 @onready var end_year_button: Button = $UI/Actions/VBoxContainer/EndYearButton
 @onready var region_info_panel: PanelContainer = $UI/RegionInfo
 @onready var region_name_label: Label = $UI/RegionInfo/VBoxContainer/RegionNameLabel
-@onready var launch_raid_button: Button = $UI/RegionInfo/VBoxContainer/LaunchRaidButton
+# Old button is deprecated/hidden, we use the container now:
+@onready var launch_raid_button: Button = $UI/RegionInfo/VBoxContainer/LaunchRaidButton 
+@onready var target_list_container: VBoxContainer = $UI/RegionInfo/VBoxContainer/TargetList
+
 @onready var settlement_button: Button = $UI/Actions/VBoxContainer/SettlementButton
-@onready var tooltip: PanelContainer = $UI/Tooltip
-@onready var tooltip_label: Label = $UI/Tooltip/Label
-
-# --- Phase 2 UI ---
 @onready var subjugate_button: Button = $UI/RegionInfo/VBoxContainer/SubjugateButton
-
-# --- Phase 3a UI ---
 @onready var dynasty_button: Button = $UI/Actions/VBoxContainer/DynastyButton
 @onready var dynasty_ui: DynastyUI = $UI/Dynasty_UI
 @onready var marry_button: Button = $UI/RegionInfo/VBoxContainer/MarryButton
-# --- END ---
-
+@onready var tooltip: PanelContainer = $UI/Tooltip
+@onready var tooltip_label: Label = $UI/Tooltip/Label
 @onready var regions_container: Node2D = $Regions
 
+# --- Systems & State ---
+const WORK_ASSIGNMENT_SCENE_PATH = "res://ui/WorkAssignment_UI.tscn"
+var work_assignment_ui: CanvasLayer
+var idle_warning_dialog: ConfirmationDialog
 var end_year_popup: PanelContainer
+
+# Persistence
+const SAVE_PATH = "user://campaign_map.tres"
+var map_state: MapState
+
+# Selection State
 var selected_region_data: WorldRegionData
 var selected_region_node: Region = null
+var calculated_subjugate_cost: int = 5 
+var current_attrition_risk: float = 0.0
 
-# Stores the calculated cost after applying Jarl stats
-var calculated_raid_cost: int = 1
-var calculated_subjugate_cost: int = 5 # Base cost from proposal
+# Visual Constants
+const SAFE_COLOR := Color(0.2, 0.8, 0.2, 0.1)   # Green
+const RISK_COLOR := Color(1.0, 0.6, 0.0, 0.1)   # Orange
+const HIGH_RISK_COLOR := Color(1.0, 0.0, 0.0, 0.1) # Red
 
 func _ready() -> void:
-	# Connect to the DynastyManager
-	DynastyManager.jarl_stats_updated.connect(_update_jarl_ui)
+	# 1. Anchor & Camera Setup
+	if not player_home_marker:
+		push_error("MacroMap: 'PlayerHomeMarker' missing! Distance calculations will fail.")
+	else:
+		print("MacroMap: Geography Anchor set at %s" % player_home_marker.global_position)
+		if macro_camera:
+			print("MacroMap: Snapping camera to home.")
+			macro_camera.snap_to_target(player_home_marker.global_position)
+
+	# 2. Data Initialization
+	_initialize_world_data()
 	
-	# Connect to all child regions
+	# 3. UI & Signal Connections
+	if launch_raid_button: launch_raid_button.hide() # Hide old button
+	
+	DynastyManager.jarl_stats_updated.connect(_update_jarl_ui)
+	# Redraw map circles when stats (range) change
+	DynastyManager.jarl_stats_updated.connect(func(_j): queue_redraw())
+	
 	for region in regions_container.get_children():
 		if region is Region:
 			region.region_hovered.connect(_on_region_hovered)
 			region.region_exited.connect(_on_region_exited)
 			region.region_selected.connect(_on_region_selected)
 			
-	# Connect local UI buttons
-	launch_raid_button.pressed.connect(_on_launch_raid_pressed)
 	settlement_button.pressed.connect(_on_settlement_pressed)
 	subjugate_button.pressed.connect(_on_subjugate_pressed)
 	end_year_button.pressed.connect(_on_end_year_pressed)
-	
-	# --- Phase 3a Connection ---
 	dynasty_button.pressed.connect(_on_dynasty_pressed)
 	marry_button.pressed.connect(_on_marry_pressed)
-	# --- END ---
 	
-	# --- Setup Payout Popup ---
+	# 4. Popups Setup
 	if end_year_popup_scene:
 		end_year_popup = end_year_popup_scene.instantiate()
 		add_child(end_year_popup) 
 		if end_year_popup.has_signal("collect_button_pressed"):
 			end_year_popup.collect_button_pressed.connect(_on_end_year_payout_collected)
-		else:
-			push_error("EndOfYear_Popup scene is missing 'collect_button_pressed' signal.")
 		end_year_popup.hide()
-	else:
-		push_warning("MacroMap: 'end_year_popup_scene' is not set in the Inspector!")
 	
-	# Connect to the EventManager's "all-clear" signal
+	if ResourceLoader.exists(WORK_ASSIGNMENT_SCENE_PATH):
+		var scene = load(WORK_ASSIGNMENT_SCENE_PATH)
+		if scene:
+			work_assignment_ui = scene.instantiate()
+			add_child(work_assignment_ui)
+			if work_assignment_ui.has_signal("assignments_confirmed"):
+				work_assignment_ui.assignments_confirmed.connect(_on_worker_assignments_confirmed)
+	
+	idle_warning_dialog = ConfirmationDialog.new()
+	idle_warning_dialog.title = "Idle Villagers"
+	idle_warning_dialog.ok_button_text = "End Year Anyway"
+	idle_warning_dialog.cancel_button_text = "Manage Workers"
+	idle_warning_dialog.confirmed.connect(_start_end_year_sequence)
+	idle_warning_dialog.canceled.connect(_on_open_worker_ui) 
+	add_child(idle_warning_dialog)
+	
 	EventBus.event_system_finished.connect(_on_event_system_finished)
 	
-	# Initialize UI
+	# 5. Final Cleanup
 	_update_jarl_ui(DynastyManager.get_current_jarl())
 	region_info_panel.hide()
 	tooltip.hide()
+	queue_redraw()
 
-func _update_jarl_ui(jarl: JarlData) -> void:
-	if not jarl:
-		return
-		
-	authority_label.text = "Authority: %d / %d" % [jarl.current_authority, jarl.max_authority]
-	renown_label.text = "Renown: %d" % jarl.renown
+# --- Phase 5.3: Visualizing Range ---
+func _draw() -> void:
+	if not player_home_marker: return
+	var jarl = DynastyManager.get_current_jarl()
+	if not jarl: return
 	
-	if selected_region_data:
-		_on_region_selected(selected_region_data)
+	var safe_r = jarl.get_safe_range()
+	
+	# Draw Safe Zone
+	draw_circle(player_home_marker.position, safe_r, SAFE_COLOR)
+	draw_arc(player_home_marker.position, safe_r, 0, TAU, 64, Color.GREEN, 2.0)
+	
+	# Draw Visual "Risk" Gradient
+	draw_arc(player_home_marker.position, safe_r + 500, 0, TAU, 64, Color.RED, 1.0)
 
-# --- Region Signal Handlers ---
+# --- Phase 5.2: Data Generation & Persistence ---
+func _initialize_world_data() -> void:
+	if ResourceLoader.exists(SAVE_PATH):
+		print("MacroMap: Loading existing campaign state...")
+		map_state = load(SAVE_PATH)
+		_apply_state_to_regions()
+	else:
+		print("MacroMap: New Campaign detected. Generating world...")
+		map_state = MapState.new()
+		_generate_new_world()
+		_save_map_state()
 
-func _on_region_hovered(data: WorldRegionData, _screen_position: Vector2) -> void:
-	tooltip_label.text = data.display_name
-	var mouse_pos = get_viewport().get_mouse_position()
-	tooltip.position = mouse_pos + Vector2(15, 15)
-	tooltip.show()
+func _generate_new_world() -> void:
+	if not player_home_marker: return
+	var jarl = DynastyManager.get_current_jarl()
+	if not jarl: return
+	
+	var safe_range = jarl.get_safe_range()
+	
+	for region in regions_container.get_children():
+		if not region is Region: continue
+		
+		# FIX: Use polygon center for accurate distance
+		var dist = player_home_marker.global_position.distance_to(region.get_global_center())
+		var tier = 1
+		
+		if dist <= safe_range:
+			tier = 1
+		elif dist <= safe_range * 1.5:
+			tier = 2
+		else:
+			tier = 3
+			
+		var data = MapDataGenerator.generate_region_data(tier)
+		region.data = data
+		map_state.region_data_map[region.name] = data
+		
+		print("Generated %s (Tier %d) at dist %.0f" % [data.display_name, tier, dist])
 
-func _on_region_exited() -> void:
-	tooltip.hide()
+func _apply_state_to_regions() -> void:
+	for region in regions_container.get_children():
+		if not region is Region: continue
+		if map_state.region_data_map.has(region.name):
+			region.data = map_state.region_data_map[region.name]
 
+func _save_map_state() -> void:
+	var error = ResourceSaver.save(map_state, SAVE_PATH)
+	if error != OK:
+		push_error("MacroMap: Failed to save map state!")
+
+# --- Phase 5.4: Selection & UI Logic ---
 func _on_region_selected(data: WorldRegionData) -> void:
-	# De-select the previously selected region, if any
+	# --- REFACTOR: Use the helper to clear previous selection first ---
+	# But we must NOT clear the data yet, or we lose the reference we just clicked.
+	# So we only clear the visual node state here.
 	if is_instance_valid(selected_region_node):
 		selected_region_node.is_selected = false
 		selected_region_node.set_visual_state(false)
-		
-	# Find the new region node
+	# ------------------------------------------------------------------
+	
+	# Find new node
 	for region in regions_container.get_children():
 		if region is Region and region.data == data:
 			selected_region_node = region
@@ -5912,144 +6333,183 @@ func _on_region_selected(data: WorldRegionData) -> void:
 			break
 			
 	selected_region_data = data
-	region_name_label.text = data.display_name
-	
-	var jarl = DynastyManager.get_current_jarl()
-	if not jarl:
-		push_error("MacroMap: Cannot get Jarl from DynastyManager!")
+
+func _populate_raid_targets(data: WorldRegionData, is_conquered: bool, is_allied: bool) -> void:
+	# Clear list
+	for child in target_list_container.get_children():
+		child.queue_free()
+		
+	if is_conquered:
+		var label = Label.new()
+		label.text = "Region Conquered"
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		target_list_container.add_child(label)
 		return
 
-	# --- CHECK IF CONQUERED OR ALLIED ---
-	var is_conquered = DynastyManager.has_conquered_region(data.resource_path)
-	var is_allied = DynastyManager.is_allied_region(data.resource_path)
+	if data.raid_targets.is_empty():
+		var label = Label.new()
+		label.text = "No Valid Targets"
+		target_list_container.add_child(label)
+		return
+
+	# Generate Buttons
+	for target in data.raid_targets:
+		var btn = Button.new()
+		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		
+		var risk_text = ""
+		var btn_color = Color.WHITE
+		
+		if current_attrition_risk > 0.0:
+			risk_text = " (%d%% Risk)" % int(current_attrition_risk * 100)
+			if current_attrition_risk > 0.3:
+				btn_color = Color(1.0, 0.4, 0.4) # Reddish
+			else:
+				btn_color = Color(1.0, 0.9, 0.4) # Yellowish
+		
+		if is_allied:
+			btn.text = "%s (Allied)" % target.display_name
+			btn.disabled = true
+		else:
+			btn.text = "%s - Cost: %d Auth%s" % [target.display_name, target.raid_cost_authority, risk_text]
+			btn.modulate = btn_color
+			
+			var can_afford = DynastyManager.can_spend_authority(target.raid_cost_authority)
+			if not can_afford:
+				btn.disabled = true
+				btn.text += " (Low Auth)"
+			else:
+				btn.pressed.connect(_initiate_raid.bind(target))
+		
+		target_list_container.add_child(btn)
+
+func _initiate_raid(target: RaidTargetData) -> void:
+	# 1. Apply Attrition Gamble
+	if current_attrition_risk > 0.0:
+		_apply_attrition(current_attrition_risk)
 	
+	# 2. Set Data
+	DynastyManager.set_current_raid_target(target.settlement_data)
+	
+	# 3. Set Difficulty Context (Phase 5.5)
+	DynastyManager.current_raid_difficulty = target.difficulty_rating
+	
+	# 4. Spend Cost & Launch
+	DynastyManager.spend_authority(target.raid_cost_authority)
+	print("Launching raid on: %s (Diff: %d)" % [target.display_name, target.difficulty_rating])
+	EventBus.scene_change_requested.emit("raid_mission")
+
+func _apply_attrition(risk_chance: float) -> void:
+	if not SettlementManager.has_current_settlement(): return
+	
+	var garrison = SettlementManager.current_settlement.garrisoned_units
+	var units_lost = 0
+	var units_to_remove: Array[String] = []
+	
+	print("Applying Attrition Risk: %.2f" % risk_chance)
+	
+	for unit_path in garrison.keys():
+		var count = garrison[unit_path]
+		var surviving_count = 0
+		for i in range(count):
+			if randf() > risk_chance:
+				surviving_count += 1
+			else:
+				units_lost += 1
+		
+		if surviving_count > 0:
+			garrison[unit_path] = surviving_count
+		else:
+			units_to_remove.append(unit_path)
+			
+	for path in units_to_remove:
+		garrison.erase(path)
+		
+	SettlementManager.save_settlement()
+	if units_lost > 0:
+		print("ATTRITION: Lost %d units to the sea!" % units_lost)
+
+func _update_diplomacy_buttons(data: WorldRegionData, is_conquered: bool, is_allied: bool) -> void:
 	if is_conquered:
-		launch_raid_button.disabled = true
-		launch_raid_button.text = "Raid (Conquered)"
 		subjugate_button.disabled = true
 		subjugate_button.text = "Subjugate (Conquered)"
 		marry_button.disabled = true
 		marry_button.text = "Marry (Conquered)"
-		region_info_panel.show()
 		return
-	
-	# --- 1. CALCULATE RAID COST ---
-	calculated_raid_cost = max(1, data.base_authority_cost) # Placeholder for now
-	launch_raid_button.text = "Launch Raid (Cost: %d Auth)" % calculated_raid_cost
-	var can_afford_raid = DynastyManager.can_spend_authority(calculated_raid_cost)
-	launch_raid_button.disabled = (not can_afford_raid) or is_allied
-	if is_allied:
-		launch_raid_button.text = "Raid (Allied)"
-	elif not can_afford_raid:
-		launch_raid_button.text += "\nNot Enough Authority"
-		
-	# --- 2. CALCULATE SUBJUGATE COST ---
-	var base_subjugate_cost = 5
-	var trait_penalty = 0
-	var alliance_discount = 0
-	var penalty_text = ""
-	var discount_text = ""
-	
-	# "Soft-Guide" Trait Penalty
-	if jarl.has_trait("Pious") and data.region_type_tag == "Monastery":
-		trait_penalty = 3
-		penalty_text = " (+3 Pious)"
-	
-	# "Marry for Alliance" Bonus
-	if is_allied:
-		alliance_discount = 2 # Example discount
-		discount_text = " (-2 Alliance)"
-	
-	calculated_subjugate_cost = max(1, base_subjugate_cost + trait_penalty - alliance_discount)
-	
-	subjugate_button.text = "Subjugate (Cost: %d Auth%s%s)" % [calculated_subjugate_cost, penalty_text, discount_text]
-	var can_afford_subjugate = DynastyManager.can_spend_authority(calculated_subjugate_cost)
-	subjugate_button.disabled = not can_afford_subjugate
-	if not can_afford_subjugate:
-		subjugate_button.text += "\nNot Enough Authority"
 
-	# --- 3. CALCULATE MARRIAGE COST ---
-	marry_button.text = "Marry for Alliance (Cost: 1 Heir)"
+	# Subjugate
+	var base_cost = 5
+	var ally_mod = 0
+	if is_allied: ally_mod = 2
+	calculated_subjugate_cost = max(1, base_cost - ally_mod)
+	
+	subjugate_button.text = "Subjugate (Cost: %d)" % calculated_subjugate_cost
+	subjugate_button.disabled = not DynastyManager.can_spend_authority(calculated_subjugate_cost)
+	
+	# Marry
+	marry_button.text = "Marry (Cost: 1 Heir)"
 	var has_heir = DynastyManager.get_available_heir_count() > 0
-	marry_button.disabled = is_allied or (not has_heir)
-	
-	if is_allied:
-		marry_button.text = "Marry (Allied)"
-	elif not has_heir:
-		marry_button.text += "\n(No Available Heir)"
-		
-	region_info_panel.show()
+	marry_button.disabled = is_allied or not has_heir
+	if is_allied: marry_button.text = "Marry (Allied)"
 
-# --- UI Button Handlers ---
-
-func _on_launch_raid_pressed() -> void:
-	if not selected_region_data:
-		return
-		
-	DynastyManager.set_current_raid_target(selected_region_data.target_settlement_data)
-	var success = DynastyManager.spend_authority(calculated_raid_cost)
-	
-	if success:
-		EventBus.scene_change_requested.emit("raid_mission")
-	else:
-		push_error("MacroMap: LaunchRaid button was pressed but authority check failed.")
-		DynastyManager.set_current_raid_target(null)
-
+# --- Standard Action Handlers ---
 func _on_subjugate_pressed() -> void:
-	if not selected_region_data:
-		return
-		
+	if not selected_region_data: return
 	var success = DynastyManager.spend_authority(calculated_subjugate_cost)
-	
 	if success:
 		DynastyManager.add_conquered_region(selected_region_data.resource_path)
-		
-		# --- NEW: Add Legitimacy Boost ---
 		var jarl = DynastyManager.get_current_jarl()
-		jarl.legitimacy = min(100, jarl.legitimacy + 5) # +5 Legitimacy
-		DynastyManager.jarl_stats_updated.emit(jarl) # Force UI/data refresh
-		# --- END NEW ---
-		
+		jarl.legitimacy = min(100, jarl.legitimacy + 5) 
+		DynastyManager.jarl_stats_updated.emit(jarl) 
 		print("Region %s successfully subjugated." % selected_region_data.display_name)
-	else:
-		push_error("MacroMap: Subjugate button was pressed but authority check failed.")
+		_on_region_selected(selected_region_data)
 
 func _on_marry_pressed() -> void:
-	"""Handles the 'Marry for Alliance' button press."""
-	if not selected_region_data:
-		return
-		
+	if not selected_region_data: return
 	var success = DynastyManager.marry_heir_for_alliance(selected_region_data.resource_path)
-	
-	if success:
-		print("MacroMap: Alliance with %s successful." % selected_region_data.display_name)
-		# The UI will refresh automatically via the jarl_stats_updated signal.
-	else:
-		print("MacroMap: Alliance failed (no available heir).")
+	if success: 
+		print("Alliance with %s successful." % selected_region_data.display_name)
+		_on_region_selected(selected_region_data)
 
-func _on_dynasty_pressed() -> void:
-	"""Shows the Dynasty UI panel."""
-	if is_instance_valid(dynasty_ui):
-		dynasty_ui.show()
+func _on_settlement_pressed() -> void: EventBus.scene_change_requested.emit("settlement")
+func _on_dynasty_pressed() -> void: if dynasty_ui: dynasty_ui.show()
 
-# --- End Year Payout Logic ---
+# --- End Year Logic ---
 func _on_end_year_pressed() -> void:
+	if not SettlementManager.has_current_settlement(): return
+	var settlement = SettlementManager.current_settlement
+	var total_pop = settlement.population_total
+	var assigned_pop = 0
+	for key in settlement.worker_assignments:
+		assigned_pop += settlement.worker_assignments[key]
+	
+	if (total_pop - assigned_pop) > 0:
+		idle_warning_dialog.dialog_text = "You have %d idle villagers.\nEnd year anyway?" % (total_pop - assigned_pop)
+		idle_warning_dialog.popup_centered()
+	else:
+		_start_end_year_sequence()
+
+func _start_end_year_sequence() -> void:
 	if not is_instance_valid(end_year_popup):
-		push_error("MacroMap: End year popup not instanced. Ending year without payout.")
 		_process_end_year_logic({})
 		return
-	
 	var payout = SettlementManager.calculate_payout()
-	end_year_popup.display_payout(payout, "End of Year Payout")
+	end_year_popup.display_payout(payout, "End of Year Report")
 
 func _on_end_year_payout_collected(payout: Dictionary) -> void:
-	# This function's ONLY job is to process the end of year logic.
-	# The scene change is now handled by _on_event_system_finished.
 	_process_end_year_logic(payout)
 
+func _process_end_year_logic(payout: Dictionary) -> void:
+	if not payout.is_empty(): SettlementManager.deposit_resources(payout)
+	DynastyManager.end_year()
+	if is_instance_valid(selected_region_node):
+		selected_region_node.is_selected = false
+		selected_region_node.set_visual_state(false)
+	selected_region_data = null
+	selected_region_node = null
+	region_info_panel.hide()
+
 func _on_event_system_finished() -> void:
-	# This is the "all-clear" signal.
-	# NOW we check for raids and change the scene.
 	if randf() < enemy_raid_chance:
 		print("--- ENEMY RAID TRIGGERED ---")
 		DynastyManager.is_defensive_raid = true
@@ -6058,105 +6518,170 @@ func _on_event_system_finished() -> void:
 		print("No enemy raid this year.")
 		EventBus.scene_change_requested.emit("settlement")
 
-func _process_end_year_logic(payout: Dictionary) -> void:
-	if not payout.is_empty():
-		SettlementManager.deposit_resources(payout)
-	
-	# This call is what triggers the EventManager's logic
-	DynastyManager.end_year()
-	
+func _update_jarl_ui(jarl: JarlData) -> void:
+	if not jarl: return
+	authority_label.text = "Authority: %d / %d" % [jarl.current_authority, jarl.max_authority]
+	renown_label.text = "Renown: %d" % jarl.renown
+	if selected_region_data: _on_region_selected(selected_region_data)
+
+func _on_region_hovered(data: WorldRegionData, _screen_position: Vector2) -> void:
+	tooltip_label.text = data.display_name
+	var mouse_pos = get_viewport().get_mouse_position()
+	tooltip.position = mouse_pos + Vector2(15, 15)
+	tooltip.show()
+
+func _on_region_exited() -> void: tooltip.hide()
+func _on_open_worker_ui() -> void:
+	if work_assignment_ui and SettlementManager.current_settlement:
+		work_assignment_ui.setup(SettlementManager.current_settlement)
+func _on_worker_assignments_confirmed(assignments: Dictionary) -> void:
+	if SettlementManager.current_settlement:
+		SettlementManager.current_settlement.worker_assignments = assignments
+		SettlementManager.save_settlement()
+func _unhandled_input(event: InputEvent) -> void:
+	# Detect clicks on the "Ocean" (Background)
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			_deselect_current_region()
+
+func _deselect_current_region() -> void:
+	# 1. Reset Visuals on the old node
 	if is_instance_valid(selected_region_node):
 		selected_region_node.is_selected = false
 		selected_region_node.set_visual_state(false)
 	
-	selected_region_data = null
+	# 2. Clear Selection Data
 	selected_region_node = null
-	region_info_panel.hide()
-
-func _on_settlement_pressed() -> void:
-	EventBus.scene_change_requested.emit("settlement")
-
-func _unhandled_input(event: InputEvent) -> void:
-	pass
+	selected_region_data = null
+	
+	# 3. Hide the Side Panel
+	if region_info_panel:
+		region_info_panel.hide()
 
 --- SCRIPT: res://scenes/world_map/Region.gd ---
 # res://scenes/world_map/Region.gd
-#
-# Attached to an Area2D node to make a map province
-# clickable and interactive.
 class_name Region
 extends Area2D
 
+# Signals to notify the MacroMap controller
 signal region_hovered(data: WorldRegionData, screen_position: Vector2)
 signal region_exited()
 signal region_selected(data: WorldRegionData)
 
+# The data resource representing this province
 @export var data: WorldRegionData
 
-# Normally, we'd use a Sprite2d, but for now we'll just use a colorrect
-@onready var sprite = $Sprite2D
+# Reference to the visual polygon (Source of Truth)
+@onready var highlight_poly: Polygon2D = get_node_or_null("HighlightPoly")
+# Reference to the collision polygon (Target)
+@onready var collision_poly: CollisionPolygon2D = get_node_or_null("CollisionPolygon2D")
 
-var default_color: Color = Color(1.0, 1.0, 1.0, 0.2)
-var hover_color: Color = Color(1.0, 1.0, 1.0, 0.6)
-var selected_color: Color = Color(1.0, 0.9, 0.2, 0.8) # Yellow
+# Visual Settings
+var default_color: Color = Color(0, 0, 0, 0)       # Invisible
+var hover_color: Color = Color(1.0, 1.0, 1.0, 0.2) # Faint White
+var selected_color: Color = Color(1.0, 0.9, 0.2, 0.4) # Yellowish
 
 var is_selected: bool = false
 
 func _ready() -> void:
+	# 1. Data Validation
 	if not data:
 		push_error("Region node '%s' has no WorldRegionData assigned!" % name)
-		queue_free()
 		return
 	
-	# Essential error checking for collision shapes
-	var collision_shape = get_node_or_null("CollisionShape2D")
-	if not collision_shape:
-		push_error("Region '%s' - CollisionShape2D NOT FOUND!" % name)
-	elif not collision_shape.shape:
-		push_error("Region '%s' - CollisionShape2D shape is NULL!" % name)
+	# 2. Node Validation & Sync
+	if not highlight_poly:
+		push_error("Region '%s' is missing 'HighlightPoly' (Polygon2D)." % name)
+		return
+		
+	if not collision_poly:
+		# Optional: Create it if it doesn't exist
+		collision_poly = CollisionPolygon2D.new()
+		collision_poly.name = "CollisionPolygon2D"
+		add_child(collision_poly)
+		print("Region '%s': Created missing CollisionPolygon2D." % name)
 	
-	# Connect to our own signals
+	# --- THE MAGIC FIX ---
+	_sync_collision_shape()
+	# ---------------------
+	
+	# 3. Input Connection
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
 	input_event.connect(_on_input_event)
 	
-	if sprite:
-		sprite.material = CanvasItemMaterial.new()
-		sprite.material.blend_mode = CanvasItemMaterial.BLEND_MODE_MIX
-		set_visual_state(false)
-	else:
-		push_warning("Region node '%s' is missing its $Sprite2D child." % name)
+	# 4. Initial State
+	set_visual_state(false)
+
+func _sync_collision_shape() -> void:
+	"""Copies points from the Visual Polygon to the Collision Polygon."""
+	if not highlight_poly: return
+	
+	if highlight_poly.polygon.is_empty():
+		push_warning("Region '%s': HighlightPoly has no points!" % name)
+		return
+	
+	# --- DEBUG PRINT ---
+	print("Region: Syncing shape for '%s' (%d points)..." % [name, highlight_poly.polygon.size()])
+	# -------------------
+
+	# Copy the points over
+	collision_poly.polygon = highlight_poly.polygon
+	
+	# Ensure positions match
+	collision_poly.position = highlight_poly.position
+	collision_poly.scale = highlight_poly.scale
 
 func set_visual_state(is_hovered: bool) -> void:
-	if not sprite:
-		return
+	if not highlight_poly: return
 		
 	var target_color: Color
+	
 	if is_selected:
 		target_color = selected_color
+		highlight_poly.visible = true
 	elif is_hovered:
 		target_color = hover_color
+		highlight_poly.visible = true
 	else:
 		target_color = default_color
+		highlight_poly.visible = false 
 		
 	var tween = create_tween()
-	tween.tween_property(sprite, "modulate", target_color, 0.1).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(highlight_poly, "color", target_color, 0.1)
+
+# --- Signal Handlers ---
 
 func _on_mouse_entered() -> void:
-	set_visual_state(true)
+	if not is_selected:
+		set_visual_state(true)
 	emit_signal("region_hovered", data, get_global_mouse_position())
 
 func _on_mouse_exited() -> void:
-	set_visual_state(false)
+	if not is_selected:
+		set_visual_state(false)
 	emit_signal("region_exited")
 
 func _on_input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
-	# Check for left mouse button click
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		is_selected = true
 		set_visual_state(true)
 		emit_signal("region_selected", data)
 		get_viewport().set_input_as_handled()
+func get_global_center() -> Vector2:
+	# If no poly, fallback to node position
+	if not collision_poly or collision_poly.polygon.is_empty():
+		return global_position
+		
+	var sum_points = Vector2.ZERO
+	for point in collision_poly.polygon:
+		sum_points += point
+		
+	var local_center = sum_points / collision_poly.polygon.size()
+	
+	# Apply the node's transform (position/scale/rotation) to get world coords
+	return to_global(local_center)
+	
 
 --- SCRIPT: res://scenes/world_map/WorldMap_Stub.gd ---
 # res://scenes/world_map/WorldMap_Stub.gd
@@ -6734,9 +7259,7 @@ func _on_ai_attack_stopped() -> void:
 
 --- SCRIPT: res://scripts/buildings/SettlementBridge.gd ---
 # res://scripts/buildings/SettlementBridge.gd
-#
-# --- MODIFIED: Phase 1.3 Integration ---
-# Now delegates save logic to SettlementManager.place_building
+# --- MODIFIED: Added Work Assignment UI & Button ---
 
 extends Node
 
@@ -6768,6 +7291,12 @@ var end_of_year_popup: PanelContainer
 @onready var building_container: Node2D = $BuildingContainer
 @onready var grid_manager: Node = $GridManager
 
+# --- NEW: Worker Management UI ---
+const WORK_ASSIGNMENT_SCENE_PATH = "res://ui/WorkAssignment_UI.tscn"
+var work_assignment_ui: CanvasLayer
+var manage_workers_button: Button
+# -------------------------------
+
 # --- State Variables ---
 var great_hall_instance: BaseBuilding = null
 var game_is_over: bool = false
@@ -6780,12 +7309,56 @@ func _ready() -> void:
 	_setup_ui()
 	_connect_signals()
 	
+	# --- NEW: Setup Worker UI ---
+	_setup_worker_ui()
+	# ----------------------------
+	if not DynastyManager.pending_raid_result.is_empty():
+		_process_raid_return()
+		
 	storefront_ui.show()
 	if end_of_year_popup:
 		end_of_year_popup.hide()
 
 func _exit_tree() -> void:
 	SettlementManager.unregister_active_scene_nodes()
+
+# --- NEW: Worker UI Setup Function ---
+func _setup_worker_ui() -> void:
+	# 1. Load the UI Scene
+	if ResourceLoader.exists(WORK_ASSIGNMENT_SCENE_PATH):
+		var scene = load(WORK_ASSIGNMENT_SCENE_PATH)
+		if scene:
+			work_assignment_ui = scene.instantiate()
+			add_child(work_assignment_ui)
+			if work_assignment_ui.has_signal("assignments_confirmed"):
+				work_assignment_ui.assignments_confirmed.connect(_on_worker_assignments_confirmed)
+	else:
+		push_error("SettlementBridge: WorkAssignment_UI scene missing.")
+
+	# 2. Create the Button
+	manage_workers_button = Button.new()
+	manage_workers_button.text = "Manage Workers"
+	manage_workers_button.pressed.connect(_on_manage_workers_pressed)
+	
+	# Position it Top-Right (below the Start Raid button logic usually, or Top-Left)
+	# Let's put it Top-Left for visibility in the settlement view
+	ui_layer.add_child(manage_workers_button)
+	manage_workers_button.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT, Control.PRESET_MODE_MINSIZE, 20)
+	manage_workers_button.position.y += 60 # Offset down a bit if needed
+
+func _on_manage_workers_pressed() -> void:
+	if not SettlementManager.has_current_settlement():
+		return
+	
+	if work_assignment_ui:
+		work_assignment_ui.setup(SettlementManager.current_settlement)
+
+func _on_worker_assignments_confirmed(assignments: Dictionary) -> void:
+	print("SettlementBridge: Work assignments saved.")
+	if SettlementManager.current_settlement:
+		SettlementManager.current_settlement.worker_assignments = assignments
+		SettlementManager.save_settlement()
+# ----------------------------------------
 
 func _setup_default_resources() -> void:
 	if not test_building_data:
@@ -6815,7 +7388,8 @@ func _initialize_settlement() -> void:
 		return
 	var local_astar_grid = grid_manager.astar_grid
 	
-	SettlementManager.register_active_scene_nodes(local_astar_grid, building_container)
+	# Pass GridManager for Phase 3
+	SettlementManager.register_active_scene_nodes(local_astar_grid, building_container, grid_manager)
 	
 	_spawn_placed_buildings()
 	
@@ -6823,10 +7397,6 @@ func _initialize_settlement() -> void:
 
 
 func _spawn_placed_buildings() -> void:
-	"""
-	Instantiates ACTIVE buildings from the loaded settlement data.
-	Also instantiates PENDING buildings (Blueprints).
-	"""
 	if not SettlementManager.current_settlement:
 		return
 	
@@ -6835,18 +7405,22 @@ func _spawn_placed_buildings() -> void:
 
 	# 1. Spawn Active Buildings
 	for building_entry in SettlementManager.current_settlement.placed_buildings:
-		_spawn_single_building(building_entry, false) # False = Not new, Active
+		_spawn_single_building(building_entry, false) 
 
-	# 2. Spawn Pending Blueprints (New for Phase 1.3)
+	# 2. Spawn Pending Blueprints (Phase 4 Update)
 	for building_entry in SettlementManager.current_settlement.pending_construction_buildings:
 		var b = _spawn_single_building(building_entry, false)
 		if b:
-			b.set_state(BaseBuilding.BuildingState.BLUEPRINT)
-			# Restore progress if we tracked it
-			if "progress" in building_entry:
-				b.construction_progress = building_entry["progress"]
+			var progress = building_entry.get("progress", 0)
+			if progress > 0:
+				b.construction_progress = progress
+				b.set_state(BaseBuilding.BuildingState.UNDER_CONSTRUCTION)
+				# Force visual update for health bar
+				if b.has_method("add_construction_progress"):
+					b.add_construction_progress(0) 
+			else:
+				b.set_state(BaseBuilding.BuildingState.BLUEPRINT)
 	
-	# Update grid
 	if is_instance_valid(SettlementManager.active_astar_grid):
 		SettlementManager.active_astar_grid.update()
 	
@@ -6858,13 +7432,9 @@ func _spawn_single_building(entry: Dictionary, is_new: bool) -> BaseBuilding:
 	
 	var building_data: BuildingData = load(building_res_path)
 	if building_data:
-		# We use is_new_construction = false here because we are loading data,
-		# not creating *new* data entries.
 		var new_building = SettlementManager.place_building(building_data, grid_pos, is_new)
-		
 		if new_building and new_building.data.display_name == "Great Hall":
 			_setup_great_hall(new_building)
-		
 		return new_building
 	else:
 		push_error("Failed to load building resource from path: %s" % building_res_path)
@@ -6875,7 +7445,7 @@ func _create_default_settlement() -> SettlementData:
 	var settlement = SettlementData.new()
 	settlement.treasury = {"gold": 1000, "wood": 500, "food": 100, "stone": 200}
 	settlement.placed_buildings = []
-	settlement.pending_construction_buildings = [] # Initialize new list
+	settlement.pending_construction_buildings = [] 
 	settlement.garrisoned_units = {}
 	settlement.resource_path = "res://data/settlements/home_base_fixed.tres"
 	return settlement
@@ -6958,20 +7528,11 @@ func _on_building_placement_cancelled(building_data: BuildingData) -> void:
 	print("Building placement cancelled: %s" % building_data.display_name)
 
 func _on_building_placement_completed() -> void:
-	"""
-	Updated for Phase 1.3: Calls place_building with is_new_construction=true.
-	"""
 	if awaiting_placement and SettlementManager.current_settlement:
 		var snapped_grid_pos = Vector2i(building_cursor.global_position / grid_manager.cell_size)
 		
 		print("SettlementBridge: Placing NEW blueprint for %s at %s" % [awaiting_placement.display_name, snapped_grid_pos])
-		
-		# --- CRITICAL FIX IS HERE ---
-		# We MUST pass 'true' as the 3rd argument. 
-		# true = New Construction (Blueprint)
-		# false (default) = Existing Building (Active)
 		SettlementManager.place_building(awaiting_placement, snapped_grid_pos, true)
-		# ----------------------------
 	
 	awaiting_placement = null
 
@@ -6984,6 +7545,11 @@ func _on_building_right_clicked(building: BaseBuilding) -> void:
 	# Move/Sell logic
 	if building_cursor.is_active:
 		return
+	
+	# --- REVERTED: Lock Removed ---
+	# We now allow deleting the Hub because the Cursor logic 
+	# permits placing it back down on empty land.
+	# ------------------------------
 		
 	print("SettlementBridge: Move requested for %s" % building.data.display_name)
 	
@@ -6999,6 +7565,41 @@ func _on_building_right_clicked(building: BaseBuilding) -> void:
 	# Re-buy
 	if SettlementManager.attempt_purchase(cost):
 		EventBus.building_ready_for_placement.emit(data)
+
+func _process_raid_return() -> void:
+	print("SettlementBridge: Processing return from raid...")
+	var result = DynastyManager.pending_raid_result
+	var difficulty = DynastyManager.current_raid_difficulty
+	var loot_summary = {}
+	
+	if result.get("outcome") == "victory":
+		# 1. Retrieve Looted Gold
+		var gold = result.get("gold_looted", 0)
+		
+		# 2. Calculate Bonus Gold (Victory Bonus)
+		# Base 200 + (50 per difficulty star)
+		var bonus_gold = 200 + (difficulty * 50)
+		var total_gold = gold + bonus_gold
+		
+		loot_summary["gold"] = total_gold
+		
+		# 3. Calculate Thralls (The Scarcity Engine)
+		# Formula: Random(2 to 4) * Difficulty
+		var base_thralls = randi_range(2, 4)
+		var total_thralls = base_thralls * difficulty
+		
+		loot_summary["population"] = total_thralls
+		
+		# 4. Deposit
+		SettlementManager.deposit_resources(loot_summary)
+		
+		# 5. Show the Report
+		if is_instance_valid(end_of_year_popup):
+			# We reuse the EndOfYear popup but with a custom title
+			end_of_year_popup.display_payout(loot_summary, "Raid Successful!")
+			
+	# Clear the result so it doesn't trigger again on reload
+	DynastyManager.pending_raid_result.clear()
 
 --- SCRIPT: res://scripts/formations/SquadFormation.gd ---
 # res://scripts/formations/SquadFormation.gd
@@ -7292,6 +7893,120 @@ func get_formation_info() -> Dictionary:
 		"is_moving": is_moving
 	}
 
+--- SCRIPT: res://scripts/generators/MapDataGenerator.gd ---
+# res://scripts/generators/MapDataGenerator.gd
+class_name MapDataGenerator
+extends RefCounted
+
+# --- Name Generation ---
+const REGION_PREFIXES = ["North", "South", "West", "East", "High", "Low", "Old", "New", "Great", "Little"]
+const REGION_NAMES = ["Vinland", "Frankia", "Saxony", "Wessex", "Mercia", "Northumbria", "Alba", "Ireland", "Rus", "Novgorod", "Agdir", "Rogaland"]
+const REGION_SUFFIXES = ["Hold", "Reach", "Lands", "Coast", "Valley", "Fjord", "Isle", "Haven", "March"]
+
+# --- Templates ---
+const LAYOUT_MONASTERY = "res://data/settlements/monastery_base.tres"
+const LAYOUT_VILLAGE = "res://data/settlements/economic_base.tres" # Placeholder
+const LAYOUT_FORTRESS = "res://data/settlements/fortress_layout.tres"
+
+# --- Generation Logic ---
+
+static func generate_region_data(tier: int) -> WorldRegionData:
+	var data = WorldRegionData.new()
+	
+	# 1. Identity
+	data.display_name = _generate_name()
+	data.region_type_tag = "Province"
+	
+	# 2. Difficulty Scaling
+	var base_diff = 1.0 + (float(tier - 1) * 0.8)
+	var variance = randf_range(0.0, 0.5)
+	var final_difficulty = base_diff + variance
+	
+	# 3. Generate Targets
+	var target_count = randi_range(1, 3)
+	
+	# --- FIX: Declare this BEFORE the loop ---
+	var min_cost = 999 
+	# ---------------------------------------
+	
+	for i in range(target_count):
+		var target = _generate_target_for_tier(data.display_name, tier, final_difficulty)
+		if target:
+			data.raid_targets.append(target)
+			# Check if this target is cheaper than the current minimum
+			if target.raid_cost_authority < min_cost:
+				min_cost = target.raid_cost_authority
+	
+	# 4. Set the region base cost (Safe check if loop failed)
+	data.base_authority_cost = min_cost if min_cost != 999 else 1
+	
+	# 5. Income & Description
+	data.yearly_income = {"gold": int(10 * final_difficulty), "food": int(20 * final_difficulty)}
+	data.description = "A Tier %d region. Difficulty Rating: %.1f" % [tier, final_difficulty]
+	
+	return data
+
+static func _generate_target_for_tier(region_name: String, tier: int, difficulty: float) -> RaidTargetData:
+	var target = RaidTargetData.new()
+	var layout_path = ""
+	var type_name = ""
+	
+	# Biased RNG based on Tier
+	var roll = randf()
+	
+	if tier == 1:
+		# Mostly Monasteries/Villages
+		if roll < 0.4: 
+			type_name = "Monastery"
+			layout_path = LAYOUT_MONASTERY
+		else:
+			type_name = "Village"
+			layout_path = LAYOUT_VILLAGE
+			
+	elif tier == 2:
+		# Mix
+		if roll < 0.3:
+			type_name = "Monastery"
+			layout_path = LAYOUT_MONASTERY
+		elif roll < 0.7:
+			type_name = "Trading Post"
+			layout_path = LAYOUT_VILLAGE
+		else:
+			type_name = "Fortress"
+			layout_path = LAYOUT_FORTRESS
+			
+	elif tier == 3:
+		# Mostly Hard Targets
+		if roll < 0.2:
+			type_name = "Rich Monastery"
+			layout_path = LAYOUT_MONASTERY
+		else:
+			type_name = "Fortress"
+			layout_path = LAYOUT_FORTRESS
+	
+	target.display_name = "%s %s" % [region_name, type_name]
+	target.difficulty_rating = int(round(difficulty))
+	target.raid_cost_authority = max(1, int(round(difficulty * 0.5)))
+	
+	# Load Layout Template
+	if ResourceLoader.exists(layout_path):
+		target.settlement_data = load(layout_path).duplicate(true)
+		
+		# Scale Garrison Size by Difficulty
+		_scale_garrison(target.settlement_data, difficulty)
+	
+	return target
+
+static func _scale_garrison(settlement: SettlementData, multiplier: float) -> void:
+	if not settlement or not settlement.garrisoned_units: return
+	
+	for unit_path in settlement.garrisoned_units:
+		var count = settlement.garrisoned_units[unit_path]
+		settlement.garrisoned_units[unit_path] = int(count * multiplier)
+
+static func _generate_name() -> String:
+	return "%s %s" % [REGION_PREFIXES.pick_random(), REGION_NAMES.pick_random()]
+
 --- SCRIPT: res://scripts/ui/BuildingPreviewCursor.gd ---
 # BuildingPreviewCursor.gd - RTS-style building placement system
 extends Node2D
@@ -7303,223 +8018,143 @@ var preview_sprite: Sprite2D
 var is_active: bool = false
 
 # Grid and placement
-var cell_size: int = 32 # This is now SET by the scene (e.g., SettlementBridge)
+var cell_size: int = 32 
 var grid_overlay: Node2D
 var can_place: bool = false
 
 # Visual feedback
-var valid_color: Color = Color(0.0, 1.0, 0.0, 0.7)    # Green for valid placement
-var invalid_color: Color = Color(1.0, 0.0, 0.0, 0.7)  # Red for invalid placement
+var valid_color: Color = Color(0.0, 1.0, 0.0, 0.7)    # Green
+var invalid_color: Color = Color(1.0, 0.0, 0.0, 0.7)  # Red
 
 signal placement_completed
 signal placement_cancelled
 
+# --- NEW: Reference to GridManager for Phase 3 checks ---
+var grid_manager: Node = null
+
 func _ready() -> void:
-	# Ensure we're always on top for visibility
 	z_index = 100
 	
-	# Create grid overlay for visual feedback
 	grid_overlay = Node2D.new()
 	grid_overlay.name = "GridOverlay"
 	add_child(grid_overlay)
 	
-	# --- THIS IS THE FIX ---
-	# Removed dependency on SettlementManager.tile_size
-	# The 'cell_size' var will be set externally by SettlementBridge.gd
-	# -----------------------
-	print("BuildingPreviewCursor ready. Waiting for cell_size to be set.")
+	# Find GridManager sibling
+	grid_manager = get_parent().get_node_or_null("GridManager")
+	
+	print("BuildingPreviewCursor ready.")
 
 func set_building_preview(building_data: BuildingData) -> void:
-	"""Start building placement mode with the specified building"""
-	if not building_data:
-		print("ERROR: No building data provided to set_building_preview")
-		return
-	
-	if cell_size <= 0:
-		push_error("BuildingPreviewCursor: cell_size is not set! Cannot create preview.")
-		return
+	if not building_data: return
+	if cell_size <= 0: return
 	
 	print("Setting building preview for: %s" % building_data.display_name)
 	current_building_data = building_data
 	
-	# Clean up any existing preview
 	_cleanup_preview()
 	
-	# Create new preview sprite
 	preview_sprite = Sprite2D.new()
 	preview_sprite.name = "PreviewSprite"
 	
-	# Set up the building texture
 	if building_data.building_texture:
 		preview_sprite.texture = building_data.building_texture
 	else:
-		# Create a simple colored rectangle if no texture
 		var texture = _create_building_texture(building_data)
 		preview_sprite.texture = texture
-		print("Created fallback texture for preview")
 	
-	
-	# --- Automatic Scaling Logic ---
-	
-	# 1. Get the target size based on grid
+	# Scale
 	var target_size: Vector2 = Vector2(building_data.grid_size) * cell_size
-	
-	# 2. Scale the Sprite (if texture exists)
 	if preview_sprite.texture:
 		var texture_size: Vector2 = preview_sprite.texture.get_size()
-		
 		if texture_size.x > 0 and texture_size.y > 0:
-			var new_scale: Vector2 = target_size / texture_size
-			preview_sprite.scale = new_scale
-		else:
-			push_warning("BuildingPreviewCursor: Texture for '%s' has invalid size %s. Cannot scale preview." % [building_data.display_name, texture_size])
-	else:
-		push_warning("BuildingPreviewCursor: No texture for '%s' preview." % building_data.display_name)
-			
-	# --- END SCALING LOGIC ---
-
+			preview_sprite.scale = target_size / texture_size
 	
-	# Set semi-transparent
 	preview_sprite.modulate = valid_color
 	add_child(preview_sprite)
 	
-	# Create grid outline to show building footprint
 	_create_grid_outline(building_data.grid_size)
 	
-	# Activate placement mode
 	is_active = true
 	visible = true
 
 func _create_building_texture(building_data: BuildingData) -> ImageTexture:
-	"""Create a simple colored texture for buildings without textures"""
-	var size = Vector2i(
-		building_data.grid_size.x * cell_size,
-		building_data.grid_size.y * cell_size
-	)
-	
+	var size = Vector2i(building_data.grid_size.x * cell_size, building_data.grid_size.y * cell_size)
 	var image = Image.create(size.x, size.y, false, Image.FORMAT_RGBA8)
-	var color = _get_building_color(building_data)
-	image.fill(color)
-	
+	image.fill(Color(0.6, 0.6, 0.6, 1.0))
 	var texture = ImageTexture.new()
 	texture.set_image(image)
 	return texture
 
 func _create_grid_outline(grid_size: Vector2i) -> void:
-	"""Create a visual outline showing the building's grid footprint"""
 	_clear_grid_overlay()
-	
 	var outline_color = Color.WHITE
 	var line_width = 2.0
-	
-	# This var 'rect_size' now correctly uses the synced 'cell_size'
 	var rect_size = Vector2(grid_size.x * cell_size, grid_size.y * cell_size)
 	
-	# Create outline using Line2D nodes for each edge
-	var lines = []
+	var points = [
+		Vector2(0, 0), Vector2(rect_size.x, 0), 
+		Vector2(rect_size.x, rect_size.y), Vector2(0, rect_size.y), 
+		Vector2(0, 0)
+	]
 	
-	# Top line
-	var top_line = Line2D.new()
-	top_line.add_point(Vector2(0, 0))
-	top_line.add_point(Vector2(rect_size.x, 0))
-	top_line.width = line_width
-	top_line.default_color = outline_color
-	lines.append(top_line)
-	
-	# Right line
-	var right_line = Line2D.new()
-	right_line.add_point(Vector2(rect_size.x, 0))
-	right_line.add_point(Vector2(rect_size.x, rect_size.y))
-	right_line.width = line_width
-	right_line.default_color = outline_color
-	lines.append(right_line)
-	
-	# Bottom line
-	var bottom_line = Line2D.new()
-	bottom_line.add_point(Vector2(rect_size.x, rect_size.y))
-	bottom_line.add_point(Vector2(0, rect_size.y))
-	bottom_line.width = line_width
-	bottom_line.default_color = outline_color
-	lines.append(bottom_line)
-	
-	# Left line
-	var left_line = Line2D.new()
-	left_line.add_point(Vector2(0, rect_size.y))
-	left_line.add_point(Vector2(0, 0))
-	left_line.width = line_width
-	left_line.default_color = outline_color
-	lines.append(left_line)
-	
-	# Add lines to grid overlay
-	for line in lines:
-		grid_overlay.add_child(line)
+	var line = Line2D.new()
+	line.points = points
+	line.width = line_width
+	line.default_color = outline_color
+	grid_overlay.add_child(line)
 
 func _clear_grid_overlay() -> void:
-	"""Clear the grid overlay visual elements"""
 	for child in grid_overlay.get_children():
 		child.queue_free()
 
-func _get_building_color(building_data: BuildingData) -> Color:
-	"""Get a representative color for the building type"""
-	var name = building_data.display_name.to_lower()
-	if "wall" in name:
-		return Color(0.7, 0.5, 0.3, 1.0) # Brown
-	elif "hall" in name:
-		return Color(0.8, 0.8, 0.2, 1.0) # Yellow
-	elif "tower" in name or "watchtower" in name:
-		return Color(0.5, 0.5, 0.8, 1.0) # Blue
-	elif "lumber" in name:
-		return Color(0.3, 0.8, 0.3, 1.0) # Green
-	elif "granary" in name:
-		return Color(0.9, 0.6, 0.2, 1.0) # Orange
-	elif "chapel" in name or "library" in name or "scriptorium" in name:
-		return Color(0.8, 0.4, 0.8, 1.0) # Purple
-	else:
-		return Color(0.6, 0.6, 0.6, 1.0) # Gray
-
 func _process(_delta: float) -> void:
-	"""Update cursor position and placement validity"""
-	if not is_active or not current_building_data:
-		return
+	if not is_active or not current_building_data: return
 	
-	# Get mouse position and snap to grid
 	var mouse_pos = get_global_mouse_position()
 	var grid_pos = _world_to_grid(mouse_pos)
-	var snapped_world_pos = _grid_to_world(grid_pos)
+	global_position = _grid_to_world(grid_pos)
 	
-	# Update cursor position
-	global_position = snapped_world_pos
-	
-	# Check placement validity
 	can_place = _can_place_at_position(grid_pos)
-	
-	# Update visual feedback
 	_update_visual_feedback()
 
 func _world_to_grid(world_pos: Vector2) -> Vector2i:
-	"""Convert world position to grid coordinates"""
-	if cell_size <= 0: return Vector2i.ZERO # Safety check
+	if cell_size <= 0: return Vector2i.ZERO
 	return Vector2i(int(world_pos.x / cell_size), int(world_pos.y / cell_size))
 
 func _grid_to_world(grid_pos: Vector2i) -> Vector2:
-	"""Convert grid coordinates to world position (centered on cell)"""
 	return Vector2(grid_pos.x * cell_size, grid_pos.y * cell_size)
 
+# --- MODIFIED: Enforce Phase 3 Territory Constraints ---
 func _can_place_at_position(grid_pos: Vector2i) -> bool:
-	"""Check if building can be placed by asking the SettlementManager."""
 	if not SettlementManager or not current_building_data:
 		return false
 	
-	# This call still works because SettlementManager delegates
-	# to the registered AStarGrid object.
-	return SettlementManager.is_placement_valid(grid_pos, current_building_data.grid_size)
+	# 1. Check Collision (Is the ground solid/occupied?)
+	# This applies to EVERYTHING. You can't build inside a rock.
+	if not SettlementManager.is_placement_valid(grid_pos, current_building_data.grid_size):
+		return false
+		
+	# 2. Check Territory (Is it in the Green Zone?)
+	# EXCEPTION: If this building IS a Hub (Great Hall), it generates the zone.
+	# Therefore, it does not need to be *inside* an existing zone.
+	if current_building_data.is_territory_hub:
+		return true
+	
+	# Standard check for non-hubs (Walls, Farms, etc.)
+	if grid_manager and grid_manager.has_method("is_cell_buildable"):
+		# We check every tile in the building's footprint
+		for x in range(current_building_data.grid_size.x):
+			for y in range(current_building_data.grid_size.y):
+				var check_pos = grid_pos + Vector2i(x, y)
+				
+				# If ANY part of the building is outside territory, deny placement
+				if not grid_manager.is_cell_buildable(check_pos):
+					return false
+	
+	return true
 
 func _update_visual_feedback() -> void:
-	"""Update the visual appearance based on placement validity"""
-	if not preview_sprite:
-		return
-	
-	# Change color based on placement validity
+	if not preview_sprite: return
 	if can_place:
 		preview_sprite.modulate = valid_color
 		_set_grid_overlay_color(Color.GREEN)
@@ -7528,70 +8163,45 @@ func _update_visual_feedback() -> void:
 		_set_grid_overlay_color(Color.RED)
 
 func _set_grid_overlay_color(color: Color) -> void:
-	"""Set the color of the grid overlay lines"""
 	for child in grid_overlay.get_children():
 		if child is Line2D:
 			child.default_color = color
 
 func place_building() -> bool:
-	"""Attempt to place the building at current position"""
 	if not is_active or not current_building_data or not can_place:
-		print("Cannot place building: not active (%s), no data (%s), or invalid position (%s)" % [is_active, current_building_data != null, can_place])
 		return false
 	
 	var grid_pos = _world_to_grid(global_position)
-	
-	print("Attempting to place %s at grid position %s" % [current_building_data.display_name, grid_pos])
-	
-	# This call still works! - FIXED: Now passes is_new_construction=true
 	var new_building = SettlementManager.place_building(current_building_data, grid_pos, true)
 	
 	if new_building:
-		print("Successfully placed building: %s" % current_building_data.display_name)
 		placement_completed.emit()
 		cancel_preview()
 		return true
-	else:
-		print("Failed to place building through SettlementManager")
-		return false
+	return false
 
 func cancel_preview() -> void:
-	"""Cancel building placement and clean up"""
-	print("Cancelling building preview")
-	
 	is_active = false
 	visible = false
 	current_building_data = null
 	can_place = false
-	
 	_cleanup_preview()
 	placement_cancelled.emit()
 
 func _cleanup_preview() -> void:
-	"""Clean up preview visual elements"""
 	if preview_sprite:
 		preview_sprite.queue_free()
 		preview_sprite = null
-	
 	_clear_grid_overlay()
 
 func _input(event: InputEvent) -> void:
-	"""Handle input for building placement"""
-	if not is_active:
-		return
+	if not is_active: return
 	
 	if event is InputEventMouseButton and event.is_pressed():
 		if event.button_index == MOUSE_BUTTON_LEFT:
-			# Attempt to place building
-			if place_building():
-				print("Building placed successfully")
-			else:
-				print("Failed to place building")
+			place_building()
 			get_viewport().set_input_as_handled()
-		
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
-			# Cancel placement
-			print("Building placement cancelled by right click")
 			cancel_preview()
 			get_viewport().set_input_as_handled()
 
@@ -7965,9 +8575,8 @@ func die() -> void:
 --- SCRIPT: res://scripts/utility/GridManager.gd ---
 # res://scripts/utility/GridManager.gd
 #
-# A reusable scene that creates and manages an AStarGrid2D object.
-# This encapsulates grid logic so scenes like SettlementBridge
-# and RaidMission don't have to duplicate code.
+# Manages the AStarGrid2D and the Territory System (Flood Fill).
+# --- MODIFIED: Phase 3.1 Territory Logic ---
 
 extends Node
 
@@ -7976,13 +8585,14 @@ extends Node
 @export var grid_height: int = 40
 @export var cell_size: int = 32
 
-## The AStarGrid2D object this manager creates and configures.
 var astar_grid: AStarGrid2D
 
+# Phase 3: Territory Tracking
+# Dictionary { Vector2i: true } containing all cells where players can build.
+var buildable_cells: Dictionary = {}
+
 func _ready() -> void:
-	# Create and configure the grid object
 	astar_grid = AStarGrid2D.new()
-		
 	var playable_rect := Rect2i(0, 0, grid_width, grid_height)
 	astar_grid.region = playable_rect
 	astar_grid.cell_size = Vector2(cell_size, cell_size)
@@ -7991,54 +8601,139 @@ func _ready() -> void:
 	
 	print("GridManager: Local grid initialized: %dx%d cells" % [grid_width, grid_height])
 
+
+func recalculate_territory(placed_buildings: Array) -> void:
+	"""
+	Recalculates territory using a 'Wireless' propagation model.
+	1. Hubs generate territory naturally.
+	2. Connectors (Walls) extend territory if they are INSIDE an existing territory.
+	3. This allows daisy-chaining without physical contact.
+	"""
+	buildable_cells.clear()
+	
+	# 1. Sort buildings into Hubs (Sources) and Connectors (Extenders)
+	var active_sources: Array[Dictionary] = []
+	var candidate_connectors: Array[Dictionary] = []
+	
+	for entry in placed_buildings:
+		var pos = entry["grid_position"]
+		# Normalize to Vector2
+		var grid_pos = Vector2(pos.x, pos.y) if pos is Vector2i else pos
+		
+		var data = load(entry["resource_path"]) as BuildingData
+		if not data: continue
+		
+		# Calculate center point for distance checks
+		var center_pos = grid_pos + (Vector2(data.grid_size) / 2.0)
+		
+		var info = {
+			"grid_pos": Vector2i(grid_pos),
+			"center": center_pos,
+			"data": data,
+			"radius": data.territory_radius
+		}
+		
+		if data.is_territory_hub:
+			active_sources.append(info)
+		elif data.extends_territory:
+			candidate_connectors.append(info)
+
+	# 2. Iterative Propagation (Daisy-Chaining)
+	# We loop until we stop finding new powered connectors.
+	var new_connection_found = true
+	
+	while new_connection_found:
+		new_connection_found = false
+		var next_candidates: Array[Dictionary] = []
+		
+		for connector in candidate_connectors:
+			var is_powered = false
+			
+			# Check if this connector is inside the range of ANY active source
+			for source in active_sources:
+				var distance = source["center"].distance_to(connector["center"])
+				# Use a forgiving check: if distance <= source radius + small buffer
+				# We check if the connector is essentially "covered" by the source
+				if distance <= source["radius"]:
+					is_powered = true
+					break
+			
+			if is_powered:
+				active_sources.append(connector)
+				new_connection_found = true
+			else:
+				next_candidates.append(connector)
+		
+		# Shrink the list of candidates to only those who haven't powered on yet
+		candidate_connectors = next_candidates
+
+	# 3. Rasterize (Draw) the Territory
+	# Now that we know which buildings are active, apply their radius to the grid.
+	for source in active_sources:
+		_apply_territory_to_grid(source)
+
+	print("GridManager: Territory recalculated (Wireless). %d valid build tiles." % buildable_cells.size())
+	
+	# Force visualizer update
+	queue_redraw_visualizer()
+
+func _apply_territory_to_grid(source_info: Dictionary) -> void:
+	var center = Vector2i(source_info["grid_pos"]) + (source_info["data"].grid_size / 2)
+	var r = source_info["radius"]
+	
+	# Draw a square radius (matches standard RTS logic best)
+	for x in range(-r, r + 1):
+		for y in range(-r, r + 1):
+			var cell = center + Vector2i(x, y)
+			
+			# Check bounds
+			if cell.x >= 0 and cell.x < grid_width and \
+			   cell.y >= 0 and cell.y < grid_height:
+				buildable_cells[cell] = true
+
+
+func queue_redraw_visualizer() -> void:
+	var visualizer = get_parent().get_node_or_null("GridVisualizer")
+	if visualizer:
+		visualizer.queue_redraw()
+
+func is_cell_buildable(grid_pos: Vector2i) -> bool:
+	return buildable_cells.has(grid_pos)
+
 --- SCRIPT: res://scripts/utility/GridVisualizer.gd ---
 # res://scripts/utility/GridVisualizer.gd
-#
-# A simple visualizer that draws the AStarGrid lines and solid points
-# for debugging purposes in scenes that use the GridManager.
+# --- MODIFIED: Phase 3.2 Visualizing the Zone ---
 class_name GridVisualizer
 extends Node2D
 
-const GRID_LINE_COLOR := Color(1.0, 1.0, 1.0, 0.1) # White, 10% opacity
-const SOLID_CELL_COLOR := Color(1.0, 0.0, 0.0, 0.4) # Red, 40% opacity
-const LINE_WIDTH := 1.0
-const SOLID_CELL_SIZE := 0.6 # Percentage of cell size for the red square
+const GRID_LINE_COLOR := Color(1.0, 1.0, 1.0, 0.05)
+const SOLID_CELL_COLOR := Color(1.0, 0.0, 0.0, 0.3) # Red for blocked
+const TERRITORY_COLOR := Color(0.0, 1.0, 0.0, 0.1) # Light Green for territory
 
 # Configuration populated in _ready()
 var grid_width: int = 0
 var grid_height: int = 0
 var cell_size: int = 0
 var astar_grid: AStarGrid2D = null
-
+var grid_manager: Node = null
 
 func _ready() -> void:
-	# 1. Find the GridManager in the local scene tree
-	var grid_manager = get_parent().get_node_or_null("GridManager")
+	grid_manager = get_parent().get_node_or_null("GridManager")
 	if not grid_manager:
-		push_error("GridVisualizer: Could not find 'GridManager' child node.")
 		queue_free()
 		return
 
-	# 2. Get configuration from the GridManager
 	grid_width = grid_manager.grid_width
 	grid_height = grid_manager.grid_height
 	cell_size = grid_manager.cell_size
 	
-	# 3. Get the AStarGrid2D reference
 	if "astar_grid" in grid_manager:
 		astar_grid = grid_manager.astar_grid
-	else:
-		push_error("GridVisualizer: GridManager does not have 'astar_grid' property.")
 
-	# 4. Connect to the event bus to update when the grid pathing changes
 	EventBus.pathfinding_grid_updated.connect(_on_pathfinding_grid_updated)
 	
-	# Tell the engine we will be drawing every frame (only for debugging, turn off in production)
-	set_process_mode(Node.PROCESS_MODE_ALWAYS)
-	set_process(true)
-	
-	print("GridVisualizer initialized for %dx%d grid with %d cell size." % [grid_width, grid_height, cell_size])
-
+	set_process_mode(Node.PROCESS_MODE_ALWAYS) # Draw even when paused
+	queue_redraw()
 
 func _exit_tree() -> void:
 	if EventBus.is_connected("pathfinding_grid_updated", _on_pathfinding_grid_updated):
@@ -8047,41 +8742,37 @@ func _exit_tree() -> void:
 func _draw() -> void:
 	if cell_size <= 0: return
 
+	# --- 1. Draw Territory (Green) ---
+	if grid_manager and "buildable_cells" in grid_manager:
+		var buildable = grid_manager.buildable_cells
+		for cell in buildable:
+			var rect = Rect2(cell.x * cell_size, cell.y * cell_size, cell_size, cell_size)
+			draw_rect(rect, TERRITORY_COLOR)
+
+	# --- 2. Draw Grid Lines ---
 	var map_width = grid_width * cell_size
 	var map_height = grid_height * cell_size
 
-	# Draw horizontal lines
 	for i in range(grid_height + 1):
 		var y = float(i) * cell_size
-		draw_line(Vector2(0, y), Vector2(map_width, y), GRID_LINE_COLOR, LINE_WIDTH)
+		draw_line(Vector2(0, y), Vector2(map_width, y), GRID_LINE_COLOR, 1.0)
 
-	# Draw vertical lines
 	for j in range(grid_width + 1):
 		var x = float(j) * cell_size
-		draw_line(Vector2(x, 0), Vector2(x, map_height), GRID_LINE_COLOR, LINE_WIDTH)
+		draw_line(Vector2(x, 0), Vector2(x, map_height), GRID_LINE_COLOR, 1.0)
 
-	# Draw solid cells if AStarGrid is available
-	if is_instance_valid(astar_grid) and astar_grid.is_connected:
-		_draw_solid_cells()
-
-func _draw_solid_cells() -> void:
-	if not is_instance_valid(astar_grid): return
-
-	var cell_draw_size = cell_size * SOLID_CELL_SIZE
-	var cell_offset = cell_size * (1.0 - SOLID_CELL_SIZE) * 0.5
-	
-	for i in range(grid_width):
-		for j in range(grid_height):
-			var cell_pos = Vector2i(i, j)
-			
-			if astar_grid.is_point_solid(cell_pos):
-				var rect_top_left = Vector2(float(i * cell_size) + cell_offset, float(j * cell_size) + cell_offset)
-				var rect_size = Vector2(cell_draw_size, cell_draw_size)
-				
-				draw_rect(Rect2(rect_top_left, rect_size), SOLID_CELL_COLOR)
+	# --- 3. Draw Blocked Cells (Red) ---
+	if is_instance_valid(astar_grid):
+		var cell_draw_size = cell_size * 0.6
+		var cell_offset = cell_size * 0.2
+		
+		for i in range(grid_width):
+			for j in range(grid_height):
+				if astar_grid.is_point_solid(Vector2i(i, j)):
+					var rect_top_left = Vector2(float(i * cell_size) + cell_offset, float(j * cell_size) + cell_offset)
+					draw_rect(Rect2(rect_top_left, Vector2(cell_draw_size, cell_draw_size)), SOLID_CELL_COLOR)
 
 func _on_pathfinding_grid_updated(_grid_position: Vector2i) -> void:
-	# A building was placed or destroyed, so redraw the grid to show the change.
 	queue_redraw()
 
 --- SCRIPT: res://test/test_blueprint_saving.gd ---
@@ -8695,7 +9386,7 @@ func _gui_input(event: InputEvent) -> void:
 			queue_redraw()
 			accept_event()
 
-func _handle_smart_command(screen_pos: Vector2) -> void:
+func _handle_smart_command(_screen_pos: Vector2) -> void:
 	# This function determines if a right-click
 	# is a "move" or "attack" command.
 	var world_space: PhysicsDirectSpaceState2D = get_world_2d().direct_space_state
@@ -9154,6 +9845,195 @@ func _on_confirm() -> void:
 	
 	# 3. Close the window
 	queue_free()
+
+--- SCRIPT: res://ui/WorkAssignment_UI.gd ---
+# res://ui/WorkAssignment_UI.gd
+extends CanvasLayer
+
+signal assignments_confirmed(assignments: Dictionary)
+
+@onready var total_pop_label: Label = $PanelContainer/MarginContainer/VBoxContainer/Header/TotalPopLabel
+@onready var available_pop_label: Label = $PanelContainer/MarginContainer/VBoxContainer/Header/AvailablePopLabel
+@onready var sliders_container: VBoxContainer = $PanelContainer/MarginContainer/VBoxContainer/SlidersContainer
+@onready var confirm_button: Button = $PanelContainer/MarginContainer/VBoxContainer/ConfirmButton
+
+var prediction_label: RichTextLabel
+
+var current_settlement: SettlementData
+var temp_assignments: Dictionary = {}
+var total_population: int = 0
+var available_population: int = 0
+
+# --- NEW: Capacity Tracking ---
+var labor_capacities: Dictionary = {} 
+# ------------------------------
+
+var sliders: Dictionary = {} 
+var labels: Dictionary = {}  
+
+func _ready() -> void:
+	confirm_button.pressed.connect(_on_confirm_pressed)
+	confirm_button.text = "Confirm Assignments"
+	
+	prediction_label = RichTextLabel.new()
+	prediction_label.name = "PredictionLabel"
+	prediction_label.fit_content = true
+	prediction_label.bbcode_enabled = true
+	prediction_label.custom_minimum_size = Vector2(0, 60)
+	
+	var container = $PanelContainer/MarginContainer/VBoxContainer
+	container.add_child(prediction_label)
+	container.move_child(prediction_label, container.get_child_count() - 2)
+	
+	hide()
+
+func setup(settlement: SettlementData) -> void:
+	current_settlement = settlement
+	total_population = settlement.population_total
+	
+	# --- NEW: Fetch Capacities ---
+	if SettlementManager.has_method("get_labor_capacities"):
+		labor_capacities = SettlementManager.get_labor_capacities()
+	else:
+		labor_capacities = {"construction": 100, "food": 100, "wood": 100, "stone": 100}
+	# -----------------------------
+	
+	# Initialize temp assignments (Gold Removed)
+	temp_assignments = {
+		"construction": 0,
+		"food": 0,
+		"wood": 0,
+		"stone": 0
+	}
+	
+	# Restore saved values if valid
+	for key in temp_assignments:
+		if current_settlement.worker_assignments.has(key):
+			# Clamp to current capacity in case buildings were lost
+			temp_assignments[key] = min(current_settlement.worker_assignments[key], labor_capacities.get(key, 0))
+	
+	_rebuild_ui()
+	_update_calculations()
+	show()
+
+func _rebuild_ui() -> void:
+	for child in sliders_container.get_children():
+		child.queue_free()
+	sliders.clear()
+	labels.clear()
+	
+	# --- MODIFIED: Gold Removed ---
+	var categories = ["construction", "food", "wood", "stone"]
+	
+	for category in categories:
+		_create_slider_row(category)
+
+func _create_slider_row(category: String) -> void:
+	var row = HBoxContainer.new()
+	
+	var name_label = Label.new()
+	name_label.text = category.capitalize()
+	name_label.custom_minimum_size = Vector2(100, 0)
+	row.add_child(name_label)
+	
+	# --- NEW: Capacity Logic ---
+	var capacity = labor_capacities.get(category, 0)
+	# The absolute max is capped by BOTH total population AND building capacity
+	var max_assignable = min(total_population, capacity)
+	
+	var slider = HSlider.new()
+	slider.min_value = 0
+	slider.max_value = max_assignable
+	slider.value = temp_assignments.get(category, 0)
+	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	
+	# Disable slider if no capacity (e.g., no blueprints for construction)
+	if max_assignable == 0:
+		slider.editable = false
+		slider.modulate = Color(0.5, 0.5, 0.5)
+	
+	slider.value_changed.connect(_on_slider_changed.bind(category))
+	row.add_child(slider)
+	sliders[category] = slider
+	
+	var value_label = Label.new()
+	# Display as "Assigned / Capacity"
+	value_label.text = "%d / %d" % [slider.value, capacity]
+	value_label.custom_minimum_size = Vector2(60, 0)
+	value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	row.add_child(value_label)
+	labels[category] = value_label
+	
+	sliders_container.add_child(row)
+
+func _on_slider_changed(value: float, category: String) -> void:
+	var new_val = int(value)
+	var current_usage = 0
+	for key in temp_assignments:
+		if key != category:
+			current_usage += temp_assignments[key]
+	
+	# Check Global Pop Limit
+	if current_usage + new_val > total_population:
+		new_val = total_population - current_usage
+		sliders[category].set_value_no_signal(new_val)
+	
+	temp_assignments[category] = new_val
+	_update_calculations()
+
+func _update_calculations() -> void:
+	var assigned_count = 0
+	for key in temp_assignments:
+		assigned_count += temp_assignments[key]
+		if labels.has(key):
+			var capacity = labor_capacities.get(key, 0)
+			labels[key].text = "%d / %d" % [temp_assignments[key], capacity]
+	
+	available_population = total_population - assigned_count
+	
+	total_pop_label.text = "Total Population: %d" % total_population
+	available_pop_label.text = "Idle: %d" % available_population
+	
+	if available_population < 0:
+		available_pop_label.modulate = Color.RED
+		confirm_button.disabled = true
+	else:
+		available_pop_label.modulate = Color.GREEN
+		confirm_button.disabled = false
+
+	if SettlementManager.has_method("simulate_turn"):
+		var prediction = SettlementManager.simulate_turn(temp_assignments)
+		_update_prediction_display(prediction)
+
+func _update_prediction_display(data: Dictionary) -> void:
+	if not prediction_label: return
+	
+	var text = "[b]Estimated Outcome:[/b]\n"
+	var res = data.get("resources_gained", {})
+	var res_str = ""
+	
+	for r in res:
+		if res[r] > 0:
+			var color_tag = "[color=white]"
+			if r == "food": color_tag = "[color=salmon]"
+			elif r == "wood": color_tag = "[color=burlywood]"
+			
+			res_str += "%s+%d %s[/color]  " % [color_tag, res[r], r.capitalize()]
+	
+	if res_str != "":
+		text += res_str + "\n"
+	else:
+		text += "[color=gray]No resource gain[/color]\n"
+		
+	var completed = data.get("buildings_completing", [])
+	if not completed.is_empty():
+		text += "[color=green]Completing: " + ", ".join(completed) + "[/color]"
+	
+	prediction_label.text = text
+
+func _on_confirm_pressed() -> void:
+	hide()
+	assignments_confirmed.emit(temp_assignments)
 --- END OF CODEBASE ---
 
 ---

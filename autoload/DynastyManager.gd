@@ -15,11 +15,18 @@ var current_raid_target: SettlementData
 
 var is_defensive_raid: bool = false
 
-# --- NEW: Succession System ---
+#Succession System ---
 var minimum_inherited_legitimacy: int = 0
 var loaded_legacy_upgrades: Array[LegacyUpgradeData] = []
-# --- END NEW ---
 
+#Raid Context & Results ---
+# Stores the difficulty (Tier) of the active raid for reward calculation
+var current_raid_difficulty: int = 1 
+
+# Stores the raw outcome from the RTS layer before processing
+# Format: { "outcome": "win", "gold_looted": 0, "buildings_destroyed": 0 }
+var pending_raid_result: Dictionary = {} 
+# -----------------------------------
 # Path to the player's persistent Jarl data
 const PLAYER_JARL_PATH = "res://data/characters/PlayerJarl.tres"
 

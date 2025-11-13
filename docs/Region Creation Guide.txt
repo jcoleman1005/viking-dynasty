@@ -1,0 +1,47 @@
+Step 4: Drawing the Borders (The Fun Part)
+Now we trace your map image to define the territories.
+
+Go back to MacroMap.tscn.
+
+Instance a Region:
+
+Drag Region.tscn into the scene (under Regions node).
+
+Rename it (e.g., "Region_Norway_South").
+
+Assign Data:
+
+In the Inspector, assign a WorldRegionData resource (e.g., Region_Monastery.tres).
+
+Draw the Clickable Area:
+
+Select the CollisionPolygon2D child of that new region.
+
+In the Toolbar, click the "Create Points" tool (Pencil icon).
+
+Click around the border of that territory on your map image to trace it.
+
+Tip: You don't need pixel-perfect precision; just rough shapes work fine.
+
+Draw the Highlight:
+
+Select the HighlightPoly child.
+
+Crucial Trick: You don't want to draw it twice!
+
+Select your CollisionPolygon2D. In the Inspector, look for Polygon. Click it -> Copy.
+
+Select HighlightPoly. In the Inspector, look for Polygon. Click it -> Paste.
+
+Now your highlight perfectly matches your click area.
+
+Step 5: Repeat
+Repeat Step 4 for every territory on your map image.
+
+Duplicate the Region node.
+
+Move/Redraw the CollisionPolygon2D points.
+
+Copy points to HighlightPoly.
+
+Assign new WorldRegionData.
