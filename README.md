@@ -6,15 +6,20 @@ A strategic Viking settlement and raid management game built with Godot 4.5. Com
 
 Viking Dynasty combines real-time strategy elements with settlement building and resource management. Players control Viking raiders in tactical missions while developing their home settlement for long-term growth and expansion.
 
+**Version 2.1** introduces revolutionary blueprint construction, advanced AI systems, and comprehensive dynasty management with multi-generational character progression.
+
 ### Key Features
 
 - **Real-Time Strategy Combat**: Command Viking units in tactical raids and defensive battles with advanced AI systems
+- **Blueprint Construction System**: Revolutionary three-phase building workflow (Blueprint → Construction → Active) with visual feedback
 - **Settlement Building**: Construct and manage economic and defensive buildings with dynamic grid-based placement
 - **Resource Management**: Collect, trade, and invest resources from successful raids with persistent economy
 - **World Map Exploration**: Navigate regions and plan strategic campaigns across the Viking world
 - **Dynasty Progression**: Build your Viking legacy through multiple generations with character traits and inheritance
+- **Advanced AttackAI Component**: Modular, data-driven combat system for both units and defensive structures
 - **Dynamic Pathfinding**: AStarGrid2D-based unit navigation with intelligent obstacle avoidance
 - **Formation Combat**: Squad-based tactical formations with coordinated unit behaviors
+- **Projectile Pool Management**: Performance-optimized combat system with sophisticated collision detection
 
 ## Technical Architecture
 
@@ -55,13 +60,16 @@ Viking Dynasty combines real-time strategy elements with settlement building and
 - **World Map**: Strategic campaign layer with region exploration and macro-level planning
 - **Defensive Micro**: Base defense scenarios with tower defense elements
 
-### Recent Architecture Improvements
+### Recent Architecture Improvements (Version 2.1)
+- **Blueprint Construction System**: Revolutionary three-phase building workflow with state management and visual feedback
 - **Enhanced AI Systems**: Advanced UnitFSM with state-based behaviors and tactical decision making
-- **Modular Combat System**: AttackAI component-based architecture for reusable attack behaviors across units and buildings
-- **Improved Combat**: Projectile-based combat system with sophisticated damage calculation and ProjectilePoolManager optimization
+- **Modular AttackAI Component**: Data-driven combat system for both units and defensive structures (288 lines)
+- **Projectile Pool Manager**: Performance-optimized combat system with sophisticated collision detection
+- **Collision System Overhaul**: Fixed projectile-building interactions with proper layer architecture
 - **Squad Formations**: Coordinated unit movement with formation maintenance and tactical positioning
-- **Building Preview**: Real-time building placement with visual validation (301 lines)
-- **UI Systems**: Comprehensive StorefrontUI (410 lines) and DynastyUI for player interaction
+- **Building Preview Cursor**: Real-time placement validation with grid snapping and visual feedback (301 lines)
+- **Dynasty Management UI**: Comprehensive character progression interface with heir management
+- **Settlement Persistence**: Enhanced save/load system with blueprint state management
 
 ## Project Structure
 
@@ -145,11 +153,13 @@ The project includes comprehensive input mapping:
 ## Game Systems
 
 ### Settlement Management
+- **Blueprint Construction System**: Three-phase building workflow (Blueprint → Construction → Active) with visual state management
 - **Economic Buildings**: Resource generation with time-based payouts and upgrade paths
-- **Dynamic Placement**: Real-time validation with AStarGrid2D pathfinding integration
+- **Dynamic Placement**: Real-time validation with AStarGrid2D pathfinding integration and RTS-style building cursor
 - **Resource Treasury**: Multi-resource economy with purchase/sale validation and market dynamics
-- **Save/Load System**: Persistent settlement data with complete resource state management
-- **Building Preview**: Visual placement system with collision detection and grid snapping
+- **Construction Management**: Pending building tracking with progress systems and worker assignment capability
+- **Save/Load System**: Persistent settlement data with complete resource state and blueprint management
+- **Visual Feedback**: Color-coded building states with transparency and collision system integration
 
 ### Advanced RTS Combat
 - **Unit Selection**: Drag-select with formation support and multi-unit coordination
@@ -254,15 +264,19 @@ The project uses a comprehensive collision layer system:
 
 ## Current Development Status
 
-### Completed Systems ✅
-- **Core Settlement**: Complete building mechanics with grid-based placement and pathfinding
-- **Advanced RTS**: Unit selection, movement, formation combat with sophisticated AI
+### Completed Systems ✅ (Version 2.1)
+- **Blueprint Construction System**: Revolutionary three-phase building workflow with visual feedback and state management
+- **Core Settlement**: Complete building mechanics with grid-based placement and pathfinding integration
+- **Advanced RTS**: Unit selection, movement, formation combat with sophisticated AI systems
 - **Resource Economy**: Comprehensive management with persistent save/load functionality
-- **Combat Systems**: Projectile-based combat with AttackAI component and tactical depth (see `ATTACKAI_USAGE.md` for detailed guide)
+- **AttackAI Component System**: Modular, data-driven combat for units and defensive structures (see `docs/ATTACKAI_USAGE.md`)
+- **Projectile Pool Management**: Performance-optimized combat system with proper collision detection
 - **Event Architecture**: Complete signal-driven communication with EventBus coordination
-- **AI Systems**: Multi-state finite state machines with tactical decision making
+- **AI Systems**: Multi-state finite state machines with tactical decision making and formation support
 - **Dynasty Management**: Character progression with traits, heirs, and legacy systems
 - **World Map**: Strategic layer with region exploration and campaign management
+- **Building Placement Testing**: Comprehensive RTS-style building cursor with validation (see `docs/building_placement_test_guide.md`)
+- **Collision System**: Fixed projectile-building interactions with proper layer architecture
 
 ### Active Development 🚧
 - **UI/UX Enhancement**: Polishing StorefrontUI and DynastyUI for improved user experience

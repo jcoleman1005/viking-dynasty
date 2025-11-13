@@ -121,11 +121,27 @@ func get_labor_capacities() -> Dictionary:
 
 func deposit_resources(loot: Dictionary) -> void:
 	if not current_settlement: return
+	
 	for resource_type in loot:
-		if current_settlement.treasury.has(resource_type):
-			current_settlement.treasury[resource_type] += loot[resource_type]
+		var amount = loot[resource_type]
+		
+		# --- NEW: Handle Population (Thralls) ---
+		if resource_type == "population":
+			# Ensure the variable exists in data (it was added in Phase 2 but let's be safe)
+			if not "population_total" in current_settlement:
+				current_settlement.population_total = 10
+				
+			current_settlement.population_total += amount
+			print("SettlementManager: Acquired %d new thralls. Total Pop: %d" % [amount, current_settlement.population_total])
+		# ----------------------------------------
+		
+		# Handle Standard Resources
+		elif current_settlement.treasury.has(resource_type):
+			current_settlement.treasury[resource_type] += amount
 		else:
-			current_settlement.treasury[resource_type] = loot[resource_type]
+			# Create key if missing (e.g. specialized loot)
+			current_settlement.treasury[resource_type] = amount
+			
 	EventBus.treasury_updated.emit(current_settlement.treasury)
 	save_settlement()
 

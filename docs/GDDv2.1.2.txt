@@ -1,8 +1,18 @@
-Viking Dynasty GDD (v2.1.0)
+Viking Dynasty GDD (v2.1.2 - Updated)
+
+## Major Version 2.1.2 Updates
+
+**Revolutionary Blueprint Construction System**: Complete overhaul from instant-build to sophisticated three-phase construction workflow (Blueprint → Construction → Active) with full visual feedback and state management.
+
+**Advanced AttackAI Component System**: Modular, data-driven combat architecture supporting both units and defensive structures with comprehensive projectile management and collision detection.
+
+**Enhanced Building Placement & Testing**: Professional RTS-style building cursor with real-time validation, grid snapping, and comprehensive testing framework.
+
+**Collision System Overhaul**: Fixed all projectile-building interaction issues with proper layer architecture and performance optimization.
+
+**Settlement Persistence Enhancement**: Advanced save/load system supporting blueprint states and construction progress tracking.
 
 1. High-Level Concept & Vision
-
-Concept: A strategy hybrid blending the dynastic, grand strategy of Crusader Kings with the tactical, real-time battles of Age of Empires II, enhanced with sophisticated AI systems and formation-based combat.
 
 Layers: Players manage a dynasty on a strategic Macro layer, build a persistent, grid-based Bridge (Settlement), and fight in real-time Micro missions with advanced tactical formations.
 
@@ -87,12 +97,47 @@ Pillar 3: "Reinvestment" Payout System [Enhanced]
 - Sophisticated economic building system with Base_Building.gd (256 lines)
 - Dynamic resource generation based on building efficiency and upgrades
 - EndOfYear_Popup.gd integration for seasonal resource collection
-- Economic balancing through market dynamics and resource scarcity
+4.E. Revolutionary Blueprint Construction System (Version 2.1.2)
 
-3.C. Advanced "Offensive Raid" System (Micro Layer)
+Mechanic: Complete overhaul from instant-build to sophisticated three-phase construction workflow with comprehensive state management and visual feedback.
 
-Pillar 1: Enhanced Garrison & Unit Management [Fully Enhanced]
-- Advanced unit recruitment through StorefrontUI integration
+Implementation Status: Fully Functional
+
+**Phase Architecture**:
+- **Blueprint Phase**: Blue-tinted (0.4, 0.6, 1.0) with 50% transparency, collision disabled, no economic contribution
+- **Construction Phase**: Gray-tinted (0.8, 0.8, 0.8) with 80% transparency, collision disabled, progress tracking
+- **Active Phase**: Full opacity with normal colors, collision enabled, full functionality
+
+**Core Systems**:
+- BaseBuilding.gd (256 lines): Strict building state machine with enum BuildingState { BLUEPRINT, UNDER_CONSTRUCTION, ACTIVE }
+- SettlementManager.place_building(): Enhanced with is_new_construction parameter for blueprint creation
+- SettlementData.gd: Includes pending_construction_buildings array for persistent blueprint tracking
+- Construction progress system with add_construction_progress() method for work completion
+
+**Visual Feedback System**:
+- Color-coded building states with transparency levels for immediate visual recognition
+- Health bar visibility management (hidden during construction phases)
+- EventBus integration with building_state_changed signal for economic system communication
+
+**Economic Integration**:
+- Material costs deducted immediately upon blueprint placement
+- Only ACTIVE buildings contribute to resource generation via calculate_payout()
+- Blueprints and under-construction buildings excluded from economic calculations
+
+**Persistence & Save System**:
+- Enhanced save/load system supporting blueprint states and construction progress
+- Backward compatibility: existing saves load buildings as ACTIVE state
+- Vector2/Vector2i compatibility handling for reliable serialization
+
+**Testing Framework**:
+- Comprehensive test suite in building_placement_test_guide.md
+- RTS-style building cursor with real-time validation and grid snapping
+- Visual placement feedback with green/red validity indication
+
+This system transforms building placement from instant construction to strategic resource allocation and construction management, adding tactical depth to settlement planning.
+
+4.F. Advanced AttackAI Component System (Version 2.1.2)
+
 - Formation-based unit organization with SquadFormation.gd (290 lines)
 - Specialized unit types: PlayerVikingRaider.gd (46 lines), EnemyVikingRaider.gd (29 lines)
 - Base_Unit.gd (215 lines) system with comprehensive combat statistics

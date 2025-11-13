@@ -1,77 +1,123 @@
 # res://scenes/world_map/Region.gd
-#
-# Attached to an Area2D node to make a map province
-# clickable and interactive.
 class_name Region
 extends Area2D
 
+# Signals to notify the MacroMap controller
 signal region_hovered(data: WorldRegionData, screen_position: Vector2)
 signal region_exited()
 signal region_selected(data: WorldRegionData)
 
+# The data resource representing this province
 @export var data: WorldRegionData
 
-# Normally, we'd use a Sprite2d, but for now we'll just use a colorrect
-@onready var sprite = $Sprite2D
+# Reference to the visual polygon (Source of Truth)
+@onready var highlight_poly: Polygon2D = get_node_or_null("HighlightPoly")
+# Reference to the collision polygon (Target)
+@onready var collision_poly: CollisionPolygon2D = get_node_or_null("CollisionPolygon2D")
 
-var default_color: Color = Color(1.0, 1.0, 1.0, 0.2)
-var hover_color: Color = Color(1.0, 1.0, 1.0, 0.6)
-var selected_color: Color = Color(1.0, 0.9, 0.2, 0.8) # Yellow
+# Visual Settings
+var default_color: Color = Color(0, 0, 0, 0)       # Invisible
+var hover_color: Color = Color(1.0, 1.0, 1.0, 0.2) # Faint White
+var selected_color: Color = Color(1.0, 0.9, 0.2, 0.4) # Yellowish
 
 var is_selected: bool = false
 
 func _ready() -> void:
+	# 1. Data Validation
 	if not data:
 		push_error("Region node '%s' has no WorldRegionData assigned!" % name)
-		queue_free()
 		return
 	
-	# Essential error checking for collision shapes
-	var collision_shape = get_node_or_null("CollisionShape2D")
-	if not collision_shape:
-		push_error("Region '%s' - CollisionShape2D NOT FOUND!" % name)
-	elif not collision_shape.shape:
-		push_error("Region '%s' - CollisionShape2D shape is NULL!" % name)
+	# 2. Node Validation & Sync
+	if not highlight_poly:
+		push_error("Region '%s' is missing 'HighlightPoly' (Polygon2D)." % name)
+		return
+		
+	if not collision_poly:
+		# Optional: Create it if it doesn't exist
+		collision_poly = CollisionPolygon2D.new()
+		collision_poly.name = "CollisionPolygon2D"
+		add_child(collision_poly)
+		print("Region '%s': Created missing CollisionPolygon2D." % name)
 	
-	# Connect to our own signals
+	# --- THE MAGIC FIX ---
+	_sync_collision_shape()
+	# ---------------------
+	
+	# 3. Input Connection
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
 	input_event.connect(_on_input_event)
 	
-	if sprite:
-		sprite.material = CanvasItemMaterial.new()
-		sprite.material.blend_mode = CanvasItemMaterial.BLEND_MODE_MIX
-		set_visual_state(false)
-	else:
-		push_warning("Region node '%s' is missing its $Sprite2D child." % name)
+	# 4. Initial State
+	set_visual_state(false)
+
+func _sync_collision_shape() -> void:
+	"""Copies points from the Visual Polygon to the Collision Polygon."""
+	if not highlight_poly: return
+	
+	if highlight_poly.polygon.is_empty():
+		push_warning("Region '%s': HighlightPoly has no points!" % name)
+		return
+	
+	# --- DEBUG PRINT ---
+	print("Region: Syncing shape for '%s' (%d points)..." % [name, highlight_poly.polygon.size()])
+	# -------------------
+
+	# Copy the points over
+	collision_poly.polygon = highlight_poly.polygon
+	
+	# Ensure positions match
+	collision_poly.position = highlight_poly.position
+	collision_poly.scale = highlight_poly.scale
 
 func set_visual_state(is_hovered: bool) -> void:
-	if not sprite:
-		return
+	if not highlight_poly: return
 		
 	var target_color: Color
+	
 	if is_selected:
 		target_color = selected_color
+		highlight_poly.visible = true
 	elif is_hovered:
 		target_color = hover_color
+		highlight_poly.visible = true
 	else:
 		target_color = default_color
+		highlight_poly.visible = false 
 		
 	var tween = create_tween()
-	tween.tween_property(sprite, "modulate", target_color, 0.1).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(highlight_poly, "color", target_color, 0.1)
+
+# --- Signal Handlers ---
 
 func _on_mouse_entered() -> void:
-	set_visual_state(true)
+	if not is_selected:
+		set_visual_state(true)
 	emit_signal("region_hovered", data, get_global_mouse_position())
 
 func _on_mouse_exited() -> void:
-	set_visual_state(false)
+	if not is_selected:
+		set_visual_state(false)
 	emit_signal("region_exited")
 
 func _on_input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
-	# Check for left mouse button click
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		is_selected = true
 		set_visual_state(true)
 		emit_signal("region_selected", data)
 		get_viewport().set_input_as_handled()
+func get_global_center() -> Vector2:
+	# If no poly, fallback to node position
+	if not collision_poly or collision_poly.polygon.is_empty():
+		return global_position
+		
+	var sum_points = Vector2.ZERO
+	for point in collision_poly.polygon:
+		sum_points += point
+		
+	var local_center = sum_points / collision_poly.polygon.size()
+	
+	# Apply the node's transform (position/scale/rotation) to get world coords
+	return to_global(local_center)
+	

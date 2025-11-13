@@ -271,17 +271,27 @@ func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	
 	print("Enemy Hall destroyed! Mission success!")
 	
-	# Add bonus loot
-	raid_loot.add_loot("gold", victory_bonus_loot.get("gold", 200))
-	var total_loot = raid_loot.get_total_loot()
+	# 1. Calculate Gold Reward (Base + Loot)
+	var gold_reward = victory_bonus_loot.get("gold", 200)
+	raid_loot.add_loot("gold", gold_reward)
 	
+	# --- NEW: Calculate Thrall Reward ---
+	# Base: 2-5 thralls per raid
+	var thrall_count = randi_range(2, 5)
+	
+	# Add to loot tracker
+	raid_loot.add_loot("population", thrall_count)
+	# ------------------------------------
+	
+	# Deposit everything (Gold + Resources + Population)
+	var total_loot = raid_loot.get_total_loot()
 	SettlementManager.deposit_resources(total_loot)
+	
 	print("Mission Complete! %s" % raid_loot.get_loot_summary())
 	
-	# --- NEW: Show Victory Popup ---
-	var subtitle = "The enemy's Great Hall is in ruins.\nLoot: %s" % raid_loot.get_loot_summary()
+	# --- NEW: Victory Popup with Thrall Count ---
+	var subtitle = "The enemy's Great Hall is in ruins.\nLoot: %s\nCaptives: %d Thralls" % [raid_loot.get_loot_summary(), thrall_count]
 	_show_victory_message("VICTORY!", subtitle)
 	
-	await get_tree().create_timer(3.0).timeout # Increased timer to 3s to read
-	
+	await get_tree().create_timer(3.0).timeout
 	EventBus.scene_change_requested.emit("settlement")

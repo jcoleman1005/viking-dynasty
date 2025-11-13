@@ -1,17 +1,11 @@
-[gd_scene load_steps=4 format=3 uid="uid://cuyni4y77q51q"]
+[gd_scene load_steps=2 format=3 uid="uid://cuyni4y77q51q"]
 
 [ext_resource type="Script" uid="uid://dkthq8hijbpj4" path="res://scenes/world_map/Region.gd" id="1_abcde"]
-[ext_resource type="Texture2D" uid="uid://c6v2d1q8q7e3j" path="res://assets/placeholder_tile.tres" id="2_xl4ly"]
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_y5hem"]
-size = Vector2(200, 200)
 
 [node name="Region" type="Area2D"]
 script = ExtResource("1_abcde")
 
-[node name="Sprite2D" type="Sprite2D" parent="."]
-modulate = Color(1, 1, 1, 0.2)
-texture = ExtResource("2_xl4ly")
+[node name="HighlightPoly" type="Polygon2D" parent="."]
+visible = false
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-shape = SubResource("RectangleShape2D_y5hem")
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="."]

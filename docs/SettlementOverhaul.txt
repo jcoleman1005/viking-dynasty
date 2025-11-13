@@ -1,0 +1,62 @@
+Settlement Layer Overhaul (Phases 1-4)
+🚀 Overview
+This PR implements a comprehensive overhaul of the Settlement Layer, transitioning the game from an "instant-action" model to a deep, turn-based strategy loop. The update introduces a Blueprint Construction System, a Labor-Based Economy, and a Territory Expansion Mechanic. Players must now manage a finite population, assigning workers to construct buildings or gather resources, while strategically expanding their base using a new wireless territory system.
+
+✨ Key Features
+🏗️ Blueprint & Construction System
+Blueprint State: Buildings are now placed as semi-transparent "Blueprints" that require labor to complete.
+
+Construction Logic: Added a pending_construction_buildings queue. Workers assigned to construction generate labor points that fill progress bars.
+
+Smart Overflow: Excess labor points automatically roll over to the next blueprint in the queue, ensuring no efficiency is lost.
+
+Visual Feedback: Re-purposed building health bars to act as Construction Progress Bars (Blue) during the build phase, switching to Health Bars (Green) upon completion.
+
+🌾 Economic Engine & Labor
+Worker Assignment UI: Implemented a dedicated UI for allocating the population to different sectors (Construction, Food, Wood, Stone).
+
+Capacity & Scarcity:
+
+Gathering is now limited by Building Slots (e.g., 1 Lumber Yard = 5 max woodcutters).
+
+Removed "Gold" gathering to enforce scarcity; gold is now exclusively obtained through raiding.
+
+Prediction Engine: The UI now displays a real-time "Estimated Outcome" (e.g., "+50 Wood, Completing: Stone Wall") as sliders are adjusted.
+
+Idle Warning: Added a confirmation dialog that warns players if they attempt to end the year with idle villagers.
+
+🛡️ Spatial Expansion (Territory)
+Wireless Power System: Implemented a "Range Extender" territory algorithm.
+
+Hubs: The Great Hall generates a base "Green Zone."
+
+Connectors: Walls extend this zone if placed within range of a Hub or another active Connector.
+
+Placement Constraints: Building placement is strictly restricted to the valid Green Zone (with the exception of Hubs to prevent soft-locks).
+
+🔧 Technical Implementation
+SettlementManager.gd: Completely refactored to handle the new simulate_turn() logic, _process_construction_labor(), and user:// save system.
+
+SettlementData.gd: Updated schema to track population_total, worker_assignments, and pending_construction_buildings.
+
+GridManager.gd: Implemented an iterative propagation algorithm to calculate valid build tiles based on building radius logic.
+
+Base_Building.gd: Implemented a robust State Machine (BLUEPRINT, UNDER_CONSTRUCTION, ACTIVE) to handle visual states, collisions, and progress bar repurposing.
+
+WorkAssignment_UI.gd: Created a dynamic interface that calculates available labor slots based on active infrastructure.
+
+🐛 Key Fixes
+Save System: Switched save path from res:// to user:// to fix file lock errors (Error 15) and ensure persistence.
+
+Softlock Prevention: Modified placement logic to allow the Great Hall (Hub) to be placed outside of territory, preventing game-breaking states if the base is moved.
+
+Type Safety: Fixed Vector2 vs Vector2i comparison errors that were causing save data corruption.
+
+✅ How to Test
+Place a Blueprint: Buy a Wall. Verify it appears as a transparent Blue ghost and that the Green Zone expands wirelessly when placed near the edge.
+
+Manage Workers: Click the new "Manage Workers" button. Verify that the "Construction" slider max value updates based on the pending blueprint.
+
+End Year: Assign labor to construction. Click "End Year." Verify the building updates visually (Dark Gray foundation + Blue progress bar).
+
+Finish: End the year again to complete the building. Verify it becomes Solid/Active and the progress bar switches to a Health bar.
