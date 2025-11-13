@@ -52,7 +52,9 @@ func _ready() -> void:
 	# --- NEW: Setup Worker UI ---
 	_setup_worker_ui()
 	# ----------------------------
-	
+	if not DynastyManager.pending_raid_result.is_empty():
+		_process_raid_return()
+		
 	storefront_ui.show()
 	if end_of_year_popup:
 		end_of_year_popup.hide()
@@ -303,3 +305,38 @@ func _on_building_right_clicked(building: BaseBuilding) -> void:
 	# Re-buy
 	if SettlementManager.attempt_purchase(cost):
 		EventBus.building_ready_for_placement.emit(data)
+
+func _process_raid_return() -> void:
+	print("SettlementBridge: Processing return from raid...")
+	var result = DynastyManager.pending_raid_result
+	var difficulty = DynastyManager.current_raid_difficulty
+	var loot_summary = {}
+	
+	if result.get("outcome") == "victory":
+		# 1. Retrieve Looted Gold
+		var gold = result.get("gold_looted", 0)
+		
+		# 2. Calculate Bonus Gold (Victory Bonus)
+		# Base 200 + (50 per difficulty star)
+		var bonus_gold = 200 + (difficulty * 50)
+		var total_gold = gold + bonus_gold
+		
+		loot_summary["gold"] = total_gold
+		
+		# 3. Calculate Thralls (The Scarcity Engine)
+		# Formula: Random(2 to 4) * Difficulty
+		var base_thralls = randi_range(2, 4)
+		var total_thralls = base_thralls * difficulty
+		
+		loot_summary["population"] = total_thralls
+		
+		# 4. Deposit
+		SettlementManager.deposit_resources(loot_summary)
+		
+		# 5. Show the Report
+		if is_instance_valid(end_of_year_popup):
+			# We reuse the EndOfYear popup but with a custom title
+			end_of_year_popup.display_payout(loot_summary, "Raid Successful!")
+			
+	# Clear the result so it doesn't trigger again on reload
+	DynastyManager.pending_raid_result.clear()

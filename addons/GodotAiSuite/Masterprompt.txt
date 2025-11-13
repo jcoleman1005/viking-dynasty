@@ -354,6 +354,7 @@ script = ExtResource("1_jarl_data")
 display_name = "Bjorn"
 age = 30
 renown = 25
+current_authority = 2
 legitimacy = 30
 allied_regions = Array[String](["res://data/world_map/Region_Monastery.tres"])
 command = 12
@@ -1500,6 +1501,13 @@ MacroCamera (Camera2D)
 > script: res://scenes/world_map/MacroCamera.gd
 > scene: res://scenes/world_map/MacroCamera.tscn
 > camera_speed = 500.0
+> edge_pan_margin = 20.0
+> enable_edge_panning = true
+> enable_keyboard_movement = true
+> min_zoom = 0.5
+> max_zoom = 2.0
+> zoom_speed = 0.1
+> zoom_smoothing = 10.0
 > bounds_enabled = true
 > bounds_rect = [P: (0.0, 0.0), S: (1920.0, 1080.0)]
 
@@ -1507,39 +1515,152 @@ MacroCamera (Camera2D)
 MacroMap (Node2D)
 > script: res://scenes/world_map/MacroMap.gd
 > scene: res://scenes/world_map/MacroMap.tscn
-> position = (131.0, 23.0)
 > raid_mission_scene_path = "res://scenes/missions/RaidMission.tscn"
 > settlement_bridge_scene_path = "res://scenes/levels/SettlementBridge.tscn"
 > end_year_popup_scene = res://ui/EndOfYear_Popup.tscn
 > enemy_raid_chance = 0.25
+> player_home_marker_path = PlayerHomeMarker
 > TextureRect (TextureRect)
-> > offset_right = 40.0
-> > offset_bottom = 40.0
-> > texture = res://assets/Basemap.png
+> > offset_left = 2.0
+> > offset_top = -4.0
+> > offset_right = 1022.0
+> > offset_bottom = 771.0
+> > texture = res://assets/Viking Dynasty Game Map.png
 > Regions (Node2D)
->   Region2 (Area2D)
+>   Region_1 (Area2D)
 >     script: res://scenes/world_map/Region.gd
 >     scene: res://scenes/world_map/Region.tscn
 >   > data = res://scenes/world_map/MacroMap.tscn::Resource_seg4e
 >     HighlightPoly (Polygon2D)
->     > visible = false
+>     > color = (1.0, 1.0, 1.0, 0.1961)
+>     > polygon = [(539.0, 493.0), (542.0, 507.0), (548.0, 519.0), (550.0, 534.0), (564.0, 561.0), (571.0, 570.0), (569.0, 574.0), (568.0, 577.0), (566.0, 580.0), (566.0, 587.0), (569.0, 591.0), (574.0, 596.0), (574.0, 603.0), (574.0, 607.0), (578.0, 609.0), (584.0, 609.0), (590.0, 606.0), (596.0, 607.0), (600.0, 604.0), (597.0, 597.0), (598.0, 586.0), (611.0, 581.0), (622.0, 579.0), (625.0, 580.0), (628.0, 580.0), (628.0, 573.0), (632.0, 564.0), (634.0, 560.0), (633.0, 545.0), (635.0, 535.0), (634.0, 524.0), (635.0, 515.0), (635.0, 509.0), (630.0, 505.0), (626.0, 505.0), (606.0, 489.0), (591.0, 478.0), (570.0, 465.0), (564.0, 456.0), (558.0, 453.0), (556.0, 457.0), (555.0, 459.0), (550.0, 461.0), (549.0, 466.0), (546.0, 471.0), (548.0, 477.0), (549.0, 482.0), (546.0, 488.0), (546.0, 492.0), (541.0, 491.0)]
 >     CollisionPolygon2D (CollisionPolygon2D)
->   Region3 (Area2D)
+>     > polygon = [(0.0, 0.0)]
+>   Region_2 (Area2D)
 >     script: res://scenes/world_map/Region.gd
 >     scene: res://scenes/world_map/Region.tscn
+>   > data = res://scenes/world_map/MacroMap.tscn::Resource_seg4e
+>     HighlightPoly (Polygon2D)
+>     > color = (1.0, 1.0, 1.0, 0.1961)
+>     > polygon = [(450.0, 509.0), (440.0, 496.0), (453.0, 483.0), (455.0, 475.0), (448.0, 478.0), (441.0, 479.0), (438.0, 471.0), (440.0, 463.0), (446.0, 456.0), (443.3711, 449.4278), (440.0, 441.0), (439.0, 426.0), (440.0, 416.0), (439.4912, 404.8077), (439.0, 394.0), (445.0, 393.0), (444.0, 385.0), (452.0, 383.0), (457.0, 375.0), (467.0, 370.0), (467.0, 363.0), (476.0, 361.0), (482.0, 362.0), (485.0, 352.0), (493.0, 341.0), (508.0, 344.0), (512.0, 340.0), (515.0, 343.0), (546.0, 348.0), (552.0, 368.0), (552.0, 391.0), (555.0, 405.0), (563.0, 410.0), (563.0, 422.0), (554.0, 428.0), (558.0, 436.0), (561.0, 455.0), (551.0, 463.0), (548.0, 472.0), (546.0, 494.0), (537.0, 491.0), (534.0, 483.0), (528.0, 482.0), (520.0, 490.0), (500.0, 507.0), (491.0, 519.0), (479.0, 524.0), (467.0, 522.0), (458.0, 514.0)]
+>     CollisionPolygon2D (CollisionPolygon2D)
+>   Region_3 (Area2D)
+>     script: res://scenes/world_map/Region.gd
+>     scene: res://scenes/world_map/Region.tscn
+>   > data = res://scenes/world_map/MacroMap.tscn::Resource_seg4e
+>     HighlightPoly (Polygon2D)
+>     > color = (1.0, 1.0, 1.0, 0.1961)
+>     > polygon = [(632.0, 505.0), (600.0, 483.0), (581.0, 473.0), (559.0, 452.0), (559.0, 437.0), (553.0, 425.0), (561.0, 423.0), (561.0, 417.0), (561.0, 411.0), (556.0, 404.0), (553.0, 402.0), (551.0, 363.0), (549.0, 352.0), (552.0, 333.0), (558.0, 325.0), (566.0, 325.0), (574.0, 324.0), (577.0, 314.0), (569.0, 306.0), (578.0, 289.0), (579.0, 264.0), (578.0, 256.0), (589.0, 249.0), (589.0, 241.0), (601.0, 220.0), (596.0, 207.0), (601.0, 200.0), (601.0, 190.0), (607.0, 185.0), (612.0, 187.0), (616.0, 187.0), (616.0, 181.0), (616.0, 172.0), (620.0, 169.0), (640.0, 172.0), (642.0, 153.0), (643.0, 148.0), (646.0, 148.0), (655.0, 156.0), (663.0, 162.0), (673.0, 164.0), (679.0, 170.0), (687.0, 177.0), (690.0, 194.0), (694.0, 205.0), (701.0, 218.0), (698.0, 227.0), (709.0, 245.0), (705.0, 249.0), (688.0, 253.0), (679.0, 269.0), (674.0, 288.0), (682.0, 298.0), (673.0, 320.0), (657.0, 335.0), (652.0, 342.0), (648.0, 344.0), (640.0, 358.0), (637.0, 366.0), (633.0, 372.0), (632.0, 381.0), (631.0, 394.0), (630.0, 408.0), (633.0, 423.0), (637.0, 431.0), (647.0, 433.0), (656.0, 443.0), (663.0, 451.0), (665.0, 458.0), (663.0, 467.0), (660.0, 474.0), (654.0, 482.0), (650.0, 488.0), (643.0, 492.0), (636.0, 496.0), (636.0, 501.0)]
+>     CollisionPolygon2D (CollisionPolygon2D)
+>   Region_4 (Area2D)
+>     script: res://scenes/world_map/Region.gd
+>     scene: res://scenes/world_map/Region.tscn
+>   > data = res://scenes/world_map/MacroMap.tscn::Resource_seg4e
+>     HighlightPoly (Polygon2D)
+>     > color = (1.0, 1.0, 1.0, 0.1961)
+>     > polygon = [(515.0, 343.0), (523.0, 347.0), (535.0, 347.0), (545.0, 347.0), (549.0, 346.0), (553.0, 331.0), (559.0, 325.0), (572.0, 325.0), (575.0, 320.0), (576.0, 313.0), (572.0, 308.0), (570.0, 304.0), (574.0, 296.0), (579.0, 283.0), (579.0, 271.0), (578.0, 259.0), (579.0, 255.0), (588.0, 251.0), (590.0, 248.0), (589.0, 243.0), (600.0, 220.0), (592.0, 219.0), (585.0, 219.0), (580.0, 219.0), (573.0, 219.0), (550.0, 275.0), (541.0, 296.0), (536.0, 303.0), (538.0, 307.0), (537.0, 310.0), (535.0, 308.0), (530.0, 307.0), (528.0, 312.0), (522.0, 317.0), (519.0, 322.0), (517.0, 327.0), (515.0, 331.0), (512.0, 336.0), (512.0, 339.0)]
+>     CollisionPolygon2D (CollisionPolygon2D)
+>   Region_5 (Area2D)
+>     script: res://scenes/world_map/Region.gd
+>     scene: res://scenes/world_map/Region.tscn
+>   > data = res://scenes/world_map/MacroMap.tscn::Resource_seg4e
+>     HighlightPoly (Polygon2D)
+>     > color = (1.0, 1.0, 1.0, 0.1961)
+>     > polygon = [(528.0, 533.0), (526.0, 537.0), (527.0, 540.0), (528.0, 545.0), (527.0, 551.0), (525.0, 556.0), (525.0, 560.0), (524.0, 564.0), (524.0, 567.0), (525.0, 569.0), (527.0, 572.0), (529.0, 572.0), (534.0, 572.0), (536.0, 575.0), (535.0, 578.0), (529.0, 588.0), (519.0, 597.0), (518.0, 608.0), (518.0, 620.0), (543.0, 625.0), (552.0, 626.0), (551.0, 618.0), (538.0, 612.0), (538.0, 604.0), (541.0, 596.0), (547.0, 592.0), (559.0, 590.0), (561.0, 596.0), (566.0, 600.0), (571.0, 605.0), (571.0, 610.0), (567.0, 611.0), (563.0, 614.0), (563.0, 619.0), (563.0, 623.0), (560.0, 628.0), (555.0, 635.0), (549.0, 634.0), (546.0, 634.0), (530.0, 633.0), (514.0, 628.0), (511.0, 628.0), (504.0, 627.0), (499.0, 627.0), (494.0, 624.0), (490.0, 621.0), (492.0, 615.0), (493.0, 611.0), (486.0, 606.0), (484.0, 604.0), (483.0, 600.0), (488.0, 592.0), (485.0, 581.0), (483.0, 577.0), (483.0, 571.0), (486.0, 565.0), (488.0, 559.0), (490.0, 556.0), (492.0, 554.0), (496.0, 553.0), (501.0, 553.0), (505.0, 553.0), (509.0, 551.0), (513.0, 546.0), (516.0, 541.0), (520.0, 538.0), (525.0, 537.0)]
+>     CollisionPolygon2D (CollisionPolygon2D)
+>   Region_6 (Area2D)
+>     script: res://scenes/world_map/Region.gd
+>     scene: res://scenes/world_map/Region.tscn
+>   > data = res://scenes/world_map/MacroMap.tscn::Resource_seg4e
+>     HighlightPoly (Polygon2D)
+>     > color = (1.0, 1.0, 1.0, 0.1961)
+>     > polygon = [(648.0, 148.0), (649.0, 139.0), (653.0, 139.0), (658.0, 143.0), (665.0, 150.0), (666.0, 153.0), (672.0, 156.0), (681.0, 154.0), (685.0, 149.0), (691.0, 152.0), (697.0, 153.0), (698.0, 148.0), (700.0, 146.0), (705.0, 143.0), (704.0, 115.0), (705.0, 109.0), (710.0, 103.0), (716.0, 102.0), (720.0, 97.0), (729.0, 101.0), (738.0, 104.0), (742.0, 112.0), (744.0, 121.0), (744.0, 129.0), (741.0, 133.0), (741.0, 138.0), (741.0, 148.0), (745.0, 154.0), (754.0, 159.0), (760.0, 161.0), (767.0, 167.0), (768.0, 176.0), (766.0, 190.0), (764.0, 198.0), (770.0, 204.0), (774.0, 209.0), (779.0, 216.0), (785.0, 224.0), (788.0, 232.0), (787.0, 244.0), (788.0, 252.0), (790.0, 261.0), (798.0, 262.0), (799.0, 270.0), (805.0, 272.0), (810.0, 277.0), (810.0, 286.0), (806.0, 293.0), (811.0, 296.0), (820.0, 301.0), (830.0, 307.0), (836.0, 313.0), (836.0, 325.0), (832.0, 334.0), (827.0, 345.0), (823.0, 355.0), (821.0, 363.0), (817.0, 375.0), (809.0, 386.0), (805.0, 395.0), (800.0, 404.0), (791.0, 409.0), (788.0, 411.0), (781.0, 417.0), (772.0, 422.0), (760.0, 428.0), (749.0, 432.0), (734.0, 438.0), (725.0, 436.0), (719.0, 432.0), (708.0, 426.0), (703.0, 420.0), (695.0, 404.0), (693.0, 384.0), (691.0, 374.0), (685.0, 368.0), (685.0, 354.0), (688.0, 348.0), (688.0, 337.0), (690.0, 335.0), (694.0, 335.0), (701.0, 330.0), (703.0, 321.0), (708.0, 314.0), (714.0, 300.0), (721.0, 280.0), (727.0, 272.0), (712.0, 244.0), (704.0, 237.0), (700.0, 224.0), (698.0, 212.0), (692.0, 200.0), (688.0, 187.0), (682.0, 174.0), (675.0, 164.0), (662.0, 161.0), (653.0, 155.0)]
+>     CollisionPolygon2D (CollisionPolygon2D)
+>   Region_7 (Area2D)
+>     script: res://scenes/world_map/Region.gd
+>     scene: res://scenes/world_map/Region.tscn
+>   > data = res://scenes/world_map/MacroMap.tscn::Resource_qn6r3
+>     HighlightPoly (Polygon2D)
+>     > color = (1.0, 1.0, 1.0, 0.1961)
+>     > polygon = [(814.0, 438.0), (808.0, 438.0), (805.0, 439.0), (801.0, 441.0), (798.0, 441.0), (794.0, 441.0), (792.0, 440.0), (785.0, 440.0), (781.0, 440.0), (779.0, 440.0), (776.0, 442.0), (774.0, 445.0), (772.0, 445.0), (768.0, 447.0), (765.0, 448.0), (761.0, 449.0), (757.0, 449.0), (754.0, 451.0), (753.0, 453.0), (749.0, 456.0), (748.0, 458.0), (744.0, 461.0), (741.0, 463.0), (734.0, 469.0), (728.0, 469.0), (727.0, 471.0), (724.0, 473.0), (722.0, 475.0), (724.0, 477.0), (726.0, 479.0), (727.0, 480.0), (728.0, 482.0), (728.0, 484.0), (724.0, 488.0), (723.0, 489.0), (722.0, 493.0), (722.0, 496.0), (722.0, 498.0), (722.0, 500.0), (724.0, 500.0), (729.0, 500.0), (731.0, 498.0), (733.0, 496.0), (737.0, 494.0), (738.0, 492.0), (740.0, 490.0), (744.0, 488.0), (745.0, 485.0), (748.0, 484.0), (751.0, 487.0), (752.0, 489.0), (756.0, 489.0), (761.0, 489.0), (765.0, 488.0), (765.0, 491.0), (766.0, 495.0), (766.0, 499.0), (766.0, 502.0), (771.0, 497.0), (774.0, 496.0), (778.0, 495.0), (780.0, 494.0), (782.0, 493.0), (785.0, 494.0), (788.0, 495.0), (791.0, 496.0), (792.0, 497.0), (797.0, 499.0), (799.0, 501.0), (801.0, 502.0), (804.0, 504.0), (808.0, 503.0), (809.0, 501.0), (812.0, 500.0), (816.0, 500.0), (818.0, 500.0), (819.0, 498.0), (819.0, 496.0), (820.0, 493.0), (822.0, 491.0), (823.0, 489.0), (822.0, 484.0), (820.0, 482.0), (818.0, 478.0), (815.0, 475.0), (815.0, 472.0), (815.0, 470.0), (812.0, 466.0), (812.0, 460.0), (812.0, 455.0), (814.0, 453.0), (814.0, 449.0), (814.0, 446.0), (817.0, 440.0)]
+>     CollisionPolygon2D (CollisionPolygon2D)
+>   Region_8 (Area2D)
+>     script: res://scenes/world_map/Region.gd
+>     scene: res://scenes/world_map/Region.tscn
+>   > data = res://scenes/world_map/MacroMap.tscn::Resource_aeufb
 >     HighlightPoly (Polygon2D)
 >     > visible = false
+>     > color = (1.0, 1.0, 1.0, 0.1961)
+>     > polygon = [(716.0, 563.0), (716.0, 556.0), (716.0, 551.0), (716.0, 546.0), (718.0, 542.0), (719.0, 540.0), (719.0, 534.0), (719.0, 529.0), (720.0, 523.0), (723.0, 519.0), (727.0, 517.0), (731.0, 515.0), (735.0, 512.0), (737.0, 512.0), (737.0, 513.0), (738.0, 515.0), (741.0, 516.0), (745.0, 519.0), (748.0, 522.0), (751.0, 526.0), (752.0, 529.0), (754.0, 532.0), (757.0, 532.0), (759.0, 532.0), (763.0, 532.0), (765.0, 530.0), (766.0, 528.0), (769.0, 526.0), (769.0, 524.0), (769.0, 521.0), (769.0, 519.0), (769.0, 517.0), (768.0, 514.0), (768.0, 511.0), (768.0, 507.0), (767.0, 501.0), (770.0, 498.0), (775.0, 498.0), (776.0, 496.0), (778.0, 495.0), (783.0, 495.0), (790.0, 495.0), (798.0, 499.0), (800.0, 501.0), (803.0, 503.0), (805.0, 504.0), (810.0, 501.0), (813.0, 500.0), (819.0, 500.0), (821.0, 501.0), (825.0, 504.0), (829.0, 506.0), (831.0, 508.0), (832.0, 511.0), (832.0, 517.0), (832.0, 519.0), (835.0, 519.0), (838.0, 523.0), (840.0, 527.0), (841.0, 529.0), (843.0, 533.0), (845.0, 535.0), (846.0, 538.0), (843.0, 544.0), (841.0, 547.0), (840.0, 549.0), (838.0, 552.0), (837.0, 554.0), (833.0, 556.0), (831.0, 556.0), (830.0, 555.0), (828.0, 556.0), (827.0, 559.0), (823.0, 561.0), (821.0, 561.0), (816.0, 561.0), (813.0, 560.0), (808.0, 556.0), (805.0, 555.0), (803.0, 553.0), (800.0, 552.0), (798.0, 552.0), (792.0, 552.0), (791.0, 552.0), (790.0, 551.0), (788.0, 547.0), (787.0, 546.0), (784.0, 546.0), (784.0, 549.0), (782.0, 552.0), (780.0, 554.0), (775.0, 554.0), (770.0, 554.0), (765.0, 554.0), (762.0, 554.0), (758.0, 554.0), (757.0, 554.0), (754.0, 557.0), (752.0, 555.0), (751.0, 553.0), (750.0, 553.0), (749.0, 554.0), (748.0, 556.0), (744.0, 556.0), (740.0, 556.0), (736.0, 556.0), (733.0, 557.0), (729.0, 560.0), (727.0, 562.0), (727.0, 562.0), (725.0, 564.0), (723.0, 564.0), (718.0, 565.0)]
+>     CollisionPolygon2D (CollisionPolygon2D)
+>   Region_9 (Area2D)
+>     script: res://scenes/world_map/Region.gd
+>     scene: res://scenes/world_map/Region.tscn
+>   > data = res://scenes/world_map/MacroMap.tscn::Resource_3epe4
+>     HighlightPoly (Polygon2D)
+>     > color = (1.0, 1.0, 1.0, 0.1961)
+>     > polygon = [(725.0, 564.0), (726.0, 567.0), (726.0, 569.0), (727.0, 571.0), (727.0, 575.0), (727.0, 577.0), (730.0, 578.0), (729.0, 580.0), (726.0, 581.0), (726.0, 585.0), (726.0, 588.0), (726.0, 590.0), (726.0, 592.0), (726.0, 594.0), (728.0, 596.0), (731.0, 596.0), (734.0, 597.0), (737.0, 599.0), (742.0, 600.0), (745.0, 600.0), (750.0, 600.0), (751.0, 599.0), (755.0, 600.0), (756.0, 601.0), (757.0, 603.0), (759.0, 604.0), (759.0, 608.0), (759.0, 610.0), (759.0, 611.0), (759.0, 614.0), (759.0, 616.0), (761.0, 617.0), (764.0, 618.0), (768.0, 620.0), (771.0, 621.0), (774.0, 622.0), (775.0, 623.0), (776.0, 625.0), (777.0, 627.0), (776.0, 630.0), (776.0, 631.0), (778.0, 632.0), (780.0, 631.0), (782.0, 631.0), (786.0, 630.0), (788.0, 629.0), (789.0, 628.0), (793.0, 629.0), (794.0, 629.0), (799.0, 624.0), (800.0, 623.0), (802.0, 620.0), (803.0, 618.0), (804.0, 618.0), (807.0, 616.0), (808.0, 615.0), (812.0, 612.0), (814.0, 609.0), (814.0, 606.0), (814.0, 603.0), (815.0, 602.0), (815.0, 599.0), (814.0, 597.0), (814.0, 595.0), (814.0, 593.0), (814.0, 590.0), (816.0, 588.0), (818.0, 588.0), (820.0, 587.0), (820.0, 584.0), (820.0, 582.0), (820.0, 581.0), (822.0, 580.0), (824.0, 580.0), (826.0, 579.0), (827.0, 576.0), (827.0, 574.0), (825.0, 573.0), (823.0, 572.0), (823.0, 569.0), (823.0, 564.0), (821.0, 563.0), (819.0, 562.0), (816.0, 562.0), (814.0, 560.0), (812.0, 558.0), (809.0, 556.0), (804.0, 554.0), (801.0, 552.0), (797.0, 553.0), (794.0, 552.0), (790.0, 551.0), (787.0, 550.0), (785.0, 547.0), (783.0, 547.0), (780.0, 551.0), (779.0, 552.0), (778.0, 552.0), (773.0, 555.0), (770.0, 553.0), (767.0, 553.0), (764.0, 553.0), (760.0, 553.0), (757.0, 553.0), (756.0, 554.0), (755.0067, 555.4899), (754.0, 557.0), (752.8177, 555.8177), (752.0, 554.0), (750.0, 553.0), (749.0, 555.0), (747.0, 557.0), (744.0, 556.0), (740.0, 556.0), (737.0, 556.0), (734.0, 557.0), (731.0, 559.0), (728.0, 560.0)]
+>     CollisionPolygon2D (CollisionPolygon2D)
+>   Region_10 (Area2D)
+>     script: res://scenes/world_map/Region.gd
+>     scene: res://scenes/world_map/Region.tscn
+>   > data = res://scenes/world_map/MacroMap.tscn::Resource_37xpq
+>     HighlightPoly (Polygon2D)
+>     > color = (1.0, 1.0, 1.0, 0.1961)
+>     > polygon = [(728.0, 595.0), (727.0, 597.0), (727.0, 599.0), (729.0, 602.0), (729.0, 606.0), (729.0, 608.0), (727.0, 608.0), (726.0, 608.0), (724.0, 608.0), (722.0, 608.0), (720.0, 607.0), (718.0, 606.0), (715.0, 607.0), (713.0, 608.0), (712.0, 608.0), (710.0, 608.0), (707.0, 609.0), (707.0, 611.0), (706.0, 612.0), (705.0, 615.0), (706.0, 616.0), (706.0, 617.0), (707.0, 620.0), (707.0, 622.0), (706.0, 624.0), (704.0, 625.0), (701.0, 627.0), (700.0, 628.0), (704.0, 628.0), (706.0, 628.0), (709.0, 628.0), (713.0, 628.0), (718.0, 628.0), (724.0, 628.0), (728.0, 627.0), (730.0, 627.0), (735.0, 626.0), (740.0, 625.0), (744.0, 624.0), (747.0, 623.0), (751.0, 623.0), (754.0, 621.0), (757.0, 619.0), (758.0, 618.0), (758.0, 615.0), (759.0, 612.0), (759.0, 608.0), (759.0, 606.0), (759.0, 603.0), (758.0, 602.0), (757.0, 602.0), (755.0, 600.0), (753.0, 598.0), (751.0, 598.0), (747.0, 598.0), (745.0, 599.0), (742.0, 600.0), (739.0, 599.0), (735.0, 598.0), (734.0, 598.0), (733.0, 597.0), (731.0, 596.0), (729.0, 595.0)]
+>     CollisionPolygon2D (CollisionPolygon2D)
+>   Region_11 (Area2D)
+>     script: res://scenes/world_map/Region.gd
+>     scene: res://scenes/world_map/Region.tscn
+>   > data = res://scenes/world_map/MacroMap.tscn::Resource_n4r4f
+>     HighlightPoly (Polygon2D)
+>     > visible = false
+>     > color = (1.0, 1.0, 1.0, 0.1961)
+>     > polygon = [(690.0, 631.0), (694.0, 631.0), (698.0, 629.0), (701.0, 627.0), (705.0, 628.0), (710.0, 628.0), (715.0, 628.0), (721.0, 628.0), (728.0, 626.0), (734.0, 626.0), (743.0, 624.0), (749.0, 623.0), (756.0, 621.0), (759.0, 619.0), (761.0, 617.0), (766.0, 619.0), (770.0, 619.0), (772.0, 621.0), (775.0, 626.0), (777.0, 629.0), (780.0, 634.0), (782.0, 640.0), (785.0, 645.0), (787.0, 649.0), (790.0, 655.0), (793.0, 659.0), (794.0, 670.0), (794.0, 671.0), (791.0, 675.0), (788.0, 677.0), (785.0, 680.0), (784.0, 682.0), (785.0, 684.0), (787.0, 686.0), (792.0, 690.0), (793.0, 694.0), (793.0, 700.0), (793.0, 705.0), (794.0, 709.0), (796.0, 713.0), (800.0, 717.0), (804.0, 721.0), (807.0, 726.0), (809.0, 729.0), (810.0, 735.0), (810.0, 738.0), (809.0, 741.0), (806.0, 745.0), (799.0, 756.0), (796.0, 763.0), (793.0, 769.0), (737.0, 767.0), (739.0, 762.0), (744.0, 759.0), (747.0, 757.0), (755.0, 753.0), (757.0, 750.0), (759.0, 745.0), (762.0, 740.0), (762.0, 736.0), (762.0, 731.0), (760.0, 726.0), (759.0, 721.0), (760.0, 716.0), (753.0, 713.0), (748.0, 708.0), (746.0, 704.0), (744.0, 699.0), (742.0, 696.0), (737.0, 692.0), (734.0, 690.0), (728.0, 690.0), (724.0, 691.0), (716.0, 692.0), (712.0, 691.0), (708.0, 691.0), (703.0, 690.0), (697.0, 687.0), (693.0, 683.0), (685.0, 679.0), (685.0, 677.0), (682.0, 676.0), (677.0, 673.0), (678.0, 669.0), (680.0, 665.0), (682.0, 664.0), (685.0, 661.0), (689.0, 654.0), (689.0, 653.0), (688.0, 646.0), (687.0, 644.0), (687.0, 638.0), (688.0, 633.0)]
+>     CollisionPolygon2D (CollisionPolygon2D)
+>   Region_12 (Area2D)
+>     script: res://scenes/world_map/Region.gd
+>     scene: res://scenes/world_map/Region.tscn
+>   > data = res://scenes/world_map/MacroMap.tscn::Resource_47i7n
+>     HighlightPoly (Polygon2D)
+>     > visible = false
+>     > color = (1.0, 1.0, 1.0, 0.1961)
+>     > polygon = [(602.0, 655.0), (600.0, 657.0), (595.0, 657.0), (594.0, 652.0), (592.0, 649.0), (588.0, 649.0), (585.0, 649.0), (583.0, 646.0), (586.0, 643.0), (588.0, 640.0), (588.0, 638.0), (587.0, 634.0), (585.0, 634.0), (581.0, 636.0), (580.0, 638.0), (574.0, 639.0), (571.0, 640.0), (568.0, 640.0), (565.0, 644.0), (562.0, 645.0), (559.0, 647.0), (556.0, 649.0), (550.0, 650.0), (550.0, 652.0), (549.0, 655.0), (547.0, 656.0), (543.0, 655.0), (542.0, 654.0), (538.0, 655.0), (534.0, 654.0), (537.0, 650.0), (539.0, 648.0), (539.0, 646.0), (540.0, 640.0), (537.0, 638.0), (534.0, 642.0), (534.0, 644.0), (531.0, 644.0), (529.0, 642.0), (523.0, 641.0), (523.0, 641.0), (518.0, 635.0), (518.0, 633.0), (514.0, 629.0), (507.0, 629.0), (496.0, 627.0), (494.0, 626.0), (493.0, 628.0), (495.0, 631.0), (495.0, 634.0), (498.0, 636.0), (498.0, 639.0), (496.0, 641.0), (493.0, 642.0), (493.0, 643.0), (493.0, 645.0), (496.0, 645.0), (497.0, 646.0), (497.0, 649.0), (497.0, 652.0), (496.0, 655.0), (495.0, 658.0), (491.0, 660.0), (490.0, 662.0), (488.0, 667.0), (486.0, 669.0), (483.0, 667.0), (479.0, 663.0), (474.0, 663.0), (470.0, 663.0), (466.0, 664.0), (465.0, 664.0), (464.0, 666.0), (463.0, 669.0), (455.0, 672.0), (453.0, 672.0), (448.0, 673.0), (442.0, 675.0), (434.0, 676.0), (431.0, 678.0), (428.0, 685.0), (428.0, 687.0), (425.0, 690.0), (423.0, 692.0), (415.0, 696.0), (414.0, 697.0), (412.0, 702.0), (410.0, 706.0), (408.0, 709.0), (407.0, 713.0), (404.0, 716.0), (402.0, 719.0), (398.0, 722.0), (409.0, 733.0), (411.0, 734.0), (417.0, 738.0), (424.0, 742.0), (430.0, 746.0), (434.0, 747.0), (436.0, 754.0), (437.0, 762.0), (438.0, 766.0), (585.0, 768.0), (588.0, 764.0), (591.0, 761.0), (598.0, 758.0), (605.0, 756.0), (611.0, 756.0), (616.0, 755.0), (621.0, 751.0), (622.0, 743.0), (622.0, 737.0), (616.0, 731.0), (614.0, 724.0), (614.0, 717.0), (614.0, 709.0), (609.0, 702.0), (605.0, 695.0), (603.0, 691.0), (602.0, 688.0), (601.0, 683.0), (602.0, 678.0), (603.0, 673.0), (604.0, 670.0), (604.0, 664.0)]
+>     CollisionPolygon2D (CollisionPolygon2D)
+>   Region_13 (Area2D)
+>     script: res://scenes/world_map/Region.gd
+>     scene: res://scenes/world_map/Region.tscn
+>   > data = res://scenes/world_map/MacroMap.tscn::Resource_uahyi
+>     HighlightPoly (Polygon2D)
+>     > visible = false
+>     > color = (1.0, 1.0, 1.0, 0.1961)
+>     > polygon = [(687.0, 633.0), (684.0, 631.0), (683.0, 629.0), (681.0, 626.0), (679.0, 623.0), (676.0, 618.0), (670.0, 620.0), (666.0, 621.0), (659.0, 622.0), (655.0, 625.0), (650.0, 628.0), (647.0, 630.0), (642.0, 633.0), (640.0, 636.0), (638.0, 638.0), (635.0, 639.0), (630.0, 642.0), (627.0, 643.0), (622.0, 645.0), (618.0, 646.0), (612.0, 649.0), (609.0, 651.0), (606.0, 653.0), (603.0, 654.0), (605.0, 657.0), (605.0, 658.0), (606.0, 661.0), (607.0, 665.0), (607.0, 671.0), (606.0, 674.0), (604.0, 678.0), (602.0, 682.0), (602.0, 685.0), (602.0, 687.0), (603.0, 690.0), (604.0, 692.0), (605.0, 693.0), (610.0, 697.0), (613.0, 705.0), (613.0, 709.0), (613.0, 710.0), (621.0, 711.0), (629.0, 713.0), (639.0, 716.0), (641.0, 723.0), (642.0, 730.0), (651.0, 731.0), (654.0, 736.0), (654.0, 739.0), (662.0, 741.0), (668.0, 743.0), (676.0, 748.0), (685.0, 754.0), (687.0, 755.0), (694.0, 763.0), (701.0, 772.0), (734.0, 769.0), (738.0, 762.0), (745.0, 760.0), (750.0, 758.0), (754.0, 755.0), (758.0, 752.0), (760.0, 746.0), (761.0, 733.0), (761.0, 731.0), (761.0, 725.0), (761.0, 721.0), (759.0, 716.0), (752.0, 712.0), (747.0, 707.0), (745.0, 703.0), (742.0, 697.0), (737.0, 693.0), (732.0, 691.0), (723.0, 692.0), (714.0, 692.0), (703.0, 691.0), (701.0, 688.0), (695.0, 683.0), (689.0, 681.0), (686.0, 680.0), (684.0, 677.0), (678.0, 669.0), (678.0, 666.0), (682.0, 663.0), (686.0, 658.0), (689.0, 653.0), (689.0, 650.0), (689.0, 649.0), (689.0, 642.0), (689.0, 636.0)]
+>     CollisionPolygon2D (CollisionPolygon2D)
+>   Region_14 (Area2D)
+>     script: res://scenes/world_map/Region.gd
+>     scene: res://scenes/world_map/Region.tscn
+>   > data = res://scenes/world_map/MacroMap.tscn::Resource_jetqj
+>     HighlightPoly (Polygon2D)
+>     > visible = false
+>     > color = (1.0, 1.0, 1.0, 0.1961)
+>     > polygon = [(264.0, 478.0), (270.0, 483.0), (272.0, 484.0), (276.0, 484.0), (281.0, 484.0), (290.0, 484.0), (297.0, 485.0), (296.0, 487.0), (296.0, 490.0), (296.0, 492.0), (293.0, 494.0), (290.0, 496.0), (285.0, 499.0), (280.0, 501.0), (277.0, 503.0), (277.0, 504.0), (278.0, 506.0), (277.0, 509.0), (272.0, 513.0), (271.0, 514.0), (279.0, 514.0), (285.0, 514.0), (292.0, 515.0), (299.0, 516.0), (303.0, 517.0), (308.0, 518.0), (310.0, 522.0), (309.0, 530.0), (304.0, 536.0), (301.0, 542.0), (298.0, 549.0), (292.0, 554.0), (287.0, 558.0), (287.0, 560.0), (288.0, 568.0), (292.0, 572.0), (297.0, 578.0), (303.0, 588.0), (305.0, 594.0), (306.0, 603.0), (305.0, 616.0), (306.0, 617.0), (312.0, 623.0), (316.0, 628.0), (319.0, 634.0), (322.0, 642.0), (323.0, 654.0), (324.0, 660.0), (327.0, 664.0), (331.0, 668.0), (330.0, 672.0), (326.0, 679.0), (326.0, 683.0), (329.0, 684.0), (332.0, 680.0), (335.0, 678.0), (351.0, 682.0), (356.0, 685.0), (359.0, 691.0), (358.0, 697.0), (354.0, 703.0), (343.0, 717.0), (337.0, 722.0), (327.0, 725.0), (333.0, 733.0), (345.0, 734.0), (342.0, 739.0), (333.0, 744.0), (323.0, 746.0), (307.0, 746.0), (291.0, 746.0), (276.0, 745.0), (260.0, 745.0), (252.0, 739.0), (246.0, 739.0), (242.0, 744.0), (237.0, 750.0), (231.0, 752.0), (226.0, 747.0), (220.0, 744.0), (207.0, 747.0), (201.0, 751.0), (195.0, 748.0), (202.0, 742.0), (210.0, 738.0), (216.0, 732.0), (221.0, 727.0), (226.0, 723.0), (231.0, 721.0), (242.0, 721.0), (252.0, 721.0), (264.0, 714.0), (254.0, 714.0), (246.0, 713.0), (236.0, 706.0), (230.0, 702.0), (219.0, 699.0), (214.0, 693.0), (223.0, 688.0), (233.0, 684.0), (242.0, 682.0), (245.0, 673.0), (245.0, 664.0), (240.0, 665.0), (233.0, 665.0), (236.0, 662.0), (240.0, 658.0), (238.0, 653.0), (239.0, 647.0), (244.0, 649.0), (248.0, 651.0), (257.0, 652.0), (267.0, 655.0), (269.0, 657.0), (268.0, 651.0), (268.0, 646.0), (270.0, 641.0), (270.0, 635.0), (275.0, 634.0), (274.0, 628.0), (267.0, 628.0), (266.0, 620.0), (265.0, 615.0), (265.0, 607.0), (270.0, 603.0), (269.0, 601.0), (261.0, 602.0), (255.0, 603.0), (250.0, 600.0), (249.0, 605.0), (248.0, 606.0), (242.0, 602.0), (242.0, 604.0), (239.0, 596.0), (237.0, 590.0), (245.0, 586.0), (247.0, 583.0), (251.0, 576.0), (247.0, 566.0), (243.0, 570.0), (241.0, 578.0), (237.0, 581.0), (229.0, 582.0), (228.0, 579.0), (234.0, 573.0), (235.0, 569.0), (230.0, 564.0), (228.0, 564.0), (226.0, 568.0), (217.0, 568.0), (218.0, 562.0), (222.0, 558.0), (230.0, 556.0), (234.0, 553.0), (237.0, 550.0), (232.0, 549.0), (226.0, 549.0), (228.0, 537.0), (241.0, 531.0), (242.0, 522.0), (236.0, 522.0), (231.0, 518.0), (229.0, 511.0), (217.0, 519.0), (208.0, 517.0), (216.0, 499.0), (221.0, 495.0), (225.0, 484.0), (232.0, 482.0), (240.0, 479.0), (245.0, 479.0), (240.0, 490.0), (236.0, 495.0), (236.0, 504.0), (238.0, 510.0), (241.0, 503.0), (248.0, 499.0), (255.0, 499.0), (255.0, 493.0), (261.0, 493.0), (261.0, 486.0)]
 >     CollisionPolygon2D (CollisionPolygon2D)
 > MacroCamera (Camera2D)
 >   script: res://scenes/world_map/MacroCamera.gd
 >   scene: res://scenes/world_map/MacroCamera.tscn
-> > visible = false
+> > zoom = (1.2, 1.2)
 > > camera_speed = 500.0
+> > edge_pan_margin = 20.0
+> > enable_edge_panning = true
+> > enable_keyboard_movement = true
+> > min_zoom = 1.2
+> > max_zoom = 2.0
+> > zoom_speed = 0.1
+> > zoom_smoothing = 10.0
 > > bounds_enabled = true
-> > bounds_rect = [P: (0.0, 0.0), S: (1920.0, 1080.0)]
+> > bounds_rect = [P: (0.0, 0.0), S: (1020.0, 775.0)]
 > UI (CanvasLayer)
 > > layer = 10
-> > visible = false
 >   JarlInfo (PanelContainer)
 >   > anchors_preset = 5
 >   > anchor_left = 0.5
@@ -1583,7 +1704,6 @@ MacroMap (Node2D)
 >       > layout_mode = 2
 >       > text = "Dynasty"
 >   RegionInfo (PanelContainer)
->   > visible = false
 >   > anchors_preset = 7
 >   > anchor_left = 0.5
 >   > anchor_top = 1.0
@@ -1600,6 +1720,9 @@ MacroMap (Node2D)
 >       RegionNameLabel (Label)
 >       > layout_mode = 2
 >       > horizontal_alignment = 1
+>       TargetList (VBoxContainer)
+>       > layout_mode = 2
+>       > size_flags_vertical = 3
 >       LaunchRaidButton (Button)
 >       > layout_mode = 2
 >       > disabled = true
@@ -1613,7 +1736,6 @@ MacroMap (Node2D)
 >       > disabled = true
 >       > text = "Marry for Alliance"
 >   Tooltip (PanelContainer)
->   > visible = false
 >   > anchors_preset = 7
 >   > anchor_left = 0.5
 >   > anchor_top = 1.0
@@ -1665,6 +1787,8 @@ MacroMap (Node2D)
 >         CloseButton (Button)
 >         > layout_mode = 2
 >         > text = "Close"
+> PlayerHomeMarker (Marker2D)
+> > position = (526.0, 485.0)
 
 --- SCENE: res://scenes/world_map/Region.tscn ---
 Region (Area2D)
@@ -2094,11 +2218,18 @@ var current_raid_target: SettlementData
 
 var is_defensive_raid: bool = false
 
-# --- NEW: Succession System ---
+#Succession System ---
 var minimum_inherited_legitimacy: int = 0
 var loaded_legacy_upgrades: Array[LegacyUpgradeData] = []
-# --- END NEW ---
 
+#Raid Context & Results ---
+# Stores the difficulty (Tier) of the active raid for reward calculation
+var current_raid_difficulty: int = 1 
+
+# Stores the raw outcome from the RTS layer before processing
+# Format: { "outcome": "win", "gold_looted": 0, "buildings_destroyed": 0 }
+var pending_raid_result: Dictionary = {} 
+# -----------------------------------
 # Path to the player's persistent Jarl data
 const PLAYER_JARL_PATH = "res://data/characters/PlayerJarl.tres"
 
@@ -3044,11 +3175,27 @@ func get_labor_capacities() -> Dictionary:
 
 func deposit_resources(loot: Dictionary) -> void:
 	if not current_settlement: return
+	
 	for resource_type in loot:
-		if current_settlement.treasury.has(resource_type):
-			current_settlement.treasury[resource_type] += loot[resource_type]
+		var amount = loot[resource_type]
+		
+		# --- NEW: Handle Population (Thralls) ---
+		if resource_type == "population":
+			# Ensure the variable exists in data (it was added in Phase 2 but let's be safe)
+			if not "population_total" in current_settlement:
+				current_settlement.population_total = 10
+				
+			current_settlement.population_total += amount
+			print("SettlementManager: Acquired %d new thralls. Total Pop: %d" % [amount, current_settlement.population_total])
+		# ----------------------------------------
+		
+		# Handle Standard Resources
+		elif current_settlement.treasury.has(resource_type):
+			current_settlement.treasury[resource_type] += amount
 		else:
-			current_settlement.treasury[resource_type] = loot[resource_type]
+			# Create key if missing (e.g. specialized loot)
+			current_settlement.treasury[resource_type] = amount
+			
 	EventBus.treasury_updated.emit(current_settlement.treasury)
 	save_settlement()
 
@@ -3788,46 +3935,44 @@ extends Resource
 ## An array of resource paths to WorldRegionData files that have been subjugated.
 @export var conquered_regions: Array[String] = []
 
-# --- NEW: Progenitor Pillar Property ---
+# --- Progenitor Pillar Property ---
 ## An array of resource paths to WorldRegionData files that are allied.
 @export var allied_regions: Array[String] = []
-# --- END NEW ---
+
+
+@export_group("Naval Logistics")
+## The distance (in pixels) a fleet can travel with 0% attrition.
+@export var safe_naval_range: float = 600.0
+
+## Attrition penalty per 100 pixels beyond safe range (e.g., 0.10 = 10% risk).
+@export var attrition_per_100px: float = 0.10
+
 
 @export_group("Base Skills")
 ## Combat leadership and personal prowess
 @export var command: int = 10
-
-## Diplomatic skills and charm
 @export var diplomacy: int = 10
-
-## Strategic planning and administration
 @export var stewardship: int = 10
-
-## Religious knowledge and mysticism
 @export var learning: int = 10
-
-## Personal combat skill and courage
 @export var prowess: int = 10
-
-## Ability to inspire and lead
 @export var charisma: int = 10
 
 
 @export_group("Traits")
 ## Array of JarlTraitData resources that modify the Jarl's abilities and story
 @export var traits: Array[JarlTraitData] = []
-
 ## Legacy trait names for backward compatibility (can be removed later)
 @export var legacy_trait_names: Array[String] = []
-
 ## Whether this Jarl is currently wounded (affects stats temporarily)
 @export var is_wounded: bool = false
-
 ## Number of turns remaining for wound recovery
 @export var wound_recovery_turns: int = 0
 
 # --- HELPER FUNCTIONS ---
-# These must be defined *before* the properties that use them.
+
+func get_safe_range() -> float:
+	# Placeholder for future trait modifiers (e.g. "Seafarer" trait)
+	return safe_naval_range
 
 ## Get the number of *available* heirs (not on expedition, etc.)
 func get_available_heir_count() -> int:
@@ -3856,102 +4001,64 @@ func remove_heir(heir_to_remove: JarlHeirData) -> bool:
 func check_has_valid_heir() -> bool:
 	return get_first_available_heir() != null
 
-# --- END HELPER FUNCTIONS ---
-
 
 @export_group("Family & Succession")
 ## The Jarl's spouse (if any)
 @export var spouse_name: String = ""
-
 ## Array of JarlHeirData resources in order of succession priority
 @export var heirs: Array[JarlHeirData] = []
 
-## DEPRECATED: Replaced with a read-only property that calls check_has_valid_heir()
+## DEPRECATED Properties (kept for compatibility if needed)
 var has_valid_heir: bool:
-	get:
-		return check_has_valid_heir()
-
-## DEPRECATED: Replaced with a read-only property that calls get_available_heir_count()
+	get: return check_has_valid_heir()
 var children_count: int:
-	get:
-		return get_available_heir_count()
+	get: return get_available_heir_count()
 
 
 @export_group("Political Status")
-## Current title/rank in the political hierarchy
 @export var title: String = "Jarl"
-
-## Number of vassals under this Jarl's rule
 @export var vassal_count: int = 0
-
-## Overall diplomatic reputation with other Jarls
 @export var reputation: int = 0
-
-## Whether this Jarl is currently in exile or displaced
 @export var is_in_exile: bool = false
 
 
 @export_group("Combat & Mission State")
-## Whether the Jarl is currently leading a raid (affects vulnerability)
 @export var is_on_mission: bool = false
-
-## Number of battles this Jarl has fought
 @export var battles_fought: int = 0
-
-## Number of battles this Jarl has won
 @export var battles_won: int = 0
-
-## Total successful raids completed
 @export var successful_raids: int = 0
 
 
 ## Get the effective skill value including trait modifiers
 func get_effective_skill(skill_name: String) -> int:
 	var base_value: int = 0
-	
 	match skill_name.to_lower():
-		"command":
-			base_value = command
-		"diplomacy":
-			base_value = diplomacy
-		"stewardship":
-			base_value = stewardship
-		"learning":
-			base_value = learning
-		"prowess":
-			base_value = prowess
-		"charisma":
-			base_value = charisma
-		_:
-			return 0
+		"command": base_value = command
+		"diplomacy": base_value = diplomacy
+		"stewardship": base_value = stewardship
+		"learning": base_value = learning
+		"prowess": base_value = prowess
+		"charisma": base_value = charisma
+		_: return 0
 	
-	# Apply trait modifiers
 	var trait_modifier: int = 0
 	for jarl_trait in traits:
-		if jarl_trait == null:
-			continue
-		
+		if jarl_trait == null: continue
 		match skill_name.to_lower():
-			"command":
-				trait_modifier += jarl_trait.command_modifier
-			"stewardship":
-				trait_modifier += jarl_trait.stewardship_modifier
-			"intrigue":
-				trait_modifier += jarl_trait.intrigue_modifier
+			"command": trait_modifier += jarl_trait.command_modifier
+			"stewardship": trait_modifier += jarl_trait.stewardship_modifier
+			"intrigue": trait_modifier += jarl_trait.intrigue_modifier
 	
 	return base_value + trait_modifier
 
 
 ## Add a trait to the Jarl (if not already present)
 func add_trait(trait_data: JarlTraitData) -> void:
-	if trait_data == null:
-		return
-	# Check if we already have this trait (by display name)
+	if trait_data == null: return
 	for existing_trait in traits:
 		if existing_trait != null and existing_trait.display_name == trait_data.display_name:
 			return
 	traits.append(trait_data)
-
 
 ## Check if Jarl has a specific trait by display name
 func has_trait(trait_name: String) -> bool:
@@ -3960,117 +4067,57 @@ func has_trait(trait_name: String) -> bool:
 			return true
 	return false
 
-
-## Get the Jarl's Authority cap based on Renown Tier (GDD reference)
+## Get the Jarl's Authority cap based on Renown Tier
 func get_authority_cap() -> int:
 	match renown_tier:
-		0: return 3  # Petty Jarl
-		1: return 5  # High Jarl
-		2: return 7  # Kingmaker
-		_: return 3 + renown_tier  # Future tiers
+		0: return 3
+		1: return 5
+		2: return 7
+		_: return 3 + renown_tier
 
-
-## Check if the Jarl can take an action (has Authority remaining)
 func can_take_action(authority_cost: int = 1) -> bool:
 	return current_authority >= authority_cost
 
-
-## Spend Authority for an action
 func spend_authority(cost: int = 1) -> bool:
 	if can_take_action(cost):
 		current_authority -= cost
 		return true
 	return false
 
-
-## Award Renown for completing a major action
 func award_renown(amount: int) -> void:
 	renown += amount
 	years_since_action = 0
 	_update_renown_tier()
 
-
-## Update Renown Tier based on current Renown
 func _update_renown_tier() -> void:
-	if renown >= 1000:
-		renown_tier = 3
-	elif renown >= 500:
-		renown_tier = 2
-	elif renown >= 200:
-		renown_tier = 1
-	else:
-		renown_tier = 0
+	if renown >= 1000: renown_tier = 3
+	elif renown >= 500: renown_tier = 2
+	elif renown >= 200: renown_tier = 1
+	else: renown_tier = 0
 
-
-## Reset Authority at the start of a new year
 func reset_authority() -> void:
 	max_authority = get_authority_cap()
-	
 	if succession_debuff_years_remaining > 0:
-		# Jarl is still consolidating power
-		
-		# 1. Calculate the legitimacy multiplier (e.g., 20 Legitimacy -> 0.2)
 		var legit_multiplier = legitimacy / 100.0
-		
-		# 2. Calculate the authority to gain (e.g., 5 * 0.2 = 1.0)
 		var authority_gained = int(round(max_authority * legit_multiplier))
-		
-		# 3. Enforce the "min 1" rule
 		current_authority = max(1, authority_gained)
-		
-		# 4. Count down the debuff timer
 		succession_debuff_years_remaining -= 1
-		
 	else:
-		# The Jarl is stable. Reset to normal max.
 		current_authority = max_authority
 
-
-## Apply aging effects to the Jarl
 func age_jarl(years: int = 1) -> void:
 	age += years
 	years_since_action += years
-	
-	# Apply age-related skill changes
 	if age > 60:
-		# Older Jarls lose prowess but gain wisdom
 		prowess = max(1, prowess - 1)
 		learning = min(20, learning + 1)
 
-
-## Get a summary string of the Jarl's current status
-func get_status_summary() -> String:
-	var status_parts: Array[String] = []
-	
-	status_parts.append("Age: %d" % age)
-	status_parts.append("Renown: %d (Tier %d)" % [renown, renown_tier])
-	status_parts.append("Authority: %d/%d" % [current_authority, max_authority])
-	
-	if is_wounded:
-		status_parts.append("WOUNDED (%d turns)" % wound_recovery_turns)
-	
-	if is_on_mission:
-		status_parts.append("ON MISSION")
-	
-	return " | ".join(status_parts)
-
-
-## Remove a trait by display name
 func remove_trait(trait_name: String) -> bool:
 	for i in range(traits.size()):
 		if traits[i] != null and traits[i].display_name == trait_name:
 			traits.remove_at(i)
 			return true
 	return false
-
-
-## Get all trait names as a string array (for easy saving/display)
-func get_trait_names() -> Array[String]:
-	var trait_names: Array[String] = []
-	for jarl_trait in traits:
-		if jarl_trait != null:
-			trait_names.append(jarl_trait.display_name)
-	return trait_names
 
 --- SCRIPT: res://data/characters/JarlHeirData.gd ---
 # res://data/characters/JarlHeirData.gd
@@ -4412,6 +4459,18 @@ extends Resource
 @export var linear_damping: float = 5.0
 # ---------------------------------------------
 
+--- SCRIPT: res://data/world_map/MapState.gd ---
+# res://data/world_map/MapState.gd
+class_name MapState
+extends Resource
+
+# Dictionary mapping Region Node Names to their Data
+# Format: { "Region1": WorldRegionData, "Region2": WorldRegionData }
+@export var region_data_map: Dictionary = {}
+
+# We can track global map flags here too
+@export var turns_elapsed: int = 0
+
 --- SCRIPT: res://data/world_map/RaidTargetData.gd ---
 # res://data/world_map/RaidTargetData.gd
 class_name RaidTargetData
@@ -4440,7 +4499,7 @@ extends Resource
 
 # Deprecated (Keep for temporary compatibility if needed, or delete)
 # @export var target_settlement_data: SettlementData 
-# @export var base_authority_cost: int = 1
+@export var base_authority_cost: int = 1
 
 --- SCRIPT: res://player/RTSCamera.gd ---
 # res://player/RTSCamera.gd
@@ -5908,70 +5967,131 @@ func _show_victory_message(title: String, subtitle: String) -> void:
 		get_tree().current_scene.add_child(victory_popup) # Fallback
 # --- END NEW ---
 
+# res://scenes/missions/RaidObjectiveManager.gd
+
 func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	"""Called when the enemy's Great Hall is destroyed (OFFENSIVE win condition)"""
 	if mission_over: return
 	mission_over = true
 	
-	print("Enemy Hall destroyed! Mission success!")
+	print("RaidObjectiveManager: Enemy Hall destroyed! Preparing report...")
 	
-	# Add bonus loot
-	raid_loot.add_loot("gold", victory_bonus_loot.get("gold", 200))
-	var total_loot = raid_loot.get_total_loot()
+	# 1. Gather Raw Stats
+	# We only track what physically happened (gold picked up, win state)
+	var raw_gold = raid_loot.collected_loot.get("gold", 0)
 	
-	SettlementManager.deposit_resources(total_loot)
-	print("Mission Complete! %s" % raid_loot.get_loot_summary())
+	# 2. Package the Result
+	var result = {
+		"outcome": "victory",
+		"gold_looted": raw_gold,
+		# We can add more stats here later (e.g. "units_lost")
+	}
 	
-	# --- NEW: Show Victory Popup ---
-	var subtitle = "The enemy's Great Hall is in ruins.\nLoot: %s" % raid_loot.get_loot_summary()
-	_show_victory_message("VICTORY!", subtitle)
+	# 3. Send to Courier
+	DynastyManager.pending_raid_result = result
 	
-	await get_tree().create_timer(3.0).timeout # Increased timer to 3s to read
+	# 4. Show simple feedback and leave
+	# (We purposely do NOT show the full loot popup here anymore)
+	_show_victory_message("VICTORY!", "The settlement lies in ruins.\nReturning to ships...")
 	
+	await get_tree().create_timer(3.0).timeout
 	EventBus.scene_change_requested.emit("settlement")
 
 --- SCRIPT: res://scenes/world_map/MacroCamera.gd ---
 # res://scenes/world_map/MacroCamera.gd
-#
-# Camera controller for the Macro Map.
-# Implements WASD and Middle-Mouse-Drag panning
-# with boundaries.
+# Upgraded with Zoom and Edge Panning
 extends Camera2D 
 class_name MacroCamera
 
+# --- Movement Settings ---
+@export_group("Movement")
 @export var camera_speed: float = 500.0
+@export var edge_pan_margin: float = 20.0
+@export var enable_edge_panning: bool = true
+@export var enable_keyboard_movement: bool = true
+
+# --- Zoom Settings ---
+@export_group("Zoom")
+@export var min_zoom: float = 0.5  # Far away
+@export var max_zoom: float = 2.0  # Close up
+@export var zoom_speed: float = 0.1
+@export var zoom_smoothing: float = 10.0
+
+# --- Bounds Settings ---
+@export_group("Bounds")
 @export var bounds_enabled: bool = true 
 @export var bounds_rect: Rect2 = Rect2(0, 0, 1920, 1080)
 
+# Internal State
+var target_zoom: Vector2 = Vector2.ONE
 var is_dragging: bool = false
 var drag_start_pos: Vector2
 
 func _ready() -> void:
+	target_zoom = zoom
 	make_current()
 
-func _process(delta: float) -> void:
-	var movement_vector := Vector2.ZERO
-	
-	# WASD camera movement [cite: 471]
-	if Input.is_action_pressed("ui_left") or Input.is_key_pressed(KEY_A):
-		movement_vector.x -= 1
-	if Input.is_action_pressed("ui_right") or Input.is_key_pressed(KEY_D):
-		movement_vector.x += 1
-	if Input.is_action_pressed("ui_up") or Input.is_key_pressed(KEY_W):
-		movement_vector.y -= 1
-	if Input.is_action_pressed("ui_down") or Input.is_key_pressed(KEY_S):
-		movement_vector.y += 1
-	
-	if movement_vector != Vector2.ZERO:
-		global_position += movement_vector.normalized() * camera_speed * delta
-		
-	# Apply clamping
+func snap_to_target(target_position: Vector2) -> void:
+	global_position = target_position
 	_clamp_camera_to_bounds()
 
+func _process(delta: float) -> void:
+	# 1. Apply Smooth Zoom
+	zoom = zoom.lerp(target_zoom, zoom_smoothing * delta)
+	
+	# 2. Handle Movement
+	if not is_dragging:
+		_handle_movement(delta)
+		
+	# 3. Clamp Bounds
+	_clamp_camera_to_bounds()
+
+func _handle_movement(delta: float) -> void:
+	var movement_vector := Vector2.ZERO
+	var viewport_size = get_viewport().get_visible_rect().size
+	var mouse_pos = get_viewport().get_mouse_position()
+	
+	# Keyboard Movement
+	if enable_keyboard_movement:
+		if Input.is_action_pressed("ui_left") or Input.is_key_pressed(KEY_A):
+			movement_vector.x -= 1
+		if Input.is_action_pressed("ui_right") or Input.is_key_pressed(KEY_D):
+			movement_vector.x += 1
+		if Input.is_action_pressed("ui_up") or Input.is_key_pressed(KEY_W):
+			movement_vector.y -= 1
+		if Input.is_action_pressed("ui_down") or Input.is_key_pressed(KEY_S):
+			movement_vector.y += 1
+	
+	# Edge Panning
+	if enable_edge_panning:
+		if mouse_pos.x <= edge_pan_margin:
+			movement_vector.x -= 1
+		elif mouse_pos.x >= viewport_size.x - edge_pan_margin:
+			movement_vector.x += 1
+		if mouse_pos.y <= edge_pan_margin:
+			movement_vector.y -= 1
+		elif mouse_pos.y >= viewport_size.y - edge_pan_margin:
+			movement_vector.y += 1
+	
+	# Apply Movement
+	if movement_vector != Vector2.ZERO:
+		movement_vector = movement_vector.normalized()
+		# Adjust speed based on zoom (move faster when zoomed out)
+		var zoom_multiplier = 1.0 / zoom.x
+		global_position += movement_vector * camera_speed * zoom_multiplier * delta
+
 func _unhandled_input(event: InputEvent) -> void:
-	# Middle-Mouse-Drag Panning [cite: 472]
+	# Zoom Controls
 	if event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_MIDDLE:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			_zoom_in()
+			get_viewport().set_input_as_handled()
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_zoom_out()
+			get_viewport().set_input_as_handled()
+			
+		# Middle-Mouse Drag
+		elif event.button_index == MOUSE_BUTTON_MIDDLE:
 			if event.is_pressed():
 				is_dragging = true
 				drag_start_pos = get_global_mouse_position() - global_position
@@ -5985,53 +6105,105 @@ func _unhandled_input(event: InputEvent) -> void:
 		_clamp_camera_to_bounds()
 		get_viewport().set_input_as_handled()
 
+func _zoom_in() -> void:
+	target_zoom += Vector2(zoom_speed, zoom_speed)
+	_clamp_zoom()
+
+func _zoom_out() -> void:
+	target_zoom -= Vector2(zoom_speed, zoom_speed)
+	_clamp_zoom()
+
+func _clamp_zoom() -> void:
+	target_zoom.x = clamp(target_zoom.x, min_zoom, max_zoom)
+	target_zoom.y = clamp(target_zoom.y, min_zoom, max_zoom)
+
 func _clamp_camera_to_bounds() -> void:
 	if bounds_enabled:
-		global_position.x = clamp(global_position.x, bounds_rect.position.x, bounds_rect.end.x)
-		global_position.y = clamp(global_position.y, bounds_rect.position.y, bounds_rect.end.y)
+		# Adjust bounds based on zoom to prevent seeing outside the map
+		var view_size = get_viewport_rect().size / zoom
+		var min_x = bounds_rect.position.x + view_size.x / 2
+		var max_x = bounds_rect.end.x - view_size.x / 2
+		var min_y = bounds_rect.position.y + view_size.y / 2
+		var max_y = bounds_rect.end.y - view_size.y / 2
+		
+		# Only clamp if the map is larger than the view
+		if min_x < max_x: global_position.x = clamp(global_position.x, min_x, max_x)
+		if min_y < max_y: global_position.y = clamp(global_position.y, min_y, max_y)
 
 --- SCRIPT: res://scenes/world_map/MacroMap.gd ---
 # res://scenes/world_map/MacroMap.gd
-# --- MODIFIED: Removed Button, Kept Idle Check ---
-
 extends Node2D
 
-# ... (Keep existing exports/onready) ...
+# --- Scene Configuration ---
 @export var raid_mission_scene_path: String = "res://scenes/missions/RaidMission.tscn"
 @export var settlement_bridge_scene_path: String = "res://scenes/levels/SettlementBridge.tscn"
 @export var end_year_popup_scene: PackedScene
 @export var enemy_raid_chance: float = 0.25
 
+# --- Phase 5.1: Geography Anchor ---
+@export var player_home_marker_path: NodePath = "PlayerHomeMarker"
+@onready var player_home_marker: Marker2D = get_node_or_null(player_home_marker_path)
+@onready var macro_camera: MacroCamera = $MacroCamera
+
+# --- UI References ---
 @onready var authority_label: Label = $UI/JarlInfo/VBoxContainer/AuthorityLabel
 @onready var renown_label: Label = $UI/JarlInfo/VBoxContainer/RenownLabel
 @onready var end_year_button: Button = $UI/Actions/VBoxContainer/EndYearButton
 @onready var region_info_panel: PanelContainer = $UI/RegionInfo
 @onready var region_name_label: Label = $UI/RegionInfo/VBoxContainer/RegionNameLabel
-@onready var launch_raid_button: Button = $UI/RegionInfo/VBoxContainer/LaunchRaidButton
+# Old button is deprecated/hidden, we use the container now:
+@onready var launch_raid_button: Button = $UI/RegionInfo/VBoxContainer/LaunchRaidButton 
+@onready var target_list_container: VBoxContainer = $UI/RegionInfo/VBoxContainer/TargetList
+
 @onready var settlement_button: Button = $UI/Actions/VBoxContainer/SettlementButton
-@onready var tooltip: PanelContainer = $UI/Tooltip
-@onready var tooltip_label: Label = $UI/Tooltip/Label
 @onready var subjugate_button: Button = $UI/RegionInfo/VBoxContainer/SubjugateButton
 @onready var dynasty_button: Button = $UI/Actions/VBoxContainer/DynastyButton
 @onready var dynasty_ui: DynastyUI = $UI/Dynasty_UI
 @onready var marry_button: Button = $UI/RegionInfo/VBoxContainer/MarryButton
+@onready var tooltip: PanelContainer = $UI/Tooltip
+@onready var tooltip_label: Label = $UI/Tooltip/Label
+@onready var regions_container: Node2D = $Regions
 
+# --- Systems & State ---
 const WORK_ASSIGNMENT_SCENE_PATH = "res://ui/WorkAssignment_UI.tscn"
 var work_assignment_ui: CanvasLayer
-
-# --- NEW: Only keep Dialog ---
 var idle_warning_dialog: ConfirmationDialog
-# ---------------------------
-
-@onready var regions_container: Node2D = $Regions
 var end_year_popup: PanelContainer
+
+# Persistence
+const SAVE_PATH = "user://campaign_map.tres"
+var map_state: MapState
+
+# Selection State
 var selected_region_data: WorldRegionData
 var selected_region_node: Region = null
-var calculated_raid_cost: int = 1
 var calculated_subjugate_cost: int = 5 
+var current_attrition_risk: float = 0.0
+
+# Visual Constants
+const SAFE_COLOR := Color(0.2, 0.8, 0.2, 0.1)   # Green
+const RISK_COLOR := Color(1.0, 0.6, 0.0, 0.1)   # Orange
+const HIGH_RISK_COLOR := Color(1.0, 0.0, 0.0, 0.1) # Red
 
 func _ready() -> void:
+	# 1. Anchor & Camera Setup
+	if not player_home_marker:
+		push_error("MacroMap: 'PlayerHomeMarker' missing! Distance calculations will fail.")
+	else:
+		print("MacroMap: Geography Anchor set at %s" % player_home_marker.global_position)
+		if macro_camera:
+			print("MacroMap: Snapping camera to home.")
+			macro_camera.snap_to_target(player_home_marker.global_position)
+
+	# 2. Data Initialization
+	_initialize_world_data()
+	
+	# 3. UI & Signal Connections
+	if launch_raid_button: launch_raid_button.hide() # Hide old button
+	
 	DynastyManager.jarl_stats_updated.connect(_update_jarl_ui)
+	# Redraw map circles when stats (range) change
+	DynastyManager.jarl_stats_updated.connect(func(_j): queue_redraw())
 	
 	for region in regions_container.get_children():
 		if region is Region:
@@ -6039,13 +6211,13 @@ func _ready() -> void:
 			region.region_exited.connect(_on_region_exited)
 			region.region_selected.connect(_on_region_selected)
 			
-	launch_raid_button.pressed.connect(_on_launch_raid_pressed)
 	settlement_button.pressed.connect(_on_settlement_pressed)
 	subjugate_button.pressed.connect(_on_subjugate_pressed)
 	end_year_button.pressed.connect(_on_end_year_pressed)
 	dynasty_button.pressed.connect(_on_dynasty_pressed)
 	marry_button.pressed.connect(_on_marry_pressed)
 	
+	# 4. Popups Setup
 	if end_year_popup_scene:
 		end_year_popup = end_year_popup_scene.instantiate()
 		add_child(end_year_popup) 
@@ -6053,7 +6225,6 @@ func _ready() -> void:
 			end_year_popup.collect_button_pressed.connect(_on_end_year_payout_collected)
 		end_year_popup.hide()
 	
-	# Load UI for fallback (when Idle Warning "Cancel" is clicked)
 	if ResourceLoader.exists(WORK_ASSIGNMENT_SCENE_PATH):
 		var scene = load(WORK_ASSIGNMENT_SCENE_PATH)
 		if scene:
@@ -6062,7 +6233,6 @@ func _ready() -> void:
 			if work_assignment_ui.has_signal("assignments_confirmed"):
 				work_assignment_ui.assignments_confirmed.connect(_on_worker_assignments_confirmed)
 	
-	# --- IDLE WARNING DIALOG ---
 	idle_warning_dialog = ConfirmationDialog.new()
 	idle_warning_dialog.title = "Idle Villagers"
 	idle_warning_dialog.ok_button_text = "End Year Anyway"
@@ -6070,40 +6240,251 @@ func _ready() -> void:
 	idle_warning_dialog.confirmed.connect(_start_end_year_sequence)
 	idle_warning_dialog.canceled.connect(_on_open_worker_ui) 
 	add_child(idle_warning_dialog)
-	# ---------------------------
 	
 	EventBus.event_system_finished.connect(_on_event_system_finished)
+	
+	# 5. Final Cleanup
 	_update_jarl_ui(DynastyManager.get_current_jarl())
 	region_info_panel.hide()
 	tooltip.hide()
+	queue_redraw()
 
-func _on_open_worker_ui() -> void:
-	if not SettlementManager.has_current_settlement(): return
-	if work_assignment_ui:
-		work_assignment_ui.setup(SettlementManager.current_settlement)
+# --- Phase 5.3: Visualizing Range ---
+func _draw() -> void:
+	if not player_home_marker: return
+	var jarl = DynastyManager.get_current_jarl()
+	if not jarl: return
+	
+	var safe_r = jarl.get_safe_range()
+	
+	# Draw Safe Zone
+	draw_circle(player_home_marker.position, safe_r, SAFE_COLOR)
+	draw_arc(player_home_marker.position, safe_r, 0, TAU, 64, Color.GREEN, 2.0)
+	
+	# Draw Visual "Risk" Gradient
+	draw_arc(player_home_marker.position, safe_r + 500, 0, TAU, 64, Color.RED, 1.0)
 
-func _on_worker_assignments_confirmed(assignments: Dictionary) -> void:
-	print("MacroMap: Work assignments saved.")
-	if SettlementManager.current_settlement:
-		SettlementManager.current_settlement.worker_assignments = assignments
-		SettlementManager.save_settlement()
+# --- Phase 5.2: Data Generation & Persistence ---
+func _initialize_world_data() -> void:
+	if ResourceLoader.exists(SAVE_PATH):
+		print("MacroMap: Loading existing campaign state...")
+		map_state = load(SAVE_PATH)
+		_apply_state_to_regions()
+	else:
+		print("MacroMap: New Campaign detected. Generating world...")
+		map_state = MapState.new()
+		_generate_new_world()
+		_save_map_state()
 
-func _on_end_year_pressed() -> void:
-	if not SettlementManager.has_current_settlement():
-		return
+func _generate_new_world() -> void:
+	if not player_home_marker: return
+	var jarl = DynastyManager.get_current_jarl()
+	if not jarl: return
+	
+	var safe_range = jarl.get_safe_range()
+	
+	for region in regions_container.get_children():
+		if not region is Region: continue
 		
-	# 1. Check for Idle Villagers
+		# FIX: Use polygon center for accurate distance
+		var dist = player_home_marker.global_position.distance_to(region.get_global_center())
+		var tier = 1
+		
+		if dist <= safe_range:
+			tier = 1
+		elif dist <= safe_range * 1.5:
+			tier = 2
+		else:
+			tier = 3
+			
+		var data = MapDataGenerator.generate_region_data(tier)
+		region.data = data
+		map_state.region_data_map[region.name] = data
+		
+		print("Generated %s (Tier %d) at dist %.0f" % [data.display_name, tier, dist])
+
+func _apply_state_to_regions() -> void:
+	for region in regions_container.get_children():
+		if not region is Region: continue
+		if map_state.region_data_map.has(region.name):
+			region.data = map_state.region_data_map[region.name]
+
+func _save_map_state() -> void:
+	var error = ResourceSaver.save(map_state, SAVE_PATH)
+	if error != OK:
+		push_error("MacroMap: Failed to save map state!")
+
+# --- Phase 5.4: Selection & UI Logic ---
+func _on_region_selected(data: WorldRegionData) -> void:
+	# --- REFACTOR: Use the helper to clear previous selection first ---
+	# But we must NOT clear the data yet, or we lose the reference we just clicked.
+	# So we only clear the visual node state here.
+	if is_instance_valid(selected_region_node):
+		selected_region_node.is_selected = false
+		selected_region_node.set_visual_state(false)
+	# ------------------------------------------------------------------
+	
+	# Find new node
+	for region in regions_container.get_children():
+		if region is Region and region.data == data:
+			selected_region_node = region
+			selected_region_node.is_selected = true
+			selected_region_node.set_visual_state(false)
+			break
+			
+	selected_region_data = data
+
+func _populate_raid_targets(data: WorldRegionData, is_conquered: bool, is_allied: bool) -> void:
+	# Clear list
+	for child in target_list_container.get_children():
+		child.queue_free()
+		
+	if is_conquered:
+		var label = Label.new()
+		label.text = "Region Conquered"
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		target_list_container.add_child(label)
+		return
+
+	if data.raid_targets.is_empty():
+		var label = Label.new()
+		label.text = "No Valid Targets"
+		target_list_container.add_child(label)
+		return
+
+	# Generate Buttons
+	for target in data.raid_targets:
+		var btn = Button.new()
+		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		
+		var risk_text = ""
+		var btn_color = Color.WHITE
+		
+		if current_attrition_risk > 0.0:
+			risk_text = " (%d%% Risk)" % int(current_attrition_risk * 100)
+			if current_attrition_risk > 0.3:
+				btn_color = Color(1.0, 0.4, 0.4) # Reddish
+			else:
+				btn_color = Color(1.0, 0.9, 0.4) # Yellowish
+		
+		if is_allied:
+			btn.text = "%s (Allied)" % target.display_name
+			btn.disabled = true
+		else:
+			btn.text = "%s - Cost: %d Auth%s" % [target.display_name, target.raid_cost_authority, risk_text]
+			btn.modulate = btn_color
+			
+			var can_afford = DynastyManager.can_spend_authority(target.raid_cost_authority)
+			if not can_afford:
+				btn.disabled = true
+				btn.text += " (Low Auth)"
+			else:
+				btn.pressed.connect(_initiate_raid.bind(target))
+		
+		target_list_container.add_child(btn)
+
+func _initiate_raid(target: RaidTargetData) -> void:
+	# 1. Apply Attrition Gamble
+	if current_attrition_risk > 0.0:
+		_apply_attrition(current_attrition_risk)
+	
+	# 2. Set Data
+	DynastyManager.set_current_raid_target(target.settlement_data)
+	
+	# 3. Set Difficulty Context (Phase 5.5)
+	DynastyManager.current_raid_difficulty = target.difficulty_rating
+	
+	# 4. Spend Cost & Launch
+	DynastyManager.spend_authority(target.raid_cost_authority)
+	print("Launching raid on: %s (Diff: %d)" % [target.display_name, target.difficulty_rating])
+	EventBus.scene_change_requested.emit("raid_mission")
+
+func _apply_attrition(risk_chance: float) -> void:
+	if not SettlementManager.has_current_settlement(): return
+	
+	var garrison = SettlementManager.current_settlement.garrisoned_units
+	var units_lost = 0
+	var units_to_remove: Array[String] = []
+	
+	print("Applying Attrition Risk: %.2f" % risk_chance)
+	
+	for unit_path in garrison.keys():
+		var count = garrison[unit_path]
+		var surviving_count = 0
+		for i in range(count):
+			if randf() > risk_chance:
+				surviving_count += 1
+			else:
+				units_lost += 1
+		
+		if surviving_count > 0:
+			garrison[unit_path] = surviving_count
+		else:
+			units_to_remove.append(unit_path)
+			
+	for path in units_to_remove:
+		garrison.erase(path)
+		
+	SettlementManager.save_settlement()
+	if units_lost > 0:
+		print("ATTRITION: Lost %d units to the sea!" % units_lost)
+
+func _update_diplomacy_buttons(data: WorldRegionData, is_conquered: bool, is_allied: bool) -> void:
+	if is_conquered:
+		subjugate_button.disabled = true
+		subjugate_button.text = "Subjugate (Conquered)"
+		marry_button.disabled = true
+		marry_button.text = "Marry (Conquered)"
+		return
+
+	# Subjugate
+	var base_cost = 5
+	var ally_mod = 0
+	if is_allied: ally_mod = 2
+	calculated_subjugate_cost = max(1, base_cost - ally_mod)
+	
+	subjugate_button.text = "Subjugate (Cost: %d)" % calculated_subjugate_cost
+	subjugate_button.disabled = not DynastyManager.can_spend_authority(calculated_subjugate_cost)
+	
+	# Marry
+	marry_button.text = "Marry (Cost: 1 Heir)"
+	var has_heir = DynastyManager.get_available_heir_count() > 0
+	marry_button.disabled = is_allied or not has_heir
+	if is_allied: marry_button.text = "Marry (Allied)"
+
+# --- Standard Action Handlers ---
+func _on_subjugate_pressed() -> void:
+	if not selected_region_data: return
+	var success = DynastyManager.spend_authority(calculated_subjugate_cost)
+	if success:
+		DynastyManager.add_conquered_region(selected_region_data.resource_path)
+		var jarl = DynastyManager.get_current_jarl()
+		jarl.legitimacy = min(100, jarl.legitimacy + 5) 
+		DynastyManager.jarl_stats_updated.emit(jarl) 
+		print("Region %s successfully subjugated." % selected_region_data.display_name)
+		_on_region_selected(selected_region_data)
+
+func _on_marry_pressed() -> void:
+	if not selected_region_data: return
+	var success = DynastyManager.marry_heir_for_alliance(selected_region_data.resource_path)
+	if success: 
+		print("Alliance with %s successful." % selected_region_data.display_name)
+		_on_region_selected(selected_region_data)
+
+func _on_settlement_pressed() -> void: EventBus.scene_change_requested.emit("settlement")
+func _on_dynasty_pressed() -> void: if dynasty_ui: dynasty_ui.show()
+
+# --- End Year Logic ---
+func _on_end_year_pressed() -> void:
+	if not SettlementManager.has_current_settlement(): return
 	var settlement = SettlementManager.current_settlement
 	var total_pop = settlement.population_total
 	var assigned_pop = 0
-	
 	for key in settlement.worker_assignments:
 		assigned_pop += settlement.worker_assignments[key]
 	
-	var idle_count = total_pop - assigned_pop
-	
-	if idle_count > 0:
-		idle_warning_dialog.dialog_text = "You have %d idle villagers.\nEnd year anyway?" % idle_count
+	if (total_pop - assigned_pop) > 0:
+		idle_warning_dialog.dialog_text = "You have %d idle villagers.\nEnd year anyway?" % (total_pop - assigned_pop)
 		idle_warning_dialog.popup_centered()
 	else:
 		_start_end_year_sequence()
@@ -6112,11 +6493,31 @@ func _start_end_year_sequence() -> void:
 	if not is_instance_valid(end_year_popup):
 		_process_end_year_logic({})
 		return
-	
 	var payout = SettlementManager.calculate_payout()
 	end_year_popup.display_payout(payout, "End of Year Report")
 
-# ... (Keep remaining functions: _update_jarl_ui, region handlers, raid buttons, etc. unchanged) ...
+func _on_end_year_payout_collected(payout: Dictionary) -> void:
+	_process_end_year_logic(payout)
+
+func _process_end_year_logic(payout: Dictionary) -> void:
+	if not payout.is_empty(): SettlementManager.deposit_resources(payout)
+	DynastyManager.end_year()
+	if is_instance_valid(selected_region_node):
+		selected_region_node.is_selected = false
+		selected_region_node.set_visual_state(false)
+	selected_region_data = null
+	selected_region_node = null
+	region_info_panel.hide()
+
+func _on_event_system_finished() -> void:
+	if randf() < enemy_raid_chance:
+		print("--- ENEMY RAID TRIGGERED ---")
+		DynastyManager.is_defensive_raid = true
+		EventBus.scene_change_requested.emit("raid_mission")
+	else:
+		print("No enemy raid this year.")
+		EventBus.scene_change_requested.emit("settlement")
+
 func _update_jarl_ui(jarl: JarlData) -> void:
 	if not jarl: return
 	authority_label.text = "Authority: %d / %d" % [jarl.current_authority, jarl.max_authority]
@@ -6130,117 +6531,35 @@ func _on_region_hovered(data: WorldRegionData, _screen_position: Vector2) -> voi
 	tooltip.show()
 
 func _on_region_exited() -> void: tooltip.hide()
+func _on_open_worker_ui() -> void:
+	if work_assignment_ui and SettlementManager.current_settlement:
+		work_assignment_ui.setup(SettlementManager.current_settlement)
+func _on_worker_assignments_confirmed(assignments: Dictionary) -> void:
+	if SettlementManager.current_settlement:
+		SettlementManager.current_settlement.worker_assignments = assignments
+		SettlementManager.save_settlement()
+func _unhandled_input(event: InputEvent) -> void:
+	# Detect clicks on the "Ocean" (Background)
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			_deselect_current_region()
 
-func _on_region_selected(data: WorldRegionData) -> void:
+func _deselect_current_region() -> void:
+	# 1. Reset Visuals on the old node
 	if is_instance_valid(selected_region_node):
 		selected_region_node.is_selected = false
 		selected_region_node.set_visual_state(false)
-	for region in regions_container.get_children():
-		if region is Region and region.data == data:
-			selected_region_node = region
-			selected_region_node.is_selected = true
-			selected_region_node.set_visual_state(false)
-			break
-	selected_region_data = data
-	region_name_label.text = data.display_name
-	var jarl = DynastyManager.get_current_jarl()
-	if not jarl: return
-	var is_conquered = DynastyManager.has_conquered_region(data.resource_path)
-	var is_allied = DynastyManager.is_allied_region(data.resource_path)
-	if is_conquered:
-		launch_raid_button.disabled = true
-		launch_raid_button.text = "Raid (Conquered)"
-		subjugate_button.disabled = true
-		subjugate_button.text = "Subjugate (Conquered)"
-		marry_button.disabled = true
-		marry_button.text = "Marry (Conquered)"
-		region_info_panel.show()
-		return
-	calculated_raid_cost = max(1, data.base_authority_cost) 
-	launch_raid_button.text = "Launch Raid (Cost: %d Auth)" % calculated_raid_cost
-	var can_afford_raid = DynastyManager.can_spend_authority(calculated_raid_cost)
-	launch_raid_button.disabled = (not can_afford_raid) or is_allied
-	if is_allied: launch_raid_button.text = "Raid (Allied)"
-	elif not can_afford_raid: launch_raid_button.text += "\nNot Enough Authority"
-	var base_subjugate_cost = 5
-	var trait_penalty = 0
-	var alliance_discount = 0
-	var penalty_text = ""
-	var discount_text = ""
-	if jarl.has_trait("Pious") and data.region_type_tag == "Monastery":
-		trait_penalty = 3
-		penalty_text = " (+3 Pious)"
-	if is_allied:
-		alliance_discount = 2 
-		discount_text = " (-2 Alliance)"
-	calculated_subjugate_cost = max(1, base_subjugate_cost + trait_penalty - alliance_discount)
-	subjugate_button.text = "Subjugate (Cost: %d Auth%s%s)" % [calculated_subjugate_cost, penalty_text, discount_text]
-	var can_afford_subjugate = DynastyManager.can_spend_authority(calculated_subjugate_cost)
-	subjugate_button.disabled = not can_afford_subjugate
-	if not can_afford_subjugate: subjugate_button.text += "\nNot Enough Authority"
-	marry_button.text = "Marry for Alliance (Cost: 1 Heir)"
-	var has_heir = DynastyManager.get_available_heir_count() > 0
-	marry_button.disabled = is_allied or (not has_heir)
-	if is_allied: marry_button.text = "Marry (Allied)"
-	elif not has_heir: marry_button.text += "\n(No Available Heir)"
-	region_info_panel.show()
-
-func _on_launch_raid_pressed() -> void:
-	if not selected_region_data: return
-	DynastyManager.set_current_raid_target(selected_region_data.target_settlement_data)
-	var success = DynastyManager.spend_authority(calculated_raid_cost)
-	if success: EventBus.scene_change_requested.emit("raid_mission")
-	else: DynastyManager.set_current_raid_target(null)
-
-func _on_subjugate_pressed() -> void:
-	if not selected_region_data: return
-	var success = DynastyManager.spend_authority(calculated_subjugate_cost)
-	if success:
-		DynastyManager.add_conquered_region(selected_region_data.resource_path)
-		var jarl = DynastyManager.get_current_jarl()
-		jarl.legitimacy = min(100, jarl.legitimacy + 5) 
-		DynastyManager.jarl_stats_updated.emit(jarl) 
-		print("Region %s successfully subjugated." % selected_region_data.display_name)
-
-func _on_marry_pressed() -> void:
-	if not selected_region_data: return
-	var success = DynastyManager.marry_heir_for_alliance(selected_region_data.resource_path)
-	if success: print("MacroMap: Alliance with %s successful." % selected_region_data.display_name)
-	else: print("MacroMap: Alliance failed (no available heir).")
-
-func _on_dynasty_pressed() -> void:
-	if is_instance_valid(dynasty_ui): dynasty_ui.show()
-
-func _on_end_year_payout_collected(payout: Dictionary) -> void:
-	_process_end_year_logic(payout)
-
-func _on_event_system_finished() -> void:
-	if randf() < enemy_raid_chance:
-		print("--- ENEMY RAID TRIGGERED ---")
-		DynastyManager.is_defensive_raid = true
-		EventBus.scene_change_requested.emit("raid_mission")
-	else:
-		print("No enemy raid this year.")
-		EventBus.scene_change_requested.emit("settlement")
-
-func _process_end_year_logic(payout: Dictionary) -> void:
-	if not payout.is_empty(): SettlementManager.deposit_resources(payout)
-	DynastyManager.end_year()
-	if is_instance_valid(selected_region_node):
-		selected_region_node.is_selected = false
-		selected_region_node.set_visual_state(false)
-	selected_region_data = null
+	
+	# 2. Clear Selection Data
 	selected_region_node = null
-	region_info_panel.hide()
-
-func _on_settlement_pressed() -> void: EventBus.scene_change_requested.emit("settlement")
-func _unhandled_input(_event: InputEvent) -> void: pass
+	selected_region_data = null
+	
+	# 3. Hide the Side Panel
+	if region_info_panel:
+		region_info_panel.hide()
 
 --- SCRIPT: res://scenes/world_map/Region.gd ---
 # res://scenes/world_map/Region.gd
-#
-# Attached to an Area2D node to make an irregular map province
-# clickable and interactive using CollisionPolygon2D.
 class_name Region
 extends Area2D
 
@@ -6249,16 +6568,18 @@ signal region_hovered(data: WorldRegionData, screen_position: Vector2)
 signal region_exited()
 signal region_selected(data: WorldRegionData)
 
-# The data resource representing this province (Economy, Name, etc.)
+# The data resource representing this province
 @export var data: WorldRegionData
 
-# Reference to the visual polygon (must be a child node named "HighlightPoly")
-@onready var highlight_poly: Polygon2D = $HighlightPoly
+# Reference to the visual polygon (Source of Truth)
+@onready var highlight_poly: Polygon2D = get_node_or_null("HighlightPoly")
+# Reference to the collision polygon (Target)
+@onready var collision_poly: CollisionPolygon2D = get_node_or_null("CollisionPolygon2D")
 
 # Visual Settings
-var default_color: Color = Color(0, 0, 0, 0)       # Invisible by default
-var hover_color: Color = Color(1.0, 1.0, 1.0, 0.2) # Faint White Overlay
-var selected_color: Color = Color(1.0, 0.9, 0.2, 0.4) # Yellowish Overlay
+var default_color: Color = Color(0, 0, 0, 0)       # Invisible
+var hover_color: Color = Color(1.0, 1.0, 1.0, 0.2) # Faint White
+var selected_color: Color = Color(1.0, 0.9, 0.2, 0.4) # Yellowish
 
 var is_selected: bool = false
 
@@ -6268,9 +6589,21 @@ func _ready() -> void:
 		push_error("Region node '%s' has no WorldRegionData assigned!" % name)
 		return
 	
-	# 2. Node Validation
+	# 2. Node Validation & Sync
 	if not highlight_poly:
-		push_error("Region '%s' is missing its $HighlightPoly (Polygon2D) child." % name)
+		push_error("Region '%s' is missing 'HighlightPoly' (Polygon2D)." % name)
+		return
+		
+	if not collision_poly:
+		# Optional: Create it if it doesn't exist
+		collision_poly = CollisionPolygon2D.new()
+		collision_poly.name = "CollisionPolygon2D"
+		add_child(collision_poly)
+		print("Region '%s': Created missing CollisionPolygon2D." % name)
+	
+	# --- THE MAGIC FIX ---
+	_sync_collision_shape()
+	# ---------------------
 	
 	# 3. Input Connection
 	mouse_entered.connect(_on_mouse_entered)
@@ -6280,10 +6613,26 @@ func _ready() -> void:
 	# 4. Initial State
 	set_visual_state(false)
 
+func _sync_collision_shape() -> void:
+	"""Copies points from the Visual Polygon to the Collision Polygon."""
+	if not highlight_poly: return
+	
+	if highlight_poly.polygon.is_empty():
+		push_warning("Region '%s': HighlightPoly has no points!" % name)
+		return
+	
+	# --- DEBUG PRINT ---
+	print("Region: Syncing shape for '%s' (%d points)..." % [name, highlight_poly.polygon.size()])
+	# -------------------
+
+	# Copy the points over
+	collision_poly.polygon = highlight_poly.polygon
+	
+	# Ensure positions match
+	collision_poly.position = highlight_poly.position
+	collision_poly.scale = highlight_poly.scale
+
 func set_visual_state(is_hovered: bool) -> void:
-	"""
-	Updates the color/visibility of the highlight polygon based on state.
-	"""
 	if not highlight_poly: return
 		
 	var target_color: Color
@@ -6296,10 +6645,8 @@ func set_visual_state(is_hovered: bool) -> void:
 		highlight_poly.visible = true
 	else:
 		target_color = default_color
-		# We hide it completely when inactive to save draw calls
 		highlight_poly.visible = false 
 		
-	# Simple tween for smooth highlight feel
 	var tween = create_tween()
 	tween.tween_property(highlight_poly, "color", target_color, 0.1)
 
@@ -6316,12 +6663,25 @@ func _on_mouse_exited() -> void:
 	emit_signal("region_exited")
 
 func _on_input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
-	# Detect Left Click
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		is_selected = true
-		set_visual_state(true) # Force visual update immediately
+		set_visual_state(true)
 		emit_signal("region_selected", data)
-		get_viewport().set_input_as_handled() # Prevent click from falling through to map
+		get_viewport().set_input_as_handled()
+func get_global_center() -> Vector2:
+	# If no poly, fallback to node position
+	if not collision_poly or collision_poly.polygon.is_empty():
+		return global_position
+		
+	var sum_points = Vector2.ZERO
+	for point in collision_poly.polygon:
+		sum_points += point
+		
+	var local_center = sum_points / collision_poly.polygon.size()
+	
+	# Apply the node's transform (position/scale/rotation) to get world coords
+	return to_global(local_center)
+	
 
 --- SCRIPT: res://scenes/world_map/WorldMap_Stub.gd ---
 # res://scenes/world_map/WorldMap_Stub.gd
@@ -6952,7 +7312,9 @@ func _ready() -> void:
 	# --- NEW: Setup Worker UI ---
 	_setup_worker_ui()
 	# ----------------------------
-	
+	if not DynastyManager.pending_raid_result.is_empty():
+		_process_raid_return()
+		
 	storefront_ui.show()
 	if end_of_year_popup:
 		end_of_year_popup.hide()
@@ -7203,6 +7565,41 @@ func _on_building_right_clicked(building: BaseBuilding) -> void:
 	# Re-buy
 	if SettlementManager.attempt_purchase(cost):
 		EventBus.building_ready_for_placement.emit(data)
+
+func _process_raid_return() -> void:
+	print("SettlementBridge: Processing return from raid...")
+	var result = DynastyManager.pending_raid_result
+	var difficulty = DynastyManager.current_raid_difficulty
+	var loot_summary = {}
+	
+	if result.get("outcome") == "victory":
+		# 1. Retrieve Looted Gold
+		var gold = result.get("gold_looted", 0)
+		
+		# 2. Calculate Bonus Gold (Victory Bonus)
+		# Base 200 + (50 per difficulty star)
+		var bonus_gold = 200 + (difficulty * 50)
+		var total_gold = gold + bonus_gold
+		
+		loot_summary["gold"] = total_gold
+		
+		# 3. Calculate Thralls (The Scarcity Engine)
+		# Formula: Random(2 to 4) * Difficulty
+		var base_thralls = randi_range(2, 4)
+		var total_thralls = base_thralls * difficulty
+		
+		loot_summary["population"] = total_thralls
+		
+		# 4. Deposit
+		SettlementManager.deposit_resources(loot_summary)
+		
+		# 5. Show the Report
+		if is_instance_valid(end_of_year_popup):
+			# We reuse the EndOfYear popup but with a custom title
+			end_of_year_popup.display_payout(loot_summary, "Raid Successful!")
+			
+	# Clear the result so it doesn't trigger again on reload
+	DynastyManager.pending_raid_result.clear()
 
 --- SCRIPT: res://scripts/formations/SquadFormation.gd ---
 # res://scripts/formations/SquadFormation.gd
@@ -7498,129 +7895,117 @@ func get_formation_info() -> Dictionary:
 
 --- SCRIPT: res://scripts/generators/MapDataGenerator.gd ---
 # res://scripts/generators/MapDataGenerator.gd
-#
-# Utility class to procedurally generate WorldRegionData and RaidTargetData.
-# This allows for infinite replayability on the map.
 class_name MapDataGenerator
 extends RefCounted
 
-# --- Name Generation Config ---
+# --- Name Generation ---
 const REGION_PREFIXES = ["North", "South", "West", "East", "High", "Low", "Old", "New", "Great", "Little"]
 const REGION_NAMES = ["Vinland", "Frankia", "Saxony", "Wessex", "Mercia", "Northumbria", "Alba", "Ireland", "Rus", "Novgorod", "Agdir", "Rogaland"]
 const REGION_SUFFIXES = ["Hold", "Reach", "Lands", "Coast", "Valley", "Fjord", "Isle", "Haven", "March"]
 
-# --- Type Config ---
-const TYPES = ["Monastery", "Village", "Fortress", "Trading Post"]
+# --- Templates ---
+const LAYOUT_MONASTERY = "res://data/settlements/monastery_base.tres"
+const LAYOUT_VILLAGE = "res://data/settlements/economic_base.tres" # Placeholder
+const LAYOUT_FORTRESS = "res://data/settlements/fortress_layout.tres"
 
-# --- Layout Templates ---
-# These must match actual files in your project
-const RAID_LAYOUTS = [
-	"res://data/settlements/monastery_base.tres",
-	"res://data/settlements/economic_base.tres",
-	"res://data/settlements/fortress_layout.tres",
-	"res://data/settlements/small_defensive.tres"
-]
+# --- Generation Logic ---
 
-static func generate_region_data() -> WorldRegionData:
+static func generate_region_data(tier: int) -> WorldRegionData:
 	var data = WorldRegionData.new()
 	
-	# 1. Generate Base Region Identity
+	# 1. Identity
 	data.display_name = _generate_name()
-	data.region_type_tag = "Province" # Generic tag for the container
+	data.region_type_tag = "Province"
 	
-	# 2. Determine Overall Region Difficulty & Economy
-	var regional_difficulty = randf_range(1.0, 3.0)
+	# 2. Difficulty Scaling
+	var base_diff = 1.0 + (float(tier - 1) * 0.8)
+	var variance = randf_range(0.0, 0.5)
+	var final_difficulty = base_diff + variance
 	
-	# The passive income if you conquer the whole region (using a random type profile)
-	var income_profile = TYPES.pick_random()
-	data.yearly_income = _generate_income(income_profile, regional_difficulty)
-	
-	data.description = "A %s region known for its %s." % [
-		"wealthy" if regional_difficulty > 2.0 else "modest",
-		"gold" if "gold" in data.yearly_income else "resources"
-	]
-	
-	# 3. Generate 1-3 Raid Targets (The POIs)
+	# 3. Generate Targets
 	var target_count = randi_range(1, 3)
 	
+	# --- FIX: Declare this BEFORE the loop ---
+	var min_cost = 999 
+	# ---------------------------------------
+	
 	for i in range(target_count):
-		var target = _generate_raid_target(data.display_name, regional_difficulty)
+		var target = _generate_target_for_tier(data.display_name, tier, final_difficulty)
 		if target:
 			data.raid_targets.append(target)
-			
-	print("MapDataGenerator: Generated region '%s' with %d targets." % [data.display_name, target_count])
+			# Check if this target is cheaper than the current minimum
+			if target.raid_cost_authority < min_cost:
+				min_cost = target.raid_cost_authority
+	
+	# 4. Set the region base cost (Safe check if loop failed)
+	data.base_authority_cost = min_cost if min_cost != 999 else 1
+	
+	# 5. Income & Description
+	data.yearly_income = {"gold": int(10 * final_difficulty), "food": int(20 * final_difficulty)}
+	data.description = "A Tier %d region. Difficulty Rating: %.1f" % [tier, final_difficulty]
+	
 	return data
 
-static func _generate_raid_target(region_name: String, regional_difficulty_mod: float) -> RaidTargetData:
+static func _generate_target_for_tier(region_name: String, tier: int, difficulty: float) -> RaidTargetData:
 	var target = RaidTargetData.new()
+	var layout_path = ""
+	var type_name = ""
 	
-	# Pick a specific type for this target (e.g., Agdir Monastery)
-	var type = TYPES.pick_random()
-	target.display_name = "%s %s" % [region_name, type]
+	# Biased RNG based on Tier
+	var roll = randf()
 	
-	# Calculate stats based on regional difficulty + variance
-	var local_variance = randf_range(0.8, 1.2)
-	var final_difficulty = regional_difficulty_mod * local_variance
+	if tier == 1:
+		# Mostly Monasteries/Villages
+		if roll < 0.4: 
+			type_name = "Monastery"
+			layout_path = LAYOUT_MONASTERY
+		else:
+			type_name = "Village"
+			layout_path = LAYOUT_VILLAGE
+			
+	elif tier == 2:
+		# Mix
+		if roll < 0.3:
+			type_name = "Monastery"
+			layout_path = LAYOUT_MONASTERY
+		elif roll < 0.7:
+			type_name = "Trading Post"
+			layout_path = LAYOUT_VILLAGE
+		else:
+			type_name = "Fortress"
+			layout_path = LAYOUT_FORTRESS
+			
+	elif tier == 3:
+		# Mostly Hard Targets
+		if roll < 0.2:
+			type_name = "Rich Monastery"
+			layout_path = LAYOUT_MONASTERY
+		else:
+			type_name = "Fortress"
+			layout_path = LAYOUT_FORTRESS
 	
-	target.difficulty_rating = int(round(final_difficulty))
-	target.raid_cost_authority = int(max(1, round(final_difficulty))) # Min 1 Authority
+	target.display_name = "%s %s" % [region_name, type_name]
+	target.difficulty_rating = int(round(difficulty))
+	target.raid_cost_authority = max(1, int(round(difficulty * 0.5)))
 	
-	# Flavor text
-	target.description = "A %s level %d." % [type.to_lower(), target.difficulty_rating]
-	
-	# Assign a Settlement Layout
-	# In a complex PCG system, you might generate the settlement here.
-	# For now, we pick a template and duplicate it so changes don't affect the source file.
-	var layout_path = RAID_LAYOUTS.pick_random()
-	
-	# Try to match layout to type if possible (simple heuristic)
-	if type == "Monastery":
-		layout_path = "res://data/settlements/monastery_base.tres"
-	elif type == "Fortress":
-		layout_path = "res://data/settlements/fortress_layout.tres"
-	
+	# Load Layout Template
 	if ResourceLoader.exists(layout_path):
 		target.settlement_data = load(layout_path).duplicate(true)
 		
-		# Optional: Modify the settlement based on difficulty
-		# e.g., Add more garrison units
-		if target.settlement_data and target.settlement_data.garrisoned_units:
-			for unit_path in target.settlement_data.garrisoned_units:
-				target.settlement_data.garrisoned_units[unit_path] += int(final_difficulty)
-	else:
-		push_warning("MapDataGenerator: Layout template not found: %s" % layout_path)
-		return null
-		
+		# Scale Garrison Size by Difficulty
+		_scale_garrison(target.settlement_data, difficulty)
+	
 	return target
 
-static func _generate_name() -> String:
-	var p = REGION_PREFIXES.pick_random()
-	var n = REGION_NAMES.pick_random()
-	var s = REGION_SUFFIXES.pick_random()
+static func _scale_garrison(settlement: SettlementData, multiplier: float) -> void:
+	if not settlement or not settlement.garrisoned_units: return
 	
-	# Random naming structure
-	var roll = randi() % 3
-	match roll:
-		0: return "%s %s" % [p, n]
-		1: return "%s %s" % [n, s]
-		_: return n
+	for unit_path in settlement.garrisoned_units:
+		var count = settlement.garrisoned_units[unit_path]
+		settlement.garrisoned_units[unit_path] = int(count * multiplier)
 
-static func _generate_income(type: String, multiplier: float) -> Dictionary:
-	var income = {}
-	
-	match type:
-		"Monastery":
-			income["gold"] = int(randi_range(15, 30) * multiplier)
-		"Village":
-			income["food"] = int(randi_range(20, 40) * multiplier)
-			income["wood"] = int(randi_range(10, 20) * multiplier)
-		"Fortress":
-			income["stone"] = int(randi_range(10, 20) * multiplier)
-			income["gold"] = int(randi_range(5, 15) * multiplier)
-		"Trading Post":
-			income["gold"] = int(randi_range(20, 50) * multiplier)
-			
-	return income
+static func _generate_name() -> String:
+	return "%s %s" % [REGION_PREFIXES.pick_random(), REGION_NAMES.pick_random()]
 
 --- SCRIPT: res://scripts/ui/BuildingPreviewCursor.gd ---
 # BuildingPreviewCursor.gd - RTS-style building placement system
