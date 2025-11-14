@@ -1,112 +1,143 @@
 # res://ui/DynastyUI.gd
-#
-# Manages the "Dynasty" UI panel, which allows the player
-# to spend heirs as a resource for the "Progenitor" pillar.
 class_name DynastyUI
 extends PanelContainer
 
-@onready var title_label: Label = $Margin/VBox/TitleLabel
-@onready var heirs_container: VBoxContainer = $Margin/VBox/HeirsContainer
-@onready var close_button: Button = $Margin/VBox/CloseButton
+# References
+@onready var ancestors_container: HBoxContainer = $Margin/MainLayout/AncestorsScroll/AncestorsHBox
+@onready var current_jarl_name: Label = $Margin/MainLayout/CurrentJarlPanel/Stats/NameLabel
+@onready var current_jarl_stats: Label = $Margin/MainLayout/CurrentJarlPanel/Stats/StatsLabel
+@onready var heirs_container: HBoxContainer = $Margin/MainLayout/HeirsScroll/HeirsHBox
+@onready var close_button: Button = $Margin/MainLayout/CloseButton
+@onready var context_menu: PopupMenu = $ContextMenu
 
-# Expedition cost from proposal 
-const EXPEDITION_GOLD_COST = 500
+# Resources
+const HEIR_CARD_SCENE = preload("res://ui/components/HeirCard.tscn")
+const PLACEHOLDER_ICON = preload("res://textures/placeholders/unit_placeholder.png")
+
+var selected_heir: JarlHeirData
 
 func _ready() -> void:
-	close_button.pressed.connect(hide)
-	
-	# Connect to the DynastyManager to refresh when Jarl data changes
+	close_button.pressed.connect(_on_close_button_pressed)
 	DynastyManager.jarl_stats_updated.connect(_on_jarl_stats_updated)
 	
-	# Initial population
+	# --- FIX: Use Signal instead of overriding show() ---
+	visibility_changed.connect(_on_visibility_changed)
+	# ---------------------------------------------------
+	
+	# Setup Context Menu
+	context_menu.add_item("Designate Heir (Cost: 1 Authority)", 0)
+	context_menu.add_item("Fund Expedition (Cost: 500 Gold)", 1)
+	context_menu.add_item("Arrange Marriage (Cost: 1 Heir)", 2)
+	context_menu.id_pressed.connect(_on_context_menu_item_pressed)
+	
 	if DynastyManager.current_jarl:
 		_on_jarl_stats_updated(DynastyManager.get_current_jarl())
 	
-	hide() # Start hidden by default
+	hide()
+
+# --- NEW: Handler for visibility changes ---
+func _on_visibility_changed() -> void:
+	if visible and DynastyManager.current_jarl:
+		_on_jarl_stats_updated(DynastyManager.get_current_jarl())
+		print("Dynasty UI: Auto-refreshed data on visible.")
+# -------------------------------------------
 
 func _on_jarl_stats_updated(jarl: JarlData) -> void:
-	"""Refreshes all UI elements with the latest Jarl data."""
-	if not jarl:
-		return
-		
-	title_label.text = "%s's Dynasty" % jarl.display_name
+	if not jarl: return
 	
-	# Clear existing heirs
+	# 1. Update Current Jarl
+	current_jarl_name.text = jarl.display_name
+	current_jarl_stats.text = "Age: %d | Authority: %d/%d | Renown: %d" % [jarl.age, jarl.current_authority, jarl.max_authority, jarl.renown]
+
+	# 2. Update Ancestors
+	_populate_ancestors(jarl.ancestors)
+
+	# 3. Update Heirs
+	_populate_heirs(jarl.heirs)
+
+func _populate_ancestors(ancestors_data: Array) -> void:
+	for child in ancestors_container.get_children():
+		child.queue_free()
+		
+	for data in ancestors_data:
+		var texture = TextureRect.new()
+		texture.custom_minimum_size = Vector2(64, 64)
+		texture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		texture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		
+		# Enable Mouse Interaction for Tooltips
+		texture.mouse_filter = Control.MOUSE_FILTER_STOP 
+		
+		if data.has("portrait") and data["portrait"] != null:
+			texture.texture = data["portrait"]
+		else:
+			texture.texture = PLACEHOLDER_ICON
+			
+		texture.tooltip_text = "%s\nFinal Renown: %d\nDied: %s" % [
+			data.get("name", "Ancestor"), 
+			data.get("final_renown", 0),
+			data.get("death_reason", "Unknown")
+		]
+		
+		texture.modulate = Color(0.5, 0.5, 0.5, 0.8) 
+		ancestors_container.add_child(texture)
+
+func _populate_heirs(heirs_data: Array[JarlHeirData]) -> void:
 	for child in heirs_container.get_children():
 		child.queue_free()
 		
-	# Populate heirs list
-	if jarl.heirs.is_empty():
-		var label = Label.new()
-		label.text = "No valid heirs."
-		heirs_container.add_child(label)
-		return
+	for heir in heirs_data:
+		var card = HEIR_CARD_SCENE.instantiate()
+		heirs_container.add_child(card)
+		card.setup(heir)
+		card.card_clicked.connect(_on_heir_card_clicked)
 
-	# Check current gold for button disabling
-	var current_gold = 0
-	if SettlementManager.current_settlement:
-		current_gold = SettlementManager.current_settlement.treasury.get("gold", 0)
-
-	for heir in jarl.heirs:
-		if not heir: continue
-		
-		var heir_row = HBoxContainer.new()
-		heir_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		
-		var name_label = Label.new()
-		name_label.text = "• %s (%d)" % [heir.display_name, heir.age]
-		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		heir_row.add_child(name_label)
-
-		match heir.status:
-			JarlHeirData.HeirStatus.Available:
-				var expedition_button = Button.new()
-				expedition_button.text = "Send on Expedition"
-				expedition_button.tooltip_text = "Cost: 1 Heir, %d Gold" % EXPEDITION_GOLD_COST
-				
-				if current_gold < EXPEDITION_GOLD_COST:
-					expedition_button.disabled = true
-					expedition_button.tooltip_text += "\n(Not enough Gold)"
-				
-				expedition_button.pressed.connect(_on_expedition_pressed.bind(heir))
-				heir_row.add_child(expedition_button)
-				
-				# TODO: Add "Marry for Alliance" button here
-			
-			JarlHeirData.HeirStatus.OnExpedition:
-				var status_label = Label.new()
-				status_label.text = "On Expedition (%d years)" % heir.expedition_years_remaining
-				status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-				heir_row.add_child(status_label)
-				
-			JarlHeirData.HeirStatus.MarriedOff:
-				var status_label = Label.new()
-				status_label.text = "Married Away"
-				status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-				heir_row.add_child(status_label)
-			
-			_:
-				var status_label = Label.new()
-				status_label.text = "Unavailable"
-				status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-				heir_row.add_child(status_label)
-
-		heirs_container.add_child(heir_row)
-
-
-func _on_expedition_pressed(heir: JarlHeirData) -> void:
-	"""Called when an 'Send on Expedition' button is pressed."""
+func _on_heir_card_clicked(heir: JarlHeirData, mouse_pos: Vector2) -> void:
+	selected_heir = heir
 	
-	var cost = {"gold": EXPEDITION_GOLD_COST}
+	# Disable context items based on state
+	context_menu.set_item_disabled(0, false) # Designate
+	context_menu.set_item_disabled(1, false) # Expedition
+	context_menu.set_item_disabled(2, false) # Marriage
 	
-	# 1. Attempt to spend the gold
-	if SettlementManager.attempt_purchase(cost):
-		# 2. If gold spend is successful, spend the heir
-		print("DynastyUI: Spent %d gold. Sending heir %s on expedition." % [EXPEDITION_GOLD_COST, heir.display_name])
-		DynastyManager.start_heir_expedition(heir)
-		
-		# UI will refresh automatically via the jarl_stats_updated signal
+	if heir.status != JarlHeirData.HeirStatus.Available:
+		context_menu.set_item_disabled(1, true) # Cannot send on expedition
+		context_menu.set_item_disabled(2, true) # Cannot marry off
+	
+	if heir.is_designated_heir:
+		context_menu.set_item_text(0, "Designated Heir (Active)")
+		context_menu.set_item_disabled(0, true)
 	else:
-		# This shouldn't happen if the button is disabled, but as a fallback.
-		print("DynastyUI: Expedition failed. Not enough gold.")
-		EventBus.purchase_failed.emit("Not enough Gold")
+		context_menu.set_item_text(0, "Designate Heir (Cost: 1 Authority)")
+	
+	context_menu.position = Vector2i(mouse_pos)
+	context_menu.popup()
+
+func _on_context_menu_item_pressed(id: int) -> void:
+	if not selected_heir: return
+	
+	match id:
+		0: # Designate Heir
+			DynastyManager.designate_heir(selected_heir)
+		
+		1: # Fund Expedition
+			var cost = {"gold": 500}
+			if SettlementManager.attempt_purchase(cost):
+				DynastyManager.start_heir_expedition(selected_heir)
+			else:
+				print("Not enough gold for expedition.")
+		
+		2: # Arrange Marriage
+			if DynastyManager.get_current_jarl():
+				selected_heir.status = JarlHeirData.HeirStatus.MarriedOff
+				DynastyManager.award_renown(150) 
+				print("Heir married off for Renown.")
+
+func _on_close_button_pressed() -> void:
+	hide()
+
+func _input(event: InputEvent) -> void:
+	if visible and event is InputEventKey and event.pressed:
+		if event.keycode == KEY_ESCAPE:
+			_on_close_button_pressed()
+			get_viewport().set_input_as_handled()

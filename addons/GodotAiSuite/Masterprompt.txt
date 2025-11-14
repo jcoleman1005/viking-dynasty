@@ -340,34 +340,82 @@ display_name = "Ragnar (Test)"
 metadata/_custom_type_script = "uid://cql5qpafvywy1"
 
 --- RESOURCE: res://data/characters/PlayerJarl.tres ---
-[gd_resource type="Resource" script_class="JarlData" load_steps=7 format=3]
+[gd_resource type="Resource" script_class="JarlData" load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://data/characters/JarlHeirData.gd" id="1_4gouw"]
 [ext_resource type="Script" path="res://data/characters/JarlData.gd" id="1_jarl_data"]
-[ext_resource type="Resource" path="res://data/characters/heirs/TestHeir.tres" id="2_0bn2j"]
-[ext_resource type="Resource" path="res://data/traits/Trait_Pious.tres" id="2_pious_trait"]
 [ext_resource type="Script" path="res://data/traits/JarlTraitData.gd" id="3_0bn2j"]
-[ext_resource type="Resource" path="res://data/traits/Trait_Ambitious.tres" id="4_ambitious_trait"]
+
+[sub_resource type="Resource" id="Resource_3vd45"]
+script = ExtResource("3_0bn2j")
+display_name = "Strong"
+
+[sub_resource type="Resource" id="Resource_0xpic"]
+script = ExtResource("1_4gouw")
+display_name = "Magnus"
+age = 26
+is_designated_heir = true
+stewardship = 12
+prowess = 15
+genetic_trait = SubResource("Resource_3vd45")
+
+[sub_resource type="Resource" id="Resource_4gouw"]
+script = ExtResource("1_4gouw")
+display_name = "Leif"
+age = 24
+prowess = 10
+
+[sub_resource type="Resource" id="Resource_0bn2j"]
+script = ExtResource("3_0bn2j")
+display_name = "Genius"
+
+[sub_resource type="Resource" id="Resource_oxx44"]
+script = ExtResource("1_4gouw")
+display_name = "Ivar"
+age = 23
+status = 5
+stewardship = 14
+prowess = 4
+genetic_trait = SubResource("Resource_0bn2j")
+
+[sub_resource type="Resource" id="Resource_3ar3u"]
+script = ExtResource("1_4gouw")
+display_name = "Gyda"
+age = 22
+gender = "Female"
+status = 2
+stewardship = 15
+prowess = 5
+
+[sub_resource type="Resource" id="Resource_sjsvf"]
+script = ExtResource("1_4gouw")
+display_name = "Sigrid"
+age = 3
+gender = "Female"
 
 [resource]
 script = ExtResource("1_jarl_data")
-display_name = "Bjorn"
-age = 30
-renown = 25
-current_authority = 2
-legitimacy = 30
-allied_regions = Array[String](["res://data/world_map/Region_Monastery.tres"])
-command = 12
-stewardship = 11
-learning = 9
-prowess = 14
-traits = Array[ExtResource("3_0bn2j")]([ExtResource("2_pious_trait"), ExtResource("4_ambitious_trait")])
-spouse_name = "Lagertha"
-heirs = Array[ExtResource("1_4gouw")]([ExtResource("2_0bn2j")])
-battles_fought = 2
-battles_won = 2
-successful_raids = 2
-metadata/_custom_type_script = "uid://bm8qe8d38a1il"
+display_name = "Jarl Testor the Builder"
+age = 49
+renown = 1366
+renown_tier = 3
+current_authority = 6
+max_authority = 6
+years_since_action = 2
+ancestors = Array[Dictionary]([{
+"death_reason": "Died in battle against Saxons",
+"final_renown": 800,
+"name": "Harald Tanglehair"
+}, {
+"death_reason": "Drowned in a frozen lake",
+"final_renown": 1500,
+"name": "Halfdan the Black"
+}, {
+"death_reason": "Old age",
+"final_renown": 2200,
+"name": "Sigurd Snake-in-the-Eye"
+}])
+heirs = Array[ExtResource("1_4gouw")]([SubResource("Resource_0xpic"), SubResource("Resource_4gouw"), SubResource("Resource_oxx44"), SubResource("Resource_3ar3u"), SubResource("Resource_sjsvf")])
 
 --- RESOURCE: res://data/events/ambitious_heir.tres ---
 [gd_resource type="Resource" script_class="EventData" load_steps=5 format=3 uid="uid://ddjwe73h3diq5"]
@@ -1421,6 +1469,9 @@ Base_Unit (CharacterBody2D)
 > script: res://scripts/units/Base_Unit.gd
 > scene: res://scenes/units/Base_Unit.tscn
 > collision_layer = 2
+> separation_enabled = true
+> separation_force = 30.0
+> separation_radius = 40.0
 > Sprite2D (Sprite2D)
 > > texture = res://textures/placeholders/unit_placeholder.png
 > CollisionShape2D (CollisionShape2D)
@@ -1460,6 +1511,9 @@ PlayerVikingRaider (CharacterBody2D)
 > script: res://scripts/units/PlayerVikingRaider.gd
 > scene: res://scenes/units/PlayerVikingRaider.tscn
 > collision_layer = 2
+> separation_enabled = true
+> separation_force = 30.0
+> separation_radius = 40.0
 > Sprite2D (Sprite2D)
 > > scale = (0.058594, 0.061523)
 > > texture = res://textures/placeholders/unit_placeholder.png
@@ -1480,6 +1534,8 @@ VikingRaider (CharacterBody2D)
 > collision_layer = 4
 > data = res://data/units/EnemyVikingRaider_Data.tres
 > separation_enabled = false
+> separation_force = 30.0
+> separation_radius = 40.0
 > Sprite2D (Sprite2D)
 > > modulate = (0.5464, 0.0, 0.0, 1.0)
 > > self_modulate = (1.0, 0.0, 0.0, 1.0)
@@ -1527,64 +1583,71 @@ MacroMap (Node2D)
 > > offset_bottom = 771.0
 > > texture = res://assets/Viking Dynasty Game Map.png
 > Regions (Node2D)
->   Region_1 (Area2D)
+>   Region_Southern_Sweden (Area2D)
 >     script: res://scenes/world_map/Region.gd
 >     scene: res://scenes/world_map/Region.tscn
 >   > data = res://scenes/world_map/MacroMap.tscn::Resource_seg4e
 >     HighlightPoly (Polygon2D)
+>     > visible = false
 >     > color = (1.0, 1.0, 1.0, 0.1961)
 >     > polygon = [(539.0, 493.0), (542.0, 507.0), (548.0, 519.0), (550.0, 534.0), (564.0, 561.0), (571.0, 570.0), (569.0, 574.0), (568.0, 577.0), (566.0, 580.0), (566.0, 587.0), (569.0, 591.0), (574.0, 596.0), (574.0, 603.0), (574.0, 607.0), (578.0, 609.0), (584.0, 609.0), (590.0, 606.0), (596.0, 607.0), (600.0, 604.0), (597.0, 597.0), (598.0, 586.0), (611.0, 581.0), (622.0, 579.0), (625.0, 580.0), (628.0, 580.0), (628.0, 573.0), (632.0, 564.0), (634.0, 560.0), (633.0, 545.0), (635.0, 535.0), (634.0, 524.0), (635.0, 515.0), (635.0, 509.0), (630.0, 505.0), (626.0, 505.0), (606.0, 489.0), (591.0, 478.0), (570.0, 465.0), (564.0, 456.0), (558.0, 453.0), (556.0, 457.0), (555.0, 459.0), (550.0, 461.0), (549.0, 466.0), (546.0, 471.0), (548.0, 477.0), (549.0, 482.0), (546.0, 488.0), (546.0, 492.0), (541.0, 491.0)]
 >     CollisionPolygon2D (CollisionPolygon2D)
 >     > polygon = [(0.0, 0.0)]
->   Region_2 (Area2D)
+>   Region_Southern_Norway (Area2D)
 >     script: res://scenes/world_map/Region.gd
 >     scene: res://scenes/world_map/Region.tscn
 >   > data = res://scenes/world_map/MacroMap.tscn::Resource_seg4e
 >     HighlightPoly (Polygon2D)
+>     > visible = false
 >     > color = (1.0, 1.0, 1.0, 0.1961)
 >     > polygon = [(450.0, 509.0), (440.0, 496.0), (453.0, 483.0), (455.0, 475.0), (448.0, 478.0), (441.0, 479.0), (438.0, 471.0), (440.0, 463.0), (446.0, 456.0), (443.3711, 449.4278), (440.0, 441.0), (439.0, 426.0), (440.0, 416.0), (439.4912, 404.8077), (439.0, 394.0), (445.0, 393.0), (444.0, 385.0), (452.0, 383.0), (457.0, 375.0), (467.0, 370.0), (467.0, 363.0), (476.0, 361.0), (482.0, 362.0), (485.0, 352.0), (493.0, 341.0), (508.0, 344.0), (512.0, 340.0), (515.0, 343.0), (546.0, 348.0), (552.0, 368.0), (552.0, 391.0), (555.0, 405.0), (563.0, 410.0), (563.0, 422.0), (554.0, 428.0), (558.0, 436.0), (561.0, 455.0), (551.0, 463.0), (548.0, 472.0), (546.0, 494.0), (537.0, 491.0), (534.0, 483.0), (528.0, 482.0), (520.0, 490.0), (500.0, 507.0), (491.0, 519.0), (479.0, 524.0), (467.0, 522.0), (458.0, 514.0)]
 >     CollisionPolygon2D (CollisionPolygon2D)
->   Region_3 (Area2D)
+>   Region_Northern_Sweden (Area2D)
 >     script: res://scenes/world_map/Region.gd
 >     scene: res://scenes/world_map/Region.tscn
 >   > data = res://scenes/world_map/MacroMap.tscn::Resource_seg4e
 >     HighlightPoly (Polygon2D)
+>     > visible = false
 >     > color = (1.0, 1.0, 1.0, 0.1961)
 >     > polygon = [(632.0, 505.0), (600.0, 483.0), (581.0, 473.0), (559.0, 452.0), (559.0, 437.0), (553.0, 425.0), (561.0, 423.0), (561.0, 417.0), (561.0, 411.0), (556.0, 404.0), (553.0, 402.0), (551.0, 363.0), (549.0, 352.0), (552.0, 333.0), (558.0, 325.0), (566.0, 325.0), (574.0, 324.0), (577.0, 314.0), (569.0, 306.0), (578.0, 289.0), (579.0, 264.0), (578.0, 256.0), (589.0, 249.0), (589.0, 241.0), (601.0, 220.0), (596.0, 207.0), (601.0, 200.0), (601.0, 190.0), (607.0, 185.0), (612.0, 187.0), (616.0, 187.0), (616.0, 181.0), (616.0, 172.0), (620.0, 169.0), (640.0, 172.0), (642.0, 153.0), (643.0, 148.0), (646.0, 148.0), (655.0, 156.0), (663.0, 162.0), (673.0, 164.0), (679.0, 170.0), (687.0, 177.0), (690.0, 194.0), (694.0, 205.0), (701.0, 218.0), (698.0, 227.0), (709.0, 245.0), (705.0, 249.0), (688.0, 253.0), (679.0, 269.0), (674.0, 288.0), (682.0, 298.0), (673.0, 320.0), (657.0, 335.0), (652.0, 342.0), (648.0, 344.0), (640.0, 358.0), (637.0, 366.0), (633.0, 372.0), (632.0, 381.0), (631.0, 394.0), (630.0, 408.0), (633.0, 423.0), (637.0, 431.0), (647.0, 433.0), (656.0, 443.0), (663.0, 451.0), (665.0, 458.0), (663.0, 467.0), (660.0, 474.0), (654.0, 482.0), (650.0, 488.0), (643.0, 492.0), (636.0, 496.0), (636.0, 501.0)]
 >     CollisionPolygon2D (CollisionPolygon2D)
->   Region_4 (Area2D)
+>   Region_Northern_Norway (Area2D)
 >     script: res://scenes/world_map/Region.gd
 >     scene: res://scenes/world_map/Region.tscn
 >   > data = res://scenes/world_map/MacroMap.tscn::Resource_seg4e
 >     HighlightPoly (Polygon2D)
+>     > visible = false
 >     > color = (1.0, 1.0, 1.0, 0.1961)
 >     > polygon = [(515.0, 343.0), (523.0, 347.0), (535.0, 347.0), (545.0, 347.0), (549.0, 346.0), (553.0, 331.0), (559.0, 325.0), (572.0, 325.0), (575.0, 320.0), (576.0, 313.0), (572.0, 308.0), (570.0, 304.0), (574.0, 296.0), (579.0, 283.0), (579.0, 271.0), (578.0, 259.0), (579.0, 255.0), (588.0, 251.0), (590.0, 248.0), (589.0, 243.0), (600.0, 220.0), (592.0, 219.0), (585.0, 219.0), (580.0, 219.0), (573.0, 219.0), (550.0, 275.0), (541.0, 296.0), (536.0, 303.0), (538.0, 307.0), (537.0, 310.0), (535.0, 308.0), (530.0, 307.0), (528.0, 312.0), (522.0, 317.0), (519.0, 322.0), (517.0, 327.0), (515.0, 331.0), (512.0, 336.0), (512.0, 339.0)]
 >     CollisionPolygon2D (CollisionPolygon2D)
->   Region_5 (Area2D)
+>   Region_Denmark (Area2D)
 >     script: res://scenes/world_map/Region.gd
 >     scene: res://scenes/world_map/Region.tscn
 >   > data = res://scenes/world_map/MacroMap.tscn::Resource_seg4e
 >     HighlightPoly (Polygon2D)
+>     > visible = false
 >     > color = (1.0, 1.0, 1.0, 0.1961)
 >     > polygon = [(528.0, 533.0), (526.0, 537.0), (527.0, 540.0), (528.0, 545.0), (527.0, 551.0), (525.0, 556.0), (525.0, 560.0), (524.0, 564.0), (524.0, 567.0), (525.0, 569.0), (527.0, 572.0), (529.0, 572.0), (534.0, 572.0), (536.0, 575.0), (535.0, 578.0), (529.0, 588.0), (519.0, 597.0), (518.0, 608.0), (518.0, 620.0), (543.0, 625.0), (552.0, 626.0), (551.0, 618.0), (538.0, 612.0), (538.0, 604.0), (541.0, 596.0), (547.0, 592.0), (559.0, 590.0), (561.0, 596.0), (566.0, 600.0), (571.0, 605.0), (571.0, 610.0), (567.0, 611.0), (563.0, 614.0), (563.0, 619.0), (563.0, 623.0), (560.0, 628.0), (555.0, 635.0), (549.0, 634.0), (546.0, 634.0), (530.0, 633.0), (514.0, 628.0), (511.0, 628.0), (504.0, 627.0), (499.0, 627.0), (494.0, 624.0), (490.0, 621.0), (492.0, 615.0), (493.0, 611.0), (486.0, 606.0), (484.0, 604.0), (483.0, 600.0), (488.0, 592.0), (485.0, 581.0), (483.0, 577.0), (483.0, 571.0), (486.0, 565.0), (488.0, 559.0), (490.0, 556.0), (492.0, 554.0), (496.0, 553.0), (501.0, 553.0), (505.0, 553.0), (509.0, 551.0), (513.0, 546.0), (516.0, 541.0), (520.0, 538.0), (525.0, 537.0)]
 >     CollisionPolygon2D (CollisionPolygon2D)
->   Region_6 (Area2D)
+>   Region_Finland (Area2D)
 >     script: res://scenes/world_map/Region.gd
 >     scene: res://scenes/world_map/Region.tscn
 >   > data = res://scenes/world_map/MacroMap.tscn::Resource_seg4e
 >     HighlightPoly (Polygon2D)
+>     > visible = false
 >     > color = (1.0, 1.0, 1.0, 0.1961)
 >     > polygon = [(648.0, 148.0), (649.0, 139.0), (653.0, 139.0), (658.0, 143.0), (665.0, 150.0), (666.0, 153.0), (672.0, 156.0), (681.0, 154.0), (685.0, 149.0), (691.0, 152.0), (697.0, 153.0), (698.0, 148.0), (700.0, 146.0), (705.0, 143.0), (704.0, 115.0), (705.0, 109.0), (710.0, 103.0), (716.0, 102.0), (720.0, 97.0), (729.0, 101.0), (738.0, 104.0), (742.0, 112.0), (744.0, 121.0), (744.0, 129.0), (741.0, 133.0), (741.0, 138.0), (741.0, 148.0), (745.0, 154.0), (754.0, 159.0), (760.0, 161.0), (767.0, 167.0), (768.0, 176.0), (766.0, 190.0), (764.0, 198.0), (770.0, 204.0), (774.0, 209.0), (779.0, 216.0), (785.0, 224.0), (788.0, 232.0), (787.0, 244.0), (788.0, 252.0), (790.0, 261.0), (798.0, 262.0), (799.0, 270.0), (805.0, 272.0), (810.0, 277.0), (810.0, 286.0), (806.0, 293.0), (811.0, 296.0), (820.0, 301.0), (830.0, 307.0), (836.0, 313.0), (836.0, 325.0), (832.0, 334.0), (827.0, 345.0), (823.0, 355.0), (821.0, 363.0), (817.0, 375.0), (809.0, 386.0), (805.0, 395.0), (800.0, 404.0), (791.0, 409.0), (788.0, 411.0), (781.0, 417.0), (772.0, 422.0), (760.0, 428.0), (749.0, 432.0), (734.0, 438.0), (725.0, 436.0), (719.0, 432.0), (708.0, 426.0), (703.0, 420.0), (695.0, 404.0), (693.0, 384.0), (691.0, 374.0), (685.0, 368.0), (685.0, 354.0), (688.0, 348.0), (688.0, 337.0), (690.0, 335.0), (694.0, 335.0), (701.0, 330.0), (703.0, 321.0), (708.0, 314.0), (714.0, 300.0), (721.0, 280.0), (727.0, 272.0), (712.0, 244.0), (704.0, 237.0), (700.0, 224.0), (698.0, 212.0), (692.0, 200.0), (688.0, 187.0), (682.0, 174.0), (675.0, 164.0), (662.0, 161.0), (653.0, 155.0)]
 >     CollisionPolygon2D (CollisionPolygon2D)
->   Region_7 (Area2D)
+>   Region_Estonia (Area2D)
 >     script: res://scenes/world_map/Region.gd
 >     scene: res://scenes/world_map/Region.tscn
 >   > data = res://scenes/world_map/MacroMap.tscn::Resource_qn6r3
 >     HighlightPoly (Polygon2D)
+>     > visible = false
 >     > color = (1.0, 1.0, 1.0, 0.1961)
 >     > polygon = [(814.0, 438.0), (808.0, 438.0), (805.0, 439.0), (801.0, 441.0), (798.0, 441.0), (794.0, 441.0), (792.0, 440.0), (785.0, 440.0), (781.0, 440.0), (779.0, 440.0), (776.0, 442.0), (774.0, 445.0), (772.0, 445.0), (768.0, 447.0), (765.0, 448.0), (761.0, 449.0), (757.0, 449.0), (754.0, 451.0), (753.0, 453.0), (749.0, 456.0), (748.0, 458.0), (744.0, 461.0), (741.0, 463.0), (734.0, 469.0), (728.0, 469.0), (727.0, 471.0), (724.0, 473.0), (722.0, 475.0), (724.0, 477.0), (726.0, 479.0), (727.0, 480.0), (728.0, 482.0), (728.0, 484.0), (724.0, 488.0), (723.0, 489.0), (722.0, 493.0), (722.0, 496.0), (722.0, 498.0), (722.0, 500.0), (724.0, 500.0), (729.0, 500.0), (731.0, 498.0), (733.0, 496.0), (737.0, 494.0), (738.0, 492.0), (740.0, 490.0), (744.0, 488.0), (745.0, 485.0), (748.0, 484.0), (751.0, 487.0), (752.0, 489.0), (756.0, 489.0), (761.0, 489.0), (765.0, 488.0), (765.0, 491.0), (766.0, 495.0), (766.0, 499.0), (766.0, 502.0), (771.0, 497.0), (774.0, 496.0), (778.0, 495.0), (780.0, 494.0), (782.0, 493.0), (785.0, 494.0), (788.0, 495.0), (791.0, 496.0), (792.0, 497.0), (797.0, 499.0), (799.0, 501.0), (801.0, 502.0), (804.0, 504.0), (808.0, 503.0), (809.0, 501.0), (812.0, 500.0), (816.0, 500.0), (818.0, 500.0), (819.0, 498.0), (819.0, 496.0), (820.0, 493.0), (822.0, 491.0), (823.0, 489.0), (822.0, 484.0), (820.0, 482.0), (818.0, 478.0), (815.0, 475.0), (815.0, 472.0), (815.0, 470.0), (812.0, 466.0), (812.0, 460.0), (812.0, 455.0), (814.0, 453.0), (814.0, 449.0), (814.0, 446.0), (817.0, 440.0)]
 >     CollisionPolygon2D (CollisionPolygon2D)
->   Region_8 (Area2D)
+>   Region_Northern_Baltics (Area2D)
 >     script: res://scenes/world_map/Region.gd
 >     scene: res://scenes/world_map/Region.tscn
 >   > data = res://scenes/world_map/MacroMap.tscn::Resource_aeufb
@@ -1593,11 +1656,12 @@ MacroMap (Node2D)
 >     > color = (1.0, 1.0, 1.0, 0.1961)
 >     > polygon = [(716.0, 563.0), (716.0, 556.0), (716.0, 551.0), (716.0, 546.0), (718.0, 542.0), (719.0, 540.0), (719.0, 534.0), (719.0, 529.0), (720.0, 523.0), (723.0, 519.0), (727.0, 517.0), (731.0, 515.0), (735.0, 512.0), (737.0, 512.0), (737.0, 513.0), (738.0, 515.0), (741.0, 516.0), (745.0, 519.0), (748.0, 522.0), (751.0, 526.0), (752.0, 529.0), (754.0, 532.0), (757.0, 532.0), (759.0, 532.0), (763.0, 532.0), (765.0, 530.0), (766.0, 528.0), (769.0, 526.0), (769.0, 524.0), (769.0, 521.0), (769.0, 519.0), (769.0, 517.0), (768.0, 514.0), (768.0, 511.0), (768.0, 507.0), (767.0, 501.0), (770.0, 498.0), (775.0, 498.0), (776.0, 496.0), (778.0, 495.0), (783.0, 495.0), (790.0, 495.0), (798.0, 499.0), (800.0, 501.0), (803.0, 503.0), (805.0, 504.0), (810.0, 501.0), (813.0, 500.0), (819.0, 500.0), (821.0, 501.0), (825.0, 504.0), (829.0, 506.0), (831.0, 508.0), (832.0, 511.0), (832.0, 517.0), (832.0, 519.0), (835.0, 519.0), (838.0, 523.0), (840.0, 527.0), (841.0, 529.0), (843.0, 533.0), (845.0, 535.0), (846.0, 538.0), (843.0, 544.0), (841.0, 547.0), (840.0, 549.0), (838.0, 552.0), (837.0, 554.0), (833.0, 556.0), (831.0, 556.0), (830.0, 555.0), (828.0, 556.0), (827.0, 559.0), (823.0, 561.0), (821.0, 561.0), (816.0, 561.0), (813.0, 560.0), (808.0, 556.0), (805.0, 555.0), (803.0, 553.0), (800.0, 552.0), (798.0, 552.0), (792.0, 552.0), (791.0, 552.0), (790.0, 551.0), (788.0, 547.0), (787.0, 546.0), (784.0, 546.0), (784.0, 549.0), (782.0, 552.0), (780.0, 554.0), (775.0, 554.0), (770.0, 554.0), (765.0, 554.0), (762.0, 554.0), (758.0, 554.0), (757.0, 554.0), (754.0, 557.0), (752.0, 555.0), (751.0, 553.0), (750.0, 553.0), (749.0, 554.0), (748.0, 556.0), (744.0, 556.0), (740.0, 556.0), (736.0, 556.0), (733.0, 557.0), (729.0, 560.0), (727.0, 562.0), (727.0, 562.0), (725.0, 564.0), (723.0, 564.0), (718.0, 565.0)]
 >     CollisionPolygon2D (CollisionPolygon2D)
->   Region_9 (Area2D)
+>   Region_Southern_Baltics (Area2D)
 >     script: res://scenes/world_map/Region.gd
 >     scene: res://scenes/world_map/Region.tscn
 >   > data = res://scenes/world_map/MacroMap.tscn::Resource_3epe4
 >     HighlightPoly (Polygon2D)
+>     > visible = false
 >     > color = (1.0, 1.0, 1.0, 0.1961)
 >     > polygon = [(725.0, 564.0), (726.0, 567.0), (726.0, 569.0), (727.0, 571.0), (727.0, 575.0), (727.0, 577.0), (730.0, 578.0), (729.0, 580.0), (726.0, 581.0), (726.0, 585.0), (726.0, 588.0), (726.0, 590.0), (726.0, 592.0), (726.0, 594.0), (728.0, 596.0), (731.0, 596.0), (734.0, 597.0), (737.0, 599.0), (742.0, 600.0), (745.0, 600.0), (750.0, 600.0), (751.0, 599.0), (755.0, 600.0), (756.0, 601.0), (757.0, 603.0), (759.0, 604.0), (759.0, 608.0), (759.0, 610.0), (759.0, 611.0), (759.0, 614.0), (759.0, 616.0), (761.0, 617.0), (764.0, 618.0), (768.0, 620.0), (771.0, 621.0), (774.0, 622.0), (775.0, 623.0), (776.0, 625.0), (777.0, 627.0), (776.0, 630.0), (776.0, 631.0), (778.0, 632.0), (780.0, 631.0), (782.0, 631.0), (786.0, 630.0), (788.0, 629.0), (789.0, 628.0), (793.0, 629.0), (794.0, 629.0), (799.0, 624.0), (800.0, 623.0), (802.0, 620.0), (803.0, 618.0), (804.0, 618.0), (807.0, 616.0), (808.0, 615.0), (812.0, 612.0), (814.0, 609.0), (814.0, 606.0), (814.0, 603.0), (815.0, 602.0), (815.0, 599.0), (814.0, 597.0), (814.0, 595.0), (814.0, 593.0), (814.0, 590.0), (816.0, 588.0), (818.0, 588.0), (820.0, 587.0), (820.0, 584.0), (820.0, 582.0), (820.0, 581.0), (822.0, 580.0), (824.0, 580.0), (826.0, 579.0), (827.0, 576.0), (827.0, 574.0), (825.0, 573.0), (823.0, 572.0), (823.0, 569.0), (823.0, 564.0), (821.0, 563.0), (819.0, 562.0), (816.0, 562.0), (814.0, 560.0), (812.0, 558.0), (809.0, 556.0), (804.0, 554.0), (801.0, 552.0), (797.0, 553.0), (794.0, 552.0), (790.0, 551.0), (787.0, 550.0), (785.0, 547.0), (783.0, 547.0), (780.0, 551.0), (779.0, 552.0), (778.0, 552.0), (773.0, 555.0), (770.0, 553.0), (767.0, 553.0), (764.0, 553.0), (760.0, 553.0), (757.0, 553.0), (756.0, 554.0), (755.0067, 555.4899), (754.0, 557.0), (752.8177, 555.8177), (752.0, 554.0), (750.0, 553.0), (749.0, 555.0), (747.0, 557.0), (744.0, 556.0), (740.0, 556.0), (737.0, 556.0), (734.0, 557.0), (731.0, 559.0), (728.0, 560.0)]
 >     CollisionPolygon2D (CollisionPolygon2D)
@@ -1606,10 +1670,11 @@ MacroMap (Node2D)
 >     scene: res://scenes/world_map/Region.tscn
 >   > data = res://scenes/world_map/MacroMap.tscn::Resource_37xpq
 >     HighlightPoly (Polygon2D)
+>     > visible = false
 >     > color = (1.0, 1.0, 1.0, 0.1961)
 >     > polygon = [(728.0, 595.0), (727.0, 597.0), (727.0, 599.0), (729.0, 602.0), (729.0, 606.0), (729.0, 608.0), (727.0, 608.0), (726.0, 608.0), (724.0, 608.0), (722.0, 608.0), (720.0, 607.0), (718.0, 606.0), (715.0, 607.0), (713.0, 608.0), (712.0, 608.0), (710.0, 608.0), (707.0, 609.0), (707.0, 611.0), (706.0, 612.0), (705.0, 615.0), (706.0, 616.0), (706.0, 617.0), (707.0, 620.0), (707.0, 622.0), (706.0, 624.0), (704.0, 625.0), (701.0, 627.0), (700.0, 628.0), (704.0, 628.0), (706.0, 628.0), (709.0, 628.0), (713.0, 628.0), (718.0, 628.0), (724.0, 628.0), (728.0, 627.0), (730.0, 627.0), (735.0, 626.0), (740.0, 625.0), (744.0, 624.0), (747.0, 623.0), (751.0, 623.0), (754.0, 621.0), (757.0, 619.0), (758.0, 618.0), (758.0, 615.0), (759.0, 612.0), (759.0, 608.0), (759.0, 606.0), (759.0, 603.0), (758.0, 602.0), (757.0, 602.0), (755.0, 600.0), (753.0, 598.0), (751.0, 598.0), (747.0, 598.0), (745.0, 599.0), (742.0, 600.0), (739.0, 599.0), (735.0, 598.0), (734.0, 598.0), (733.0, 597.0), (731.0, 596.0), (729.0, 595.0)]
 >     CollisionPolygon2D (CollisionPolygon2D)
->   Region_11 (Area2D)
+>   Region_Germany_East (Area2D)
 >     script: res://scenes/world_map/Region.gd
 >     scene: res://scenes/world_map/Region.tscn
 >   > data = res://scenes/world_map/MacroMap.tscn::Resource_n4r4f
@@ -1618,7 +1683,7 @@ MacroMap (Node2D)
 >     > color = (1.0, 1.0, 1.0, 0.1961)
 >     > polygon = [(690.0, 631.0), (694.0, 631.0), (698.0, 629.0), (701.0, 627.0), (705.0, 628.0), (710.0, 628.0), (715.0, 628.0), (721.0, 628.0), (728.0, 626.0), (734.0, 626.0), (743.0, 624.0), (749.0, 623.0), (756.0, 621.0), (759.0, 619.0), (761.0, 617.0), (766.0, 619.0), (770.0, 619.0), (772.0, 621.0), (775.0, 626.0), (777.0, 629.0), (780.0, 634.0), (782.0, 640.0), (785.0, 645.0), (787.0, 649.0), (790.0, 655.0), (793.0, 659.0), (794.0, 670.0), (794.0, 671.0), (791.0, 675.0), (788.0, 677.0), (785.0, 680.0), (784.0, 682.0), (785.0, 684.0), (787.0, 686.0), (792.0, 690.0), (793.0, 694.0), (793.0, 700.0), (793.0, 705.0), (794.0, 709.0), (796.0, 713.0), (800.0, 717.0), (804.0, 721.0), (807.0, 726.0), (809.0, 729.0), (810.0, 735.0), (810.0, 738.0), (809.0, 741.0), (806.0, 745.0), (799.0, 756.0), (796.0, 763.0), (793.0, 769.0), (737.0, 767.0), (739.0, 762.0), (744.0, 759.0), (747.0, 757.0), (755.0, 753.0), (757.0, 750.0), (759.0, 745.0), (762.0, 740.0), (762.0, 736.0), (762.0, 731.0), (760.0, 726.0), (759.0, 721.0), (760.0, 716.0), (753.0, 713.0), (748.0, 708.0), (746.0, 704.0), (744.0, 699.0), (742.0, 696.0), (737.0, 692.0), (734.0, 690.0), (728.0, 690.0), (724.0, 691.0), (716.0, 692.0), (712.0, 691.0), (708.0, 691.0), (703.0, 690.0), (697.0, 687.0), (693.0, 683.0), (685.0, 679.0), (685.0, 677.0), (682.0, 676.0), (677.0, 673.0), (678.0, 669.0), (680.0, 665.0), (682.0, 664.0), (685.0, 661.0), (689.0, 654.0), (689.0, 653.0), (688.0, 646.0), (687.0, 644.0), (687.0, 638.0), (688.0, 633.0)]
 >     CollisionPolygon2D (CollisionPolygon2D)
->   Region_12 (Area2D)
+>   Region_Francia (Area2D)
 >     script: res://scenes/world_map/Region.gd
 >     scene: res://scenes/world_map/Region.tscn
 >   > data = res://scenes/world_map/MacroMap.tscn::Resource_47i7n
@@ -1627,7 +1692,7 @@ MacroMap (Node2D)
 >     > color = (1.0, 1.0, 1.0, 0.1961)
 >     > polygon = [(602.0, 655.0), (600.0, 657.0), (595.0, 657.0), (594.0, 652.0), (592.0, 649.0), (588.0, 649.0), (585.0, 649.0), (583.0, 646.0), (586.0, 643.0), (588.0, 640.0), (588.0, 638.0), (587.0, 634.0), (585.0, 634.0), (581.0, 636.0), (580.0, 638.0), (574.0, 639.0), (571.0, 640.0), (568.0, 640.0), (565.0, 644.0), (562.0, 645.0), (559.0, 647.0), (556.0, 649.0), (550.0, 650.0), (550.0, 652.0), (549.0, 655.0), (547.0, 656.0), (543.0, 655.0), (542.0, 654.0), (538.0, 655.0), (534.0, 654.0), (537.0, 650.0), (539.0, 648.0), (539.0, 646.0), (540.0, 640.0), (537.0, 638.0), (534.0, 642.0), (534.0, 644.0), (531.0, 644.0), (529.0, 642.0), (523.0, 641.0), (523.0, 641.0), (518.0, 635.0), (518.0, 633.0), (514.0, 629.0), (507.0, 629.0), (496.0, 627.0), (494.0, 626.0), (493.0, 628.0), (495.0, 631.0), (495.0, 634.0), (498.0, 636.0), (498.0, 639.0), (496.0, 641.0), (493.0, 642.0), (493.0, 643.0), (493.0, 645.0), (496.0, 645.0), (497.0, 646.0), (497.0, 649.0), (497.0, 652.0), (496.0, 655.0), (495.0, 658.0), (491.0, 660.0), (490.0, 662.0), (488.0, 667.0), (486.0, 669.0), (483.0, 667.0), (479.0, 663.0), (474.0, 663.0), (470.0, 663.0), (466.0, 664.0), (465.0, 664.0), (464.0, 666.0), (463.0, 669.0), (455.0, 672.0), (453.0, 672.0), (448.0, 673.0), (442.0, 675.0), (434.0, 676.0), (431.0, 678.0), (428.0, 685.0), (428.0, 687.0), (425.0, 690.0), (423.0, 692.0), (415.0, 696.0), (414.0, 697.0), (412.0, 702.0), (410.0, 706.0), (408.0, 709.0), (407.0, 713.0), (404.0, 716.0), (402.0, 719.0), (398.0, 722.0), (409.0, 733.0), (411.0, 734.0), (417.0, 738.0), (424.0, 742.0), (430.0, 746.0), (434.0, 747.0), (436.0, 754.0), (437.0, 762.0), (438.0, 766.0), (585.0, 768.0), (588.0, 764.0), (591.0, 761.0), (598.0, 758.0), (605.0, 756.0), (611.0, 756.0), (616.0, 755.0), (621.0, 751.0), (622.0, 743.0), (622.0, 737.0), (616.0, 731.0), (614.0, 724.0), (614.0, 717.0), (614.0, 709.0), (609.0, 702.0), (605.0, 695.0), (603.0, 691.0), (602.0, 688.0), (601.0, 683.0), (602.0, 678.0), (603.0, 673.0), (604.0, 670.0), (604.0, 664.0)]
 >     CollisionPolygon2D (CollisionPolygon2D)
->   Region_13 (Area2D)
+>   Region_Germany_West (Area2D)
 >     script: res://scenes/world_map/Region.gd
 >     scene: res://scenes/world_map/Region.tscn
 >   > data = res://scenes/world_map/MacroMap.tscn::Resource_uahyi
@@ -1636,7 +1701,7 @@ MacroMap (Node2D)
 >     > color = (1.0, 1.0, 1.0, 0.1961)
 >     > polygon = [(687.0, 633.0), (684.0, 631.0), (683.0, 629.0), (681.0, 626.0), (679.0, 623.0), (676.0, 618.0), (670.0, 620.0), (666.0, 621.0), (659.0, 622.0), (655.0, 625.0), (650.0, 628.0), (647.0, 630.0), (642.0, 633.0), (640.0, 636.0), (638.0, 638.0), (635.0, 639.0), (630.0, 642.0), (627.0, 643.0), (622.0, 645.0), (618.0, 646.0), (612.0, 649.0), (609.0, 651.0), (606.0, 653.0), (603.0, 654.0), (605.0, 657.0), (605.0, 658.0), (606.0, 661.0), (607.0, 665.0), (607.0, 671.0), (606.0, 674.0), (604.0, 678.0), (602.0, 682.0), (602.0, 685.0), (602.0, 687.0), (603.0, 690.0), (604.0, 692.0), (605.0, 693.0), (610.0, 697.0), (613.0, 705.0), (613.0, 709.0), (613.0, 710.0), (621.0, 711.0), (629.0, 713.0), (639.0, 716.0), (641.0, 723.0), (642.0, 730.0), (651.0, 731.0), (654.0, 736.0), (654.0, 739.0), (662.0, 741.0), (668.0, 743.0), (676.0, 748.0), (685.0, 754.0), (687.0, 755.0), (694.0, 763.0), (701.0, 772.0), (734.0, 769.0), (738.0, 762.0), (745.0, 760.0), (750.0, 758.0), (754.0, 755.0), (758.0, 752.0), (760.0, 746.0), (761.0, 733.0), (761.0, 731.0), (761.0, 725.0), (761.0, 721.0), (759.0, 716.0), (752.0, 712.0), (747.0, 707.0), (745.0, 703.0), (742.0, 697.0), (737.0, 693.0), (732.0, 691.0), (723.0, 692.0), (714.0, 692.0), (703.0, 691.0), (701.0, 688.0), (695.0, 683.0), (689.0, 681.0), (686.0, 680.0), (684.0, 677.0), (678.0, 669.0), (678.0, 666.0), (682.0, 663.0), (686.0, 658.0), (689.0, 653.0), (689.0, 650.0), (689.0, 649.0), (689.0, 642.0), (689.0, 636.0)]
 >     CollisionPolygon2D (CollisionPolygon2D)
->   Region_14 (Area2D)
+>   Region_Brittain (Area2D)
 >     script: res://scenes/world_map/Region.gd
 >     scene: res://scenes/world_map/Region.tscn
 >   > data = res://scenes/world_map/MacroMap.tscn::Resource_jetqj
@@ -1755,6 +1820,7 @@ MacroMap (Node2D)
 >   Dynasty_UI (PanelContainer)
 >     script: res://ui/DynastyUI.gd
 >     scene: res://ui/Dynasty_UI.tscn
+>   > custom_minimum_size = (800.0, 600.0)
 >   > anchors_preset = 8
 >   > anchor_left = 0.5
 >   > anchor_top = 0.5
@@ -1768,25 +1834,42 @@ MacroMap (Node2D)
 >   > grow_vertical = 2
 >     Margin (MarginContainer)
 >     > layout_mode = 2
->       VBox (VBoxContainer)
+>       MainLayout (VBoxContainer)
 >       > layout_mode = 2
->         TitleLabel (Label)
+>         AncestorsScroll (ScrollContainer)
+>         > custom_minimum_size = (0.0, 100.0)
 >         > layout_mode = 2
->         > text = "Jarl Bjorn\'s Dynasty"
->         > horizontal_alignment = 1
+>         > size_flags_vertical = 3
+>           AncestorsHBox (HBoxContainer)
+>           > layout_mode = 2
 >         HSeparator (HSeparator)
+>         > layout_mode = 2
+>         CurrentJarlPanel (HBoxContainer)
+>         > layout_mode = 2
+>         > size_flags_horizontal = 4
+>           Portrait (TextureRect)
+>           > custom_minimum_size = (128.0, 128.0)
+>           > layout_mode = 2
+>           Stats (VBoxContainer)
+>           > layout_mode = 2
+>             NameLabel (Label)
+>             > layout_mode = 2
+>             StatsLabel (Label)
+>             > layout_mode = 2
+>         HSeparator2 (HSeparator)
 >         > layout_mode = 2
 >         HeirsLabel (Label)
 >         > layout_mode = 2
 >         > text = "Heirs:"
->         HeirsContainer (VBoxContainer)
->         > layout_mode = 2
->         Spacer (Control)
+>         HeirsScroll (ScrollContainer)
 >         > layout_mode = 2
 >         > size_flags_vertical = 3
+>           HeirsHBox (HBoxContainer)
+>           > layout_mode = 2
 >         CloseButton (Button)
 >         > layout_mode = 2
 >         > text = "Close"
+>     ContextMenu (PopupMenu)
 > PlayerHomeMarker (Marker2D)
 > > position = (526.0, 485.0)
 
@@ -1797,38 +1880,6 @@ Region (Area2D)
 > HighlightPoly (Polygon2D)
 > > visible = false
 > CollisionPolygon2D (CollisionPolygon2D)
-
---- SCENE: res://scenes/world_map/WorldMap_Stub.tscn ---
-WorldMapStub (Control)
-> script: res://scenes/world_map/WorldMap_Stub.gd
-> scene: res://scenes/world_map/WorldMap_Stub.tscn
-> raid_mission_scene_path = "res://scenes/missions/RaidMission.tscn"
-> settlement_bridge_scene_path = "res://scenes/levels/SettlementBridge.tscn"
-> Background (ColorRect)
-> > layout_mode = 0
-> > color = (0.0, 0.0, 0.0, 1.0)
-> TitleLabel (Label)
-> > layout_mode = 0
-> > offset_top = 50.0
-> > offset_right = 141.0
-> > offset_bottom = 73.0
-> > text = "Select Your Target"
-> > horizontal_alignment = 1
-> ButtonContainer (VBoxContainer)
-> > layout_mode = 0
-> > offset_top = 150.0
-> > offset_right = 190.0
-> > offset_bottom = 216.0
-> > alignment = 1
->   RaidMonasteryButton (Button)
->   > layout_mode = 2
->   > text = "Raid: Nearby Monastery"
->   Spacer (HSeparator)
->   > layout_mode = 2
->   BackButton (Button)
->   > layout_mode = 2
->   > text = "Return to Settlement"
-> Phase3Test (Node)
 
 --- SCENE: res://scripts/ui/PauseMenu.tscn ---
 PauseMenu (CanvasLayer)
@@ -1877,10 +1928,47 @@ BuildingPreviewCursor (Node2D)
 > script: res://scripts/ui/BuildingPreviewCursor.gd
 > scene: res://ui/BuildingPreviewCursor.tscn
 
+--- SCENE: res://ui/components/HeirCard.tscn ---
+HeirCard (PanelContainer)
+> script: res://ui/components/HeirCard.gd
+> scene: res://ui/components/HeirCard.tscn
+> VBox (VBoxContainer)
+> > layout_mode = 2
+>   PortraitContainer (Control)
+>   > custom_minimum_size = (128.0, 128.0)
+>   > layout_mode = 2
+>   > size_flags_horizontal = 4
+>     Portrait (TextureRect)
+>     > layout_mode = 1
+>     > anchors_preset = 15
+>     > anchor_right = 1.0
+>     > anchor_bottom = 1.0
+>     > grow_horizontal = 2
+>     > grow_vertical = 2
+>     > expand_mode = 1
+>     HeirCrown (TextureRect)
+>     > custom_minimum_size = (32.0, 32.0)
+>     > layout_mode = 1
+>     > anchors_preset = 1
+>     > anchor_left = 1.0
+>     > anchor_right = 1.0
+>     > offset_left = -1.0
+>     > grow_horizontal = 0
+>     StatusIcon (TextureRect)
+>     > custom_minimum_size = (32.0, 32.0)
+>     > layout_mode = 1
+>     > offset_right = 1.0
+>     > expand_mode = 1
+>   NameLabel (Label)
+>   > layout_mode = 2
+>   StatsLabel (Label)
+>   > layout_mode = 2
+
 --- SCENE: res://ui/Dynasty_UI.tscn ---
 Dynasty_UI (PanelContainer)
 > script: res://ui/DynastyUI.gd
 > scene: res://ui/Dynasty_UI.tscn
+> custom_minimum_size = (800.0, 600.0)
 > anchor_left = 0.5
 > anchor_top = 0.5
 > anchor_right = 0.5
@@ -1893,25 +1981,42 @@ Dynasty_UI (PanelContainer)
 > grow_vertical = 2
 > Margin (MarginContainer)
 > > layout_mode = 2
->   VBox (VBoxContainer)
+>   MainLayout (VBoxContainer)
 >   > layout_mode = 2
->     TitleLabel (Label)
+>     AncestorsScroll (ScrollContainer)
+>     > custom_minimum_size = (0.0, 100.0)
 >     > layout_mode = 2
->     > text = "Jarl Bjorn\'s Dynasty"
->     > horizontal_alignment = 1
+>     > size_flags_vertical = 3
+>       AncestorsHBox (HBoxContainer)
+>       > layout_mode = 2
 >     HSeparator (HSeparator)
+>     > layout_mode = 2
+>     CurrentJarlPanel (HBoxContainer)
+>     > layout_mode = 2
+>     > size_flags_horizontal = 4
+>       Portrait (TextureRect)
+>       > custom_minimum_size = (128.0, 128.0)
+>       > layout_mode = 2
+>       Stats (VBoxContainer)
+>       > layout_mode = 2
+>         NameLabel (Label)
+>         > layout_mode = 2
+>         StatsLabel (Label)
+>         > layout_mode = 2
+>     HSeparator2 (HSeparator)
 >     > layout_mode = 2
 >     HeirsLabel (Label)
 >     > layout_mode = 2
 >     > text = "Heirs:"
->     HeirsContainer (VBoxContainer)
->     > layout_mode = 2
->     Spacer (Control)
+>     HeirsScroll (ScrollContainer)
 >     > layout_mode = 2
 >     > size_flags_vertical = 3
+>       HeirsHBox (HBoxContainer)
+>       > layout_mode = 2
 >     CloseButton (Button)
 >     > layout_mode = 2
 >     > text = "Close"
+> ContextMenu (PopupMenu)
 
 --- SCENE: res://ui/EndOfYear_Popup.tscn ---
 Main (PanelContainer)
@@ -2235,10 +2340,9 @@ const PLAYER_JARL_PATH = "res://data/characters/PlayerJarl.tres"
 
 func _ready() -> void:
 	_load_player_jarl()
-	_load_legacy_upgrades_from_disk() # <-- THIS IS THE FIX
-	EventBus.succession_choices_made.connect(_on_succession_choices_made) # Connect to UI
+	_load_legacy_upgrades_from_disk()
+	EventBus.succession_choices_made.connect(_on_succession_choices_made)
 
-# --- THIS IS THE NEW FUNCTION ---
 func _load_legacy_upgrades_from_disk() -> void:
 	"""
 	Scans res://data/legacy/ for .tres files and loads them.
@@ -2262,16 +2366,12 @@ func _load_legacy_upgrades_from_disk() -> void:
 					
 					# Check if already purchased
 					if has_purchased_upgrade(unique_upgrade.effect_key):
-						# This logic needs to be based on progress, not just key
-						# We will need to load progress from JarlData in the future.
-						# For now, this is fine, but we need to load progress *from* jarl data.
-						pass
+						unique_upgrade.current_progress = unique_upgrade.required_progress
 					
 					loaded_legacy_upgrades.append(unique_upgrade)
 					
 			file_name = dir.get_next()
 	print("DynastyManager: Loaded %d legacy upgrades." % loaded_legacy_upgrades.size())
-# --- END NEW FUNCTION ---
 
 func _load_player_jarl() -> void:
 	if ResourceLoader.exists(PLAYER_JARL_PATH):
@@ -2294,6 +2394,8 @@ func get_current_jarl() -> JarlData:
 		_load_player_jarl()
 	return current_jarl
 
+# --- AUTHORITY & RENOWN ---
+
 func can_spend_authority(cost: int) -> bool:
 	if not current_jarl:
 		return false
@@ -2306,10 +2408,8 @@ func spend_authority(cost: int) -> bool:
 	if current_jarl.spend_authority(cost):
 		_save_jarl_data()
 		jarl_stats_updated.emit(current_jarl)
-		# REMOVED: print("DynastyManager: Spent %d authority. %d remaining." % [cost, current_jarl.current_authority])
 		return true
 	
-	# RETAINED: Failure is important
 	print("DynastyManager: Failed to spend %d authority. %d remaining." % [cost, current_jarl.current_authority])
 	return false
 
@@ -2322,15 +2422,25 @@ func can_spend_renown(cost: int) -> bool:
 func spend_renown(cost: int) -> bool:
 	"""Spend the Jarl's Renown."""
 	if not can_spend_renown(cost):
-		# RETAINED: Failure is important
 		print("DynastyManager: Failed to spend %d renown. %d available." % [cost, current_jarl.renown])
 		return false
 	
 	current_jarl.renown -= cost
 	_save_jarl_data()
 	jarl_stats_updated.emit(current_jarl)
-	# REMOVED: print("DynastyManager: Spent %d renown. %d remaining." % [cost, current_jarl.renown])
 	return true
+
+func award_renown(amount: int) -> void:
+	if not current_jarl:
+		push_error("DynastyManager: Cannot award renown, current Jarl is null.")
+		return
+	
+	current_jarl.award_renown(amount)
+	_save_jarl_data()
+	jarl_stats_updated.emit(current_jarl)
+	print("DynastyManager: Awarded %d renown. Total: %d" % [amount, current_jarl.renown])
+
+# --- LEGACY & UNIFIER ---
 
 func purchase_legacy_upgrade(upgrade_key: String) -> void:
 	"""Mark a legacy upgrade as purchased on the Jarl's data."""
@@ -2347,7 +2457,6 @@ func has_purchased_upgrade(upgrade_key: String) -> bool:
 		return false
 	return upgrade_key in current_jarl.purchased_legacy_upgrades
 
-# --- NEW: Unifier Pillar Functions ---
 func add_conquered_region(region_path: String) -> void:
 	"""Adds a region's path to the Jarl's list of conquered territories."""
 	if not current_jarl:
@@ -2355,10 +2464,7 @@ func add_conquered_region(region_path: String) -> void:
 	if not region_path in current_jarl.conquered_regions:
 		current_jarl.conquered_regions.append(region_path)
 		_save_jarl_data()
-		# RETAINED: This is a major game state change
 		print("DynastyManager: Region '%s' conquered and saved." % region_path)
-		# We don't emit jarl_stats_updated here because spending authority
-		# will have already triggered the UI refresh.
 
 func has_conquered_region(region_path: String) -> bool:
 	"""Checks if a region has been conquered."""
@@ -2366,14 +2472,37 @@ func has_conquered_region(region_path: String) -> bool:
 		return false
 	return region_path in current_jarl.conquered_regions
 
-# --- NEW: Progenitor Pillar Functions ---
+# --- PROGENITOR PILLAR (HEIRS) ---
 
 func get_available_heir_count() -> int:
 	if not current_jarl:
 		return 0
 	return current_jarl.get_available_heir_count()
 
-func start_heir_expedition(heir: JarlHeirData, expedition_duration: int = 5) -> void:
+func designate_heir(target_heir: JarlHeirData) -> void:
+	if not current_jarl or not target_heir:
+		return
+	
+	# 1. Cost Check
+	var cost = 1
+	if not can_spend_authority(cost):
+		print("DynastyManager: Not enough Authority to designate heir.")
+		return
+		
+	spend_authority(cost)
+	
+	# 2. Clear previous designation
+	for heir in current_jarl.heirs:
+		heir.is_designated_heir = false
+		
+	# 3. Set new designation
+	target_heir.is_designated_heir = true
+	
+	_save_jarl_data()
+	jarl_stats_updated.emit(current_jarl)
+	print("DynastyManager: %s is now the designated heir." % target_heir.display_name)
+
+func start_heir_expedition(heir: JarlHeirData, expedition_duration: int = 3) -> void:
 	"""
 	Sends an heir on an expedition.
 	This marks them as unavailable and starts a timer.
@@ -2388,56 +2517,6 @@ func start_heir_expedition(heir: JarlHeirData, expedition_duration: int = 5) -> 
 	jarl_stats_updated.emit(current_jarl)
 	print("Heir %s sent on expedition for %d years." % [heir.display_name, expedition_duration])
 
-func process_heir_expeditions() -> Array[String]:
-	"""
-	Called at the End of Year.
-	Processes all heirs on expedition, returning results.
-	"""
-	if not current_jarl:
-		return []
-
-	var results: Array[String] = []
-	var heirs_to_remove: Array[JarlHeirData] = []
-	
-	for heir in current_jarl.heirs:
-		if heir.status == JarlHeirData.HeirStatus.OnExpedition:
-			heir.expedition_years_remaining -= 1
-			
-			if heir.expedition_years_remaining <= 0:
-				# Expedition is over, run probability check
-				var roll = randf()
-				if roll <= 0.7: # 70% success 
-					var renown_gain = randi_range(100, 300)
-					award_renown(renown_gain)
-					results.append("Heir %s returned from their expedition with %d Renown!" % [heir.display_name, renown_gain])
-					heir.status = JarlHeirData.HeirStatus.Available
-					
-					# --- NEW: Add Trait to Heir ---
-					var seasoned_trait = load("res://data/traits/Trait_Seasoned.tres") # Load the trait we created
-					if seasoned_trait:
-						heir.traits.append(seasoned_trait)
-					# --- END NEW ---
-					
-					# --- NEW: Add Legitimacy Boost ---
-					current_jarl.legitimacy = min(100, current_jarl.legitimacy + 5) # +5 Legitimacy for successful expedition
-					# --- END NEW ---
-				else: # 30% failure 
-					results.append("Tragic news!
-Heir %s was lost at sea during their expedition." % heir.display_name)
-					heir.status = JarlHeirData.HeirStatus.LostAtSea
-					heirs_to_remove.append(heir) # Queue for removal
-	
-	# Remove lost heirs
-	for heir in heirs_to_remove:
-		current_jarl.remove_heir(heir)
-
-	if not results.is_empty():
-		_save_jarl_data()
-		jarl_stats_updated.emit(current_jarl)
-		
-	return results
-
-# --- NEW: Marry for Alliance ---
 func marry_heir_for_alliance(region_path: String) -> bool:
 	"""
 	Spends the first available heir to form an alliance with a region.
@@ -2458,9 +2537,8 @@ func marry_heir_for_alliance(region_path: String) -> bool:
 	if not region_path in current_jarl.allied_regions:
 		current_jarl.allied_regions.append(region_path)
 	
-	# --- NEW: Add Legitimacy Boost ---
+	# Add Legitimacy Boost
 	current_jarl.legitimacy = min(100, current_jarl.legitimacy + 10) # +10 Legitimacy
-	# --- END NEW ---
 
 	print("Heir %s married off to form alliance with %s" % [heir_to_marry.display_name, region_path])
 	_save_jarl_data()
@@ -2472,49 +2550,133 @@ func is_allied_region(region_path: String) -> bool:
 	if not current_jarl:
 		return false
 	return region_path in current_jarl.allied_regions
-# --- END NEW ---
-func add_trait_to_heir(heir: JarlHeirData, trait_data: JarlTraitData) -> void:
-	"""
-	Placeholder function to add a trait to an heir.
-	Currently, JarlHeirData does not store traits.
-	This function will just log for now.
-	"""
-	# Using push_warning to flag this missing feature for development
-	push_warning("EVENT: (TODO) Would add trait '%s' to heir '%s'." % [trait_data.display_name, heir.display_name])
 
+func add_trait_to_heir(heir: JarlHeirData, trait_data: JarlTraitData) -> void:
+	if not heir: return
+	heir.traits.append(trait_data)
+	print("EVENT: Added trait '%s' to heir '%s'." % [trait_data.display_name, heir.display_name])
+
+# --- END OF YEAR LOGIC LOOP ---
 
 func end_year() -> void:
 	if not current_jarl:
 		push_error("DynastyManager: Cannot end year, current Jarl is null.")
 		return
 	
-	# --- MODIFIED: Death check happens *before* reset ---
+	# 1. Jarl Aging & Death Check
+	current_jarl.age_jarl(1)
+	
 	var jarl_died = _check_for_jarl_death()
 	if jarl_died:
-		# Succession crisis is triggered, which will emit 'event_system_finished'
-		# when it's done. We stop 'end_year' here.
+		# If Jarl died, the succession event fires. 
+		# We STOP here. The Succession UI will handle the rest.
 		return
-	# --- END MODIFIED ---
 	
-	# Jarl did not die, proceed as normal
-	current_jarl.reset_authority() # This now contains the debuff logic
+	# 2. Reset Authority
+	current_jarl.reset_authority()
 	
-	var expedition_results = process_heir_expeditions()
-	if not expedition_results.is_empty():
-		print("Expedition Results: %s" % expedition_results)
-		# TODO: We will need a way to show these results to the player,
-		# likely by modifying the EndOfYear_Popup.
+	# 3. Process Heirs (Simulation Loop)
+	_process_heir_simulation()
 	
+	# 4. Save and Update UI
 	_save_jarl_data()
 	jarl_stats_updated.emit(current_jarl)
-	print("DynastyManager: Year ended. Authority reset to %d." % current_jarl.max_authority)
 	
-	# Emit the signal so the EventManager can hear it.
+	print("DynastyManager: Year ended. Jarl is now %d." % current_jarl.age)
 	year_ended.emit()
+
+func _process_heir_simulation() -> void:
+	"""Handles aging, expedition returns, births, and deaths."""
+	var heirs_to_remove: Array[JarlHeirData] = []
 	
+	# A. Process Existing Heirs
+	for heir in current_jarl.heirs:
+		heir.age += 1
+		
+		# Expedition Logic
+		if heir.status == JarlHeirData.HeirStatus.OnExpedition:
+			heir.expedition_years_remaining -= 1
+			if heir.expedition_years_remaining <= 0:
+				_resolve_expedition(heir)
+		
+		# Natural Death Check (Simple version)
+		# 5% chance to die if over 50
+		if heir.age > 50 and randf() < 0.05: 
+			print("EVENT: Heir %s died of natural causes." % heir.display_name)
+			heirs_to_remove.append(heir)
+			
+	# Clean up dead heirs
+	for dead_heir in heirs_to_remove:
+		current_jarl.remove_heir(dead_heir)
+		
+	# B. Try for a new child (Births)
+	_try_birth_event()
+
+func _resolve_expedition(heir: JarlHeirData) -> void:
+	# 70% Success Rate
+	var roll = randf()
+	
+	if roll > 0.3:
+		# SUCCESS
+		heir.status = JarlHeirData.HeirStatus.Available
+		var renown_gain = randi_range(100, 300)
+		award_renown(renown_gain)
+		print("EVENT: Heir %s returned safely with %d Renown!" % [heir.display_name, renown_gain])
+		
+		# Optional: Load/Add Seasoned trait here
+		# var seasoned = load("res://data/traits/Trait_Seasoned.tres")
+		# if seasoned: add_trait_to_heir(heir, seasoned)
+	else:
+		# FAILURE (Death/Lost)
+		heir.status = JarlHeirData.HeirStatus.LostAtSea
+		print("EVENT: Tragic news! Heir %s was lost at sea." % heir.display_name)
+
+func _try_birth_event() -> void:
+	# 1. Hard cap on children to prevent UI overflow
+	if current_jarl.heirs.size() >= 6:
+		return
+		
+	# 2. Fertility calculation
+	var base_chance = 0.30 # 30% base chance per year
+	
+	# Age modifier (Lower chance as Jarl gets older)
+	if current_jarl.age > 50: base_chance -= 0.20
+	if current_jarl.age > 60: base_chance = 0.0
+	
+	# Roll the dice
+	if randf() < base_chance:
+		_generate_new_baby()
+
+func _generate_new_baby() -> void:
+	var baby = JarlHeirData.new()
+	baby.age = 0 # Newborn
+	
+	# Random Gender
+	baby.gender = "Male" if randf() > 0.5 else "Female"
+	
+	# Random Name (Hardcoded list for MVP)
+	var male_names = ["Erik", "Olaf", "Knut", "Sven", "Torstein", "Leif", "Ragnar", "Bjorn"]
+	var female_names = ["Astrid", "Freya", "Ingrid", "Sigrid", "Helga", "Ylva", "Lagertha", "Gunnhild"]
+	
+	if baby.gender == "Male":
+		baby.display_name = male_names.pick_random()
+	else:
+		baby.display_name = female_names.pick_random()
+		
+	# Genetic Trait Inheritance (20% chance)
+	if randf() < 0.2:
+		var trait_data = JarlTraitData.new()
+		trait_data.display_name = ["Strong", "Genius", "Giant", "Frail"].pick_random()
+		baby.genetic_trait = trait_data
+	
+	# Add to family
+	current_jarl.heirs.append(baby)
+	print("EVENT: A new child, %s, was born to the Dynasty!" % baby.display_name)
+
+# --- RAID UTILS ---
+
 func set_current_raid_target(data: SettlementData) -> void:
 	current_raid_target = data
-	# REMOVED: print("DynastyManager: Raid target set to %s" % data.resource_path)
 
 func get_current_raid_target() -> SettlementData:
 	var target = current_raid_target
@@ -2531,34 +2693,17 @@ func _save_jarl_data() -> void:
 		
 	var error = ResourceSaver.save(current_jarl, current_jarl.resource_path)
 	if error != OK:
-		# Using push_error to alert to critical save file failures
 		push_error("DynastyManager: Failed to save Jarl data to %s. Error: %s" % [current_jarl.resource_path, error])
-	# No success print needed for every save, keeps log clean
 
-func award_renown(amount: int) -> void:
-	if not current_jarl:
-		push_error("DynastyManager: Cannot award renown, current Jarl is null.")
-		return
-	
-	current_jarl.award_renown(amount)
-	_save_jarl_data()
-	jarl_stats_updated.emit(current_jarl)
-	print("DynastyManager: Awarded %d renown.
-Total: %d" % [amount, current_jarl.renown])
+# --- SUCCESSION SYSTEM ---
 
-# --- NEW: Succession System Functions ---
 func debug_kill_jarl() -> void:
-	"""
-	Public-facing debug function to immediately trigger succession.
-	Bypasses all age and 'end_year' checks.
-	"""
+	"""Public-facing debug function to immediately trigger succession."""
 	print("DEBUG: debug_kill_jarl() called. Forcing succession...")
 	_trigger_succession()
 
-
 func _check_for_jarl_death() -> bool:
-	"""Rolls for Jarl's death.
-Returns true if Jarl died."""
+	"""Rolls for Jarl's death. Returns true if Jarl died."""
 	var jarl = get_current_jarl()
 	var death_chance = 0.0
 	
@@ -2579,21 +2724,42 @@ Returns true if Jarl died."""
 func _trigger_succession() -> void:
 	"""Manages the promotion of an heir and triggers the crisis event."""
 	var old_jarl = current_jarl
-	var heir = current_jarl.get_first_available_heir()
+	
+	# 1. Try to find Designated Heir first
+	var heir = null
+	for h in current_jarl.heirs:
+		if h.is_designated_heir and h.status == JarlHeirData.HeirStatus.Available:
+			heir = h
+			break
+			
+	# 2. Fallback to first available
+	if not heir:
+		heir = current_jarl.get_first_available_heir()
 	
 	if not heir:
 		print("GAME OVER: The Jarl died with no available heir!")
 		# TODO: Add game over logic
-		get_tree().quit() # Placeholder
 		return
 	
 	# Promote heir to Jarl
 	var new_jarl = _promote_heir_to_jarl(heir, old_jarl)
-	current_jarl.heirs.erase(heir) # Remove heir from list
+	
+	# Move old Jarl to ancestors
+	var ancestor_entry = {
+		"name": old_jarl.display_name,
+		"portrait": old_jarl.portrait,
+		"final_renown": old_jarl.renown,
+		"death_reason": "Died of old age" # Simplify for now
+	}
+	new_jarl.ancestors.append(ancestor_entry)
+	
+	# Remove the promoted heir from the heir list
+	new_jarl.heirs.erase(heir) 
+	
 	current_jarl = new_jarl
 	
 	# Trigger the event
-	var succession_event_data = EventData.new() # Create a dummy event
+	var succession_event_data = EventData.new() 
 	succession_event_data.event_id = "succession_crisis"
 	EventManager._trigger_event(succession_event_data)
 
@@ -2602,26 +2768,28 @@ func _promote_heir_to_jarl(heir: JarlHeirData, predecessor: JarlData) -> JarlDat
 	var new_jarl = JarlData.new()
 	new_jarl.display_name = heir.display_name
 	new_jarl.age = heir.age
+	new_jarl.gender = heir.gender
+	new_jarl.portrait = heir.portrait
 	new_jarl.command = heir.command
 	new_jarl.stewardship = heir.stewardship
 	new_jarl.learning = heir.learning
 	new_jarl.prowess = heir.prowess
 	new_jarl.traits = heir.traits
+	new_jarl.ancestors = predecessor.ancestors.duplicate() # Carry over ancestors
+	new_jarl.heirs = predecessor.heirs.duplicate() # Siblings become heirs (simplified)
 	
 	# Calculate Legitimacy
 	var new_legit = int(predecessor.legitimacy * 0.8) # Inherit 80%
 	
-	# Apply trait/skill penalties
-	var penalty = (10 - new_jarl.get_effective_skill("stewardship")) * 2 # Example
-	penalty += (10 - new_jarl.get_effective_skill("prowess")) # Example
-	
-	new_legit = max(0, new_legit - penalty)
+	# Bonus if Designated
+	if heir.is_designated_heir:
+		new_legit += 20
 	
 	# Apply floor from Jelling Stone 
 	new_legit = max(new_legit, minimum_inherited_legitimacy) 
 	
 	new_jarl.legitimacy = new_legit
-	new_jarl.succession_debuff_years_remaining = 3 # Start the 3-year debuff
+	new_jarl.succession_debuff_years_remaining = 3 
 	
 	return new_jarl
 
@@ -2630,12 +2798,7 @@ func _on_succession_choices_made(renown_choice: String, gold_choice: String) -> 
 	if renown_choice == "refuse":
 		# Apply Renown Tax Consequence
 		var setback_applied = false
-		
-		# --- THIS IS THE FIX ---
-		# We iterate over our own 'loaded_legacy_upgrades' array,
-		# not one from another scene.
 		for upgrade in loaded_legacy_upgrades:
-		# --- END FIX ---
 			if not upgrade.is_purchased and upgrade.current_progress > 0:
 				upgrade.current_progress = max(0, upgrade.current_progress - 2) # -2 Progress
 				setback_applied = true
@@ -2649,10 +2812,7 @@ func _on_succession_choices_made(renown_choice: String, gold_choice: String) -> 
 			SettlementManager.current_settlement.has_stability_debuff = true
 			print("Settlement instability debuff applied!")
 	
-	# This is the "all-clear" signal
 	EventBus.event_system_finished.emit()
-
-# --- END NEW ---
 
 --- SCRIPT: res://autoload/EventBus.gd ---
 # res://autoload/EventBus.gd
@@ -3879,11 +4039,6 @@ class_name EconomicBuildingData
 
 --- SCRIPT: res://data/characters/JarlData.gd ---
 # res://data/characters/JarlData.gd
-#
-# Defines the persistent data for a Jarl character in Viking Dynasty.
-# This resource stores all the attributes that persist across the dynasty layer.
-# GDD Ref: Section 2.A (Macro Layer), Appendix A.2 (Renown & Succession Loop)
-
 class_name JarlData
 extends Resource
 
@@ -3896,60 +4051,52 @@ extends Resource
 ## The Jarl's age in years
 @export var age: int = 25
 
-## The Jarl's gender (affects marriage and succession options)
-@export var gender: String = "Male"  # "Male", "Female"
-
+## The Jarl's gender
+@export var gender: String = "Male" # "Male", "Female"
 
 @export_group("Dynasty & Authority")
-## Total Renown accumulated by this Jarl (persistent XP/Legacy score)
+## Total Renown accumulated by this Jarl
 @export var renown: int = 0
 
-## Current Renown Tier (determines Authority cap per year)
-## Tiers: 0="Petty Jarl", 1="High Jarl", 2="Kingmaker", etc.
+## Current Renown Tier (0-3)
 @export var renown_tier: int = 0
 
-## Authority remaining for this year (action points for Macro layer)
+## Authority remaining for this year
 @export var current_authority: int = 3
 
-## Maximum Authority this Jarl can generate per year (based on Renown Tier)
+## Maximum Authority this Jarl can generate per year
 @export var max_authority: int = 3
 
-## Years since last offensive action (for Renown Decay calculations)
+## Years since last offensive action
 @export var years_since_action: int = 0
 
-## Legitimacy score affecting succession and stability (0-100 scale)
+## Legitimacy score (0-100)
 @export var legitimacy: int = 20
 
-## Years remaining in succession debuff (reduced Authority generation)
+## Years remaining in succession debuff
 @export var succession_debuff_years_remaining: int = 0
 
-# --- Builder Pillar Upgrade Properties ---
-## Bonus starting renown for all future heirs (from "Erect Jelling Stone")
-@export var heir_starting_renown_bonus: int = 0
+# --- NEW: Lineage History ---
+@export_group("Lineage History")
+## Stores dictionaries of past rulers: { "name": String, "portrait": Texture2D, "final_renown": int, "death_reason": String }
+@export var ancestors: Array[Dictionary] = []
+# ----------------------------
 
-## An array of unique effect_keys for one-time legacy upgrades
-## (e.g., ["UPG_TRELLEBORG", "UPG_JELLING_STONE"])
+# --- Builder Pillar ---
+@export var heir_starting_renown_bonus: int = 0
 @export var purchased_legacy_upgrades: Array[String] = []
 
-# --- Unifier Pillar Property ---
-## An array of resource paths to WorldRegionData files that have been subjugated.
+# --- Unifier Pillar ---
 @export var conquered_regions: Array[String] = []
 
-# --- Progenitor Pillar Property ---
-## An array of resource paths to WorldRegionData files that are allied.
+# --- Progenitor Pillar ---
 @export var allied_regions: Array[String] = []
 
-
 @export_group("Naval Logistics")
-## The distance (in pixels) a fleet can travel with 0% attrition.
 @export var safe_naval_range: float = 600.0
-
-## Attrition penalty per 100 pixels beyond safe range (e.g., 0.10 = 10% risk).
 @export var attrition_per_100px: float = 0.10
 
-
 @export_group("Base Skills")
-## Combat leadership and personal prowess
 @export var command: int = 10
 @export var diplomacy: int = 10
 @export var stewardship: int = 10
@@ -3957,63 +4104,16 @@ extends Resource
 @export var prowess: int = 10
 @export var charisma: int = 10
 
-
 @export_group("Traits")
-## Array of JarlTraitData resources that modify the Jarl's abilities and story
 @export var traits: Array[JarlTraitData] = []
-## Legacy trait names for backward compatibility (can be removed later)
 @export var legacy_trait_names: Array[String] = []
-## Whether this Jarl is currently wounded (affects stats temporarily)
 @export var is_wounded: bool = false
-## Number of turns remaining for wound recovery
 @export var wound_recovery_turns: int = 0
 
-# --- HELPER FUNCTIONS ---
-
-func get_safe_range() -> float:
-	# Placeholder for future trait modifiers (e.g. "Seafarer" trait)
-	return safe_naval_range
-
-## Get the number of *available* heirs (not on expedition, etc.)
-func get_available_heir_count() -> int:
-	var count = 0
-	for heir in heirs:
-		if heir and heir.status == JarlHeirData.HeirStatus.Available:
-			count += 1
-	return count
-
-## Get the first available heir resource
-func get_first_available_heir() -> JarlHeirData:
-	for heir in heirs:
-		if heir and heir.status == JarlHeirData.HeirStatus.Available:
-			return heir
-	return null
-
-## Remove an heir from the dynasty (e.g., married off or lost)
-## Returns false if the heir could not be found.
-func remove_heir(heir_to_remove: JarlHeirData) -> bool:
-	if heir_to_remove in heirs:
-		heirs.erase(heir_to_remove)
-		return true
-	return false
-
-## Check if the Jarl has at least one valid, available heir
-func check_has_valid_heir() -> bool:
-	return get_first_available_heir() != null
-
-
 @export_group("Family & Succession")
-## The Jarl's spouse (if any)
 @export var spouse_name: String = ""
-## Array of JarlHeirData resources in order of succession priority
+## Array of JarlHeirData resources
 @export var heirs: Array[JarlHeirData] = []
-
-## DEPRECATED Properties (kept for compatibility if needed)
-var has_valid_heir: bool:
-	get: return check_has_valid_heir()
-var children_count: int:
-	get: return get_available_heir_count()
-
 
 @export_group("Political Status")
 @export var title: String = "Jarl"
@@ -4021,15 +4121,39 @@ var children_count: int:
 @export var reputation: int = 0
 @export var is_in_exile: bool = false
 
-
 @export_group("Combat & Mission State")
 @export var is_on_mission: bool = false
 @export var battles_fought: int = 0
 @export var battles_won: int = 0
 @export var successful_raids: int = 0
 
+# --- HELPER FUNCTIONS ---
 
-## Get the effective skill value including trait modifiers
+func get_safe_range() -> float:
+	return safe_naval_range
+
+func get_available_heir_count() -> int:
+	var count = 0
+	for heir in heirs:
+		if heir and heir.status == JarlHeirData.HeirStatus.Available:
+			count += 1
+	return count
+
+func get_first_available_heir() -> JarlHeirData:
+	for heir in heirs:
+		if heir and heir.status == JarlHeirData.HeirStatus.Available:
+			return heir
+	return null
+
+func remove_heir(heir_to_remove: JarlHeirData) -> bool:
+	if heir_to_remove in heirs:
+		heirs.erase(heir_to_remove)
+		return true
+	return false
+
+func check_has_valid_heir() -> bool:
+	return get_first_available_heir() != null
+
 func get_effective_skill(skill_name: String) -> int:
 	var base_value: int = 0
 	match skill_name.to_lower():
@@ -4051,8 +4175,6 @@ func get_effective_skill(skill_name: String) -> int:
 	
 	return base_value + trait_modifier
 
-
-## Add a trait to the Jarl (if not already present)
 func add_trait(trait_data: JarlTraitData) -> void:
 	if trait_data == null: return
 	for existing_trait in traits:
@@ -4060,14 +4182,12 @@ func add_trait(trait_data: JarlTraitData) -> void:
 			return
 	traits.append(trait_data)
 
-## Check if Jarl has a specific trait by display name
 func has_trait(trait_name: String) -> bool:
 	for jarl_trait in traits:
 		if jarl_trait != null and jarl_trait.display_name == trait_name:
 			return true
 	return false
 
-## Get the Jarl's Authority cap based on Renown Tier
 func get_authority_cap() -> int:
 	match renown_tier:
 		0: return 3
@@ -4121,9 +4241,6 @@ func remove_trait(trait_name: String) -> bool:
 
 --- SCRIPT: res://data/characters/JarlHeirData.gd ---
 # res://data/characters/JarlHeirData.gd
-#
-# Defines the data for a single heir in the dynasty.
-# This allows heirs to be "spent" or go on missions.
 class_name JarlHeirData
 extends Resource
 
@@ -4132,29 +4249,29 @@ enum HeirStatus {
 	OnExpedition,
 	MarriedOff,
 	LostAtSea,
-	Deceased
+	Deceased,
+	Maimed # Added Maimed status per design doc
 }
 
-## The heir's name.
+@export_group("Identity")
 @export var display_name: String = "New Heir"
-
-## The heir's age.
 @export var age: int = 16
+@export var gender: String = "Male" # "Male", "Female"
+@export var portrait: Texture2D
+@export var is_designated_heir: bool = false
 
-## The heir's current status.
+@export_group("Status")
 @export var status: HeirStatus = HeirStatus.Available
-
-## If on expedition, how many "years" remain.
 @export var expedition_years_remaining: int = 0
 
-# --- NEW: Heir Skills & Traits ---
 @export_group("Skills & Traits")
 @export var command: int = 8
 @export var stewardship: int = 8
 @export var learning: int = 8
 @export var prowess: int = 8
 @export var traits: Array[JarlTraitData] = []
-# --- END NEW ---
+## The innate genetic trait (e.g., Strong, Frail) separate from learned traits
+@export var genetic_trait: JarlTraitData
 
 --- SCRIPT: res://data/events/EventChoice.gd ---
 # res://data/events/EventChoice.gd
@@ -5254,10 +5371,6 @@ func _spawn_projectile(target_position_world: Vector2) -> void:
 
 --- SCRIPT: res://scenes/effects/Projectile.gd ---
 # res://scenes/effects/Projectile.gd
-#
-# A simple, straight-line projectile that applies damage on impact.
-# Now integrated with ProjectilePoolManager.
-
 class_name Projectile
 extends Area2D
 
@@ -5270,75 +5383,79 @@ var firer: Node2D = null
 @onready var lifetime_timer: Timer = $LifetimeTimer
 
 func _ready() -> void:
-	area_entered.connect(_on_area_entered)
-	body_entered.connect(_on_body_entered)
+	# Connect signals if not already connected (safety for pooling)
+	if not area_entered.is_connected(_on_area_entered):
+		area_entered.connect(_on_area_entered)
+	if not body_entered.is_connected(_on_body_entered):
+		body_entered.connect(_on_body_entered)
 	
-	# We must defer setting physics properties
-	set_deferred("monitoring", true)
+	# Default state
+	monitoring = false
+	monitorable = false
 	
-	self.monitorable = false
 	lifetime_timer.timeout.connect(_on_lifetime_timeout)
 
 func _physics_process(delta: float) -> void:
 	global_position += direction * speed * delta
 
-func setup(start_position: Vector2, target_position: Vector2, projectile_damage: int, projectile_speed: float = 400.0, collision_mask: int = 0) -> void:
-	# This function now "wakes up" the projectile
+func setup(start_position: Vector2, target_position: Vector2, projectile_damage: int, projectile_speed: float = 400.0, collision_mask_value: int = 0) -> void:
 	global_position = start_position
 	direction = (target_position - start_position).normalized()
 	damage = projectile_damage
 	speed = projectile_speed
-	self.collision_mask = collision_mask
 	
+	# Apply the mask (what we can hit)
+	self.collision_mask = collision_mask_value
+	
+	# Rotate visual
 	if direction != Vector2.ZERO:
 		rotation = direction.angle()
 	
-	# Activate the projectile
+	# --- CRITICAL FIX: Force State Reset ---
+	# We set monitoring directly. Since this is usually called from a Timer signal
+	# (AttackAI), it is generally safe.
+	monitoring = true
+	monitorable = false
 	show()
 	set_physics_process(true)
-	set_deferred("monitoring", true)
 	lifetime_timer.start()
+	
+	# Debug Print to confirm setup
+	# print("Projectile Fired! Mask: %d | Pos: %s" % [collision_mask_value, global_position])
 
 func return_to_pool() -> void:
-	"""
-	Deactivates the projectile and hides it, returning it to the pool.
-	"""
-	hide()
+	"""Deactivates the projectile and hides it."""
+	monitoring = false
 	set_physics_process(false)
-	set_deferred("monitoring", false)
+	hide()
 	lifetime_timer.stop()
-	global_position = Vector2(-1000, -1000) # Move it off-screen
+	global_position = Vector2(-5000, -5000) # Move far away
 
 func _on_area_entered(area: Area2D) -> void:
-	"""Called when this Area2D detects a 'monitorable' Area2D (like our Hitbox)."""
-	
+	# Check collision mask manually if needed, but engine should handle it
 	if area.collision_layer & self.collision_mask:
-		var parent_body = area.get_parent()
-		if parent_body and parent_body.has_method("take_damage"):
-			
-			if is_instance_valid(firer):
-				parent_body.take_damage(damage, firer)
-			else:
-				parent_body.take_damage(damage, null)
-			
-			ProjectilePoolManager.return_projectile(self)
-		else:
-			push_warning("Projectile hit non-damagable Area: '%s'." % area.name)
+		_handle_impact(area.get_parent())
+	else:
+		# Debug for misses
+		# print("Projectile hit ignored Area: %s (Layer: %d)" % [area.name, area.collision_layer])
+		pass
 
 func _on_body_entered(body: Node2D) -> void:
-	"""Called when this Area2D detects a 'monitorable' PhysicsBody (like a unit)."""
-	
-	if not body is CollisionObject2D:
-		return
-	
 	if body.collision_layer & self.collision_mask:
-		if body.has_method("take_damage"):
-			if is_instance_valid(firer):
-				body.take_damage(damage, firer)
-			else:
-				body.take_damage(damage, null)
-		
-		ProjectilePoolManager.return_projectile(self)
+		_handle_impact(body)
+
+func _handle_impact(target: Node2D) -> void:
+	if not target: return
+	
+	# print("Projectile IMPACT: %s" % target.name)
+	
+	if target.has_method("take_damage"):
+		if is_instance_valid(firer):
+			target.take_damage(damage, firer)
+		else:
+			target.take_damage(damage, null)
+	
+	ProjectilePoolManager.return_projectile(self)
 
 func _on_lifetime_timeout() -> void:
 	ProjectilePoolManager.return_projectile(self)
@@ -6315,16 +6432,14 @@ func _save_map_state() -> void:
 		push_error("MacroMap: Failed to save map state!")
 
 # --- Phase 5.4: Selection & UI Logic ---
+
 func _on_region_selected(data: WorldRegionData) -> void:
-	# --- REFACTOR: Use the helper to clear previous selection first ---
-	# But we must NOT clear the data yet, or we lose the reference we just clicked.
-	# So we only clear the visual node state here.
+	# 1. Deselect previous visual state
 	if is_instance_valid(selected_region_node):
 		selected_region_node.is_selected = false
 		selected_region_node.set_visual_state(false)
-	# ------------------------------------------------------------------
 	
-	# Find new node
+	# 2. Find and select the new node
 	for region in regions_container.get_children():
 		if region is Region and region.data == data:
 			selected_region_node = region
@@ -6333,6 +6448,32 @@ func _on_region_selected(data: WorldRegionData) -> void:
 			break
 			
 	selected_region_data = data
+	region_name_label.text = data.display_name
+	
+	var jarl = DynastyManager.get_current_jarl()
+	if not jarl: return
+	
+	# 3. Calculate Attrition Risk (Phase 5.3)
+	current_attrition_risk = 0.0
+	if player_home_marker and is_instance_valid(selected_region_node):
+		var dist = player_home_marker.global_position.distance_to(selected_region_node.get_global_center())
+		var safe_range = jarl.get_safe_range()
+		
+		if dist > safe_range:
+			var overage = dist - safe_range
+			current_attrition_risk = (overage / 100.0) * jarl.attrition_per_100px
+			current_attrition_risk = min(current_attrition_risk, 1.0) # Cap at 100%
+
+	# 4. Check Political Status
+	var is_conquered = DynastyManager.has_conquered_region(data.resource_path)
+	var is_allied = DynastyManager.is_allied_region(data.resource_path)
+	
+	# 5. Update UI Elements (Phase 5.4)
+	_populate_raid_targets(data, is_conquered, is_allied)
+	_update_diplomacy_buttons(data, is_conquered, is_allied)
+	
+	# 6. Reveal the Panel
+	region_info_panel.show()
 
 func _populate_raid_targets(data: WorldRegionData, is_conquered: bool, is_allied: bool) -> void:
 	# Clear list
@@ -6474,6 +6615,37 @@ func _on_marry_pressed() -> void:
 func _on_settlement_pressed() -> void: EventBus.scene_change_requested.emit("settlement")
 func _on_dynasty_pressed() -> void: if dynasty_ui: dynasty_ui.show()
 
+# --- UI Management ---
+
+func close_all_ui() -> void:
+	"""Closes all open UI windows for clean year transition."""
+	var ui_closed = false
+	
+	# Close Dynasty UI
+	if dynasty_ui and dynasty_ui.visible:
+		dynasty_ui.hide()
+		ui_closed = true
+		
+	# Close Region Info Panel  
+	if region_info_panel and region_info_panel.visible:
+		region_info_panel.hide()
+		ui_closed = true
+		
+	# Close Work Assignment UI
+	if work_assignment_ui and work_assignment_ui.visible:
+		work_assignment_ui.hide()
+		ui_closed = true
+		
+	# Clear region selection
+	if is_instance_valid(selected_region_node):
+		selected_region_node.is_selected = false
+		selected_region_node.set_visual_state(false)
+	selected_region_data = null
+	selected_region_node = null
+	
+	if ui_closed:
+		print("MacroMap: All UI closed for year transition")
+
 # --- End Year Logic ---
 func _on_end_year_pressed() -> void:
 	if not SettlementManager.has_current_settlement(): return
@@ -6490,6 +6662,9 @@ func _on_end_year_pressed() -> void:
 		_start_end_year_sequence()
 
 func _start_end_year_sequence() -> void:
+	# Close all UI before starting year transition
+	close_all_ui()
+	
 	if not is_instance_valid(end_year_popup):
 		_process_end_year_logic({})
 		return
@@ -6682,72 +6857,6 @@ func get_global_center() -> Vector2:
 	# Apply the node's transform (position/scale/rotation) to get world coords
 	return to_global(local_center)
 	
-
---- SCRIPT: res://scenes/world_map/WorldMap_Stub.gd ---
-# res://scenes/world_map/WorldMap_Stub.gd
-# World map interface for selecting raid targets
-# GDD Ref: Phase 3 Task 6
-
-extends Control
-
-# --- MODIFIED: Use String paths, not PackedScene ---
-## The main raid mission scene to load (e.g., RaidMission.tscn)
-@export var raid_mission_scene_path: String = "res://scenes/missions/RaidMission.tscn"
-
-## The scene to return to (e.g., SettlementBridge.tscn)
-@export var settlement_bridge_scene_path: String = "res://scenes/levels/SettlementBridge.tscn"
-# --- END MODIFICATION ---
-
-@onready var raid_monastery_button: Button = $ButtonContainer/RaidMonasteryButton
-@onready var back_button: Button = $ButtonContainer/BackButton
-
-func _ready() -> void:
-	raid_monastery_button.pressed.connect(_on_raid_monastery_pressed)
-	back_button.pressed.connect(_on_back_pressed)
-	
-	# Validate that we can actually raid (have settlement & units)
-	_validate_raid_capability()
-
-func _validate_raid_capability() -> void:
-	"""Ensure the player can actually start a raid"""
-	if not SettlementManager.current_settlement:
-		raid_monastery_button.disabled = true
-		raid_monastery_button.text = "No Settlement Loaded"
-		return
-	
-	if SettlementManager.current_settlement.garrisoned_units.is_empty():
-		raid_monastery_button.disabled = true
-		raid_monastery_button.text = "No Units Available"
-		return
-	
-	raid_monastery_button.disabled = false
-
-func _on_raid_monastery_pressed() -> void:
-	"""Launch the raid mission"""
-	print("Starting raid on nearby monastery...")
-	
-	# Additional validation before starting raid
-	if not SettlementManager.current_settlement:
-		push_error("Cannot start raid: No settlement loaded")
-		return
-	
-	# --- MODIFIED: Emit signal ---
-	if not raid_mission_scene_path.is_empty():
-		EventBus.scene_change_requested.emit(raid_mission_scene_path)
-	else:
-		push_error("WorldMap_Stub: raid_mission_scene_path is not set! Cannot start raid.")
-	# --- END MODIFICATION ---
-
-func _on_back_pressed() -> void:
-	"""Return to the settlement"""
-	print("Returning to settlement...")
-	
-	# --- MODIFIED: Emit signal ---
-	if not settlement_bridge_scene_path.is_empty():
-		EventBus.scene_change_requested.emit(settlement_bridge_scene_path)
-	else:
-		push_error("WorldMap_Stub: settlement_bridge_scene_path is not set! Cannot return.")
-	# --- END MODIFICATION ---
 
 --- SCRIPT: res://scripts/ai/SentryAI.gd ---
 # res://scripts/ai/SentryAI.gd
@@ -7259,8 +7368,6 @@ func _on_ai_attack_stopped() -> void:
 
 --- SCRIPT: res://scripts/buildings/SettlementBridge.gd ---
 # res://scripts/buildings/SettlementBridge.gd
-# --- MODIFIED: Added Work Assignment UI & Button ---
-
 extends Node
 
 # --- Exported Resources ---
@@ -7272,7 +7379,6 @@ extends Node
 
 # --- Default Assets (fallback) ---
 var default_test_building: BuildingData = preload("res://data/buildings/Bldg_Wall.tres")
-var default_raider_scene: PackedScene 
 var default_end_of_year_popup: PackedScene = preload("res://ui/EndOfYear_Popup.tscn")
 
 # --- Scene Node References ---
@@ -7282,20 +7388,20 @@ var default_end_of_year_popup: PackedScene = preload("res://ui/EndOfYear_Popup.t
 @onready var start_raid_button: Button = $UI/StartRaidButton
 @onready var storefront_ui: Control = $UI/Storefront_UI
 @onready var building_cursor: Node2D = $BuildingCursor
-var end_of_year_popup: PanelContainer
-
-# --- Debug Button ---
 @onready var debug_raid_button: Button = $UI/Storefront_UI/DebugRaidButton
 
 # --- Local Node References ---
 @onready var building_container: Node2D = $BuildingContainer
 @onready var grid_manager: Node = $GridManager
 
-# --- NEW: Worker Management UI ---
+# --- Worker & End Year UI ---
 const WORK_ASSIGNMENT_SCENE_PATH = "res://ui/WorkAssignment_UI.tscn"
 var work_assignment_ui: CanvasLayer
+var end_of_year_popup: PanelContainer
+
+# Buttons created in code
 var manage_workers_button: Button
-# -------------------------------
+var end_year_button: Button 
 
 # --- State Variables ---
 var great_hall_instance: BaseBuilding = null
@@ -7308,10 +7414,16 @@ func _ready() -> void:
 	_initialize_settlement() 
 	_setup_ui()
 	_connect_signals()
+	_setup_dynamic_ui() # Creates the buttons
 	
-	# --- NEW: Setup Worker UI ---
-	_setup_worker_ui()
-	# ----------------------------
+	# --- TEST DATA INJECTION ---
+	if not DynastyManager.current_jarl:
+		print("--- INJECTING TEST DYNASTY DATA ---")
+		var test_jarl = DynastyTestDataGenerator.generate_test_dynasty()
+		DynastyManager.current_jarl = test_jarl
+		DynastyManager.jarl_stats_updated.emit(test_jarl)
+	# ---------------------------
+	
 	if not DynastyManager.pending_raid_result.is_empty():
 		_process_raid_return()
 		
@@ -7322,9 +7434,9 @@ func _ready() -> void:
 func _exit_tree() -> void:
 	SettlementManager.unregister_active_scene_nodes()
 
-# --- NEW: Worker UI Setup Function ---
-func _setup_worker_ui() -> void:
-	# 1. Load the UI Scene
+# --- DYNAMIC UI SETUP (Worker & End Year Buttons) ---
+func _setup_dynamic_ui() -> void:
+	# 1. Load the Worker UI Scene
 	if ResourceLoader.exists(WORK_ASSIGNMENT_SCENE_PATH):
 		var scene = load(WORK_ASSIGNMENT_SCENE_PATH)
 		if scene:
@@ -7332,25 +7444,30 @@ func _setup_worker_ui() -> void:
 			add_child(work_assignment_ui)
 			if work_assignment_ui.has_signal("assignments_confirmed"):
 				work_assignment_ui.assignments_confirmed.connect(_on_worker_assignments_confirmed)
-	else:
-		push_error("SettlementBridge: WorkAssignment_UI scene missing.")
-
-	# 2. Create the Button
+	
+	# 2. Create "Manage Workers" Button (Top Left)
 	manage_workers_button = Button.new()
 	manage_workers_button.text = "Manage Workers"
 	manage_workers_button.pressed.connect(_on_manage_workers_pressed)
-	
-	# Position it Top-Right (below the Start Raid button logic usually, or Top-Left)
-	# Let's put it Top-Left for visibility in the settlement view
 	ui_layer.add_child(manage_workers_button)
 	manage_workers_button.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT, Control.PRESET_MODE_MINSIZE, 20)
-	manage_workers_button.position.y += 60 # Offset down a bit if needed
+	manage_workers_button.position.y += 60
+	
+	# 3. Create "End Year" Button (Bottom Right, above World Map)
+	end_year_button = Button.new()
+	end_year_button.text = "End Year"
+	end_year_button.modulate = Color(1, 0.8, 0.8) # Light red tint to distinguish it
+	end_year_button.pressed.connect(_on_end_year_pressed)
+	ui_layer.add_child(end_year_button)
+	
+	# Anchor to Bottom Right
+	end_year_button.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT, Control.PRESET_MODE_MINSIZE, 20)
+	# Offset it slightly so it doesn't overlap the "World Map" button
+	end_year_button.position.y -= 60 
+	end_year_button.position.x -= 20
 
 func _on_manage_workers_pressed() -> void:
-	if not SettlementManager.has_current_settlement():
-		return
-	
-	if work_assignment_ui:
+	if SettlementManager.has_current_settlement() and work_assignment_ui:
 		work_assignment_ui.setup(SettlementManager.current_settlement)
 
 func _on_worker_assignments_confirmed(assignments: Dictionary) -> void:
@@ -7358,56 +7475,96 @@ func _on_worker_assignments_confirmed(assignments: Dictionary) -> void:
 	if SettlementManager.current_settlement:
 		SettlementManager.current_settlement.worker_assignments = assignments
 		SettlementManager.save_settlement()
-# ----------------------------------------
+
+# --- UI MANAGEMENT ---
+
+func close_all_ui() -> void:
+	"""Closes all open UI windows for clean year transition."""
+	var ui_closed = false
+	
+	# Close Dynasty UI (dynamically find it)
+	var dynasty_ui = ui_layer.get_node_or_null("Dynasty_UI")
+	if dynasty_ui and dynasty_ui.visible:
+		dynasty_ui.hide()
+		ui_closed = true
+		
+	# Close Storefront UI
+	if storefront_ui and storefront_ui.visible:
+		storefront_ui.hide()
+		ui_closed = true
+		
+	# Close Work Assignment UI
+	if work_assignment_ui and work_assignment_ui.visible:
+		work_assignment_ui.hide()
+		ui_closed = true
+	
+	if ui_closed:
+		print("SettlementBridge: All UI closed for year transition")
+
+# --- END YEAR LOGIC CHAIN ---
+
+func _on_end_year_pressed() -> void:
+	print("SettlementBridge: End Year button pressed.")
+	_start_end_year_sequence()
+
+func _start_end_year_sequence() -> void:
+	# Close all UI before starting year transition
+	close_all_ui()
+	
+	if not is_instance_valid(end_of_year_popup):
+		# Fallback if popup is missing
+		print("SettlementBridge: Popup missing, triggering logic directly.")
+		_finalize_end_year({})
+		return
+		
+	# 1. Calculate Income
+	var payout = SettlementManager.calculate_payout()
+	
+	# 2. Show Popup (This pauses the flow until player clicks Collect)
+	end_of_year_popup.display_payout(payout, "Year End Report")
+
+func _on_payout_collected(payout: Dictionary) -> void:
+	# 3. Deposit Resources
+	SettlementManager.deposit_resources(payout)
+	
+	# 4. Finalize Logic
+	_finalize_end_year(payout)
+	
+	# 5. Restore UI
+	storefront_ui.show()
+
+func _finalize_end_year(_payout: Dictionary) -> void:
+	# 5. Trigger Dynasty Aging/Events
+	print("SettlementBridge: Triggering DynastyManager.end_year()...")
+	DynastyManager.end_year()
+	print("SettlementBridge: Year ended processing complete.")
+
+# ---------------------------------------------------
 
 func _setup_default_resources() -> void:
-	if not test_building_data:
-		test_building_data = default_test_building
-	if not raider_scene:
-		raider_scene = load("res://scenes/units/EnemyVikingRaider.tscn")
-	if not end_of_year_popup_scene: 
-		end_of_year_popup_scene = default_end_of_year_popup
+	if not test_building_data: test_building_data = default_test_building
+	if not raider_scene: raider_scene = load("res://scenes/units/EnemyVikingRaider.tscn")
+	if not end_of_year_popup_scene: end_of_year_popup_scene = default_end_of_year_popup
 
 func _initialize_settlement() -> void:
-	"""Initialize data, then grid, then spawn buildings."""
-	if not home_base_data:
-		home_base_data = _create_default_settlement()
-		print("SettlementBridge: Created default settlement data")
-	else:
-		if not home_base_data is SettlementData:
-			push_warning("SettlementBridge: Inspector data is not SettlementData, creating default")
-			home_base_data = _create_default_settlement()
-	
-	if home_base_data and (not home_base_data.resource_path or home_base_data.resource_path.is_empty()):
-		home_base_data.resource_path = "res://data/settlements/home_base_fixed.tres"
+	if not home_base_data: home_base_data = _create_default_settlement()
+	if not home_base_data.resource_path: home_base_data.resource_path = "res://data/settlements/home_base_fixed.tres"
 	
 	SettlementManager.load_settlement(home_base_data)
 	
-	if not is_instance_valid(grid_manager) or not "astar_grid" in grid_manager:
-		push_error("SettlementBridge: GridManager node is missing or invalid!")
-		return
-	var local_astar_grid = grid_manager.astar_grid
-	
-	# Pass GridManager for Phase 3
-	SettlementManager.register_active_scene_nodes(local_astar_grid, building_container, grid_manager)
+	if is_instance_valid(grid_manager) and "astar_grid" in grid_manager:
+		SettlementManager.register_active_scene_nodes(grid_manager.astar_grid, building_container, grid_manager)
 	
 	_spawn_placed_buildings()
-	
 	EventBus.settlement_loaded.emit(home_base_data)
 
-
 func _spawn_placed_buildings() -> void:
-	if not SettlementManager.current_settlement:
-		return
-	
-	for child in building_container.get_children():
-		child.queue_free()
+	if not SettlementManager.current_settlement: return
+	for child in building_container.get_children(): child.queue_free()
 
-	# 1. Spawn Active Buildings
 	for building_entry in SettlementManager.current_settlement.placed_buildings:
 		_spawn_single_building(building_entry, false) 
 
-	# 2. Spawn Pending Blueprints (Phase 4 Update)
 	for building_entry in SettlementManager.current_settlement.pending_construction_buildings:
 		var b = _spawn_single_building(building_entry, false)
 		if b:
@@ -7415,38 +7572,25 @@ func _spawn_placed_buildings() -> void:
 			if progress > 0:
 				b.construction_progress = progress
 				b.set_state(BaseBuilding.BuildingState.UNDER_CONSTRUCTION)
-				# Force visual update for health bar
-				if b.has_method("add_construction_progress"):
-					b.add_construction_progress(0) 
+				if b.has_method("add_construction_progress"): b.add_construction_progress(0) 
 			else:
 				b.set_state(BaseBuilding.BuildingState.BLUEPRINT)
 	
 	if is_instance_valid(SettlementManager.active_astar_grid):
 		SettlementManager.active_astar_grid.update()
-	
-	print("SettlementBridge: Settlement restored.")
 
 func _spawn_single_building(entry: Dictionary, is_new: bool) -> BaseBuilding:
-	var building_res_path: String = entry["resource_path"]
-	var grid_pos: Vector2i = entry["grid_position"]
-	
-	var building_data: BuildingData = load(building_res_path)
+	var building_data: BuildingData = load(entry["resource_path"])
 	if building_data:
-		var new_building = SettlementManager.place_building(building_data, grid_pos, is_new)
+		var new_building = SettlementManager.place_building(building_data, entry["grid_position"], is_new)
 		if new_building and new_building.data.display_name == "Great Hall":
 			_setup_great_hall(new_building)
 		return new_building
-	else:
-		push_error("Failed to load building resource from path: %s" % building_res_path)
-		return null
-
+	return null
 
 func _create_default_settlement() -> SettlementData:
 	var settlement = SettlementData.new()
 	settlement.treasury = {"gold": 1000, "wood": 500, "food": 100, "stone": 200}
-	settlement.placed_buildings = []
-	settlement.pending_construction_buildings = [] 
-	settlement.garrisoned_units = {}
 	settlement.resource_path = "res://data/settlements/home_base_fixed.tres"
 	return settlement
 
@@ -7459,81 +7603,54 @@ func _setup_ui() -> void:
 func _connect_signals() -> void:
 	restart_button.pressed.connect(_on_restart_pressed)
 	start_raid_button.pressed.connect(_on_start_raid_pressed)
-	
 	EventBus.settlement_loaded.connect(_on_settlement_loaded)
 	EventBus.building_ready_for_placement.connect(_on_building_ready_for_placement)
 	EventBus.building_placement_cancelled.connect(_on_building_placement_cancelled)
 	EventBus.building_right_clicked.connect(_on_building_right_clicked)
-	
 	if building_cursor:
 		building_cursor.placement_completed.connect(_on_building_placement_completed)
 		building_cursor.placement_cancelled.connect(_on_building_placement_cancelled_by_cursor)
-
 	if is_instance_valid(debug_raid_button):
 		debug_raid_button.pressed.connect(_on_debug_raid_pressed)
 
-func _on_settlement_loaded(_settlement_data: SettlementData) -> void:
-	pass
-
+func _on_settlement_loaded(_settlement_data: SettlementData) -> void: pass
 func _on_debug_raid_pressed() -> void:
-	print("DEBUG: Forcing defensive raid mission!")
 	DynastyManager.is_defensive_raid = true
 	EventBus.scene_change_requested.emit("raid_mission")
 
-func _on_payout_collected(payout: Dictionary) -> void:
-	SettlementManager.deposit_resources(payout)
-	storefront_ui.show()
-
 func _setup_great_hall(hall_instance: BaseBuilding) -> void:
-	if not is_instance_valid(hall_instance):
-		return
+	if not is_instance_valid(hall_instance): return
 	great_hall_instance = hall_instance
 	great_hall_instance.building_destroyed.connect(_on_great_hall_destroyed)
 
 func _on_great_hall_destroyed(_building: BaseBuilding) -> void:
-	print("GAME OVER: The Great Hall has been destroyed!")
 	game_is_over = true
 	var label : Label = $UI/Label
 	label.text = "YOU HAVE BEEN SACKED."
 	restart_button.show()
-	_destroy_all_enemies()
+	for enemy in unit_container.get_children(): enemy.queue_free()
 
-func _destroy_all_enemies() -> void:
-	for enemy in unit_container.get_children():
-		enemy.queue_free()
-
-func _on_restart_pressed() -> void:
-	get_tree().reload_current_scene()
+func _on_restart_pressed() -> void: get_tree().reload_current_scene()
 
 func _on_start_raid_pressed() -> void:
-	if not SettlementManager.current_settlement:
-		return
-	
+	if not SettlementManager.current_settlement: return
 	if SettlementManager.current_settlement.garrisoned_units.is_empty():
-		var test_unit_path = "res://data/units/EnemyVikingRaider_Data.tres"
-		SettlementManager.current_settlement.garrisoned_units[test_unit_path] = 2
+		SettlementManager.current_settlement.garrisoned_units["res://data/units/EnemyVikingRaider_Data.tres"] = 2
 		SettlementManager.save_settlement()
-	
-	if not world_map_scene_path.is_empty():
-		EventBus.scene_change_requested.emit("world_map")
+	if not world_map_scene_path.is_empty(): EventBus.scene_change_requested.emit("world_map")
 
-# --- Building Cursor System Functions ---
-
+# --- Building Cursor Logic ---
 func _on_building_ready_for_placement(building_data: BuildingData) -> void:
 	awaiting_placement = building_data
 	building_cursor.cell_size = grid_manager.cell_size
 	building_cursor.set_building_preview(building_data)
 
-func _on_building_placement_cancelled(building_data: BuildingData) -> void:
-	print("Building placement cancelled: %s" % building_data.display_name)
+func _on_building_placement_cancelled(building_data: BuildingData) -> void: pass
 
 func _on_building_placement_completed() -> void:
 	if awaiting_placement and SettlementManager.current_settlement:
 		var snapped_grid_pos = Vector2i(building_cursor.global_position / grid_manager.cell_size)
-		
-		print("SettlementBridge: Placing NEW blueprint for %s at %s" % [awaiting_placement.display_name, snapped_grid_pos])
 		SettlementManager.place_building(awaiting_placement, snapped_grid_pos, true)
-	
 	awaiting_placement = null
 
 func _on_building_placement_cancelled_by_cursor() -> void:
@@ -7542,63 +7659,30 @@ func _on_building_placement_cancelled_by_cursor() -> void:
 		awaiting_placement = null
 
 func _on_building_right_clicked(building: BaseBuilding) -> void:
-	# Move/Sell logic
-	if building_cursor.is_active:
-		return
-	
-	# --- REVERTED: Lock Removed ---
-	# We now allow deleting the Hub because the Cursor logic 
-	# permits placing it back down on empty land.
-	# ------------------------------
-		
-	print("SettlementBridge: Move requested for %s" % building.data.display_name)
-	
+	if building_cursor.is_active: return
 	var data = building.data
 	var cost = data.build_cost
-	
-	# Refund
 	SettlementManager.deposit_resources(cost)
-	
-	# Remove (Manager handles data removal)
 	SettlementManager.remove_building(building)
-	
-	# Re-buy
 	if SettlementManager.attempt_purchase(cost):
 		EventBus.building_ready_for_placement.emit(data)
 
 func _process_raid_return() -> void:
-	print("SettlementBridge: Processing return from raid...")
 	var result = DynastyManager.pending_raid_result
 	var difficulty = DynastyManager.current_raid_difficulty
 	var loot_summary = {}
 	
 	if result.get("outcome") == "victory":
-		# 1. Retrieve Looted Gold
 		var gold = result.get("gold_looted", 0)
-		
-		# 2. Calculate Bonus Gold (Victory Bonus)
-		# Base 200 + (50 per difficulty star)
 		var bonus_gold = 200 + (difficulty * 50)
-		var total_gold = gold + bonus_gold
+		loot_summary["gold"] = gold + bonus_gold
+		loot_summary["population"] = randi_range(2, 4) * difficulty
 		
-		loot_summary["gold"] = total_gold
-		
-		# 3. Calculate Thralls (The Scarcity Engine)
-		# Formula: Random(2 to 4) * Difficulty
-		var base_thralls = randi_range(2, 4)
-		var total_thralls = base_thralls * difficulty
-		
-		loot_summary["population"] = total_thralls
-		
-		# 4. Deposit
+		# Deposit and Show
 		SettlementManager.deposit_resources(loot_summary)
-		
-		# 5. Show the Report
 		if is_instance_valid(end_of_year_popup):
-			# We reuse the EndOfYear popup but with a custom title
 			end_of_year_popup.display_payout(loot_summary, "Raid Successful!")
 			
-	# Clear the result so it doesn't trigger again on reload
 	DynastyManager.pending_raid_result.clear()
 
 --- SCRIPT: res://scripts/formations/SquadFormation.gd ---
@@ -8254,8 +8338,6 @@ func _on_quit_pressed() -> void:
 
 --- SCRIPT: res://scripts/units/Base_Unit.gd ---
 # res://scripts/units/Base_Unit.gd
-# Base unit class for all units in the Viking Dynasty RTS
-
 class_name BaseUnit
 extends CharacterBody2D
 
@@ -8263,7 +8345,6 @@ signal destroyed
 signal fsm_ready(unit)
 
 @export var data: UnitData
-# Removed the : UnitFSM type hint to break the circular dependency.
 var fsm
 var current_health: int = 50
 var attack_ai: AttackAI = null
@@ -8281,34 +8362,26 @@ var attack_ai: AttackAI = null
 
 # Visual state system
 var _color_tween: Tween
-# --- THIS IS THE FIX ---
-# Changed all references from UnitFSM.State to UnitAIConstants.State
 const STATE_COLORS := {
 	UnitAIConstants.State.IDLE: Color(0.3, 0.6, 1.0),     # Blue
 	UnitAIConstants.State.MOVING: Color(0.4, 1.0, 0.4),   # Green
 	UnitAIConstants.State.FORMATION_MOVING: Color(0.4, 1.0, 0.4), # Green
 	UnitAIConstants.State.ATTACKING: Color(1.0, 0.3, 0.3) # Red
 }
-# --- END FIX ---
 const ERROR_COLOR := Color(0.7, 0.3, 1.0)
 
 func _ready() -> void:
 	if not data:
-		push_warning("BaseUnit: Node '%s' is missing its 'UnitData' resource.
-Cannot initialize." % name)
+		push_warning("BaseUnit: Node '%s' is missing its 'UnitData' resource. Cannot initialize." % name)
 		return
 	
 	current_health = data.max_health
 	_apply_texture_and_scale()
 	
-	# --- MODIFIED: DEFER ALL AI/FSM SETUP ---
 	call_deferred("_deferred_setup")
-	# ----------------------------------------
 	
 	sprite.modulate = STATE_COLORS.get(UnitAIConstants.State.IDLE, Color.WHITE)
-	
 	EventBus.pathfinding_grid_updated.connect(_on_grid_updated)
-	
 	separation_area.collision_mask = 2
 	
 	var area_shape = separation_area.get_node_or_null("CollisionShape2D")
@@ -8320,6 +8393,8 @@ Cannot initialize." % name)
 func _deferred_setup() -> void:
 	"""Initializes AttackAI and FSM after all children are guaranteed to be in the tree."""
 	
+	_create_unit_hitbox()
+	
 	if data.ai_component_scene:
 		attack_ai = data.ai_component_scene.instantiate() as AttackAI
 		if attack_ai:
@@ -8327,10 +8402,16 @@ func _deferred_setup() -> void:
 			attack_ai.configure_from_data(data)
 			
 			var target_mask = 0
+			
 			if self.collision_layer & 2: # Player unit (Layer 2)
-				target_mask = (1 << 2) | (1 << 3) # Target Enemy Units (L3) & Enemy Buildings (L4)
+				# --- FIX: Corrected Bit Shifts ---
+				# Target Enemy Units (Layer 3 -> 1<<2) & Enemy Buildings (Layer 4 -> 1<<3)
+				target_mask = (1 << 2) | (1 << 3) 
+				# ---------------------------------
+				
 			elif self.collision_layer & 4: # Enemy unit (Layer 3)
-				target_mask = (1 << 0) | (1 << 1) # Target Player Buildings (L1) & Player Units (L2)
+				# Target Player Buildings (Layer 1 -> 1<<0) & Player Units (Layer 2 -> 1<<1)
+				target_mask = (1 << 0) | (1 << 1) 
 			
 			if target_mask == 0:
 				push_warning("BaseUnit: '%s' is on an unhandled collision layer (%s). AI will not target anything." % [name, self.collision_layer])
@@ -8339,7 +8420,6 @@ func _deferred_setup() -> void:
 		else:
 			push_error("BaseUnit: Failed to instantiate ai_component_scene for %s" % data.display_name)
 	
-	# FSM relies on attack_ai being valid, so we run this last.
 	fsm = UnitFSM.new(self, attack_ai)
 	fsm_ready.emit(self)
 	
@@ -8372,9 +8452,7 @@ func _exit_tree() -> void:
 		EventBus.pathfinding_grid_updated.disconnect(_on_grid_updated)
 
 func _on_grid_updated(_grid_pos: Vector2i) -> void:
-	# --- THIS IS THE FIX ---
 	if fsm and fsm.current_state == UnitAIConstants.State.MOVING:
-	# --- END FIX ---
 		fsm._recalculate_path()
 
 func _physics_process(delta: float) -> void:
@@ -8389,9 +8467,7 @@ func _physics_process(delta: float) -> void:
 	
 	var target_fsm_velocity = Vector2.ZERO
 	
-	# --- THIS IS THE FIX ---
 	if fsm and (fsm.current_state == UnitAIConstants.State.MOVING or fsm.current_state == UnitAIConstants.State.FORMATION_MOVING):
-	# --- END FIX ---
 		target_fsm_velocity = fsm_velocity
 	
 	if target_fsm_velocity.length() > 0.1:
@@ -8424,9 +8500,7 @@ func _calculate_separation_push(delta: float) -> Vector2:
 			
 	return push_vector * separation_force * delta
 
-# --- THIS IS THE FIX ---
 func on_state_changed(state: UnitAIConstants.State) -> void:
-# --- END FIX ---
 	var to_color: Color = STATE_COLORS.get(state, Color.WHITE)
 	_tween_color(to_color, 0.2)
 
@@ -8442,15 +8516,11 @@ func _tween_color(to_color: Color, duration: float = 0.2) -> void:
 	_color_tween = create_tween()
 	_color_tween.tween_property(sprite, "modulate", to_color, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
-# --- MODIFIED: Added attacker parameter ---
 func take_damage(amount: int, attacker: Node2D = null) -> void:
 	current_health = max(0, current_health - amount)
 	
-	# --- NEW: Retaliation Logic ---
 	if fsm and is_instance_valid(attacker):
-		# Tell the FSM we are being attacked
 		fsm.command_defensive_attack(attacker)
-	# --- END NEW ---
 	
 	if current_health == 0:
 		die()
@@ -8489,6 +8559,50 @@ func _draw() -> void:
 		var color = Color.YELLOW
 		color.a = 0.8
 		draw_circle(Vector2.ZERO, radius, color, false, 3.0)
+
+func _create_unit_hitbox() -> void:
+	var hitbox_area = Area2D.new()
+	hitbox_area.name = "Hitbox"
+	
+	# --- LAYER DEBUGGING ---
+	# We print exactly what layer we are assigning to verify the logic
+	var layer_value = 0
+	
+	# Player (Layer 2) -> Hitbox Layer 2 (Value 2)
+	if self.collision_layer & 2: 
+		layer_value = 2
+	# Enemy (Layer 3/Value 4) -> Hitbox Layer 3 (Value 4)
+	elif self.collision_layer & 4:
+		layer_value = 4
+	else:
+		layer_value = 2 # Fallback
+		
+	hitbox_area.collision_layer = layer_value
+	# -------------------------
+	
+	hitbox_area.collision_mask = 0  # Hitboxes don't scan; they get scanned
+	hitbox_area.monitorable = true 
+	hitbox_area.monitoring = false
+	
+	# --- SHAPE FIX: Force a new unique shape ---
+	var hitbox_shape = CollisionShape2D.new()
+	var shape_to_use
+	
+	# Try to copy parent shape, but ensure it's unique
+	if collision_shape and collision_shape.shape:
+		shape_to_use = collision_shape.shape.duplicate()
+	else:
+		# Fallback if parent shape is missing
+		shape_to_use = CircleShape2D.new()
+		shape_to_use.radius = 15.0 # Standard unit radius
+	
+	hitbox_shape.shape = shape_to_use
+	# ------------------------------------------
+	
+	hitbox_area.add_child(hitbox_shape)
+	add_child(hitbox_area)
+	
+	print("Unit %s created Hitbox on Layer Value: %d" % [name, layer_value])
 
 --- SCRIPT: res://scripts/units/EnemyVikingRaider.gd ---
 # res://scripts/units/EnemyVikingRaider.gd
@@ -8775,77 +8889,87 @@ func _draw() -> void:
 func _on_pathfinding_grid_updated(_grid_position: Vector2i) -> void:
 	queue_redraw()
 
---- SCRIPT: res://test/test_blueprint_saving.gd ---
-# Test script to verify blueprint saving functionality
+--- SCRIPT: res://test/DynastyTestDataGenerator.gd ---
+# res://test/DynastyTestDataGenerator.gd
+class_name DynastyTestDataGenerator
+extends RefCounted
 
-extends EditorScript
-# Test function to place a blueprint and verify it's saved
-func test_blueprint_saving():
-	print("=== Testing Blueprint Saving ===")
+static func generate_test_dynasty() -> JarlData:
+	var jarl = JarlData.new()
+	jarl.display_name = "Jarl Testor the Builder"
+	jarl.age = 45
+	jarl.renown = 1250
+	jarl.current_authority = 3
+	jarl.max_authority = 5
 	
-	if not SettlementManager.has_current_settlement():
-		print("ERROR: No settlement loaded for testing")
-		return false
+	# --- 1. Populate Ancestors ---
+	var ancestors_data: Array[Dictionary] = [
+		{
+			"name": "Harald Tanglehair",
+			"death_reason": "Died in battle against Saxons",
+			"final_renown": 800
+		},
+		{
+			"name": "Halfdan the Black",
+			"death_reason": "Drowned in a frozen lake",
+			"final_renown": 1500
+		},
+		{
+			"name": "Sigurd Snake-in-the-Eye",
+			"death_reason": "Old age",
+			"final_renown": 2200
+		}
+	]
+	jarl.ancestors = ancestors_data
 	
-	# Test building placement
-	var building_data: BuildingData = load("res://data/buildings/Bldg_Wall.tres")
-	if not building_data:
-		print("ERROR: Could not load test building data")
-		return false
+	# --- 2. Create Heirs with different states ---
 	
-	print("1. Initial pending buildings: %d" % SettlementManager.get_pending_construction_buildings().size())
+	# Heir 1: The Golden Child (Designated)
+	var heir1 = JarlHeirData.new()
+	heir1.display_name = "Magnus"
+	heir1.age = 22
+	heir1.prowess = 15
+	heir1.stewardship = 12
+	heir1.is_designated_heir = true
+	heir1.status = JarlHeirData.HeirStatus.Available
+	# Dummy Trait
+	heir1.genetic_trait = JarlTraitData.new()
+	heir1.genetic_trait.display_name = "Strong"
+	jarl.heirs.append(heir1)
 	
-	# Place a new blueprint
-	var grid_pos = Vector2i(5, 5)  # Choose a safe position
-	var new_building = SettlementManager.place_building(building_data, grid_pos, true)
+	# Heir 2: The Adventurer (On Expedition)
+	var heir2 = JarlHeirData.new()
+	heir2.display_name = "Leif"
+	heir2.age = 20
+	heir2.prowess = 10
+	heir2.stewardship = 8
+	heir2.status = JarlHeirData.HeirStatus.OnExpedition
+	heir2.expedition_years_remaining = 2
+	jarl.heirs.append(heir2)
 	
-	if new_building:
-		print("2. Building placed successfully at %s" % grid_pos)
-		print("   - Building state: %s" % new_building.current_state)
-		print("   - Is active: %s" % new_building.is_active())
-		
-		# Check if it's in pending buildings
-		var pending = SettlementManager.get_pending_construction_buildings()
-		print("3. Pending buildings after placement: %d" % pending.size())
-		for entry in pending:
-			print("   - Entry: %s" % entry)
-		
-		# Wait a frame for save to complete
-		await get_tree().process_frame
-		
-		# Reload the settlement and check if blueprint was saved
-		if SettlementManager.current_settlement and SettlementManager.current_settlement.resource_path:
-			var reloaded_settlement = load(SettlementManager.current_settlement.resource_path)
-			if reloaded_settlement:
-				print("4. Reloaded settlement - Pending buildings: %d" % reloaded_settlement.pending_construction_buildings.size())
-				for i in range(reloaded_settlement.pending_construction_buildings.size()):
-					var entry = reloaded_settlement.pending_construction_buildings[i]
-					print("   - Saved Entry [%d]: %s" % [i, entry])
-				
-				if reloaded_settlement.pending_construction_buildings.size() > 0:
-					print("✅ SUCCESS: Blueprint saved successfully!")
-					return true
-				else:
-					print("❌ FAILED: Blueprint was not saved to file")
-					return false
-		else:
-			print("ERROR: Could not reload settlement for verification")
-			return false
-	else:
-		print("ERROR: Failed to place building")
-		return false
-
-func _ready():
-	# Auto-run test if this script is attached to a node
-	call_deferred("run_test")
-
-func run_test():
-	await get_tree().process_frame  # Wait for scene to be ready
-	var result = await test_blueprint_saving()
-	if result:
-		print("🎉 Blueprint saving test PASSED!")
-	else:
-		print("💥 Blueprint saving test FAILED!")
+	# Heir 3: The Unfortunate (Maimed)
+	var heir3 = JarlHeirData.new()
+	heir3.display_name = "Ivar"
+	heir3.age = 19
+	heir3.prowess = 4
+	heir3.stewardship = 14
+	heir3.status = JarlHeirData.HeirStatus.Maimed
+	heir3.genetic_trait = JarlTraitData.new()
+	heir3.genetic_trait.display_name = "Genius"
+	jarl.heirs.append(heir3)
+	
+	# Heir 4: The Diplomat (Married Off)
+	var heir4 = JarlHeirData.new()
+	heir4.display_name = "Gyda"
+	heir4.age = 18
+	heir4.gender = "Female"
+	heir4.prowess = 5
+	heir4.stewardship = 15
+	heir4.status = JarlHeirData.HeirStatus.MarriedOff
+	jarl.heirs.append(heir4)
+	
+	print("DynastyTestDataGenerator: Generated Jarl '%s' with %d heirs." % [jarl.display_name, jarl.heirs.size()])
+	return jarl
 
 --- SCRIPT: res://tools/EnemyBaseEditor.gd ---
 @tool
@@ -9048,119 +9172,214 @@ func save_layout(layout: Array[Dictionary], path: String):
 	else:
 		print("❌ Failed to save layout to: %s" % path)
 
+--- SCRIPT: res://ui/components/HeirCard.gd ---
+extends PanelContainer
+class_name HeirCard
+
+signal card_clicked(heir_data: JarlHeirData, global_pos: Vector2)
+
+# Ensure these paths match your Scene Tree names exactly
+@onready var portrait_rect: TextureRect = $VBox/PortraitContainer/Portrait
+@onready var status_icon: TextureRect = $VBox/PortraitContainer/StatusIcon
+@onready var heir_crown_icon: TextureRect = $VBox/PortraitContainer/HeirCrown
+@onready var name_label: Label = $VBox/NameLabel
+@onready var stats_label: Label = $VBox/StatsLabel
+
+var heir_data: JarlHeirData
+
+func setup(data: JarlHeirData) -> void:
+	heir_data = data
+	
+	# 1. Basic Info
+	name_label.text = "%s (%d)" % [data.display_name, data.age]
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	
+	# 2. Portrait
+	if data.portrait:
+		portrait_rect.texture = data.portrait
+	else:
+		portrait_rect.modulate = Color.GRAY 
+	
+	# 3. Crown Overlay (Active Heir)
+	heir_crown_icon.visible = data.is_designated_heir
+	
+	# 4. Status Overlay
+	_update_status_visuals()
+	
+	# 5. Stats
+	var trait_text = "None"
+	if data.genetic_trait:
+		trait_text = data.genetic_trait.display_name
+		
+	stats_label.text = "Prowess: %d\nSteward: %d\nTrait: %s" % [data.prowess, data.stewardship, trait_text]
+	stats_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+func _update_status_visuals() -> void:
+	# Reset visuals
+	modulate = Color.WHITE
+	status_icon.texture = null
+	status_icon.visible = false
+	
+	match heir_data.status:
+		JarlHeirData.HeirStatus.OnExpedition:
+			modulate = Color(0.7, 0.7, 0.7) # Dim the card
+			status_icon.visible = true
+			
+		JarlHeirData.HeirStatus.MarriedOff:
+			modulate = Color(0.5, 0.5, 0.5) # Darker
+			status_icon.visible = true
+			
+		JarlHeirData.HeirStatus.Maimed:
+			status_icon.visible = true
+
+func _gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		card_clicked.emit(heir_data, get_global_mouse_position())
+
 --- SCRIPT: res://ui/DynastyUI.gd ---
 # res://ui/DynastyUI.gd
-#
-# Manages the "Dynasty" UI panel, which allows the player
-# to spend heirs as a resource for the "Progenitor" pillar.
 class_name DynastyUI
 extends PanelContainer
 
-@onready var title_label: Label = $Margin/VBox/TitleLabel
-@onready var heirs_container: VBoxContainer = $Margin/VBox/HeirsContainer
-@onready var close_button: Button = $Margin/VBox/CloseButton
+# References
+@onready var ancestors_container: HBoxContainer = $Margin/MainLayout/AncestorsScroll/AncestorsHBox
+@onready var current_jarl_name: Label = $Margin/MainLayout/CurrentJarlPanel/Stats/NameLabel
+@onready var current_jarl_stats: Label = $Margin/MainLayout/CurrentJarlPanel/Stats/StatsLabel
+@onready var heirs_container: HBoxContainer = $Margin/MainLayout/HeirsScroll/HeirsHBox
+@onready var close_button: Button = $Margin/MainLayout/CloseButton
+@onready var context_menu: PopupMenu = $ContextMenu
 
-# Expedition cost from proposal 
-const EXPEDITION_GOLD_COST = 500
+# Resources
+const HEIR_CARD_SCENE = preload("res://ui/components/HeirCard.tscn")
+const PLACEHOLDER_ICON = preload("res://textures/placeholders/unit_placeholder.png")
+
+var selected_heir: JarlHeirData
 
 func _ready() -> void:
-	close_button.pressed.connect(hide)
-	
-	# Connect to the DynastyManager to refresh when Jarl data changes
+	close_button.pressed.connect(_on_close_button_pressed)
 	DynastyManager.jarl_stats_updated.connect(_on_jarl_stats_updated)
 	
-	# Initial population
+	# --- FIX: Use Signal instead of overriding show() ---
+	visibility_changed.connect(_on_visibility_changed)
+	# ---------------------------------------------------
+	
+	# Setup Context Menu
+	context_menu.add_item("Designate Heir (Cost: 1 Authority)", 0)
+	context_menu.add_item("Fund Expedition (Cost: 500 Gold)", 1)
+	context_menu.add_item("Arrange Marriage (Cost: 1 Heir)", 2)
+	context_menu.id_pressed.connect(_on_context_menu_item_pressed)
+	
 	if DynastyManager.current_jarl:
 		_on_jarl_stats_updated(DynastyManager.get_current_jarl())
 	
-	hide() # Start hidden by default
+	hide()
+
+# --- NEW: Handler for visibility changes ---
+func _on_visibility_changed() -> void:
+	if visible and DynastyManager.current_jarl:
+		_on_jarl_stats_updated(DynastyManager.get_current_jarl())
+		print("Dynasty UI: Auto-refreshed data on visible.")
+# -------------------------------------------
 
 func _on_jarl_stats_updated(jarl: JarlData) -> void:
-	"""Refreshes all UI elements with the latest Jarl data."""
-	if not jarl:
-		return
-		
-	title_label.text = "%s's Dynasty" % jarl.display_name
+	if not jarl: return
 	
-	# Clear existing heirs
+	# 1. Update Current Jarl
+	current_jarl_name.text = jarl.display_name
+	current_jarl_stats.text = "Age: %d | Authority: %d/%d | Renown: %d" % [jarl.age, jarl.current_authority, jarl.max_authority, jarl.renown]
+
+	# 2. Update Ancestors
+	_populate_ancestors(jarl.ancestors)
+
+	# 3. Update Heirs
+	_populate_heirs(jarl.heirs)
+
+func _populate_ancestors(ancestors_data: Array) -> void:
+	for child in ancestors_container.get_children():
+		child.queue_free()
+		
+	for data in ancestors_data:
+		var texture = TextureRect.new()
+		texture.custom_minimum_size = Vector2(64, 64)
+		texture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		texture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		
+		# Enable Mouse Interaction for Tooltips
+		texture.mouse_filter = Control.MOUSE_FILTER_STOP 
+		
+		if data.has("portrait") and data["portrait"] != null:
+			texture.texture = data["portrait"]
+		else:
+			texture.texture = PLACEHOLDER_ICON
+			
+		texture.tooltip_text = "%s\nFinal Renown: %d\nDied: %s" % [
+			data.get("name", "Ancestor"), 
+			data.get("final_renown", 0),
+			data.get("death_reason", "Unknown")
+		]
+		
+		texture.modulate = Color(0.5, 0.5, 0.5, 0.8) 
+		ancestors_container.add_child(texture)
+
+func _populate_heirs(heirs_data: Array[JarlHeirData]) -> void:
 	for child in heirs_container.get_children():
 		child.queue_free()
 		
-	# Populate heirs list
-	if jarl.heirs.is_empty():
-		var label = Label.new()
-		label.text = "No valid heirs."
-		heirs_container.add_child(label)
-		return
+	for heir in heirs_data:
+		var card = HEIR_CARD_SCENE.instantiate()
+		heirs_container.add_child(card)
+		card.setup(heir)
+		card.card_clicked.connect(_on_heir_card_clicked)
 
-	# Check current gold for button disabling
-	var current_gold = 0
-	if SettlementManager.current_settlement:
-		current_gold = SettlementManager.current_settlement.treasury.get("gold", 0)
-
-	for heir in jarl.heirs:
-		if not heir: continue
-		
-		var heir_row = HBoxContainer.new()
-		heir_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		
-		var name_label = Label.new()
-		name_label.text = "• %s (%d)" % [heir.display_name, heir.age]
-		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		heir_row.add_child(name_label)
-
-		match heir.status:
-			JarlHeirData.HeirStatus.Available:
-				var expedition_button = Button.new()
-				expedition_button.text = "Send on Expedition"
-				expedition_button.tooltip_text = "Cost: 1 Heir, %d Gold" % EXPEDITION_GOLD_COST
-				
-				if current_gold < EXPEDITION_GOLD_COST:
-					expedition_button.disabled = true
-					expedition_button.tooltip_text += "\n(Not enough Gold)"
-				
-				expedition_button.pressed.connect(_on_expedition_pressed.bind(heir))
-				heir_row.add_child(expedition_button)
-				
-				# TODO: Add "Marry for Alliance" button here
-			
-			JarlHeirData.HeirStatus.OnExpedition:
-				var status_label = Label.new()
-				status_label.text = "On Expedition (%d years)" % heir.expedition_years_remaining
-				status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-				heir_row.add_child(status_label)
-				
-			JarlHeirData.HeirStatus.MarriedOff:
-				var status_label = Label.new()
-				status_label.text = "Married Away"
-				status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-				heir_row.add_child(status_label)
-			
-			_:
-				var status_label = Label.new()
-				status_label.text = "Unavailable"
-				status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-				heir_row.add_child(status_label)
-
-		heirs_container.add_child(heir_row)
-
-
-func _on_expedition_pressed(heir: JarlHeirData) -> void:
-	"""Called when an 'Send on Expedition' button is pressed."""
+func _on_heir_card_clicked(heir: JarlHeirData, mouse_pos: Vector2) -> void:
+	selected_heir = heir
 	
-	var cost = {"gold": EXPEDITION_GOLD_COST}
+	# Disable context items based on state
+	context_menu.set_item_disabled(0, false) # Designate
+	context_menu.set_item_disabled(1, false) # Expedition
+	context_menu.set_item_disabled(2, false) # Marriage
 	
-	# 1. Attempt to spend the gold
-	if SettlementManager.attempt_purchase(cost):
-		# 2. If gold spend is successful, spend the heir
-		print("DynastyUI: Spent %d gold. Sending heir %s on expedition." % [EXPEDITION_GOLD_COST, heir.display_name])
-		DynastyManager.start_heir_expedition(heir)
-		
-		# UI will refresh automatically via the jarl_stats_updated signal
+	if heir.status != JarlHeirData.HeirStatus.Available:
+		context_menu.set_item_disabled(1, true) # Cannot send on expedition
+		context_menu.set_item_disabled(2, true) # Cannot marry off
+	
+	if heir.is_designated_heir:
+		context_menu.set_item_text(0, "Designated Heir (Active)")
+		context_menu.set_item_disabled(0, true)
 	else:
-		# This shouldn't happen if the button is disabled, but as a fallback.
-		print("DynastyUI: Expedition failed. Not enough gold.")
-		EventBus.purchase_failed.emit("Not enough Gold")
+		context_menu.set_item_text(0, "Designate Heir (Cost: 1 Authority)")
+	
+	context_menu.position = Vector2i(mouse_pos)
+	context_menu.popup()
+
+func _on_context_menu_item_pressed(id: int) -> void:
+	if not selected_heir: return
+	
+	match id:
+		0: # Designate Heir
+			DynastyManager.designate_heir(selected_heir)
+		
+		1: # Fund Expedition
+			var cost = {"gold": 500}
+			if SettlementManager.attempt_purchase(cost):
+				DynastyManager.start_heir_expedition(selected_heir)
+			else:
+				print("Not enough gold for expedition.")
+		
+		2: # Arrange Marriage
+			if DynastyManager.get_current_jarl():
+				selected_heir.status = JarlHeirData.HeirStatus.MarriedOff
+				DynastyManager.award_renown(150) 
+				print("Heir married off for Renown.")
+
+func _on_close_button_pressed() -> void:
+	hide()
+
+func _input(event: InputEvent) -> void:
+	if visible and event is InputEventKey and event.pressed:
+		if event.keycode == KEY_ESCAPE:
+			_on_close_button_pressed()
+			get_viewport().set_input_as_handled()
 
 --- SCRIPT: res://ui/EndOfYear_Popup.gd ---
 # res://ui/EndOfYear_Popup.gd

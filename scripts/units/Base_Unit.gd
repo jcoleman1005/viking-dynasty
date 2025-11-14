@@ -1,6 +1,4 @@
 # res://scripts/units/Base_Unit.gd
-# Base unit class for all units in the Viking Dynasty RTS
-
 class_name BaseUnit
 extends CharacterBody2D
 
@@ -8,7 +6,6 @@ signal destroyed
 signal fsm_ready(unit)
 
 @export var data: UnitData
-# Removed the : UnitFSM type hint to break the circular dependency.
 var fsm
 var current_health: int = 50
 var attack_ai: AttackAI = null
@@ -26,44 +23,88 @@ var attack_ai: AttackAI = null
 
 # Visual state system
 var _color_tween: Tween
-# --- THIS IS THE FIX ---
-# Changed all references from UnitFSM.State to UnitAIConstants.State
 const STATE_COLORS := {
 	UnitAIConstants.State.IDLE: Color(0.3, 0.6, 1.0),     # Blue
 	UnitAIConstants.State.MOVING: Color(0.4, 1.0, 0.4),   # Green
 	UnitAIConstants.State.FORMATION_MOVING: Color(0.4, 1.0, 0.4), # Green
 	UnitAIConstants.State.ATTACKING: Color(1.0, 0.3, 0.3) # Red
 }
-# --- END FIX ---
 const ERROR_COLOR := Color(0.7, 0.3, 1.0)
+
+# --- Collision Layer Constants ---
+const LAYER_ENV = 1
+const LAYER_PLAYER_UNIT = 2
+const LAYER_ENEMY_UNIT = 4
+const LAYER_ENEMY_BLDG = 8
 
 func _ready() -> void:
 	if not data:
-		push_warning("BaseUnit: Node '%s' is missing its 'UnitData' resource.
-Cannot initialize." % name)
+		push_warning("BaseUnit: Node '%s' is missing its 'UnitData' resource. Cannot initialize." % name)
 		return
 	
 	current_health = data.max_health
 	_apply_texture_and_scale()
 	
-	# --- MODIFIED: DEFER ALL AI/FSM SETUP ---
-	call_deferred("_deferred_setup")
+	# --- NEW: Setup Dynamic Collision Logic ---
+	_setup_collision_logic()
 	# ----------------------------------------
 	
+	call_deferred("_deferred_setup")
+	
 	sprite.modulate = STATE_COLORS.get(UnitAIConstants.State.IDLE, Color.WHITE)
-	
 	EventBus.pathfinding_grid_updated.connect(_on_grid_updated)
-	
-	separation_area.collision_mask = 2
 	
 	var area_shape = separation_area.get_node_or_null("CollisionShape2D")
 	if area_shape and area_shape.shape is CircleShape2D:
 		area_shape.shape.radius = separation_radius
 	else:
 		push_warning("'%s' has no 'SeparationArea/CollisionShape2D' with a CircleShape!" % name)
+
+func _setup_collision_logic() -> void:
+	"""
+	Configures physics and separation masks based on whether this is a Player or Enemy unit.
+	Note: _ready() runs after the spawner has set 'collision_layer', so we can rely on it here.
+	"""
+	
+	# 1. Define Masks
+	var physics_mask = 0
+	var separation_mask = 0
+	
+	# Determine Faction based on Layer
+	var is_player = (collision_layer & LAYER_PLAYER_UNIT) != 0
+	var is_enemy = (collision_layer & LAYER_ENEMY_UNIT) != 0
+	
+	if is_player:
+		# Player Physics: Walls (L1) + Enemies (L3) + Enemy Buildings (L4)
+		# Note: We exclude Friendlies (L2) from hard physics to prevent getting stuck, rely on separation.
+		physics_mask = LAYER_ENV | LAYER_ENEMY_UNIT | LAYER_ENEMY_BLDG
 		
+	elif is_enemy:
+		# Enemy Physics: Walls (L1) + Players (L2) + Enemy Buildings (L4)
+		# Note: Enemy Buildings are L4. Enemy units should probably stop at them too.
+		physics_mask = LAYER_ENV | LAYER_PLAYER_UNIT | LAYER_ENEMY_BLDG
+		
+	else:
+		# Fallback for test units or misconfigured layers
+		physics_mask = LAYER_ENV | LAYER_PLAYER_UNIT | LAYER_ENEMY_UNIT | LAYER_ENEMY_BLDG
+
+	# 2. Apply Physics Mask (Movement)
+	self.collision_mask = physics_mask
+	
+	# 3. Apply Separation Mask (Spacing)
+	# Units should separate from ALL other moving units to avoid stacking "deathballs".
+	separation_mask = LAYER_PLAYER_UNIT | LAYER_ENEMY_UNIT
+	
+	if separation_area:
+		separation_area.collision_mask = separation_mask
+	
+	# Debug output to verify
+	# print("Unit %s (%s) Masks Set -> Phys: %d, Sep: %d" % [name, "Player" if is_player else "Enemy", physics_mask, separation_mask])
+
 func _deferred_setup() -> void:
 	"""Initializes AttackAI and FSM after all children are guaranteed to be in the tree."""
+	
+	_create_unit_hitbox()
 	
 	if data.ai_component_scene:
 		attack_ai = data.ai_component_scene.instantiate() as AttackAI
@@ -72,10 +113,14 @@ func _deferred_setup() -> void:
 			attack_ai.configure_from_data(data)
 			
 			var target_mask = 0
-			if self.collision_layer & 2: # Player unit (Layer 2)
-				target_mask = (1 << 2) | (1 << 3) # Target Enemy Units (L3) & Enemy Buildings (L4)
-			elif self.collision_layer & 4: # Enemy unit (Layer 3)
-				target_mask = (1 << 0) | (1 << 1) # Target Player Buildings (L1) & Player Units (L2)
+			
+			if self.collision_layer & LAYER_PLAYER_UNIT: # Player unit
+				# Target Enemy Units (L3) & Enemy Buildings (L4)
+				target_mask = LAYER_ENEMY_UNIT | LAYER_ENEMY_BLDG
+				
+			elif self.collision_layer & LAYER_ENEMY_UNIT: # Enemy unit
+				# Target Player Buildings (L1) & Player Units (L2)
+				target_mask = LAYER_ENV | LAYER_PLAYER_UNIT
 			
 			if target_mask == 0:
 				push_warning("BaseUnit: '%s' is on an unhandled collision layer (%s). AI will not target anything." % [name, self.collision_layer])
@@ -84,7 +129,6 @@ func _deferred_setup() -> void:
 		else:
 			push_error("BaseUnit: Failed to instantiate ai_component_scene for %s" % data.display_name)
 	
-	# FSM relies on attack_ai being valid, so we run this last.
 	fsm = UnitFSM.new(self, attack_ai)
 	fsm_ready.emit(self)
 	
@@ -117,9 +161,7 @@ func _exit_tree() -> void:
 		EventBus.pathfinding_grid_updated.disconnect(_on_grid_updated)
 
 func _on_grid_updated(_grid_pos: Vector2i) -> void:
-	# --- THIS IS THE FIX ---
 	if fsm and fsm.current_state == UnitAIConstants.State.MOVING:
-	# --- END FIX ---
 		fsm._recalculate_path()
 
 func _physics_process(delta: float) -> void:
@@ -134,9 +176,7 @@ func _physics_process(delta: float) -> void:
 	
 	var target_fsm_velocity = Vector2.ZERO
 	
-	# --- THIS IS THE FIX ---
 	if fsm and (fsm.current_state == UnitAIConstants.State.MOVING or fsm.current_state == UnitAIConstants.State.FORMATION_MOVING):
-	# --- END FIX ---
 		target_fsm_velocity = fsm_velocity
 	
 	if target_fsm_velocity.length() > 0.1:
@@ -152,6 +192,7 @@ func _physics_process(delta: float) -> void:
 
 func _calculate_separation_push(delta: float) -> Vector2:
 	var push_vector = Vector2.ZERO
+	# We use get_overlapping_bodies, which respects the collision_mask we set in _setup_collision_logic
 	var neighbors = separation_area.get_overlapping_bodies()
 	if neighbors.is_empty():
 		return Vector2.ZERO
@@ -169,9 +210,7 @@ func _calculate_separation_push(delta: float) -> Vector2:
 			
 	return push_vector * separation_force * delta
 
-# --- THIS IS THE FIX ---
 func on_state_changed(state: UnitAIConstants.State) -> void:
-# --- END FIX ---
 	var to_color: Color = STATE_COLORS.get(state, Color.WHITE)
 	_tween_color(to_color, 0.2)
 
@@ -187,15 +226,11 @@ func _tween_color(to_color: Color, duration: float = 0.2) -> void:
 	_color_tween = create_tween()
 	_color_tween.tween_property(sprite, "modulate", to_color, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
-# --- MODIFIED: Added attacker parameter ---
 func take_damage(amount: int, attacker: Node2D = null) -> void:
 	current_health = max(0, current_health - amount)
 	
-	# --- NEW: Retaliation Logic ---
 	if fsm and is_instance_valid(attacker):
-		# Tell the FSM we are being attacked
 		fsm.command_defensive_attack(attacker)
-	# --- END NEW ---
 	
 	if current_health == 0:
 		die()
@@ -234,3 +269,46 @@ func _draw() -> void:
 		var color = Color.YELLOW
 		color.a = 0.8
 		draw_circle(Vector2.ZERO, radius, color, false, 3.0)
+
+func _create_unit_hitbox() -> void:
+	var hitbox_area = Area2D.new()
+	hitbox_area.name = "Hitbox"
+	
+	# --- LAYER DEBUGGING ---
+	var layer_value = 0
+	
+	# Player (Layer 2) -> Hitbox Layer 2 (Value 2)
+	if self.collision_layer & LAYER_PLAYER_UNIT: 
+		layer_value = LAYER_PLAYER_UNIT
+	# Enemy (Layer 3) -> Hitbox Layer 3 (Value 4)
+	elif self.collision_layer & LAYER_ENEMY_UNIT:
+		layer_value = LAYER_ENEMY_UNIT
+	else:
+		layer_value = LAYER_PLAYER_UNIT # Fallback
+		
+	hitbox_area.collision_layer = layer_value
+	# -------------------------
+	
+	hitbox_area.collision_mask = 0  # Hitboxes don't scan; they get scanned
+	hitbox_area.monitorable = true 
+	hitbox_area.monitoring = false
+	
+	# --- SHAPE FIX: Force a new unique shape ---
+	var hitbox_shape = CollisionShape2D.new()
+	var shape_to_use
+	
+	# Try to copy parent shape, but ensure it's unique
+	if collision_shape and collision_shape.shape:
+		shape_to_use = collision_shape.shape.duplicate()
+	else:
+		# Fallback if parent shape is missing
+		shape_to_use = CircleShape2D.new()
+		shape_to_use.radius = 15.0 # Standard unit radius
+	
+	hitbox_shape.shape = shape_to_use
+	# ------------------------------------------
+	
+	hitbox_area.add_child(hitbox_shape)
+	add_child(hitbox_area)
+	
+	# print("Unit %s created Hitbox on Layer Value: %d" % [name, layer_value])

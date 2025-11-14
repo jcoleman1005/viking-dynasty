@@ -365,6 +365,37 @@ func _on_marry_pressed() -> void:
 func _on_settlement_pressed() -> void: EventBus.scene_change_requested.emit("settlement")
 func _on_dynasty_pressed() -> void: if dynasty_ui: dynasty_ui.show()
 
+# --- UI Management ---
+
+func close_all_ui() -> void:
+	"""Closes all open UI windows for clean year transition."""
+	var ui_closed = false
+	
+	# Close Dynasty UI
+	if dynasty_ui and dynasty_ui.visible:
+		dynasty_ui.hide()
+		ui_closed = true
+		
+	# Close Region Info Panel  
+	if region_info_panel and region_info_panel.visible:
+		region_info_panel.hide()
+		ui_closed = true
+		
+	# Close Work Assignment UI
+	if work_assignment_ui and work_assignment_ui.visible:
+		work_assignment_ui.hide()
+		ui_closed = true
+		
+	# Clear region selection
+	if is_instance_valid(selected_region_node):
+		selected_region_node.is_selected = false
+		selected_region_node.set_visual_state(false)
+	selected_region_data = null
+	selected_region_node = null
+	
+	if ui_closed:
+		print("MacroMap: All UI closed for year transition")
+
 # --- End Year Logic ---
 func _on_end_year_pressed() -> void:
 	if not SettlementManager.has_current_settlement(): return
@@ -381,6 +412,9 @@ func _on_end_year_pressed() -> void:
 		_start_end_year_sequence()
 
 func _start_end_year_sequence() -> void:
+	# Close all UI before starting year transition
+	close_all_ui()
+	
 	if not is_instance_valid(end_year_popup):
 		_process_end_year_logic({})
 		return

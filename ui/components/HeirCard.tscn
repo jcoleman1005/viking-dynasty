@@ -1,0 +1,44 @@
+[gd_scene load_steps=2 format=3 uid="uid://cq1d0chfy34ni"]
+
+[ext_resource type="Script" uid="uid://bo6x8gym1ygtq" path="res://ui/components/HeirCard.gd" id="1_4levn"]
+
+[node name="HeirCard" type="PanelContainer"]
+script = ExtResource("1_4levn")
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="PortraitContainer" type="Control" parent="VBox"]
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="Portrait" type="TextureRect" parent="VBox/PortraitContainer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+
+[node name="HeirCrown" type="TextureRect" parent="VBox/PortraitContainer"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -1.0
+grow_horizontal = 0
+
+[node name="StatusIcon" type="TextureRect" parent="VBox/PortraitContainer"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 1
+offset_right = 1.0
+expand_mode = 1
+
+[node name="NameLabel" type="Label" parent="VBox"]
+layout_mode = 2
+
+[node name="StatsLabel" type="Label" parent="VBox"]
+layout_mode = 2

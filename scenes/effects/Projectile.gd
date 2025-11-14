@@ -1,8 +1,4 @@
 # res://scenes/effects/Projectile.gd
-#
-# A simple, straight-line projectile that applies damage on impact.
-# Now integrated with ProjectilePoolManager.
-
 class_name Projectile
 extends Area2D
 
@@ -15,75 +11,83 @@ var firer: Node2D = null
 @onready var lifetime_timer: Timer = $LifetimeTimer
 
 func _ready() -> void:
-	area_entered.connect(_on_area_entered)
-	body_entered.connect(_on_body_entered)
+	# Connect signals if not already connected (safety for pooling)
+	if not area_entered.is_connected(_on_area_entered):
+		area_entered.connect(_on_area_entered)
+	if not body_entered.is_connected(_on_body_entered):
+		body_entered.connect(_on_body_entered)
 	
-	# We must defer setting physics properties
-	set_deferred("monitoring", true)
+	# Default state - ensure "off" by default
+	set_deferred("monitoring", false)
+	set_deferred("monitorable", false)
+	set_physics_process(false)
 	
-	self.monitorable = false
-	lifetime_timer.timeout.connect(_on_lifetime_timeout)
+	if lifetime_timer:
+		lifetime_timer.timeout.connect(_on_lifetime_timeout)
 
 func _physics_process(delta: float) -> void:
 	global_position += direction * speed * delta
 
-func setup(start_position: Vector2, target_position: Vector2, projectile_damage: int, projectile_speed: float = 400.0, collision_mask: int = 0) -> void:
-	# This function now "wakes up" the projectile
+func setup(start_position: Vector2, target_position: Vector2, projectile_damage: int, projectile_speed: float = 400.0, collision_mask_value: int = 0) -> void:
 	global_position = start_position
 	direction = (target_position - start_position).normalized()
 	damage = projectile_damage
 	speed = projectile_speed
-	self.collision_mask = collision_mask
 	
+	# Rotate visual
 	if direction != Vector2.ZERO:
 		rotation = direction.angle()
 	
-	# Activate the projectile
-	show()
-	set_physics_process(true)
+	# --- CRITICAL FIX: Defer ALL physics state changes ---
+	# Because setup() often runs during a physics callback (e.g. _on_body_entered),
+	# direct assignments to collision properties will fail silently.
+	
+	set_deferred("collision_mask", collision_mask_value)
 	set_deferred("monitoring", true)
-	lifetime_timer.start()
+	set_deferred("monitorable", false)
+	
+	show()
+	
+	# We also defer enabling the process loop to keep it in sync with physics
+	call_deferred("set_physics_process", true)
+	
+	if lifetime_timer:
+		lifetime_timer.start()
 
 func return_to_pool() -> void:
-	"""
-	Deactivates the projectile and hides it, returning it to the pool.
-	"""
-	hide()
-	set_physics_process(false)
+	"""Deactivates the projectile and hides it."""
+	# Defer disabling physics to avoid locking errors
 	set_deferred("monitoring", false)
-	lifetime_timer.stop()
-	global_position = Vector2(-1000, -1000) # Move it off-screen
+	set_deferred("collision_mask", 0) # Reset mask to clean state
+	call_deferred("set_physics_process", false)
+	
+	hide()
+	if lifetime_timer:
+		lifetime_timer.stop()
+	
+	# Move far away to ensure no lingering collisions while deferral processes
+	global_position = Vector2(-5000, -5000) 
 
 func _on_area_entered(area: Area2D) -> void:
-	"""Called when this Area2D detects a 'monitorable' Area2D (like our Hitbox)."""
-	
+	# Check collision mask manually as a fallback, though physics engine handles it
 	if area.collision_layer & self.collision_mask:
-		var parent_body = area.get_parent()
-		if parent_body and parent_body.has_method("take_damage"):
-			
-			if is_instance_valid(firer):
-				parent_body.take_damage(damage, firer)
-			else:
-				parent_body.take_damage(damage, null)
-			
-			ProjectilePoolManager.return_projectile(self)
-		else:
-			push_warning("Projectile hit non-damagable Area: '%s'." % area.name)
+		_handle_impact(area.get_parent())
 
 func _on_body_entered(body: Node2D) -> void:
-	"""Called when this Area2D detects a 'monitorable' PhysicsBody (like a unit)."""
-	
-	if not body is CollisionObject2D:
-		return
-	
 	if body.collision_layer & self.collision_mask:
-		if body.has_method("take_damage"):
-			if is_instance_valid(firer):
-				body.take_damage(damage, firer)
-			else:
-				body.take_damage(damage, null)
-		
-		ProjectilePoolManager.return_projectile(self)
+		_handle_impact(body)
+
+func _handle_impact(target: Node2D) -> void:
+	if not target: return
+	
+	if target.has_method("take_damage"):
+		if is_instance_valid(firer):
+			target.take_damage(damage, firer)
+		else:
+			target.take_damage(damage, null)
+	
+	# Return to pool
+	ProjectilePoolManager.return_projectile(self)
 
 func _on_lifetime_timeout() -> void:
 	ProjectilePoolManager.return_projectile(self)

@@ -1,9 +1,4 @@
 # res://data/characters/JarlData.gd
-#
-# Defines the persistent data for a Jarl character in Viking Dynasty.
-# This resource stores all the attributes that persist across the dynasty layer.
-# GDD Ref: Section 2.A (Macro Layer), Appendix A.2 (Renown & Succession Loop)
-
 class_name JarlData
 extends Resource
 
@@ -16,60 +11,52 @@ extends Resource
 ## The Jarl's age in years
 @export var age: int = 25
 
-## The Jarl's gender (affects marriage and succession options)
-@export var gender: String = "Male"  # "Male", "Female"
-
+## The Jarl's gender
+@export var gender: String = "Male" # "Male", "Female"
 
 @export_group("Dynasty & Authority")
-## Total Renown accumulated by this Jarl (persistent XP/Legacy score)
+## Total Renown accumulated by this Jarl
 @export var renown: int = 0
 
-## Current Renown Tier (determines Authority cap per year)
-## Tiers: 0="Petty Jarl", 1="High Jarl", 2="Kingmaker", etc.
+## Current Renown Tier (0-3)
 @export var renown_tier: int = 0
 
-## Authority remaining for this year (action points for Macro layer)
+## Authority remaining for this year
 @export var current_authority: int = 3
 
-## Maximum Authority this Jarl can generate per year (based on Renown Tier)
+## Maximum Authority this Jarl can generate per year
 @export var max_authority: int = 3
 
-## Years since last offensive action (for Renown Decay calculations)
+## Years since last offensive action
 @export var years_since_action: int = 0
 
-## Legitimacy score affecting succession and stability (0-100 scale)
+## Legitimacy score (0-100)
 @export var legitimacy: int = 20
 
-## Years remaining in succession debuff (reduced Authority generation)
+## Years remaining in succession debuff
 @export var succession_debuff_years_remaining: int = 0
 
-# --- Builder Pillar Upgrade Properties ---
-## Bonus starting renown for all future heirs (from "Erect Jelling Stone")
-@export var heir_starting_renown_bonus: int = 0
+# --- NEW: Lineage History ---
+@export_group("Lineage History")
+## Stores dictionaries of past rulers: { "name": String, "portrait": Texture2D, "final_renown": int, "death_reason": String }
+@export var ancestors: Array[Dictionary] = []
+# ----------------------------
 
-## An array of unique effect_keys for one-time legacy upgrades
-## (e.g., ["UPG_TRELLEBORG", "UPG_JELLING_STONE"])
+# --- Builder Pillar ---
+@export var heir_starting_renown_bonus: int = 0
 @export var purchased_legacy_upgrades: Array[String] = []
 
-# --- Unifier Pillar Property ---
-## An array of resource paths to WorldRegionData files that have been subjugated.
+# --- Unifier Pillar ---
 @export var conquered_regions: Array[String] = []
 
-# --- Progenitor Pillar Property ---
-## An array of resource paths to WorldRegionData files that are allied.
+# --- Progenitor Pillar ---
 @export var allied_regions: Array[String] = []
 
-
 @export_group("Naval Logistics")
-## The distance (in pixels) a fleet can travel with 0% attrition.
 @export var safe_naval_range: float = 600.0
-
-## Attrition penalty per 100 pixels beyond safe range (e.g., 0.10 = 10% risk).
 @export var attrition_per_100px: float = 0.10
 
-
 @export_group("Base Skills")
-## Combat leadership and personal prowess
 @export var command: int = 10
 @export var diplomacy: int = 10
 @export var stewardship: int = 10
@@ -77,63 +64,16 @@ extends Resource
 @export var prowess: int = 10
 @export var charisma: int = 10
 
-
 @export_group("Traits")
-## Array of JarlTraitData resources that modify the Jarl's abilities and story
 @export var traits: Array[JarlTraitData] = []
-## Legacy trait names for backward compatibility (can be removed later)
 @export var legacy_trait_names: Array[String] = []
-## Whether this Jarl is currently wounded (affects stats temporarily)
 @export var is_wounded: bool = false
-## Number of turns remaining for wound recovery
 @export var wound_recovery_turns: int = 0
 
-# --- HELPER FUNCTIONS ---
-
-func get_safe_range() -> float:
-	# Placeholder for future trait modifiers (e.g. "Seafarer" trait)
-	return safe_naval_range
-
-## Get the number of *available* heirs (not on expedition, etc.)
-func get_available_heir_count() -> int:
-	var count = 0
-	for heir in heirs:
-		if heir and heir.status == JarlHeirData.HeirStatus.Available:
-			count += 1
-	return count
-
-## Get the first available heir resource
-func get_first_available_heir() -> JarlHeirData:
-	for heir in heirs:
-		if heir and heir.status == JarlHeirData.HeirStatus.Available:
-			return heir
-	return null
-
-## Remove an heir from the dynasty (e.g., married off or lost)
-## Returns false if the heir could not be found.
-func remove_heir(heir_to_remove: JarlHeirData) -> bool:
-	if heir_to_remove in heirs:
-		heirs.erase(heir_to_remove)
-		return true
-	return false
-
-## Check if the Jarl has at least one valid, available heir
-func check_has_valid_heir() -> bool:
-	return get_first_available_heir() != null
-
-
 @export_group("Family & Succession")
-## The Jarl's spouse (if any)
 @export var spouse_name: String = ""
-## Array of JarlHeirData resources in order of succession priority
+## Array of JarlHeirData resources
 @export var heirs: Array[JarlHeirData] = []
-
-## DEPRECATED Properties (kept for compatibility if needed)
-var has_valid_heir: bool:
-	get: return check_has_valid_heir()
-var children_count: int:
-	get: return get_available_heir_count()
-
 
 @export_group("Political Status")
 @export var title: String = "Jarl"
@@ -141,15 +81,39 @@ var children_count: int:
 @export var reputation: int = 0
 @export var is_in_exile: bool = false
 
-
 @export_group("Combat & Mission State")
 @export var is_on_mission: bool = false
 @export var battles_fought: int = 0
 @export var battles_won: int = 0
 @export var successful_raids: int = 0
 
+# --- HELPER FUNCTIONS ---
 
-## Get the effective skill value including trait modifiers
+func get_safe_range() -> float:
+	return safe_naval_range
+
+func get_available_heir_count() -> int:
+	var count = 0
+	for heir in heirs:
+		if heir and heir.status == JarlHeirData.HeirStatus.Available:
+			count += 1
+	return count
+
+func get_first_available_heir() -> JarlHeirData:
+	for heir in heirs:
+		if heir and heir.status == JarlHeirData.HeirStatus.Available:
+			return heir
+	return null
+
+func remove_heir(heir_to_remove: JarlHeirData) -> bool:
+	if heir_to_remove in heirs:
+		heirs.erase(heir_to_remove)
+		return true
+	return false
+
+func check_has_valid_heir() -> bool:
+	return get_first_available_heir() != null
+
 func get_effective_skill(skill_name: String) -> int:
 	var base_value: int = 0
 	match skill_name.to_lower():
@@ -171,8 +135,6 @@ func get_effective_skill(skill_name: String) -> int:
 	
 	return base_value + trait_modifier
 
-
-## Add a trait to the Jarl (if not already present)
 func add_trait(trait_data: JarlTraitData) -> void:
 	if trait_data == null: return
 	for existing_trait in traits:
@@ -180,14 +142,12 @@ func add_trait(trait_data: JarlTraitData) -> void:
 			return
 	traits.append(trait_data)
 
-## Check if Jarl has a specific trait by display name
 func has_trait(trait_name: String) -> bool:
 	for jarl_trait in traits:
 		if jarl_trait != null and jarl_trait.display_name == trait_name:
 			return true
 	return false
 
-## Get the Jarl's Authority cap based on Renown Tier
 func get_authority_cap() -> int:
 	match renown_tier:
 		0: return 3
