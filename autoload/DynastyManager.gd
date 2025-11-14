@@ -32,10 +32,9 @@ const PLAYER_JARL_PATH = "res://data/characters/PlayerJarl.tres"
 
 func _ready() -> void:
 	_load_player_jarl()
-	_load_legacy_upgrades_from_disk() # <-- THIS IS THE FIX
-	EventBus.succession_choices_made.connect(_on_succession_choices_made) # Connect to UI
+	_load_legacy_upgrades_from_disk()
+	EventBus.succession_choices_made.connect(_on_succession_choices_made)
 
-# --- THIS IS THE NEW FUNCTION ---
 func _load_legacy_upgrades_from_disk() -> void:
 	"""
 	Scans res://data/legacy/ for .tres files and loads them.
@@ -59,16 +58,12 @@ func _load_legacy_upgrades_from_disk() -> void:
 					
 					# Check if already purchased
 					if has_purchased_upgrade(unique_upgrade.effect_key):
-						# This logic needs to be based on progress, not just key
-						# We will need to load progress from JarlData in the future.
-						# For now, this is fine, but we need to load progress *from* jarl data.
-						pass
+						unique_upgrade.current_progress = unique_upgrade.required_progress
 					
 					loaded_legacy_upgrades.append(unique_upgrade)
 					
 			file_name = dir.get_next()
 	print("DynastyManager: Loaded %d legacy upgrades." % loaded_legacy_upgrades.size())
-# --- END NEW FUNCTION ---
 
 func _load_player_jarl() -> void:
 	if ResourceLoader.exists(PLAYER_JARL_PATH):
@@ -91,6 +86,8 @@ func get_current_jarl() -> JarlData:
 		_load_player_jarl()
 	return current_jarl
 
+# --- AUTHORITY & RENOWN ---
+
 func can_spend_authority(cost: int) -> bool:
 	if not current_jarl:
 		return false
@@ -103,10 +100,8 @@ func spend_authority(cost: int) -> bool:
 	if current_jarl.spend_authority(cost):
 		_save_jarl_data()
 		jarl_stats_updated.emit(current_jarl)
-		# REMOVED: print("DynastyManager: Spent %d authority. %d remaining." % [cost, current_jarl.current_authority])
 		return true
 	
-	# RETAINED: Failure is important
 	print("DynastyManager: Failed to spend %d authority. %d remaining." % [cost, current_jarl.current_authority])
 	return false
 
@@ -119,15 +114,25 @@ func can_spend_renown(cost: int) -> bool:
 func spend_renown(cost: int) -> bool:
 	"""Spend the Jarl's Renown."""
 	if not can_spend_renown(cost):
-		# RETAINED: Failure is important
 		print("DynastyManager: Failed to spend %d renown. %d available." % [cost, current_jarl.renown])
 		return false
 	
 	current_jarl.renown -= cost
 	_save_jarl_data()
 	jarl_stats_updated.emit(current_jarl)
-	# REMOVED: print("DynastyManager: Spent %d renown. %d remaining." % [cost, current_jarl.renown])
 	return true
+
+func award_renown(amount: int) -> void:
+	if not current_jarl:
+		push_error("DynastyManager: Cannot award renown, current Jarl is null.")
+		return
+	
+	current_jarl.award_renown(amount)
+	_save_jarl_data()
+	jarl_stats_updated.emit(current_jarl)
+	print("DynastyManager: Awarded %d renown. Total: %d" % [amount, current_jarl.renown])
+
+# --- LEGACY & UNIFIER ---
 
 func purchase_legacy_upgrade(upgrade_key: String) -> void:
 	"""Mark a legacy upgrade as purchased on the Jarl's data."""
@@ -144,7 +149,6 @@ func has_purchased_upgrade(upgrade_key: String) -> bool:
 		return false
 	return upgrade_key in current_jarl.purchased_legacy_upgrades
 
-# --- NEW: Unifier Pillar Functions ---
 func add_conquered_region(region_path: String) -> void:
 	"""Adds a region's path to the Jarl's list of conquered territories."""
 	if not current_jarl:
@@ -152,10 +156,7 @@ func add_conquered_region(region_path: String) -> void:
 	if not region_path in current_jarl.conquered_regions:
 		current_jarl.conquered_regions.append(region_path)
 		_save_jarl_data()
-		# RETAINED: This is a major game state change
 		print("DynastyManager: Region '%s' conquered and saved." % region_path)
-		# We don't emit jarl_stats_updated here because spending authority
-		# will have already triggered the UI refresh.
 
 func has_conquered_region(region_path: String) -> bool:
 	"""Checks if a region has been conquered."""
@@ -163,14 +164,37 @@ func has_conquered_region(region_path: String) -> bool:
 		return false
 	return region_path in current_jarl.conquered_regions
 
-# --- NEW: Progenitor Pillar Functions ---
+# --- PROGENITOR PILLAR (HEIRS) ---
 
 func get_available_heir_count() -> int:
 	if not current_jarl:
 		return 0
 	return current_jarl.get_available_heir_count()
 
-func start_heir_expedition(heir: JarlHeirData, expedition_duration: int = 5) -> void:
+func designate_heir(target_heir: JarlHeirData) -> void:
+	if not current_jarl or not target_heir:
+		return
+	
+	# 1. Cost Check
+	var cost = 1
+	if not can_spend_authority(cost):
+		print("DynastyManager: Not enough Authority to designate heir.")
+		return
+		
+	spend_authority(cost)
+	
+	# 2. Clear previous designation
+	for heir in current_jarl.heirs:
+		heir.is_designated_heir = false
+		
+	# 3. Set new designation
+	target_heir.is_designated_heir = true
+	
+	_save_jarl_data()
+	jarl_stats_updated.emit(current_jarl)
+	print("DynastyManager: %s is now the designated heir." % target_heir.display_name)
+
+func start_heir_expedition(heir: JarlHeirData, expedition_duration: int = 3) -> void:
 	"""
 	Sends an heir on an expedition.
 	This marks them as unavailable and starts a timer.
@@ -185,56 +209,6 @@ func start_heir_expedition(heir: JarlHeirData, expedition_duration: int = 5) -> 
 	jarl_stats_updated.emit(current_jarl)
 	print("Heir %s sent on expedition for %d years." % [heir.display_name, expedition_duration])
 
-func process_heir_expeditions() -> Array[String]:
-	"""
-	Called at the End of Year.
-	Processes all heirs on expedition, returning results.
-	"""
-	if not current_jarl:
-		return []
-
-	var results: Array[String] = []
-	var heirs_to_remove: Array[JarlHeirData] = []
-	
-	for heir in current_jarl.heirs:
-		if heir.status == JarlHeirData.HeirStatus.OnExpedition:
-			heir.expedition_years_remaining -= 1
-			
-			if heir.expedition_years_remaining <= 0:
-				# Expedition is over, run probability check
-				var roll = randf()
-				if roll <= 0.7: # 70% success 
-					var renown_gain = randi_range(100, 300)
-					award_renown(renown_gain)
-					results.append("Heir %s returned from their expedition with %d Renown!" % [heir.display_name, renown_gain])
-					heir.status = JarlHeirData.HeirStatus.Available
-					
-					# --- NEW: Add Trait to Heir ---
-					var seasoned_trait = load("res://data/traits/Trait_Seasoned.tres") # Load the trait we created
-					if seasoned_trait:
-						heir.traits.append(seasoned_trait)
-					# --- END NEW ---
-					
-					# --- NEW: Add Legitimacy Boost ---
-					current_jarl.legitimacy = min(100, current_jarl.legitimacy + 5) # +5 Legitimacy for successful expedition
-					# --- END NEW ---
-				else: # 30% failure 
-					results.append("Tragic news!
-Heir %s was lost at sea during their expedition." % heir.display_name)
-					heir.status = JarlHeirData.HeirStatus.LostAtSea
-					heirs_to_remove.append(heir) # Queue for removal
-	
-	# Remove lost heirs
-	for heir in heirs_to_remove:
-		current_jarl.remove_heir(heir)
-
-	if not results.is_empty():
-		_save_jarl_data()
-		jarl_stats_updated.emit(current_jarl)
-		
-	return results
-
-# --- NEW: Marry for Alliance ---
 func marry_heir_for_alliance(region_path: String) -> bool:
 	"""
 	Spends the first available heir to form an alliance with a region.
@@ -255,9 +229,8 @@ func marry_heir_for_alliance(region_path: String) -> bool:
 	if not region_path in current_jarl.allied_regions:
 		current_jarl.allied_regions.append(region_path)
 	
-	# --- NEW: Add Legitimacy Boost ---
+	# Add Legitimacy Boost
 	current_jarl.legitimacy = min(100, current_jarl.legitimacy + 10) # +10 Legitimacy
-	# --- END NEW ---
 
 	print("Heir %s married off to form alliance with %s" % [heir_to_marry.display_name, region_path])
 	_save_jarl_data()
@@ -269,49 +242,133 @@ func is_allied_region(region_path: String) -> bool:
 	if not current_jarl:
 		return false
 	return region_path in current_jarl.allied_regions
-# --- END NEW ---
-func add_trait_to_heir(heir: JarlHeirData, trait_data: JarlTraitData) -> void:
-	"""
-	Placeholder function to add a trait to an heir.
-	Currently, JarlHeirData does not store traits.
-	This function will just log for now.
-	"""
-	# Using push_warning to flag this missing feature for development
-	push_warning("EVENT: (TODO) Would add trait '%s' to heir '%s'." % [trait_data.display_name, heir.display_name])
 
+func add_trait_to_heir(heir: JarlHeirData, trait_data: JarlTraitData) -> void:
+	if not heir: return
+	heir.traits.append(trait_data)
+	print("EVENT: Added trait '%s' to heir '%s'." % [trait_data.display_name, heir.display_name])
+
+# --- END OF YEAR LOGIC LOOP ---
 
 func end_year() -> void:
 	if not current_jarl:
 		push_error("DynastyManager: Cannot end year, current Jarl is null.")
 		return
 	
-	# --- MODIFIED: Death check happens *before* reset ---
+	# 1. Jarl Aging & Death Check
+	current_jarl.age_jarl(1)
+	
 	var jarl_died = _check_for_jarl_death()
 	if jarl_died:
-		# Succession crisis is triggered, which will emit 'event_system_finished'
-		# when it's done. We stop 'end_year' here.
+		# If Jarl died, the succession event fires. 
+		# We STOP here. The Succession UI will handle the rest.
 		return
-	# --- END MODIFIED ---
 	
-	# Jarl did not die, proceed as normal
-	current_jarl.reset_authority() # This now contains the debuff logic
+	# 2. Reset Authority
+	current_jarl.reset_authority()
 	
-	var expedition_results = process_heir_expeditions()
-	if not expedition_results.is_empty():
-		print("Expedition Results: %s" % expedition_results)
-		# TODO: We will need a way to show these results to the player,
-		# likely by modifying the EndOfYear_Popup.
+	# 3. Process Heirs (Simulation Loop)
+	_process_heir_simulation()
 	
+	# 4. Save and Update UI
 	_save_jarl_data()
 	jarl_stats_updated.emit(current_jarl)
-	print("DynastyManager: Year ended. Authority reset to %d." % current_jarl.max_authority)
 	
-	# Emit the signal so the EventManager can hear it.
+	print("DynastyManager: Year ended. Jarl is now %d." % current_jarl.age)
 	year_ended.emit()
+
+func _process_heir_simulation() -> void:
+	"""Handles aging, expedition returns, births, and deaths."""
+	var heirs_to_remove: Array[JarlHeirData] = []
 	
+	# A. Process Existing Heirs
+	for heir in current_jarl.heirs:
+		heir.age += 1
+		
+		# Expedition Logic
+		if heir.status == JarlHeirData.HeirStatus.OnExpedition:
+			heir.expedition_years_remaining -= 1
+			if heir.expedition_years_remaining <= 0:
+				_resolve_expedition(heir)
+		
+		# Natural Death Check (Simple version)
+		# 5% chance to die if over 50
+		if heir.age > 50 and randf() < 0.05: 
+			print("EVENT: Heir %s died of natural causes." % heir.display_name)
+			heirs_to_remove.append(heir)
+			
+	# Clean up dead heirs
+	for dead_heir in heirs_to_remove:
+		current_jarl.remove_heir(dead_heir)
+		
+	# B. Try for a new child (Births)
+	_try_birth_event()
+
+func _resolve_expedition(heir: JarlHeirData) -> void:
+	# 70% Success Rate
+	var roll = randf()
+	
+	if roll > 0.3:
+		# SUCCESS
+		heir.status = JarlHeirData.HeirStatus.Available
+		var renown_gain = randi_range(100, 300)
+		award_renown(renown_gain)
+		print("EVENT: Heir %s returned safely with %d Renown!" % [heir.display_name, renown_gain])
+		
+		# Optional: Load/Add Seasoned trait here
+		# var seasoned = load("res://data/traits/Trait_Seasoned.tres")
+		# if seasoned: add_trait_to_heir(heir, seasoned)
+	else:
+		# FAILURE (Death/Lost)
+		heir.status = JarlHeirData.HeirStatus.LostAtSea
+		print("EVENT: Tragic news! Heir %s was lost at sea." % heir.display_name)
+
+func _try_birth_event() -> void:
+	# 1. Hard cap on children to prevent UI overflow
+	if current_jarl.heirs.size() >= 6:
+		return
+		
+	# 2. Fertility calculation
+	var base_chance = 0.30 # 30% base chance per year
+	
+	# Age modifier (Lower chance as Jarl gets older)
+	if current_jarl.age > 50: base_chance -= 0.20
+	if current_jarl.age > 60: base_chance = 0.0
+	
+	# Roll the dice
+	if randf() < base_chance:
+		_generate_new_baby()
+
+func _generate_new_baby() -> void:
+	var baby = JarlHeirData.new()
+	baby.age = 0 # Newborn
+	
+	# Random Gender
+	baby.gender = "Male" if randf() > 0.5 else "Female"
+	
+	# Random Name (Hardcoded list for MVP)
+	var male_names = ["Erik", "Olaf", "Knut", "Sven", "Torstein", "Leif", "Ragnar", "Bjorn"]
+	var female_names = ["Astrid", "Freya", "Ingrid", "Sigrid", "Helga", "Ylva", "Lagertha", "Gunnhild"]
+	
+	if baby.gender == "Male":
+		baby.display_name = male_names.pick_random()
+	else:
+		baby.display_name = female_names.pick_random()
+		
+	# Genetic Trait Inheritance (20% chance)
+	if randf() < 0.2:
+		var trait_data = JarlTraitData.new()
+		trait_data.display_name = ["Strong", "Genius", "Giant", "Frail"].pick_random()
+		baby.genetic_trait = trait_data
+	
+	# Add to family
+	current_jarl.heirs.append(baby)
+	print("EVENT: A new child, %s, was born to the Dynasty!" % baby.display_name)
+
+# --- RAID UTILS ---
+
 func set_current_raid_target(data: SettlementData) -> void:
 	current_raid_target = data
-	# REMOVED: print("DynastyManager: Raid target set to %s" % data.resource_path)
 
 func get_current_raid_target() -> SettlementData:
 	var target = current_raid_target
@@ -328,34 +385,17 @@ func _save_jarl_data() -> void:
 		
 	var error = ResourceSaver.save(current_jarl, current_jarl.resource_path)
 	if error != OK:
-		# Using push_error to alert to critical save file failures
 		push_error("DynastyManager: Failed to save Jarl data to %s. Error: %s" % [current_jarl.resource_path, error])
-	# No success print needed for every save, keeps log clean
 
-func award_renown(amount: int) -> void:
-	if not current_jarl:
-		push_error("DynastyManager: Cannot award renown, current Jarl is null.")
-		return
-	
-	current_jarl.award_renown(amount)
-	_save_jarl_data()
-	jarl_stats_updated.emit(current_jarl)
-	print("DynastyManager: Awarded %d renown.
-Total: %d" % [amount, current_jarl.renown])
+# --- SUCCESSION SYSTEM ---
 
-# --- NEW: Succession System Functions ---
 func debug_kill_jarl() -> void:
-	"""
-	Public-facing debug function to immediately trigger succession.
-	Bypasses all age and 'end_year' checks.
-	"""
+	"""Public-facing debug function to immediately trigger succession."""
 	print("DEBUG: debug_kill_jarl() called. Forcing succession...")
 	_trigger_succession()
 
-
 func _check_for_jarl_death() -> bool:
-	"""Rolls for Jarl's death.
-Returns true if Jarl died."""
+	"""Rolls for Jarl's death. Returns true if Jarl died."""
 	var jarl = get_current_jarl()
 	var death_chance = 0.0
 	
@@ -376,21 +416,42 @@ Returns true if Jarl died."""
 func _trigger_succession() -> void:
 	"""Manages the promotion of an heir and triggers the crisis event."""
 	var old_jarl = current_jarl
-	var heir = current_jarl.get_first_available_heir()
+	
+	# 1. Try to find Designated Heir first
+	var heir = null
+	for h in current_jarl.heirs:
+		if h.is_designated_heir and h.status == JarlHeirData.HeirStatus.Available:
+			heir = h
+			break
+			
+	# 2. Fallback to first available
+	if not heir:
+		heir = current_jarl.get_first_available_heir()
 	
 	if not heir:
 		print("GAME OVER: The Jarl died with no available heir!")
 		# TODO: Add game over logic
-		get_tree().quit() # Placeholder
 		return
 	
 	# Promote heir to Jarl
 	var new_jarl = _promote_heir_to_jarl(heir, old_jarl)
-	current_jarl.heirs.erase(heir) # Remove heir from list
+	
+	# Move old Jarl to ancestors
+	var ancestor_entry = {
+		"name": old_jarl.display_name,
+		"portrait": old_jarl.portrait,
+		"final_renown": old_jarl.renown,
+		"death_reason": "Died of old age" # Simplify for now
+	}
+	new_jarl.ancestors.append(ancestor_entry)
+	
+	# Remove the promoted heir from the heir list
+	new_jarl.heirs.erase(heir) 
+	
 	current_jarl = new_jarl
 	
 	# Trigger the event
-	var succession_event_data = EventData.new() # Create a dummy event
+	var succession_event_data = EventData.new() 
 	succession_event_data.event_id = "succession_crisis"
 	EventManager._trigger_event(succession_event_data)
 
@@ -399,26 +460,28 @@ func _promote_heir_to_jarl(heir: JarlHeirData, predecessor: JarlData) -> JarlDat
 	var new_jarl = JarlData.new()
 	new_jarl.display_name = heir.display_name
 	new_jarl.age = heir.age
+	new_jarl.gender = heir.gender
+	new_jarl.portrait = heir.portrait
 	new_jarl.command = heir.command
 	new_jarl.stewardship = heir.stewardship
 	new_jarl.learning = heir.learning
 	new_jarl.prowess = heir.prowess
 	new_jarl.traits = heir.traits
+	new_jarl.ancestors = predecessor.ancestors.duplicate() # Carry over ancestors
+	new_jarl.heirs = predecessor.heirs.duplicate() # Siblings become heirs (simplified)
 	
 	# Calculate Legitimacy
 	var new_legit = int(predecessor.legitimacy * 0.8) # Inherit 80%
 	
-	# Apply trait/skill penalties
-	var penalty = (10 - new_jarl.get_effective_skill("stewardship")) * 2 # Example
-	penalty += (10 - new_jarl.get_effective_skill("prowess")) # Example
-	
-	new_legit = max(0, new_legit - penalty)
+	# Bonus if Designated
+	if heir.is_designated_heir:
+		new_legit += 20
 	
 	# Apply floor from Jelling Stone 
 	new_legit = max(new_legit, minimum_inherited_legitimacy) 
 	
 	new_jarl.legitimacy = new_legit
-	new_jarl.succession_debuff_years_remaining = 3 # Start the 3-year debuff
+	new_jarl.succession_debuff_years_remaining = 3 
 	
 	return new_jarl
 
@@ -427,12 +490,7 @@ func _on_succession_choices_made(renown_choice: String, gold_choice: String) -> 
 	if renown_choice == "refuse":
 		# Apply Renown Tax Consequence
 		var setback_applied = false
-		
-		# --- THIS IS THE FIX ---
-		# We iterate over our own 'loaded_legacy_upgrades' array,
-		# not one from another scene.
 		for upgrade in loaded_legacy_upgrades:
-		# --- END FIX ---
 			if not upgrade.is_purchased and upgrade.current_progress > 0:
 				upgrade.current_progress = max(0, upgrade.current_progress - 2) # -2 Progress
 				setback_applied = true
@@ -446,7 +504,4 @@ func _on_succession_choices_made(renown_choice: String, gold_choice: String) -> 
 			SettlementManager.current_settlement.has_stability_debuff = true
 			print("Settlement instability debuff applied!")
 	
-	# This is the "all-clear" signal
 	EventBus.event_system_finished.emit()
-
-# --- END NEW ---

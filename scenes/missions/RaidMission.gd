@@ -330,8 +330,38 @@ func _on_enemy_fsm_ready(enemy_unit: BaseUnit, target: BaseBuilding) -> void:
 		push_error("Enemy unit %s FSM is still null after signal! FSM setup failed." % enemy_unit.name)
 
 func _spawn_test_units() -> void:
-	# (Test unit spawning code omitted for brevity - unchanged)
-	pass
+	print("RaidMission: Spawning TEST Player units (Fallback mode).")
+	
+	# --- FIX: Load Player Data ---
+	var player_data_path = "res://data/units/Unit_PlayerRaider.tres"
+	var player_data: UnitData = load(player_data_path)
+	
+	if not player_data or not player_data.scene_to_spawn:
+		push_error("RaidMission: Could not load fallback player unit data!")
+		return
+
+	var count = 5
+	var spacing = 40
+	
+	for i in range(count):
+		var unit_instance = player_data.scene_to_spawn.instantiate() as BaseUnit
+		if not unit_instance: continue
+		
+		unit_instance.name = "Test_Player_" + str(i)
+		unit_instance.data = player_data
+		
+		# --- CRITICAL: Ensure Correct Layer (Layer 2 = Player) ---
+		# Bit 1 is set (Value 2)
+		unit_instance.collision_layer = 2 
+		# ---------------------------------------------------------
+		
+		var spawn_pos = player_spawn_pos.global_position
+		spawn_pos.x += i * spacing
+		unit_instance.global_position = spawn_pos
+		
+		unit_instance.add_to_group("player_units")
+		rts_controller.add_unit_to_group(unit_instance)
+		add_child(unit_instance)
 
 func _on_enemy_building_destroyed_grid_clear(building: BaseBuilding) -> void:
 	_clear_building_from_pathfinding_grid(building)

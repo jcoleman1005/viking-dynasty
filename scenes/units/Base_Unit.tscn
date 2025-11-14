@@ -10,9 +10,6 @@ size = Vector2(72, 72)
 [node name="Base_Unit" type="CharacterBody2D"]
 collision_layer = 2
 script = ExtResource("1_script")
-separation_enabled = null
-separation_force = null
-separation_radius = null
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture = ExtResource("2_lfiq5")
