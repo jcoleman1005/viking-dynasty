@@ -57,9 +57,9 @@ func _ready() -> void:
 	if not player_home_marker:
 		push_error("MacroMap: 'PlayerHomeMarker' missing! Distance calculations will fail.")
 	else:
-		print("MacroMap: Geography Anchor set at %s" % player_home_marker.global_position)
+		Loggie.msg("MacroMap: Geography Anchor set at %s" % player_home_marker.global_position).domain("MAP").info()
 		if macro_camera:
-			print("MacroMap: Snapping camera to home.")
+			Loggie.msg("MacroMap: Snapping camera to home.").domain("MAP").info()
 			macro_camera.snap_to_target(player_home_marker.global_position)
 
 	# 2. Data Initialization
@@ -134,11 +134,11 @@ func _draw() -> void:
 # --- Phase 5.2: Data Generation & Persistence ---
 func _initialize_world_data() -> void:
 	if ResourceLoader.exists(SAVE_PATH):
-		print("MacroMap: Loading existing campaign state...")
+		Loggie.msg("MacroMap: Loading existing campaign state...").domain("MAP").info()
 		map_state = load(SAVE_PATH)
 		_apply_state_to_regions()
 	else:
-		print("MacroMap: New Campaign detected. Generating world...")
+		Loggie.msg("MacroMap: New Campaign detected. Generating world...").domain("MAP").info()
 		map_state = MapState.new()
 		_generate_new_world()
 		_save_map_state()
@@ -168,7 +168,7 @@ func _generate_new_world() -> void:
 		region.data = data
 		map_state.region_data_map[region.name] = data
 		
-		print("Generated %s (Tier %d) at dist %.0f" % [data.display_name, tier, dist])
+		Loggie.msg("Generated %s (Tier %d) at dist %.0f" % [data.display_name, tier, dist]).domain("MAP").info()
 
 func _apply_state_to_regions() -> void:
 	for region in regions_container.get_children():
@@ -287,7 +287,7 @@ func _initiate_raid(target: RaidTargetData) -> void:
 	
 	# 4. Spend Cost & Launch
 	DynastyManager.spend_authority(target.raid_cost_authority)
-	print("Launching raid on: %s (Diff: %d)" % [target.display_name, target.difficulty_rating])
+	Loggie.msg("Launching raid on: %s (Diff: %d)" % [target.display_name, target.difficulty_rating]).domain("MAP").info()
 	EventBus.scene_change_requested.emit("raid_mission")
 
 func _apply_attrition(risk_chance: float) -> void:
@@ -297,7 +297,7 @@ func _apply_attrition(risk_chance: float) -> void:
 	var units_lost = 0
 	var units_to_remove: Array[String] = []
 	
-	print("Applying Attrition Risk: %.2f" % risk_chance)
+	Loggie.msg("Applying Attrition Risk: %.2f" % risk_chance).domain("MAP").info()
 	
 	for unit_path in garrison.keys():
 		var count = garrison[unit_path]
@@ -318,7 +318,7 @@ func _apply_attrition(risk_chance: float) -> void:
 		
 	SettlementManager.save_settlement()
 	if units_lost > 0:
-		print("ATTRITION: Lost %d units to the sea!" % units_lost)
+		Loggie.msg("ATTRITION: Lost %d units to the sea!" % units_lost).domain("MAP").info()
 
 func _update_diplomacy_buttons(data: WorldRegionData, is_conquered: bool, is_allied: bool) -> void:
 	if is_conquered:
@@ -352,14 +352,14 @@ func _on_subjugate_pressed() -> void:
 		var jarl = DynastyManager.get_current_jarl()
 		jarl.legitimacy = min(100, jarl.legitimacy + 5) 
 		DynastyManager.jarl_stats_updated.emit(jarl) 
-		print("Region %s successfully subjugated." % selected_region_data.display_name)
+		Loggie.msg("Region %s successfully subjugated." % selected_region_data.display_name).domain("MAP").info()
 		_on_region_selected(selected_region_data)
 
 func _on_marry_pressed() -> void:
 	if not selected_region_data: return
 	var success = DynastyManager.marry_heir_for_alliance(selected_region_data.resource_path)
 	if success: 
-		print("Alliance with %s successful." % selected_region_data.display_name)
+		Loggie.msg("Alliance with %s successful." % selected_region_data.display_name).domain("MAP").info()
 		_on_region_selected(selected_region_data)
 
 func _on_settlement_pressed() -> void: EventBus.scene_change_requested.emit("settlement")
@@ -394,7 +394,7 @@ func close_all_ui() -> void:
 	selected_region_node = null
 	
 	if ui_closed:
-		print("MacroMap: All UI closed for year transition")
+		Loggie.msg("MacroMap: All UI closed for year transition").domain("MAP").info()
 
 # --- End Year Logic ---
 func _on_end_year_pressed() -> void:
@@ -436,11 +436,11 @@ func _process_end_year_logic(payout: Dictionary) -> void:
 
 func _on_event_system_finished() -> void:
 	if randf() < enemy_raid_chance:
-		print("--- ENEMY RAID TRIGGERED ---")
+		Loggie.msg("--- ENEMY RAID TRIGGERED ---").domain("MAP").info()
 		DynastyManager.is_defensive_raid = true
 		EventBus.scene_change_requested.emit("raid_mission")
 	else:
-		print("No enemy raid this year.")
+		Loggie.msg("No enemy raid this year.").domain("MAP").info()
 		EventBus.scene_change_requested.emit("settlement")
 
 func _update_jarl_ui(jarl: JarlData) -> void:

@@ -35,9 +35,9 @@ func _on_save_pressed() -> void:
 	"""Saves the game state via the SettlementManager."""
 	if SettlementManager.has_current_settlement():
 		SettlementManager.save_settlement()
-		print("Game saved from pause menu.")
+		Loggie.msg("Game saved from pause menu.").domain("UI").info()
 	else:
-		print("Pause Menu: No settlement loaded, cannot save.")
+		Loggie.msg("Pause Menu: No settlement loaded, cannot save.").domain("UI").info()
 
 
 func _on_quit_pressed() -> void:

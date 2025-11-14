@@ -38,7 +38,7 @@ func _ready() -> void:
 		collision_poly = CollisionPolygon2D.new()
 		collision_poly.name = "CollisionPolygon2D"
 		add_child(collision_poly)
-		print("Region '%s': Created missing CollisionPolygon2D." % name)
+		Loggie.msg("Region '%s': Created missing CollisionPolygon2D." % name).domain("MAP").info()
 	
 	# --- THE MAGIC FIX ---
 	_sync_collision_shape()
@@ -61,7 +61,7 @@ func _sync_collision_shape() -> void:
 		return
 	
 	# --- DEBUG PRINT ---
-	print("Region: Syncing shape for '%s' (%d points)..." % [name, highlight_poly.polygon.size()])
+	Loggie.msg("Region: Syncing shape for '%s' (%d points)..." % [name, highlight_poly.polygon.size()])
 	# -------------------
 
 	# Copy the points over

@@ -62,16 +62,16 @@ func _input(event: InputEvent) -> void:
 				# --- MOVED to F-Keys to avoid conflict ---
 				KEY_F1:
 					current_formation = SquadFormation.FormationType.LINE
-					print("Formation: LINE")
+					Loggie.msg("Formation: LINE").domain("RTS").info()
 				KEY_F2:
 					current_formation = SquadFormation.FormationType.COLUMN
-					print("Formation: COLUMN")
+					Loggie.msg("Formation: COLUMN").domain("RTS").info()
 				KEY_F3:
 					current_formation = SquadFormation.FormationType.WEDGE
-					print("Formation: WEDGE")
+					Loggie.msg("Formation: WEDGE").domain("RTS").info()
 				KEY_F4:
 					current_formation = SquadFormation.FormationType.BOX
-					print("Formation: BOX")
+					Loggie.msg("Formation: BOX").domain("RTS").info()
 				# -----------------------------------------
 
 # --- PUBLIC API ---
@@ -99,7 +99,7 @@ func add_unit_to_group(unit: Node2D) -> void:
 
 func remove_unit(unit: BaseUnit) -> void:
 	"""Removes a unit from tracking. Called by the unit's 'destroyed' signal."""
-	print("RTSController: Unit %s was destroyed/removed." % unit.name)
+	Loggie.msg("RTSController: Unit %s was destroyed/removed." % unit.name).domain("RTS").info()
 	
 	if unit in selected_units:
 		selected_units.erase(unit)
@@ -119,7 +119,7 @@ func remove_unit(unit: BaseUnit) -> void:
 		
 	# Check if this was the last unit
 	if controllable_units.is_empty():
-		print("RTSController: All units are gone.")
+		Loggie.msg("RTSController: All units are gone.").domain("RTS").info()
 
 # --- EVENTBUS HANDLERS ---
 
@@ -194,9 +194,9 @@ func _on_move_command(target_position: Vector2) -> void:
 # --- THIS IS THE NEW FUNCTION FOR DRAG-FORMATIONS ---
 func _on_formation_move_command(target_position: Vector2, direction_vector: Vector2):
 	# --- DEBUG ---
-	print("==================================================")
-	print("RTSController: Received formation_move_command.")
-	print("  -> Target Center: %s, Direction: %s" % [target_position, direction_vector])
+	Loggie.msg("==================================================").domain("RTS").info()
+	Loggie.msg("RTSController: Received formation_move_command.").domain("RTS").info()
+	Loggie.msg("  -> Target Center: %s, Direction: %s" % [target_position, direction_vector]).domain("RTS").info()
 	# --- END DEBUG ---
 	
 	if selected_units.is_empty():
@@ -235,7 +235,7 @@ func _clear_selection() -> void:
 # --- Control Group Functions ---
 
 func _set_control_group(num: int) -> void:
-	print("Setting control group %d" % num)
+	Loggie.msg("Setting control group %d" % num).domain("RTS").info()
 	# Clear the old group
 	control_groups[num].clear()
 	# Add all currently selected units by their ID
@@ -243,7 +243,7 @@ func _set_control_group(num: int) -> void:
 		control_groups[num].append(unit.get_instance_id())
 
 func _select_control_group(num: int) -> void:
-	print("Selecting control group %d" % num)
+	Loggie.msg("Selecting control group %d" % num).domain("RTS").info()
 	_clear_selection()
 	
 	var new_group_ids = control_groups[num]

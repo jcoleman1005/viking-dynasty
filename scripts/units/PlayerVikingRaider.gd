@@ -14,7 +14,7 @@ func _ready() -> void:
 	# Add to player units group for RTS selection and control
 	add_to_group("player_units")
 	
-	print("PlayerVikingRaider '%s' initialized and ready for RTS control" % name)
+	Loggie.msg("PlayerVikingRaider '%s' initialized and ready for RTS control" % name).domain("RTS").info()
 
 # --- THIS IS THE FIX ---
 # We override the command_attack function just to add a print statement,
@@ -25,7 +25,7 @@ func command_attack(target: Node2D) -> void:
 		push_warning("Player Raider FSM or target is not valid.")
 		return
 
-	print("Player Viking Raider '%s' attacking %s" % [name, target.name])
+	Loggie.msg("Player Viking Raider '%s' attacking %s" % [name, target.name]).domain("RTS").info()
 
 	# Pass the command to the base class, which will pass it to the FSM
 	super.command_attack(target)
@@ -40,7 +40,7 @@ func die() -> void:
 	# Notify other systems about unit death
 	EventBus.emit_signal("player_unit_died", self)
 	
-	print("Player Viking Raider '%s' has fallen in battle!" % name)
+	Loggie.msg("Player Viking Raider '%s' has fallen in battle!" % name).domain("RTS").info()
 	
 	# Call parent die method
 	super.die()

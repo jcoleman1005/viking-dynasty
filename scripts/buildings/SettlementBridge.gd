@@ -49,7 +49,7 @@ func _ready() -> void:
 	
 	# --- TEST DATA INJECTION ---
 	if not DynastyManager.current_jarl:
-		print("--- INJECTING TEST DYNASTY DATA ---")
+		Loggie.msg("--- INJECTING TEST DYNASTY DATA ---").domain("BUILDING").info()
 		var test_jarl = DynastyTestDataGenerator.generate_test_dynasty()
 		DynastyManager.current_jarl = test_jarl
 		DynastyManager.jarl_stats_updated.emit(test_jarl)
@@ -102,7 +102,7 @@ func _on_manage_workers_pressed() -> void:
 		work_assignment_ui.setup(SettlementManager.current_settlement)
 
 func _on_worker_assignments_confirmed(assignments: Dictionary) -> void:
-	print("SettlementBridge: Work assignments saved.")
+	Loggie.msg("SettlementBridge: Work assignments saved.").domain("BUILDING").info()
 	if SettlementManager.current_settlement:
 		SettlementManager.current_settlement.worker_assignments = assignments
 		SettlementManager.save_settlement()
@@ -130,12 +130,12 @@ func close_all_ui() -> void:
 		ui_closed = true
 	
 	if ui_closed:
-		print("SettlementBridge: All UI closed for year transition")
+		Loggie.msg("SettlementBridge: All UI closed for year transition").domain("BUILDING").info()
 
 # --- END YEAR LOGIC CHAIN ---
 
 func _on_end_year_pressed() -> void:
-	print("SettlementBridge: End Year button pressed.")
+	Loggie.msg("SettlementBridge: End Year button pressed.").domain("BUILDING").info()
 	_start_end_year_sequence()
 
 func _start_end_year_sequence() -> void:
@@ -144,7 +144,7 @@ func _start_end_year_sequence() -> void:
 	
 	if not is_instance_valid(end_of_year_popup):
 		# Fallback if popup is missing
-		print("SettlementBridge: Popup missing, triggering logic directly.")
+		Loggie.msg("SettlementBridge: Popup missing, triggering logic directly.").domain("BUILDING").info()
 		_finalize_end_year({})
 		return
 		
@@ -166,9 +166,9 @@ func _on_payout_collected(payout: Dictionary) -> void:
 
 func _finalize_end_year(_payout: Dictionary) -> void:
 	# 5. Trigger Dynasty Aging/Events
-	print("SettlementBridge: Triggering DynastyManager.end_year()...")
+	Loggie.msg("SettlementBridge: Triggering DynastyManager.end_year()...").domain("BUILDING").info()
 	DynastyManager.end_year()
-	print("SettlementBridge: Year ended processing complete.")
+	Loggie.msg("SettlementBridge: Year ended processing complete.").domain("BUILDING").info()
 
 # ---------------------------------------------------
 

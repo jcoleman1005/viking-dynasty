@@ -46,11 +46,11 @@ func _ready() -> void:
 	EventBus.settlement_loaded.connect(_on_settlement_ready_for_mission)
 	
 	if not SettlementManager.has_current_settlement():
-		print("RaidMission: No current settlement - loading test settlement")
+		Loggie.msg("RaidMission: No current settlement - loading test settlement").domain("RAIDMISSION").info()
 		_load_test_settlement()
 		call_deferred("initialize_mission")
 	else:
-		print("RaidMission: Settlement already loaded - initializing mission")
+		Loggie.msg("RaidMission: Settlement already loaded - initializing mission").domain("RAIDMISSION").info()
 		call_deferred("initialize_mission")
 
 func _exit_tree() -> void:
@@ -65,27 +65,27 @@ func _load_test_settlement() -> void:
 	var test_settlement = load(test_settlement_path) as SettlementData
 	
 	if test_settlement:
-		print("RaidMission: Loading test settlement: %s" % test_settlement_path)
+		Loggie.msg("RaidMission: Loading test settlement: %s" % test_settlement_path).domain("RAIDMISSION").info()
 		SettlementManager.load_settlement(test_settlement)
 	else:
-		push_error("RaidMission: Failed to load test settlement from %s" % test_settlement_path)
+		Loggie.msg("RaidMission: Failed to load test settlement from %s" % test_settlement_path).domain("RAIDMISSION").error()
 
 func _on_settlement_ready_for_mission(_settlement_data: SettlementData) -> void:
 	if not is_instance_valid(objective_manager.rts_controller): 
-		print("RaidMission: Settlement loaded - initializing mission")
+		Loggie.msg("RaidMission: Settlement loaded - initializing mission").domain("RAIDMISSION").info()
 		initialize_mission()
 
 
 func initialize_mission() -> void:
-	print("RaidMission starting...")
+	Loggie.msg("RaidMission starting...").domain("RAIDMISSION").info()
 	
 	if rts_controller == null or objective_manager == null:
-		push_error("RaidMission: Critical error! Nodes missing.")
+		Loggie.msg("RaidMission: Critical error! Nodes missing.").domain("RAIDMISSION").error()
 		get_tree().quit()
 		return
 	
 	if not is_instance_valid(grid_manager) or not "astar_grid" in grid_manager:
-		push_error("RaidMission: GridManager node is missing or invalid!")
+		Loggie.msg("RaidMission: GridManager node is missing or invalid!").domain("RAIDMISSION").error()
 		return
 	var local_astar_grid = grid_manager.astar_grid
 	SettlementManager.register_active_scene_nodes(local_astar_grid, building_container)
@@ -98,7 +98,7 @@ func initialize_mission() -> void:
 		if not enemy_base_data:
 			enemy_base_data = load(default_enemy_base_path)
 			if not enemy_base_data:
-				push_error("Could not load enemy base data.")
+				Loggie.msg("Could not load enemy base data.").domain("RAIDMISSION").error()
 				return
 		_load_enemy_base()
 		_spawn_player_garrison()
@@ -106,15 +106,15 @@ func initialize_mission() -> void:
 	if is_instance_valid(objective_building):
 		objective_manager.initialize(rts_controller, objective_building, building_container, enemy_units)
 	else:
-		push_error("RaidMission: Could not find Objective Building (Great Hall)!")
+		Loggie.msg("RaidMission: Could not find Objective Building (Great Hall)!").domain("RAIDMISSION").error()
 
 
 # --- MODIFIED: Updated to load PENDING buildings too ---
 func _load_player_base_for_defense() -> void:
-	print("Loading PLAYER base for defense...")
+	Loggie.msg("Loading PLAYER base for defense...").domain("RAIDMISSION").info()
 	var settlement = SettlementManager.current_settlement
 	if not settlement:
-		push_error("Defensive Mission: Cannot load player base.")
+		Loggie.msg("Defensive Mission: Cannot load player base.").domain("RAIDMISSION").error()
 		return
 	
 	# 1. Load Completed Buildings
@@ -124,6 +124,7 @@ func _load_player_base_for_defense() -> void:
 	_spawn_building_list(settlement.pending_construction_buildings, true)
 	
 	_update_astar_grid_for_base(settlement.placed_buildings)
+
 func _spawn_building_list(list: Array, is_blueprint: bool) -> void:
 	for building_entry in list:
 		var building_res_path: String = building_entry["resource_path"]
@@ -155,7 +156,7 @@ func _spawn_building_list(list: Array, is_blueprint: bool) -> void:
 			building_instance.set_state(BaseBuilding.BuildingState.BLUEPRINT)
 
 func _load_enemy_base() -> void:
-	print("Loading ENEMY base for offense...")
+	Loggie.msg("Loading ENEMY base for offense...").domain("RAIDMISSION").info()
 	if not enemy_base_data:
 		return
 	
@@ -263,16 +264,16 @@ func _spawn_player_garrison() -> void:
 
 
 func _spawn_enemy_wave() -> void:
-	print("=== SPAWNING ENEMY WAVE ===")
+	Loggie.msg("=== SPAWNING ENEMY WAVE ===").domain("RAIDMISSION").info()
 	var enemy_spawner = get_node_or_null(enemy_spawn_position)
 	if not is_instance_valid(enemy_spawner):
-		push_error("Defensive Mission: Invalid or missing 'Enemy Spawn Position' node!")
+		Loggie.msg("Defensive Mission: Invalid or missing 'Enemy Spawn Position' node!").domain("RAIDMISSION").error()
 		return
 		
 	var enemy_data_path = "res://data/units/EnemyVikingRaider_Data.tres"
 	var enemy_data: UnitData = load(enemy_data_path)
 	if not enemy_data or not enemy_data.scene_to_spawn:
-		push_error("Failed to load enemy unit data: %s" % enemy_data_path)
+		Loggie.msg("Failed to load enemy unit data: %s" % enemy_data_path).domain("RAIDMISSION").error()
 		return
 
 	var enemy_count = 5
@@ -284,7 +285,7 @@ func _spawn_enemy_wave() -> void:
 		# 2. Cast to BaseUnit and Set Data BEFORE add_child
 		var enemy_unit = enemy_node as BaseUnit
 		if not enemy_unit:
-			push_error("Spawned enemy node is not a BaseUnit!")
+			Loggie.msg("Spawned enemy node is not a BaseUnit!").domain("RAIDMISSION").error()
 			enemy_node.queue_free()
 			continue
 		
@@ -308,7 +309,7 @@ func _spawn_enemy_wave() -> void:
 		if is_instance_valid(objective_building):
 			enemy_unit.fsm_ready.connect(_on_enemy_fsm_ready.bind(objective_building))
 	
-	print("Spawned %d enemy raiders." % enemy_count)
+	Loggie.msg("Spawned %d enemy raiders." % enemy_count).domain("RAIDMISSION").info()
 
 # --- UPDATED SIGNAL HANDLER: Handles ALL post-spawn configuration ---
 func _on_enemy_fsm_ready(enemy_unit: BaseUnit, target: BaseBuilding) -> void:
@@ -327,17 +328,17 @@ func _on_enemy_fsm_ready(enemy_unit: BaseUnit, target: BaseBuilding) -> void:
 	if enemy_unit.fsm:
 		enemy_unit.fsm.command_attack(target)
 	else:
-		push_error("Enemy unit %s FSM is still null after signal! FSM setup failed." % enemy_unit.name)
+		Loggie.msg("Enemy unit %s FSM is still null after signal! FSM setup failed." % enemy_unit.name).domain("RAIDMISSION").error()
 
 func _spawn_test_units() -> void:
-	print("RaidMission: Spawning TEST Player units (Fallback mode).")
+	Loggie.msg("RaidMission: Spawning TEST Player units (Fallback mode).").domain("RAIDMISSION").info()
 	
 	# --- FIX: Load Player Data ---
 	var player_data_path = "res://data/units/Unit_PlayerRaider.tres"
 	var player_data: UnitData = load(player_data_path)
 	
 	if not player_data or not player_data.scene_to_spawn:
-		push_error("RaidMission: Could not load fallback player unit data!")
+		Loggie.msg("RaidMission: Could not load fallback player unit data!").domain("RAIDMISSION").error()
 		return
 
 	var count = 5

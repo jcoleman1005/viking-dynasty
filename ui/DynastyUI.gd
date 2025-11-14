@@ -39,7 +39,7 @@ func _ready() -> void:
 func _on_visibility_changed() -> void:
 	if visible and DynastyManager.current_jarl:
 		_on_jarl_stats_updated(DynastyManager.get_current_jarl())
-		print("Dynasty UI: Auto-refreshed data on visible.")
+		Loggie.msg("Dynasty UI: Auto-refreshed data on visible.").domain("UI").info()
 # -------------------------------------------
 
 func _on_jarl_stats_updated(jarl: JarlData) -> void:
@@ -125,13 +125,13 @@ func _on_context_menu_item_pressed(id: int) -> void:
 			if SettlementManager.attempt_purchase(cost):
 				DynastyManager.start_heir_expedition(selected_heir)
 			else:
-				print("Not enough gold for expedition.")
+				Loggie.msg("Not enough gold for expedition.").domain("UI").info()
 		
 		2: # Arrange Marriage
 			if DynastyManager.get_current_jarl():
 				selected_heir.status = JarlHeirData.HeirStatus.MarriedOff
 				DynastyManager.award_renown(150) 
-				print("Heir married off for Renown.")
+				Loggie.msg("Heir married off for Renown.").domain("UI").info()
 
 func _on_close_button_pressed() -> void:
 	hide()

@@ -67,7 +67,7 @@ func move_to_position(target_pos: Vector2, direction: Vector2 = Vector2.DOWN) ->
 		# Move the unit to its formation position
 		_move_unit_to_position(unit, target_formation_pos)
 	
-	print("Squad moving to %s in %s formation with %d units" % [target_pos, FormationType.keys()[formation_type], units.size()])
+	Loggie.msg("Squad moving to %s in %s formation with %d units" % [target_pos, FormationType.keys()[formation_type], units.size()]).domain("RTS").info()
 
 # --- MODIFIED: Added direction and rotation logic ---
 func _calculate_formation_positions(center_pos: Vector2, direction: Vector2) -> Array[Vector2]:
