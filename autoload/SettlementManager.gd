@@ -11,6 +11,10 @@ var active_astar_grid: AStarGrid2D = null
 var active_building_container: Node2D = null
 var grid_manager_node: Node = null 
 
+func _ready() -> void:
+	# --- NEW: Listen for permanent unit loss ---
+	EventBus.player_unit_died.connect(_on_player_unit_died)
+
 func register_active_scene_nodes(grid: AStarGrid2D, container: Node2D, manager_node: Node = null) -> void:
 	if not is_instance_valid(grid) or not is_instance_valid(container):
 		Loggie.msg("Failed to register invalid scene nodes.").domain(LogDomains.SETTLEMENT).error()
@@ -31,6 +35,44 @@ func _trigger_territory_update() -> void:
 	if current_settlement and is_instance_valid(grid_manager_node) and grid_manager_node.has_method("recalculate_territory"):
 		var all_buildings = current_settlement.placed_buildings + current_settlement.pending_construction_buildings
 		grid_manager_node.recalculate_territory(all_buildings)
+
+# --- NEW: Handle Unit Death ---
+func _on_player_unit_died(unit: Node2D) -> void:
+	"""
+	Removes a destroyed unit from the settlement's garrison.
+	Called automatically by EventBus when a PlayerVikingRaider dies.
+	"""
+	if not current_settlement: return
+	
+	# 1. Validate Unit and Data
+	var base_unit = unit as BaseUnit
+	if not base_unit or not base_unit.data:
+		return
+		
+	# 2. Identify Unit by Resource Path
+	var unit_path = base_unit.data.resource_path
+	if unit_path.is_empty():
+		Loggie.msg("Unit died but has no valid resource_path. Cannot update garrison.").domain(LogDomains.SETTLEMENT).warn()
+		return
+		
+	# 3. Update Garrison Count
+	if current_settlement.garrisoned_units.has(unit_path):
+		var count = current_settlement.garrisoned_units[unit_path]
+		
+		if count > 0:
+			current_settlement.garrisoned_units[unit_path] = count - 1
+			
+			# Cleanup if count reaches 0
+			if current_settlement.garrisoned_units[unit_path] <= 0:
+				current_settlement.garrisoned_units.erase(unit_path)
+			
+			Loggie.msg("⚔️ Unit PERMANENTLY lost: %s (Remaining: %d)" % [base_unit.data.display_name, count - 1]).domain(LogDomains.SETTLEMENT).info()
+			
+			# 4. Save Immediately
+			save_settlement()
+	else:
+		Loggie.msg("Unit %s died, but was not found in garrison records (Mercenary/Event unit?)" % base_unit.data.display_name).domain(LogDomains.SETTLEMENT).debug()
+# ------------------------------
 
 # --- Settlement Data ---
 
@@ -483,7 +525,6 @@ func apply_raid_damages() -> Dictionary:
 	report["wood_lost"] = wood_loss
 	
 	# 2. Construction Setbacks (Damage pending blueprints)
-	# Iterate backwards to safely remove
 	var indices_to_remove = []
 	for i in range(current_settlement.pending_construction_buildings.size()):
 		var entry = current_settlement.pending_construction_buildings[i]
@@ -494,11 +535,9 @@ func apply_raid_damages() -> Dictionary:
 			report["buildings_damaged"] += 1
 			
 			if entry["progress"] <= 0:
-				# If progress falls below zero, the blueprint is razed
 				indices_to_remove.append(i)
 				report["buildings_destroyed"] += 1
 	
-	# Apply removals
 	indices_to_remove.sort()
 	indices_to_remove.reverse()
 	for i in indices_to_remove:
