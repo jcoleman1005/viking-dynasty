@@ -35,79 +35,93 @@ theme_override_constants/margin_top = 15
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 15
 
-[node name="TabContainer" type="TabContainer" parent="PanelContainer/MarginContainer"]
+[node name="MainLayout" type="VBoxContainer" parent="PanelContainer/MarginContainer"]
 layout_mode = 2
-current_tab = 0
 
-[node name="BuildTab" type="VBoxContainer" parent="PanelContainer/MarginContainer/TabContainer"]
+[node name="Header" type="HBoxContainer" parent="PanelContainer/MarginContainer/MainLayout"]
 layout_mode = 2
-theme_override_constants/separation = 12
-metadata/_tab_index = 0
+theme_override_constants/separation = 20
 
-[node name="TreasuryDisplay" type="HBoxContainer" parent="PanelContainer/MarginContainer/TabContainer/BuildTab"]
+[node name="TreasuryDisplay" type="HBoxContainer" parent="PanelContainer/MarginContainer/MainLayout/Header"]
 layout_mode = 2
 theme_override_constants/separation = 15
 
-[node name="GoldLabel" type="Label" parent="PanelContainer/MarginContainer/TabContainer/BuildTab/TreasuryDisplay"]
+[node name="GoldLabel" type="Label" parent="PanelContainer/MarginContainer/MainLayout/Header/TreasuryDisplay"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Gold: 0"
 
-[node name="WoodLabel" type="Label" parent="PanelContainer/MarginContainer/TabContainer/BuildTab/TreasuryDisplay"]
+[node name="WoodLabel" type="Label" parent="PanelContainer/MarginContainer/MainLayout/Header/TreasuryDisplay"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Wood: 0"
 
-[node name="FoodLabel" type="Label" parent="PanelContainer/MarginContainer/TabContainer/BuildTab/TreasuryDisplay"]
+[node name="FoodLabel" type="Label" parent="PanelContainer/MarginContainer/MainLayout/Header/TreasuryDisplay"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Food: 0"
 
-[node name="StoneLabel" type="Label" parent="PanelContainer/MarginContainer/TabContainer/BuildTab/TreasuryDisplay"]
+[node name="StoneLabel" type="Label" parent="PanelContainer/MarginContainer/MainLayout/Header/TreasuryDisplay"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Stone: 0"
 
-[node name="BuildButtonsContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer/TabContainer/BuildTab"]
+[node name="VSeparator" type="VSeparator" parent="PanelContainer/MarginContainer/MainLayout/Header/TreasuryDisplay"]
 layout_mode = 2
 
-[node name="RecruitTab" type="VBoxContainer" parent="PanelContainer/MarginContainer/TabContainer"]
+[node name="UnitCountLabel" type="Label" parent="PanelContainer/MarginContainer/MainLayout/Header"]
+layout_mode = 2
+text = "Units: 0"
+
+[node name="TabContainer" type="TabContainer" parent="PanelContainer/MarginContainer/MainLayout"]
+layout_mode = 2
+current_tab = 0
+
+[node name="BuildTab" type="VBoxContainer" parent="PanelContainer/MarginContainer/MainLayout/TabContainer"]
+layout_mode = 2
+theme_override_constants/separation = 12
+metadata/_tab_index = 0
+
+[node name="BuildButtonsContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer/MainLayout/TabContainer/BuildTab"]
+layout_mode = 2
+
+[node name="RecruitTab" type="VBoxContainer" parent="PanelContainer/MarginContainer/MainLayout/TabContainer"]
 visible = false
 layout_mode = 2
 theme_override_constants/separation = 12
 metadata/_tab_index = 1
 
-[node name="RecruitButtons" type="VBoxContainer" parent="PanelContainer/MarginContainer/TabContainer/RecruitTab"]
+[node name="RecruitButtons" type="VBoxContainer" parent="PanelContainer/MarginContainer/MainLayout/TabContainer/RecruitTab"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="GarrisonList" type="VBoxContainer" parent="PanelContainer/MarginContainer/TabContainer/RecruitTab"]
+[node name="GarrisonList" type="VBoxContainer" parent="PanelContainer/MarginContainer/MainLayout/TabContainer/RecruitTab"]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="LegacyTab" type="VBoxContainer" parent="PanelContainer/MarginContainer/TabContainer"]
+[node name="LegacyTab" type="VBoxContainer" parent="PanelContainer/MarginContainer/MainLayout/TabContainer"]
 visible = false
 layout_mode = 2
 metadata/_tab_index = 2
 
-[node name="JarlStatsDisplay" type="HBoxContainer" parent="PanelContainer/MarginContainer/TabContainer/LegacyTab"]
+[node name="JarlStatsDisplay" type="HBoxContainer" parent="PanelContainer/MarginContainer/MainLayout/TabContainer/LegacyTab"]
 layout_mode = 2
 
-[node name="RenownLabel" type="Label" parent="PanelContainer/MarginContainer/TabContainer/LegacyTab/JarlStatsDisplay"]
+[node name="RenownLabel" type="Label" parent="PanelContainer/MarginContainer/MainLayout/TabContainer/LegacyTab/JarlStatsDisplay"]
 layout_mode = 2
 text = "Renown: 0"
 
-[node name="AuthorityLabel" type="Label" parent="PanelContainer/MarginContainer/TabContainer/LegacyTab/JarlStatsDisplay"]
+[node name="AuthorityLabel" type="Label" parent="PanelContainer/MarginContainer/MainLayout/TabContainer/LegacyTab/JarlStatsDisplay"]
 layout_mode = 2
 text = "Authority: 0/0"
 
-[node name="Description" type="Label" parent="PanelContainer/MarginContainer/TabContainer/LegacyTab"]
+[node name="Description" type="Label" parent="PanelContainer/MarginContainer/MainLayout/TabContainer/LegacyTab"]
 layout_mode = 2
 text = "Spend Renown and Authority on permanent dynasty upgrades."
 autowrap_mode = 3
 
-[node name="HSeparator" type="HSeparator" parent="PanelContainer/MarginContainer/TabContainer/LegacyTab"]
+[node name="HSeparator" type="HSeparator" parent="PanelContainer/MarginContainer/MainLayout/TabContainer/LegacyTab"]
 layout_mode = 2
 
-[node name="LegacyButtonsContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer/TabContainer/LegacyTab"]
+[node name="LegacyButtonsContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer/MainLayout/TabContainer/LegacyTab"]
 layout_mode = 2

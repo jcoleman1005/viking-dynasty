@@ -2,8 +2,8 @@
 
 [ext_resource type="Script" uid="uid://js4bbqgeyd6c" path="res://data/buildings/BuildingData.gd" id="1_i2pmy"]
 [ext_resource type="PackedScene" uid="uid://cws6xle5x52g4" path="res://scenes/buildings/Base_Building.tscn" id="2_hptna"]
-[ext_resource type="PackedScene" path="res://scenes/components/AttackAI.tscn" id="3_ai"]
-[ext_resource type="PackedScene" path="res://scenes/effects/Projectile.tscn" id="4_proj"]
+[ext_resource type="PackedScene" uid="uid://de3nko6b1rqyg" path="res://scenes/components/AttackAI.tscn" id="3_ai"]
+[ext_resource type="PackedScene" uid="uid://d10havsaesr6i" path="res://scenes/effects/Projectile.tscn" id="4_proj"]
 
 [resource]
 script = ExtResource("1_i2pmy")
@@ -19,7 +19,6 @@ dev_color = Color(0.8, 0.2, 0.2, 1)
 is_defensive_structure = true
 attack_damage = 15
 attack_range = 250.0
-attack_speed = 1.5
 ai_component_scene = ExtResource("3_ai")
 projectile_scene = ExtResource("4_proj")
-projectile_speed = 500.0
+projectile_speed = 200.0

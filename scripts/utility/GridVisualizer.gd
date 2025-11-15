@@ -1,5 +1,4 @@
 # res://scripts/utility/GridVisualizer.gd
-# --- MODIFIED: Phase 3.2 Visualizing the Zone ---
 class_name GridVisualizer
 extends Node2D
 
@@ -7,12 +6,20 @@ const GRID_LINE_COLOR := Color(1.0, 1.0, 1.0, 0.05)
 const SOLID_CELL_COLOR := Color(1.0, 0.0, 0.0, 0.3) # Red for blocked
 const TERRITORY_COLOR := Color(0.0, 1.0, 0.0, 0.1) # Light Green for territory
 
+# --- NEW: Border Settings ---
+@export_group("Border Settings")
+@export var show_border: bool = true
+# ----------------------------
+
 # Configuration populated in _ready()
 var grid_width: int = 0
 var grid_height: int = 0
 var cell_size: int = 0
 var astar_grid: AStarGrid2D = null
 var grid_manager: Node = null
+
+# --- NEW: Node Reference ---
+@onready var reference_rect: ReferenceRect = get_node_or_null("ReferenceRect")
 
 func _ready() -> void:
 	grid_manager = get_parent().get_node_or_null("GridManager")
@@ -26,6 +33,15 @@ func _ready() -> void:
 	
 	if "astar_grid" in grid_manager:
 		astar_grid = grid_manager.astar_grid
+	
+	# --- NEW: Sync ReferenceRect ---
+	if reference_rect:
+		var total_width = grid_width * cell_size
+		var total_height = grid_height * cell_size
+		reference_rect.size = Vector2(total_width, total_height)
+		reference_rect.position = Vector2.ZERO
+		reference_rect.visible = show_border
+	# -------------------------------
 
 	EventBus.pathfinding_grid_updated.connect(_on_pathfinding_grid_updated)
 	
@@ -46,10 +62,11 @@ func _draw() -> void:
 			var rect = Rect2(cell.x * cell_size, cell.y * cell_size, cell_size, cell_size)
 			draw_rect(rect, TERRITORY_COLOR)
 
-	# --- 2. Draw Grid Lines ---
+	# Calculate Map Dimensions
 	var map_width = grid_width * cell_size
 	var map_height = grid_height * cell_size
 
+	# --- 2. Draw Grid Lines ---
 	for i in range(grid_height + 1):
 		var y = float(i) * cell_size
 		draw_line(Vector2(0, y), Vector2(map_width, y), GRID_LINE_COLOR, 1.0)

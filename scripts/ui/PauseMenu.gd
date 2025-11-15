@@ -1,4 +1,4 @@
-# res://ui/PauseMenu.gd
+# res://scripts/ui/PauseMenu.gd
 #
 # This script controls the pause menu itself.
 # It runs while the game is paused (Process Mode = "When Paused").
@@ -8,6 +8,7 @@ extends CanvasLayer
 
 @onready var resume_button: Button = $PanelContainer/VBoxContainer/ResumeButton
 @onready var save_button: Button = $PanelContainer/VBoxContainer/SaveButton
+@onready var new_game_button: Button = $PanelContainer/VBoxContainer/NewGameButton
 @onready var quit_button: Button = $PanelContainer/VBoxContainer/QuitButton
 
 
@@ -15,6 +16,12 @@ func _ready() -> void:
 	# Connect signals in code
 	resume_button.pressed.connect(_on_resume_pressed)
 	save_button.pressed.connect(_on_save_pressed)
+	
+	if new_game_button:
+		new_game_button.pressed.connect(_on_new_game_pressed)
+	else:
+		push_warning("PauseMenu: NewGameButton node not found!")
+		
 	quit_button.pressed.connect(_on_quit_pressed)
 
 
@@ -38,6 +45,25 @@ func _on_save_pressed() -> void:
 		Loggie.msg("Game saved from pause menu.").domain("UI").info()
 	else:
 		Loggie.msg("Pause Menu: No settlement loaded, cannot save.").domain("UI").info()
+
+
+func _on_new_game_pressed() -> void:
+	"""Wipes the save file and restarts the game."""
+	Loggie.msg("Pause Menu: New Game requested. Wiping save...").domain("UI").warn()
+	
+	# 1. Delete Save
+	SettlementManager.delete_save_file()
+	
+	# 2. Unpause (Critical for scene reload to work properly)
+	get_tree().paused = false
+	
+	# 3. Request Transition to Settlement Scene
+	# This ensures that if we are in a Raid, we go home.
+	# If we are at home, it effectively reloads the scene.
+	EventBus.scene_change_requested.emit("settlement")
+	
+	# 4. Close menu
+	queue_free()
 
 
 func _on_quit_pressed() -> void:

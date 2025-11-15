@@ -5,6 +5,7 @@
 # Decoupled from RaidMission.gd (which is now just a level loader).
 extends Node
 class_name RaidObjectiveManager
+
 # --- Mission Configuration ---
 # These will be set in the Inspector on this node.
 @export var victory_bonus_loot: Dictionary = {"gold": 200}
@@ -167,12 +168,21 @@ func _on_mission_failed(reason: String) -> void:
 	
 	Loggie.msg("Mission Failed! %s" % reason).domain("RTS").info()
 	
-	_show_failure_message(reason)
+	# --- NEW: Handle Defensive Consequences ---
+	if is_defensive_mission:
+		# Calculate losses and get the summary string
+		var report = DynastyManager.process_defensive_loss()
+		var full_reason = reason + "\n\n" + report.get("summary_text", "")
+		_show_failure_message(full_reason)
+	else:
+		# Offensive failure (just return home empty handed)
+		_show_failure_message(reason + "\n\nYour raid failed. No loot was secured.")
+	# ------------------------------------------
 	
-	await get_tree().create_timer(3.0).timeout
+	# Wait longer so they can read the damage report
+	await get_tree().create_timer(6.0).timeout
 	
 	EventBus.scene_change_requested.emit("settlement")
-
 
 func _show_failure_message(reason: String) -> void:
 	"""Display the mission failure message to the player"""
@@ -184,28 +194,40 @@ func _show_failure_message(reason: String) -> void:
 	
 	var bg_panel = Panel.new()
 	bg_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	bg_panel.modulate = Color(0, 0, 0, 0.7)
+	bg_panel.modulate = Color(0, 0, 0, 0.85) # Darker for dramatic effect
 	failure_popup.add_child(bg_panel)
 	
 	var message_container = VBoxContainer.new()
 	message_container.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	
+	# --- FIX: Ensure Centering ---
+	message_container.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	message_container.grow_vertical = Control.GROW_DIRECTION_BOTH
+	# ---------------------------
+	
+	# Widen the container for the report text
+	message_container.custom_minimum_size.x = 600 
+	
 	var failure_label = Label.new()
-	failure_label.text = "DEFENSE FAILED!"
+	failure_label.text = "DEFEAT"
 	failure_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	# --- FIX: Add theme overrides for visibility ---
-	failure_label.add_theme_font_size_override("font_size", 32)
+	failure_label.add_theme_font_size_override("font_size", 42)
 	failure_label.add_theme_color_override("font_color", Color.CRIMSON)
 	message_container.add_child(failure_label)
 	
-	var subtitle_label = Label.new()
+	# Use RichTextLabel for the report so we can use colors
+	var subtitle_label = RichTextLabel.new()
 	subtitle_label.text = reason
+	subtitle_label.fit_content = true
+	subtitle_label.bbcode_enabled = true
+	subtitle_label.custom_minimum_size = Vector2(600, 0)
 	subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	message_container.add_child(subtitle_label)
 	
 	var return_label = Label.new()
-	return_label.text = "Returning to settlement..."
+	return_label.text = "\nReturning to settlement..."
 	return_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	return_label.modulate = Color(1, 1, 1, 0.6)
 	message_container.add_child(return_label)
 	
 	failure_popup.add_child(message_container)
@@ -234,6 +256,11 @@ func _show_victory_message(title: String, subtitle: String) -> void:
 	
 	var message_container = VBoxContainer.new()
 	message_container.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	
+	# --- FIX: Ensure Centering ---
+	message_container.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	message_container.grow_vertical = Control.GROW_DIRECTION_BOTH
+	# ---------------------------
 	
 	var title_label = Label.new()
 	title_label.text = title
@@ -264,7 +291,6 @@ func _show_victory_message(title: String, subtitle: String) -> void:
 		get_tree().current_scene.add_child(victory_popup) # Fallback
 # --- END NEW ---
 
-# res://scenes/missions/RaidObjectiveManager.gd
 
 func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	"""Called when the enemy's Great Hall is destroyed (OFFENSIVE win condition)"""

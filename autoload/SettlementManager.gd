@@ -5,11 +5,46 @@ const BUILDER_EFFICIENCY: int = 25
 const GATHERER_EFFICIENCY: int = 10
 const BASE_GATHERING_CAPACITY: int = 2
 const USER_SAVE_PATH = "user://savegame.tres"
+# --- NEW: Map Save Path ---
+const MAP_SAVE_PATH = "user://campaign_map.tres"
+# --------------------------
 
 var current_settlement: SettlementData
 var active_astar_grid: AStarGrid2D = null
 var active_building_container: Node2D = null
 var grid_manager_node: Node = null 
+
+func _ready() -> void:
+	# Listen for permanent unit loss
+	EventBus.player_unit_died.connect(_on_player_unit_died)
+
+# --- MODIFIED: Save Management Helper ---
+func delete_save_file() -> void:
+	"""Deletes existing save files (Settlement & Map) to force a new game state."""
+	var settlement_deleted = false
+	var map_deleted = false
+	
+	# 1. Delete Settlement Save
+	if FileAccess.file_exists(USER_SAVE_PATH):
+		var error = DirAccess.remove_absolute(USER_SAVE_PATH)
+		if error == OK:
+			settlement_deleted = true
+		else:
+			Loggie.msg("SettlementManager: Failed to delete settlement save. Error: %s" % error).domain(LogDomains.SYSTEM).error()
+	
+	# 2. Delete Map Save
+	if FileAccess.file_exists(MAP_SAVE_PATH):
+		var error = DirAccess.remove_absolute(MAP_SAVE_PATH)
+		if error == OK:
+			map_deleted = true
+		else:
+			Loggie.msg("SettlementManager: Failed to delete map save. Error: %s" % error).domain(LogDomains.SYSTEM).error()
+			
+	if settlement_deleted or map_deleted:
+		Loggie.msg("SettlementManager: Save files deleted (Settlement: %s, Map: %s). Starting fresh." % [settlement_deleted, map_deleted]).domain(LogDomains.SYSTEM).info()
+	else:
+		Loggie.msg("SettlementManager: No save files found to delete.").domain(LogDomains.SYSTEM).info()
+# -----------------------------------
 
 func register_active_scene_nodes(grid: AStarGrid2D, container: Node2D, manager_node: Node = null) -> void:
 	if not is_instance_valid(grid) or not is_instance_valid(container):
@@ -31,6 +66,37 @@ func _trigger_territory_update() -> void:
 	if current_settlement and is_instance_valid(grid_manager_node) and grid_manager_node.has_method("recalculate_territory"):
 		var all_buildings = current_settlement.placed_buildings + current_settlement.pending_construction_buildings
 		grid_manager_node.recalculate_territory(all_buildings)
+
+func _on_player_unit_died(unit: Node2D) -> void:
+	"""
+	Removes a destroyed unit from the settlement's garrison.
+	Called automatically by EventBus when a PlayerVikingRaider dies.
+	"""
+	if not current_settlement: return
+	
+	var base_unit = unit as BaseUnit
+	if not base_unit or not base_unit.data:
+		return
+		
+	var unit_path = base_unit.data.resource_path
+	if unit_path.is_empty():
+		Loggie.msg("Unit died but has no valid resource_path. Cannot update garrison.").domain(LogDomains.SETTLEMENT).warn()
+		return
+		
+	if current_settlement.garrisoned_units.has(unit_path):
+		var count = current_settlement.garrisoned_units[unit_path]
+		
+		if count > 0:
+			current_settlement.garrisoned_units[unit_path] = count - 1
+			
+			if current_settlement.garrisoned_units[unit_path] <= 0:
+				current_settlement.garrisoned_units.erase(unit_path)
+			
+			Loggie.msg("⚔️ Unit PERMANENTLY lost: %s (Remaining: %d)" % [base_unit.data.display_name, count - 1]).domain(LogDomains.SETTLEMENT).info()
+			
+			save_settlement()
+	else:
+		Loggie.msg("Unit %s died, but was not found in garrison records (Mercenary/Event unit?)" % base_unit.data.display_name).domain(LogDomains.SETTLEMENT).debug()
 
 # --- Settlement Data ---
 
@@ -454,3 +520,57 @@ func simulate_turn(simulated_assignments: Dictionary) -> Dictionary:
 					result["resources_gained"][res] += int(r_data.yearly_income[res] * stewardship_bonus)
 
 	return result
+
+func apply_raid_damages() -> Dictionary:
+	"""
+	Calculates and applies material losses from a successful enemy raid.
+	Returns a dictionary of losses for display.
+	"""
+	if not current_settlement: return {}
+	
+	var report = {
+		"gold_lost": 0,
+		"wood_lost": 0,
+		"buildings_damaged": 0,
+		"buildings_destroyed": 0
+	}
+	
+	# 1. Resource Plundering (Lose 20-40% of Gold and Wood)
+	var loss_ratio = randf_range(0.2, 0.4)
+	
+	var current_gold = current_settlement.treasury.get("gold", 0)
+	var gold_loss = int(current_gold * loss_ratio)
+	current_settlement.treasury["gold"] = max(0, current_gold - gold_loss)
+	report["gold_lost"] = gold_loss
+	
+	var current_wood = current_settlement.treasury.get("wood", 0)
+	var wood_loss = int(current_wood * loss_ratio)
+	current_settlement.treasury["wood"] = max(0, current_wood - wood_loss)
+	report["wood_lost"] = wood_loss
+	
+	# 2. Construction Setbacks (Damage pending blueprints)
+	var indices_to_remove = []
+	for i in range(current_settlement.pending_construction_buildings.size()):
+		var entry = current_settlement.pending_construction_buildings[i]
+		var damage = randi_range(50, 150) # Setback amount
+		
+		if entry.get("progress", 0) > 0:
+			entry["progress"] -= damage
+			report["buildings_damaged"] += 1
+			
+			if entry["progress"] <= 0:
+				indices_to_remove.append(i)
+				report["buildings_destroyed"] += 1
+	
+	indices_to_remove.sort()
+	indices_to_remove.reverse()
+	for i in indices_to_remove:
+		current_settlement.pending_construction_buildings.remove_at(i)
+		
+	# 3. Apply Stability Debuff
+	current_settlement.has_stability_debuff = true
+	
+	save_settlement()
+	EventBus.treasury_updated.emit(current_settlement.treasury)
+	
+	return report

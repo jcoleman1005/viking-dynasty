@@ -1,22 +1,26 @@
-# res://ui/StorefrontUI.gd (Fully Refactored)
+# res://ui/StorefrontUI.gd
 extends Control
 
 const LegacyUpgradeData = preload("res://data/legacy/LegacyUpgradeData.gd")
-# --- Node References ---
-@onready var gold_label: Label = $PanelContainer/MarginContainer/TabContainer/BuildTab/TreasuryDisplay/GoldLabel
-@onready var wood_label: Label = $PanelContainer/MarginContainer/TabContainer/BuildTab/TreasuryDisplay/WoodLabel
-@onready var food_label: Label = $PanelContainer/MarginContainer/TabContainer/BuildTab/TreasuryDisplay/FoodLabel
-@onready var stone_label: Label = $PanelContainer/MarginContainer/TabContainer/BuildTab/TreasuryDisplay/StoneLabel
 
-@onready var build_buttons_container: VBoxContainer = $PanelContainer/MarginContainer/TabContainer/BuildTab/BuildButtonsContainer
+# --- Header References (Permanent HUD) ---
+# These are now children of MainLayout/Header, not the TabContainer
+@onready var gold_label: Label = $PanelContainer/MarginContainer/MainLayout/Header/TreasuryDisplay/GoldLabel
+@onready var wood_label: Label = $PanelContainer/MarginContainer/MainLayout/Header/TreasuryDisplay/WoodLabel
+@onready var food_label: Label = $PanelContainer/MarginContainer/MainLayout/Header/TreasuryDisplay/FoodLabel
+@onready var stone_label: Label = $PanelContainer/MarginContainer/MainLayout/Header/TreasuryDisplay/StoneLabel
+@onready var unit_count_label: Label = $PanelContainer/MarginContainer/MainLayout/Header/UnitCountLabel
 
-@onready var recruit_buttons_container: VBoxContainer = $PanelContainer/MarginContainer/TabContainer/RecruitTab/RecruitButtons
-@onready var garrison_list_container: VBoxContainer = $PanelContainer/MarginContainer/TabContainer/RecruitTab/GarrisonList
+# --- Tab References ---
+@onready var build_buttons_container: VBoxContainer = $PanelContainer/MarginContainer/MainLayout/TabContainer/BuildTab/BuildButtonsContainer
+
+@onready var recruit_buttons_container: VBoxContainer = $PanelContainer/MarginContainer/MainLayout/TabContainer/RecruitTab/RecruitButtons
+@onready var garrison_list_container: VBoxContainer = $PanelContainer/MarginContainer/MainLayout/TabContainer/RecruitTab/GarrisonList
 
 # --- Legacy Tab References ---
-@onready var renown_label: Label = $PanelContainer/MarginContainer/TabContainer/LegacyTab/JarlStatsDisplay/RenownLabel
-@onready var authority_label: Label = $PanelContainer/MarginContainer/TabContainer/LegacyTab/JarlStatsDisplay/AuthorityLabel
-@onready var legacy_buttons_container: VBoxContainer = $PanelContainer/MarginContainer/TabContainer/LegacyTab/LegacyButtonsContainer
+@onready var renown_label: Label = $PanelContainer/MarginContainer/MainLayout/TabContainer/LegacyTab/JarlStatsDisplay/RenownLabel
+@onready var authority_label: Label = $PanelContainer/MarginContainer/MainLayout/TabContainer/LegacyTab/JarlStatsDisplay/AuthorityLabel
+@onready var legacy_buttons_container: VBoxContainer = $PanelContainer/MarginContainer/MainLayout/TabContainer/LegacyTab/LegacyButtonsContainer
 
 # --- Exported Data ---
 @export var available_buildings: Array[BuildingData] = []
@@ -28,9 +32,8 @@ const LegacyUpgradeData = preload("res://data/legacy/LegacyUpgradeData.gd")
 var minimum_inherited_legitimacy: int = 0 
 
 func _ready() -> void:
-	# --- FIX: Allow unused mouse events to pass to the Camera ---
+	# Allow unused mouse events to pass to the Camera
 	mouse_filter = Control.MOUSE_FILTER_PASS
-	# ------------------------------------------------------------
 
 	# Connect to SettlementManager for treasury
 	EventBus.treasury_updated.connect(_update_treasury_display)
@@ -71,7 +74,7 @@ func _update_treasury_display(new_treasury: Dictionary) -> void:
 	stone_label.text = "Stone: %d" % new_treasury.get("stone", 0)
 
 func _on_purchase_successful(item_name: String) -> void:
-	if item_name.contains("Raider") or item_name.contains("Unit"):
+	if item_name.contains("Raider") or item_name.contains("Unit") or item_name.contains("Viking"):
 		_update_garrison_display()
 
 func _on_settlement_loaded(settlement_data: SettlementData) -> void:
@@ -80,6 +83,9 @@ func _on_settlement_loaded(settlement_data: SettlementData) -> void:
 		_update_treasury_display(settlement_data.treasury)
 	else:
 		_update_treasury_display(default_treasury_display)
+	
+	# Also update garrison/unit count on load
+	_update_garrison_display()
 
 func _update_initial_treasury() -> void:
 	"""Deferred treasury update to ensure settlement is loaded"""
@@ -89,41 +95,43 @@ func _update_initial_treasury() -> void:
 		_update_treasury_display(default_treasury_display)
 
 func _update_garrison_display() -> void:
-	if not garrison_list_container: return
-	
-	for child in garrison_list_container.get_children():
-		child.queue_free()
-	
-	if not SettlementManager.current_settlement: return
-	
-	var garrison = SettlementManager.current_settlement.garrisoned_units
-	if garrison.is_empty():
-		var empty_garrison_label = Label.new()
-		empty_garrison_label.text = "No units in garrison"
-		garrison_list_container.add_child(empty_garrison_label)
-		return
-	
-	var header_label = Label.new()
-	header_label.text = "Current Garrison:"
-	header_label.add_theme_font_size_override("font_size", 16)
-	garrison_list_container.add_child(header_label)
-	
-	for unit_path in garrison:
-		var unit_count: int = garrison[unit_path]
-		var unit_data: UnitData = load(unit_path)
-		if unit_data:
-			var unit_label = Label.new()
-			unit_label.text = "• %s x%d" % [unit_data.display_name, unit_count]
-			garrison_list_container.add_child(unit_label)
-	
+	# 1. Update the Detailed List (Inside the Recruit Tab)
+	if garrison_list_container:
+		for child in garrison_list_container.get_children():
+			child.queue_free()
+		
+		if SettlementManager.current_settlement and not SettlementManager.current_settlement.garrisoned_units.is_empty():
+			var header_label = Label.new()
+			header_label.text = "Garrison Details:"
+			header_label.add_theme_font_size_override("font_size", 16)
+			garrison_list_container.add_child(header_label)
+			
+			for unit_path in SettlementManager.current_settlement.garrisoned_units:
+				var unit_count: int = SettlementManager.current_settlement.garrisoned_units[unit_path]
+				var unit_data: UnitData = load(unit_path)
+				if unit_data:
+					var unit_label = Label.new()
+					unit_label.text = "• %s x%d" % [unit_data.display_name, unit_count]
+					garrison_list_container.add_child(unit_label)
+		else:
+			var empty_label = Label.new()
+			empty_label.text = "No units in garrison"
+			garrison_list_container.add_child(empty_label)
+
+	# 2. Update the Permanent Header Count (Outside the Tab)
 	var total_units = 0
-	for unit_path in garrison:
-		total_units += garrison[unit_path]
+	if SettlementManager.current_settlement:
+		var garrison = SettlementManager.current_settlement.garrisoned_units
+		for unit_path in garrison:
+			total_units += garrison[unit_path]
 	
-	var total_label = Label.new()
-	total_label.text = "Total units: %d" % total_units
-	total_label.add_theme_font_size_override("font_size", 12)
-	garrison_list_container.add_child(total_label)
+	if unit_count_label:
+		unit_count_label.text = "Garrison: %d" % total_units
+		# Add simple color coding for feedback
+		if total_units == 0:
+			unit_count_label.modulate = Color.SALMON
+		else:
+			unit_count_label.modulate = Color.WHITE
 
 # --- Jarl Stats UI ---
 func _update_jarl_stats_display(jarl_data: JarlData) -> void:
@@ -165,14 +173,13 @@ func _populate_legacy_buttons() -> void:
 		button.text = "%s\n%s" % [title_text, cost_text]
 		button.tooltip_text = upgrade_data.description
 		
-		# --- FIX: Constrain Legacy Button Icons too ---
+		# Constrain Legacy Button Icons
 		if upgrade_data.icon:
 			button.icon = upgrade_data.icon
 			button.expand_icon = true
 			button.custom_minimum_size = Vector2(0, 64)
 			button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 			button.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
-		# ---------------------------------------------
 		
 		var can_buy_renown = jarl.renown >= current_renown_cost
 		var can_buy_auth = jarl.current_authority >= upgrade_data.authority_cost
@@ -241,14 +248,13 @@ func _create_building_button(building_data: BuildingData) -> void:
 	var button = Button.new()
 	button.text = "%s (Cost: %s)" % [building_data.display_name, _format_cost(building_data.build_cost)]
 	
-	# --- FIX: Constrain Building Icons ---
+	# Constrain Building Icons
 	if building_data.icon:
 		button.icon = building_data.icon
-		button.expand_icon = true # Force icon to scale
-		button.custom_minimum_size = Vector2(0, 64) # Force button height
+		button.expand_icon = true
+		button.custom_minimum_size = Vector2(0, 64)
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	# -------------------------------------
 	
 	button.pressed.connect(_on_buy_button_pressed.bind(building_data))
 	build_buttons_container.add_child(button)
@@ -279,14 +285,13 @@ func _setup_recruit_buttons() -> void:
 		var button = Button.new()
 		button.text = "%s (Cost: %s)" % [unit_data.display_name, _format_cost(unit_data.spawn_cost)]
 		
-		# --- FIX: Constrain Recruit Icons ---
+		# Constrain Recruit Icons
 		if unit_data.icon:
 			button.icon = unit_data.icon
-			button.expand_icon = true # Force icon to scale
-			button.custom_minimum_size = Vector2(0, 64) # Force button height
+			button.expand_icon = true
+			button.custom_minimum_size = Vector2(0, 64)
 			button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 			button.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
-		# ------------------------------------
 
 		button.pressed.connect(_on_recruit_button_pressed.bind(unit_data))
 		recruit_buttons_container.add_child(button)

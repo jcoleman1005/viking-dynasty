@@ -8,6 +8,15 @@ extends Node
 @export var end_of_year_popup_scene: PackedScene
 @export var world_map_scene_path: String = "res://scenes/world_map/WorldMap_Stub.tscn"
 
+# --- New Game Configuration (Used when no save file exists) ---
+@export_group("New Game Settings")
+@export var start_gold: int = 1000
+@export var start_wood: int = 500
+@export var start_food: int = 100
+@export var start_stone: int = 200
+@export var start_population: int = 10
+# -----------------------------------
+
 # --- Default Assets (fallback) ---
 var default_test_building: BuildingData = preload("res://data/buildings/Bldg_Wall.tres")
 var default_end_of_year_popup: PackedScene = preload("res://ui/EndOfYear_Popup.tscn")
@@ -178,9 +187,13 @@ func _setup_default_resources() -> void:
 	if not end_of_year_popup_scene: end_of_year_popup_scene = default_end_of_year_popup
 
 func _initialize_settlement() -> void:
-	if not home_base_data: home_base_data = _create_default_settlement()
-	if not home_base_data.resource_path: home_base_data.resource_path = "res://data/settlements/home_base_fixed.tres"
+	# --- MODIFIED: Always create from Inspector Settings ---
+	# This ensures that when a new game starts (no save file found),
+	# we use the configured Start Gold/Wood and place the Great Hall.
+	# Any pre-assigned resource in 'home_base_data' is ignored in favor of these settings.
+	home_base_data = _create_default_settlement()
 	
+	# Load (Will ignore this object if save file exists)
 	SettlementManager.load_settlement(home_base_data)
 	
 	if is_instance_valid(grid_manager) and "astar_grid" in grid_manager:
@@ -221,8 +234,25 @@ func _spawn_single_building(entry: Dictionary, is_new: bool) -> BaseBuilding:
 
 func _create_default_settlement() -> SettlementData:
 	var settlement = SettlementData.new()
-	settlement.treasury = {"gold": 1000, "wood": 500, "food": 100, "stone": 200}
+	# Use exported values
+	settlement.treasury = {
+		"gold": start_gold, 
+		"wood": start_wood, 
+		"food": start_food, 
+		"stone": start_stone
+	}
+	settlement.population_total = start_population
 	settlement.resource_path = "res://data/settlements/home_base_fixed.tres"
+	
+	# --- NEW: Auto-place Great Hall ---
+	# Centered on 60x40 grid (approx 28,18 for 4x4 building)
+	var great_hall_entry = {
+		"resource_path": "res://data/buildings/GreatHall.tres",
+		"grid_position": Vector2i(28, 18)
+	}
+	settlement.placed_buildings.append(great_hall_entry)
+	# ----------------------------------
+	
 	return settlement
 
 func _setup_ui() -> void:
