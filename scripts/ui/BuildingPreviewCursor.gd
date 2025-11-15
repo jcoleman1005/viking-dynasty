@@ -1,4 +1,3 @@
-# BuildingPreviewCursor.gd - RTS-style building placement system
 extends Node2D
 class_name BuildingPreviewCursor
 
@@ -16,86 +15,44 @@ var can_place: bool = false
 var valid_color: Color = Color(0.0, 1.0, 0.0, 0.7)    # Green
 var invalid_color: Color = Color(1.0, 0.0, 0.0, 0.7)  # Red
 
+# Tether Visualization
+var nearest_node: ResourceNode = null
+var tether_color_valid: Color = Color(0.2, 1.0, 0.2, 0.8) # Green
+var tether_color_invalid: Color = Color(1.0, 0.2, 0.2, 0.8) # Red
+
 signal placement_completed
 signal placement_cancelled
 
-# --- NEW: Reference to GridManager for Phase 3 checks ---
+# Reference to GridManager
 var grid_manager: Node = null
 
 func _ready() -> void:
 	z_index = 100
-	
 	grid_overlay = Node2D.new()
 	grid_overlay.name = "GridOverlay"
 	add_child(grid_overlay)
-	
-	# Find GridManager sibling
 	grid_manager = get_parent().get_node_or_null("GridManager")
-	
-	Loggie.msg("BuildingPreviewCursor ready.").domain("BUILDING").info()
 
 func set_building_preview(building_data: BuildingData) -> void:
 	if not building_data: return
-	if cell_size <= 0: return
-	
-	Loggie.msg("Setting building preview for: %s" % building_data.display_name).domain("BUILDING").info()
 	current_building_data = building_data
 	
 	_cleanup_preview()
 	
 	preview_sprite = Sprite2D.new()
-	preview_sprite.name = "PreviewSprite"
-	
 	if building_data.building_texture:
 		preview_sprite.texture = building_data.building_texture
-	else:
-		var texture = _create_building_texture(building_data)
-		preview_sprite.texture = texture
-	
-	# Scale
-	var target_size: Vector2 = Vector2(building_data.grid_size) * cell_size
-	if preview_sprite.texture:
-		var texture_size: Vector2 = preview_sprite.texture.get_size()
-		if texture_size.x > 0 and texture_size.y > 0:
-			preview_sprite.scale = target_size / texture_size
-	
+		# Simple scaling logic
+		var target_size = Vector2(building_data.grid_size) * cell_size
+		var tex_size = preview_sprite.texture.get_size()
+		preview_sprite.scale = target_size / tex_size
+
 	preview_sprite.modulate = valid_color
 	add_child(preview_sprite)
 	
 	_create_grid_outline(building_data.grid_size)
-	
 	is_active = true
 	visible = true
-
-func _create_building_texture(building_data: BuildingData) -> ImageTexture:
-	var size = Vector2i(building_data.grid_size.x * cell_size, building_data.grid_size.y * cell_size)
-	var image = Image.create(size.x, size.y, false, Image.FORMAT_RGBA8)
-	image.fill(Color(0.6, 0.6, 0.6, 1.0))
-	var texture = ImageTexture.new()
-	texture.set_image(image)
-	return texture
-
-func _create_grid_outline(grid_size: Vector2i) -> void:
-	_clear_grid_overlay()
-	var outline_color = Color.WHITE
-	var line_width = 2.0
-	var rect_size = Vector2(grid_size.x * cell_size, grid_size.y * cell_size)
-	
-	var points = [
-		Vector2(0, 0), Vector2(rect_size.x, 0), 
-		Vector2(rect_size.x, rect_size.y), Vector2(0, rect_size.y), 
-		Vector2(0, 0)
-	]
-	
-	var line = Line2D.new()
-	line.points = points
-	line.width = line_width
-	line.default_color = outline_color
-	grid_overlay.add_child(line)
-
-func _clear_grid_overlay() -> void:
-	for child in grid_overlay.get_children():
-		child.queue_free()
 
 func _process(_delta: float) -> void:
 	if not is_active or not current_building_data: return
@@ -105,88 +62,86 @@ func _process(_delta: float) -> void:
 	global_position = _grid_to_world(grid_pos)
 	
 	can_place = _can_place_at_position(grid_pos)
+	
+	# Find tether target
+	_find_nearest_resource_node(global_position)
+	
 	_update_visual_feedback()
+	queue_redraw()
+
+func _find_nearest_resource_node(world_pos: Vector2) -> void:
+	nearest_node = null
+	if not current_building_data is EconomicBuildingData: return
+		
+	var target_type = (current_building_data as EconomicBuildingData).resource_type
+	var min_dist = INF
+	var nodes = get_tree().get_nodes_in_group("resource_nodes")
+	
+	for node in nodes:
+		if node is ResourceNode and node.resource_type == target_type:
+			if node.is_depleted(): continue
+			var dist = world_pos.distance_to(node.global_position)
+			if dist < min_dist:
+				min_dist = dist
+				nearest_node = node
+
+func _draw() -> void:
+	if is_active and nearest_node:
+		var start = Vector2.ZERO
+		var end = to_local(nearest_node.global_position)
+		var dist = global_position.distance_to(nearest_node.global_position)
+		var is_in_range = dist <= nearest_node.district_radius
+		var color = tether_color_valid if is_in_range else tether_color_invalid
+		
+		draw_line(start, end, color, 2.0)
+		draw_circle(end, 5.0, color)
 
 func _world_to_grid(world_pos: Vector2) -> Vector2i:
-	if cell_size <= 0: return Vector2i.ZERO
 	return Vector2i(int(world_pos.x / cell_size), int(world_pos.y / cell_size))
 
 func _grid_to_world(grid_pos: Vector2i) -> Vector2:
 	return Vector2(grid_pos.x * cell_size, grid_pos.y * cell_size)
 
-# --- MODIFIED: Enforce Phase 3 Territory Constraints ---
 func _can_place_at_position(grid_pos: Vector2i) -> bool:
-	if not SettlementManager or not current_building_data:
-		return false
-	
-	# 1. Check Collision (Is the ground solid/occupied?)
-	# This applies to EVERYTHING. You can't build inside a rock.
-	if not SettlementManager.is_placement_valid(grid_pos, current_building_data.grid_size):
-		return false
-		
-	# 2. Check Territory (Is it in the Green Zone?)
-	# EXCEPTION: If this building IS a Hub (Great Hall), it generates the zone.
-	# Therefore, it does not need to be *inside* an existing zone.
-	if current_building_data.is_territory_hub:
-		return true
-	
-	# Standard check for non-hubs (Walls, Farms, etc.)
-	if grid_manager and grid_manager.has_method("is_cell_buildable"):
-		# We check every tile in the building's footprint
-		for x in range(current_building_data.grid_size.x):
-			for y in range(current_building_data.grid_size.y):
-				var check_pos = grid_pos + Vector2i(x, y)
-				
-				# If ANY part of the building is outside territory, deny placement
-				if not grid_manager.is_cell_buildable(check_pos):
-					return false
-	
-	return true
+	if not SettlementManager: return false
+	return SettlementManager.is_placement_valid(grid_pos, current_building_data.grid_size, current_building_data)
 
 func _update_visual_feedback() -> void:
 	if not preview_sprite: return
-	if can_place:
-		preview_sprite.modulate = valid_color
-		_set_grid_overlay_color(Color.GREEN)
-	else:
-		preview_sprite.modulate = invalid_color
-		_set_grid_overlay_color(Color.RED)
+	preview_sprite.modulate = valid_color if can_place else invalid_color
 
-func _set_grid_overlay_color(color: Color) -> void:
-	for child in grid_overlay.get_children():
-		if child is Line2D:
-			child.default_color = color
-
-func place_building() -> bool:
-	if not is_active or not current_building_data or not can_place:
-		return false
-	
+func place_building() -> void:
+	if not is_active or not can_place: return
 	var grid_pos = _world_to_grid(global_position)
-	var new_building = SettlementManager.place_building(current_building_data, grid_pos, true)
-	
-	if new_building:
-		placement_completed.emit()
-		cancel_preview()
-		return true
-	return false
+	SettlementManager.place_building(current_building_data, grid_pos, true)
+	placement_completed.emit()
+	cancel_preview()
 
 func cancel_preview() -> void:
 	is_active = false
 	visible = false
 	current_building_data = null
-	can_place = false
 	_cleanup_preview()
 	placement_cancelled.emit()
 
 func _cleanup_preview() -> void:
-	if preview_sprite:
-		preview_sprite.queue_free()
-		preview_sprite = null
+	if preview_sprite: preview_sprite.queue_free()
 	_clear_grid_overlay()
+
+func _create_grid_outline(grid_size: Vector2i) -> void:
+	_clear_grid_overlay()
+	var rect_size = Vector2(grid_size.x * cell_size, grid_size.y * cell_size)
+	var points = [Vector2(0,0), Vector2(rect_size.x, 0), Vector2(rect_size.x, rect_size.y), Vector2(0, rect_size.y), Vector2(0,0)]
+	var line = Line2D.new()
+	line.points = points
+	line.width = 2.0
+	grid_overlay.add_child(line)
+
+func _clear_grid_overlay() -> void:
+	for child in grid_overlay.get_children(): child.queue_free()
 
 func _input(event: InputEvent) -> void:
 	if not is_active: return
-	
 	if event is InputEventMouseButton and event.is_pressed():
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			place_building()
