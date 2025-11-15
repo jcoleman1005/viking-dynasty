@@ -5,6 +5,9 @@ const BUILDER_EFFICIENCY: int = 25
 const GATHERER_EFFICIENCY: int = 10
 const BASE_GATHERING_CAPACITY: int = 2
 const USER_SAVE_PATH = "user://savegame.tres"
+# --- NEW: Map Save Path ---
+const MAP_SAVE_PATH = "user://campaign_map.tres"
+# --------------------------
 
 var current_settlement: SettlementData
 var active_astar_grid: AStarGrid2D = null
@@ -12,8 +15,36 @@ var active_building_container: Node2D = null
 var grid_manager_node: Node = null 
 
 func _ready() -> void:
-	# --- NEW: Listen for permanent unit loss ---
+	# Listen for permanent unit loss
 	EventBus.player_unit_died.connect(_on_player_unit_died)
+
+# --- MODIFIED: Save Management Helper ---
+func delete_save_file() -> void:
+	"""Deletes existing save files (Settlement & Map) to force a new game state."""
+	var settlement_deleted = false
+	var map_deleted = false
+	
+	# 1. Delete Settlement Save
+	if FileAccess.file_exists(USER_SAVE_PATH):
+		var error = DirAccess.remove_absolute(USER_SAVE_PATH)
+		if error == OK:
+			settlement_deleted = true
+		else:
+			Loggie.msg("SettlementManager: Failed to delete settlement save. Error: %s" % error).domain(LogDomains.SYSTEM).error()
+	
+	# 2. Delete Map Save
+	if FileAccess.file_exists(MAP_SAVE_PATH):
+		var error = DirAccess.remove_absolute(MAP_SAVE_PATH)
+		if error == OK:
+			map_deleted = true
+		else:
+			Loggie.msg("SettlementManager: Failed to delete map save. Error: %s" % error).domain(LogDomains.SYSTEM).error()
+			
+	if settlement_deleted or map_deleted:
+		Loggie.msg("SettlementManager: Save files deleted (Settlement: %s, Map: %s). Starting fresh." % [settlement_deleted, map_deleted]).domain(LogDomains.SYSTEM).info()
+	else:
+		Loggie.msg("SettlementManager: No save files found to delete.").domain(LogDomains.SYSTEM).info()
+# -----------------------------------
 
 func register_active_scene_nodes(grid: AStarGrid2D, container: Node2D, manager_node: Node = null) -> void:
 	if not is_instance_valid(grid) or not is_instance_valid(container):
@@ -36,7 +67,6 @@ func _trigger_territory_update() -> void:
 		var all_buildings = current_settlement.placed_buildings + current_settlement.pending_construction_buildings
 		grid_manager_node.recalculate_territory(all_buildings)
 
-# --- NEW: Handle Unit Death ---
 func _on_player_unit_died(unit: Node2D) -> void:
 	"""
 	Removes a destroyed unit from the settlement's garrison.
@@ -44,35 +74,29 @@ func _on_player_unit_died(unit: Node2D) -> void:
 	"""
 	if not current_settlement: return
 	
-	# 1. Validate Unit and Data
 	var base_unit = unit as BaseUnit
 	if not base_unit or not base_unit.data:
 		return
 		
-	# 2. Identify Unit by Resource Path
 	var unit_path = base_unit.data.resource_path
 	if unit_path.is_empty():
 		Loggie.msg("Unit died but has no valid resource_path. Cannot update garrison.").domain(LogDomains.SETTLEMENT).warn()
 		return
 		
-	# 3. Update Garrison Count
 	if current_settlement.garrisoned_units.has(unit_path):
 		var count = current_settlement.garrisoned_units[unit_path]
 		
 		if count > 0:
 			current_settlement.garrisoned_units[unit_path] = count - 1
 			
-			# Cleanup if count reaches 0
 			if current_settlement.garrisoned_units[unit_path] <= 0:
 				current_settlement.garrisoned_units.erase(unit_path)
 			
 			Loggie.msg("⚔️ Unit PERMANENTLY lost: %s (Remaining: %d)" % [base_unit.data.display_name, count - 1]).domain(LogDomains.SETTLEMENT).info()
 			
-			# 4. Save Immediately
 			save_settlement()
 	else:
 		Loggie.msg("Unit %s died, but was not found in garrison records (Mercenary/Event unit?)" % base_unit.data.display_name).domain(LogDomains.SETTLEMENT).debug()
-# ------------------------------
 
 # --- Settlement Data ---
 

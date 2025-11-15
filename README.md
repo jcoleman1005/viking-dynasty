@@ -6,12 +6,13 @@ A strategic Viking settlement and raid management game built with Godot 4.5. Com
 
 Viking Dynasty combines real-time strategy elements with settlement building and resource management. Players control Viking raiders in tactical missions while developing their home settlement for long-term growth and expansion.
 
-**Version 2.1** introduces revolutionary blueprint construction, advanced AI systems, and comprehensive dynasty management with multi-generational character progression.
+**Version 2.1.3** introduces revolutionary blueprint construction system, enhanced UI/UX with professional spacing standards, advanced AI systems with modular AttackAI components, comprehensive dynasty management with multi-generational character progression, and collision system overhauls for optimal performance.
 
 ### Key Features
 
 - **Real-Time Strategy Combat**: Command Viking units in tactical raids and defensive battles with advanced AI systems
 - **Blueprint Construction System**: Revolutionary three-phase building workflow (Blueprint → Construction → Active) with visual feedback
+- **Professional UI/UX**: Enhanced interface design with VikingDynastyTheme and proper spacing hierarchy for optimal user experience
 - **Settlement Building**: Construct and manage economic and defensive buildings with dynamic grid-based placement
 - **Resource Management**: Collect, trade, and invest resources from successful raids with persistent economy
 - **World Map Exploration**: Navigate regions and plan strategic campaigns across the Viking world
@@ -60,8 +61,9 @@ Viking Dynasty combines real-time strategy elements with settlement building and
 - **World Map**: Strategic campaign layer with region exploration and macro-level planning
 - **Defensive Micro**: Base defense scenarios with tower defense elements
 
-### Recent Architecture Improvements (Version 2.1)
+### Recent Architecture Improvements (Version 2.1.3)
 - **Blueprint Construction System**: Revolutionary three-phase building workflow with state management and visual feedback
+- **Professional UI/UX Overhaul**: VikingDynastyTheme with proper spacing hierarchy, enhanced button standards, and responsive design principles
 - **Enhanced AI Systems**: Advanced UnitFSM with state-based behaviors and tactical decision making
 - **Modular AttackAI Component**: Data-driven combat system for both units and defensive structures (288 lines)
 - **Projectile Pool Manager**: Performance-optimized combat system with sophisticated collision detection

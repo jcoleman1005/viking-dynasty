@@ -26,6 +26,13 @@ home_base_data = SubResource("Resource_vmd61")
 end_of_year_popup_scene = ExtResource("2_5el12")
 world_map_scene_path = "res://scenes/world_map/MacroMap.tscn"
 
+[node name="ReferenceRect" type="ReferenceRect" parent="."]
+custom_minimum_size = Vector2(1920, 1680)
+anchors_preset = -1
+offset_right = 1920.0
+offset_bottom = 1680.0
+border_width = 4.0
+
 [node name="UnitContainer" type="Node2D" parent="."]
 
 [node name="UI" type="CanvasLayer" parent="."]
@@ -93,5 +100,19 @@ script = ExtResource("6_cursor")
 position = Vector2(1000, 400)
 script = ExtResource("8_ggwng")
 
-[node name="Resource_Wood" parent="." instance=ExtResource("9_vmd61")]
+[node name="MapResources" type="Node2D" parent="."]
+
+[node name="Resource_Wood" parent="MapResources" instance=ExtResource("9_vmd61")]
 position = Vector2(547, 194)
+
+[node name="Resource_Food" parent="MapResources" instance=ExtResource("9_vmd61")]
+position = Vector2(1633, 1452)
+resource_type = "food"
+district_radius = 280.0
+
+[node name="Sprite2D" parent="MapResources/Resource_Food" index="0"]
+position = Vector2(6, -1)
+scale = Vector2(2.5, 2.1060605)
+region_rect = Rect2(81.92726, 102.517105, 41.771072, 33.86844)
+
+[editable path="MapResources/Resource_Food"]
