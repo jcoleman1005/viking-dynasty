@@ -99,7 +99,7 @@ func _setup_collision_logic() -> void:
 		separation_area.collision_mask = separation_mask
 	
 	# Debug output to verify
-	# print("Unit %s (%s) Masks Set -> Phys: %d, Sep: %d" % [name, "Player" if is_player else "Enemy", physics_mask, separation_mask])
+	#Loggie.msg("Unit %s (%s) Masks Set -> Phys: %d, Sep: %d" % [name, "Player" if is_player else "Enemy", physics_mask, separation_mask])
 
 func _deferred_setup() -> void:
 	"""Initializes AttackAI and FSM after all children are guaranteed to be in the tree."""
@@ -311,4 +311,4 @@ func _create_unit_hitbox() -> void:
 	hitbox_area.add_child(hitbox_shape)
 	add_child(hitbox_area)
 	
-	# print("Unit %s created Hitbox on Layer Value: %d" % [name, layer_value])
+	# Loggie.msg("Unit %s created Hitbox on Layer Value: %d" % [name, layer_value])

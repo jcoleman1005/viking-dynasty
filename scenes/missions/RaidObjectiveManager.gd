@@ -39,7 +39,7 @@ func initialize(
 	"""
 	# Prevent multiple initialization
 	if is_initialized:
-		print("RaidObjectiveManager: Already initialized, skipping.")
+		Loggie.msg("RaidObjectiveManager: Already initialized, skipping.").domain("RTS").info()
 		return
 		
 	self.rts_controller = p_rts_controller
@@ -53,7 +53,7 @@ func initialize(
 		push_error("RaidObjectiveManager: Failed to initialize. Received invalid node references.")
 		return
 	
-	print("RaidObjectiveManager: Initialized and tracking objectives.")
+	Loggie.msg("RaidObjectiveManager: Initialized and tracking objectives.").domain("RTS").info()
 	
 	# Connect to all necessary signals
 	if not is_defensive_mission:
@@ -87,7 +87,7 @@ func _on_enemy_building_destroyed_for_loot(building: BaseBuilding) -> void:
 	
 	if raid_loot and building_data:
 		raid_loot.add_loot_from_building(building_data)
-		print("RaidObjectiveManager: Building destroyed: %s | %s" % [building_data.display_name, raid_loot.get_loot_summary()])
+		Loggie.msg("RaidObjectiveManager: Building destroyed: %s | %s" % [building_data.display_name, raid_loot.get_loot_summary()]).domain("RTS").info()
 	
 	# Count remaining buildings for mission tracking
 	var remaining_buildings = building_container.get_children().size() - 1 # -1 for the one just destroyed
@@ -150,7 +150,7 @@ func _on_defensive_mission_won() -> void:
 	"""WIN CONDITION for defensive mission"""
 	if mission_over: return
 	mission_over = true
-	print("Mission Success! All attackers defeated.")
+	Loggie.msg("Mission Success! All attackers defeated.").domain("RTS").info()
 	
 	# --- NEW: Show Victory Popup ---
 	_show_victory_message("VICTORY!", "All attackers have been defeated.")
@@ -165,7 +165,7 @@ func _on_mission_failed(reason: String) -> void:
 	if mission_over: return
 	mission_over = true
 	
-	print("Mission Failed! %s" % reason)
+	Loggie.msg("Mission Failed! %s" % reason).domain("RTS").info()
 	
 	_show_failure_message(reason)
 	
@@ -271,7 +271,7 @@ func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	if mission_over: return
 	mission_over = true
 	
-	print("RaidObjectiveManager: Enemy Hall destroyed! Preparing report...")
+	Loggie.msg("RaidObjectiveManager: Enemy Hall destroyed! Preparing report...").domain("RTS").info()
 	
 	# 1. Gather Raw Stats
 	# We only track what physically happened (gold picked up, win state)

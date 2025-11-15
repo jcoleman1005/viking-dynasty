@@ -29,4 +29,4 @@ func set_attack_target(target: BaseBuilding) -> void:
 	# Updated to use the new constants script
 	fsm.change_state(UnitAIConstants.State.MOVING)
 	# --- END FIX ---
-	print("Viking Raider initialized and moving to target: %s" % target.data.display_name)
+	Loggie.msg("Viking Raider initialized and moving to target: %s" % target.data.display_name).domain("RTS").info()

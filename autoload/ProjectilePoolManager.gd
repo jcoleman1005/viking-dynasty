@@ -27,7 +27,7 @@ func _ready() -> void:
 		p.return_to_pool() # Deactivate it and move it off-screen
 		available_projectiles.append(p)
 	
-	print("ProjectilePoolManager: Initialized with %d projectiles." % initial_pool_size)
+	Loggie.msg("ProjectilePoolManager: Initialized with %d projectiles." % initial_pool_size).domain("RTS").info()
 
 func get_projectile() -> Projectile:
 	"""

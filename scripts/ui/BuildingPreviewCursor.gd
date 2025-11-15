@@ -32,13 +32,13 @@ func _ready() -> void:
 	# Find GridManager sibling
 	grid_manager = get_parent().get_node_or_null("GridManager")
 	
-	print("BuildingPreviewCursor ready.")
+	Loggie.msg("BuildingPreviewCursor ready.").domain("BUILDING").info()
 
 func set_building_preview(building_data: BuildingData) -> void:
 	if not building_data: return
 	if cell_size <= 0: return
 	
-	print("Setting building preview for: %s" % building_data.display_name)
+	Loggie.msg("Setting building preview for: %s" % building_data.display_name).domain("BUILDING").info()
 	current_building_data = building_data
 	
 	_cleanup_preview()

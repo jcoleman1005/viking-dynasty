@@ -58,13 +58,13 @@ func _on_body_entered(body: Node2D) -> void:
 	if body.is_in_group("player_units") and not current_target:
 		current_target = body
 		enemy_detected.emit(body)
-		# Removed print: print("%s detected enemy: %s" % [get_parent().name, body.name])
+		# Removed print: Loggie.msg("%s detected enemy: %s" % [get_parent().name, body.name]).domain("RTS").info()
 
 func _on_body_exited(body: Node2D) -> void:
 	"""Handle player units leaving detection range"""
 	if body == current_target:
 		current_target = null
-		# Removed print: print("%s lost target: %s" % [get_parent().name, body.name])
+		# Removed print: Loggie.msg("%s lost target: %s" % [get_parent().name, body.name]).domain("RTS").info()
 
 func _attack_target(target: Node2D) -> void:
 	"""Execute attack on target"""
@@ -77,7 +77,7 @@ func _attack_target(target: Node2D) -> void:
 		current_target = null
 		return
 	
-	# Removed print: print("%s attacking %s for %d damage" % [get_parent().name, target.name, attack_damage])
+	# Removed print: Loggie.msg("%s attacking %s for %d damage" % [get_parent().name, target.name, attack_damage]).domain("RTS").info()
 	
 	# Apply damage if target has take_damage method
 	if target.has_method("take_damage"):

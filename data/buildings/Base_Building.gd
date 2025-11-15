@@ -145,7 +145,7 @@ func add_construction_progress(amount: int) -> void:
 		set_state(BuildingState.UNDER_CONSTRUCTION)
 		
 	construction_progress += amount
-	print("Building %s progress: %d / %d" % [name, construction_progress, data.construction_effort_required])
+	Loggie.msg("Building %s progress: %d / %d" % [name, construction_progress, data.construction_effort_required]).domain("BUILDING").info()
 	
 	# Update the bar immediately
 	if health_bar:

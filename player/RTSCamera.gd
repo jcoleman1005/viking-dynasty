@@ -33,7 +33,7 @@ var drag_start_mouse_pos: Vector2 = Vector2.ZERO
 var drag_start_camera_pos: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
-	print("RTS Camera Initialized") # Check your Output tab for this!
+	Loggie.msg("RTS Camera Initialized").domain("RTS").info() # Check your Output tab for this!
 	# Initialize target zoom to current zoom
 	target_zoom = zoom
 	make_current()

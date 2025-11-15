@@ -23,7 +23,7 @@ func add_loot(resource_type: String, amount: int) -> void:
 	else:
 		collected_loot[resource_type] = amount
 	
-	print("Loot added: %d %s (Total: %d)" % [amount, resource_type, collected_loot[resource_type]])
+	Loggie.msg("Loot added: %d %s (Total: %d)" % [amount, resource_type, collected_loot[resource_type]]).domain("MAP").info()
 
 func add_loot_from_building(building_data: BuildingData) -> void:
 	"""Extract loot from a destroyed building"""

@@ -24,7 +24,7 @@ func _ready() -> void:
 	astar_grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_NEVER
 	astar_grid.update()
 	
-	print("GridManager: Local grid initialized: %dx%d cells" % [grid_width, grid_height])
+	Loggie.msg("GridManager: Local grid initialized: %dx%d cells" % [grid_width, grid_height]).domain("BUILDING").info()
 
 
 func recalculate_territory(placed_buildings: Array) -> void:
@@ -97,7 +97,7 @@ func recalculate_territory(placed_buildings: Array) -> void:
 	for source in active_sources:
 		_apply_territory_to_grid(source)
 
-	print("GridManager: Territory recalculated (Wireless). %d valid build tiles." % buildable_cells.size())
+	Loggie.msg("GridManager: Territory recalculated (Wireless). %d valid build tiles." % buildable_cells.size()).domain("BUILDING").info()
 	
 	# Force visualizer update
 	queue_redraw_visualizer()

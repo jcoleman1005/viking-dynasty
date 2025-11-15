@@ -16,6 +16,7 @@ config/features=PackedStringArray("4.5", "GL Compatibility")
 
 [autoload]
 
+Loggie="*res://addons/loggie/loggie.gd"
 EventBus="*res://autoload/EventBus.gd"
 SettlementManager="*res://autoload/SettlementManager.gd"
 PauseManager="*res://autoload/PauseManager.tscn"
@@ -31,7 +32,7 @@ naming/script_name_casing=1
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/GodotAiSuite/plugin.cfg")
+enabled=PackedStringArray("res://addons/GodotAiSuite/plugin.cfg", "res://addons/loggie/plugin.cfg")
 
 [input]
 

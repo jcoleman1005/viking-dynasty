@@ -221,7 +221,7 @@ func _apply_legacy_upgrade_effect(effect_key: String) -> void:
 				jarl.heir_starting_renown_bonus += 50
 				DynastyManager.minimum_inherited_legitimacy = 25
 		"UPG_BUILD_CHAPEL":
-			print("Applied UPG_BUILD_CHAPEL: Dynasty's piety increased.")
+			Loggie.msg("Applied UPG_BUILD_CHAPEL: Dynasty's piety increased.").domain("UI").info()
 
 # --- Building Tab Functions ---
 func _load_building_data() -> void:
@@ -258,7 +258,7 @@ func _on_buy_button_pressed(item_data: BuildingData) -> void:
 	if SettlementManager.attempt_purchase(item_data.build_cost):
 		EventBus.building_ready_for_placement.emit(item_data)
 	else:
-		print("UI received purchase failure for '%s'." % item_data.display_name)
+		Loggie.msg("UI received purchase failure for '%s'." % item_data.display_name).domain("UI").info()
 
 # --- Recruit Tab Functions ---
 func _load_unit_data() -> void:
