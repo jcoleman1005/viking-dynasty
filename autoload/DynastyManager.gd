@@ -363,3 +363,70 @@ func _on_succession_choices_made(renown_choice: String, gold_choice: String) -> 
 			Loggie.msg("Settlement instability debuff applied due to refused gold tax.").domain("DYNASTY").info()
 	
 	EventBus.event_system_finished.emit()
+	
+# --- NEW: Defensive Loss Orchestration ---
+func process_defensive_loss() -> Dictionary:
+	"""
+	Orchestrates the consequences of losing a defensive mission.
+	Handles Character death, Renown loss, and calls SettlementManager for resources.
+	Returns a summary Dictionary.
+	"""
+	if not current_jarl: return {}
+	
+	var aftermath_report = {
+		"summary_text": "",
+		"jarl_died": false,
+		"heir_died": null # Name of heir if died
+	}
+	
+	# 1. Renown Loss (Humiliation)
+	var renown_loss = randi_range(50, 150)
+	current_jarl.renown = max(0, current_jarl.renown - renown_loss)
+	
+	# 2. Call Settlement Manager for Material Loss
+	var material_losses = SettlementManager.apply_raid_damages()
+	
+	# 3. Risk of Heir Death (15% chance if heirs exist)
+	if current_jarl.heirs.size() > 0 and randf() < 0.15:
+		var victim_index = randi() % current_jarl.heirs.size()
+		var victim = current_jarl.heirs[victim_index]
+		victim.status = JarlHeirData.HeirStatus.Deceased
+		aftermath_report["heir_died"] = victim.display_name
+		current_jarl.remove_heir(victim)
+		Loggie.msg("Heir %s was killed during the sacking!" % victim.display_name).domain("DYNASTY").warn()
+		
+	# 4. Risk of Jarl Death (10% chance, higher if old)
+	var death_chance = 0.10
+	if current_jarl.age > 60: death_chance += 0.10
+	
+	if randf() < death_chance:
+		aftermath_report["jarl_died"] = true
+		Loggie.msg("The Jarl fell defending the settlement!").domain("DYNASTY").warn()
+		# We trigger succession logic immediately
+		_trigger_succession()
+	
+	_save_jarl_data()
+	jarl_stats_updated.emit(current_jarl)
+	
+	# 5. Build Summary Text
+	var text = "Defeat! The settlement has been sacked.\n\n"
+	text += "[color=salmon]Resources Lost:[/color]\n"
+	text += "- %d Gold\n" % material_losses.get("gold_lost", 0)
+	text += "- %d Wood\n" % material_losses.get("wood_lost", 0)
+	text += "- %d Renown\n" % renown_loss
+	
+	if material_losses.get("buildings_damaged", 0) > 0:
+		text += "- %d Construction sites damaged\n" % material_losses["buildings_damaged"]
+	if material_losses.get("buildings_destroyed", 0) > 0:
+		text += "- %d Blueprints destroyed completely\n" % material_losses["buildings_destroyed"]
+		
+	text += "\n[color=red]Casualties:[/color]\n"
+	if aftermath_report["jarl_died"]:
+		text += "- THE JARL HAS FALLEN!\n"
+	if aftermath_report["heir_died"]:
+		text += "- Heir %s was killed.\n" % aftermath_report["heir_died"]
+	if not aftermath_report["jarl_died"] and not aftermath_report["heir_died"]:
+		text += "The Dynasty survived physically, if not in reputation."
+		
+	aftermath_report["summary_text"] = text
+	return aftermath_report

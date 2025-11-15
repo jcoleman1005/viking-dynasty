@@ -1,21 +1,8 @@
-[gd_resource type="Resource" script_class="JarlData" load_steps=11 format=3]
+[gd_resource type="Resource" script_class="JarlData" load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://data/characters/JarlHeirData.gd" id="1_4gouw"]
 [ext_resource type="Script" path="res://data/characters/JarlData.gd" id="1_jarl_data"]
 [ext_resource type="Script" path="res://data/traits/JarlTraitData.gd" id="3_0bn2j"]
-
-[sub_resource type="Resource" id="Resource_3vd45"]
-script = ExtResource("3_0bn2j")
-display_name = "Strong"
-
-[sub_resource type="Resource" id="Resource_0xpic"]
-script = ExtResource("1_4gouw")
-display_name = "Magnus"
-age = 26
-is_designated_heir = true
-stewardship = 12
-prowess = 15
-genetic_trait = SubResource("Resource_3vd45")
 
 [sub_resource type="Resource" id="Resource_4gouw"]
 script = ExtResource("1_4gouw")
@@ -53,12 +40,11 @@ gender = "Female"
 
 [resource]
 script = ExtResource("1_jarl_data")
-display_name = "Jarl Testor the Builder"
-age = 49
-renown = 1366
-renown_tier = 3
-max_authority = 6
-years_since_action = 2
+display_name = "Magnus"
+age = 26
+current_authority = 2
+legitimacy = 36
+succession_debuff_years_remaining = 3
 ancestors = Array[Dictionary]([{
 "death_reason": "Died in battle against Saxons",
 "final_renown": 800,
@@ -71,5 +57,14 @@ ancestors = Array[Dictionary]([{
 "death_reason": "Old age",
 "final_renown": 2200,
 "name": "Sigurd Snake-in-the-Eye"
+}, {
+"death_reason": "Died of old age",
+"final_renown": 1228,
+"name": "Jarl Testor the Builder",
+"portrait": null
 }])
-heirs = Array[ExtResource("1_4gouw")]([SubResource("Resource_0xpic"), SubResource("Resource_4gouw"), SubResource("Resource_oxx44"), SubResource("Resource_3ar3u"), SubResource("Resource_sjsvf")])
+command = 8
+stewardship = 12
+learning = 8
+prowess = 15
+heirs = Array[ExtResource("1_4gouw")]([SubResource("Resource_4gouw"), SubResource("Resource_oxx44"), SubResource("Resource_3ar3u"), SubResource("Resource_sjsvf")])

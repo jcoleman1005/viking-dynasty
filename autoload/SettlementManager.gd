@@ -454,3 +454,60 @@ func simulate_turn(simulated_assignments: Dictionary) -> Dictionary:
 					result["resources_gained"][res] += int(r_data.yearly_income[res] * stewardship_bonus)
 
 	return result
+
+func apply_raid_damages() -> Dictionary:
+	"""
+	Calculates and applies material losses from a successful enemy raid.
+	Returns a dictionary of losses for display.
+	"""
+	if not current_settlement: return {}
+	
+	var report = {
+		"gold_lost": 0,
+		"wood_lost": 0,
+		"buildings_damaged": 0,
+		"buildings_destroyed": 0
+	}
+	
+	# 1. Resource Plundering (Lose 20-40% of Gold and Wood)
+	var loss_ratio = randf_range(0.2, 0.4)
+	
+	var current_gold = current_settlement.treasury.get("gold", 0)
+	var gold_loss = int(current_gold * loss_ratio)
+	current_settlement.treasury["gold"] = max(0, current_gold - gold_loss)
+	report["gold_lost"] = gold_loss
+	
+	var current_wood = current_settlement.treasury.get("wood", 0)
+	var wood_loss = int(current_wood * loss_ratio)
+	current_settlement.treasury["wood"] = max(0, current_wood - wood_loss)
+	report["wood_lost"] = wood_loss
+	
+	# 2. Construction Setbacks (Damage pending blueprints)
+	# Iterate backwards to safely remove
+	var indices_to_remove = []
+	for i in range(current_settlement.pending_construction_buildings.size()):
+		var entry = current_settlement.pending_construction_buildings[i]
+		var damage = randi_range(50, 150) # Setback amount
+		
+		if entry.get("progress", 0) > 0:
+			entry["progress"] -= damage
+			report["buildings_damaged"] += 1
+			
+			if entry["progress"] <= 0:
+				# If progress falls below zero, the blueprint is razed
+				indices_to_remove.append(i)
+				report["buildings_destroyed"] += 1
+	
+	# Apply removals
+	indices_to_remove.sort()
+	indices_to_remove.reverse()
+	for i in indices_to_remove:
+		current_settlement.pending_construction_buildings.remove_at(i)
+		
+	# 3. Apply Stability Debuff
+	current_settlement.has_stability_debuff = true
+	
+	save_settlement()
+	EventBus.treasury_updated.emit(current_settlement.treasury)
+	
+	return report
