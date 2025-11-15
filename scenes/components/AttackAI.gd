@@ -158,18 +158,14 @@ func _select_target_default() -> void:
 			targets_in_range.erase(target)
 			continue
 		
-		# --- FIX: Enforce Collision Mask ---
-		# This prevents Friendly Fire. We check if the target matches our allowed mask.
+		# Enforce Collision Mask
 		if not (target.collision_layer & target_collision_mask):
 			continue
-		# -----------------------------------
 
 		# Determine type based on layer
-		# Units: Layer 2 (Player) or Layer 3 (Enemy) -> Binary 0110 -> 6
-		if target.collision_layer & 6: 
+		if target.collision_layer & 6: # Layer 2 or 3 (Units)
 			unit_targets.append(target)
-		# Buildings: Layer 1 (Player) or Layer 4 (Enemy) -> Binary 1001 -> 9
-		elif target.collision_layer & 9: 
+		elif target.collision_layer & 9: # Layer 1 or 4 (Buildings)
 			building_targets.append(target)
 
 	var closest_target: Node2D = null
@@ -178,13 +174,19 @@ func _select_target_default() -> void:
 	# Prioritize Units over Buildings
 	if not unit_targets.is_empty():
 		for target in unit_targets:
+			# Use simple distance for units (usually small)
 			var distance = parent_node.global_position.distance_to(target.global_position)
 			if distance < closest_distance:
 				closest_distance = distance
 				closest_target = target
 	elif not building_targets.is_empty():
 		for target in building_targets:
-			var distance = parent_node.global_position.distance_to(target.global_position)
+			# --- FIX: Edge-to-Edge Distance logic for selection ---
+			var dist_center = parent_node.global_position.distance_to(target.global_position)
+			var radius = _get_target_radius(target)
+			var distance = max(0, dist_center - radius)
+			# ------------------------------------------------------
+			
 			if distance < closest_distance:
 				closest_distance = distance
 				closest_target = target
@@ -196,14 +198,10 @@ func _select_target_default() -> void:
 	else:
 		_stop_attacking()
 
-# --- NEW SIEGE AI LOGIC ---
 func _select_target_defensive_siege() -> void:
 	"""
-	Enemy AI logic:
-	1. Prioritize the Great Hall if it's in LOS.
-	2. Otherwise, attack the closest building.
+	Enemy AI logic: Prioritize Great Hall, then closest building.
 	"""
-	# Only access FSM if parent is a BaseUnit
 	var unit_parent = parent_node as BaseUnit
 	if not is_instance_valid(unit_parent) or not unit_parent.fsm:
 		_stop_attacking()
@@ -213,13 +211,13 @@ func _select_target_defensive_siege() -> void:
 	var great_hall = unit_parent.fsm.objective_target
 	if is_instance_valid(great_hall):
 		var hall_pos = great_hall.global_position
+		# Use center distance for LOS check (simple)
 		var distance_to_hall = parent_node.global_position.distance_to(hall_pos)
 		
 		if distance_to_hall <= great_hall_los_range:
-			# If Hall is in LOS, override all other targets
 			current_target = great_hall
 			_start_attacking()
-			return # Found our priority target
+			return
 
 	# 2. Find Closest Building (Priority 2)
 	var closest_building: Node2D = null
@@ -230,14 +228,16 @@ func _select_target_defensive_siege() -> void:
 			targets_in_range.erase(target)
 			continue
 			
-		# --- FIX: Enforce Collision Mask ---
 		if not (target.collision_layer & target_collision_mask):
 			continue
-		# -----------------------------------
 		
-		# Target Layer 1 (Player Buildings) or Layer 4 (Enemy Buildings)
-		if target.collision_layer & 9: 
-			var distance = parent_node.global_position.distance_to(target.global_position)
+		if target.collision_layer & 9: # Buildings
+			# --- FIX: Edge-to-Edge Distance logic for selection ---
+			var dist_center = parent_node.global_position.distance_to(target.global_position)
+			var radius = _get_target_radius(target)
+			var distance = max(0, dist_center - radius)
+			# ------------------------------------------------------
+			
 			if distance < closest_distance:
 				closest_distance = distance
 				closest_building = target
@@ -247,16 +247,13 @@ func _select_target_defensive_siege() -> void:
 	if current_target:
 		_start_attacking()
 	else:
-		# No buildings in range, stop attacking
 		_stop_attacking()
-# --- END NEW ---
 
 func _start_attacking() -> void:
 	if not is_attacking:
 		is_attacking = true
 		attack_started.emit(current_target)
 	
-	# Fire the first attack immediately instead of waiting for the timer.
 	_on_attack_timer_timeout()
 	
 	if attack_timer and attack_timer.is_stopped():
@@ -273,59 +270,80 @@ func _stop_attacking() -> void:
 func _on_attack_timer_timeout() -> void:
 	"""Called when the attack timer fires"""
 	if not current_target:
-		# If our target is null, we should stop attacking
 		_stop_attacking()
 		return
 	
-	# Verify target is still valid and in range
 	if not is_instance_valid(current_target):
 		_select_target()
 		return
 	
 	var distance_to_target = parent_node.global_position.distance_to(current_target.global_position)
 	
-	# Added a +10 buffer to prevent units from stopping if target is *just* at the edge
-	if distance_to_target > attack_range + 10.0:
+	# --- FIX: Subtract Target Radius for Large Buildings ---
+	var target_radius = _get_target_radius(current_target)
+	var effective_distance = max(0, distance_to_target - target_radius)
+	
+	# Tolerance: Range + 10 buffer
+	if effective_distance > attack_range + 10.0:
 		_stop_attacking() 
 		return
+	# -----------------------------------------------------
 	
-	# Emit signal before attacking
 	about_to_attack.emit(current_target, attack_damage)
 	
-	# Attack the target
 	if projectile_scene:
-		# RANGED: Spawn projectile
 		_spawn_projectile(current_target.global_position)
 	else:
-		# MELEE: Direct damage
 		var target_to_damage = current_target
 		
 		if target_to_damage.name == "Hitbox":
 			target_to_damage = target_to_damage.get_parent()
 		
 		if target_to_damage.has_method("take_damage"):
-			# Pass parent_node as the attacker for retaliation logic
 			target_to_damage.take_damage(attack_damage, parent_node)
 
 func _spawn_projectile(target_position_world: Vector2) -> void:
-	"""Spawn a projectile towards the target position"""
-	if not projectile_scene:
-		push_warning("AttackAI: No projectile scene assigned. Cannot fire.")
-		return
+	if not projectile_scene: return
 	
-	# 1. Get a projectile from the pool
 	var projectile: Projectile = ProjectilePoolManager.get_projectile()
-	if not projectile:
-		push_error("AttackAI: ProjectilePoolManager failed to provide a projectile.")
-		return
+	if not projectile: return
 	
-	# We set our new 'firer' variable instead of the 'owner' property
 	projectile.firer = parent_node
 	
 	projectile.setup(
-		parent_node.global_position,  # start position
-		target_position_world,        # target position
-		attack_damage,                # damage
-		projectile_speed,             # Use configured speed
-		target_collision_mask         # what to hit
+		parent_node.global_position,
+		target_position_world,
+		attack_damage,
+		projectile_speed,
+		target_collision_mask
 	)
+
+# --- NEW HELPER: Get Target Radius ---
+func _get_target_radius(target: Node2D) -> float:
+	"""
+	Estimates the radius of the target.
+	Crucial for attacking large buildings (Great Hall).
+	"""
+	# 1. Check if it's a Building Hitbox
+	if target.name == "Hitbox" and target.get_parent() is BaseBuilding:
+		var building = target.get_parent() as BaseBuilding
+		if building.data:
+			# Approximate radius as half the smallest side of the building
+			# (32 is standard cell size)
+			var size = min(building.data.grid_size.x, building.data.grid_size.y)
+			return (size * 32.0) / 2.0
+			
+	# 2. Check if it's a Unit (BaseUnit)
+	if target is BaseUnit:
+		return 15.0 # Standard unit radius
+		
+	# 3. Fallback: Check for CollisionShape
+	var col = target.get_node_or_null("CollisionShape2D")
+	if col:
+		if col.shape is CircleShape2D:
+			return col.shape.radius
+		elif col.shape is RectangleShape2D:
+			var extents = col.shape.size / 2.0
+			return min(extents.x, extents.y)
+			
+	return 0.0
