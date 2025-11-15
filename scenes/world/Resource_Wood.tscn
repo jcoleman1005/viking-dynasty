@@ -1,0 +1,18 @@
+[gd_scene load_steps=4 format=3 uid="uid://bmrx7k05of21t"]
+
+[ext_resource type="Script" uid="uid://cfj14fe8a8hmp" path="res://scenes/world/ResourceNode.gd" id="1_sdct1"]
+[ext_resource type="Texture2D" uid="uid://db4binkwy6ipf" path="res://assets/assets_spritesheet_v2_free.png" id="2_sy4g7"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_vdeun"]
+radius = 20.0
+
+[node name="Resource_Wood" type="Area2D"]
+script = ExtResource("1_sdct1")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_sy4g7")
+region_enabled = true
+region_rect = Rect2(0, 0, 61, 98.5)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_vdeun")

@@ -357,14 +357,42 @@ func place_building(building_data: BuildingData, grid_position: Vector2i, is_new
 	_trigger_territory_update()
 	return new_building
 
-func is_placement_valid(grid_position: Vector2i, building_size: Vector2i) -> bool:
+func is_placement_valid(grid_position: Vector2i, building_size: Vector2i, building_data: BuildingData = null) -> bool:
 	if not is_instance_valid(active_astar_grid): return false
+	
+	# 1. Standard Grid/Collision Checks
 	for x in range(building_size.x):
 		for y in range(building_size.y):
 			var cell_pos = grid_position + Vector2i(x, y)
 			if not _is_cell_within_bounds(cell_pos): return false
 			if active_astar_grid.is_point_solid(cell_pos): return false
+	
+	# 2. District Constraint Check (NEW)
+	if building_data and building_data is EconomicBuildingData:
+		if not _is_within_district_range(grid_position, building_size, building_data):
+			return false
+			
 	return true
+
+# Helper to check distance against all nodes
+func _is_within_district_range(grid_pos: Vector2i, size: Vector2i, data: EconomicBuildingData) -> bool:
+	var cell_size = get_active_grid_cell_size()
+	
+	# Calculate center of the proposed building in World Space
+	var building_world_pos = Vector2(grid_pos) * cell_size
+	var building_center = building_world_pos + (Vector2(size) * cell_size / 2.0)
+	
+	var nodes = get_tree().get_nodes_in_group("resource_nodes")
+	
+	for node in nodes:
+		if node is ResourceNode and node.resource_type == data.resource_type:
+			# Check 1: Is it close enough?
+			if node.is_position_in_district(building_center):
+				# Check 2: Is the resource still alive?
+				if not node.is_depleted():
+					return true
+	
+	return false
 
 func _is_cell_within_bounds(grid_position: Vector2i) -> bool:
 	if not is_instance_valid(active_astar_grid): return false
