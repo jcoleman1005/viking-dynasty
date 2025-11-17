@@ -39,11 +39,22 @@ func delete_save_file() -> void:
 			map_deleted = true
 		else:
 			Loggie.msg("SettlementManager: Failed to delete map save. Error: %s" % error).domain(LogDomains.SYSTEM).error()
+	
+	# 3. Reset internal state
+	reset_manager_state()
 			
 	if settlement_deleted or map_deleted:
 		Loggie.msg("SettlementManager: Save files deleted (Settlement: %s, Map: %s). Starting fresh." % [settlement_deleted, map_deleted]).domain(LogDomains.SYSTEM).info()
 	else:
 		Loggie.msg("SettlementManager: No save files found to delete.").domain(LogDomains.SYSTEM).info()
+
+func reset_manager_state() -> void:
+	"""Resets the SettlementManager's internal state for a clean new game."""
+	current_settlement = null
+	active_astar_grid = null
+	active_building_container = null
+	grid_manager_node = null
+	Loggie.msg("SettlementManager: Internal state reset for new game").domain(LogDomains.SYSTEM).info()
 # -----------------------------------
 
 func register_active_scene_nodes(grid: AStarGrid2D, container: Node2D, manager_node: Node = null) -> void:
