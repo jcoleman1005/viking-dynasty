@@ -4,25 +4,28 @@ extends Node
 const BUILDER_EFFICIENCY: int = 25
 const GATHERER_EFFICIENCY: int = 10
 const BASE_GATHERING_CAPACITY: int = 2
-const USER_SAVE_PATH = "user://savegame.tres"
-# --- NEW: Map Save Path ---
-const MAP_SAVE_PATH = "user://campaign_map.tres"
-# --------------------------
+const USER_SAVE_PATH := "user://savegame.tres"
+const MAP_SAVE_PATH := "user://campaign_map.tres"
 
 var current_settlement: SettlementData
 var active_astar_grid: AStarGrid2D = null
 var active_building_container: Node2D = null
 var grid_manager_node: Node = null 
 
+# Migration map: old unit Data paths -> new ones
+const UNIT_PATH_MIGRATIONS := {
+	"res://data/units/PlayerVikingRaider_Data.tres": "res://data/units/Unit_PlayerRaider.tres",
+}
+
 func _ready() -> void:
 	# Listen for permanent unit loss
 	EventBus.player_unit_died.connect(_on_player_unit_died)
 
-# --- MODIFIED: Save Management Helper ---
+# --- Save Management Helper ---
 func delete_save_file() -> void:
 	"""Deletes existing save files (Settlement & Map) to force a new game state."""
-	var settlement_deleted = false
-	var map_deleted = false
+	var settlement_deleted := false
+	var map_deleted := false
 	
 	# 1. Delete Settlement Save
 	if FileAccess.file_exists(USER_SAVE_PATH):
@@ -30,23 +33,23 @@ func delete_save_file() -> void:
 		if error == OK:
 			settlement_deleted = true
 		else:
-			Loggie.msg("SettlementManager: Failed to delete settlement save. Error: %s" % error).domain(LogDomains.SYSTEM).error()
+			Loggie.msg("SettlementManager: Failed to delete settlement save. Error: %s" % error).domain("SYSTEM").error()
 	
 	# 2. Delete Map Save
 	if FileAccess.file_exists(MAP_SAVE_PATH):
-		var error = DirAccess.remove_absolute(MAP_SAVE_PATH)
-		if error == OK:
+		var error2 = DirAccess.remove_absolute(MAP_SAVE_PATH)
+		if error2 == OK:
 			map_deleted = true
 		else:
-			Loggie.msg("SettlementManager: Failed to delete map save. Error: %s" % error).domain(LogDomains.SYSTEM).error()
+			Loggie.msg("SettlementManager: Failed to delete map save. Error: %s" % error2).domain("SYSTEM").error()
 	
 	# 3. Reset internal state
 	reset_manager_state()
 			
 	if settlement_deleted or map_deleted:
-		Loggie.msg("SettlementManager: Save files deleted (Settlement: %s, Map: %s). Starting fresh." % [settlement_deleted, map_deleted]).domain(LogDomains.SYSTEM).info()
+		Loggie.msg("SettlementManager: Save files deleted (Settlement: %s, Map: %s). Starting fresh." % [settlement_deleted, map_deleted]).domain("SYSTEM").info()
 	else:
-		Loggie.msg("SettlementManager: No save files found to delete.").domain(LogDomains.SYSTEM).info()
+		Loggie.msg("SettlementManager: No save files found to delete.").domain("SYSTEM").info()
 
 func reset_manager_state() -> void:
 	"""Resets the SettlementManager's internal state for a clean new game."""
@@ -54,24 +57,24 @@ func reset_manager_state() -> void:
 	active_astar_grid = null
 	active_building_container = null
 	grid_manager_node = null
-	Loggie.msg("SettlementManager: Internal state reset for new game").domain(LogDomains.SYSTEM).info()
+	Loggie.msg("SettlementManager: Internal state reset for new game").domain("SYSTEM").info()
 # -----------------------------------
 
 func register_active_scene_nodes(grid: AStarGrid2D, container: Node2D, manager_node: Node = null) -> void:
 	if not is_instance_valid(grid) or not is_instance_valid(container):
-		Loggie.msg("Failed to register invalid scene nodes.").domain(LogDomains.SETTLEMENT).error()
+		Loggie.msg("Failed to register invalid scene nodes.").domain("SETTLEMENT").error()
 		return
 	active_astar_grid = grid
 	active_building_container = container
 	grid_manager_node = manager_node 
-	Loggie.msg("Active scene nodes registered.").domain(LogDomains.SETTLEMENT).info()
+	Loggie.msg("Active scene nodes registered.").domain("SETTLEMENT").info()
 	_trigger_territory_update()
 
 func unregister_active_scene_nodes() -> void:
 	active_astar_grid = null
 	active_building_container = null
 	grid_manager_node = null 
-	Loggie.msg("Active scene nodes unregistered.").domain(LogDomains.SETTLEMENT).info()
+	Loggie.msg("Active scene nodes unregistered.").domain("SETTLEMENT").info()
 
 func _trigger_territory_update() -> void:
 	if current_settlement and is_instance_valid(grid_manager_node) and grid_manager_node.has_method("recalculate_territory"):
@@ -83,7 +86,8 @@ func _on_player_unit_died(unit: Node2D) -> void:
 	Removes a destroyed unit from the settlement's garrison.
 	Called automatically by EventBus when a PlayerVikingRaider dies.
 	"""
-	if not current_settlement: return
+	if not current_settlement:
+		return
 	
 	var base_unit = unit as BaseUnit
 	if not base_unit or not base_unit.data:
@@ -91,11 +95,11 @@ func _on_player_unit_died(unit: Node2D) -> void:
 		
 	var unit_path = base_unit.data.resource_path
 	if unit_path.is_empty():
-		Loggie.msg("Unit died but has no valid resource_path. Cannot update garrison.").domain(LogDomains.SETTLEMENT).warn()
+		Loggie.msg("Unit died but has no valid resource_path. Cannot update garrison.").domain("SETTLEMENT").warn()
 		return
 		
 	if current_settlement.garrisoned_units.has(unit_path):
-		var count = current_settlement.garrisoned_units[unit_path]
+		var count: int = current_settlement.garrisoned_units[unit_path]
 		
 		if count > 0:
 			current_settlement.garrisoned_units[unit_path] = count - 1
@@ -103,11 +107,11 @@ func _on_player_unit_died(unit: Node2D) -> void:
 			if current_settlement.garrisoned_units[unit_path] <= 0:
 				current_settlement.garrisoned_units.erase(unit_path)
 			
-			Loggie.msg("⚔️ Unit PERMANENTLY lost: %s (Remaining: %d)" % [base_unit.data.display_name, count - 1]).domain(LogDomains.SETTLEMENT).info()
+			Loggie.msg("⚔️ Unit PERMANENTLY lost: %s (Remaining: %d)" % [base_unit.data.display_name, count - 1]).domain("SETTLEMENT").info()
 			
 			save_settlement()
 	else:
-		Loggie.msg("Unit %s died, but was not found in garrison records (Mercenary/Event unit?)" % base_unit.data.display_name).domain(LogDomains.SETTLEMENT).debug()
+		Loggie.msg("Unit %s died, but was not found in garrison records (Mercenary/Event unit?)" % base_unit.data.display_name).domain("SETTLEMENT").debug()
 
 # --- Settlement Data ---
 
@@ -116,11 +120,15 @@ func load_settlement(data: SettlementData) -> void:
 		var saved_data = load(USER_SAVE_PATH)
 		if saved_data is SettlementData:
 			current_settlement = saved_data
-			Loggie.msg("Loaded user save from %s" % USER_SAVE_PATH).domain(LogDomains.SETTLEMENT).info()
+			Loggie.msg("Loaded user save from %s" % USER_SAVE_PATH).domain("SETTLEMENT").info()
 		else:
 			_load_fallback_data(data)
 	else:
 		_load_fallback_data(data)
+	
+	# Migrate any old garrison unit paths
+	_migrate_garrison_paths()
+	save_settlement()  # persist cleaned paths
 	
 	EventBus.settlement_loaded.emit(current_settlement)
 	_trigger_territory_update()
@@ -128,22 +136,47 @@ func load_settlement(data: SettlementData) -> void:
 func _load_fallback_data(data: SettlementData) -> void:
 	if data:
 		current_settlement = data.duplicate(true)
-		Loggie.msg("Loaded default template.").domain(LogDomains.SETTLEMENT).info()
+		Loggie.msg("Loaded default template.").domain("SETTLEMENT").info()
 	else:
-		Loggie.msg("No data provided and no save file found.").domain(LogDomains.SETTLEMENT).error()
+		Loggie.msg("No data provided and no save file found.").domain("SETTLEMENT").error()
 
 func save_settlement() -> void:
-	if not current_settlement: return
+	if not current_settlement:
+		return
 	
 	var error = ResourceSaver.save(current_settlement, USER_SAVE_PATH)
 	if error == OK:
 		var count = current_settlement.pending_construction_buildings.size()
-		Loggie.msg("Saved to %s (Pending: %d)" % [USER_SAVE_PATH, count]).domain(LogDomains.SETTLEMENT).info()
+		Loggie.msg("Saved to %s (Pending: %d)" % [USER_SAVE_PATH, count]).domain("SETTLEMENT").info()
 	else:
-		Loggie.msg("Failed to save to %s. Error code: %s" % [USER_SAVE_PATH, error]).domain(LogDomains.SETTLEMENT).error()
+		Loggie.msg("Failed to save to %s. Error code: %s" % [USER_SAVE_PATH, error]).domain("SETTLEMENT").error()
 
 func has_current_settlement() -> bool:
 	return current_settlement != null
+
+func _migrate_garrison_paths() -> void:
+	if not current_settlement:
+		return
+	if typeof(current_settlement.garrisoned_units) != TYPE_DICTIONARY:
+		return
+	
+	var old_garrison: Dictionary = current_settlement.garrisoned_units
+	var new_garrison: Dictionary = {}
+	
+	for path in old_garrison.keys():
+		var new_path: String = UNIT_PATH_MIGRATIONS.get(path, path)
+		
+		# Skip invalid targets
+		if not ResourceLoader.exists(new_path):
+			continue
+		
+		var count: int = old_garrison[path]
+		if new_garrison.has(new_path):
+			new_garrison[new_path] += count
+		else:
+			new_garrison[new_path] = count
+	
+	current_settlement.garrisoned_units = new_garrison
 
 # --- Treasury & Economy ---
 func get_labor_capacities() -> Dictionary:
@@ -153,7 +186,8 @@ func get_labor_capacities() -> Dictionary:
 		"wood": BASE_GATHERING_CAPACITY,
 		"stone": BASE_GATHERING_CAPACITY
 	}
-	if not current_settlement: return capacities
+	if not current_settlement:
+		return capacities
 
 	for entry in current_settlement.placed_buildings:
 		var b_data = load(entry["resource_path"])
@@ -170,7 +204,8 @@ func get_labor_capacities() -> Dictionary:
 	return capacities
 
 func deposit_resources(loot: Dictionary) -> void:
-	if not current_settlement: return
+	if not current_settlement:
+		return
 	
 	for resource_type in loot:
 		var amount = loot[resource_type]
@@ -178,7 +213,7 @@ func deposit_resources(loot: Dictionary) -> void:
 			if not "population_total" in current_settlement:
 				current_settlement.population_total = 10
 			current_settlement.population_total += amount
-			Loggie.msg("Acquired %d new thralls. Total Pop: %d" % [amount, current_settlement.population_total]).domain(LogDomains.SETTLEMENT).info()
+			Loggie.msg("Acquired %d new thralls. Total Pop: %d" % [amount, current_settlement.population_total]).domain("SETTLEMENT").info()
 		elif current_settlement.treasury.has(resource_type):
 			current_settlement.treasury[resource_type] += amount
 		else:
@@ -188,13 +223,13 @@ func deposit_resources(loot: Dictionary) -> void:
 	save_settlement()
 
 func attempt_purchase(item_cost: Dictionary) -> bool:
-	if not current_settlement: return false
+	if not current_settlement:
+		return false
 	
 	for resource_type in item_cost:
-		if not current_settlement.treasury.has(resource_type) or \
-		current_settlement.treasury[resource_type] < item_cost[resource_type]:
+		if not current_settlement.treasury.has(resource_type) or current_settlement.treasury[resource_type] < item_cost[resource_type]:
 			var reason = "Insufficient %s" % resource_type
-			Loggie.msg("Purchase failed. %s." % reason).domain(LogDomains.SETTLEMENT).warn()
+			Loggie.msg("Purchase failed. %s." % reason).domain("SETTLEMENT").warn()
 			EventBus.purchase_failed.emit(reason)
 			return false
 			
@@ -206,12 +241,13 @@ func attempt_purchase(item_cost: Dictionary) -> bool:
 	return true
 
 func calculate_payout() -> Dictionary:
-	if not current_settlement: return {}
+	if not current_settlement:
+		return {}
 
 	_process_construction_labor()
 
 	var total_payout: Dictionary = {}
-	var stewardship_bonus = 1.0
+	var stewardship_bonus := 1.0
 	var jarl = DynastyManager.get_current_jarl()
 	if jarl:
 		var skill = jarl.get_effective_skill("stewardship")
@@ -220,18 +256,20 @@ func calculate_payout() -> Dictionary:
 
 	if current_settlement.worker_assignments:
 		for resource_type in ["food", "wood", "stone"]:
-			var assigned = current_settlement.worker_assignments.get(resource_type, 0)
+			var assigned: int = current_settlement.worker_assignments.get(resource_type, 0)
 			if assigned > 0:
-				if not total_payout.has(resource_type): total_payout[resource_type] = 0
+				if not total_payout.has(resource_type):
+					total_payout[resource_type] = 0
 				var labor_yield = int(assigned * GATHERER_EFFICIENCY * stewardship_bonus)
 				total_payout[resource_type] += labor_yield
-				Loggie.msg("Labor added %d %s" % [labor_yield, resource_type]).domain(LogDomains.SETTLEMENT).info()
+				Loggie.msg("Labor added %d %s" % [labor_yield, resource_type]).domain("SETTLEMENT").info()
 
 	for entry in current_settlement.placed_buildings:
 		var b_data = load(entry["resource_path"])
 		if b_data is EconomicBuildingData:
 			var type = b_data.resource_type
-			if not total_payout.has(type): total_payout[type] = 0
+			if not total_payout.has(type):
+				total_payout[type] = 0
 			total_payout[type] += int(b_data.fixed_payout_amount * stewardship_bonus)
 
 	if jarl:
@@ -239,7 +277,8 @@ func calculate_payout() -> Dictionary:
 			var r_data = load(region_path)
 			if r_data:
 				for res in r_data.yearly_income:
-					if not total_payout.has(res): total_payout[res] = 0
+					if not total_payout.has(res):
+						total_payout[res] = 0
 					total_payout[res] += int(r_data.yearly_income[res] * stewardship_bonus)
 
 	if jarl and current_settlement.has_stability_debuff:
@@ -251,58 +290,67 @@ func calculate_payout() -> Dictionary:
 	return total_payout
 
 func recruit_unit(unit_data: UnitData) -> void:
-	if not current_settlement or not unit_data: return
+	if not current_settlement or not unit_data:
+		return
 	var unit_path: String = unit_data.resource_path
-	if unit_path.is_empty(): return
+	if unit_path.is_empty():
+		return
 	
 	if current_settlement.garrisoned_units.has(unit_path):
 		current_settlement.garrisoned_units[unit_path] += 1
 	else:
 		current_settlement.garrisoned_units[unit_path] = 1
 	
-	Loggie.msg("Recruited %s." % unit_data.display_name).domain(LogDomains.SETTLEMENT).info()
+	Loggie.msg("Recruited %s." % unit_data.display_name).domain("SETTLEMENT").info()
 	save_settlement()
 	EventBus.purchase_successful.emit(unit_data.display_name)
 
+# --- Construction / Buildings ---
+
 func _process_construction_labor() -> void:
-	if not current_settlement: return
+	if not current_settlement:
+		return
 	
-	var assigned_builders = current_settlement.worker_assignments.get("construction", 0)
+	var assigned_builders: int = current_settlement.worker_assignments.get("construction", 0)
 	if assigned_builders <= 0:
-		Loggie.msg("End Year: No builders assigned. Construction stalled.").domain(LogDomains.SETTLEMENT).warn()
+		Loggie.msg("End Year: No builders assigned. Construction stalled.").domain("SETTLEMENT").warn()
 		return
 		
 	var total_labor_points = assigned_builders * BUILDER_EFFICIENCY
-	Loggie.msg("End Year: Processing Construction. Available Labor: %d" % total_labor_points).domain(LogDomains.SETTLEMENT).info()
+	Loggie.msg("End Year: Processing Construction. Available Labor: %d" % total_labor_points).domain("SETTLEMENT").info()
 	
 	var completed_indices: Array[int] = []
 	
 	for i in range(current_settlement.pending_construction_buildings.size()):
-		if total_labor_points <= 0: break
+		if total_labor_points <= 0:
+			break
 			
 		var entry = current_settlement.pending_construction_buildings[i]
 		var building_data = load(entry["resource_path"]) as BuildingData
-		if not building_data: continue
+		if not building_data:
+			continue
 		
-		var current_progress = entry.get("progress", 0)
-		var effort_needed = building_data.construction_effort_required
-		var effort_remaining = effort_needed - current_progress
-		var points_to_apply = min(total_labor_points, effort_remaining)
+		var current_progress: int = entry.get("progress", 0)
+		var effort_needed: int = building_data.construction_effort_required
+		var effort_remaining: int = effort_needed - current_progress
+		var points_to_apply: int = min(total_labor_points, effort_remaining)
 		
 		entry["progress"] = current_progress + points_to_apply
 		total_labor_points -= points_to_apply
 		
-		Loggie.msg(" > Applied %d points to %s (Progress: %d/%d)" % [points_to_apply, building_data.display_name, entry["progress"], effort_needed]).domain(LogDomains.SETTLEMENT).debug()
+		Loggie.msg(" > Applied %d points to %s (Progress: %d/%d)" %
+			[points_to_apply, building_data.display_name, entry["progress"], effort_needed]
+		).domain("SETTLEMENT").debug()
 		
 		var grid_pos = Vector2i(entry["grid_position"]) 
 		var active_instance = _find_building_instance_at(grid_pos)
 		if is_instance_valid(active_instance):
 			active_instance.add_construction_progress(points_to_apply)
 		else:
-			Loggie.msg("Warning: Could not find visual instance for building at %s" % grid_pos).domain(LogDomains.SETTLEMENT).warn()
+			Loggie.msg("Warning: Could not find visual instance for building at %s" % grid_pos).domain("SETTLEMENT").warn()
 		
 		if entry["progress"] >= effort_needed:
-			Loggie.msg(" >>> Construction COMPLETE: %s" % building_data.display_name).domain(LogDomains.SETTLEMENT).info()
+			Loggie.msg(" >>> Construction COMPLETE: %s" % building_data.display_name).domain("SETTLEMENT").info()
 			completed_indices.append(i)
 			var new_placed_entry = {
 				"resource_path": entry["resource_path"],
@@ -320,7 +368,8 @@ func _process_construction_labor() -> void:
 		_trigger_territory_update()
 
 func _find_building_instance_at(grid_pos: Vector2i) -> BaseBuilding:
-	if not is_instance_valid(active_building_container): return null
+	if not is_instance_valid(active_building_container):
+		return null
 	var cell_size = get_active_grid_cell_size()
 	for child in active_building_container.get_children():
 		if child is BaseBuilding:
@@ -332,7 +381,8 @@ func _find_building_instance_at(grid_pos: Vector2i) -> BaseBuilding:
 	return null
 
 func remove_building(building_instance: BaseBuilding) -> void:
-	if not current_settlement or not is_instance_valid(building_instance): return
+	if not current_settlement or not is_instance_valid(building_instance):
+		return
 
 	var cell_size = get_active_grid_cell_size()
 	var building_pos = building_instance.global_position
@@ -355,10 +405,10 @@ func remove_building(building_instance: BaseBuilding) -> void:
 	
 	if removed:
 		save_settlement()
-		Loggie.msg("Removed %s from data at %s." % [building_instance.data.display_name, grid_pos]).domain(LogDomains.SETTLEMENT).info()
+		Loggie.msg("Removed %s from data at %s." % [building_instance.data.display_name, grid_pos]).domain("SETTLEMENT").info()
 		_trigger_territory_update()
 	else:
-		Loggie.msg("Could not find data entry for building at %s" % grid_pos).domain(LogDomains.SETTLEMENT).warn()
+		Loggie.msg("Could not find data entry for building at %s" % grid_pos).domain("SETTLEMENT").warn()
 
 	building_instance.queue_free()
 
@@ -379,20 +429,21 @@ func _remove_from_list(list: Array, grid_pos: Vector2i) -> bool:
 	return false
 
 func get_active_grid_cell_size() -> Vector2:
-	if is_instance_valid(active_astar_grid): return active_astar_grid.cell_size
+	if is_instance_valid(active_astar_grid):
+		return active_astar_grid.cell_size
 	return Vector2(32, 32)
 
 func place_building(building_data: BuildingData, grid_position: Vector2i, is_new_construction: bool = false) -> BaseBuilding:
 	if not is_instance_valid(active_astar_grid) or not is_instance_valid(active_building_container):
-		Loggie.msg("Place building failed: Active scene nodes are not registered.").domain(LogDomains.SETTLEMENT).error()
+		Loggie.msg("Place building failed: Active scene nodes are not registered.").domain("SETTLEMENT").error()
 		return null
 
 	if not building_data or not building_data.scene_to_spawn:
-		Loggie.msg("Build request failed: BuildingData or scene_to_spawn is null.").domain(LogDomains.SETTLEMENT).error()
+		Loggie.msg("Build request failed: BuildingData or scene_to_spawn is null.").domain("SETTLEMENT").error()
 		return null
 	
-	if not is_placement_valid(grid_position, building_data.grid_size):
-		Loggie.msg("Cannot place building at %s: Invalid position." % grid_position).domain(LogDomains.SETTLEMENT).error()
+	if not is_placement_valid(grid_position, building_data.grid_size, building_data):
+		Loggie.msg("Cannot place building at %s: Invalid position." % grid_position).domain("SETTLEMENT").error()
 		return null
 	
 	var new_building: BaseBuilding = building_data.scene_to_spawn.instantiate()
@@ -427,7 +478,7 @@ func place_building(building_data: BuildingData, grid_position: Vector2i, is_new
 			
 		current_settlement.pending_construction_buildings.append(entry)
 		save_settlement() 
-		Loggie.msg("New blueprint placed and saved at %s." % grid_position).domain(LogDomains.SETTLEMENT).info()
+		Loggie.msg("New blueprint placed and saved at %s." % grid_position).domain("SETTLEMENT").info()
 	else:
 		new_building.set_state(BaseBuilding.BuildingState.ACTIVE)
 	
@@ -435,16 +486,19 @@ func place_building(building_data: BuildingData, grid_position: Vector2i, is_new
 	return new_building
 
 func is_placement_valid(grid_position: Vector2i, building_size: Vector2i, building_data: BuildingData = null) -> bool:
-	if not is_instance_valid(active_astar_grid): return false
+	if not is_instance_valid(active_astar_grid):
+		return false
 	
 	# 1. Standard Grid/Collision Checks
 	for x in range(building_size.x):
 		for y in range(building_size.y):
 			var cell_pos = grid_position + Vector2i(x, y)
-			if not _is_cell_within_bounds(cell_pos): return false
-			if active_astar_grid.is_point_solid(cell_pos): return false
+			if not _is_cell_within_bounds(cell_pos):
+				return false
+			if active_astar_grid.is_point_solid(cell_pos):
+				return false
 	
-	# 2. District Constraint Check (NEW)
+	# 2. District Constraint Check (for economic buildings)
 	if building_data and building_data is EconomicBuildingData:
 		if not _is_within_district_range(grid_position, building_size, building_data):
 			return false
@@ -472,16 +526,21 @@ func _is_within_district_range(grid_pos: Vector2i, size: Vector2i, data: Economi
 	return false
 
 func _is_cell_within_bounds(grid_position: Vector2i) -> bool:
-	if not is_instance_valid(active_astar_grid): return false
+	if not is_instance_valid(active_astar_grid):
+		return false
 	var bounds = active_astar_grid.region
-	return grid_position.x >= bounds.position.x and grid_position.x < bounds.end.x and \
-		   grid_position.y >= bounds.position.y and grid_position.y < bounds.end.y
+	return grid_position.x >= bounds.position.x and grid_position.x < bounds.end.x \
+		and grid_position.y >= bounds.position.y and grid_position.y < bounds.end.y
+
+# --- Pathfinding helpers ---
 
 func get_astar_path(start_pos: Vector2, end_pos: Vector2, allow_partial_path: bool = false) -> PackedVector2Array:
-	if not is_instance_valid(active_astar_grid): return PackedVector2Array()
+	if not is_instance_valid(active_astar_grid):
+		return PackedVector2Array()
 	var start_id: Vector2i = Vector2i(start_pos / active_astar_grid.cell_size)
 	var end_id: Vector2i = Vector2i(end_pos / active_astar_grid.cell_size)
-	if not _is_cell_within_bounds(start_id): return PackedVector2Array()
+	if not _is_cell_within_bounds(start_id):
+		return PackedVector2Array()
 	return active_astar_grid.get_point_path(start_id, end_id, allow_partial_path)
 
 func set_astar_point_solid(grid_position: Vector2i, solid: bool) -> void:
@@ -489,18 +548,21 @@ func set_astar_point_solid(grid_position: Vector2i, solid: bool) -> void:
 		active_astar_grid.set_point_solid(grid_position, solid)
 
 func simulate_turn(simulated_assignments: Dictionary) -> Dictionary:
-	if not current_settlement: return {}
+	if not current_settlement:
+		return {}
 	var result = {
 		"resources_gained": { "food": 0, "wood": 0, "stone": 0, "gold": 0 },
 		"buildings_completing": []
 	}
-	var assigned_builders = simulated_assignments.get("construction", 0)
+	var assigned_builders: int = simulated_assignments.get("construction", 0)
 	var total_points = assigned_builders * BUILDER_EFFICIENCY
 	
 	for entry in current_settlement.pending_construction_buildings:
-		if total_points <= 0: break
+		if total_points <= 0:
+			break
 		var b_data = load(entry["resource_path"]) as BuildingData
-		if not b_data: continue
+		if not b_data:
+			continue
 		var needed = b_data.construction_effort_required - entry.get("progress", 0)
 		var applied = min(total_points, needed)
 		total_points -= applied
@@ -519,9 +581,9 @@ func simulate_turn(simulated_assignments: Dictionary) -> Dictionary:
 			result["resources_gained"][res] += int(count * GATHERER_EFFICIENCY * stewardship_bonus)
 
 	for entry in current_settlement.placed_buildings:
-		var b_data = load(entry["resource_path"])
-		if b_data is EconomicBuildingData:
-			result["resources_gained"][b_data.resource_type] += int(b_data.fixed_payout_amount * stewardship_bonus)
+		var b_data2 = load(entry["resource_path"])
+		if b_data2 is EconomicBuildingData:
+			result["resources_gained"][b_data2.resource_type] += int(b_data2.fixed_payout_amount * stewardship_bonus)
 			
 	if jarl:
 		for path in jarl.conquered_regions:
@@ -532,12 +594,15 @@ func simulate_turn(simulated_assignments: Dictionary) -> Dictionary:
 
 	return result
 
+# --- Enemy Raids ---
+
 func apply_raid_damages() -> Dictionary:
 	"""
 	Calculates and applies material losses from a successful enemy raid.
 	Returns a dictionary of losses for display.
 	"""
-	if not current_settlement: return {}
+	if not current_settlement:
+		return {}
 	
 	var report = {
 		"gold_lost": 0,
@@ -560,7 +625,7 @@ func apply_raid_damages() -> Dictionary:
 	report["wood_lost"] = wood_loss
 	
 	# 2. Construction Setbacks (Damage pending blueprints)
-	var indices_to_remove = []
+	var indices_to_remove: Array[int] = []
 	for i in range(current_settlement.pending_construction_buildings.size()):
 		var entry = current_settlement.pending_construction_buildings[i]
 		var damage = randi_range(50, 150) # Setback amount
