@@ -186,12 +186,58 @@ func _setup_default_resources() -> void:
 	if not raider_scene: raider_scene = load("res://scenes/units/EnemyVikingRaider.tscn")
 	if not end_of_year_popup_scene: end_of_year_popup_scene = default_end_of_year_popup
 
+func _clear_all_buildings() -> void:
+	"""Completely clears all buildings from scene tree and resets grid state."""
+	# 1. Clear all building instances from scene
+	if is_instance_valid(building_container):
+		for child in building_container.get_children():
+			child.queue_free()
+		# Wait a frame for queue_free() to complete
+		await get_tree().process_frame
+	
+	# 2. Clear all units from scene
+	if is_instance_valid(unit_container):
+		for child in unit_container.get_children():
+			child.queue_free()
+		await get_tree().process_frame
+	
+	# 3. Reset grid state if available
+	if is_instance_valid(grid_manager):
+		# Reset AStarGrid2D to clear all solid points
+		if "astar_grid" in grid_manager and grid_manager.astar_grid:
+			var grid = grid_manager.astar_grid
+			var region = grid.region
+			# Clear all solid points
+			for x in range(region.size.x):
+				for y in range(region.size.y):
+					var pos = Vector2i(x + region.position.x, y + region.position.y)
+					grid.set_point_solid(pos, false)
+			grid.update()
+		
+		# Reset territory tracking
+		if "buildable_cells" in grid_manager:
+			grid_manager.buildable_cells.clear()
+		
+		# Force visualizer redraw
+		if grid_manager.has_method("queue_redraw_visualizer"):
+			grid_manager.queue_redraw_visualizer()
+	
+	# 4. Reset state variables
+	great_hall_instance = null
+	game_is_over = false
+	awaiting_placement = null
+	
+	Loggie.msg("SettlementBridge: All buildings and units cleared, grid reset for new game").domain("BUILDING").info()
+
 func _initialize_settlement() -> void:
 	# --- MODIFIED: Always create from Inspector Settings ---
 	# This ensures that when a new game starts (no save file found),
 	# we use the configured Start Gold/Wood and place the Great Hall.
 	# Any pre-assigned resource in 'home_base_data' is ignored in favor of these settings.
 	home_base_data = _create_default_settlement()
+	
+	# CRITICAL: Clear any existing buildings from the scene tree first
+	await _clear_all_buildings()
 	
 	# Load (Will ignore this object if save file exists)
 	SettlementManager.load_settlement(home_base_data)

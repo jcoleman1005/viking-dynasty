@@ -101,7 +101,7 @@ func _update_garrison_display() -> void:
 			child.queue_free()
 		
 		if SettlementManager.current_settlement and not SettlementManager.current_settlement.garrisoned_units.is_empty():
-			var header_label = Label.new()
+			var header_label := Label.new()
 			header_label.text = "Garrison Details:"
 			header_label.add_theme_font_size_override("font_size", 16)
 			garrison_list_container.add_child(header_label)
@@ -109,19 +109,24 @@ func _update_garrison_display() -> void:
 			for unit_path in SettlementManager.current_settlement.garrisoned_units:
 				var unit_count: int = SettlementManager.current_settlement.garrisoned_units[unit_path]
 				var unit_data: UnitData = load(unit_path)
+				var unit_label := Label.new()
+				
 				if unit_data:
-					var unit_label = Label.new()
 					unit_label.text = "• %s x%d" % [unit_data.display_name, unit_count]
-					garrison_list_container.add_child(unit_label)
+				else:
+					# Fallback for bad paths so UI doesn't explode
+					unit_label.text = "• Unknown unit (%s) x%d" % [unit_path.get_file(), unit_count]
+				
+				garrison_list_container.add_child(unit_label)
 		else:
-			var empty_label = Label.new()
+			var empty_label := Label.new()
 			empty_label.text = "No units in garrison"
 			garrison_list_container.add_child(empty_label)
 
 	# 2. Update the Permanent Header Count (Outside the Tab)
-	var total_units = 0
+	var total_units := 0
 	if SettlementManager.current_settlement:
-		var garrison = SettlementManager.current_settlement.garrisoned_units
+		var garrison := SettlementManager.current_settlement.garrisoned_units
 		for unit_path in garrison:
 			total_units += garrison[unit_path]
 	
@@ -135,7 +140,8 @@ func _update_garrison_display() -> void:
 
 # --- Jarl Stats UI ---
 func _update_jarl_stats_display(jarl_data: JarlData) -> void:
-	if not jarl_data: return
+	if not jarl_data:
+		return
 	renown_label.text = "Renown: %d" % jarl_data.renown
 	authority_label.text = "Authority: %d / %d" % [jarl_data.current_authority, jarl_data.max_authority]
 	_populate_legacy_buttons()
@@ -145,25 +151,26 @@ func _populate_legacy_buttons() -> void:
 		child.queue_free()
 	
 	if DynastyManager.loaded_legacy_upgrades.is_empty():
-		var placeholder_label = Label.new()
+		var placeholder_label := Label.new()
 		placeholder_label.text = "No legacy upgrades found."
 		legacy_buttons_container.add_child(placeholder_label)
 		return
 	
 	var jarl = DynastyManager.get_current_jarl()
-	if not jarl: return
+	if not jarl:
+		return
 
 	var is_pious = jarl.has_trait("Pious")
 
 	for upgrade_data in DynastyManager.loaded_legacy_upgrades:
 		var current_renown_cost = upgrade_data.renown_cost
-		var trait_modifier_text = ""
+		var trait_modifier_text := ""
 		
 		if is_pious and upgrade_data.effect_key == "UPG_BUILD_CHAPEL":
 			current_renown_cost = max(0, upgrade_data.renown_cost - 25)
 			trait_modifier_text = " (-25 Pious)"
 
-		var button = Button.new()
+		var button := Button.new()
 		var cost_text = "Cost: %d Renown%s, %d Auth" % [current_renown_cost, trait_modifier_text, upgrade_data.authority_cost]
 		
 		var title_text = upgrade_data.display_name
@@ -245,7 +252,7 @@ func _load_building_data() -> void:
 			file_name = dir.get_next()
 
 func _create_building_button(building_data: BuildingData) -> void:
-	var button = Button.new()
+	var button := Button.new()
 	button.text = "%s (Cost: %s)" % [building_data.display_name, _format_cost(building_data.build_cost)]
 	
 	# Constrain Building Icons
@@ -260,7 +267,8 @@ func _create_building_button(building_data: BuildingData) -> void:
 	build_buttons_container.add_child(button)
 
 func _on_buy_button_pressed(item_data: BuildingData) -> void:
-	if not item_data: return
+	if not item_data:
+		return
 	if SettlementManager.attempt_purchase(item_data.build_cost):
 		EventBus.building_ready_for_placement.emit(item_data)
 	else:
@@ -282,7 +290,7 @@ func _load_unit_data() -> void:
 
 func _setup_recruit_buttons() -> void:
 	for unit_data in available_units:
-		var button = Button.new()
+		var button := Button.new()
 		button.text = "%s (Cost: %s)" % [unit_data.display_name, _format_cost(unit_data.spawn_cost)]
 		
 		# Constrain Recruit Icons
@@ -297,14 +305,20 @@ func _setup_recruit_buttons() -> void:
 		recruit_buttons_container.add_child(button)
 
 func _is_player_unit(unit_data: UnitData) -> bool:
-	if not unit_data: return false
-	if "Player" in unit_data.display_name: return true
-	if "Player" in unit_data.resource_path: return true
-	if unit_data.scene_to_spawn and "Player" in unit_data.scene_to_spawn.resource_path: return true
-	if unit_data.display_name in ["Viking Raider"]: return false
+	if not unit_data:
+		return false
+	if "Player" in unit_data.display_name:
+		return true
+	if "Player" in unit_data.resource_path:
+		return true
+	if unit_data.scene_to_spawn and "Player" in unit_data.scene_to_spawn.resource_path:
+		return true
+	if unit_data.display_name in ["Viking Raider"]:
+		return false
 	return true
 
 func _on_recruit_button_pressed(unit_data: UnitData) -> void:
-	if not unit_data: return
+	if not unit_data:
+		return
 	if SettlementManager.attempt_purchase(unit_data.spawn_cost):
 		SettlementManager.recruit_unit(unit_data)

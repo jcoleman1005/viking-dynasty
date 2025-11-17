@@ -10,12 +10,15 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_ht1qg")
+available_buildings = null
+available_units = null
 default_treasury_display = {
 "food": 100,
 "gold": 100,
 "stone": 100,
 "wood": 100
 }
+auto_load_units_from_directory = null
 
 [node name="PanelContainer" type="PanelContainer" parent="."]
 layout_mode = 1

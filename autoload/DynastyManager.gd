@@ -51,6 +51,43 @@ func _load_player_jarl() -> void:
 		
 	jarl_stats_updated.emit(current_jarl)
 
+func reset_dynasty(total_wipe: bool = true) -> void:
+	"""Resets the dynasty state for a new campaign.
+	If total_wipe is true, clears renown, upgrades, conquered regions, etc.
+	"""
+	# Reload base Jarl template from disk
+	if ResourceLoader.exists(PLAYER_JARL_PATH):
+		current_jarl = load(PLAYER_JARL_PATH) as JarlData
+	else:
+		current_jarl = JarlData.new()
+		current_jarl.display_name = "Fallback Jarl"
+
+	if total_wipe and current_jarl:
+		current_jarl.renown = 0
+		current_jarl.purchased_legacy_upgrades.clear()
+		current_jarl.conquered_regions.clear()
+		current_jarl.allied_regions.clear()
+		current_jarl.ancestors.clear()
+		current_jarl.heirs.clear()
+		current_jarl.legitimacy = 0
+		current_jarl.succession_debuff_years_remaining = 0
+		current_jarl.current_authority = current_jarl.max_authority
+
+	# Reset runtime-only state
+	current_raid_target = null
+	is_defensive_raid = false
+	current_raid_difficulty = 1
+	pending_raid_result.clear()
+
+	# Persist the wiped Jarl
+	_save_jarl_data()
+	
+	# Reload legacy upgrades from clean Jarl state
+	_load_legacy_upgrades_from_disk()
+	
+	jarl_stats_updated.emit(current_jarl)
+	Loggie.msg("DynastyManager: FULL CAMPAIGN WIPE applied. Dynasty reset to defaults.").domain("DYNASTY").warn()
+
 func get_current_jarl() -> JarlData:
 	if not current_jarl:
 		_load_player_jarl()

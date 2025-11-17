@@ -51,18 +51,22 @@ func _on_new_game_pressed() -> void:
 	"""Wipes the save file and restarts the game."""
 	Loggie.msg("Pause Menu: New Game requested. Wiping save...").domain("UI").warn()
 	
-	# 1. Delete Save
+	# 1. Delete Save (Settlement + Map) and reset manager state
 	SettlementManager.delete_save_file()
 	
-	# 2. Unpause (Critical for scene reload to work properly)
+	# 2. FULL CAMPAIGN WIPE: Reset Dynasty (Jarl, heirs, renown, upgrades, regions)
+	if is_instance_valid(DynastyManager):
+		DynastyManager.reset_dynasty(true)
+	
+	# 3. Unpause (Critical for scene reload to work properly)
 	get_tree().paused = false
 	
-	# 3. Request Transition to Settlement Scene
+	# 4. Request Transition to Settlement Scene
 	# This ensures that if we are in a Raid, we go home.
 	# If we are at home, it effectively reloads the scene.
 	EventBus.scene_change_requested.emit("settlement")
 	
-	# 4. Close menu
+	# 5. Close menu
 	queue_free()
 
 
