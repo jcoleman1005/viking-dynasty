@@ -341,11 +341,20 @@ func _on_restart_pressed() -> void: get_tree().reload_current_scene()
 
 func _on_start_raid_pressed() -> void:
 	if not SettlementManager.current_settlement: return
-	if SettlementManager.current_settlement.garrisoned_units.is_empty():
-		SettlementManager.current_settlement.garrisoned_units["res://data/units/PlayerVikingRaider_Data.tres"] = 2
-		SettlementManager.save_settlement()
-	if not world_map_scene_path.is_empty(): EventBus.scene_change_requested.emit("world_map")
+	
+	# --- FIX: Check 'warbands', not 'garrisoned_units' ---
+	if SettlementManager.current_settlement.warbands.is_empty():
+		# Auto-recruit a fallback warband if the player has no army
+		var default_unit_path = "res://data/units/Unit_PlayerRaider.tres"
+		if ResourceLoader.exists(default_unit_path):
+			var unit_data = load(default_unit_path) as UnitData
+			if unit_data:
+				SettlementManager.recruit_unit(unit_data)
+				Loggie.msg("Debug: Auto-recruited fallback warband for raid.").domain("BUILDING").info()
+	# -----------------------------------------------------
 
+	if not world_map_scene_path.is_empty(): 
+		EventBus.scene_change_requested.emit("world_map")
 # --- Building Cursor Logic ---
 func _on_building_ready_for_placement(building_data: BuildingData) -> void:
 	awaiting_placement = building_data

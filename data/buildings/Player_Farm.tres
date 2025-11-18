@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="EconomicBuildingData" load_steps=4 format=3 uid="uid://y7xhmemltm28"]
 
-[ext_resource type="Texture2D" uid="uid://cvtmpipin3j4" path="res://textures/placeholders/lumber_mill_placeholder.png" id="1_lr1ah"]
+[ext_resource type="Texture2D" uid="uid://cq15assok65xd" path="res://assets/Gemini/windmill_edited.png" id="1_lr1ah"]
 [ext_resource type="PackedScene" uid="uid://cws6xle5x52g4" path="res://scenes/buildings/Base_Building.tscn" id="2_mixjq"]
 [ext_resource type="Script" uid="uid://d33smw07vm6y4" path="res://data/buildings/EconomicBuildingData.gd" id="3_svyis"]
 
@@ -10,12 +10,13 @@ resource_type = "food"
 fixed_payout_amount = 75
 display_name = "Farm"
 scene_to_spawn = ExtResource("2_mixjq")
+icon = ExtResource("1_lr1ah")
 building_texture = ExtResource("1_lr1ah")
 build_cost = {
 "wood": 75
 }
 max_health = 75
 grid_size = Vector2i(2, 2)
-dev_color = Color(0.2, 0.8, 0.2, 1)
+dev_color = Color(0.85490197, 0.8, 0.2, 1)
 is_player_buildable = true
 territory_radius = 0

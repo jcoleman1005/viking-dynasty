@@ -1,10 +1,11 @@
-[gd_resource type="Resource" script_class="UnitData" load_steps=6 format=3 uid="uid://brnbvjwnoyh3j"]
+[gd_resource type="Resource" script_class="UnitData" load_steps=7 format=3 uid="uid://brnbvjwnoyh3j"]
 
 [ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://dsv0s4yq8c8m5" path="res://scenes/units/EnemyVikingRaider.tscn" id="2_spawn_scene"]
 [ext_resource type="Texture2D" uid="uid://pwi4bv5ch827" path="res://textures/placeholders/unit_placeholder.png" id="3_6go6j"]
 [ext_resource type="PackedScene" uid="uid://de3nko6b1rqyg" path="res://scenes/components/AttackAI.tscn" id="4_ai"]
 [ext_resource type="PackedScene" uid="uid://d10havsaesr6i" path="res://scenes/effects/Projectile.tscn" id="5_proj"]
+[ext_resource type="Texture2D" uid="uid://buwxqfjw7whon" path="res://textures/units/viking_raider_sprite.png" id="6_lv2v5"]
 
 [resource]
 script = ExtResource("1_script")
@@ -23,4 +24,4 @@ attack_speed = 0.5
 ai_component_scene = ExtResource("4_ai")
 projectile_scene = ExtResource("5_proj")
 projectile_speed = 450.0
-visual_texture = ExtResource("3_6go6j")
+visual_texture = ExtResource("6_lv2v5")

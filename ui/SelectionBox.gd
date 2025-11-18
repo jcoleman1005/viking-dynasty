@@ -6,7 +6,6 @@
 # It also uses
 # accept_event() to stop input from passing through the UI.
 extends Control
-
 var is_dragging := false
 var start_pos := Vector2.ZERO
 var is_command_dragging := false
@@ -14,8 +13,10 @@ var command_start_pos := Vector2.ZERO
 # ---------------------------
 
 func _ready() -> void:
-	#Allow unused mouse events (like Zoom) to pass to the Camera
+	# Allow unused mouse events (like Zoom) to pass to the Camera
+	# but DON'T consume mouse events here; let other UI handle them
 	mouse_filter = Control.MOUSE_FILTER_PASS
+
 
 func _gui_input(event: InputEvent) -> void:
 	# We use _gui_input, which is only called if the mouse

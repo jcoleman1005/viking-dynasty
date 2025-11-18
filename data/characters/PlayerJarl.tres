@@ -1,16 +1,24 @@
-[gd_resource type="Resource" script_class="JarlData" load_steps=4 format=3]
+[gd_resource type="Resource" script_class="JarlData" load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://data/characters/JarlHeirData.gd" id="1_4gouw"]
 [ext_resource type="Script" path="res://data/characters/JarlData.gd" id="1_jarl_data"]
 [ext_resource type="Script" path="res://data/traits/JarlTraitData.gd" id="3_0bn2j"]
 
+[sub_resource type="Resource" id="Resource_3vd45"]
+script = ExtResource("1_4gouw")
+display_name = "Lagertha"
+age = 0
+gender = "Female"
+
 [resource]
 script = ExtResource("1_jarl_data")
 display_name = "Magnus"
-age = 34
-years_since_action = 49
+age = 38
+current_authority = 2
+years_since_action = 53
 legitimacy = 0
 command = 8
 stewardship = 12
 learning = 17
 prowess = 6
+heirs = Array[ExtResource("1_4gouw")]([SubResource("Resource_3vd45")])

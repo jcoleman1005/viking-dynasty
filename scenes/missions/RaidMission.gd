@@ -1,11 +1,4 @@
 # res://scenes/missions/RaidMission.gd
-# Raid Mission Controller for Phase 3
-#
-# --- REFACTORED ---
-# Fixed initialization order: 'data' is now assigned BEFORE add_child().
-# This ensures BaseUnit._ready() has the data needed to create the FSM.
-# Fixed race condition in enemy spawning by using fsm_ready signal.
-# ------------------
 extends Node2D
 
 # --- Exported Mission Configuration ---
@@ -20,10 +13,9 @@ extends Node2D
 @export var mission_difficulty: float = 1.0
 @export var allow_retreat: bool = true
 
-# --- NEW: Defensive Mission ---
+# --- Defensive Mission Settings ---
 @export var is_defensive_mission: bool = false
 @export var enemy_spawn_position: NodePath
-# -----------------------------
 
 # --- Node References ---
 @onready var player_spawn_pos: Marker2D = $PlayerStartPosition
@@ -35,7 +27,6 @@ extends Node2D
 # --- State Variables ---
 var objective_building: BaseBuilding = null
 var enemy_units: Array[BaseUnit] = []
-
 
 func _ready() -> void:
 	if DynastyManager.is_defensive_raid:
@@ -55,30 +46,20 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	SettlementManager.unregister_active_scene_nodes()
-	
 	if EventBus.is_connected("settlement_loaded", _on_settlement_ready_for_mission):
 		EventBus.settlement_loaded.disconnect(_on_settlement_ready_for_mission)
-
 
 func _load_test_settlement() -> void:
 	var test_settlement_path = "res://data/settlements/home_base_fixed.tres"
 	var test_settlement = load(test_settlement_path) as SettlementData
-	
 	if test_settlement:
-		Loggie.msg("RaidMission: Loading test settlement: %s" % test_settlement_path).domain("RAIDMISSION").info()
 		SettlementManager.load_settlement(test_settlement)
-	else:
-		Loggie.msg("RaidMission: Failed to load test settlement from %s" % test_settlement_path).domain("RAIDMISSION").error()
 
 func _on_settlement_ready_for_mission(_settlement_data: SettlementData) -> void:
 	if not is_instance_valid(objective_manager.rts_controller): 
-		Loggie.msg("RaidMission: Settlement loaded - initializing mission").domain("RAIDMISSION").info()
 		initialize_mission()
 
-
 func initialize_mission() -> void:
-	Loggie.msg("RaidMission starting...").domain("RAIDMISSION").info()
-	
 	if rts_controller == null or objective_manager == null:
 		Loggie.msg("RaidMission: Critical error! Nodes missing.").domain("RAIDMISSION").error()
 		get_tree().quit()
@@ -87,6 +68,7 @@ func initialize_mission() -> void:
 	if not is_instance_valid(grid_manager) or not "astar_grid" in grid_manager:
 		Loggie.msg("RaidMission: GridManager node is missing or invalid!").domain("RAIDMISSION").error()
 		return
+		
 	var local_astar_grid = grid_manager.astar_grid
 	SettlementManager.register_active_scene_nodes(local_astar_grid, building_container)
 	
@@ -97,30 +79,23 @@ func initialize_mission() -> void:
 	else:
 		if not enemy_base_data:
 			enemy_base_data = load(default_enemy_base_path)
-			if not enemy_base_data:
-				Loggie.msg("Could not load enemy base data.").domain("RAIDMISSION").error()
-				return
 		_load_enemy_base()
 		_spawn_player_garrison()
 	
 	if is_instance_valid(objective_building):
 		objective_manager.initialize(rts_controller, objective_building, building_container, enemy_units)
+		
+		# Connect Fyrd Signal
+		if not objective_manager.fyrd_arrived.is_connected(_on_fyrd_arrived):
+			objective_manager.fyrd_arrived.connect(_on_fyrd_arrived)
 	else:
 		Loggie.msg("RaidMission: Could not find Objective Building (Great Hall)!").domain("RAIDMISSION").error()
 
-
-# --- MODIFIED: Updated to load PENDING buildings too ---
 func _load_player_base_for_defense() -> void:
-	Loggie.msg("Loading PLAYER base for defense...").domain("RAIDMISSION").info()
 	var settlement = SettlementManager.current_settlement
-	if not settlement:
-		Loggie.msg("Defensive Mission: Cannot load player base.").domain("RAIDMISSION").error()
-		return
+	if not settlement: return
 	
-	# 1. Load Completed Buildings
 	_spawn_building_list(settlement.placed_buildings, false)
-	
-	# 2. Load Blueprints (New Fix)
 	_spawn_building_list(settlement.pending_construction_buildings, true)
 	
 	_update_astar_grid_for_base(settlement.placed_buildings)
@@ -131,8 +106,7 @@ func _spawn_building_list(list: Array, is_blueprint: bool) -> void:
 		var grid_pos: Vector2i = building_entry["grid_position"]
 		
 		var building_data: BuildingData = load(building_res_path)
-		if not building_data or not building_data.scene_to_spawn:
-			continue
+		if not building_data or not building_data.scene_to_spawn: continue
 		
 		var building_instance: BaseBuilding = building_data.scene_to_spawn.instantiate()
 		building_instance.name = building_data.display_name + "_Player"
@@ -151,28 +125,22 @@ func _spawn_building_list(list: Array, is_blueprint: bool) -> void:
 			
 		building_container.add_child(building_instance)
 		
-		# Apply Blueprint State if needed
 		if is_blueprint:
 			building_instance.set_state(BaseBuilding.BuildingState.BLUEPRINT)
 
 func _load_enemy_base() -> void:
-	Loggie.msg("Loading ENEMY base for offense...").domain("RAIDMISSION").info()
-	if not enemy_base_data:
-		return
+	if not enemy_base_data: return
 	
 	for building_entry in enemy_base_data.placed_buildings:
 		var building_res_path: String = building_entry["resource_path"]
 		var grid_pos: Vector2i = building_entry["grid_position"]
 		
 		var building_data: BuildingData = load(building_res_path)
-		if not building_data or not building_data.scene_to_spawn:
-			continue
+		if not building_data or not building_data.scene_to_spawn: continue
 		
 		var building_instance: BaseBuilding = building_data.scene_to_spawn.instantiate()
 		building_instance.name = building_data.display_name + "_Enemy"
-		
-		if "data" in building_instance:
-			building_instance.data = building_data
+		if "data" in building_instance: building_instance.data = building_data
 		
 		var world_pos_top_left: Vector2 = Vector2(grid_pos) * grid_manager.cell_size
 		var building_footprint_size: Vector2 = Vector2(building_data.grid_size) * grid_manager.cell_size
@@ -210,92 +178,101 @@ func _update_astar_grid_for_base(placed_buildings: Array) -> void:
 	if is_instance_valid(grid_manager) and is_instance_valid(grid_manager.astar_grid):
 		grid_manager.astar_grid.update()
 
-
+# --- FIXED: SPAWN PLAYER SQUADS (10 Men per Warband) ---
 func _spawn_player_garrison() -> void:
 	if not SettlementManager.current_settlement:
 		_spawn_test_units() 
 		return
 	
-	var garrison = SettlementManager.current_settlement.garrisoned_units
-	if garrison.is_empty():
+	var warbands = SettlementManager.current_settlement.warbands
+	
+	if warbands.is_empty():
 		if not is_defensive_mission:
 			objective_manager.call_deferred("_check_loss_condition")
 		return
 	
 	var units_per_row: int = player_spawn_formation.get("units_per_row", 5)
 	var spacing: float = player_spawn_formation.get("spacing", 40.0)
-	var current_row: int = 0
-	var current_col: int = 0
 	
-	for unit_path in garrison:
-		var unit_count: int = garrison[unit_path]
-		var unit_data: UnitData = load(unit_path)
+	# This variable tracks WHERE on the grid we are spawning
+	var current_squad_index: int = 0
+	
+	for warband in warbands:
+		if warband.is_wounded: continue
 		
-		if not unit_data or not unit_data.scene_to_spawn:
-			continue
+		var unit_data = warband.unit_type
+		if not unit_data or not unit_data.scene_to_spawn: continue
 		
-		for i in range(unit_count):
+		# --- SQUAD LOGIC: 10 MEN [cite: 7] ---
+		# 1 Thegn, 1 Banner, 8 Huscarls
+		for i in range(warband.current_manpower):
 			var unit_instance: Node2D = unit_data.scene_to_spawn.instantiate()
-			
-			if not unit_instance is BaseUnit:
-				continue
+			if not unit_instance is BaseUnit: continue
 				
-			unit_instance.name = unit_data.display_name + "_" + str(i)
-			if "data" in unit_instance:
-				unit_instance.data = unit_data
+			# Identity
+			unit_instance.warband_ref = warband
+			unit_instance.data = unit_data
 			
-			var spawn_pos: Vector2 = player_spawn_pos.global_position
+			# Role & Naming
+			if i == 0:
+				unit_instance.name = warband.custom_name + "_Thegn"
+				# Future: Add visual distinction for Thegn
+			elif i == 1:
+				unit_instance.name = warband.custom_name + "_Banner"
+				# Future: Add visual distinction for Banner
+			else:
+				unit_instance.name = warband.custom_name + "_Huscarl_" + str(i)
 			
+			# --- FORCE CONTROLLABLE LAYER ---
+			# Layer 2 = Player Unit (Value 2)
+			unit_instance.collision_layer = 2 
+			# ------------------------------
+
+			# --- POSITIONING ---
+			# Calculate Squad Base Position
+			var row = current_squad_index / units_per_row
+			var col = current_squad_index % units_per_row
+			
+			var base_pos = player_spawn_pos.global_position
 			if is_defensive_mission and is_instance_valid(objective_building):
-				spawn_pos = objective_building.global_position + Vector2(100, 100)
+				base_pos = objective_building.global_position + Vector2(100, 100)
 			
-			spawn_pos.x += current_col * spacing
-			spawn_pos.y += current_row * spacing
-			unit_instance.global_position = spawn_pos
+			# Offset for the specific squad
+			base_pos.x += col * (spacing * 4) # Gap between squads
+			base_pos.y += row * (spacing * 3)
 			
+			# Offset for the individual unit (formation within the squad)
+			# 2 rows of 5
+			var unit_x = (i % 5) * 25
+			var unit_y = (i / 5) * 25
+			
+			unit_instance.global_position = base_pos + Vector2(unit_x, unit_y)
+			
+			# Registration
 			unit_instance.add_to_group("player_units")
 			rts_controller.add_unit_to_group(unit_instance)
 			add_child(unit_instance)
 			
-			current_col += 1
-			if current_col >= units_per_row:
-				current_col = 0
-				current_row += 1
-
+		current_squad_index += 1
 
 func _spawn_enemy_wave() -> void:
-	Loggie.msg("=== SPAWNING ENEMY WAVE ===").domain("RAIDMISSION").info()
 	var enemy_spawner = get_node_or_null(enemy_spawn_position)
-	if not is_instance_valid(enemy_spawner):
-		Loggie.msg("Defensive Mission: Invalid or missing 'Enemy Spawn Position' node!").domain("RAIDMISSION").error()
-		return
+	if not is_instance_valid(enemy_spawner): return
 		
 	var enemy_data_path = "res://data/units/EnemyVikingRaider_Data.tres"
 	var enemy_data: UnitData = load(enemy_data_path)
-	if not enemy_data or not enemy_data.scene_to_spawn:
-		Loggie.msg("Failed to load enemy unit data: %s" % enemy_data_path).domain("RAIDMISSION").error()
-		return
+	if not enemy_data or not enemy_data.scene_to_spawn: return
 
 	var enemy_count = 5
 	for i in range(enemy_count):
-		
-		# 1. Instantiate
 		var enemy_node = enemy_data.scene_to_spawn.instantiate()
-		
-		# 2. Cast to BaseUnit and Set Data BEFORE add_child
 		var enemy_unit = enemy_node as BaseUnit
-		if not enemy_unit:
-			Loggie.msg("Spawned enemy node is not a BaseUnit!").domain("RAIDMISSION").error()
-			enemy_node.queue_free()
-			continue
+		if not enemy_unit: continue
 		
-		# Assign data before adding to tree
 		enemy_unit.data = enemy_data
 		enemy_unit.name = enemy_data.display_name + "_Enemy_" + str(i)
-		# Use bit-shift for clarity (Layer 3 = 1 << 2, value 4)
 		enemy_unit.collision_layer = 1 << 2 
 		
-		# 3. Add to Tree (Triggers _ready(), which now finds 'data')
 		add_child(enemy_node) 
 		
 		var spawn_pos = enemy_spawner.global_position + Vector2(i * 40, 0)
@@ -304,57 +281,32 @@ func _spawn_enemy_wave() -> void:
 		enemy_unit.add_to_group("enemy_units")
 		enemy_units.append(enemy_unit)
 		
-		# 4. Connect to the FSM ready signal
-		# We DO NOT access FSM or AttackAI here. We wait for the signal.
 		if is_instance_valid(objective_building):
 			enemy_unit.fsm_ready.connect(_on_enemy_fsm_ready.bind(objective_building))
-	
-	Loggie.msg("Spawned %d enemy raiders." % enemy_count).domain("RAIDMISSION").info()
 
-# --- UPDATED SIGNAL HANDLER: Handles ALL post-spawn configuration ---
 func _on_enemy_fsm_ready(enemy_unit: BaseUnit, target: BaseBuilding) -> void:
-	"""
-	Called by the enemy unit when its FSM is fully set up via _deferred_setup.
-	This ensures we only issue the command when the unit is ready to receive it.
-	"""
-	if not is_instance_valid(target) or not is_instance_valid(enemy_unit):
-		return
+	if not is_instance_valid(target) or not is_instance_valid(enemy_unit): return
 
-	# 1. Configure the AttackAI mode (NOW SAFE)
 	if enemy_unit.attack_ai:
 		enemy_unit.attack_ai.ai_mode = AttackAI.AI_Mode.DEFENSIVE_SIEGE
 		
-	# 2. Command Attack (NOW SAFE)
 	if enemy_unit.fsm:
 		enemy_unit.fsm.command_attack(target)
-	else:
-		Loggie.msg("Enemy unit %s FSM is still null after signal! FSM setup failed." % enemy_unit.name).domain("RAIDMISSION").error()
 
 func _spawn_test_units() -> void:
-	Loggie.msg("RaidMission: Spawning TEST Player units (Fallback mode).").domain("RAIDMISSION").info()
-	
-	# --- FIX: Load Player Data ---
 	var player_data_path = "res://data/units/Unit_PlayerRaider.tres"
 	var player_data: UnitData = load(player_data_path)
-	
-	if not player_data or not player_data.scene_to_spawn:
-		Loggie.msg("RaidMission: Could not load fallback player unit data!").domain("RAIDMISSION").error()
-		return
+	if not player_data: return
 
 	var count = 5
 	var spacing = 40
-	
 	for i in range(count):
 		var unit_instance = player_data.scene_to_spawn.instantiate() as BaseUnit
 		if not unit_instance: continue
 		
 		unit_instance.name = "Test_Player_" + str(i)
 		unit_instance.data = player_data
-		
-		# --- CRITICAL: Ensure Correct Layer (Layer 2 = Player) ---
-		# Bit 1 is set (Value 2)
 		unit_instance.collision_layer = 2 
-		# ---------------------------------------------------------
 		
 		var spawn_pos = player_spawn_pos.global_position
 		spawn_pos.x += i * spacing
@@ -368,8 +320,7 @@ func _on_enemy_building_destroyed_grid_clear(building: BaseBuilding) -> void:
 	_clear_building_from_pathfinding_grid(building)
 
 func _clear_building_from_pathfinding_grid(building: BaseBuilding) -> void:
-	if not building.data or not is_instance_valid(grid_manager):
-		return
+	if not building.data or not is_instance_valid(grid_manager): return
 		
 	var cell_size = grid_manager.cell_size
 	var size_in_pixels = Vector2(building.data.grid_size) * cell_size
@@ -384,3 +335,41 @@ func _clear_building_from_pathfinding_grid(building: BaseBuilding) -> void:
 	
 	if is_instance_valid(grid_manager.astar_grid):
 		grid_manager.astar_grid.update()
+
+# --- FYRD RESPONSE (ANTI-GRIND) ---
+
+func _on_fyrd_arrived() -> void:
+	# Spawn 20 units at the enemy spawn point (or edges)
+	var fyrd_count = 20
+	var spawn_origin = Vector2(1000, 0) # Default if marker missing
+	
+	var spawner = get_node_or_null(enemy_spawn_position)
+	if spawner:
+		spawn_origin = spawner.global_position
+	
+	Loggie.msg("Spawning Fyrd Wave: %d units" % fyrd_count).domain("RAIDMISSION").warn()
+	
+	# Load template
+	var enemy_data = load("res://data/units/EnemyVikingRaider_Data.tres") as UnitData
+	if not enemy_data: return
+	
+	for i in range(fyrd_count):
+		var unit = enemy_data.scene_to_spawn.instantiate() as BaseUnit
+		if not unit: continue
+		
+		unit.data = enemy_data
+		unit.name = "Fyrd_Warrior_%d" % i
+		
+		# Fyrd Buffs: Faster and Stronger
+		unit.current_health = 100 # Double HP
+		unit.collision_layer = 1 << 2 # Layer 3 (Enemy)
+		
+		# Random offset spawn
+		var offset = Vector2(randf_range(-200, 200), randf_range(-200, 200))
+		unit.global_position = spawn_origin + offset
+		
+		add_child(unit)
+		
+		# Command them to attack player units immediately
+		if unit.attack_ai:
+			unit.attack_ai.ai_mode = AttackAI.AI_Mode.DEFAULT # Aggressive

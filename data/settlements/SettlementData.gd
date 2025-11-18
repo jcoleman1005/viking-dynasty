@@ -10,7 +10,7 @@ class_name SettlementData
 @export var pending_construction_buildings: Array = []
 
 # Garrison
-@export var garrisoned_units: Dictionary = {}
+@export var warbands: Array[WarbandData] = []
 @export var max_garrison_bonus: int = 0
 
 # --- NEW: Phase 2 Population Data ---
