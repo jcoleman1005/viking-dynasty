@@ -246,7 +246,7 @@ func _initialize_settlement() -> void:
 		SettlementManager.register_active_scene_nodes(grid_manager.astar_grid, building_container, grid_manager)
 	
 	_spawn_placed_buildings()
-	EventBus.settlement_loaded.emit(home_base_data)
+	# Remove redundant emit - SettlementManager.load_settlement() already emits settlement_loaded
 
 func _spawn_placed_buildings() -> void:
 	if not SettlementManager.current_settlement: return

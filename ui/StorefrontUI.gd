@@ -89,6 +89,14 @@ func _on_settlement_loaded(settlement_data: SettlementData) -> void:
 
 func _update_initial_treasury() -> void:
 	"""Deferred treasury update to ensure settlement is loaded"""
+	# Wait until SettlementManager has a settlement, but don't hang forever
+	var attempts := 0
+	var max_attempts := 30  # ~0.5 seconds at 60fps
+
+	while (SettlementManager.current_settlement == null or SettlementManager.current_settlement.treasury == null) and attempts < max_attempts:
+		await get_tree().process_frame
+		attempts += 1
+
 	if SettlementManager.current_settlement and SettlementManager.current_settlement.treasury:
 		_update_treasury_display(SettlementManager.current_settlement.treasury)
 	else:
