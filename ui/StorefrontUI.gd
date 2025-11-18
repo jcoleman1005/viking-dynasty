@@ -36,6 +36,7 @@ func _ready() -> void:
 	EventBus.purchase_successful.connect(_on_purchase_successful)
 	EventBus.settlement_loaded.connect(_on_settlement_loaded)
 	DynastyManager.jarl_stats_updated.connect(_update_jarl_stats_display)
+	DynastyManager.year_ended.connect(_update_garrison_display)
 	Loggie.debug("Event Bus signals connected", "StorefrontUI")
 	
 	# Initial Setup
@@ -104,18 +105,32 @@ func _update_garrison_display() -> void:
 			garrison_list_container.add_child(header_label)
 			
 			for warband in SettlementManager.current_settlement.warbands:
-				var unit_label := Label.new()
-				var status = ""
-				if warband.is_wounded: status = " (Wounded)"
+				# --- UI CHANGE: Use RichTextLabel ---
+				# We need RichTextLabel for the colors to work.
+				# Since the container expects Control nodes, we can swap Label for RichTextLabel.
+				var unit_label := RichTextLabel.new()
+				unit_label.fit_content = true
+				unit_label.bbcode_enabled = true
+				unit_label.custom_minimum_size = Vector2(300, 24) # Ensure width
 				
-				unit_label.text = "• %s (%s) - Men: %d/%d%s" % [
+				var status = ""
+				if warband.is_wounded: status += " [color=red](Wounded)[/color]"
+				
+				# Get Jarl Name for flavor text
+				var jarl_name = "the Jarl"
+				if DynastyManager.current_jarl:
+					jarl_name = DynastyManager.current_jarl.display_name
+				
+				var loyalty_text = warband.get_loyalty_description(jarl_name)
+				
+				unit_label.text = "• %s (%d/10) - %s%s" % [
 					warband.custom_name, 
-					warband.unit_type.display_name, 
 					warband.current_manpower,
-					10, # Max constant
+					loyalty_text,
 					status
 				]
 				
+				# Tooltip
 				if not warband.history_log.is_empty():
 					unit_label.mouse_filter = Control.MOUSE_FILTER_STOP
 					unit_label.tooltip_text = "\n".join(warband.history_log)

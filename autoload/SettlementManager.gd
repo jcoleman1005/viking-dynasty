@@ -187,7 +187,12 @@ func get_labor_capacities() -> Dictionary:
 
 func deposit_resources(loot: Dictionary) -> void:
 	if not current_settlement: return
+	
 	for resource_type in loot:
+		# --- NEW: Skip special keys ---
+		if resource_type.begins_with("_"): continue
+		# ------------------------------
+		
 		var amount = loot[resource_type]
 		if resource_type == "population":
 			if not "population_total" in current_settlement: current_settlement.population_total = 10
@@ -196,6 +201,7 @@ func deposit_resources(loot: Dictionary) -> void:
 			current_settlement.treasury[resource_type] += amount
 		else:
 			current_settlement.treasury[resource_type] = amount
+			
 	EventBus.treasury_updated.emit(current_settlement.treasury)
 	save_settlement()
 
@@ -213,7 +219,7 @@ func attempt_purchase(item_cost: Dictionary) -> bool:
 func calculate_payout() -> Dictionary:
 	if not current_settlement: return {}
 	_process_construction_labor()
-
+	
 	var total_payout: Dictionary = {}
 	var stewardship_bonus := 1.0
 	var jarl = DynastyManager.get_current_jarl()
@@ -248,7 +254,11 @@ func calculate_payout() -> Dictionary:
 		if total_payout.has("gold"): total_payout["gold"] = int(total_payout["gold"] * 0.75)
 		current_settlement.has_stability_debuff = false
 		save_settlement()
-
+	var hunger_warnings = _process_warband_hunger()
+	if not hunger_warnings.is_empty():
+		# Store messages in a special key starting with underscore
+		total_payout["_messages"] = hunger_warnings
+		
 	return total_payout
 
 # --- CONSTRUCTION (UNCHANGED) ---
@@ -462,3 +472,40 @@ func apply_raid_damages() -> Dictionary:
 	save_settlement()
 	EventBus.treasury_updated.emit(current_settlement.treasury)
 	return report
+
+func _process_warband_hunger() -> Array[String]:
+	if not current_settlement: return []
+	
+	var deserters: Array[WarbandData] = []
+	var warnings: Array[String] = []
+	
+	for warband in current_settlement.warbands:
+		var old_loyalty = warband.loyalty
+		
+		# 1. Decay Loyalty
+		var decay = 25
+		warband.modify_loyalty(-decay)
+		warband.turns_idle += 1
+		
+		# 2. Generate Warnings based on NEW loyalty
+		if warband.loyalty <= 0:
+			if randf() < 0.5:
+				deserters.append(warband)
+				warnings.append("[color=red]DESERTION: The %s have left your service![/color]" % warband.custom_name)
+				Loggie.msg("The %s have betrayed you and left!" % warband.custom_name).domain("SETTLEMENT").warn()
+			else:
+				warnings.append("[color=red]MUTINY: The %s refuse to obey! Raid immediately![/color]" % warband.custom_name)
+				Loggie.msg("The %s are openly mutinous!" % warband.custom_name).domain("SETTLEMENT").warn()
+				
+		elif warband.loyalty <= 25:
+			warnings.append("[color=yellow]UNREST: The %s are growing restless (%d%% Loyalty).[/color]" % [warband.custom_name, warband.loyalty])
+			Loggie.msg("The %s are losing faith in your leadership." % warband.custom_name).domain("SETTLEMENT").info()
+			
+	# Remove deserters
+	for bad_apple in deserters:
+		current_settlement.warbands.erase(bad_apple)
+		
+	if not deserters.is_empty() or not warnings.is_empty():
+		save_settlement()
+		
+	return warnings

@@ -3,7 +3,7 @@ extends PanelContainer
 
 signal collect_button_pressed(payout: Dictionary)
 
-@onready var payout_label: Label = $MarginContainer/VBoxContainer/PayoutLabel
+@onready var payout_label: RichTextLabel = $MarginContainer/VBoxContainer/PayoutLabel
 @onready var collect_button: Button = $MarginContainer/VBoxContainer/CollectButton
 
 var _current_payout: Dictionary = {}
@@ -19,19 +19,36 @@ func _ready() -> void:
 	hide()
 
 func display_payout(payout: Dictionary, title: String = "Welcome home!") -> void:
-	if payout.is_empty():
-		# If there's no payout, just emit the signal and don't show
-		collect_button_pressed.emit({})
-		return
-
 	_current_payout = payout
 	
-	# Use the new title parameter
-	var payout_text: String = "%s\n\nResources gathered:\n" % title
-	for resource_type in payout:
-		payout_text += "- %s: %d\n" % [resource_type.capitalize(), payout[resource_type]]
+	var text: String = "[b]%s[/b]\n\n" % title
 	
-	payout_label.text = payout_text
+	# 1. Add Warnings first (High Priority)
+	if payout.has("_messages"):
+		var messages = payout["_messages"]
+		text += "[b]Incidents:[/b]\n"
+		for msg in messages:
+			text += "%s\n" % msg
+		text += "\n"
+	
+	# 2. Add Resources
+	text += "[b]Resources gathered:[/b]\n"
+	var found_resources = false
+	
+	for key in payout:
+		if key.begins_with("_"): continue
+		text += "- %s: %d\n" % [key.capitalize(), payout[key]]
+		found_resources = true
+		
+	if not found_resources:
+		text += "(None)\n"
+	
+	# Assign to label
+	# IMPORTANT: If your PayoutLabel is a standard Label, you need to
+	# check 'Use Custom Formatting' or similar if available, or swap to RichTextLabel.
+	# Assuming you swap it or use a RichTextLabel:
+	payout_label.text = text
+	
 	show()
 
 func _on_collect_pressed() -> void:

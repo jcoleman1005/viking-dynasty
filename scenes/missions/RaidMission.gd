@@ -199,6 +199,11 @@ func _spawn_player_garrison() -> void:
 	
 	for warband in warbands:
 		if warband.is_wounded: continue
+		# Going on a raid restores 50 loyalty immediately
+		if warband.loyalty < 100:
+			warband.modify_loyalty(50)
+			warband.turns_idle = 0
+			Loggie.msg("Warband %s: Loyalty restored by battle!" % warband.custom_name).domain("RAIDMISSION").info()
 		
 		var unit_data = warband.unit_type
 		if not unit_data or not unit_data.scene_to_spawn: continue
