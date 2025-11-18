@@ -239,3 +239,7 @@ func _create_unit_hitbox() -> void:
 	hitbox_shape.shape = shape_to_use
 	hitbox_area.add_child(hitbox_shape)
 	add_child(hitbox_area)
+	
+func command_retreat(target_pos: Vector2) -> void:
+	if fsm:
+		fsm.command_retreat(target_pos)

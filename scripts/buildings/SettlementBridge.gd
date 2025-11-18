@@ -385,18 +385,26 @@ func _on_building_right_clicked(building: BaseBuilding) -> void:
 
 func _process_raid_return() -> void:
 	var result = DynastyManager.pending_raid_result
-	var difficulty = DynastyManager.current_raid_difficulty
+	var outcome = result.get("outcome")
 	var loot_summary = {}
 	
-	if result.get("outcome") == "victory":
+	if outcome == "victory":
 		var gold = result.get("gold_looted", 0)
-		var bonus_gold = 200 + (difficulty * 50)
-		loot_summary["gold"] = gold + bonus_gold
-		loot_summary["population"] = randi_range(2, 4) * difficulty
-		
-		# Deposit and Show
-		SettlementManager.deposit_resources(loot_summary)
+		var bonus = 200 # Victory Bonus
+		loot_summary["gold"] = gold + bonus
+		loot_summary["population"] = randi_range(2, 4)
 		if is_instance_valid(end_of_year_popup):
-			end_of_year_popup.display_payout(loot_summary, "Raid Successful!")
+			end_of_year_popup.display_payout(loot_summary, "Raid Victory!")
+			
+	elif outcome == "retreat":
+		var gold = result.get("gold_looted", 0)
+		# No bonus, no population
+		loot_summary["gold"] = gold
+		
+		if is_instance_valid(end_of_year_popup):
+			end_of_year_popup.display_payout(loot_summary, "Raid Retreat\n(Loot Secured)")
+			
+	if not loot_summary.is_empty():
+		SettlementManager.deposit_resources(loot_summary)
 			
 	DynastyManager.pending_raid_result.clear()

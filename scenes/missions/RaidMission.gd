@@ -16,6 +16,11 @@ extends Node2D
 # --- Defensive Mission Settings ---
 @export var is_defensive_mission: bool = false
 @export var enemy_spawn_position: NodePath
+# --- NEW: RAID DIRECTION SETTING ---
+## The direction units should step towards when disembarking.
+## (1, 0) = Right, (-1, 0) = Left, (0, 1) = Down, etc.
+## This allows future maps to rotate the beach landing.
+@export var landing_direction: Vector2 = Vector2.RIGHT
 
 # --- Node References ---
 @onready var player_spawn_pos: Marker2D = $PlayerStartPosition
@@ -81,7 +86,9 @@ func initialize_mission() -> void:
 			enemy_base_data = load(default_enemy_base_path)
 		_load_enemy_base()
 		_spawn_player_garrison()
-	
+	if not is_defensive_mission:
+		_spawn_retreat_zone()
+		
 	if is_instance_valid(objective_building):
 		objective_manager.initialize(rts_controller, objective_building, building_container, enemy_units)
 		
@@ -194,22 +201,22 @@ func _spawn_player_garrison() -> void:
 	var units_per_row: int = player_spawn_formation.get("units_per_row", 5)
 	var spacing: float = player_spawn_formation.get("spacing", 40.0)
 	
-	# This variable tracks WHERE on the grid we are spawning
 	var current_squad_index: int = 0
 	
 	for warband in warbands:
 		if warband.is_wounded: continue
-		# Going on a raid restores 50 loyalty immediately
+		
+		# --- NEW: Restore Loyalty on Deploy ---
 		if warband.loyalty < 100:
 			warband.modify_loyalty(50)
 			warband.turns_idle = 0
 			Loggie.msg("Warband %s: Loyalty restored by battle!" % warband.custom_name).domain("RAIDMISSION").info()
+		# --------------------------------------
 		
 		var unit_data = warband.unit_type
 		if not unit_data or not unit_data.scene_to_spawn: continue
 		
-		# --- SQUAD LOGIC: 10 MEN [cite: 7] ---
-		# 1 Thegn, 1 Banner, 8 Huscarls
+		# --- SQUAD LOGIC: 10 MEN ---
 		for i in range(warband.current_manpower):
 			var unit_instance: Node2D = unit_data.scene_to_spawn.instantiate()
 			if not unit_instance is BaseUnit: continue
@@ -218,36 +225,33 @@ func _spawn_player_garrison() -> void:
 			unit_instance.warband_ref = warband
 			unit_instance.data = unit_data
 			
-			# Role & Naming
-			if i == 0:
-				unit_instance.name = warband.custom_name + "_Thegn"
-				# Future: Add visual distinction for Thegn
-			elif i == 1:
-				unit_instance.name = warband.custom_name + "_Banner"
-				# Future: Add visual distinction for Banner
-			else:
-				unit_instance.name = warband.custom_name + "_Huscarl_" + str(i)
+			# Naming
+			if i == 0: unit_instance.name = warband.custom_name + "_Thegn"
+			elif i == 1: unit_instance.name = warband.custom_name + "_Banner"
+			else: unit_instance.name = warband.custom_name + "_Huscarl_" + str(i)
 			
-			# --- FORCE CONTROLLABLE LAYER ---
-			# Layer 2 = Player Unit (Value 2)
+			# Force Controllable
 			unit_instance.collision_layer = 2 
-			# ------------------------------
 
-			# --- POSITIONING ---
-			# Calculate Squad Base Position
+			# --- FIX: DYNAMIC SPAWN OFFSET ---
+			var base_pos = player_spawn_pos.global_position
+			
+			if is_defensive_mission and is_instance_valid(objective_building):
+				base_pos = objective_building.global_position + Vector2(100, 100)
+			else:
+				# Offensive: Use the exported landing_direction
+				# Multiply by 200 pixels to clear the Retreat Zone
+				base_pos += landing_direction * 200.0
+			# ---------------------------------
+			
+			# Squad Positioning
 			var row = current_squad_index / units_per_row
 			var col = current_squad_index % units_per_row
 			
-			var base_pos = player_spawn_pos.global_position
-			if is_defensive_mission and is_instance_valid(objective_building):
-				base_pos = objective_building.global_position + Vector2(100, 100)
-			
-			# Offset for the specific squad
-			base_pos.x += col * (spacing * 4) # Gap between squads
+			base_pos.x += col * (spacing * 4)
 			base_pos.y += row * (spacing * 3)
 			
-			# Offset for the individual unit (formation within the squad)
-			# 2 rows of 5
+			# Individual Unit Positioning
 			var unit_x = (i % 5) * 25
 			var unit_y = (i / 5) * 25
 			
@@ -259,6 +263,7 @@ func _spawn_player_garrison() -> void:
 			add_child(unit_instance)
 			
 		current_squad_index += 1
+
 
 func _spawn_enemy_wave() -> void:
 	var enemy_spawner = get_node_or_null(enemy_spawn_position)
@@ -378,3 +383,28 @@ func _on_fyrd_arrived() -> void:
 		# Command them to attack player units immediately
 		if unit.attack_ai:
 			unit.attack_ai.ai_mode = AttackAI.AI_Mode.DEFAULT # Aggressive
+func _spawn_retreat_zone() -> void:
+	var zone = Area2D.new()
+	zone.name = "RetreatZone"
+	zone.set_script(load("res://scenes/missions/RetreatZone.gd"))
+	
+	# Visual Debug
+	var poly = Polygon2D.new()
+	poly.color = Color(0.2, 0.8, 1.0, 0.3) # Blue extraction zone
+	var points = PackedVector2Array([Vector2(-100,-100), Vector2(100,-100), Vector2(100,100), Vector2(-100,100)])
+	poly.polygon = points
+	zone.add_child(poly)
+	
+	# Collision
+	var coll = CollisionPolygon2D.new()
+	coll.polygon = points
+	zone.add_child(coll)
+	
+	# Position at Spawn
+	zone.global_position = player_spawn_pos.global_position
+	
+	add_child(zone)
+	
+	# Connect Signal
+	if zone.has_signal("unit_evacuated"):
+		zone.unit_evacuated.connect(objective_manager.on_unit_evacuated)

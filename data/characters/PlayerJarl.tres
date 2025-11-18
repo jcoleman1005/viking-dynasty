@@ -7,12 +7,12 @@
 [sub_resource type="Resource" id="Resource_0xpic"]
 script = ExtResource("1_4gouw")
 display_name = "Torstein"
-age = 22
+age = 25
 
 [sub_resource type="Resource" id="Resource_4gouw"]
 script = ExtResource("1_4gouw")
 display_name = "Gunnhild"
-age = 21
+age = 24
 gender = "Female"
 
 [sub_resource type="Resource" id="Resource_0bn2j"]
@@ -22,7 +22,7 @@ display_name = "Frail"
 [sub_resource type="Resource" id="Resource_oxx44"]
 script = ExtResource("1_4gouw")
 display_name = "Lagertha"
-age = 19
+age = 22
 gender = "Female"
 genetic_trait = SubResource("Resource_0bn2j")
 
@@ -33,26 +33,26 @@ display_name = "Genius"
 [sub_resource type="Resource" id="Resource_sjsvf"]
 script = ExtResource("1_4gouw")
 display_name = "Ingrid"
-age = 17
+age = 20
 gender = "Female"
 genetic_trait = SubResource("Resource_3ar3u")
 
 [sub_resource type="Resource" id="Resource_op288"]
 script = ExtResource("1_4gouw")
 display_name = "Knut"
-age = 13
 
 [sub_resource type="Resource" id="Resource_3vd45"]
 script = ExtResource("1_4gouw")
 display_name = "Erik"
-age = 8
+age = 11
 
 [resource]
 script = ExtResource("1_jarl_data")
 display_name = "Lagertha"
-age = 24
+age = 27
 gender = "Female"
-years_since_action = 10
+current_authority = 2
+years_since_action = 13
 legitimacy = 0
 ancestors = Array[Dictionary]([{
 "death_reason": "Died of old age",

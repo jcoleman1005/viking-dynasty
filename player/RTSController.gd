@@ -166,6 +166,15 @@ func _on_select_command(select_rect: Rect2, is_box_select: bool) -> void:
 			closest_unit.set_selected(true)
 
 func _on_move_command(target_position: Vector2) -> void:
+	# --- FIX: Prune invalid units immediately ---
+	# This removes any "zombies" that might have sneaked into the selection
+	var valid_units: Array[BaseUnit] = []
+	for unit in selected_units:
+		if is_instance_valid(unit):
+			valid_units.append(unit)
+	selected_units = valid_units
+	# --------------------------------------------
+
 	if selected_units.is_empty():
 		return
 	
@@ -176,20 +185,23 @@ func _on_move_command(target_position: Vector2) -> void:
 		# Multiple units - use formation
 		var units_as_node2d: Array[Node2D] = []
 		for unit in selected_units:
-			units_as_node2d.append(unit)
+			# Double-check validity just to be safe
+			if is_instance_valid(unit):
+				units_as_node2d.append(unit)
 		
+		if units_as_node2d.is_empty(): return
+
 		var formation = SquadFormation.new(units_as_node2d)
 		formation.formation_type = current_formation
 		formation.unit_spacing = 45.0
 		
-		# --- MODIFIED: Calculate direction ---
-		# For a simple right-click, we just face the destination
+		# Calculate direction
 		var group_center = formation.formation_center
 		var direction = (target_position - group_center).normalized()
 		if direction.is_zero_approx():
-			direction = Vector2.DOWN # Default fallback
+			direction = Vector2.DOWN 
+			
 		formation.move_to_position(target_position, direction)
-		# -------------------------------------
 
 # --- THIS IS THE NEW FUNCTION FOR DRAG-FORMATIONS ---
 func _on_formation_move_command(target_position: Vector2, direction_vector: Vector2):
@@ -276,3 +288,25 @@ func _select_control_group(num: int) -> void:
 			camera.global_position = center_pos
 		elif camera:
 			camera.global_position = center_pos
+			
+func command_scramble(target_position: Vector2) -> void:
+	"""
+	Orders ALL controllable units to run individually to the target.
+	Uses the new RETREAT state to ignore combat.
+	"""
+	Loggie.msg("RTSController: SCRAMBLE! Breaking formation.").domain("RTS").info()
+	
+	_clear_selection()
+	
+	for unit in controllable_units:
+		if not is_instance_valid(unit): continue
+		
+		var panic_offset = Vector2(randf_range(-80, 80), randf_range(-80, 80))
+		var unique_dest = target_position + panic_offset
+		
+		# --- FIX: Check for specific retreat command ---
+		if unit.fsm and unit.fsm.has_method("command_retreat"):
+			unit.fsm.command_retreat(unique_dest)
+		else:
+			# Fallback for older unit types
+			unit.command_move_to(unique_dest)

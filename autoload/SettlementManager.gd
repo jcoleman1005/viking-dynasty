@@ -59,27 +59,21 @@ func _on_player_unit_died(unit: Node2D) -> void:
 	if not current_settlement: return
 	
 	var base_unit = unit as BaseUnit
-	# Safety check: ensure it's a tracked unit
 	if not base_unit or not base_unit.warband_ref:
 		return 
 
 	var warband = base_unit.warband_ref
 	
-	# Check if this warband is actually in our roster
 	if warband in current_settlement.warbands:
-		
-		# --- LOGIC CHANGE: Casualty vs Wipe ---
+		# Casualty Logic
 		warband.current_manpower -= 1
 		
 		if warband.current_manpower <= 0:
-			# Total Wipeout
 			current_settlement.warbands.erase(warband)
 			Loggie.msg("☠️ Warband Destroyed: %s" % warband.custom_name).domain("SETTLEMENT").warn()
 		else:
-			# Just a casualty
 			Loggie.msg("⚔️ Casualty in %s. Remaining: %d" % [warband.custom_name, warband.current_manpower]).domain("SETTLEMENT").info()
 		
-		# Always save state immediately
 		save_settlement()
 
 func recruit_unit(unit_data: UnitData) -> void:
@@ -113,50 +107,9 @@ func _load_fallback_data(data: SettlementData) -> void:
 		current_settlement = data.duplicate(true)
 		if current_settlement.warbands == null:
 			current_settlement.warbands = []
-		_migrate_legacy_properties()
 		Loggie.msg("Loaded default template.").domain("SETTLEMENT").info()
 	else:
 		Loggie.msg("No data provided and no save file found.").domain("SETTLEMENT").error()
-
-func _migrate_legacy_properties() -> void:
-	"""Migrates old settlement data properties to new format."""
-	if not current_settlement:
-		return
-	
-	# Safely migrate 'garrisoned_units' to 'warbands' if it exists
-	if "garrisoned_units" in current_settlement:
-		var legacy_units = current_settlement.get("garrisoned_units")
-		if legacy_units is Dictionary and not legacy_units.is_empty():
-			# Convert old dictionary format to new warband array
-			for unit_type in legacy_units:
-				var count = legacy_units[unit_type] as int
-				for i in range(count):
-					# Try to find matching unit data
-					var unit_path = "res://data/units/Unit_PlayerRaider.tres"
-					if ResourceLoader.exists(unit_path):
-						var unit_data = load(unit_path) as UnitData
-						if unit_data:
-							var warband = WarbandData.new(unit_data)
-							current_settlement.warbands.append(warband)
-		
-		# Remove the old property
-		if current_settlement.has_method("remove_meta"):
-			current_settlement.remove_meta("garrisoned_units")
-		
-		Loggie.msg("Migrated %d legacy units to warband format." % current_settlement.warbands.size()).domain("SETTLEMENT").info()
-	
-	# Ensure other required properties exist
-	if not "population_total" in current_settlement:
-		current_settlement.population_total = 10
-	
-	if not "worker_assignments" in current_settlement:
-		current_settlement.worker_assignments = {
-			"construction": 0,
-			"food": 0,
-			"wood": 0,
-			"stone": 0,
-			"gold": 0
-		}
 
 func save_settlement() -> void:
 	if not current_settlement: return
@@ -167,7 +120,7 @@ func save_settlement() -> void:
 func has_current_settlement() -> bool:
 	return current_settlement != null
 
-# --- ECONOMY (UNCHANGED) ---
+# --- ECONOMY ---
 
 func get_labor_capacities() -> Dictionary:
 	var capacities = { "construction": 0, "food": BASE_GATHERING_CAPACITY, "wood": BASE_GATHERING_CAPACITY, "stone": BASE_GATHERING_CAPACITY }
@@ -187,11 +140,8 @@ func get_labor_capacities() -> Dictionary:
 
 func deposit_resources(loot: Dictionary) -> void:
 	if not current_settlement: return
-	
 	for resource_type in loot:
-		# --- NEW: Skip special keys ---
 		if resource_type.begins_with("_"): continue
-		# ------------------------------
 		
 		var amount = loot[resource_type]
 		if resource_type == "population":
@@ -218,9 +168,16 @@ func attempt_purchase(item_cost: Dictionary) -> bool:
 
 func calculate_payout() -> Dictionary:
 	if not current_settlement: return {}
+	
 	_process_construction_labor()
 	
+	# Process Hunger
+	var hunger_warnings = _process_warband_hunger()
+	
 	var total_payout: Dictionary = {}
+	if not hunger_warnings.is_empty():
+		total_payout["_messages"] = hunger_warnings
+
 	var stewardship_bonus := 1.0
 	var jarl = DynastyManager.get_current_jarl()
 	if jarl:
@@ -254,14 +211,10 @@ func calculate_payout() -> Dictionary:
 		if total_payout.has("gold"): total_payout["gold"] = int(total_payout["gold"] * 0.75)
 		current_settlement.has_stability_debuff = false
 		save_settlement()
-	var hunger_warnings = _process_warband_hunger()
-	if not hunger_warnings.is_empty():
-		# Store messages in a special key starting with underscore
-		total_payout["_messages"] = hunger_warnings
-		
+
 	return total_payout
 
-# --- CONSTRUCTION (UNCHANGED) ---
+# --- CONSTRUCTION & PATHFINDING ---
 
 func get_active_grid_cell_size() -> Vector2:
 	if is_instance_valid(active_astar_grid): return active_astar_grid.cell_size
@@ -390,11 +343,22 @@ func _is_cell_within_bounds(grid_position: Vector2i) -> bool:
 	var bounds = active_astar_grid.region
 	return grid_position.x >= bounds.position.x and grid_position.x < bounds.end.x and grid_position.y >= bounds.position.y and grid_position.y < bounds.end.y
 
+# --- FIX: Robust Pathfinding with Clamping ---
 func get_astar_path(start_pos: Vector2, end_pos: Vector2, allow_partial_path: bool = false) -> PackedVector2Array:
 	if not is_instance_valid(active_astar_grid): return PackedVector2Array()
-	var start = Vector2i(start_pos / active_astar_grid.cell_size)
-	var end = Vector2i(end_pos / active_astar_grid.cell_size)
+	
+	var cell_size = active_astar_grid.cell_size
+	var start = Vector2i(start_pos / cell_size)
+	var end = Vector2i(end_pos / cell_size)
+	
+	# If start is invalid, we can't path
 	if not _is_cell_within_bounds(start): return PackedVector2Array()
+	
+	# Clamp target to grid bounds
+	var bounds = active_astar_grid.region
+	end.x = clampi(end.x, bounds.position.x, bounds.end.x - 1)
+	end.y = clampi(end.y, bounds.position.y, bounds.end.y - 1)
+	
 	return active_astar_grid.get_point_path(start, end, allow_partial_path)
 
 func set_astar_point_solid(grid_position: Vector2i, solid: bool) -> void:
@@ -473,6 +437,8 @@ func apply_raid_damages() -> Dictionary:
 	EventBus.treasury_updated.emit(current_settlement.treasury)
 	return report
 
+# --- HUNGER LOGIC ---
+
 func _process_warband_hunger() -> Array[String]:
 	if not current_settlement: return []
 	
@@ -480,28 +446,23 @@ func _process_warband_hunger() -> Array[String]:
 	var warnings: Array[String] = []
 	
 	for warband in current_settlement.warbands:
-		var old_loyalty = warband.loyalty
-		
-		# 1. Decay Loyalty
 		var decay = 25
 		warband.modify_loyalty(-decay)
 		warband.turns_idle += 1
 		
-		# 2. Generate Warnings based on NEW loyalty
 		if warband.loyalty <= 0:
 			if randf() < 0.5:
 				deserters.append(warband)
-				warnings.append("[color=red]DESERTION: The %s have left your service![/color]" % warband.custom_name)
+				warnings.append("[color=red]DESERTION: The %s have left![/color]" % warband.custom_name)
 				Loggie.msg("The %s have betrayed you and left!" % warband.custom_name).domain("SETTLEMENT").warn()
 			else:
-				warnings.append("[color=red]MUTINY: The %s refuse to obey! Raid immediately![/color]" % warband.custom_name)
+				warnings.append("[color=red]MUTINY: The %s refuse to obey![/color]" % warband.custom_name)
 				Loggie.msg("The %s are openly mutinous!" % warband.custom_name).domain("SETTLEMENT").warn()
 				
 		elif warband.loyalty <= 25:
 			warnings.append("[color=yellow]UNREST: The %s are growing restless (%d%% Loyalty).[/color]" % [warband.custom_name, warband.loyalty])
 			Loggie.msg("The %s are losing faith in your leadership." % warband.custom_name).domain("SETTLEMENT").info()
 			
-	# Remove deserters
 	for bad_apple in deserters:
 		current_settlement.warbands.erase(bad_apple)
 		

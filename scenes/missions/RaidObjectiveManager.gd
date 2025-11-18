@@ -1,7 +1,6 @@
 # res://scenes/missions/RaidObjectiveManager.gd
 #
-# Manages all mission-specific logic for a raid, including
-# loot, win conditions, and loss conditions.
+# Manages all mission-specific logic: Loot, Win/Loss, Fyrd Timer, and Retreat.
 extends Node
 class_name RaidObjectiveManager
 
@@ -15,9 +14,12 @@ var raid_loot: RaidLootData
 var rts_controller: RTSController
 var objective_building: BaseBuilding
 var building_container: Node2D
-var enemy_units: Array[BaseUnit] = [] # For defensive win condition
+var enemy_units: Array[BaseUnit] = [] 
 var is_initialized: bool = false
 var mission_over: bool = false
+
+# --- RETREAT STATE ---
+var escaped_unit_count: int = 0
 
 # --- FYRD TIMER STATE ---
 const FYRD_ARRIVAL_TIME: float = 120.0 # 2 Minutes
@@ -55,10 +57,6 @@ func initialize(
 	p_building_container: Node2D,
 	p_enemy_units: Array[BaseUnit] = []
 ) -> void:
-	"""
-	Called by RaidMission.gd after the level is loaded
-	to pass in all necessary scene references.
-	"""
 	if is_initialized:
 		Loggie.msg("RaidObjectiveManager: Already initialized, skipping.").domain("RTS").info()
 		return
@@ -79,50 +77,120 @@ func initialize(
 	# Connect to all necessary signals
 	if not is_defensive_mission:
 		_connect_to_building_signals()
-		# Start Fyrd Timer for offensive missions
-		_setup_timer_ui()
+		
+		# --- SETUP UI (Timer + Retreat Button) ---
+		_setup_mission_ui()
 		fyrd_timer_active = true
+		# -----------------------------------------
 		
 	_setup_win_loss_conditions()
-	
-	# Mark as initialized
 	is_initialized = true
 
+# --- UI SETUP ---
+
+func _setup_mission_ui() -> void:
+	var canvas = get_parent().get_node_or_null("CanvasLayer")
+	if not canvas: return
+	
+	if not is_defensive_mission:
+		# 1. Timer
+		_setup_timer_ui()
+		
+		# 2. Retreat Button
+		var retreat_btn = Button.new()
+		retreat_btn.text = "RETREAT!"
+		retreat_btn.modulate = Color(1, 0.5, 0.5)
+		retreat_btn.add_theme_font_size_override("font_size", 20)
+		retreat_btn.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 20)
+		retreat_btn.position.y += 20
+		retreat_btn.position.x -= 20
+		retreat_btn.pressed.connect(_on_retreat_ordered)
+		canvas.add_child(retreat_btn)
+
+func _setup_timer_ui() -> void:
+	var canvas = get_parent().get_node_or_null("CanvasLayer")
+	if canvas:
+		timer_label = Label.new()
+		timer_label.add_theme_font_size_override("font_size", 24)
+		timer_label.add_theme_color_override("font_color", Color.WHITE)
+		timer_label.add_theme_constant_override("outline_size", 4)
+		timer_label.add_theme_color_override("font_outline_color", Color.BLACK)
+		
+		timer_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+		timer_label.position.y += 20
+		canvas.add_child(timer_label)
+
+# --- RETREAT LOGIC ---
+
+func _on_retreat_ordered() -> void:
+	Loggie.msg("Retreat Ordered! All units scrambling.").domain("RTS").warn()
+	
+	var spawn_marker = get_parent().get_node_or_null("PlayerStartPosition")
+	if spawn_marker and rts_controller:
+		# --- FIX: Use Scramble instead of Formation Move ---
+		rts_controller.command_scramble(spawn_marker.global_position)
+		# ---------------------------------------------------
+
+func on_unit_evacuated(unit: BaseUnit) -> void:
+	escaped_unit_count += 1
+	
+	# 1. Clean up RTS Controller immediately
+	# This prevents "Zombie Selection" errors if the player tries to drag-select fading units
+	if is_instance_valid(rts_controller):
+		rts_controller.remove_unit(unit)
+
+	# 2. Check remaining units
+	# Since RetreatZone removed the unit from the group, this count is now accurate
+	var remaining = get_tree().get_nodes_in_group("player_units").size()
+	
+	Loggie.msg("Unit escaped. Remaining on field: %d" % remaining).domain("RTS").info()
+	
+	if remaining <= 0 and not mission_over:
+		_end_mission_via_retreat()
+
+func _end_mission_via_retreat() -> void:
+	if mission_over: return
+	mission_over = true
+	
+	var raw_gold = raid_loot.collected_loot.get("gold", 0)
+	Loggie.msg("Retreat Complete. Loot secured: %d" % raw_gold).domain("RTS").info()
+	
+	var result = {
+		"outcome": "retreat",
+		"gold_looted": raw_gold
+	}
+	DynastyManager.pending_raid_result = result
+	
+	_show_victory_message("RETREAT", "We escaped with what we could carry.")
+	await get_tree().create_timer(3.0).timeout
+	EventBus.scene_change_requested.emit("settlement")
+
+# --- STANDARD OBJECTIVE LOGIC ---
 
 func _connect_to_building_signals() -> void:
-	# Connect to the Great Hall for the win condition
 	if objective_building.has_signal("building_destroyed"):
 		if not objective_building.building_destroyed.is_connected(_on_enemy_hall_destroyed):
 			objective_building.building_destroyed.connect(_on_enemy_hall_destroyed)
 	
-	# Connect to *all* buildings for loot collection
 	for building in building_container.get_children():
 		if building is BaseBuilding and building.has_signal("building_destroyed"):
 			if not building.building_destroyed.is_connected(_on_enemy_building_destroyed_for_loot):
 				building.building_destroyed.connect(_on_enemy_building_destroyed_for_loot)
 
-# --- Objective Logic ---
-
 func _on_enemy_building_destroyed_for_loot(building: BaseBuilding) -> void:
 	if mission_over: return
-	
 	var building_data = building.data as BuildingData
-	
 	if raid_loot and building_data:
 		raid_loot.add_loot_from_building(building_data)
-		Loggie.msg("RaidObjectiveManager: Building destroyed: %s" % building_data.display_name).domain("RTS").info()
+		Loggie.msg("Loot secured from %s" % building_data.display_name).domain("RTS").info()
 
 func _setup_win_loss_conditions() -> void:
 	if is_defensive_mission:
-		# Lose if Hall is destroyed
 		if objective_building.has_signal("building_destroyed"):
 			objective_building.building_destroyed.connect(_on_player_hall_destroyed)
-		# Win if all enemies are defeated
 		_check_defensive_win_condition()
 	else:
-		# Lose if all player units are destroyed
 		_check_loss_condition()
-
 
 func _check_loss_condition() -> void:
 	if mission_over: return
@@ -142,11 +210,8 @@ func _check_defensive_win_condition() -> void:
 	if mission_over: return
 	await get_tree().create_timer(1.0).timeout
 
-	# Prune dead/invalid units
 	enemy_units = enemy_units.filter(func(unit): return is_instance_valid(unit))
-	var remaining_enemies = enemy_units.size()
-	
-	if remaining_enemies == 0:
+	if enemy_units.is_empty():
 		_on_defensive_mission_won()
 		return
 
@@ -166,7 +231,6 @@ func _on_defensive_mission_won() -> void:
 func _on_mission_failed(reason: String) -> void:
 	if mission_over: return
 	mission_over = true
-	
 	Loggie.msg("Mission Failed! %s" % reason).domain("RTS").info()
 	
 	if is_defensive_mission:
@@ -179,127 +243,17 @@ func _on_mission_failed(reason: String) -> void:
 	await get_tree().create_timer(6.0).timeout
 	EventBus.scene_change_requested.emit("settlement")
 
-func _show_failure_message(reason: String) -> void:
-	var failure_popup = Control.new()
-	failure_popup.name = "FailurePopup"
-	failure_popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	failure_popup.theme = UI_THEME
-	
-	var bg_panel = Panel.new()
-	bg_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	bg_panel.modulate = Color(0, 0, 0, 0.85)
-	failure_popup.add_child(bg_panel)
-	
-	var message_container = VBoxContainer.new()
-	message_container.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	message_container.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	message_container.grow_vertical = Control.GROW_DIRECTION_BOTH
-	message_container.custom_minimum_size.x = 600 
-	
-	var failure_label = Label.new()
-	failure_label.text = "DEFEAT"
-	failure_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	failure_label.add_theme_font_size_override("font_size", 42)
-	failure_label.add_theme_color_override("font_color", Color.CRIMSON)
-	message_container.add_child(failure_label)
-	
-	var subtitle_label = RichTextLabel.new()
-	subtitle_label.text = reason
-	subtitle_label.fit_content = true
-	subtitle_label.bbcode_enabled = true
-	subtitle_label.custom_minimum_size = Vector2(600, 0)
-	subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	message_container.add_child(subtitle_label)
-	
-	var return_label = Label.new()
-	return_label.text = "\nReturning to settlement..."
-	return_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	return_label.modulate = Color(1, 1, 1, 0.6)
-	message_container.add_child(return_label)
-	
-	failure_popup.add_child(message_container)
-	
-	var canvas = get_parent().get_node_or_null("CanvasLayer")
-	if canvas:
-		canvas.add_child(failure_popup)
-	else:
-		get_tree().current_scene.add_child(failure_popup)
-
-func _show_victory_message(title: String, subtitle: String) -> void:
-	var victory_popup = Control.new()
-	victory_popup.name = "VictoryPopup"
-	victory_popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	victory_popup.theme = UI_THEME
-	
-	var bg_panel = Panel.new()
-	bg_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	bg_panel.modulate = Color(0.1, 0.1, 0.1, 0.7)
-	victory_popup.add_child(bg_panel)
-	
-	var message_container = VBoxContainer.new()
-	message_container.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	message_container.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	message_container.grow_vertical = Control.GROW_DIRECTION_BOTH
-	
-	var title_label = Label.new()
-	title_label.text = title
-	title_label.add_theme_font_size_override("font_size", 32)
-	title_label.add_theme_color_override("font_color", Color.GOLD)
-	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	message_container.add_child(title_label)
-	
-	var subtitle_label = Label.new()
-	subtitle_label.text = subtitle
-	subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	message_container.add_child(subtitle_label)
-	
-	var return_label = Label.new()
-	return_label.text = "Returning to settlement..."
-	return_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	message_container.add_child(return_label)
-	
-	victory_popup.add_child(message_container)
-	
-	var canvas = get_parent().get_node_or_null("CanvasLayer")
-	if canvas:
-		canvas.add_child(victory_popup)
-	else:
-		get_tree().current_scene.add_child(victory_popup)
-
-
 func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
-	"""Called when the enemy's Great Hall is destroyed (OFFENSIVE win condition)"""
 	if mission_over: return
 	mission_over = true
 	
-	Loggie.msg("RaidObjectiveManager: Enemy Hall destroyed! Victory!").domain("RTS").info()
-	
 	var raw_gold = raid_loot.collected_loot.get("gold", 0)
-	var result = {
-		"outcome": "victory",
-		"gold_looted": raw_gold,
-	}
+	var result = { "outcome": "victory", "gold_looted": raw_gold }
 	DynastyManager.pending_raid_result = result
 	
 	_show_victory_message("VICTORY!", "The settlement lies in ruins.\nReturning to ships...")
 	await get_tree().create_timer(3.0).timeout
 	EventBus.scene_change_requested.emit("settlement")
-
-# --- FYRD LOGIC ---
-
-func _setup_timer_ui() -> void:
-	var canvas = get_parent().get_node_or_null("CanvasLayer")
-	if canvas:
-		timer_label = Label.new()
-		timer_label.add_theme_font_size_override("font_size", 24)
-		timer_label.add_theme_color_override("font_color", Color.WHITE)
-		timer_label.add_theme_constant_override("outline_size", 4)
-		timer_label.add_theme_color_override("font_outline_color", Color.BLACK)
-		
-		# Top Center positioning
-		timer_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
-		timer_label.position.y += 20
-		canvas.add_child(timer_label)
 
 func _trigger_fyrd() -> void:
 	fyrd_timer_active = false
@@ -307,3 +261,40 @@ func _trigger_fyrd() -> void:
 	if is_instance_valid(timer_label):
 		timer_label.text = "THE FYRD IS HERE!"
 	fyrd_arrived.emit()
+
+# --- HELPERS ---
+func _show_failure_message(reason: String) -> void:
+	var popup = _create_popup_base()
+	var label = Label.new()
+	label.text = "DEFEAT\n\n" + reason
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_color_override("font_color", Color.CRIMSON)
+	popup.get_child(1).add_child(label)
+	_add_popup_to_canvas(popup)
+
+func _show_victory_message(title: String, subtitle: String) -> void:
+	var popup = _create_popup_base()
+	var label = Label.new()
+	label.text = title + "\n\n" + subtitle
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_color_override("font_color", Color.GOLD)
+	popup.get_child(1).add_child(label)
+	_add_popup_to_canvas(popup)
+
+func _create_popup_base() -> Control:
+	var popup = Control.new()
+	popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	popup.theme = UI_THEME
+	var bg = Panel.new()
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	bg.modulate = Color(0,0,0,0.85)
+	popup.add_child(bg)
+	var container = VBoxContainer.new()
+	container.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	popup.add_child(container)
+	return popup
+
+func _add_popup_to_canvas(popup: Control) -> void:
+	var canvas = get_parent().get_node_or_null("CanvasLayer")
+	if canvas: canvas.add_child(popup)
+	else: get_tree().current_scene.add_child(popup)
