@@ -69,6 +69,11 @@ func _on_player_unit_died(unit: Node2D) -> void:
 		warband.current_manpower -= 1
 		
 		if warband.current_manpower <= 0:
+			# --- NEW: HEIR DEATH CHECK ---
+			if warband.assigned_heir_name != "":
+				DynastyManager.kill_heir_by_name(warband.assigned_heir_name, "Slain leading the %s" % warband.custom_name)
+			# -----------------------------
+			
 			current_settlement.warbands.erase(warband)
 			Loggie.msg("☠️ Warband Destroyed: %s" % warband.custom_name).domain("SETTLEMENT").warn()
 		else:

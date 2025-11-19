@@ -467,3 +467,19 @@ func process_defensive_loss() -> Dictionary:
 		
 	aftermath_report["summary_text"] = text
 	return aftermath_report
+	
+func find_heir_by_name(h_name: String) -> JarlHeirData:
+	if not current_jarl: return null
+	for heir in current_jarl.heirs:
+		if heir.display_name == h_name:
+			return heir
+	return null
+
+func kill_heir_by_name(h_name: String, reason: String) -> void:
+	var heir = find_heir_by_name(h_name)
+	if heir:
+		heir.status = JarlHeirData.HeirStatus.Deceased
+		current_jarl.remove_heir(heir)
+		Loggie.msg("The Heir %s has fallen! Reason: %s" % [h_name, reason]).domain("DYNASTY").error()
+		jarl_stats_updated.emit(current_jarl)
+		_save_jarl_data()
