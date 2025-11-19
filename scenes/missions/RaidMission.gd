@@ -380,9 +380,8 @@ func _on_fyrd_arrived() -> void:
 		
 		add_child(unit)
 		
-		# Command them to attack player units immediately
-		if unit.attack_ai:
-			unit.attack_ai.ai_mode = AttackAI.AI_Mode.DEFAULT # Aggressive
+		unit.fsm_ready.connect(_on_fyrd_fsm_ready)
+		
 func _spawn_retreat_zone() -> void:
 	var zone = Area2D.new()
 	zone.name = "RetreatZone"
@@ -408,3 +407,16 @@ func _spawn_retreat_zone() -> void:
 	# Connect Signal
 	if zone.has_signal("unit_evacuated"):
 		zone.unit_evacuated.connect(objective_manager.on_unit_evacuated)
+
+func _on_fyrd_fsm_ready(unit: BaseUnit) -> void:
+	# 1. Set AI Mode to Aggressive
+	if unit.attack_ai:
+		unit.attack_ai.ai_mode = AttackAI.AI_Mode.DEFAULT
+	
+	# 2. Command: Hunt the Player / Block Exit
+	# By moving to the Player Spawn (Retreat Zone), they force a fight if you try to leave.
+	if unit.fsm:
+		# We use command_move_to. 
+		# The AttackAI component running in parallel will detect players along the way
+		# and automatically switch the FSM to ATTACKING state.
+		unit.fsm.command_move_to(player_spawn_pos.global_position)
