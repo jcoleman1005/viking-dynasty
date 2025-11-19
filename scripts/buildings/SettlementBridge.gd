@@ -388,17 +388,37 @@ func _process_raid_return() -> void:
 	var outcome = result.get("outcome")
 	var loot_summary = {}
 	
+	# --- NEW: Calculate XP Award ---
+	var xp_gain = 0
+	if outcome == "victory":
+		xp_gain = 50
+	elif outcome == "retreat":
+		xp_gain = 20
+	
+	# Distribute XP to survivors
+	if SettlementManager.current_settlement and xp_gain > 0:
+		for warband in SettlementManager.current_settlement.warbands:
+			# Skip units that didn't participate (optional logic, but simple is better for now)
+			# For now, we assume the whole garrison went on the raid.
+			if not warband.is_wounded:
+				warband.experience += xp_gain
+				Loggie.msg("Warband %s gained %d XP! (Total: %d)" % [warband.custom_name, xp_gain, warband.experience]).domain("SETTLEMENT").info()
+	# -------------------------------
+
 	if outcome == "victory":
 		var gold = result.get("gold_looted", 0)
-		var bonus = 200 # Victory Bonus
+		# Difficulty Bonus
+		var difficulty = DynastyManager.current_raid_difficulty
+		var bonus = 200 + (difficulty * 50)
+		
 		loot_summary["gold"] = gold + bonus
-		loot_summary["population"] = randi_range(2, 4)
+		loot_summary["population"] = randi_range(2, 4) * difficulty
+		
 		if is_instance_valid(end_of_year_popup):
 			end_of_year_popup.display_payout(loot_summary, "Raid Victory!")
 			
 	elif outcome == "retreat":
 		var gold = result.get("gold_looted", 0)
-		# No bonus, no population
 		loot_summary["gold"] = gold
 		
 		if is_instance_valid(end_of_year_popup):

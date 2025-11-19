@@ -105,32 +105,32 @@ func _update_garrison_display() -> void:
 			garrison_list_container.add_child(header_label)
 			
 			for warband in SettlementManager.current_settlement.warbands:
-				# --- UI CHANGE: Use RichTextLabel ---
-				# We need RichTextLabel for the colors to work.
-				# Since the container expects Control nodes, we can swap Label for RichTextLabel.
+				# --- FIX: Use RichTextLabel for Colors ---
 				var unit_label := RichTextLabel.new()
-				unit_label.fit_content = true
 				unit_label.bbcode_enabled = true
-				unit_label.custom_minimum_size = Vector2(300, 24) # Ensure width
+				unit_label.fit_content = true
+				unit_label.custom_minimum_size = Vector2(300, 24) # Ensure it has width/height
 				
 				var status = ""
-				if warband.is_wounded: status += " [color=red](Wounded)[/color]"
+				if warband.is_wounded: status = " [color=red](Wounded)[/color]"
 				
-				# Get Jarl Name for flavor text
+				# Get Jarl Name
 				var jarl_name = "the Jarl"
 				if DynastyManager.current_jarl:
 					jarl_name = DynastyManager.current_jarl.display_name
 				
+				# Get Colored Loyalty Text
 				var loyalty_text = warband.get_loyalty_description(jarl_name)
 				
-				unit_label.text = "• %s (%d/10) - %s%s" % [
+				unit_label.text = "• %s (%d/10)\n   %s - %s%s" % [
 					warband.custom_name, 
 					warband.current_manpower,
+					warband.get_level_title(), # e.g. "Trained"
 					loyalty_text,
 					status
 				]
+				# -----------------------------------------
 				
-				# Tooltip
 				if not warband.history_log.is_empty():
 					unit_label.mouse_filter = Control.MOUSE_FILTER_STOP
 					unit_label.tooltip_text = "\n".join(warband.history_log)
@@ -152,7 +152,7 @@ func _update_garrison_display() -> void:
 			unit_count_label.modulate = Color.SALMON
 		else:
 			unit_count_label.modulate = Color.WHITE
-
+			
 # --- Jarl Stats UI ---
 func _update_jarl_stats_display(jarl_data: JarlData) -> void:
 	if not jarl_data: return

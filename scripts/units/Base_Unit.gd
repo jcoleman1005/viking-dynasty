@@ -46,14 +46,30 @@ const LAYER_ENEMY_BLDG = 8
 
 func _ready() -> void:
 	if not data:
-		push_warning("BaseUnit: Node '%s' is missing its 'UnitData' resource. Cannot initialize." % name)
+		push_warning("BaseUnit: Node '%s' is missing 'UnitData'." % name)
 		return
 	
-	current_health = data.max_health
+	# --- NEW: Apply Warband Stats ---
+	var hp_mult = 1.0
+	var dmg_mult = 1.0
+	
+	if warband_ref:
+		var level_mult = warband_ref.get_stat_multiplier()
+		hp_mult = level_mult
+		dmg_mult = level_mult
+		
+		# Visual feedback for elites (Optional: Tint slightly gold)
+		if warband_ref.get_level() >= 3:
+			modulate = Color(1.1, 1.1, 1.0) # Slight brightness boost
+	
+	current_health = int(data.max_health * hp_mult)
+	
+	# We need to pass damage mod to the AttackAI
+	# --------------------------------
+	
 	_apply_texture_and_scale()
 	_setup_collision_logic()
-	
-	call_deferred("_deferred_setup")
+	call_deferred("_deferred_setup", dmg_mult) # Pass dmg modifier
 	
 	sprite.modulate = STATE_COLORS.get(UnitAIConstants.State.IDLE, Color.WHITE)
 	EventBus.pathfinding_grid_updated.connect(_on_grid_updated)
@@ -83,7 +99,7 @@ func _setup_collision_logic() -> void:
 	if separation_area:
 		separation_area.collision_mask = separation_mask
 
-func _deferred_setup() -> void:
+func _deferred_setup(damage_mult: float = 1.0) -> void:
 	_create_unit_hitbox()
 	
 	if data.ai_component_scene:
@@ -91,6 +107,9 @@ func _deferred_setup() -> void:
 		if attack_ai:
 			add_child(attack_ai)
 			attack_ai.configure_from_data(data)
+			
+			# --- NEW: Apply Damage Buff ---
+			attack_ai.attack_damage = int(attack_ai.attack_damage * damage_mult)
 			
 			var target_mask = 0
 			if self.collision_layer & LAYER_PLAYER_UNIT: 
