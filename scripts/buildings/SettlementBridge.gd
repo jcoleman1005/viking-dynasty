@@ -44,10 +44,10 @@ var game_is_over: bool = false
 var awaiting_placement: BuildingData = null
 
 func _ready() -> void:
-	Loggie.set_domain_enabled("UI", true)
-	Loggie.set_domain_enabled("SETTLEMENT", true)
-	Loggie.set_domain_enabled("BUILDING", true)
-	Loggie.set_domain_enabled("DEBUG", true)
+	Loggie.set_domain_enabled("UI", false)
+	Loggie.set_domain_enabled("SETTLEMENT", false)
+	Loggie.set_domain_enabled("BUILDING", false)
+	Loggie.set_domain_enabled("DEBUG", false)
 	
 	_setup_default_resources()
 	_initialize_settlement() 

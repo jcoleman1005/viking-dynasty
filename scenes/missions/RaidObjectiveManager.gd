@@ -163,7 +163,7 @@ func _end_mission_via_retreat() -> void:
 	
 	_show_victory_message("RETREAT", "We escaped with what we could carry.")
 	await get_tree().create_timer(3.0).timeout
-	EventBus.scene_change_requested.emit("settlement")
+	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
 
 # --- STANDARD OBJECTIVE LOGIC ---
 
@@ -226,7 +226,7 @@ func _on_defensive_mission_won() -> void:
 	mission_over = true
 	_show_victory_message("VICTORY!", "All attackers have been defeated.")
 	await get_tree().create_timer(3.0).timeout
-	EventBus.scene_change_requested.emit("settlement")
+	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
 
 func _on_mission_failed(reason: String) -> void:
 	if mission_over: return
@@ -241,7 +241,7 @@ func _on_mission_failed(reason: String) -> void:
 		_show_failure_message(reason + "\n\nYour raid failed. No loot was secured.")
 	
 	await get_tree().create_timer(6.0).timeout
-	EventBus.scene_change_requested.emit("settlement")
+	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
 
 func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	if mission_over: return
@@ -253,7 +253,7 @@ func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	
 	_show_victory_message("VICTORY!", "The settlement lies in ruins.\nReturning to ships...")
 	await get_tree().create_timer(3.0).timeout
-	EventBus.scene_change_requested.emit("settlement")
+	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
 
 func _trigger_fyrd() -> void:
 	fyrd_timer_active = false

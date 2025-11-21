@@ -420,8 +420,8 @@ func process_defensive_loss() -> Dictionary:
 	var renown_loss = randi_range(50, 150)
 	current_jarl.renown = max(0, current_jarl.renown - renown_loss)
 	
-	# 2. Call Settlement Manager for Material Loss
-	var material_losses = SettlementManager.apply_raid_damages()
+	# 2. Call Economy Manager for Material Loss
+	var material_losses = EconomyManager.apply_raid_damages()
 	
 	# 3. Risk of Heir Death (15% chance if heirs exist)
 	if current_jarl.heirs.size() > 0 and randf() < 0.15:

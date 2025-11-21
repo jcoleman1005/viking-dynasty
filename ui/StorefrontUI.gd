@@ -159,7 +159,7 @@ func _setup_window_logic() -> void:
 	
 	btn_manage.pressed.connect(func(): EventBus.worker_management_toggled.emit())
 	btn_family.pressed.connect(func(): EventBus.dynasty_view_requested.emit())
-	btn_map.pressed.connect(func(): EventBus.scene_change_requested.emit("world_map"))
+	btn_map.pressed.connect(func(): EventBus.scene_change_requested.emit(GameScenes.WORLD_MAP))
 	btn_end_year.pressed.connect(func(): EventBus.end_year_requested.emit())
 	
 	var windows = [build_window, recruit_window, legacy_window]
@@ -189,10 +189,12 @@ func _refresh_all() -> void:
 	_populate_legacy_buttons()
 	
 func _update_treasury_display(treasury: Dictionary) -> void:
-	gold_label.text = "%d" % treasury.get("gold", 0)
-	wood_label.text = "%d" % treasury.get("wood", 0)
-	food_label.text = "%d" % treasury.get("food", 0)
-	stone_label.text = "%d" % treasury.get("stone", 0)
+	# Use GameResources constants to safely access the dictionary
+	gold_label.text = "%d" % treasury.get(GameResources.GOLD, 0)
+	wood_label.text = "%d" % treasury.get(GameResources.WOOD, 0)
+	food_label.text = "%d" % treasury.get(GameResources.FOOD, 0)
+	stone_label.text = "%d" % treasury.get(GameResources.STONE, 0)
+	
 	if SettlementManager.current_settlement:
 		unit_count_label.text = "%d" % SettlementManager.current_settlement.warbands.size()
 		

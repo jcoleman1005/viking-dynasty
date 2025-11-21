@@ -294,7 +294,7 @@ func _initiate_raid(target: RaidTargetData) -> void:
 	# 4. Spend Cost & Launch
 	DynastyManager.spend_authority(target.raid_cost_authority)
 	Loggie.msg("Launching raid on: %s (Diff: %d)" % [target.display_name, target.difficulty_rating]).domain("MAP").info()
-	EventBus.scene_change_requested.emit("raid_mission")
+	EventBus.scene_change_requested.emit(GameScenes.RAID_MISSION)
 
 func _apply_attrition(risk_chance: float) -> void:
 	if not SettlementManager.has_current_settlement(): return
@@ -368,7 +368,7 @@ func _on_marry_pressed() -> void:
 		Loggie.msg("Alliance with %s successful." % selected_region_data.display_name).domain("MAP").info()
 		_on_region_selected(selected_region_data)
 
-func _on_settlement_pressed() -> void: EventBus.scene_change_requested.emit("settlement")
+func _on_settlement_pressed() -> void: EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
 func _on_dynasty_pressed() -> void: if dynasty_ui: dynasty_ui.show()
 
 # --- UI Management ---
@@ -444,10 +444,10 @@ func _on_event_system_finished() -> void:
 	if randf() < enemy_raid_chance:
 		Loggie.msg("--- ENEMY RAID TRIGGERED ---").domain("MAP").info()
 		DynastyManager.is_defensive_raid = true
-		EventBus.scene_change_requested.emit("raid_mission")
+		EventBus.scene_change_requested.emit(GameScenes.RAID_MISSION)
 	else:
 		Loggie.msg("No enemy raid this year.").domain("MAP").info()
-		EventBus.scene_change_requested.emit("settlement")
+		EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
 
 func _update_jarl_ui(jarl: JarlData) -> void:
 	if not jarl: return
@@ -469,7 +469,7 @@ func _on_open_worker_ui() -> void:
 	
 	# 2. Go to the settlement
 	Loggie.msg("Redirecting to Settlement for worker management...").domain("MAP").info()
-	EventBus.scene_change_requested.emit("settlement")
+	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
 		
 		
 func _on_worker_assignments_confirmed(assignments: Dictionary) -> void:

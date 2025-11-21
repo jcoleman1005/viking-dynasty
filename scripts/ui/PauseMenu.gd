@@ -73,7 +73,7 @@ func _on_new_game_pressed() -> void:
 	if is_instance_valid(DynastyManager):
 		DynastyManager.reset_dynasty(true)
 	get_tree().paused = false
-	EventBus.scene_change_requested.emit("settlement")
+	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
 	queue_free()
 
 func _on_quit_pressed() -> void:
