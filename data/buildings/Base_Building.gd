@@ -17,6 +17,7 @@ var construction_progress: int = 0
 
 # Node refs
 var background: ColorRect
+var sprite: Sprite2D
 var label: Label
 var collision_shape: CollisionShape2D
 var hitbox_area: Area2D
@@ -42,6 +43,14 @@ func _ready() -> void:
 	label = Label.new()
 	background.add_child(label)
 	add_child(background)
+	
+	# Create sprite for building texture
+	if data.building_texture:
+		sprite = Sprite2D.new()
+		sprite.texture = data.building_texture
+		add_child(sprite)
+		# Position sprite behind other elements but above background
+		move_child(sprite, 1)
 	# -------------------------
 	
 	input_pickable = true
@@ -106,7 +115,9 @@ func _update_visual_state() -> void:
 			# Standard Colors
 			self.modulate = Color.WHITE
 			_apply_color_coding() 
-			background.color.a = 1.0
+			# Only override alpha if we don't have a sprite (color_coding handles sprite case)
+			if not (sprite and sprite.texture):
+				background.color.a = 1.0
 			if label: label.text = data.display_name
 			
 			# --- HEALTH BAR CONFIG ---
@@ -183,6 +194,12 @@ func _apply_data_and_scale() -> void:
 	background.custom_minimum_size = size
 	background.position = -size / 2.0
 	
+	# Scale sprite to match building size
+	if sprite and sprite.texture:
+		var texture_size = sprite.texture.get_size()
+		sprite.scale = size / texture_size
+		sprite.position = Vector2.ZERO  # Center the sprite
+	
 	label.text = data.display_name
 	label.custom_minimum_size = size
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -199,6 +216,11 @@ func _apply_color_coding() -> void:
 	if data.dev_color != Color.TRANSPARENT and data.dev_color != Color.GRAY: c = data.dev_color
 	elif data.is_defensive_structure: c = Color.CRIMSON * 0.8
 	elif data.is_player_buildable: c = Color.ROYAL_BLUE * 0.8
+	
+	# If we have a building texture, make background more transparent to show the sprite
+	if sprite and sprite.texture:
+		c.a = 0.2  # Make background mostly transparent
+	
 	background.color = c
 
 func _create_dev_visuals() -> void:

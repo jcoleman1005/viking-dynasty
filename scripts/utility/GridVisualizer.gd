@@ -34,18 +34,21 @@ func _ready() -> void:
 	if "astar_grid" in grid_manager:
 		astar_grid = grid_manager.astar_grid
 	
-	# --- NEW: Sync ReferenceRect ---
+	# --- FIX: Stop the border from blocking clicks ---
 	if reference_rect:
 		var total_width = grid_width * cell_size
 		var total_height = grid_height * cell_size
 		reference_rect.size = Vector2(total_width, total_height)
 		reference_rect.position = Vector2.ZERO
 		reference_rect.visible = show_border
-	# -------------------------------
+		
+		# This is the magic line:
+		reference_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# -------------------------------------------------
 
 	EventBus.pathfinding_grid_updated.connect(_on_pathfinding_grid_updated)
 	
-	set_process_mode(Node.PROCESS_MODE_ALWAYS) # Draw even when paused
+	set_process_mode(Node.PROCESS_MODE_ALWAYS) 
 	queue_redraw()
 
 func _exit_tree() -> void:

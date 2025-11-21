@@ -1,130 +1,282 @@
-[gd_scene load_steps=2 format=3 uid="uid://btovbm7r6nern"]
+[gd_scene load_steps=9 format=3 uid="uid://btovbm7r6nern"]
 
 [ext_resource type="Script" uid="uid://t708tcf43ayu" path="res://ui/StorefrontUI.gd" id="1_ht1qg"]
+[ext_resource type="Theme" uid="uid://63duv3n1vwhg" path="res://ui/themes/VikingDynastyTheme.tres" id="2_5jinl"]
+[ext_resource type="Texture2D" uid="uid://d08kc6hrja6ev" path="res://ui/assets/res_gold.png" id="3_yyd0e"]
+[ext_resource type="Texture2D" uid="uid://m6tx1fv7imra" path="res://ui/assets/res_wood.png" id="4_epn6g"]
+[ext_resource type="Texture2D" uid="uid://ck3gpx751ywcw" path="res://ui/assets/res_food.png" id="5_nipb8"]
+[ext_resource type="Texture2D" uid="uid://denkxl6ex742y" path="res://ui/assets/res_stone.png" id="6_4b5t2"]
+[ext_resource type="Texture2D" uid="uid://cukqh3t2wkmua" path="res://ui/assets/res_peasant.png" id="7_x6vu8"]
+[ext_resource type="Texture2D" uid="uid://day6g5ykwqgyb" path="res://ui/assets/res_thrall.png" id="8_fh15s"]
 
-[node name="Main" type="Control"]
+[node name="Storefront_UI" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 script = ExtResource("1_ht1qg")
-available_buildings = null
-available_units = null
 default_treasury_display = {
 "food": 100,
 "gold": 100,
 "stone": 100,
 "wood": 100
 }
-auto_load_units_from_directory = null
 
-[node name="PanelContainer" type="PanelContainer" parent="."]
+[node name="TopHUD" type="PanelContainer" parent="."]
+modulate = Color(1, 1, 1, 0.8627451)
+custom_minimum_size = Vector2(0, 60)
 layout_mode = 1
 anchors_preset = -1
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 20.0
-offset_top = -140.0
-offset_right = 480.0
-offset_bottom = -20.0
-grow_vertical = 0
+anchor_right = 1.0
+offset_bottom = 40.0
+grow_horizontal = 2
+mouse_filter = 2
+theme = ExtResource("2_5jinl")
 
-[node name="MarginContainer" type="MarginContainer" parent="PanelContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="TopHUD"]
 layout_mode = 2
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_top = 15
-theme_override_constants/margin_right = 20
-theme_override_constants/margin_bottom = 15
+theme_override_constants/separation = 40
+alignment = 1
 
-[node name="MainLayout" type="VBoxContainer" parent="PanelContainer/MarginContainer"]
-layout_mode = 2
-
-[node name="Header" type="HBoxContainer" parent="PanelContainer/MarginContainer/MainLayout"]
-layout_mode = 2
-theme_override_constants/separation = 20
-
-[node name="TreasuryDisplay" type="HBoxContainer" parent="PanelContainer/MarginContainer/MainLayout/Header"]
+[node name="TreasuryDisplay" type="HBoxContainer" parent="TopHUD/HBoxContainer"]
 layout_mode = 2
 theme_override_constants/separation = 15
 
-[node name="GoldLabel" type="Label" parent="PanelContainer/MarginContainer/MainLayout/Header/TreasuryDisplay"]
+[node name="GoldIcon" type="TextureRect" parent="TopHUD/HBoxContainer/TreasuryDisplay"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+texture = ExtResource("3_yyd0e")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="GoldLabel" type="Label" parent="TopHUD/HBoxContainer/TreasuryDisplay"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Gold: 0"
 
-[node name="WoodLabel" type="Label" parent="PanelContainer/MarginContainer/MainLayout/Header/TreasuryDisplay"]
+[node name="WoodIcon" type="TextureRect" parent="TopHUD/HBoxContainer/TreasuryDisplay"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+texture = ExtResource("4_epn6g")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="WoodLabel" type="Label" parent="TopHUD/HBoxContainer/TreasuryDisplay"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Wood: 0"
 
-[node name="FoodLabel" type="Label" parent="PanelContainer/MarginContainer/MainLayout/Header/TreasuryDisplay"]
+[node name="FoodIcon" type="TextureRect" parent="TopHUD/HBoxContainer/TreasuryDisplay"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+texture = ExtResource("5_nipb8")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="FoodLabel" type="Label" parent="TopHUD/HBoxContainer/TreasuryDisplay"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Food: 0"
 
-[node name="StoneLabel" type="Label" parent="PanelContainer/MarginContainer/MainLayout/Header/TreasuryDisplay"]
+[node name="StoneIcon" type="TextureRect" parent="TopHUD/HBoxContainer/TreasuryDisplay"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+texture = ExtResource("6_4b5t2")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="StoneLabel" type="Label" parent="TopHUD/HBoxContainer/TreasuryDisplay"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Stone: 0"
 
-[node name="VSeparator" type="VSeparator" parent="PanelContainer/MarginContainer/MainLayout/Header/TreasuryDisplay"]
+[node name="VSeparator" type="VSeparator" parent="TopHUD/HBoxContainer/TreasuryDisplay"]
 layout_mode = 2
 
-[node name="UnitCountLabel" type="Label" parent="PanelContainer/MarginContainer/MainLayout/Header"]
+[node name="PeasantIcon" type="TextureRect" parent="TopHUD/HBoxContainer/TreasuryDisplay"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+texture = ExtResource("7_x6vu8")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PeasantLabel" type="Label" parent="TopHUD/HBoxContainer/TreasuryDisplay"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Villagers: 0"
+
+[node name="ThrallIcon" type="TextureRect" parent="TopHUD/HBoxContainer/TreasuryDisplay"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+texture = ExtResource("8_fh15s")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ThrallLabel" type="Label" parent="TopHUD/HBoxContainer/TreasuryDisplay"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Thralls: 0"
+
+[node name="VSeparator2" type="VSeparator" parent="TopHUD/HBoxContainer/TreasuryDisplay"]
+layout_mode = 2
+
+[node name="UnitCountLabel" type="Label" parent="TopHUD/HBoxContainer/TreasuryDisplay"]
+unique_name_in_owner = true
 layout_mode = 2
 text = "Units: 0"
 
-[node name="TabContainer" type="TabContainer" parent="PanelContainer/MarginContainer/MainLayout"]
-layout_mode = 2
-current_tab = 0
+[node name="Windows" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_bottom = -78.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
-[node name="BuildTab" type="VBoxContainer" parent="PanelContainer/MarginContainer/MainLayout/TabContainer"]
-layout_mode = 2
-theme_override_constants/separation = 12
-metadata/_tab_index = 0
+[node name="BuildWindow" type="PanelContainer" parent="Windows"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(360, 350)
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -350.0
+offset_right = 300.0
+grow_vertical = 0
 
-[node name="BuildButtonsContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer/MainLayout/TabContainer/BuildTab"]
-layout_mode = 2
-
-[node name="RecruitTab" type="VBoxContainer" parent="PanelContainer/MarginContainer/MainLayout/TabContainer"]
-visible = false
-layout_mode = 2
-theme_override_constants/separation = 12
-metadata/_tab_index = 1
-
-[node name="RecruitButtons" type="VBoxContainer" parent="PanelContainer/MarginContainer/MainLayout/TabContainer/RecruitTab"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="GarrisonList" type="VBoxContainer" parent="PanelContainer/MarginContainer/MainLayout/TabContainer/RecruitTab"]
-layout_mode = 2
-theme_override_constants/separation = 6
-
-[node name="LegacyTab" type="VBoxContainer" parent="PanelContainer/MarginContainer/MainLayout/TabContainer"]
-visible = false
-layout_mode = 2
-metadata/_tab_index = 2
-
-[node name="JarlStatsDisplay" type="HBoxContainer" parent="PanelContainer/MarginContainer/MainLayout/TabContainer/LegacyTab"]
+[node name="MarginContainer" type="MarginContainer" parent="Windows/BuildWindow"]
 layout_mode = 2
 
-[node name="RenownLabel" type="Label" parent="PanelContainer/MarginContainer/MainLayout/TabContainer/LegacyTab/JarlStatsDisplay"]
-layout_mode = 2
-text = "Renown: 0"
-
-[node name="AuthorityLabel" type="Label" parent="PanelContainer/MarginContainer/MainLayout/TabContainer/LegacyTab/JarlStatsDisplay"]
-layout_mode = 2
-text = "Authority: 0/0"
-
-[node name="Description" type="Label" parent="PanelContainer/MarginContainer/MainLayout/TabContainer/LegacyTab"]
-layout_mode = 2
-text = "Spend Renown and Authority on permanent dynasty upgrades."
-autowrap_mode = 3
-
-[node name="HSeparator" type="HSeparator" parent="PanelContainer/MarginContainer/MainLayout/TabContainer/LegacyTab"]
+[node name="ScrollContainer" type="ScrollContainer" parent="Windows/BuildWindow/MarginContainer"]
 layout_mode = 2
 
-[node name="LegacyButtonsContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer/MainLayout/TabContainer/LegacyTab"]
+[node name="BuildGrid" type="GridContainer" parent="Windows/BuildWindow/MarginContainer/ScrollContainer"]
+unique_name_in_owner = true
 layout_mode = 2
+columns = 3
+
+[node name="RecruitWindow" type="PanelContainer" parent="Windows"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(400, 500)
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -40.0
+offset_right = 40.0
+grow_vertical = 0
+
+[node name="MarginContainer" type="MarginContainer" parent="Windows/RecruitWindow"]
+layout_mode = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Windows/RecruitWindow/MarginContainer"]
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="RecruitList" type="VBoxContainer" parent="Windows/RecruitWindow/MarginContainer/ScrollContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="LegacyWindow" type="PanelContainer" parent="Windows"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(400, 500)
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -500.0
+offset_right = 400.0
+grow_vertical = 0
+
+[node name="MarginContainer" type="MarginContainer" parent="Windows/LegacyWindow"]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Windows/LegacyWindow/MarginContainer"]
+layout_mode = 2
+
+[node name="JarlStats" type="HBoxContainer" parent="Windows/LegacyWindow/MarginContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="RenownLabel" type="Label" parent="Windows/LegacyWindow/MarginContainer/VBoxContainer/JarlStats"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="AuthorityLabel" type="Label" parent="Windows/LegacyWindow/MarginContainer/VBoxContainer/JarlStats"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="HSeparator" type="HSeparator" parent="Windows/LegacyWindow/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Windows/LegacyWindow/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="LegacyList" type="VBoxContainer" parent="Windows/LegacyWindow/MarginContainer/VBoxContainer/ScrollContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="BottomDeck" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -20.0
+offset_top = -40.0
+offset_right = 20.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="HBoxContainer" type="HBoxContainer" parent="BottomDeck"]
+layout_mode = 2
+
+[node name="Btn_Build" type="Button" parent="BottomDeck/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Build"
+
+[node name="Btn_Recruit" type="Button" parent="BottomDeck/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Army"
+
+[node name="Btn_Manage" type="Button" parent="BottomDeck/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Manage"
+
+[node name="Btn_LegacyUpgrades" type="Button" parent="BottomDeck/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Legacy"
+
+[node name="Btn_Family" type="Button" parent="BottomDeck/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Family"
+
+[node name="VSeparator" type="VSeparator" parent="BottomDeck/HBoxContainer"]
+layout_mode = 2
+
+[node name="Btn_Map" type="Button" parent="BottomDeck/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "World Map"
+
+[node name="Btn_EndYear" type="Button" parent="BottomDeck/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "End Year"

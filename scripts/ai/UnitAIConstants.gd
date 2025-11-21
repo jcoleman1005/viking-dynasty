@@ -1,8 +1,18 @@
 # res://scripts/ai/UnitAIConstants.gd
-#
-# Holds shared enums for the Unit AI system to break
-# circular dependencies between BaseUnit and UnitFSM.
 class_name UnitAIConstants
+extends RefCounted
 
-enum State { IDLE, MOVING, FORMATION_MOVING, ATTACKING }
-enum Stance { DEFENSIVE, HOLD_POSITION }
+# Defines the possible states for the Unit Finite State Machine
+enum State { 
+	IDLE, 
+	MOVING, 
+	FORMATION_MOVING, 
+	ATTACKING, 
+	RETREATING 
+}
+
+# Defines behavior stances
+enum Stance { 
+	DEFENSIVE, 
+	HOLD_POSITION 
+}

@@ -1,12 +1,15 @@
-[gd_scene load_steps=15 format=4 uid="uid://c53k15q2w8c1a"]
+[gd_scene load_steps=18 format=4 uid="uid://c53k15q2w8c1a"]
 
 [ext_resource type="PackedScene" uid="uid://dqh0xu88khxct" path="res://ui/EndOfYear_Popup.tscn" id="2_5el12"]
 [ext_resource type="Script" uid="uid://dafjxa85ci2rx" path="res://scripts/buildings/SettlementBridge.gd" id="2_c48a7"]
 [ext_resource type="Script" uid="uid://hlb8s5g0yp6k" path="res://data/settlements/SettlementData.gd" id="2_ggwng"]
 [ext_resource type="PackedScene" uid="uid://btovbm7r6nern" path="res://ui/Storefront_UI.tscn" id="3_vj45l"]
+[ext_resource type="Script" uid="uid://koj0vo5eoaum" path="res://data/units/WarbandData.gd" id="3_vlppw"]
 [ext_resource type="Texture2D" uid="uid://c8k136eygums6" path="res://assets/Kenney/medieval_tilesheet.png" id="4_ilgdx"]
 [ext_resource type="PackedScene" uid="uid://dsrvmutqo7g3h" path="res://scripts/utility/GridManager.tscn" id="6_b34qi"]
 [ext_resource type="Script" uid="uid://c4bv8okjkvtt7" path="res://scripts/ui/BuildingPreviewCursor.gd" id="6_cursor"]
+[ext_resource type="PackedScene" uid="uid://c5qg2j1qa4g0b" path="res://ui/Dynasty_UI.tscn" id="7_k14p1"]
+[ext_resource type="Script" uid="uid://6speiwju5o1r" path="res://ui/PauseButton.gd" id="7_n23os"]
 [ext_resource type="PackedScene" uid="uid://ptujtdi5jtsk" path="res://scripts/utility/GridVisualizer.tscn" id="7_oq6tm"]
 [ext_resource type="Script" uid="uid://bxbqkyp1d6750" path="res://player/RTSCamera.gd" id="8_ggwng"]
 [ext_resource type="PackedScene" uid="uid://bmrx7k05of21t" path="res://scenes/world/Resource_Wood.tscn" id="9_vmd61"]
@@ -1414,7 +1417,6 @@ sources/0 = SubResource("TileSetAtlasSource_n23os")
 script = ExtResource("2_c48a7")
 home_base_data = SubResource("Resource_vmd61")
 end_of_year_popup_scene = ExtResource("2_5el12")
-world_map_scene_path = "res://scenes/world_map/MacroMap.tscn"
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]
 position = Vector2(-3, 0)
@@ -1425,32 +1427,15 @@ tile_set = SubResource("TileSet_k14p1")
 
 [node name="UI" type="CanvasLayer" parent="."]
 
-[node name="Label" type="Label" parent="UI"]
-anchors_preset = -1
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -319.0
-offset_right = 319.0
-offset_bottom = 23.0
-grow_horizontal = 2
-text = "Purchase buildings from the storefront below, then place them on your settlement"
-horizontal_alignment = 1
-
 [node name="Storefront_UI" parent="UI" instance=ExtResource("3_vj45l")]
 
-[node name="DebugRaidButton" type="Button" parent="UI/Storefront_UI"]
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -143.0
-offset_bottom = 27.0
-grow_horizontal = 0
-text = "DEBUG: Start Raid"
+[node name="Dynasty_UI" parent="UI" instance=ExtResource("7_k14p1")]
+
+[node name="EndOfYear_Popup" parent="UI" instance=ExtResource("2_5el12")]
 
 [node name="RestartButton" type="Button" parent="UI"]
 visible = false
-anchors_preset = -1
+anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
@@ -1463,17 +1448,13 @@ grow_horizontal = 2
 grow_vertical = 2
 text = "Return to Settlement"
 
-[node name="StartRaidButton" type="Button" parent="UI"]
-anchors_preset = -1
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -150.0
-offset_top = -40.0
-grow_horizontal = 0
-grow_vertical = 0
-text = "World Map"
+[node name="PauseButton" type="Button" parent="UI"]
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 130.0
+offset_bottom = 50.0
+text = "PAUSE (ESC)"
+script = ExtResource("7_n23os")
 
 [node name="BuildingCursor" type="Node2D" parent="."]
 script = ExtResource("6_cursor")

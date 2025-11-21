@@ -40,7 +40,7 @@ func _ready() -> void:
 
 func setup(settlement: SettlementData) -> void:
 	current_settlement = settlement
-	total_population = settlement.population_total
+	total_population = settlement.population_peasants
 	
 	# --- NEW: Fetch Capacities ---
 	if SettlementManager.has_method("get_labor_capacities"):

@@ -7,7 +7,7 @@
 
 [resource]
 script = ExtResource("1_script")
-display_name = "Player Viking Raider"
+display_name = "Viking Raider"
 scene_to_spawn = ExtResource("2_spawn_scene")
 icon = ExtResource("3_viking_sprite")
 spawn_cost = {

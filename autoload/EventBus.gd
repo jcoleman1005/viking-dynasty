@@ -35,7 +35,8 @@ signal settlement_loaded(settlement_data: SettlementData)
 
 # --- Unit Management Signals ---
 signal player_unit_died(unit: Node2D)
-
+signal worker_management_toggled()
+signal dynasty_view_requested()
 # --- NEW: RTS Command Signals (GDD Section 10) ---
 # Emitted by SelectionBox.gd, consumed by RTSController.gd
 
@@ -59,3 +60,9 @@ signal event_system_finished()
 
 # --- NEW: Succession Crisis System ---
 signal succession_choices_made(renown_choice: String, gold_choice: String)
+# --- NEW: Camera Control ---
+# Emitted by UI to lock/unlock the RTS camera (prevent zoom/pan while in menus)
+signal camera_input_lock_requested(is_locked: bool)
+
+# --- NEW: Game Loop Signals ---
+signal end_year_requested()

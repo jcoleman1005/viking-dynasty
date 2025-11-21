@@ -245,18 +245,24 @@ func _populate_raid_targets(data: WorldRegionData, is_conquered: bool, is_allied
 
 	# Generate Buttons
 	for target in data.raid_targets:
+		# --- FIX: Safety Check for Corrupt Data ---
+		if not target: 
+			continue
+		# ------------------------------------------
+
 		var btn = Button.new()
 		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		
 		var risk_text = ""
-		var btn_color = Color.WHITE
+		var btn_color = Color.WHITE # Default styling
 		
+		# Re-calculate attrition for display
 		if current_attrition_risk > 0.0:
 			risk_text = " (%d%% Risk)" % int(current_attrition_risk * 100)
 			if current_attrition_risk > 0.3:
-				btn_color = Color(1.0, 0.4, 0.4) # Reddish
+				btn_color = Color(1.0, 0.4, 0.4) # Reddish tint
 			else:
-				btn_color = Color(1.0, 0.9, 0.4) # Yellowish
+				btn_color = Color(1.0, 0.9, 0.4) # Yellowish tint
 		
 		if is_allied:
 			btn.text = "%s (Allied)" % target.display_name
@@ -273,7 +279,7 @@ func _populate_raid_targets(data: WorldRegionData, is_conquered: bool, is_allied
 				btn.pressed.connect(_initiate_raid.bind(target))
 		
 		target_list_container.add_child(btn)
-
+		
 func _initiate_raid(target: RaidTargetData) -> void:
 	# 1. Apply Attrition Gamble
 	if current_attrition_risk > 0.0:
@@ -400,7 +406,7 @@ func close_all_ui() -> void:
 func _on_end_year_pressed() -> void:
 	if not SettlementManager.has_current_settlement(): return
 	var settlement = SettlementManager.current_settlement
-	var total_pop = settlement.population_total
+	var total_pop = settlement.population_peasants
 	var assigned_pop = 0
 	for key in settlement.worker_assignments:
 		assigned_pop += settlement.worker_assignments[key]
@@ -456,13 +462,21 @@ func _on_region_hovered(data: WorldRegionData, _screen_position: Vector2) -> voi
 	tooltip.show()
 
 func _on_region_exited() -> void: tooltip.hide()
+
 func _on_open_worker_ui() -> void:
-	if work_assignment_ui and SettlementManager.current_settlement:
-		work_assignment_ui.setup(SettlementManager.current_settlement)
+	# 1. Set the flag so the next scene knows what to do
+	SettlementManager.pending_management_open = true
+	
+	# 2. Go to the settlement
+	Loggie.msg("Redirecting to Settlement for worker management...").domain("MAP").info()
+	EventBus.scene_change_requested.emit("settlement")
+		
+		
 func _on_worker_assignments_confirmed(assignments: Dictionary) -> void:
 	if SettlementManager.current_settlement:
 		SettlementManager.current_settlement.worker_assignments = assignments
 		SettlementManager.save_settlement()
+		
 func _unhandled_input(event: InputEvent) -> void:
 	# Detect clicks on the "Ocean" (Background)
 	if event is InputEventMouseButton:

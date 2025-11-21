@@ -28,6 +28,7 @@ func _ready() -> void:
 	context_menu.add_item("Designate Heir (Cost: 1 Authority)", 0)
 	context_menu.add_item("Fund Expedition (Cost: 500 Gold)", 1)
 	context_menu.add_item("Arrange Marriage (Cost: 1 Heir)", 2)
+	context_menu.add_item("Assign as Captain", 3)
 	context_menu.id_pressed.connect(_on_context_menu_item_pressed)
 	
 	if DynastyManager.current_jarl:
@@ -132,7 +133,9 @@ func _on_context_menu_item_pressed(id: int) -> void:
 				selected_heir.status = JarlHeirData.HeirStatus.MarriedOff
 				DynastyManager.award_renown(150) 
 				Loggie.msg("Heir married off for Renown.").domain("UI").info()
-
+		3: # Assign Captain
+			_open_warband_assignment_dialog()
+			
 func _on_close_button_pressed() -> void:
 	hide()
 
@@ -141,3 +144,22 @@ func _input(event: InputEvent) -> void:
 		if event.keycode == KEY_ESCAPE:
 			_on_close_button_pressed()
 			get_viewport().set_input_as_handled()
+
+
+func _open_warband_assignment_dialog() -> void:
+	# Simple logic: Assign to the first available warband for now
+	# (Ideally, this would open a submenu list of warbands)
+	var settlement = SettlementManager.current_settlement
+	if not settlement or settlement.warbands.is_empty():
+		Loggie.msg("No Warbands available to lead.").domain("UI").warn()
+		return
+		
+	for wb in settlement.warbands:
+		if wb.assigned_heir_name == "":
+			wb.assigned_heir_name = selected_heir.display_name
+			Loggie.msg("Heir %s assigned to lead %s" % [selected_heir.display_name, wb.custom_name]).domain("UI").info()
+			# Add history log
+			wb.add_history("Year %d: Led by %s" % [DynastyManager.current_jarl.age, selected_heir.display_name])
+			return
+			
+	Loggie.msg("All Warbands already have captains!").domain("UI").warn()
