@@ -2,7 +2,12 @@
 extends Resource
 class_name SettlementData
 
-@export var treasury: Dictionary = {"gold": 0, "wood": 0, "food": 0, "stone": 0}
+@export var treasury: Dictionary = {
+	GameResources.GOLD: 0, 
+	GameResources.WOOD: 0, 
+	GameResources.FOOD: 0, 
+	GameResources.STONE: 0
+	}
 @export var placed_buildings: Array[Dictionary] = []
 @export var pending_construction_buildings: Array = []
 @export var warbands: Array[WarbandData] = []

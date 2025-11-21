@@ -24,6 +24,8 @@ DynastyManager="*res://autoload/DynastyManager.gd"
 SceneManager="*res://autoload/SceneManager.tscn"
 EventManager="*res://autoload/EventManager.tscn"
 ProjectilePoolManager="*res://autoload/ProjectilePoolManager.gd"
+NavigationManager="*res://autoload/NavigationManager.gd"
+EconomyManager="*res://autoload/EconomyManager.gd"
 
 [editor]
 

@@ -14,10 +14,13 @@ func _on_scene_change_requested(scene_key: String) -> void:
 		return
 
 	var target_scene: PackedScene = null
-	match scene_key.to_lower():
-		"settlement": target_scene = settlement_scene
-		"world_map": target_scene = world_map_scene
-		"raid_mission": target_scene = raid_mission_scene
+	match scene_key: # Removed to_lower() for strict exact matching
+		GameScenes.SETTLEMENT: 
+			target_scene = settlement_scene
+		GameScenes.WORLD_MAP: 
+			target_scene = world_map_scene
+		GameScenes.RAID_MISSION: 
+			target_scene = raid_mission_scene
 		_:
 			Loggie.msg("Unknown scene key '%s'." % scene_key).domain("SCENE").error()
 			return
