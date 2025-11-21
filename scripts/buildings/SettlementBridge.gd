@@ -36,6 +36,7 @@ var work_assignment_ui: CanvasLayer
 var end_of_year_popup: PanelContainer
 var thrall_tags: Array[Control] = []
 var is_managing_thralls: bool = false
+var idle_warning_dialog: ConfirmationDialog
 
 # --- State Variables ---
 var great_hall_instance: BaseBuilding = null
@@ -64,6 +65,15 @@ func _ready() -> void:
 		
 	if storefront_ui: storefront_ui.show()
 	if end_of_year_popup: end_of_year_popup.hide()
+	
+	# --- NEW: Check for auto-open request ---
+	if SettlementManager.pending_management_open:
+		SettlementManager.pending_management_open = false # Reset flag
+		# Wait a frame for UI to settle
+		get_tree().create_timer(0.1).timeout.connect(func():
+			if not is_managing_thralls:
+				_toggle_thrall_management()
+		)
 
 func _exit_tree() -> void:
 	SettlementManager.unregister_active_scene_nodes()
@@ -99,7 +109,21 @@ func _setup_ui() -> void:
 			if work_assignment_ui.has_signal("assignments_confirmed"):
 				work_assignment_ui.assignments_confirmed.connect(_on_worker_assignments_confirmed)
 	
-	# REMOVED: Old dynamic button creation code
+	# --- NEW: Create Idle Warning Dialog ---
+	idle_warning_dialog = ConfirmationDialog.new()
+	idle_warning_dialog.title = "Idle Villagers"
+	idle_warning_dialog.ok_button_text = "End Year Anyway"
+	idle_warning_dialog.cancel_button_text = "Manage Workers"
+	
+	idle_warning_dialog.confirmed.connect(_start_end_year_sequence)
+	
+	# If we are already here, just open the tags directly
+	idle_warning_dialog.canceled.connect(func():
+		if not is_managing_thralls:
+			_toggle_thrall_management()
+	)
+	
+	add_child(idle_warning_dialog)
 
 # --- WORKER ASSIGNMENT LOGIC ---
 # Note: Since we removed the dedicated "Manage Workers" button, 
@@ -115,7 +139,17 @@ func _on_worker_assignments_confirmed(assignments: Dictionary) -> void:
 
 func _on_end_year_pressed() -> void:
 	Loggie.msg("SettlementBridge: End Year requested.").domain("BUILDING").info()
-	_start_end_year_sequence()
+	
+	# --- NEW: Check for Idles ---
+	var idle_p = SettlementManager.get_idle_peasants()
+	var idle_t = SettlementManager.get_idle_thralls()
+	var total_idle = idle_p + idle_t
+	
+	if total_idle > 0:
+		idle_warning_dialog.dialog_text = "You have %d idle workers (Citizens/Thralls).\nUnassigned workers produce nothing.\n\nEnd year anyway?" % total_idle
+		idle_warning_dialog.popup_centered()
+	else:
+		_start_end_year_sequence()
 
 func _start_end_year_sequence() -> void:
 	_close_all_popups()

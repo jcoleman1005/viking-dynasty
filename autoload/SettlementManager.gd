@@ -11,6 +11,7 @@ var current_settlement: SettlementData
 var active_astar_grid: AStarGrid2D = null
 var active_building_container: Node2D = null
 var grid_manager_node: Node = null 
+var pending_management_open: bool = false
 
 func _ready() -> void:
 	EventBus.player_unit_died.connect(_on_player_unit_died)

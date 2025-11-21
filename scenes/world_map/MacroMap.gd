@@ -462,13 +462,21 @@ func _on_region_hovered(data: WorldRegionData, _screen_position: Vector2) -> voi
 	tooltip.show()
 
 func _on_region_exited() -> void: tooltip.hide()
+
 func _on_open_worker_ui() -> void:
-	if work_assignment_ui and SettlementManager.current_settlement:
-		work_assignment_ui.setup(SettlementManager.current_settlement)
+	# 1. Set the flag so the next scene knows what to do
+	SettlementManager.pending_management_open = true
+	
+	# 2. Go to the settlement
+	Loggie.msg("Redirecting to Settlement for worker management...").domain("MAP").info()
+	EventBus.scene_change_requested.emit("settlement")
+		
+		
 func _on_worker_assignments_confirmed(assignments: Dictionary) -> void:
 	if SettlementManager.current_settlement:
 		SettlementManager.current_settlement.worker_assignments = assignments
 		SettlementManager.save_settlement()
+		
 func _unhandled_input(event: InputEvent) -> void:
 	# Detect clicks on the "Ocean" (Background)
 	if event is InputEventMouseButton:
