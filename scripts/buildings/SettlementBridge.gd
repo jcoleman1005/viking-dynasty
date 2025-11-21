@@ -34,6 +34,8 @@ var default_end_of_year_popup: PackedScene = preload("res://ui/EndOfYear_Popup.t
 const WORK_ASSIGNMENT_SCENE_PATH = "res://ui/WorkAssignment_UI.tscn"
 var work_assignment_ui: CanvasLayer
 var end_of_year_popup: PanelContainer
+var thrall_tags: Array[Control] = []
+var is_managing_thralls: bool = false
 
 # --- State Variables ---
 var great_hall_instance: BaseBuilding = null
@@ -41,6 +43,11 @@ var game_is_over: bool = false
 var awaiting_placement: BuildingData = null
 
 func _ready() -> void:
+	Loggie.set_domain_enabled("UI", true)
+	Loggie.set_domain_enabled("SETTLEMENT", true)
+	Loggie.set_domain_enabled("BUILDING", true)
+	Loggie.set_domain_enabled("DEBUG", true)
+	
 	_setup_default_resources()
 	_initialize_settlement() 
 	_setup_ui()
@@ -66,7 +73,8 @@ func _connect_signals() -> void:
 	EventBus.building_ready_for_placement.connect(_on_building_ready_for_placement)
 	EventBus.building_placement_cancelled.connect(_on_building_placement_cancelled)
 	EventBus.building_right_clicked.connect(_on_building_right_clicked)
-	
+	EventBus.worker_management_toggled.connect(_toggle_thrall_management)
+	EventBus.dynasty_view_requested.connect(_toggle_dynasty_view)
 	# --- NEW: Listen for End Year Request ---
 	EventBus.end_year_requested.connect(_on_end_year_pressed)
 	# ----------------------------------------
@@ -209,13 +217,17 @@ func _spawn_single_building(entry: Dictionary, is_new: bool) -> BaseBuilding:
 func _create_default_settlement() -> SettlementData:
 	var settlement = SettlementData.new()
 	settlement.treasury = { "gold": start_gold, "wood": start_wood, "food": start_food, "stone": start_stone }
-	settlement.population_total = start_population
+	settlement.population_peasants = start_population
 	settlement.resource_path = "res://data/settlements/home_base_fixed.tres"
 	var great_hall_entry = { "resource_path": "res://data/buildings/GreatHall.tres", "grid_position": Vector2i(28, 18) }
 	settlement.placed_buildings.append(great_hall_entry)
 	return settlement
 
-func _on_settlement_loaded(_settlement_data: SettlementData) -> void: pass
+func _on_settlement_loaded(_settlement_data: SettlementData) -> void:
+	# If we are currently in "Management Mode", we must refresh the tags
+	# to show the new worker counts immediately.
+	if is_managing_thralls:
+		_spawn_thrall_tags()
 
 func _setup_great_hall(hall_instance: BaseBuilding) -> void:
 	if not is_instance_valid(hall_instance): return
@@ -289,3 +301,148 @@ func _process_raid_return() -> void:
 		SettlementManager.deposit_resources(loot_summary)
 			
 	DynastyManager.pending_raid_result.clear()
+# --- THRALL MANAGEMENT UI ---
+
+func _input(event: InputEvent) -> void:
+	# 1. Existing Hotkey (Toggle Management)
+	if event is InputEventKey and event.pressed and event.keycode == KEY_T:
+		_toggle_thrall_management()
+
+	# 2. Debug Clicker (Find Invisible Walls)
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		var hovered_control = get_viewport().gui_get_hovered_control()
+		
+		if hovered_control:
+			Loggie.msg("🛑 CLICK BLOCKED BY: %s" % hovered_control.name).domain("DEBUG").warn()
+			Loggie.msg("   Path: %s" % hovered_control.get_path()).domain("DEBUG").warn()
+			
+			# Check Filter (0 = Stop, 1 = Pass, 2 = Ignore)
+			var filter_name = "STOP"
+			if hovered_control.mouse_filter == Control.MOUSE_FILTER_PASS: filter_name = "PASS"
+			elif hovered_control.mouse_filter == Control.MOUSE_FILTER_IGNORE: filter_name = "IGNORE"
+			
+			Loggie.msg("   Mouse Filter: %s (%d)" % [filter_name, hovered_control.mouse_filter]).domain("DEBUG").warn()
+		else:
+			Loggie.msg("✅ UI is clean. Click passed to World.").domain("DEBUG").info()
+
+func _toggle_thrall_management() -> void:
+	is_managing_thralls = !is_managing_thralls
+	
+	if is_managing_thralls:
+		_spawn_thrall_tags()
+		Loggie.msg("Thrall Management: ON").domain("UI").info()
+	else:
+		_clear_thrall_tags()
+		Loggie.msg("Thrall Management: OFF").domain("UI").info()
+
+func _spawn_thrall_tags() -> void:
+	_clear_thrall_tags()
+	
+	var settlement = SettlementManager.current_settlement
+	if not settlement: return
+	
+	# 1. ACTIVE BUILDINGS (Existing Loop)
+	for i in range(settlement.placed_buildings.size()):
+		var entry = settlement.placed_buildings[i]
+		var data = load(entry["resource_path"])
+		
+		if data is EconomicBuildingData:
+			_create_tag(i, entry, data, false)
+
+	# 2. PENDING BUILDINGS (New Loop)
+	for i in range(settlement.pending_construction_buildings.size()):
+		var entry = settlement.pending_construction_buildings[i]
+		var data = load(entry["resource_path"])
+		
+		# All buildings need construction workers, not just Economic ones.
+		if data: 
+			_create_tag(i, entry, data, true)
+
+# Helper to avoid duplicate code
+func _create_tag(index: int, entry: Dictionary, data: BuildingData, is_pending: bool) -> void:
+	var tag = preload("res://ui/components/WorkerTag.tscn").instantiate()
+	building_container.add_child(tag)
+	tag.z_index = 100
+	
+	var world_building = _find_building_instance_by_entry(entry) # Helper update needed
+	if world_building:
+		tag.global_position = world_building.global_position + Vector2(-60, -100)
+		
+		# Determine caps
+		var p_cap = 0
+		var t_cap = 0
+		
+		if is_pending:
+			# Construction Capacity (e.g. 5 builders max)
+			p_cap = data.base_labor_capacity
+			t_cap = data.base_labor_capacity
+		elif data is EconomicBuildingData:
+			# Production Capacity
+			p_cap = data.peasant_capacity
+			t_cap = data.thrall_capacity
+			
+		tag.setup(
+			index, 
+			entry.get("peasant_count", 0), p_cap,
+			entry.get("thrall_count", 0), t_cap,
+			is_pending
+		)
+		thrall_tags.append(tag)
+
+func _clear_thrall_tags() -> void:
+	for tag in thrall_tags:
+		tag.queue_free()
+	thrall_tags.clear()
+
+# --- THE HELPER YOU NEEDED ---
+func _find_building_instance_by_index(index: int) -> BaseBuilding:
+	if not SettlementManager.current_settlement: return null
+	var entry = SettlementManager.current_settlement.placed_buildings[index]
+	
+	# entry["grid_position"] might be Vector2 or Vector2i depending on save version
+	var target_grid_pos = Vector2i(entry["grid_position"])
+	
+	for child in building_container.get_children():
+		if child is BaseBuilding and child.data:
+			var cell_size = grid_manager.cell_size
+			# Calculate grid pos of this child
+			var size_offset = Vector2(child.data.grid_size) * cell_size / 2.0
+			var top_left = child.global_position - size_offset
+			# Add small epsilon to avoid float errors
+			var child_grid_pos = Vector2i(round((top_left.x + 1) / cell_size), round((top_left.y + 1) / cell_size))
+			
+			if child_grid_pos == target_grid_pos:
+				return child
+	return null
+func _toggle_dynasty_view() -> void:
+	var dynasty_ui = ui_layer.get_node_or_null("Dynasty_UI")
+	if dynasty_ui:
+		if dynasty_ui.visible:
+			dynasty_ui.hide()
+		else:
+			# Close other windows to prevent clutter
+			if storefront_ui: storefront_ui.call("_close_all_windows") 
+			_clear_thrall_tags()
+			is_managing_thralls = false
+			
+			dynasty_ui.show()
+			Loggie.msg("Opening Dynasty View").domain("UI").info()
+	else:
+		Loggie.msg("Error: Dynasty_UI node not found in SettlementBridge/UI").domain("UI").error()
+func _find_building_instance_by_entry(entry: Dictionary) -> BaseBuilding:
+	var target_pos = Vector2i(entry["grid_position"])
+	
+	for child in building_container.get_children():
+		if child is BaseBuilding and child.data:
+			var cell_size = grid_manager.cell_size
+			var size_pixels = Vector2(child.data.grid_size) * cell_size
+			var top_left = child.global_position - (size_pixels / 2.0)
+			
+			var child_grid_pos = Vector2i(
+				round(top_left.x / cell_size),
+				round(top_left.y / cell_size)
+			)
+			
+			if child_grid_pos == target_pos:
+				return child
+	return null

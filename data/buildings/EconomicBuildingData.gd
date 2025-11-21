@@ -1,16 +1,15 @@
 # res://data/buildings/EconomicBuildingData.gd
-extends BuildingData
 class_name EconomicBuildingData
+extends BuildingData
 
-@export_group("Economic Stats")
-## The type of resource this building generates (e.g., "wood", "food", "stone").
+@export_group("Thrall Economy")
 @export var resource_type: String = "wood"
 
-## The fixed amount of resources generated passively per turn.
-@export var fixed_payout_amount: int = 10
+## What this building produces automatically (Peasant labor).
+@export var base_passive_output: int = 50
 
-## The maximum amount of the resource that can be stored before collection.
-@export var storage_cap: int = 100
+## Extra resource generated per assigned Thrall.
+@export var output_per_thrall: int = 50
 
-## The max number of workers that can be assigned to gather this resource here.
-@export var max_workers: int = 3
+## Maximum number of Thralls this building can manage.
+@export var thrall_capacity: int = 5

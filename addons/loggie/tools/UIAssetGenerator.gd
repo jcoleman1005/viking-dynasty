@@ -174,84 +174,107 @@ func _gen_tooltip_bg() -> void:
 		
 	img.save_png(OUT_PATH + "tooltip_bg.png")
 
-func _gen_icons() -> void:
-	var icons = ["icon_build", "icon_army", "icon_crown", "icon_map", "icon_time"]
-	for name in icons:
-		var img = Image.create(64, 64, false, Image.FORMAT_RGBA8)
-		var col = Color("#f5e6d3") # Parchment White
-		
-		for x in 64:
-			for y in 64:
-				var d_center = Vector2(x,y).distance_to(Vector2(32,32))
-				var pixel = Color(0,0,0,0)
-				
-				match name:
-					"icon_build": # House shape
-						if y > 30 and x > 14 and x < 50 and y < 54: pixel = col # Box
-						if y <= 30 and y > 10 and abs(x - 32) < (y - 6): pixel = col # Roof
-					"icon_army": # Helmet shape
-						if d_center < 20 and y < 36: pixel = col # Dome
-						if y >= 36 and y < 50 and abs(x-32) < 20: pixel = col # Cheek guards
-						if x == 32 and y < 45: pixel = Color(0,0,0,0) # Nose gap
-					"icon_crown": # Crown shape
-						if y > 30 and y < 50 and x > 14 and x < 50: pixel = col # Band
-						if y <= 30 and (abs(x-14) < 4 or abs(x-32) < 6 or abs(x-50) < 4): pixel = col # Points
-					"icon_map": # Scroll shape
-						if x > 14 and x < 50 and y > 10 and y < 54: pixel = col # Paper
-						# Cutout lines
-						if (y % 10 == 0) and x > 20 and x < 44: pixel = Color(0,0,0,0)
-					"icon_time": # Hourglass
-						if abs(x-32) < (y-10)*0.8 and y < 32 and y > 10: pixel = col # Top
-						if abs(x-32) < (54-y)*0.8 and y >= 32 and y < 54: pixel = col # Bottom
-				
-				img.set_pixel(x, y, pixel)
-		
-		img.save_png(OUT_PATH + name + ".png")
-
 func _gen_resource_icons() -> void:
-	var resources = ["res_gold", "res_wood", "res_food", "res_stone"]
+	var resources = ["res_gold", "res_wood", "res_food", "res_stone", "res_peasant", "res_thrall"]
 	
 	for name in resources:
 		var img = Image.create(64, 64, false, Image.FORMAT_RGBA8)
 		
-		for x in 64:
-			for y in 64:
-				var pixel = Color(0,0,0,0)
-				
-				match name:
-					"res_gold": # Coin stack
-						# Bottom Coin
-						if Vector2(x,y).distance_to(Vector2(24, 40)) < 10: pixel = Color("#ffd700")
-						if Vector2(x,y).distance_to(Vector2(40, 40)) < 10: pixel = Color("#daa520")
-						# Top Coin
-						if Vector2(x,y).distance_to(Vector2(32, 28)) < 10: pixel = Color("#ffff00")
-						
-					"res_wood": # Logs
-						# Log 1
-						if x > 10 and x < 54 and y > 20 and y < 30: pixel = Color("#8b4513")
-						# Log 2
-						if x > 10 and x < 54 and y > 32 and y < 42: pixel = Color("#a0522d")
-						# Log 3
-						if x > 10 and x < 54 and y > 44 and y < 54: pixel = Color("#8b4513")
-						# Ends
-						if x < 14 and y > 20 and y < 54: pixel = Color("#deb887")
-						
-					"res_food": # Meat on bone
-						# Bone
-						if x > 10 and x < 54 and abs(y-32) < 4: pixel = Color("#f5f5f5")
-						if Vector2(x,y).distance_to(Vector2(14, 32)) < 6: pixel = Color("#f5f5f5")
-						if Vector2(x,y).distance_to(Vector2(50, 32)) < 6: pixel = Color("#f5f5f5")
-						# Meat
-						if Vector2(x,y).distance_to(Vector2(32, 32)) < 14: pixel = Color("#cd5c5c")
-						
-					"res_stone": # Boulder
-						var d = Vector2(x,y).distance_to(Vector2(32,32))
-						# Irregular shape logic
-						var noise = (x * y) % 7
-						if d < 20 + noise: 
-							pixel = Color("#808080")
-							if x > 32 and y < 32: pixel = Color("#a9a9a9") # Highlight
-							
-				img.set_pixel(x, y, pixel)
+		# Helper to fill a rect
+		var fill_rect = func(rect: Rect2i, color: Color):
+			for x in range(rect.position.x, rect.end.x):
+				for y in range(rect.position.y, rect.end.y):
+					img.set_pixel(x, y, color)
 		
+		# Helper to fill a circle
+		var fill_circle = func(center: Vector2, radius: float, color: Color):
+			for x in 64:
+				for y in 64:
+					if Vector2(x,y).distance_to(center) <= radius:
+						img.set_pixel(x, y, color)
+
+		match name:
+			"res_gold":
+				# Stack of 3 Yellow Coins
+				fill_circle.call(Vector2(20, 40), 12, Color.GOLD)
+				fill_circle.call(Vector2(44, 40), 12, Color.GOLD)
+				fill_circle.call(Vector2(32, 24), 12, Color("#ffff00")) # Bright Top
+				
+			"res_wood":
+				# 3 Brown Logs (Rectangles)
+				fill_rect.call(Rect2i(10, 10, 44, 12), Color("#8b4513"))
+				fill_rect.call(Rect2i(10, 26, 44, 12), Color("#a0522d"))
+				fill_rect.call(Rect2i(10, 42, 44, 12), Color("#8b4513"))
+				
+			"res_food":
+				# Red Apple / Meat
+				fill_circle.call(Vector2(32, 36), 20, Color("#cd5c5c")) # Meat
+				fill_rect.call(Rect2i(30, 10, 4, 10), Color.WHITE) # Bone/Stem
+				
+			"res_stone":
+				# Grey Boulder
+				fill_circle.call(Vector2(32, 32), 22, Color.GRAY)
+				fill_circle.call(Vector2(24, 24), 8, Color.LIGHT_GRAY) # Highlight
+				
+			"res_peasant":
+				# Tan Face + Green Hood
+				fill_circle.call(Vector2(32, 32), 24, Color("#556b2f")) # Hood
+				fill_circle.call(Vector2(32, 32), 16, Color("#f5deb3")) # Face
+				
+			"res_thrall":
+				# Iron Shackle
+				fill_circle.call(Vector2(32, 32), 22, Color.DIM_GRAY) # Ring
+				fill_circle.call(Vector2(32, 32), 14, Color(0,0,0,0)) # Hole (Transparent)
+				fill_rect.call(Rect2i(28, 40, 8, 24), Color.DIM_GRAY) # Chain link
+
+		img.save_png(OUT_PATH + name + ".png")
+
+func _gen_icons() -> void:
+	var icons = ["icon_build", "icon_army", "icon_crown", "icon_map", "icon_time", "icon_manage", "icon_family"]
+	
+	for name in icons:
+		var img = Image.create(64, 64, false, Image.FORMAT_RGBA8)
+		
+		# --- FIX: Pure White for maximum visibility ---
+		var col = Color.WHITE 
+		# ----------------------------------------------
+		
+		# Helper for drawing shapes
+		var draw_box = func(r: Rect2i):
+			for x in range(r.position.x, r.end.x):
+				for y in range(r.position.y, r.end.y):
+					img.set_pixel(x, y, col)
+					
+		match name:
+			"icon_build": # Hammer
+				draw_box.call(Rect2i(20, 20, 24, 12)) # Head
+				draw_box.call(Rect2i(28, 32, 8, 24))  # Handle
+			"icon_army": # Sword
+				draw_box.call(Rect2i(30, 10, 4, 30)) # Blade
+				draw_box.call(Rect2i(24, 40, 16, 4)) # Guard
+				draw_box.call(Rect2i(30, 44, 4, 10)) # Hilt
+			"icon_crown": # Crown
+				draw_box.call(Rect2i(16, 40, 32, 8)) # Base
+				draw_box.call(Rect2i(16, 20, 8, 20)) # Left
+				draw_box.call(Rect2i(28, 20, 8, 20)) # Mid
+				draw_box.call(Rect2i(40, 20, 8, 20)) # Right
+			"icon_map": # Square Map
+				draw_box.call(Rect2i(16, 16, 32, 32))
+				# Cut center
+				for x in range(20, 44):
+					for y in range(20, 44):
+						img.set_pixel(x, y, Color(0,0,0,0))
+			"icon_time": # Hourglass
+				draw_box.call(Rect2i(20, 16, 24, 4)) # Top
+				draw_box.call(Rect2i(20, 44, 24, 4)) # Bot
+				draw_box.call(Rect2i(28, 20, 8, 24)) # Middle
+			"icon_manage": # Gear
+				draw_box.call(Rect2i(20, 20, 24, 24))
+				for x in range(26, 38):
+					for y in range(26, 38):
+						img.set_pixel(x, y, Color(0,0,0,0)) # Hole
+			"icon_family": # Tree
+				draw_box.call(Rect2i(28, 32, 8, 24)) # Trunk
+				draw_box.call(Rect2i(20, 10, 24, 22)) # Leaves
+
 		img.save_png(OUT_PATH + name + ".png")

@@ -35,7 +35,8 @@ signal settlement_loaded(settlement_data: SettlementData)
 
 # --- Unit Management Signals ---
 signal player_unit_died(unit: Node2D)
-
+signal worker_management_toggled()
+signal dynasty_view_requested()
 # --- NEW: RTS Command Signals (GDD Section 10) ---
 # Emitted by SelectionBox.gd, consumed by RTSController.gd
 

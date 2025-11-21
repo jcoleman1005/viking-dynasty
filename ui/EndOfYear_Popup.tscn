@@ -3,8 +3,8 @@
 [ext_resource type="Script" uid="uid://pi8qvm18eita" path="res://ui/EndOfYear_Popup.gd" id="1_3kn8e"]
 [ext_resource type="Theme" uid="uid://63duv3n1vwhg" path="res://ui/themes/VikingDynastyTheme.tres" id="2_theme"]
 
-[node name="Main" type="PanelContainer"]
-anchors_preset = -1
+[node name="EndOfYear_Popup" type="PanelContainer"]
+anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5

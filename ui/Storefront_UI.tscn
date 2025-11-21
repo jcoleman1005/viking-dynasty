@@ -1,11 +1,13 @@
-[gd_scene load_steps=7 format=3 uid="uid://btovbm7r6nern"]
+[gd_scene load_steps=9 format=3 uid="uid://btovbm7r6nern"]
 
 [ext_resource type="Script" uid="uid://t708tcf43ayu" path="res://ui/StorefrontUI.gd" id="1_ht1qg"]
 [ext_resource type="Theme" uid="uid://63duv3n1vwhg" path="res://ui/themes/VikingDynastyTheme.tres" id="2_5jinl"]
-[ext_resource type="Texture2D" uid="uid://d08kc6hrja6ev" path="res://ui/assets/res_gold.png" id="3_hnosc"]
+[ext_resource type="Texture2D" uid="uid://d08kc6hrja6ev" path="res://ui/assets/res_gold.png" id="3_yyd0e"]
 [ext_resource type="Texture2D" uid="uid://m6tx1fv7imra" path="res://ui/assets/res_wood.png" id="4_epn6g"]
-[ext_resource type="Texture2D" uid="uid://ck3gpx751ywcw" path="res://ui/assets/res_food.png" id="5_yyd0e"]
-[ext_resource type="Texture2D" uid="uid://denkxl6ex742y" path="res://ui/assets/res_stone.png" id="6_nipb8"]
+[ext_resource type="Texture2D" uid="uid://ck3gpx751ywcw" path="res://ui/assets/res_food.png" id="5_nipb8"]
+[ext_resource type="Texture2D" uid="uid://denkxl6ex742y" path="res://ui/assets/res_stone.png" id="6_4b5t2"]
+[ext_resource type="Texture2D" uid="uid://cukqh3t2wkmua" path="res://ui/assets/res_peasant.png" id="7_x6vu8"]
+[ext_resource type="Texture2D" uid="uid://day6g5ykwqgyb" path="res://ui/assets/res_thrall.png" id="8_fh15s"]
 
 [node name="Storefront_UI" type="Control"]
 layout_mode = 3
@@ -44,8 +46,11 @@ layout_mode = 2
 theme_override_constants/separation = 15
 
 [node name="GoldIcon" type="TextureRect" parent="TopHUD/HBoxContainer/TreasuryDisplay"]
+custom_minimum_size = Vector2(40, 40)
 layout_mode = 2
-texture = ExtResource("3_hnosc")
+texture = ExtResource("3_yyd0e")
+expand_mode = 1
+stretch_mode = 5
 
 [node name="GoldLabel" type="Label" parent="TopHUD/HBoxContainer/TreasuryDisplay"]
 unique_name_in_owner = true
@@ -53,9 +58,12 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Gold: 0"
 
-[node name="Wood Icon" type="TextureRect" parent="TopHUD/HBoxContainer/TreasuryDisplay"]
+[node name="WoodIcon" type="TextureRect" parent="TopHUD/HBoxContainer/TreasuryDisplay"]
+custom_minimum_size = Vector2(40, 40)
 layout_mode = 2
 texture = ExtResource("4_epn6g")
+expand_mode = 1
+stretch_mode = 5
 
 [node name="WoodLabel" type="Label" parent="TopHUD/HBoxContainer/TreasuryDisplay"]
 unique_name_in_owner = true
@@ -64,8 +72,11 @@ theme_override_font_sizes/font_size = 14
 text = "Wood: 0"
 
 [node name="FoodIcon" type="TextureRect" parent="TopHUD/HBoxContainer/TreasuryDisplay"]
+custom_minimum_size = Vector2(40, 40)
 layout_mode = 2
-texture = ExtResource("5_yyd0e")
+texture = ExtResource("5_nipb8")
+expand_mode = 1
+stretch_mode = 5
 
 [node name="FoodLabel" type="Label" parent="TopHUD/HBoxContainer/TreasuryDisplay"]
 unique_name_in_owner = true
@@ -74,8 +85,11 @@ theme_override_font_sizes/font_size = 14
 text = "Food: 0"
 
 [node name="StoneIcon" type="TextureRect" parent="TopHUD/HBoxContainer/TreasuryDisplay"]
+custom_minimum_size = Vector2(40, 40)
 layout_mode = 2
-texture = ExtResource("6_nipb8")
+texture = ExtResource("6_4b5t2")
+expand_mode = 1
+stretch_mode = 5
 
 [node name="StoneLabel" type="Label" parent="TopHUD/HBoxContainer/TreasuryDisplay"]
 unique_name_in_owner = true
@@ -84,6 +98,35 @@ theme_override_font_sizes/font_size = 14
 text = "Stone: 0"
 
 [node name="VSeparator" type="VSeparator" parent="TopHUD/HBoxContainer/TreasuryDisplay"]
+layout_mode = 2
+
+[node name="PeasantIcon" type="TextureRect" parent="TopHUD/HBoxContainer/TreasuryDisplay"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+texture = ExtResource("7_x6vu8")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PeasantLabel" type="Label" parent="TopHUD/HBoxContainer/TreasuryDisplay"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Villagers: 0"
+
+[node name="ThrallIcon" type="TextureRect" parent="TopHUD/HBoxContainer/TreasuryDisplay"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+texture = ExtResource("8_fh15s")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ThrallLabel" type="Label" parent="TopHUD/HBoxContainer/TreasuryDisplay"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Thralls: 0"
+
+[node name="VSeparator2" type="VSeparator" parent="TopHUD/HBoxContainer/TreasuryDisplay"]
 layout_mode = 2
 
 [node name="UnitCountLabel" type="Label" parent="TopHUD/HBoxContainer/TreasuryDisplay"]
@@ -152,8 +195,8 @@ layout_mode = 1
 anchors_preset = -1
 anchor_top = 1.0
 anchor_bottom = 1.0
-offset_top = -40.0
-offset_right = 40.0
+offset_top = -500.0
+offset_right = 400.0
 grow_vertical = 0
 
 [node name="MarginContainer" type="MarginContainer" parent="Windows/LegacyWindow"]
@@ -210,10 +253,20 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "Army"
 
-[node name="Btn_Legacy" type="Button" parent="BottomDeck/HBoxContainer"]
+[node name="Btn_Manage" type="Button" parent="BottomDeck/HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Dynasty"
+text = "Manage"
+
+[node name="Btn_LegacyUpgrades" type="Button" parent="BottomDeck/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Legacy"
+
+[node name="Btn_Family" type="Button" parent="BottomDeck/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Family"
 
 [node name="VSeparator" type="VSeparator" parent="BottomDeck/HBoxContainer"]
 layout_mode = 2

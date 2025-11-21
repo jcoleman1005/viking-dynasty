@@ -108,8 +108,8 @@ static func _clone_settlement_data(original: SettlementData) -> SettlementData:
 	# Warbands start empty for new clones (to be scaled later)
 	clone.warbands.clear() 
 	
-	clone.max_garrison_bonus = original.max_garrison_bonus
-	clone.population_total = original.population_total
+	clone.population_peasants = original.population_peasants
+	clone.population_thralls = original.population_thralls
 	
 	return clone
 

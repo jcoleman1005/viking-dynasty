@@ -1,0 +1,57 @@
+[gd_scene load_steps=3 format=3 uid="uid://btsh08figkwts"]
+
+[ext_resource type="Script" uid="uid://b7wywer60bc0a" path="res://ui/components/WorkerTag.gd" id="1_nr0dy"]
+[ext_resource type="Theme" uid="uid://63duv3n1vwhg" path="res://ui/themes/VikingDynastyTheme.tres" id="2_fqgk7"]
+
+[node name="WorkerTag" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_nr0dy")
+
+[node name="Panel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 218.0
+offset_bottom = 126.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+theme = ExtResource("2_fqgk7")
+
+[node name="VBox" type="VBoxContainer" parent="Panel"]
+layout_mode = 2
+
+[node name="HBox_Peasant" type="HBoxContainer" parent="Panel/VBox"]
+layout_mode = 2
+
+[node name="Btn_Minus" type="Button" parent="Panel/VBox/HBox_Peasant"]
+layout_mode = 2
+text = "-"
+
+[node name="CountLabel" type="Label" parent="Panel/VBox/HBox_Peasant"]
+layout_mode = 2
+text = "Villagers: 2/5"
+
+[node name="Btn_Plus" type="Button" parent="Panel/VBox/HBox_Peasant"]
+layout_mode = 2
+text = "+"
+
+[node name="HSeparator" type="HSeparator" parent="Panel/VBox"]
+layout_mode = 2
+
+[node name="HBox_Thrall" type="HBoxContainer" parent="Panel/VBox"]
+layout_mode = 2
+
+[node name="Btn_Minus" type="Button" parent="Panel/VBox/HBox_Thrall"]
+layout_mode = 2
+text = "-"
+
+[node name="CountLabel" type="Label" parent="Panel/VBox/HBox_Thrall"]
+layout_mode = 2
+text = "Thralls: 2/5"
+
+[node name="Btn_Plus" type="Button" parent="Panel/VBox/HBox_Thrall"]
+layout_mode = 2
+text = "+"

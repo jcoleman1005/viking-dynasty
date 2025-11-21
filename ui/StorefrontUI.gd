@@ -3,12 +3,16 @@ extends Control
 
 const LegacyUpgradeData = preload("res://data/legacy/LegacyUpgradeData.gd")
 
-# --- Header References ---
+# --- Header References (Permanent HUD) ---
 @onready var gold_label: Label = %GoldLabel
 @onready var wood_label: Label = %WoodLabel
 @onready var food_label: Label = %FoodLabel
 @onready var stone_label: Label = %StoneLabel
 @onready var unit_count_label: Label = %UnitCountLabel
+
+# --- NEW: Population References ---
+@onready var peasant_label: Label = %PeasantLabel
+@onready var thrall_label: Label = %ThrallLabel
 
 # --- Window References ---
 @onready var build_window: Control = %BuildWindow
@@ -27,7 +31,9 @@ const LegacyUpgradeData = preload("res://data/legacy/LegacyUpgradeData.gd")
 # --- Dock Buttons ---
 @onready var btn_build: Button = %Btn_Build
 @onready var btn_recruit: Button = %Btn_Recruit
-@onready var btn_legacy: Button = %Btn_Legacy
+@onready var btn_manage: Button = %Btn_Manage
+@onready var btn_upgrades: Button = %Btn_LegacyUpgrades
+@onready var btn_family: Button = %Btn_Family
 @onready var btn_map: Button = %Btn_Map
 @onready var btn_end_year: Button = %Btn_EndYear
 
@@ -42,6 +48,7 @@ func _ready() -> void:
 
 	EventBus.treasury_updated.connect(_update_treasury_display)
 	EventBus.purchase_successful.connect(_on_purchase_successful)
+	EventBus.purchase_failed.connect(_on_purchase_failed)
 	EventBus.settlement_loaded.connect(_on_settlement_loaded)
 	DynastyManager.jarl_stats_updated.connect(_update_jarl_stats_display)
 	DynastyManager.year_ended.connect(_update_garrison_display)
@@ -59,38 +66,54 @@ func _ready() -> void:
 	
 	_refresh_all()
 
-# --- VISUAL SETUP ---
+# --- VISUAL SETUP (CRASH PROOF) ---
 func _apply_theme_overrides() -> void:
 	var tag_path = "res://ui/assets/resource_tag.png"
 	var font_path = "res://assets/fonts/UncialAntiqua-Regular.ttf"
 	var tooltip_bg_path = "res://ui/assets/tooltip_bg.png"
-	var theme_path = "res://ui/themes/VikingDynastyTheme.tres"
+	var default_theme_path = "res://ui/themes/VikingDynastyTheme.tres"
 	
 	var plaque_tex = load(tag_path) if ResourceLoader.exists(tag_path) else null
 	var font = load(font_path) if ResourceLoader.exists(font_path) else null
 	var tooltip_tex = load(tooltip_bg_path) if ResourceLoader.exists(tooltip_bg_path) else null
 	
-	# 1. Resource Labels
+	# 1. Resource Labels & Icons
 	if plaque_tex and font:
 		var style = StyleBoxTexture.new()
 		style.texture = plaque_tex
 		style.content_margin_left = 16
 		style.content_margin_right = 16
-		style.content_margin_top = 8
-		style.content_margin_bottom = 8
+		style.content_margin_top = 4 # Reduced padding
+		style.content_margin_bottom = 4
 		
-		var labels = [gold_label, wood_label, food_label, stone_label, unit_count_label]
+		var labels = [gold_label, wood_label, food_label, stone_label, unit_count_label, peasant_label, thrall_label]
 		for lbl in labels:
 			if lbl:
 				lbl.add_theme_stylebox_override("normal", style)
 				lbl.add_theme_font_override("font", font)
-				lbl.add_theme_font_size_override("font_size", 32) 
+				
+				# --- FIX 1: Smaller Font ---
+				lbl.add_theme_font_size_override("font_size", 24) 
+				# ---------------------------
+				
 				lbl.add_theme_color_override("font_color", Color("#f5e6d3"))
 				lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 				lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-				lbl.custom_minimum_size.y = 60
+				lbl.custom_minimum_size.y = 48 # Reduced height
+				
+				# --- FIX 2: Force Icon Visibility ---
+				# Look at the parent (HBox) and find any TextureRect siblings
+				var container = lbl.get_parent()
+				if container:
+					for child in container.get_children():
+						if child is TextureRect:
+							# Force the icon to expand to fit the available height
+							child.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+							child.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+							# Force a minimum size so it can't be crushed to 0
+							child.custom_minimum_size = Vector2(40, 40)
 	
-	# 2. Tooltip Styling
+	# 2. Tooltip Styling (Keep existing logic)
 	if tooltip_tex:
 		var style_tooltip = StyleBoxTexture.new()
 		style_tooltip.texture = tooltip_tex
@@ -99,19 +122,14 @@ func _apply_theme_overrides() -> void:
 		style_tooltip.content_margin_top = 8
 		style_tooltip.content_margin_bottom = 8
 		
-		# --- FIX: SAFELY LOAD THEME ---
-		# If self.theme is null, load it from disk.
-		var base_theme = theme
-		if not base_theme:
-			if ResourceLoader.exists(theme_path):
-				base_theme = load(theme_path)
+		if theme == null:
+			if ResourceLoader.exists(default_theme_path):
+				theme = load(default_theme_path)
 			else:
-				base_theme = Theme.new() # Fallback if file missing
-		
-		# Duplicate to create local override
-		theme = base_theme.duplicate()
-		self.theme = theme 
-		# ------------------------------
+				theme = Theme.new()
+
+		theme = theme.duplicate() 
+		self.theme = theme
 		
 		theme.set_stylebox("panel", "TooltipPanel", style_tooltip)
 		theme.set_color("font_color", "TooltipLabel", Color.WHITE)
@@ -120,7 +138,9 @@ func _apply_theme_overrides() -> void:
 func _setup_dock_icons() -> void:
 	_set_btn_icon(btn_build, "res://ui/assets/icon_build.png")
 	_set_btn_icon(btn_recruit, "res://ui/assets/icon_army.png")
-	_set_btn_icon(btn_legacy, "res://ui/assets/icon_crown.png")
+	_set_btn_icon(btn_manage, "res://ui/assets/icon_manage.png")
+	_set_btn_icon(btn_upgrades, "res://ui/assets/icon_crown.png")
+	_set_btn_icon(btn_family, "res://ui/assets/icon_family.png")
 	_set_btn_icon(btn_map, "res://ui/assets/icon_map.png")
 	_set_btn_icon(btn_end_year, "res://ui/assets/icon_time.png")
 
@@ -135,14 +155,12 @@ func _set_btn_icon(btn: Button, path: String) -> void:
 func _setup_window_logic() -> void:
 	btn_build.pressed.connect(_toggle_window.bind(build_window))
 	btn_recruit.pressed.connect(_toggle_window.bind(recruit_window))
-	btn_legacy.pressed.connect(_toggle_window.bind(legacy_window))
+	btn_upgrades.pressed.connect(_toggle_window.bind(legacy_window))
 	
-	# --- ACTIONS ---
+	btn_manage.pressed.connect(func(): EventBus.worker_management_toggled.emit())
+	btn_family.pressed.connect(func(): EventBus.dynasty_view_requested.emit())
 	btn_map.pressed.connect(func(): EventBus.scene_change_requested.emit("world_map"))
-	
-	# FIX: Connect End Year button
 	btn_end_year.pressed.connect(func(): EventBus.end_year_requested.emit())
-	# ---------------
 	
 	var windows = [build_window, recruit_window, legacy_window]
 	for win in windows:
@@ -177,6 +195,14 @@ func _update_treasury_display(treasury: Dictionary) -> void:
 	stone_label.text = "%d" % treasury.get("stone", 0)
 	if SettlementManager.current_settlement:
 		unit_count_label.text = "%d" % SettlementManager.current_settlement.warbands.size()
+		
+		var idle_p = SettlementManager.get_idle_peasants()
+		var total_p = SettlementManager.current_settlement.population_peasants
+		var idle_t = SettlementManager.get_idle_thralls()
+		var total_t = SettlementManager.current_settlement.population_thralls
+		
+		if peasant_label: peasant_label.text = "%d/%d" % [idle_p, total_p]
+		if thrall_label: thrall_label.text = "%d/%d" % [idle_t, total_t]
 
 func _update_initial_treasury() -> void:
 	await get_tree().process_frame
@@ -185,6 +211,24 @@ func _update_initial_treasury() -> void:
 
 func _on_purchase_successful(_item: String) -> void:
 	_refresh_all()
+
+func _on_purchase_failed(reason: String) -> void:
+	_show_toast(reason, Color.SALMON)
+
+func _show_toast(text: String, color: Color) -> void:
+	var label = Label.new()
+	label.text = text
+	label.add_theme_color_override("font_color", color)
+	label.add_theme_font_size_override("font_size", 32)
+	label.add_theme_color_override("font_outline_color", Color.BLACK)
+	label.add_theme_constant_override("outline_size", 6)
+	add_child(label)
+	label.position = get_viewport_rect().size / 2.0 - Vector2(100, 50)
+	var tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(label, "position:y", label.position.y - 100, 1.5).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+	tween.tween_property(label, "modulate:a", 0.0, 1.5).set_ease(Tween.EASE_IN)
+	tween.chain().tween_callback(label.queue_free)
 
 func _on_settlement_loaded(data: SettlementData) -> void:
 	if data: _update_treasury_display(data.treasury)
@@ -356,4 +400,3 @@ func _format_cost(cost: Dictionary) -> String:
 	var s = []
 	for k in cost: s.append("%d %s" % [cost[k], k])
 	return ", ".join(s)
-	

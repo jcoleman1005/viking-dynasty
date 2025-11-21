@@ -406,7 +406,7 @@ func close_all_ui() -> void:
 func _on_end_year_pressed() -> void:
 	if not SettlementManager.has_current_settlement(): return
 	var settlement = SettlementManager.current_settlement
-	var total_pop = settlement.population_total
+	var total_pop = settlement.population_peasants
 	var assigned_pop = 0
 	for key in settlement.worker_assignments:
 		assigned_pop += settlement.worker_assignments[key]
