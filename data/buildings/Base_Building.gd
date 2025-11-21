@@ -1,3 +1,5 @@
+# res://data/buildings/Base_Building.gd
+@tool
 class_name BaseBuilding
 extends StaticBody2D
 
@@ -35,17 +37,20 @@ func _ready() -> void:
 	current_health = data.max_health
 	
 	# --- Create core nodes ---
-	collision_shape = CollisionShape2D.new()
-	collision_shape.shape = RectangleShape2D.new()
-	add_child(collision_shape)
+	# We check if nodes exist to prevent duplication if script reloads in editor
+	if not collision_shape:
+		collision_shape = CollisionShape2D.new()
+		collision_shape.shape = RectangleShape2D.new()
+		add_child(collision_shape)
 	
-	background = ColorRect.new()
-	label = Label.new()
-	background.add_child(label)
-	add_child(background)
+	if not background:
+		background = ColorRect.new()
+		label = Label.new()
+		background.add_child(label)
+		add_child(background)
 	
 	# Create sprite for building texture
-	if data.building_texture:
+	if data.building_texture and not sprite:
 		sprite = Sprite2D.new()
 		sprite.texture = data.building_texture
 		add_child(sprite)
@@ -53,14 +58,67 @@ func _ready() -> void:
 		move_child(sprite, 1)
 	# -------------------------
 	
+	# Visual setup (Runs in Game AND Editor)
+	_apply_data_and_scale()
+	
+	# --- STOP HERE IF IN EDITOR ---
+	if Engine.is_editor_hint():
+		return
+		
+	# Gameplay setup (Runs ONLY in Game)
 	input_pickable = true
 	_create_hitbox()
-	_apply_data_and_scale()
 	_create_dev_visuals() 
 	_setup_defensive_ai()
 	
 	# Apply the initial state visual
 	_update_visual_state()
+
+func _apply_data_and_scale() -> void:
+	# Fallback for Editor where SettlementManager might not be active/valid
+	var cell_size = Vector2(32, 32)
+	if not Engine.is_editor_hint() and SettlementManager:
+		cell_size = SettlementManager.get_active_grid_cell_size()
+	
+	var size = Vector2(data.grid_size) * cell_size
+	
+	if background:
+		background.custom_minimum_size = size
+		background.position = -size / 2.0
+	
+	# Scale sprite to match building size
+	if sprite and sprite.texture:
+		var texture_size = sprite.texture.get_size()
+		sprite.scale = size / texture_size
+		sprite.position = Vector2.ZERO  # Center the sprite
+	
+	if label:
+		label.text = data.display_name
+		label.custom_minimum_size = size
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	
+	_apply_color_coding()
+	
+	if collision_shape and collision_shape.shape: 
+		collision_shape.shape.size = size
+	# Note: Hitbox resizing handled in _create_hitbox for runtime
+
+func _apply_color_coding() -> void:
+	if not background: return
+	
+	var c = Color.GRAY
+	if data.dev_color != Color.TRANSPARENT and data.dev_color != Color.GRAY: c = data.dev_color
+	elif data.is_defensive_structure: c = Color.CRIMSON * 0.8
+	elif data.is_player_buildable: c = Color.ROYAL_BLUE * 0.8
+	
+	# If we have a building texture, make background more transparent to show the sprite
+	if sprite and sprite.texture:
+		c.a = 0.2  # Make background mostly transparent
+	
+	background.color = c
+
 
 func _input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
 	if event is InputEventMouseButton and event.pressed:
@@ -186,42 +244,6 @@ func _create_hitbox() -> void:
 	s.shape = RectangleShape2D.new()
 	hitbox_area.add_child(s)
 	add_child(hitbox_area)
-
-func _apply_data_and_scale() -> void:
-	if not SettlementManager: return
-	var cell = SettlementManager.get_active_grid_cell_size()
-	var size = Vector2(data.grid_size) * cell
-	background.custom_minimum_size = size
-	background.position = -size / 2.0
-	
-	# Scale sprite to match building size
-	if sprite and sprite.texture:
-		var texture_size = sprite.texture.get_size()
-		sprite.scale = size / texture_size
-		sprite.position = Vector2.ZERO  # Center the sprite
-	
-	label.text = data.display_name
-	label.custom_minimum_size = size
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	
-	_apply_color_coding()
-	
-	if collision_shape: collision_shape.shape.size = size
-	if hitbox_area: hitbox_area.get_child(0).shape.size = size
-
-func _apply_color_coding() -> void:
-	var c = Color.GRAY
-	if data.dev_color != Color.TRANSPARENT and data.dev_color != Color.GRAY: c = data.dev_color
-	elif data.is_defensive_structure: c = Color.CRIMSON * 0.8
-	elif data.is_player_buildable: c = Color.ROYAL_BLUE * 0.8
-	
-	# If we have a building texture, make background more transparent to show the sprite
-	if sprite and sprite.texture:
-		c.a = 0.2  # Make background mostly transparent
-	
-	background.color = c
 
 func _create_dev_visuals() -> void:
 	var cell = SettlementManager.get_active_grid_cell_size()
