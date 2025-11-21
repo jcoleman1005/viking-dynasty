@@ -31,39 +31,21 @@ func _run() -> void:
 
 func _gen_parchment() -> void:
 	var img = Image.create(SIZE, SIZE, false, Image.FORMAT_RGBA8)
-	
-	# Noise 1: Fine Paper Grain
-	var grain_noise = FastNoiseLite.new()
-	grain_noise.frequency = 0.1
-	grain_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
-	grain_noise.seed = 1234
-	
-	# Noise 2: Coffee Stains / Age
-	var stain_noise = FastNoiseLite.new()
-	stain_noise.frequency = 0.01
-	stain_noise.noise_type = FastNoiseLite.TYPE_PERLIN
-	stain_noise.seed = 5678
+	var noise = FastNoiseLite.new()
+	noise.frequency = 0.03
+	noise.noise_type = FastNoiseLite.TYPE_PERLIN
 	
 	for x in SIZE:
 		for y in SIZE:
-			# 1. Base Color: Much warmer, darker beige (Aged Vellum)
-			# Old was #f5e6d3 (Too bright) -> New is #dcbfa6
-			var col = Color("#dcbfa6")
+			# Base: Cool Grey
+			var col = Color("#aeb5bd")
 			
-			# 2. Apply Grain (High frequency, low impact)
-			var g = grain_noise.get_noise_2d(x, y)
-			col = col.darkened(g * 0.05) # Subtle texture
-			
-			# 3. Apply Stains (Low frequency, darker impact)
-			var s = stain_noise.get_noise_2d(x, y)
-			# Create "clouds" of darkness
-			if s > 0.2:
-				col = col.darkened((s - 0.2) * 0.15)
+			var n = noise.get_noise_2d(x, y)
+			col = col.darkened(n * 0.1)
 			
 			img.set_pixel(x, y, col)
-			
 	img.save_png(OUT_PATH + "parchment_bg.png")
-
+	
 func _gen_wood() -> void:
 	var img = Image.create(SIZE, SIZE, false, Image.FORMAT_RGBA8)
 	var noise = FastNoiseLite.new()
