@@ -7,7 +7,7 @@ process_mode = 2
 script = ExtResource("1_ubb4e")
 
 [node name="PanelContainer" type="PanelContainer" parent="."]
-anchors_preset = -1
+anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
@@ -19,22 +19,54 @@ offset_bottom = 20.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer"]
+[node name="MainMenuContainer" type="VBoxContainer" parent="PanelContainer"]
 layout_mode = 2
 
-[node name="ResumeButton" type="Button" parent="PanelContainer/VBoxContainer"]
+[node name="ResumeButton" type="Button" parent="PanelContainer/MainMenuContainer"]
 layout_mode = 2
 text = "Resume"
 
-[node name="SaveButton" type="Button" parent="PanelContainer/VBoxContainer"]
+[node name="SaveButton" type="Button" parent="PanelContainer/MainMenuContainer"]
 layout_mode = 2
 text = "Save Game"
 
-[node name="NewGameButton" type="Button" parent="PanelContainer/VBoxContainer"]
+[node name="NewGameButton" type="Button" parent="PanelContainer/MainMenuContainer"]
 modulate = Color(1, 0, 0, 1)
 layout_mode = 2
 text = "Start New Game (Wipe Save)"
 
-[node name="QuitButton" type="Button" parent="PanelContainer/VBoxContainer"]
+[node name="DebugButton" type="Button" parent="PanelContainer/MainMenuContainer"]
+layout_mode = 2
+text = "Debugs/Cheats"
+
+[node name="QuitButton" type="Button" parent="PanelContainer/MainMenuContainer"]
 layout_mode = 2
 text = "Quit Game"
+
+[node name="DebugMenuContainer" type="VBoxContainer" parent="PanelContainer"]
+visible = false
+layout_mode = 2
+
+[node name="Btn_AddGold" type="Button" parent="PanelContainer/DebugMenuContainer"]
+layout_mode = 2
+text = "+1000 Gold"
+
+[node name="Btn_AddRenown" type="Button" parent="PanelContainer/DebugMenuContainer"]
+layout_mode = 2
+text = "+500 Renown"
+
+[node name="Btn_UnlockLegacy" type="Button" parent="PanelContainer/DebugMenuContainer"]
+layout_mode = 2
+text = "Unlock Training Grounds"
+
+[node name="Btn_TriggerRaid" type="Button" parent="PanelContainer/DebugMenuContainer"]
+layout_mode = 2
+text = "Trigger Defensive Raid"
+
+[node name="Btn_KillJarl" type="Button" parent="PanelContainer/DebugMenuContainer"]
+layout_mode = 2
+text = "Kill Current Jarl"
+
+[node name="Btn_Back" type="Button" parent="PanelContainer/DebugMenuContainer"]
+layout_mode = 2
+text = "Back"

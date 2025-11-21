@@ -1428,16 +1428,6 @@ tile_set = SubResource("TileSet_k14p1")
 
 [node name="Storefront_UI" parent="UI" instance=ExtResource("3_vj45l")]
 
-[node name="DebugRaidButton" type="Button" parent="UI/Storefront_UI"]
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -143.0
-offset_bottom = 27.0
-grow_horizontal = 0
-text = "DEBUG: Start Raid"
-
 [node name="RestartButton" type="Button" parent="UI"]
 visible = false
 anchors_preset = 8

@@ -357,10 +357,3 @@ func _format_cost(cost: Dictionary) -> String:
 	for k in cost: s.append("%d %s" % [cost[k], k])
 	return ", ".join(s)
 	
-func _input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and event.keycode == KEY_F9:
-		if not DynastyManager.has_purchased_upgrade("UPG_TRAINING_GROUNDS"):
-			DynastyManager.purchase_legacy_upgrade("UPG_TRAINING_GROUNDS")
-			if DynastyManager.current_jarl:
-				_update_jarl_stats_display(DynastyManager.current_jarl)
-			Loggie.msg("CHEAT: Training Grounds Unlocked!").domain("UI").warn()
