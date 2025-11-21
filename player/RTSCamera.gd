@@ -31,14 +31,18 @@ var target_zoom: Vector2 = Vector2.ONE
 var is_dragging: bool = false
 var drag_start_mouse_pos: Vector2 = Vector2.ZERO
 var drag_start_camera_pos: Vector2 = Vector2.ZERO
+var input_locked: bool = false
 
 func _ready() -> void:
 	Loggie.msg("RTS Camera Initialized").domain("RTS").info() # Check your Output tab for this!
 	# Initialize target zoom to current zoom
 	target_zoom = zoom
 	make_current()
-
+	EventBus.camera_input_lock_requested.connect(_on_input_lock_requested)
+	
 func _unhandled_input(event: InputEvent) -> void:
+	if input_locked:
+		return
 	# --- Zoom Control (Mouse Wheel) ---
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
@@ -134,3 +138,6 @@ func _clamp_position() -> void:
 	if bounds_enabled:
 		global_position.x = clamp(global_position.x, bounds_rect.position.x, bounds_rect.end.x)
 		global_position.y = clamp(global_position.y, bounds_rect.position.y, bounds_rect.end.y)
+
+func _on_input_lock_requested(locked: bool) -> void:
+	input_locked = locked

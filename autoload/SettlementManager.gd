@@ -16,17 +16,13 @@ func _ready() -> void:
 	EventBus.player_unit_died.connect(_on_player_unit_died)
 
 # --- SAVE MANAGEMENT ---
-
 func delete_save_file() -> void:
 	var settlement_deleted := false
 	var map_deleted := false
-	
 	if FileAccess.file_exists(USER_SAVE_PATH):
 		if DirAccess.remove_absolute(USER_SAVE_PATH) == OK: settlement_deleted = true
-	
 	if FileAccess.file_exists(MAP_SAVE_PATH):
 		if DirAccess.remove_absolute(MAP_SAVE_PATH) == OK: map_deleted = true
-	
 	reset_manager_state()
 	Loggie.msg("Save files deleted (Settlement: %s, Map: %s)." % [settlement_deleted, map_deleted]).domain("SYSTEM").info()
 
@@ -54,45 +50,64 @@ func _trigger_territory_update() -> void:
 		grid_manager_node.recalculate_territory(all_buildings)
 
 # --- WARBAND MANAGEMENT ---
-
 func _on_player_unit_died(unit: Node2D) -> void:
 	if not current_settlement: return
-	
 	var base_unit = unit as BaseUnit
-	if not base_unit or not base_unit.warband_ref:
-		return 
+	if not base_unit or not base_unit.warband_ref: return 
 
 	var warband = base_unit.warband_ref
-	
 	if warband in current_settlement.warbands:
-		# Casualty Logic
 		warband.current_manpower -= 1
-		
 		if warband.current_manpower <= 0:
-			# --- NEW: HEIR DEATH CHECK ---
 			if warband.assigned_heir_name != "":
 				DynastyManager.kill_heir_by_name(warband.assigned_heir_name, "Slain leading the %s" % warband.custom_name)
-			# -----------------------------
-			
 			current_settlement.warbands.erase(warband)
 			Loggie.msg("☠️ Warband Destroyed: %s" % warband.custom_name).domain("SETTLEMENT").warn()
 		else:
 			Loggie.msg("⚔️ Casualty in %s. Remaining: %d" % [warband.custom_name, warband.current_manpower]).domain("SETTLEMENT").info()
-		
 		save_settlement()
 
 func recruit_unit(unit_data: UnitData) -> void:
 	if not current_settlement or not unit_data: return
-	
 	var new_warband = WarbandData.new(unit_data)
-	current_settlement.warbands.append(new_warband)
 	
+	# Catch-Up Mechanic
+	if DynastyManager.has_purchased_upgrade("UPG_TRAINING_GROUNDS"):
+		new_warband.experience = 200
+		new_warband.add_history("Recruited as Hardened Veterans")
+	else:
+		new_warband.add_history("Recruited")
+		
+	current_settlement.warbands.append(new_warband)
 	Loggie.msg("Recruited new Warband: %s" % new_warband.custom_name).domain("SETTLEMENT").info()
 	save_settlement()
 	EventBus.purchase_successful.emit(unit_data.display_name)
 
-# --- LOAD/SAVE ---
+# --- NEW FEATURES: Gear & Guards ---
+func upgrade_warband_gear(warband: WarbandData) -> bool:
+	if not current_settlement: return false
+	if warband.gear_tier >= WarbandData.MAX_GEAR_TIER: return false
+	var cost = warband.get_gear_cost()
+	if attempt_purchase({"gold": cost}):
+		warband.gear_tier += 1
+		warband.add_history("Upgraded to %s" % warband.get_gear_name())
+		save_settlement()
+		EventBus.purchase_successful.emit("Gear Upgrade")
+		return true
+	return false
 
+func toggle_hearth_guard(warband: WarbandData) -> void:
+	if not current_settlement: return
+	warband.is_hearth_guard = !warband.is_hearth_guard
+	if warband.is_hearth_guard:
+		warband.add_history("Assigned to Hearth Guard")
+	else:
+		warband.add_history("Relieved from Hearth Guard")
+	save_settlement()
+	EventBus.purchase_successful.emit("Guard Toggle")
+# -----------------------------------
+
+# --- LOAD/SAVE ---
 func load_settlement(data: SettlementData) -> void:
 	if ResourceLoader.exists(USER_SAVE_PATH):
 		var saved_data = load(USER_SAVE_PATH)
@@ -103,7 +118,6 @@ func load_settlement(data: SettlementData) -> void:
 			_load_fallback_data(data)
 	else:
 		_load_fallback_data(data)
-	
 	EventBus.settlement_loaded.emit(current_settlement)
 	_trigger_territory_update()
 
@@ -126,28 +140,23 @@ func has_current_settlement() -> bool:
 	return current_settlement != null
 
 # --- ECONOMY ---
-
 func get_labor_capacities() -> Dictionary:
 	var capacities = { "construction": 0, "food": BASE_GATHERING_CAPACITY, "wood": BASE_GATHERING_CAPACITY, "stone": BASE_GATHERING_CAPACITY }
 	if not current_settlement: return capacities
-
 	for entry in current_settlement.placed_buildings:
 		var b_data = load(entry["resource_path"])
 		if b_data is EconomicBuildingData:
 			if capacities.has(b_data.resource_type):
 				capacities[b_data.resource_type] += b_data.max_workers
-	
 	for entry in current_settlement.pending_construction_buildings:
 		var b_data = load(entry["resource_path"]) as BuildingData
 		if b_data: capacities["construction"] += b_data.base_labor_capacity
-			
 	return capacities
 
 func deposit_resources(loot: Dictionary) -> void:
 	if not current_settlement: return
 	for resource_type in loot:
 		if resource_type.begins_with("_"): continue
-		
 		var amount = loot[resource_type]
 		if resource_type == "population":
 			if not "population_total" in current_settlement: current_settlement.population_total = 10
@@ -156,7 +165,6 @@ func deposit_resources(loot: Dictionary) -> void:
 			current_settlement.treasury[resource_type] += amount
 		else:
 			current_settlement.treasury[resource_type] = amount
-			
 	EventBus.treasury_updated.emit(current_settlement.treasury)
 	save_settlement()
 
@@ -173,10 +181,7 @@ func attempt_purchase(item_cost: Dictionary) -> bool:
 
 func calculate_payout() -> Dictionary:
 	if not current_settlement: return {}
-	
 	_process_construction_labor()
-	
-	# Process Hunger
 	var hunger_warnings = _process_warband_hunger()
 	
 	var total_payout: Dictionary = {}
@@ -219,8 +224,7 @@ func calculate_payout() -> Dictionary:
 
 	return total_payout
 
-# --- CONSTRUCTION & PATHFINDING ---
-
+# --- CONSTRUCTION ---
 func get_active_grid_cell_size() -> Vector2:
 	if is_instance_valid(active_astar_grid): return active_astar_grid.cell_size
 	return Vector2(32, 32)
@@ -229,7 +233,6 @@ func _process_construction_labor() -> void:
 	if not current_settlement: return
 	var assigned = current_settlement.worker_assignments.get("construction", 0)
 	if assigned <= 0: return
-		
 	var total_points = assigned * BUILDER_EFFICIENCY
 	var completed_indices: Array[int] = []
 	
@@ -238,12 +241,10 @@ func _process_construction_labor() -> void:
 		var entry = current_settlement.pending_construction_buildings[i]
 		var b_data = load(entry["resource_path"]) as BuildingData
 		if not b_data: continue
-		
 		var needed = b_data.construction_effort_required - entry.get("progress", 0)
 		var applied = min(total_points, needed)
 		entry["progress"] += applied
 		total_points -= applied
-		
 		if entry["progress"] >= b_data.construction_effort_required:
 			completed_indices.append(i)
 			current_settlement.placed_buildings.append({
@@ -255,21 +256,18 @@ func _process_construction_labor() -> void:
 	completed_indices.reverse()
 	for i in completed_indices:
 		current_settlement.pending_construction_buildings.remove_at(i)
-		
 	save_settlement()
 	if not completed_indices.is_empty(): _trigger_territory_update()
 
 func place_building(building_data: BuildingData, grid_position: Vector2i, is_new_construction: bool = false) -> BaseBuilding:
 	if not is_instance_valid(active_building_container): return null
 	if not is_placement_valid(grid_position, building_data.grid_size, building_data): return null
-	
 	var new_building = building_data.scene_to_spawn.instantiate()
 	new_building.data = building_data
 	var cell = get_active_grid_cell_size()
 	var pos = Vector2(grid_position) * cell + (Vector2(building_data.grid_size) * cell / 2.0)
 	new_building.global_position = pos
 	active_building_container.add_child(new_building)
-	
 	if building_data.blocks_pathfinding:
 		for x in range(building_data.grid_size.x):
 			for y in range(building_data.grid_size.y):
@@ -278,7 +276,6 @@ func place_building(building_data: BuildingData, grid_position: Vector2i, is_new
 					active_astar_grid.set_point_solid(cell_pos, true)
 		active_astar_grid.update()
 		EventBus.pathfinding_grid_updated.emit(grid_position)
-
 	if is_new_construction:
 		new_building.set_state(BaseBuilding.BuildingState.BLUEPRINT)
 		current_settlement.pending_construction_buildings.append({
@@ -287,10 +284,8 @@ func place_building(building_data: BuildingData, grid_position: Vector2i, is_new
 			"progress": 0
 		})
 		save_settlement()
-		Loggie.msg("New blueprint placed at %s." % grid_position).domain("SETTLEMENT").info()
 	else:
 		new_building.set_state(BaseBuilding.BuildingState.ACTIVE)
-	
 	_trigger_territory_update()
 	return new_building
 
@@ -298,7 +293,6 @@ func remove_building(building_instance: BaseBuilding) -> void:
 	if not current_settlement or not is_instance_valid(building_instance): return
 	var cell_size = get_active_grid_cell_size()
 	var grid_pos = Vector2i((building_instance.global_position - (Vector2(building_instance.data.grid_size) * cell_size / 2.0)) / cell_size)
-	
 	if is_instance_valid(active_astar_grid):
 		for x in range(building_instance.data.grid_size.x):
 			for y in range(building_instance.data.grid_size.y):
@@ -307,7 +301,6 @@ func remove_building(building_instance: BaseBuilding) -> void:
 					active_astar_grid.set_point_solid(cell, false)
 		active_astar_grid.update()
 		EventBus.pathfinding_grid_updated.emit(grid_pos)
-
 	var removed = _remove_from_list(current_settlement.placed_buildings, grid_pos)
 	if not removed: removed = _remove_from_list(current_settlement.pending_construction_buildings, grid_pos)
 	if removed:
@@ -348,22 +341,15 @@ func _is_cell_within_bounds(grid_position: Vector2i) -> bool:
 	var bounds = active_astar_grid.region
 	return grid_position.x >= bounds.position.x and grid_position.x < bounds.end.x and grid_position.y >= bounds.position.y and grid_position.y < bounds.end.y
 
-# --- FIX: Robust Pathfinding with Clamping ---
 func get_astar_path(start_pos: Vector2, end_pos: Vector2, allow_partial_path: bool = false) -> PackedVector2Array:
 	if not is_instance_valid(active_astar_grid): return PackedVector2Array()
-	
 	var cell_size = active_astar_grid.cell_size
 	var start = Vector2i(start_pos / cell_size)
 	var end = Vector2i(end_pos / cell_size)
-	
-	# If start is invalid, we can't path
 	if not _is_cell_within_bounds(start): return PackedVector2Array()
-	
-	# Clamp target to grid bounds
 	var bounds = active_astar_grid.region
 	end.x = clampi(end.x, bounds.position.x, bounds.end.x - 1)
 	end.y = clampi(end.y, bounds.position.y, bounds.end.y - 1)
-	
 	return active_astar_grid.get_point_path(start, end, allow_partial_path)
 
 func set_astar_point_solid(grid_position: Vector2i, solid: bool) -> void:
@@ -375,7 +361,6 @@ func simulate_turn(simulated_assignments: Dictionary) -> Dictionary:
 	var result = { "resources_gained": { "food": 0, "wood": 0, "stone": 0, "gold": 0 }, "buildings_completing": [] }
 	var assigned_builders = simulated_assignments.get("construction", 0)
 	var total_points = assigned_builders * BUILDER_EFFICIENCY
-	
 	for entry in current_settlement.pending_construction_buildings:
 		if total_points <= 0: break
 		var b_data = load(entry["resource_path"]) as BuildingData
@@ -385,44 +370,36 @@ func simulate_turn(simulated_assignments: Dictionary) -> Dictionary:
 		total_points -= applied
 		if (entry.get("progress", 0) + applied) >= b_data.construction_effort_required:
 			result["buildings_completing"].append(b_data.display_name)
-
 	var stewardship_bonus = 1.0
 	var jarl = DynastyManager.get_current_jarl()
 	if jarl:
 		var skill = jarl.get_effective_skill("stewardship")
 		stewardship_bonus = 1.0 + (skill - 10) * 0.05
-
 	for res in ["food", "wood", "stone"]:
 		var count = simulated_assignments.get(res, 0)
 		if count > 0: result["resources_gained"][res] += int(count * GATHERER_EFFICIENCY * stewardship_bonus)
-
 	for entry in current_settlement.placed_buildings:
 		var b_data = load(entry["resource_path"])
 		if b_data is EconomicBuildingData:
 			result["resources_gained"][b_data.resource_type] += int(b_data.fixed_payout_amount * stewardship_bonus)
-			
 	if jarl:
 		for path in jarl.conquered_regions:
 			var r_data = load(path)
 			if r_data:
 				for res in r_data.yearly_income:
 					result["resources_gained"][res] += int(r_data.yearly_income[res] * stewardship_bonus)
-
 	return result
 
 func apply_raid_damages() -> Dictionary:
 	if not current_settlement: return {}
 	var report = { "gold_lost": 0, "wood_lost": 0, "buildings_damaged": 0, "buildings_destroyed": 0 }
 	var loss_ratio = randf_range(0.2, 0.4)
-	
 	var g_loss = int(current_settlement.treasury.get("gold", 0) * loss_ratio)
 	current_settlement.treasury["gold"] -= g_loss
 	report["gold_lost"] = g_loss
-	
 	var w_loss = int(current_settlement.treasury.get("wood", 0) * loss_ratio)
 	current_settlement.treasury["wood"] -= w_loss
 	report["wood_lost"] = w_loss
-	
 	var indices_to_remove: Array[int] = []
 	for i in range(current_settlement.pending_construction_buildings.size()):
 		var entry = current_settlement.pending_construction_buildings[i]
@@ -432,46 +409,39 @@ func apply_raid_damages() -> Dictionary:
 			if entry["progress"] <= 0:
 				indices_to_remove.append(i)
 				report["buildings_destroyed"] += 1
-	
 	indices_to_remove.sort()
 	indices_to_remove.reverse()
 	for i in indices_to_remove: current_settlement.pending_construction_buildings.remove_at(i)
-		
 	current_settlement.has_stability_debuff = true
 	save_settlement()
 	EventBus.treasury_updated.emit(current_settlement.treasury)
 	return report
 
-# --- HUNGER LOGIC ---
-
 func _process_warband_hunger() -> Array[String]:
 	if not current_settlement: return []
-	
 	var deserters: Array[WarbandData] = []
 	var warnings: Array[String] = []
 	
 	for warband in current_settlement.warbands:
+		# SKIP IF GUARD
+		if warband.is_hearth_guard:
+			Loggie.msg("Warband %s is guarding (Loyalty Frozen)." % warband.custom_name).domain("SETTLEMENT").info()
+			continue
+			
 		var decay = 25
 		warband.modify_loyalty(-decay)
 		warband.turns_idle += 1
-		
 		if warband.loyalty <= 0:
 			if randf() < 0.5:
 				deserters.append(warband)
 				warnings.append("[color=red]DESERTION: The %s have left![/color]" % warband.custom_name)
-				Loggie.msg("The %s have betrayed you and left!" % warband.custom_name).domain("SETTLEMENT").warn()
 			else:
 				warnings.append("[color=red]MUTINY: The %s refuse to obey![/color]" % warband.custom_name)
-				Loggie.msg("The %s are openly mutinous!" % warband.custom_name).domain("SETTLEMENT").warn()
-				
 		elif warband.loyalty <= 25:
 			warnings.append("[color=yellow]UNREST: The %s are growing restless (%d%% Loyalty).[/color]" % [warband.custom_name, warband.loyalty])
-			Loggie.msg("The %s are losing faith in your leadership." % warband.custom_name).domain("SETTLEMENT").info()
 			
 	for bad_apple in deserters:
 		current_settlement.warbands.erase(bad_apple)
-		
 	if not deserters.is_empty() or not warnings.is_empty():
 		save_settlement()
-		
 	return warnings

@@ -1416,7 +1416,6 @@ sources/0 = SubResource("TileSetAtlasSource_n23os")
 script = ExtResource("2_c48a7")
 home_base_data = SubResource("Resource_vmd61")
 end_of_year_popup_scene = ExtResource("2_5el12")
-world_map_scene_path = "res://scenes/world_map/MacroMap.tscn"
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]
 position = Vector2(-3, 0)
@@ -1427,21 +1426,7 @@ tile_set = SubResource("TileSet_k14p1")
 
 [node name="UI" type="CanvasLayer" parent="."]
 
-[node name="Label" type="Label" parent="UI"]
-anchors_preset = -1
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -319.0
-offset_right = 319.0
-offset_bottom = 23.0
-grow_horizontal = 2
-text = "Purchase buildings from the storefront below, then place them on your settlement"
-horizontal_alignment = 1
-
 [node name="Storefront_UI" parent="UI" instance=ExtResource("3_vj45l")]
-available_buildings = []
-available_units = []
-auto_load_units_from_directory = true
 
 [node name="DebugRaidButton" type="Button" parent="UI/Storefront_UI"]
 layout_mode = 1
@@ -1455,7 +1440,7 @@ text = "DEBUG: Start Raid"
 
 [node name="RestartButton" type="Button" parent="UI"]
 visible = false
-anchors_preset = -1
+anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
@@ -1468,20 +1453,7 @@ grow_horizontal = 2
 grow_vertical = 2
 text = "Return to Settlement"
 
-[node name="StartRaidButton" type="Button" parent="UI"]
-anchors_preset = -1
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -150.0
-offset_top = -40.0
-grow_horizontal = 0
-grow_vertical = 0
-text = "World Map"
-
 [node name="PauseButton" type="Button" parent="UI"]
-anchors_preset = -1
 offset_left = 10.0
 offset_top = 10.0
 offset_right = 130.0

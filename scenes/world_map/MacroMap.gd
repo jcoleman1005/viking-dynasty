@@ -245,18 +245,24 @@ func _populate_raid_targets(data: WorldRegionData, is_conquered: bool, is_allied
 
 	# Generate Buttons
 	for target in data.raid_targets:
+		# --- FIX: Safety Check for Corrupt Data ---
+		if not target: 
+			continue
+		# ------------------------------------------
+
 		var btn = Button.new()
 		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		
 		var risk_text = ""
-		var btn_color = Color.WHITE
+		var btn_color = Color.WHITE # Default styling
 		
+		# Re-calculate attrition for display
 		if current_attrition_risk > 0.0:
 			risk_text = " (%d%% Risk)" % int(current_attrition_risk * 100)
 			if current_attrition_risk > 0.3:
-				btn_color = Color(1.0, 0.4, 0.4) # Reddish
+				btn_color = Color(1.0, 0.4, 0.4) # Reddish tint
 			else:
-				btn_color = Color(1.0, 0.9, 0.4) # Yellowish
+				btn_color = Color(1.0, 0.9, 0.4) # Yellowish tint
 		
 		if is_allied:
 			btn.text = "%s (Allied)" % target.display_name
@@ -273,7 +279,7 @@ func _populate_raid_targets(data: WorldRegionData, is_conquered: bool, is_allied
 				btn.pressed.connect(_initiate_raid.bind(target))
 		
 		target_list_container.add_child(btn)
-
+		
 func _initiate_raid(target: RaidTargetData) -> void:
 	# 1. Apply Attrition Gamble
 	if current_attrition_risk > 0.0:

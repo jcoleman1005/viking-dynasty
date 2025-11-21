@@ -51,45 +51,31 @@ func _ready() -> void:
 	
 	var hp_mult = 1.0
 	var dmg_mult = 1.0
-	var speed_mult = 1.0
+	# Speed is handled by UnitData base, modified by Captains only for now
 	
 	if warband_ref:
-		# 1. Apply Veterancy (Existing)
+		# 1. Apply Veterancy (XP)
 		var level_mult = warband_ref.get_stat_multiplier()
 		hp_mult *= level_mult
 		dmg_mult *= level_mult
 		
-		# 2. Apply Heir Leadership (New)
+		# 2. Apply Gear (Gold) - NEW
+		hp_mult *= warband_ref.get_gear_health_mult()
+		dmg_mult *= warband_ref.get_gear_damage_mult()
+		# -----------------------------
+		
+		# 3. Apply Heir Leadership
 		if warband_ref.assigned_heir_name != "":
 			var heir = DynastyManager.find_heir_by_name(warband_ref.assigned_heir_name)
 			if heir:
-				# Prowess Buff (Damage)
-				# Base 5. Every point above 5 gives +10% damage.
 				if heir.prowess > 5:
 					var p_bonus = 1.0 + ((heir.prowess - 5) * 0.10)
 					dmg_mult *= p_bonus
-					
-				# Command Buff (Speed)
-				# Base 5. Every point above 5 gives +5% speed.
-				if heir.command > 5:
-					var c_bonus = 1.0 + ((heir.command - 5) * 0.05)
-					speed_mult *= c_bonus
-				
-				# Visual Feedback: Gold Aura for Captains
 				modulate = Color(1.2, 1.2, 0.8) 
 				Loggie.msg("Unit %s buffed by Captain %s!" % [name, heir.display_name]).domain("UNIT").info()
 
 	current_health = int(data.max_health * hp_mult)
 	
-	# Apply Speed Mod
-	if data.move_speed > 0:
-		# We modify the data temporarily for this instance, or apply it to velocity logic
-		# Better: Store it in a variable accessed by FSM
-		# For now, let's hack it into the linear_damping or acceleration if we don't want to touch FSM
-		# Actually, FSM reads unit.data.move_speed.
-		# To do this properly without dirtying the Resource, we should add a speed_modifier var to BaseUnit.
-		pass 
-		
 	_apply_texture_and_scale()
 	_setup_collision_logic()
 	call_deferred("_deferred_setup", dmg_mult)

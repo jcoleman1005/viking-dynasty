@@ -1,67 +1,18 @@
-[gd_resource type="Resource" script_class="JarlData" load_steps=12 format=3]
+[gd_resource type="Resource" script_class="JarlData" load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://data/characters/JarlHeirData.gd" id="1_4gouw"]
 [ext_resource type="Script" path="res://data/characters/JarlData.gd" id="1_jarl_data"]
 [ext_resource type="Script" path="res://data/traits/JarlTraitData.gd" id="3_0bn2j"]
 
-[sub_resource type="Resource" id="Resource_0xpic"]
-script = ExtResource("1_4gouw")
-display_name = "Torstein"
-age = 25
-
-[sub_resource type="Resource" id="Resource_4gouw"]
-script = ExtResource("1_4gouw")
-display_name = "Gunnhild"
-age = 24
-gender = "Female"
-
-[sub_resource type="Resource" id="Resource_0bn2j"]
-script = ExtResource("3_0bn2j")
-display_name = "Frail"
-
-[sub_resource type="Resource" id="Resource_oxx44"]
-script = ExtResource("1_4gouw")
-display_name = "Lagertha"
-age = 22
-gender = "Female"
-genetic_trait = SubResource("Resource_0bn2j")
-
-[sub_resource type="Resource" id="Resource_3ar3u"]
-script = ExtResource("3_0bn2j")
-display_name = "Genius"
-
-[sub_resource type="Resource" id="Resource_sjsvf"]
-script = ExtResource("1_4gouw")
-display_name = "Ingrid"
-age = 20
-gender = "Female"
-genetic_trait = SubResource("Resource_3ar3u")
-
-[sub_resource type="Resource" id="Resource_op288"]
-script = ExtResource("1_4gouw")
-display_name = "Knut"
-
-[sub_resource type="Resource" id="Resource_3vd45"]
-script = ExtResource("1_4gouw")
-display_name = "Erik"
-age = 11
-
 [resource]
 script = ExtResource("1_jarl_data")
 display_name = "Lagertha"
-age = 27
+age = 28
 gender = "Female"
-current_authority = 0
-years_since_action = 13
+current_authority = 2
+years_since_action = 14
 legitimacy = 0
-ancestors = Array[Dictionary]([{
-"death_reason": "Died of old age",
-"final_renown": 0,
-"name": "Magnus",
-"portrait": null
-}])
 command = 8
 stewardship = 8
 learning = 8
 prowess = 8
-heirs = Array[ExtResource("1_4gouw")]([SubResource("Resource_0xpic"), SubResource("Resource_4gouw"), SubResource("Resource_oxx44"), SubResource("Resource_sjsvf"), SubResource("Resource_op288"), SubResource("Resource_3vd45")])

@@ -59,3 +59,9 @@ signal event_system_finished()
 
 # --- NEW: Succession Crisis System ---
 signal succession_choices_made(renown_choice: String, gold_choice: String)
+# --- NEW: Camera Control ---
+# Emitted by UI to lock/unlock the RTS camera (prevent zoom/pan while in menus)
+signal camera_input_lock_requested(is_locked: bool)
+
+# --- NEW: Game Loop Signals ---
+signal end_year_requested()

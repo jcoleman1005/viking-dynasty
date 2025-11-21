@@ -83,25 +83,30 @@ static func _generate_target_for_tier(region_name: String, tier: int, difficulty
 	
 	return target
 
+
+# In scripts/generators/MapDataGenerator.gd
+
 static func _clone_settlement_data(original: SettlementData) -> SettlementData:
 	var clone = SettlementData.new()
 	
 	# Deep copy safe properties
 	clone.treasury = original.treasury.duplicate()
 	
-	# Copy Buildings
-	clone.placed_buildings = []
+	# --- FIX: Use clear() + append for strict arrays ---
+	# Do not assign [] directly, as Godot 4 treats that as a generic Array
+	# which conflicts with Array[Dictionary]
+	
+	clone.placed_buildings.clear()
 	for b in original.placed_buildings:
 		clone.placed_buildings.append(b.duplicate())
 		
-	clone.pending_construction_buildings = []
+	clone.pending_construction_buildings.clear()
 	for p in original.pending_construction_buildings:
 		clone.pending_construction_buildings.append(p.duplicate())
+	# ---------------------------------------------------
 		
-	# --- CRITICAL FIX: Reset Warbands ---
-	# We do NOT copy the old array. We start fresh.
-	# The _scale_garrison function will populate this with new enemies.
-	clone.warbands = [] 
+	# Warbands start empty for new clones (to be scaled later)
+	clone.warbands.clear() 
 	
 	clone.max_garrison_bonus = original.max_garrison_bonus
 	clone.population_total = original.population_total
