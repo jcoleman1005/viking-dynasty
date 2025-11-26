@@ -131,8 +131,7 @@ func process_construction_labor() -> void:
 		if peasants == 0 and thralls == 0:
 			continue 
 			
-		# Note: Efficiency constant is now in EconomyManager, or we can keep a local copy if strictly logic.
-		# For now, we access via EconomyManager for Single Source of Truth.
+		# Note: Efficiency constant is now in EconomyManager
 		var labor_points = (peasants + thralls) * EconomyManager.BUILDER_EFFICIENCY
 		
 		entry["progress"] = entry.get("progress", 0) + labor_points

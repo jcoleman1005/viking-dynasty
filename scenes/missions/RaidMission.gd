@@ -167,25 +167,32 @@ func _spawn_player_garrison() -> void:
 func _spawn_enemy_wave() -> void:
 	var spawner = get_node_or_null(enemy_spawn_position)
 	if not spawner: return
+	
 	# 1. Validation: Do we have enemies to spawn?
 	if enemy_wave_units.is_empty():
 		Loggie.msg("RaidMission: No enemy units assigned in Inspector!").domain("RAID").warn()
 		return
+
 	for i in range(enemy_wave_count):
 		# 2. Pick a random enemy data from the list
 		var random_data = enemy_wave_units.pick_random()
+		
 		# 3. Load the scene using the new safe loader
 		var scene_ref = random_data.load_scene()
 		if not scene_ref: continue
+		
 		# 4. Instantiate
 		var unit = scene_ref.instantiate()
 		unit.data = random_data # Inject Data back into the unit
+		
 		# 5. Setup Layers & Groups
 		unit.collision_layer = 1 << 2 # Layer 3 (Enemy Units)
 		unit.add_to_group("enemy_units")
+		
 		# 6. Position
 		unit.global_position = spawner.global_position + Vector2(i * 40, 0)
 		add_child(unit)
+		
 		# 7. Give Orders
 		if objective_building:
 			unit.fsm_ready.connect(func(u): 
