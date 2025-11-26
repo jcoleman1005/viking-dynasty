@@ -136,7 +136,6 @@ text = "Units: 0"
 
 [node name="Windows" type="Control" parent="."]
 layout_mode = 1
-anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_bottom = -78.0

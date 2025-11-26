@@ -8,6 +8,33 @@ extends Node
 @export var end_of_year_popup_scene: PackedScene
 @export var world_map_scene_path: String = "res://scenes/world_map/MacroMap.tscn"
 
+# --- REACTIVE DEBUG SETTINGS ---
+# Using setters allows you to toggle these in the Remote Scene Tree at runtime!
+@export_group("Loggie Debug Settings")
+@export var show_ui_logs: bool = false:
+	set(value):
+		show_ui_logs = value
+		if is_inside_tree(): # Prevent errors during initialization
+			Loggie.set_domain_enabled("UI", value)
+@export var show_settlement_logs: bool = false:
+	set(value):
+		show_settlement_logs = value
+		if is_inside_tree():
+			Loggie.set_domain_enabled("SETTLEMENT", value)
+@export var show_building_logs: bool = false:
+	set(value):
+		show_building_logs = value
+		if is_inside_tree():
+			Loggie.set_domain_enabled("BUILDING", value)
+@export var show_debug_logs: bool = true: ## General debug messages
+	set(value):
+		show_debug_logs = value
+		if is_inside_tree():
+			Loggie.set_domain_enabled("DEBUG", value)
+
+# --- NEW: Civ Unit Data ---
+@export var civilian_data: UnitData 
+
 # --- New Game Configuration ---
 @export_group("New Game Settings")
 @export var start_gold: int = 1000
@@ -15,6 +42,8 @@ extends Node
 @export var start_food: int = 100
 @export var start_stone: int = 200
 @export var start_population: int = 10
+
+
 
 # --- Default Assets ---
 var default_test_building: BuildingData = preload("res://data/buildings/Bldg_Wall.tres")
@@ -29,13 +58,11 @@ var default_end_of_year_popup: PackedScene = preload("res://ui/EndOfYear_Popup.t
 # --- Local Node References ---
 @onready var building_container: Node2D = $BuildingContainer
 @onready var grid_manager: Node = $GridManager
-
+@onready var rts_controller: RTSController = $RTSController
 # --- Worker & End Year UI ---
 const WORK_ASSIGNMENT_SCENE_PATH = "res://ui/WorkAssignment_UI.tscn"
 var work_assignment_ui: CanvasLayer
 var end_of_year_popup: PanelContainer
-var thrall_tags: Array[Control] = []
-var is_managing_thralls: bool = false
 var idle_warning_dialog: ConfirmationDialog
 
 # --- State Variables ---
@@ -65,35 +92,47 @@ func _ready() -> void:
 		
 	if storefront_ui: storefront_ui.show()
 	if end_of_year_popup: end_of_year_popup.hide()
-	
-	# --- NEW: Check for auto-open request ---
-	if SettlementManager.pending_management_open:
-		SettlementManager.pending_management_open = false # Reset flag
-		# Wait a frame for UI to settle
-		get_tree().create_timer(0.1).timeout.connect(func():
-			if not is_managing_thralls:
-				_toggle_thrall_management()
-		)
-
+	# --- DEBUG CHECK ---
+	var controller = get_node_or_null("RTSController")
+	if controller:
+		print("DIAGNOSTIC: Checking RTSController connections...")
+		
+		# Check if the controller is actually listening
+		if not EventBus.select_command.is_connected(controller._on_select_command):
+			print("DIAGNOSTIC: RTSController was asleep! Forcing connections now.")
+			
+			# Manually wire up the brain
+			EventBus.select_command.connect(controller._on_select_command)
+			EventBus.move_command.connect(controller._on_move_command)
+			EventBus.attack_command.connect(controller._on_attack_command)
+			EventBus.interact_command.connect(controller._on_interact_command)
+			
+			# Inject dependencies manually just in case
+			controller.control_groups = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [], 9: [], 0: [] }
+			
+			print("DIAGNOSTIC: RTSController manually jump-started.")
+		else:
+			print("DIAGNOSTIC: RTSController is already connected.")
+			
 func _exit_tree() -> void:
 	SettlementManager.unregister_active_scene_nodes()
 
 func _connect_signals() -> void:
 	EventBus.settlement_loaded.connect(_on_settlement_loaded)
+	# --- NEW: Sync physical units to data ---
+	EventBus.settlement_loaded.connect(_sync_villagers)
+	
 	EventBus.building_ready_for_placement.connect(_on_building_ready_for_placement)
 	EventBus.building_placement_cancelled.connect(_on_building_placement_cancelled)
 	EventBus.building_right_clicked.connect(_on_building_right_clicked)
-	EventBus.worker_management_toggled.connect(_toggle_thrall_management)
 	EventBus.dynasty_view_requested.connect(_toggle_dynasty_view)
-	# --- NEW: Listen for End Year Request ---
 	EventBus.end_year_requested.connect(_on_end_year_pressed)
-	# ----------------------------------------
 	
 	if building_cursor:
 		building_cursor.placement_completed.connect(_on_building_placement_completed)
 		building_cursor.placement_cancelled.connect(_on_building_placement_cancelled_by_cursor)
 
-# --- UI SETUP (Cleaned Up) ---
+# --- UI SETUP ---
 func _setup_ui() -> void:
 	# End Year Popup
 	end_of_year_popup = end_of_year_popup_scene.instantiate()
@@ -109,26 +148,23 @@ func _setup_ui() -> void:
 			if work_assignment_ui.has_signal("assignments_confirmed"):
 				work_assignment_ui.assignments_confirmed.connect(_on_worker_assignments_confirmed)
 	
-	# --- NEW: Create Idle Warning Dialog ---
+	# Idle Warning Dialog
 	idle_warning_dialog = ConfirmationDialog.new()
 	idle_warning_dialog.title = "Idle Villagers"
 	idle_warning_dialog.ok_button_text = "End Year Anyway"
-	idle_warning_dialog.cancel_button_text = "Manage Workers"
+	idle_warning_dialog.cancel_button_text = "Select Idle Worker"
 	
 	idle_warning_dialog.confirmed.connect(_start_end_year_sequence)
 	
-	# If we are already here, just open the tags directly
+	# Map the cancel button to finding an idle worker
 	idle_warning_dialog.canceled.connect(func():
-		if not is_managing_thralls:
-			_toggle_thrall_management()
+		if storefront_ui and storefront_ui.has_method("_select_idle_worker"):
+			storefront_ui._select_idle_worker()
 	)
 	
 	add_child(idle_warning_dialog)
 
 # --- WORKER ASSIGNMENT LOGIC ---
-# Note: Since we removed the dedicated "Manage Workers" button, 
-# you might want to add a button for this in the Storefront later.
-# For now, we can auto-trigger it on End Year if needed, or let the Storefront handle it.
 func _on_worker_assignments_confirmed(assignments: Dictionary) -> void:
 	Loggie.msg("SettlementBridge: Work assignments saved.").domain("BUILDING").info()
 	if SettlementManager.current_settlement:
@@ -140,7 +176,7 @@ func _on_worker_assignments_confirmed(assignments: Dictionary) -> void:
 func _on_end_year_pressed() -> void:
 	Loggie.msg("SettlementBridge: End Year requested.").domain("BUILDING").info()
 	
-	# --- NEW: Check for Idles ---
+	# Check for Idles
 	var idle_p = SettlementManager.get_idle_peasants()
 	var idle_t = SettlementManager.get_idle_thralls()
 	var total_idle = idle_p + idle_t
@@ -176,16 +212,15 @@ func _finalize_end_year(_payout: Dictionary) -> void:
 	DynastyManager.end_year()
 
 func _close_all_popups() -> void:
-	# Hide other UI if open
 	var dynasty_ui = ui_layer.get_node_or_null("Dynasty_UI")
 	if dynasty_ui: dynasty_ui.hide()
 	if work_assignment_ui: work_assignment_ui.hide()
 
-# --- SETTLEMENT LOGIC (Unchanged) ---
+# --- SETTLEMENT LOGIC ---
 
 func _setup_default_resources() -> void:
 	if not test_building_data: test_building_data = default_test_building
-	if not raider_scene: raider_scene = load("res://scenes/units/EnemyVikingRaider.tscn")
+	if not raider_scene: raider_scene = load("res://scenes/units/VikingRaider.tscn")
 	if not end_of_year_popup_scene: end_of_year_popup_scene = default_end_of_year_popup
 
 func _clear_all_buildings() -> void:
@@ -258,10 +293,8 @@ func _create_default_settlement() -> SettlementData:
 	return settlement
 
 func _on_settlement_loaded(_settlement_data: SettlementData) -> void:
-	# If we are currently in "Management Mode", we must refresh the tags
-	# to show the new worker counts immediately.
-	if is_managing_thralls:
-		_spawn_thrall_tags()
+	# Handled by _sync_villagers
+	pass
 
 func _setup_great_hall(hall_instance: BaseBuilding) -> void:
 	if not is_instance_valid(hall_instance): return
@@ -270,7 +303,6 @@ func _setup_great_hall(hall_instance: BaseBuilding) -> void:
 
 func _on_great_hall_destroyed(_building: BaseBuilding) -> void:
 	game_is_over = true
-	# You can trigger a game over screen here
 	if is_instance_valid(unit_container):
 		for enemy in unit_container.get_children(): enemy.queue_free()
 
@@ -335,148 +367,81 @@ func _process_raid_return() -> void:
 		SettlementManager.deposit_resources(loot_summary)
 			
 	DynastyManager.pending_raid_result.clear()
-# --- THRALL MANAGEMENT UI ---
 
-func _input(event: InputEvent) -> void:
-	# 1. Existing Hotkey (Toggle Management)
-	if event is InputEventKey and event.pressed and event.keycode == KEY_T:
-		_toggle_thrall_management()
+# --- PHYSICAL VILLAGER SYNC ---
 
-	# 2. Debug Clicker (Find Invisible Walls)
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		var hovered_control = get_viewport().gui_get_hovered_control()
+func _sync_villagers(_data: SettlementData = null) -> void:
+	if not SettlementManager.has_current_settlement(): return
+	
+	var idle_count = SettlementManager.get_idle_peasants()
+	# Count existing civilian units
+	var active_civilians = []
+	if unit_container:
+		for child in unit_container.get_children():
+			if child.is_in_group("civilians"):
+				active_civilians.append(child)
+	
+	var current_count = active_civilians.size()
+	var diff = idle_count - current_count
+	
+	if diff > 0:
+		_spawn_civilians(diff)
+	elif diff < 0:
+		_despawn_civilians(abs(diff), active_civilians)
+
+func _spawn_civilians(count: int) -> void:
+	Loggie.msg("Attempting to spawn %d civilians..." % count).domain("SETTLEMENT").info()
+	
+	# 1. Validate Data exists
+	if not civilian_data:
+		Loggie.msg("FAILED: No 'civilian_data' assigned in Inspector!").domain("SETTLEMENT").error()
+		return
+
+	var spawn_origin = Vector2.ZERO
+	if great_hall_instance:
+		spawn_origin = great_hall_instance.global_position
+	
+	# 2. Load the Scene safely using the new helper
+	var scene_ref = civilian_data.load_scene()
+	if not scene_ref:
+		# The error is already logged inside load_scene(), but we log here to confirm flow stop
+		Loggie.msg("FAILED: load_scene() returned null.").domain("SETTLEMENT").error()
+		return
+	
+	Loggie.msg("Scene loaded successfully. Instantiating %d units..." % count).domain("SETTLEMENT").info()
+	
+	for i in range(count):
+		var civ = scene_ref.instantiate()
 		
-		if hovered_control:
-			Loggie.msg("🛑 CLICK BLOCKED BY: %s" % hovered_control.name).domain("DEBUG").warn()
-			Loggie.msg("   Path: %s" % hovered_control.get_path()).domain("DEBUG").warn()
-			
-			# Check Filter (0 = Stop, 1 = Pass, 2 = Ignore)
-			var filter_name = "STOP"
-			if hovered_control.mouse_filter == Control.MOUSE_FILTER_PASS: filter_name = "PASS"
-			elif hovered_control.mouse_filter == Control.MOUSE_FILTER_IGNORE: filter_name = "IGNORE"
-			
-			Loggie.msg("   Mouse Filter: %s (%d)" % [filter_name, hovered_control.mouse_filter]).domain("DEBUG").warn()
-		else:
-			Loggie.msg("✅ UI is clean. Click passed to World.").domain("DEBUG").info()
-
-func _toggle_thrall_management() -> void:
-	is_managing_thralls = !is_managing_thralls
-	
-	if is_managing_thralls:
-		_spawn_thrall_tags()
-		Loggie.msg("Thrall Management: ON").domain("UI").info()
-	else:
-		_clear_thrall_tags()
-		Loggie.msg("Thrall Management: OFF").domain("UI").info()
-
-func _spawn_thrall_tags() -> void:
-	_clear_thrall_tags()
-	
-	var settlement = SettlementManager.current_settlement
-	if not settlement: return
-	
-	# 1. ACTIVE BUILDINGS (Existing Loop)
-	for i in range(settlement.placed_buildings.size()):
-		var entry = settlement.placed_buildings[i]
-		var data = load(entry["resource_path"])
+		# 3. Inject Data (This re-establishes the link)
+		civ.data = civilian_data
 		
-		if data is EconomicBuildingData:
-			_create_tag(i, entry, data, false)
+		civ.position = spawn_origin + Vector2(randf_range(-50, 50), randf_range(-50, 50))
+		unit_container.add_child(civ)
+		# Register the new unit with the RTS Controller so it can be selected!
+		if is_instance_valid(rts_controller):
+			rts_controller.add_unit_to_group(civ)
+		if civ.has_method("command_move_to"):
+			civ.command_move_to(civ.position + Vector2(randf_range(-30, 30), randf_range(-30, 30)))
 
-	# 2. PENDING BUILDINGS (New Loop)
-	for i in range(settlement.pending_construction_buildings.size()):
-		var entry = settlement.pending_construction_buildings[i]
-		var data = load(entry["resource_path"])
-		
-		# All buildings need construction workers, not just Economic ones.
-		if data: 
-			_create_tag(i, entry, data, true)
+func _despawn_civilians(count: int, current_list: Array) -> void:
+	for i in range(count):
+		if i < current_list.size():
+			var civ = current_list[i]
+			if is_instance_valid(civ):
+				if civ.has_method("die_without_event"):
+					civ.die_without_event()
+				else:
+					civ.queue_free()
 
-# Helper to avoid duplicate code
-func _create_tag(index: int, entry: Dictionary, data: BuildingData, is_pending: bool) -> void:
-	var tag = preload("res://ui/components/WorkerTag.tscn").instantiate()
-	building_container.add_child(tag)
-	tag.z_index = 100
-	
-	var world_building = _find_building_instance_by_entry(entry) # Helper update needed
-	if world_building:
-		tag.global_position = world_building.global_position + Vector2(-60, -100)
-		
-		# Determine caps
-		var p_cap = 0
-		var t_cap = 0
-		
-		if is_pending:
-			# Construction Capacity (e.g. 5 builders max)
-			p_cap = data.base_labor_capacity
-			t_cap = data.base_labor_capacity
-		elif data is EconomicBuildingData:
-			# Production Capacity
-			p_cap = data.peasant_capacity
-			t_cap = data.thrall_capacity
-			
-		tag.setup(
-			index, 
-			entry.get("peasant_count", 0), p_cap,
-			entry.get("thrall_count", 0), t_cap,
-			is_pending
-		)
-		thrall_tags.append(tag)
-
-func _clear_thrall_tags() -> void:
-	for tag in thrall_tags:
-		tag.queue_free()
-	thrall_tags.clear()
-
-# --- THE HELPER YOU NEEDED ---
-func _find_building_instance_by_index(index: int) -> BaseBuilding:
-	if not SettlementManager.current_settlement: return null
-	var entry = SettlementManager.current_settlement.placed_buildings[index]
-	
-	# entry["grid_position"] might be Vector2 or Vector2i depending on save version
-	var target_grid_pos = Vector2i(entry["grid_position"])
-	
-	for child in building_container.get_children():
-		if child is BaseBuilding and child.data:
-			var cell_size = grid_manager.cell_size
-			# Calculate grid pos of this child
-			var size_offset = Vector2(child.data.grid_size) * cell_size / 2.0
-			var top_left = child.global_position - size_offset
-			# Add small epsilon to avoid float errors
-			var child_grid_pos = Vector2i(round((top_left.x + 1) / cell_size), round((top_left.y + 1) / cell_size))
-			
-			if child_grid_pos == target_grid_pos:
-				return child
-	return null
 func _toggle_dynasty_view() -> void:
 	var dynasty_ui = ui_layer.get_node_or_null("Dynasty_UI")
 	if dynasty_ui:
 		if dynasty_ui.visible:
 			dynasty_ui.hide()
 		else:
-			# Close other windows to prevent clutter
 			if storefront_ui: storefront_ui.call("_close_all_windows") 
-			_clear_thrall_tags()
-			is_managing_thralls = false
-			
 			dynasty_ui.show()
 			Loggie.msg("Opening Dynasty View").domain("UI").info()
 	else:
 		Loggie.msg("Error: Dynasty_UI node not found in SettlementBridge/UI").domain("UI").error()
-func _find_building_instance_by_entry(entry: Dictionary) -> BaseBuilding:
-	var target_pos = Vector2i(entry["grid_position"])
-	
-	for child in building_container.get_children():
-		if child is BaseBuilding and child.data:
-			var cell_size = grid_manager.cell_size
-			var size_pixels = Vector2(child.data.grid_size) * cell_size
-			var top_left = child.global_position - (size_pixels / 2.0)
-			
-			var child_grid_pos = Vector2i(
-				round(top_left.x / cell_size),
-				round(top_left.y / cell_size)
-			)
-			
-			if child_grid_pos == target_pos:
-				return child
-	return null

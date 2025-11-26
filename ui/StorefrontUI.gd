@@ -40,10 +40,17 @@ const LegacyUpgradeData = preload("res://data/legacy/LegacyUpgradeData.gd")
 # --- Data ---
 @export var available_buildings: Array[BuildingData] = []
 @export var available_units: Array[UnitData] = []
-@export var default_treasury_display: Dictionary = {"gold": 0, "wood": 0, "food": 0, "stone": 0}
+@export var default_treasury_display: Dictionary = {} 
 @export var auto_load_units_from_directory: bool = true
 
 func _ready() -> void:
+	default_treasury_display = {
+		GameResources.GOLD: 0, 
+		GameResources.WOOD: 0, 
+		GameResources.FOOD: 0, 
+		GameResources.STONE: 0
+	}
+	
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	EventBus.treasury_updated.connect(_update_treasury_display)
@@ -400,5 +407,8 @@ func _load_unit_data() -> void:
 
 func _format_cost(cost: Dictionary) -> String:
 	var s = []
-	for k in cost: s.append("%d %s" % [cost[k], k])
+	for k in cost:
+		var display_name = GameResources.get_display_name(k)
+		s.append("%d %s" % [cost[k], display_name])
+		# ------------------------------------
 	return ", ".join(s)

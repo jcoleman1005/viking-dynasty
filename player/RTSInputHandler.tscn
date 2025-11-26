@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://bvsuoj3irdvcs"]
+
+[ext_resource type="Script" uid="uid://bm330jy5v6a7d" path="res://scripts/utility/RTSInputHandler.gd" id="1_ifvy5"]
+
+[node name="RtsInputHandler" type="Node"]
+script = ExtResource("1_ifvy5")

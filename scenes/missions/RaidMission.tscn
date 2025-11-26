@@ -1,8 +1,11 @@
-[gd_scene load_steps=8 format=3 uid="uid://d3ifdm0rvd5kl"]
+[gd_scene load_steps=11 format=3 uid="uid://d3ifdm0rvd5kl"]
 
 [ext_resource type="Script" uid="uid://cuw68f180xbui" path="res://scenes/missions/RaidMission.gd" id="1_qt4qp"]
 [ext_resource type="PackedScene" uid="uid://cyp3t7gbdg0wx" path="res://player/RTSController.tscn" id="2_8icmc"]
+[ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="2_y6ix7"]
 [ext_resource type="PackedScene" uid="uid://1ly65bng2mep" path="res://ui/SelectionBox.tscn" id="3_24u83"]
+[ext_resource type="Script" uid="uid://bm330jy5v6a7d" path="res://scripts/utility/RTSInputHandler.gd" id="3_e8k8h"]
+[ext_resource type="Resource" uid="uid://brnbvjwnoyh3j" path="res://data/units/EnemyVikingRaider_Data.tres" id="3_eoj4n"]
 [ext_resource type="PackedScene" uid="uid://dsrvmutqo7g3h" path="res://scripts/utility/GridManager.tscn" id="5_olj83"]
 [ext_resource type="Script" uid="uid://bxbqkyp1d6750" path="res://player/RTSCamera.gd" id="5_xkh2l"]
 [ext_resource type="PackedScene" uid="uid://ptujtdi5jtsk" path="res://scripts/utility/GridVisualizer.tscn" id="6_l8hqj"]
@@ -10,6 +13,7 @@
 
 [node name="RaidMission" type="Node2D"]
 script = ExtResource("1_qt4qp")
+enemy_wave_units = Array[ExtResource("2_y6ix7")]([ExtResource("3_eoj4n")])
 enemy_spawn_position = NodePath("EnemySpawnPosition")
 
 [node name="PlayerStartPosition" type="Marker2D" parent="."]
@@ -19,6 +23,9 @@ position = Vector2(-161, 606)
 position = Vector2(383, -21)
 
 [node name="RTSController" parent="." instance=ExtResource("2_8icmc")]
+
+[node name="RTSInputHandler" type="Node" parent="."]
+script = ExtResource("3_e8k8h")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 

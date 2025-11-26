@@ -35,7 +35,8 @@ func change_state(new_state: UnitAIConstants.State) -> void:
 	current_state = new_state
 	
 	if is_instance_valid(unit):
-		unit.call("on_state_changed", current_state)
+		if unit.has_method("on_state_changed"):
+			unit.on_state_changed(current_state)
 	
 	_enter_state(current_state)
 
@@ -43,7 +44,7 @@ func _enter_state(state: UnitAIConstants.State) -> void:
 	match state:
 		UnitAIConstants.State.IDLE:
 			unit.velocity = Vector2.ZERO
-		UnitAIConstants.State.MOVING:
+		UnitAIConstants.State.MOVING, UnitAIConstants.State.INTERACTING:
 			_recalculate_path()
 		UnitAIConstants.State.RETREATING:
 			_recalculate_path()
@@ -54,7 +55,7 @@ func _enter_state(state: UnitAIConstants.State) -> void:
 
 func _exit_state(state: UnitAIConstants.State) -> void:
 	match state:
-		UnitAIConstants.State.MOVING:
+		UnitAIConstants.State.MOVING, UnitAIConstants.State.INTERACTING:
 			path.clear()
 			stuck_timer = 0.0
 		UnitAIConstants.State.FORMATION_MOVING:
@@ -73,18 +74,33 @@ func _recalculate_path() -> void:
 	if is_instance_valid(target_node):
 		target_position = target_node.global_position
 	elif target_position == Vector2.ZERO:
+		Loggie.msg("FSM: No target pos. Going Idle.").domain("AI").debug()
 		change_state(UnitAIConstants.State.IDLE)
 		return
 	
+	# --- DEBUG LOGIC ---
+	var start_pos = unit.global_position
+	# Allow partial path if we have a solid target node (like a building)
 	var allow_partial = is_instance_valid(target_node)
-	path = SettlementManager.get_astar_path(unit.global_position, target_position, allow_partial)
+	
+	Loggie.msg("FSM: Requesting path from %s to %s (Partial: %s)" % [start_pos, target_position, allow_partial]).domain("AI").debug()
+	
+	path = SettlementManager.get_astar_path(start_pos, target_position, allow_partial)
 	
 	if path.is_empty():
-		# Only warn if we aren't basically there already
-		if unit.global_position.distance_to(target_position) > 32:
-			if unit and unit.has_method("flash_error_color"):
+		Loggie.msg("FSM: Path returned EMPTY. Dist to target: %f" % start_pos.distance_to(target_position)).domain("AI").warn()
+		
+		# FORCE move if very close (A* sometimes fails on short distances inside cell boundaries)
+		if start_pos.distance_to(target_position) < 150.0:
+			Loggie.msg("FSM: Target close. Forcing direct path.").domain("AI").warn()
+			path = [target_position] # Fake a path straight to target
+		else:
+			if unit.has_method("flash_error_color"):
 				unit.flash_error_color()
-		change_state(UnitAIConstants.State.IDLE)
+			change_state(UnitAIConstants.State.IDLE)
+			return
+	else:
+		Loggie.msg("FSM: Path found with %d points." % path.size()).domain("AI").debug()
 
 # --- RTS COMMANDS ---
 
@@ -145,6 +161,23 @@ func command_retreat(target_pos: Vector2) -> void:
 	if attack_ai: attack_ai.stop_attacking()
 	change_state(UnitAIConstants.State.RETREATING)
 
+# --- NEW COMMAND: Approach / Interact ---
+func command_approach(target: Node2D) -> void:
+	command_interact_move(target)
+
+func command_interact_move(target: Node2D) -> void:
+	if not is_instance_valid(target): return
+	
+	# Set objective so we can pathfind to it
+	objective_target = target
+	current_target = null
+	target_position = target.global_position
+	
+	if attack_ai: attack_ai.stop_attacking()
+	
+	# Enter the safe "Interacting" state
+	change_state(UnitAIConstants.State.INTERACTING)
+
 # --- UPDATE LOOP ---
 
 func update(delta: float) -> void:
@@ -159,6 +192,8 @@ func update(delta: float) -> void:
 			_retreat_state(delta)
 		UnitAIConstants.State.ATTACKING:
 			_attack_state(delta)
+		UnitAIConstants.State.INTERACTING:
+			_interact_state(delta)
 
 # --- STATE LOGIC ---
 
@@ -217,17 +252,49 @@ func _move_state(delta: float) -> void:
 		return
 	
 	# Path Complete Logic
-	if is_instance_valid(target_node) and target_node == objective_target:
-		var blocking_building = _find_closest_blocking_building()
-		if is_instance_valid(blocking_building):
-			command_attack_obstruction(blocking_building)
-		else:
-			change_state(UnitAIConstants.State.IDLE)
-	else:
+	change_state(UnitAIConstants.State.IDLE)
+
+# --- NEW SAFE STATE ---
+func _interact_state(delta: float) -> void:
+	# This mirrors movement logic but NEVER enters attack state
+	
+	if not is_instance_valid(objective_target):
 		change_state(UnitAIConstants.State.IDLE)
+		return
+
+	if not path.is_empty():
+		var next_waypoint: Vector2 = path[0]
+		var direction: Vector2 = (next_waypoint - unit.global_position).normalized()
+		var velocity: Vector2 = direction * unit.data.move_speed
+		
+		unit.velocity = velocity
+		unit.move_and_slide()
+		
+		# --- DEBUG PHYSICS ---
+		if unit.velocity.length() < 5.0 and velocity.length() > 10.0:
+			if Engine.get_frames_drawn() % 60 == 0:
+				print("DEBUG PHYSICS: Unit blocked! Wanted: ", velocity, " Actual: ", unit.velocity)
+		# ---------------------
+		
+		if unit.global_position.distance_to(next_waypoint) < 8.0:
+			path.pop_front()
+			
+		# Simple stuck check (Repath if stuck)
+		if unit.velocity.length_squared() < 1.0:
+			stuck_timer += delta
+			if stuck_timer > 1.0:
+				_recalculate_path()
+				stuck_timer = 0.0
+		else:
+			stuck_timer = 0.0
+	else:
+		# "The Last Mile": Path is empty, but maybe not at center (because of allow_partial).
+		# Keep pushing towards the physical building to ensure geometry overlap.
+		var dir = (objective_target.global_position - unit.global_position).normalized()
+		unit.velocity = dir * unit.data.move_speed
+		unit.move_and_slide()
 
 func _retreat_state(delta: float) -> void:
-	# 1. Try to follow the A* Path first (Navigates around walls)
 	if not path.is_empty():
 		var next_waypoint: Vector2 = path[0]
 		var direction: Vector2 = (next_waypoint - unit.global_position).normalized()
@@ -239,7 +306,6 @@ func _retreat_state(delta: float) -> void:
 		if unit.global_position.distance_to(next_waypoint) < 8.0:
 			path.pop_front()
 			
-		# Stuck Logic - Just repath, don't attack
 		if unit.velocity.length_squared() < 1.0:
 			stuck_timer += delta
 			if stuck_timer > 1.0:
@@ -247,13 +313,10 @@ func _retreat_state(delta: float) -> void:
 				stuck_timer = 0.0
 		else:
 			stuck_timer = 0.0
-			
 		return
 
-	# 2. "The Last Mile" - If path is done but we are still here...
-	# Walk straight towards the raw target position (ignoring grid/walls).
+	# The Last Mile for Retreat
 	var dist_to_final = unit.global_position.distance_to(target_position)
-	
 	if dist_to_final > 5.0:
 		var direction = (target_position - unit.global_position).normalized()
 		unit.velocity = direction * unit.data.move_speed
@@ -349,7 +412,8 @@ func _find_closest_enemy_in_los() -> Node2D:
 func _on_ai_attack_started(target: Node2D) -> void:
 	if current_state != UnitAIConstants.State.IDLE: return
 	if current_state == UnitAIConstants.State.ATTACKING and target == current_target: return
-	if current_state == UnitAIConstants.State.RETREATING: return # Ignore distractions
+	if current_state == UnitAIConstants.State.RETREATING: return 
+	if current_state == UnitAIConstants.State.INTERACTING: return # Workers ignore distractions
 	
 	if attack_ai.ai_mode == AttackAI.AI_Mode.DEFENSIVE_SIEGE: return
 	

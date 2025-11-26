@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="UnitData" load_steps=3 format=3 uid="uid://iiho31ik0qvb"]
+
+[ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="1_4oj7p"]
+[ext_resource type="Texture2D" uid="uid://cukqh3t2wkmua" path="res://ui/assets/res_peasant.png" id="1_ca617"]
+
+[resource]
+script = ExtResource("1_4oj7p")
+display_name = "Villager"
+scene_path = "uid://c7powse34uuxc"
+icon = ExtResource("1_ca617")
+max_health = 20
+move_speed = 120.0
+attack_damage = 0
+attack_range = 0.0
+visual_texture = ExtResource("1_ca617")
+target_pixel_size = Vector2(24, 24)
+metadata/_custom_type_script = "uid://cq155t20ujb2j"

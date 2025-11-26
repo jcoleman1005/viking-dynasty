@@ -1,63 +1,45 @@
 # res://data/units/UnitData.gd
-#
-# Defines the core data for any unit in the game.
-# This resource is used by Base_Unit.tscn to configure instances.
-# GDD Ref: 7.C.1.b
-
 class_name UnitData
 extends Resource
 
-## The name displayed in the UI (e.g., "Viking Raider").
 @export var display_name: String = "New Unit"
 
-## The scene that will be instanced when this unit is spawned.
-@export var scene_to_spawn: PackedScene
+# --- SOFT REFERENCE ---
+# This uses the file system picker, preventing typos.
+@export_file("*.tscn") var scene_path: String = ""
+# ----------------------
 
-## The icon shown in the training menu.
 @export var icon: Texture2D
-
-## The cost in 'Resources' to train this unit.
 @export var spawn_cost: Dictionary = {"food": 25}
 
-
 @export_group("Combat Stats")
-## The unit's maximum hit points.
 @export var max_health: int = 50
-
-## Movement speed in pixels per second.
 @export var move_speed: float = 75.0
-
-## Damage dealt per attack.
 @export var attack_damage: int = 8
-
-## Range in pixels. (e.g., 10 for melee, 300 for archer).
 @export var attack_range: float = 10.0
-
-## Attacks per second.
 @export var attack_speed: float = 1.2
 
-## An optional AI scene to instance (e.g., for ranged units)
-@export var ai_component_scene: PackedScene
-
-## The projectile scene to spawn when this unit attacks (for ranged units).
-@export var projectile_scene: PackedScene
-
-## The speed of the projectile, in pixels per second.
-@export var projectile_speed: float = 400.0
-
-
 @export_group("Visuals")
-## The texture to use for the unit's sprite.
 @export var visual_texture: Texture2D
-
-## The target gameplay size in pixels (e.g., 32x32).
 @export var target_pixel_size: Vector2 = Vector2(32, 32)
 
-
 @export_group("Movement Feel")
-# --- NEW: Added properties from Base_Unit ---
-## How quickly the unit reaches max speed (e.g., 10.0)
 @export var acceleration: float = 10.0
-## How much "friction" the unit has (e.g., 5.0)
 @export var linear_damping: float = 5.0
-# ---------------------------------------------
+
+@export var ai_component_scene: PackedScene
+@export var projectile_scene: PackedScene # Restoring this too just in case
+@export var projectile_speed: float = 400.0
+
+# --- ROBUST LOADER ---
+# Instead of just load(), we verify the file exists.
+func load_scene() -> PackedScene:
+	if scene_path == "":
+		Loggie.msg("UnitData Error: No scene path assigned for %s" % display_name).domain("SYSTEM").error()
+		return null
+		
+	if not ResourceLoader.exists(scene_path):
+		Loggie.msg("UnitData Error: File not found at %s" % scene_path).domain("SYSTEM").error()
+		return null
+		
+	return load(scene_path)

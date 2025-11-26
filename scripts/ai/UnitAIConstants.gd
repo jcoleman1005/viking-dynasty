@@ -8,7 +8,8 @@ enum State {
 	MOVING, 
 	FORMATION_MOVING, 
 	ATTACKING, 
-	RETREATING 
+	RETREATING,
+	INTERACTING 
 }
 
 # Defines behavior stances
