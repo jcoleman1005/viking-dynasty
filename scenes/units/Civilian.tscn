@@ -1,0 +1,13 @@
+[gd_scene load_steps=4 format=3 uid="uid://c7powse34uuxc"]
+
+[ext_resource type="PackedScene" uid="uid://bky4c6y8fkk8g" path="res://scenes/units/Base_Unit.tscn" id="1_7jnl1"]
+[ext_resource type="Script" uid="uid://cumpki2vfwt1e" path="res://scripts/units/CivilianUnit.gd" id="2_7jnl1"]
+[ext_resource type="Resource" uid="uid://iiho31ik0qvb" path="res://data/units/Unit_Civilian.tres" id="3_obgkw"]
+
+[node name="Civilian" instance=ExtResource("1_7jnl1")]
+script = ExtResource("2_7jnl1")
+data = ExtResource("3_obgkw")
+
+[node name="Sprite2D" parent="." index="0"]
+modulate = Color(1, 1, 0, 1)
+region_rect = Rect2(509.90704, 170.3761, 21.10736, 26.607208)

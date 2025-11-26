@@ -1,22 +1,39 @@
 # res://autoload/SettlementManager.gd
 extends Node
 
-const BUILDER_EFFICIENCY: int = 25
-const GATHERER_EFFICIENCY: int = 10
-const BASE_GATHERING_CAPACITY: int = 2
+# --- Constants ---
 const USER_SAVE_PATH := "user://savegame.tres"
 const MAP_SAVE_PATH := "user://campaign_map.tres"
 
+# --- State ---
 var current_settlement: SettlementData
 var active_astar_grid: AStarGrid2D = null
 var active_building_container: Node2D = null
 var grid_manager_node: Node = null 
 
-# Scene Transition Flag (For the "Manage Workers" button on Map)
+# Scene Transition Flag
 var pending_management_open: bool = false
 
 func _ready() -> void:
 	EventBus.player_unit_died.connect(_on_player_unit_died)
+
+# --- ECONOMY DELEGATION (CLEANED) ---
+
+func calculate_payout() -> Dictionary:
+	# Pure delegation. EconomyManager handles the orchestration.
+	return EconomyManager.calculate_payout()
+
+func deposit_resources(loot: Dictionary) -> void:
+	# Pure delegation. Prevents double-counting resources.
+	EconomyManager.deposit_resources(loot)
+
+func attempt_purchase(item_cost: Dictionary) -> bool:
+	# Pure delegation.
+	return EconomyManager.attempt_purchase(item_cost)
+
+func apply_raid_damages() -> Dictionary:
+	# Pure delegation.
+	return EconomyManager.apply_raid_damages()
 
 # --- POPULATION & WORKER MANAGEMENT ---
 
@@ -32,7 +49,6 @@ func get_idle_peasants() -> int:
 	for entry in current_settlement.pending_construction_buildings:
 		employed += entry.get("peasant_count", 0)
 	
-	# --- FIX: Use new variable name ---
 	return current_settlement.population_peasants - employed
 
 func get_idle_thralls() -> int:
@@ -60,8 +76,7 @@ func assign_worker(building_index: int, type: String, amount: int) -> void:
 	var current = entry.get(key, 0)
 	
 	var new_val = current + amount
-	if new_val < 0: new_val = 0
-	if new_val > cap: new_val = cap
+	new_val = clampi(new_val, 0, cap)
 	
 	# Check Availability (Only if adding)
 	if amount > 0:
@@ -81,13 +96,11 @@ func assign_construction_worker(index: int, type: String, amount: int) -> void:
 	if not data: return
 	
 	var key = "peasant_count" if type == "peasant" else "thrall_count"
-	# Builders use base_labor_capacity
 	var cap = data.base_labor_capacity 
 	var current = entry.get(key, 0)
 	
 	var new_val = current + amount
-	if new_val < 0: new_val = 0
-	if new_val > cap: new_val = cap
+	new_val = clampi(new_val, 0, cap)
 	
 	if amount > 0:
 		var idle = get_idle_peasants() if type == "peasant" else get_idle_thralls()
@@ -99,107 +112,7 @@ func assign_construction_worker(index: int, type: String, amount: int) -> void:
 	save_settlement()
 	EventBus.settlement_loaded.emit(current_settlement)
 
-# --- RECRUITMENT ---
-
-func recruit_unit(unit_data: UnitData) -> void:
-	if not current_settlement or not unit_data: return
-	
-	# Drafting Cost
-	var population_cost = 10
-	var idle_peasants = get_idle_peasants()
-	
-	if idle_peasants < population_cost:
-		EventBus.purchase_failed.emit("Not enough idle Citizens! (Need %d)" % population_cost)
-		return
-		
-	# --- FIX: Deduct from new variable ---
-	current_settlement.population_peasants -= population_cost
-	# -------------------------------------
-	
-	var new_warband = WarbandData.new(unit_data)
-	
-	# Training Grounds Legacy
-	if DynastyManager.has_purchased_upgrade("UPG_TRAINING_GROUNDS"):
-		new_warband.experience = 200
-		new_warband.add_history("Recruited as Hardened Veterans")
-	else:
-		new_warband.add_history("Recruited")
-		
-	current_settlement.warbands.append(new_warband)
-	Loggie.msg("Drafted %d citizens into %s." % [population_cost, new_warband.custom_name]).domain("SETTLEMENT").info()
-	
-	save_settlement()
-	EventBus.purchase_successful.emit(unit_data.display_name)
-
-# --- ECONOMY CALCULATIONS ---
-func calculate_payout() -> Dictionary:
-	return EconomyManager.calculate_payout()
-	
-	process_construction_labor()
-	var hunger_warnings = process_warband_hunger()
-	var total_payout: Dictionary = {}
-	if not hunger_warnings.is_empty():
-		total_payout["_messages"] = hunger_warnings
-
-	var stewardship_bonus := 1.0
-	var jarl = DynastyManager.get_current_jarl()
-	if jarl:
-		var skill = jarl.get_effective_skill("stewardship")
-		stewardship_bonus = 1.0 + (skill - 10) * 0.05
-		stewardship_bonus = max(0.5, stewardship_bonus)
-
-	for entry in current_settlement.placed_buildings:
-		var b_data = load(entry["resource_path"])
-		if b_data is EconomicBuildingData:
-			var type = b_data.resource_type
-			# Ensure the type exists in the dictionary using the variable (which holds the constant value)
-			if not total_payout.has(type): total_payout[type] = 0
-			
-			var p_count = entry.get("peasant_count", 0)
-			var p_out = p_count * b_data.output_per_peasant
-			
-			var t_count = entry.get("thrall_count", 0)
-			var t_out = t_count * b_data.output_per_thrall
-			
-			var production = int((p_out + t_out) * stewardship_bonus)
-			total_payout[type] += production
-
-	if jarl:
-		for region_path in jarl.conquered_regions:
-			var r_data = load(region_path)
-			if r_data:
-				for res in r_data.yearly_income:
-					if not total_payout.has(res): total_payout[res] = 0
-					total_payout[res] += int(r_data.yearly_income[res] * stewardship_bonus)
-
-	# Apply stability debuff specifically to GOLD using the constant
-	if jarl and current_settlement.has_stability_debuff:
-		if total_payout.has(GameResources.GOLD): 
-			total_payout[GameResources.GOLD] = int(total_payout[GameResources.GOLD] * 0.75)
-		current_settlement.has_stability_debuff = false
-		save_settlement()
-
-	return total_payout
-
-func deposit_resources(loot: Dictionary) -> void:
-	EconomyManager.deposit_resources(loot)
-	
-	for resource_type in loot:
-		if resource_type.begins_with("_"): continue
-		
-		var amount = loot[resource_type]
-		
-		# check for specific population keys, or the generic string if legacy data exists
-		if resource_type == "population" or resource_type == GameResources.POP_THRALL:
-			current_settlement.population_thralls += amount
-		elif current_settlement.treasury.has(resource_type):
-			current_settlement.treasury[resource_type] += amount
-		else:
-			# Fallback for initialization or custom types
-			current_settlement.treasury[resource_type] = amount
-			
-	EventBus.treasury_updated.emit(current_settlement.treasury)
-	save_settlement()
+# --- CONSTRUCTION LOGIC ---
 
 func process_construction_labor() -> void:
 	if not current_settlement: return
@@ -218,7 +131,8 @@ func process_construction_labor() -> void:
 		if peasants == 0 and thralls == 0:
 			continue 
 			
-		var labor_points = (peasants + thralls) * BUILDER_EFFICIENCY
+		# Note: Efficiency constant is now in EconomyManager
+		var labor_points = (peasants + thralls) * EconomyManager.BUILDER_EFFICIENCY
 		
 		entry["progress"] = entry.get("progress", 0) + labor_points
 		Loggie.msg("Construction: %s gained %d progress" % [b_data.display_name, labor_points]).domain("SETTLEMENT").info()
@@ -242,10 +156,39 @@ func process_construction_labor() -> void:
 	save_settlement()
 	if not completed_indices.is_empty(): _trigger_territory_update()
 
-# --- BOILERPLATE (Load/Save/Upgrade/Guards) ---
+func complete_building_construction(building_instance: BaseBuilding) -> void:
+	# Called by BaseBuilding when state changes to ACTIVE via other means (e.g. debug)
+	pass
 
-func attempt_purchase(item_cost: Dictionary) -> bool:
-	return EconomyManager.attempt_purchase(item_cost)
+# --- RECRUITMENT & UNIT LOGIC ---
+
+func recruit_unit(unit_data: UnitData) -> void:
+	if not current_settlement or not unit_data: return
+	
+	# Drafting Cost
+	var population_cost = 10
+	var idle_peasants = get_idle_peasants()
+	
+	if idle_peasants < population_cost:
+		EventBus.purchase_failed.emit("Not enough idle Citizens! (Need %d)" % population_cost)
+		return
+		
+	current_settlement.population_peasants -= population_cost
+	
+	var new_warband = WarbandData.new(unit_data)
+	
+	# Training Grounds Legacy
+	if DynastyManager.has_purchased_upgrade("UPG_TRAINING_GROUNDS"):
+		new_warband.experience = 200
+		new_warband.add_history("Recruited as Hardened Veterans")
+	else:
+		new_warband.add_history("Recruited")
+		
+	current_settlement.warbands.append(new_warband)
+	Loggie.msg("Drafted %d citizens into %s." % [population_cost, new_warband.custom_name]).domain("SETTLEMENT").info()
+	
+	save_settlement()
+	EventBus.purchase_successful.emit(unit_data.display_name)
 
 func upgrade_warband_gear(warband: WarbandData) -> bool:
 	if not current_settlement: return false
@@ -301,15 +244,30 @@ func process_warband_hunger() -> Array[String]:
 		
 	return warnings
 
+func _on_player_unit_died(unit: Node2D) -> void:
+	if not current_settlement: return
+	var base_unit = unit as BaseUnit
+	if not base_unit or not base_unit.warband_ref: return 
+
+	var warband = base_unit.warband_ref
+	if warband in current_settlement.warbands:
+		warband.current_manpower -= 1
+		if warband.current_manpower <= 0:
+			if warband.assigned_heir_name != "":
+				DynastyManager.kill_heir_by_name(warband.assigned_heir_name, "Slain leading the %s" % warband.custom_name)
+			current_settlement.warbands.erase(warband)
+			Loggie.msg("☠️ Warband Destroyed: %s" % warband.custom_name).domain("SETTLEMENT").warn()
+		else:
+			Loggie.msg("⚔️ Casualty in %s. Remaining: %d" % [warband.custom_name, warband.current_manpower]).domain("SETTLEMENT").info()
+		save_settlement()
+
 # --- PERSISTENCE ---
 
 func delete_save_file() -> void:
-	var settlement_deleted := false
-	var map_deleted := false
 	if FileAccess.file_exists(USER_SAVE_PATH):
-		if DirAccess.remove_absolute(USER_SAVE_PATH) == OK: settlement_deleted = true
+		DirAccess.remove_absolute(USER_SAVE_PATH)
 	if FileAccess.file_exists(MAP_SAVE_PATH):
-		if DirAccess.remove_absolute(MAP_SAVE_PATH) == OK: map_deleted = true
+		DirAccess.remove_absolute(MAP_SAVE_PATH)
 	reset_manager_state()
 	Loggie.msg("Save files deleted.").domain("SYSTEM").info()
 
@@ -350,8 +308,7 @@ func save_settlement() -> void:
 func has_current_settlement() -> bool:
 	return current_settlement != null
 
-# --- PATHFINDING / GRID (Internal) ---
-# Keeping these to ensure compatibility until full refactor
+# --- PATHFINDING / GRID (Delegated to Scene Nodes) ---
 
 func register_active_scene_nodes(grid: AStarGrid2D, container: Node2D, manager_node: Node = null) -> void:
 	if not is_instance_valid(grid) or not is_instance_valid(container): return
@@ -484,22 +441,53 @@ func set_astar_point_solid(grid_position: Vector2i, solid: bool) -> void:
 	if is_instance_valid(active_astar_grid) and _is_cell_within_bounds(grid_position):
 		active_astar_grid.set_point_solid(grid_position, solid)
 
-func apply_raid_damages() -> Dictionary:
-	return EconomyManager.apply_raid_damages()
 
-func _on_player_unit_died(unit: Node2D) -> void:
-	if not current_settlement: return
-	var base_unit = unit as BaseUnit
-	if not base_unit or not base_unit.warband_ref: return 
+func assign_worker_from_unit(building: BaseBuilding, type: String) -> bool:
+	if not current_settlement: return false
+	
+	var entry = _find_entry_for_building(building)
+	if entry.is_empty(): 
+		Loggie.msg("SettlementManager: Could not find data for %s" % building.name).domain("SETTLEMENT").error()
+		return false
+	
+	var data = building.data
+	var cap = 0
+	var current = 0
+	
+	if building.current_state == BaseBuilding.BuildingState.ACTIVE:
+		if data is EconomicBuildingData:
+			cap = data.peasant_capacity
+			current = entry.get("peasant_count", 0)
+	else:
+		cap = data.base_labor_capacity
+		current = entry.get("peasant_count", 0)
+		
+	if current >= cap:
+		EventBus.purchase_failed.emit("Building is full!")
+		return false # <--- FAILURE
 
-	var warband = base_unit.warband_ref
-	if warband in current_settlement.warbands:
-		warband.current_manpower -= 1
-		if warband.current_manpower <= 0:
-			if warband.assigned_heir_name != "":
-				DynastyManager.kill_heir_by_name(warband.assigned_heir_name, "Slain leading the %s" % warband.custom_name)
-			current_settlement.warbands.erase(warband)
-			Loggie.msg("☠️ Warband Destroyed: %s" % warband.custom_name).domain("SETTLEMENT").warn()
-		else:
-			Loggie.msg("⚔️ Casualty in %s. Remaining: %d" % [warband.custom_name, warband.current_manpower]).domain("SETTLEMENT").info()
-		save_settlement()
+	entry["peasant_count"] = current + 1
+	Loggie.msg("Worker assigned to %s" % building.data.display_name).domain("SETTLEMENT").info()
+	
+	save_settlement()
+	EventBus.settlement_loaded.emit(current_settlement)
+	return true # <--- SUCCESS
+	
+func _find_entry_for_building(building: BaseBuilding) -> Dictionary:
+	# Helper to map a Node back to its Data Dictionary
+	var cell_size = get_active_grid_cell_size()
+	
+	# Calculate the top-left grid position based on the building's center and size
+	var half_size = (Vector2(building.data.grid_size) * cell_size) / 2.0
+	var grid_pos = Vector2i((building.global_position - half_size) / cell_size)
+	
+	# Check Placed Buildings
+	for entry in current_settlement.placed_buildings:
+		# entry["grid_position"] might be Vector2 or Vector2i, cast to be safe
+		if Vector2i(entry["grid_position"]) == grid_pos: return entry
+		
+	# Check Pending Construction
+	for entry in current_settlement.pending_construction_buildings:
+		if Vector2i(entry["grid_position"]) == grid_pos: return entry
+		
+	return {}

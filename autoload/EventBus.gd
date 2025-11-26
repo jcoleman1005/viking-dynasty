@@ -51,8 +51,14 @@ signal attack_command(target_node: Node2D)
 
 # --- NEW: Emitted on right-click-and-drag ---
 signal formation_move_command(target_position: Vector2, direction_vector: Vector2)
+signal interact_command(target: Node2D)
+# --- NEW: Keyboard Commands (Refactor Step) ---
+# Emitted when 0-9 is pressed. is_assigning = true if CTRL is held.
+signal control_group_command(group_index: int, is_assigning: bool)
 
-# --- NEW: Building Cursor System Signals ---
+# Emitted when formation keys (F1-F4) are pressed.
+# Passes the integer value of the Enum (0=Line, 1=Column, etc.)
+signal formation_change_command(formation_type: int)
 
 
 # --- NEW: Event System Flow Control ---

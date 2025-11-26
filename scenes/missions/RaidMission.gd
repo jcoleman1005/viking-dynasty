@@ -2,6 +2,8 @@
 extends Node2D
 
 # --- Configuration ---
+@export var enemy_wave_units: Array[UnitData] = []
+@export var enemy_wave_count: int = 5
 @export var enemy_base_data: SettlementData
 @export var default_enemy_base_path: String = "res://data/settlements/monastery_base.tres"
 @export var player_spawn_formation: Dictionary = {"units_per_row": 5, "spacing": 40}
@@ -165,16 +167,33 @@ func _spawn_player_garrison() -> void:
 func _spawn_enemy_wave() -> void:
 	var spawner = get_node_or_null(enemy_spawn_position)
 	if not spawner: return
-	var enemy_data = load("res://data/units/EnemyVikingRaider_Data.tres") as UnitData
 	
-	for i in range(5):
-		var unit = enemy_data.scene_to_spawn.instantiate()
-		unit.data = enemy_data
-		unit.collision_layer = 1 << 2
-		add_child(unit)
-		unit.global_position = spawner.global_position + Vector2(i*40, 0)
+	# 1. Validation: Do we have enemies to spawn?
+	if enemy_wave_units.is_empty():
+		Loggie.msg("RaidMission: No enemy units assigned in Inspector!").domain("RAID").warn()
+		return
+
+	for i in range(enemy_wave_count):
+		# 2. Pick a random enemy data from the list
+		var random_data = enemy_wave_units.pick_random()
+		
+		# 3. Load the scene using the new safe loader
+		var scene_ref = random_data.load_scene()
+		if not scene_ref: continue
+		
+		# 4. Instantiate
+		var unit = scene_ref.instantiate()
+		unit.data = random_data # Inject Data back into the unit
+		
+		# 5. Setup Layers & Groups
+		unit.collision_layer = 1 << 2 # Layer 3 (Enemy Units)
 		unit.add_to_group("enemy_units")
 		
+		# 6. Position
+		unit.global_position = spawner.global_position + Vector2(i * 40, 0)
+		add_child(unit)
+		
+		# 7. Give Orders
 		if objective_building:
 			unit.fsm_ready.connect(func(u): 
 				if u.fsm: u.fsm.command_attack(objective_building)

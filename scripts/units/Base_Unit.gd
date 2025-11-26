@@ -138,12 +138,17 @@ func _apply_texture_and_scale() -> void:
 		return
 	var target_size: Vector2 = data.target_pixel_size
 
+	# 1. Apply Texture override from Data (if present)
 	if data.visual_texture:
 		sprite.texture = data.visual_texture
+	
+	# 2. Apply Scaling (Always runs, even if using the default Scene texture)
+	if sprite.texture:
 		var texture_size: Vector2 = sprite.texture.get_size()
 		if texture_size.x > 0 and texture_size.y > 0:
 			sprite.scale = target_size / texture_size
 	
+	# 3. Apply Collision Sizing
 	if collision_shape and collision_shape.shape is RectangleShape2D:
 		collision_shape.shape.size = target_size
 
@@ -271,3 +276,8 @@ func _create_unit_hitbox() -> void:
 func command_retreat(target_pos: Vector2) -> void:
 	if fsm:
 		fsm.command_retreat(target_pos)
+func command_start_working(target_building: BaseBuilding, target_node: ResourceNode) -> void:
+	if fsm and fsm.has_method("command_start_cycle"):
+		fsm.command_start_cycle(target_building, target_node)
+	else:
+		push_warning("Unit %s tried to start working, but FSM missing 'command_start_cycle'." % name)

@@ -22,7 +22,12 @@ func _gui_input(event: InputEvent) -> void:
 	# We use _gui_input, which is only called if the mouse
 	# is over this Control. Since it's fullscreen,
 	# this will always be the case.
-	
+	if event is InputEventMouseButton and event.pressed:
+		print("DEBUG: SelectionBox received click! Button: ", event.button_index)
+	if event is InputEventMouseButton:
+		# --- DEBUG: Print ALL mouse button events ---
+		var state = "DOWN" if event.pressed else "UP"
+		print("DEBUG: Mouse Btn ", event.button_index, " is ", state)
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if event.is_pressed():
@@ -46,47 +51,35 @@ func _gui_input(event: InputEvent) -> void:
 				queue_redraw() # Clear the box
 				accept_event()
 		
-		# --- MODIFIED: Handle Right Click Drag ---
-		elif event.button_index == MOUSE_BUTTON_RIGHT:
+	# Right Click Handling
+		if event.button_index == MOUSE_BUTTON_RIGHT:
 			if event.is_pressed():
 				is_command_dragging = true
 				command_start_pos = get_local_mouse_position()
 				accept_event()
-			else: # On Right-Click Release
-				if not is_command_dragging:
-					# This can happen if the click started outside the window
-					# and was released inside. Ignore it.
-					return
-					
+			else: # On Release
+				if not is_command_dragging: return
 				is_command_dragging = false
+				
 				var end_pos = get_local_mouse_position()
 				var drag_vector = end_pos - command_start_pos
 				
-				var main_camera: Camera2D = get_viewport().get_camera_2d()
-				if not main_camera: 
-					push_error("SelectionBox: No Camera2D found.")
-					return
-
-				# Convert screen positions to world
-				# We use get_global_mouse_position() for the *end*
-				# and calculate the start based on the drag vector
-				var world_end_pos = main_camera.get_global_mouse_position()
-				var world_start_pos = world_end_pos - (drag_vector / main_camera.zoom)
-				
-				# Check if it was a drag or just a click
-				if drag_vector.length_squared() > 225: # 15px drag threshold
-					# It was a drag. Emit formation move.
-					# The direction is from start to end
-					var world_drag_vector = (world_end_pos - world_start_pos).normalized()
-					EventBus.formation_move_command.emit(world_start_pos, world_drag_vector)
+				# Check for drag vs click
+				if drag_vector.length_squared() > 225:
+					# Drag Logic (Formation)
+					var main_camera = get_viewport().get_camera_2d()
+					if main_camera:
+						var world_end = main_camera.get_global_mouse_position()
+						var world_start = world_end - (drag_vector / main_camera.zoom)
+						var dir = (world_end - world_start).normalized()
+						EventBus.formation_move_command.emit(world_start, dir)
 				else:
-					# It was a click. Do smart command.
+					# Click Logic (Smart Command)
 					_handle_smart_command(end_pos)
 					
-				queue_redraw() # Clear drag line
+				queue_redraw()
 				accept_event()
-		# -----------------------------------------
-	
+				
 	elif event is InputEventMouseMotion:
 		if is_dragging or is_command_dragging:
 			# Update the draw loop as the mouse moves
@@ -94,39 +87,45 @@ func _gui_input(event: InputEvent) -> void:
 			accept_event()
 
 func _handle_smart_command(_screen_pos: Vector2) -> void:
-	# This function determines if a right-click
-	# is a "move" or "attack" command.
 	var world_space: PhysicsDirectSpaceState2D = get_world_2d().direct_space_state
 	var main_camera: Camera2D = get_viewport().get_camera_2d()
 	
-	if not main_camera:
-		push_error("SelectionBox: No Camera2D found in viewport.")
-		return
+	if not main_camera: return
 		
-	# Convert screen position to world position
 	var world_pos: Vector2 = main_camera.get_global_mouse_position()
 	
 	var query := PhysicsPointQueryParameters2D.new()
 	query.position = world_pos
 	query.collide_with_areas = true
 	query.collide_with_bodies = true
-	
-	# --- MODIFIED: Collision Mask ---
-	# We now attack Layer 3 (Enemy Units) and Layer 4 (Enemy Buildings)
-	# Binary 1100 = 12
-	query.collision_mask = 12 
-	# --------------------------------
+	# 1 (Friendly/Env) + 4 (Enemy Unit) + 8 (Enemy Building) = 13
+	query.collision_mask = 13 
 	
 	var results: Array = world_space.intersect_point(query)
 	
 	if not results.is_empty():
-		# We hit an enemy! Emit an attack command.
-		var target = results[0].collider
-		EventBus.emit_signal("attack_command", target)
+		var hit_object = results[0].collider
+		print("DEBUG: Raycast hit ", hit_object.name, " (Type: ", hit_object.get_class(), ")")
+		
+		# --- RESOLVE TARGET ---
+		# If we hit the child "Hitbox", bubble up to the parent Building
+		var final_target = hit_object
+		if hit_object.name == "Hitbox" and hit_object.get_parent() is BaseBuilding:
+			final_target = hit_object.get_parent()
+			print("DEBUG: Bubbled up to parent building: ", final_target.name)
+		# ----------------------
+		
+		# Check Layer 1 (Friendly) AND Type
+		if final_target.collision_layer == 1 and final_target is BaseBuilding:
+			print("DEBUG: Friendly Building detected. INTERACT.")
+			EventBus.interact_command.emit(final_target)
+		else:
+			print("DEBUG: Enemy/Other detected. ATTACK.")
+			EventBus.attack_command.emit(final_target)
 	else:
-		# We hit the ground. Emit a move command.
-		EventBus.emit_signal("move_command", world_pos)
-
+		print("DEBUG: Ground clicked. MOVE.")
+		EventBus.move_command.emit(world_pos)
+		
 func _draw() -> void:
 	# This function draws the selection box
 	if is_dragging:
