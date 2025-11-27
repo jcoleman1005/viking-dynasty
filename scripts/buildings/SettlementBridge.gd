@@ -337,6 +337,25 @@ func _on_building_right_clicked(building: BaseBuilding) -> void:
 func _process_raid_return() -> void:
 	var result = DynastyManager.pending_raid_result
 	var outcome = result.get("outcome")
+	
+	# --- NEW: Process Returning Bondi ---
+	if SettlementManager.current_settlement:
+		var warbands_to_disband: Array[WarbandData] = []
+		
+		for warband in SettlementManager.current_settlement.warbands:
+			if warband.is_bondi:
+				# Refund Survivors
+				if warband.current_manpower > 0:
+					SettlementManager.current_settlement.population_peasants += warband.current_manpower
+					Loggie.msg("Bondi disbanded. %d returned to work." % warband.current_manpower).domain(LogDomains.SETTLEMENT).info()
+				
+				warbands_to_disband.append(warband)
+		
+		# Cleanup
+		for wb in warbands_to_disband:
+			SettlementManager.current_settlement.warbands.erase(wb)
+	# -------------------------------------
+
 	var grade = result.get("victory_grade", "Standard")
 	var loot_summary = {}
 	

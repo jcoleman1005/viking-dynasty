@@ -1,0 +1,28 @@
+[gd_scene load_steps=4 format=3 uid="uid://b23ynenrrakpo"]
+
+[ext_resource type="Script" uid="uid://btumxrbbibjx8" path="res://scripts/units/PlayerVikingRaider.gd" id="1_uy07r"]
+[ext_resource type="Shape2D" uid="uid://bda7xb0judu2h" path="res://resources/separation_circle_shape.tres" id="2_hbse2"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_n6s0a"]
+size = Vector2(72, 72)
+
+[node name="PlayerVikingRaider" type="CharacterBody2D"]
+modulate = Color(0.6, 0.7, 0.5, 1)
+collision_layer = 2
+script = ExtResource("1_uy07r")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+region_rect = Rect2(509.90704, 170.3761, 21.10736, 26.607208)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_n6s0a")
+
+[node name="AttackTimer" type="Timer" parent="."]
+
+[node name="SeparationArea" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="SeparationArea"]
+shape = ExtResource("2_hbse2")
