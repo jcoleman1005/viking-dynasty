@@ -36,7 +36,7 @@ size_flags_horizontal = 3
 
 [node name="TargetNameLabel" type="Label" parent="MarginContainer/MainVBox/ContentHBox/LeftCol"]
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.84313726, 0, 1)
+theme_override_colors/font_color = Color(1, 0, 0, 1)
 theme_override_font_sizes/font_size = 20
 text = "Target Name"
 
@@ -105,8 +105,8 @@ layout_mode = 2
 
 [node name="BondiLabel" type="Label" parent="MarginContainer/MainVBox/ContentHBox/RightCol/BondiPanel/BondiVBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.6784314, 0.84705883, 0.9019608, 1)
-text = "Call the Bondi (Farmers)"
+theme_override_colors/font_color = Color(0.029002039, 0.22655004, 0.21467707, 1)
+text = "Recruit the Bondi (Farmers)"
 
 [node name="BondiSliderBox" type="HBoxContainer" parent="MarginContainer/MainVBox/ContentHBox/RightCol/BondiPanel/BondiVBox"]
 layout_mode = 2

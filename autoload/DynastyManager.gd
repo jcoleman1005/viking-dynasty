@@ -141,7 +141,7 @@ func calculate_journey_attrition(target_distance: float) -> Dictionary:
 	}
 	
 	# 1. Calculate Risk
-	var base_risk = 0.0
+	var base_risk = 0.02
 	if target_distance > safe_range:
 		# e.g. (800 - 600) / 100 * 0.10 = 0.20 (20% risk)
 		base_risk = ((target_distance - safe_range) / 100.0) * current_jarl.attrition_per_100px
@@ -152,10 +152,14 @@ func calculate_journey_attrition(target_distance: float) -> Dictionary:
 		
 	base_risk = clampf(base_risk, 0.05, 0.90) # Always 5% chance of something
 	
-	Loggie.msg("Journey Calc: Dist %.0f / Safe %.0f. Risk: %.2f" % [target_distance, safe_range, base_risk]).domain("DYNASTY").info()
-	
 	# 3. Roll the Dice
 	var roll = randf()
+	
+	# --- DIAGNOSTIC PRINT ---
+	var status = "SAFE"
+	if roll < base_risk: status = "RISK EVENT!"
+	print("[DIAGNOSTIC] Journey Risk: Roll %.2f vs Chance %.2f -> %s" % [roll, base_risk, status])
+	# ------------------------
 	
 	if roll < base_risk:
 		# FAILURE (Attrition Event)
@@ -187,7 +191,6 @@ func calculate_journey_attrition(target_distance: float) -> Dictionary:
 			raid_health_modifier = 1.0
 			
 	return report
-
 # --- AUTHORITY & RENOWN ---
 
 func can_spend_authority(cost: int) -> bool:
