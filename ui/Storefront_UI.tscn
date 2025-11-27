@@ -252,11 +252,6 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "Army"
 
-[node name="Btn_Manage" type="Button" parent="BottomDeck/HBoxContainer"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Manage"
-
 [node name="Btn_LegacyUpgrades" type="Button" parent="BottomDeck/HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2

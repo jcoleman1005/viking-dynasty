@@ -86,6 +86,8 @@ extends Resource
 @export var battles_fought: int = 0
 @export var battles_won: int = 0
 @export var successful_raids: int = 0
+## Tracks progress towards Warlord trait
+@export var offensive_wins: int = 0 
 
 # --- HELPER FUNCTIONS ---
 
@@ -109,6 +111,10 @@ func remove_heir(heir_to_remove: JarlHeirData) -> bool:
 	if heir_to_remove in heirs:
 		heirs.erase(heir_to_remove)
 		return true
+	
+	# LOGGIE: Warning if trying to remove non-existent heir
+	if Engine.is_editor_hint() == false: # Prevent tool script spam
+		Loggie.msg("JarlData: Attempted to remove heir '%s', but they were not in the list." % heir_to_remove.display_name).domain(LogDomains.DYNASTY).warn()
 	return false
 
 func check_has_valid_heir() -> bool:
@@ -162,6 +168,10 @@ func spend_authority(cost: int = 1) -> bool:
 	if can_take_action(cost):
 		current_authority -= cost
 		return true
+	
+	# LOGGIE: Logic error catching
+	if Engine.is_editor_hint() == false:
+		Loggie.msg("JarlData: Insufficient Authority. Needed %d, had %d." % [cost, current_authority]).domain(LogDomains.DYNASTY).debug()
 	return false
 
 func award_renown(amount: int) -> void:

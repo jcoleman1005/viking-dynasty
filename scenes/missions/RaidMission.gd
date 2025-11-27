@@ -18,25 +18,32 @@ extends Node2D
 @onready var building_container: Node2D = $BuildingContainer
 @onready var objective_manager: RaidObjectiveManager = $RaidObjectiveManager
 
-# --- NEW: Map Loader ---
+# --- Map Loader ---
 var map_loader: RaidMapLoader
-# -----------------------
 
 var objective_building: BaseBuilding = null
 
 func _ready() -> void:
+	print("[DIAGNOSTIC] RaidMission: _ready() called.")
+	
 	# Initialize Loader
 	map_loader = RaidMapLoader.new()
 	add_child(map_loader)
 	
+	# Check Context (Defensive vs Offensive)
 	if DynastyManager.is_defensive_raid:
 		self.is_defensive_mission = true
 		objective_manager.is_defensive_mission = true
 		DynastyManager.is_defensive_raid = false
+		print("[DIAGNOSTIC] RaidMission: Mode set to DEFENSIVE.")
+	else:
+		print("[DIAGNOSTIC] RaidMission: Mode set to OFFENSIVE (Raid).")
 	
 	EventBus.settlement_loaded.connect(_on_settlement_ready_for_mission)
 	
+	# Safe Initialization
 	if not SettlementManager.has_current_settlement():
+		print("[DIAGNOSTIC] RaidMission: No current settlement found. Loading test data.")
 		_load_test_settlement()
 		call_deferred("initialize_mission")
 	else:
@@ -48,7 +55,11 @@ func _exit_tree() -> void:
 		EventBus.settlement_loaded.disconnect(_on_settlement_ready_for_mission)
 
 func initialize_mission() -> void:
-	if not _validate_nodes(): return
+	print("[DIAGNOSTIC] RaidMission: Initializing...")
+	
+	if not _validate_nodes(): 
+		print("[DIAGNOSTIC] RaidMission: Node validation FAILED.")
+		return
 	
 	# 1. Setup Grid
 	var local_astar_grid = grid_manager.astar_grid
@@ -69,7 +80,7 @@ func initialize_mission() -> void:
 		if not objective_manager.fyrd_arrived.is_connected(_on_fyrd_arrived):
 			objective_manager.fyrd_arrived.connect(_on_fyrd_arrived)
 	else:
-		Loggie.msg("RaidMission: Critical - No Objective Building found!").domain("RAID").error()
+		Loggie.msg("RaidMission: Critical - No Objective Building found!").domain(LogDomains.RAID).error()
 
 func _setup_defensive_mode() -> void:
 	# Load Player Base
@@ -83,7 +94,11 @@ func _setup_defensive_mode() -> void:
 func _setup_offensive_mode() -> void:
 	# Load Enemy Base
 	if not enemy_base_data:
-		enemy_base_data = load(default_enemy_base_path)
+		if ResourceLoader.exists(default_enemy_base_path):
+			enemy_base_data = load(default_enemy_base_path)
+		else:
+			Loggie.msg("RaidMission: Default enemy base path not found: %s" % default_enemy_base_path).domain(LogDomains.RAID).error()
+			return
 	
 	objective_building = map_loader.load_base(enemy_base_data, false)
 	
@@ -96,44 +111,90 @@ func _setup_offensive_mode() -> void:
 	_spawn_retreat_zone()
 
 func _on_building_destroyed_grid_update(building: BaseBuilding) -> void:
-	# Simple grid clearing logic when stuff blows up
 	if not building.data or not is_instance_valid(grid_manager): return
-	var grid_pos = Vector2i(building.global_position / grid_manager.cell_size) # Approx center
-	# (For robust clearing, re-use the logic from previous RaidMission script or move it to Loader)
-	# For now, we can just let the building die.
+	# Grid updates handled by BaseBuilding/SettlementManager logic usually, but kept here for safety hook
 	pass
 
-# --- SPAWNING LOGIC (Kept here as it is Game Rule logic, not Map Gen) ---
+# --- SPAWNING LOGIC ---
 
 func _spawn_player_garrison() -> void:
-	if not SettlementManager.current_settlement:
-		_spawn_test_units() 
-		return
+	print("[DIAGNOSTIC] RaidMission: Spawning Player Garrison...")
 	
-	var warbands = SettlementManager.current_settlement.warbands
-	if warbands.is_empty():
+	# 1. Determine Source of Troops
+	var warbands_to_spawn: Array[WarbandData] = []
+	var health_modifier: float = 1.0
+	
+	if is_defensive_mission:
+		if SettlementManager.current_settlement:
+			warbands_to_spawn = SettlementManager.current_settlement.warbands
+		print("[DIAGNOSTIC] Mode Defensive. Warbands found in settlement: ", warbands_to_spawn.size())
+	else:
+		# OFFENSIVE MODE
+		# Check DynastyManager Staging
+		if not DynastyManager.outbound_raid_force.is_empty():
+			warbands_to_spawn = DynastyManager.outbound_raid_force
+			health_modifier = DynastyManager.raid_health_modifier
+			print("[DIAGNOSTIC] Mode Offensive. Found staged force: ", warbands_to_spawn.size(), " warbands. HP Mod: ", health_modifier)
+		else:
+			# Fallback for testing scenes directly
+			print("[DIAGNOSTIC] Mode Offensive. NO STAGED FORCE FOUND in DynastyManager.")
+			if SettlementManager.current_settlement:
+				print("[DIAGNOSTIC] Falling back to SettlementManager garrison.")
+				warbands_to_spawn = SettlementManager.current_settlement.warbands
+			else:
+				print("[DIAGNOSTIC] No SettlementManager data found either. Trying test spawn.")
+				_spawn_test_units()
+				return
+
+	# 2. Validation
+	if warbands_to_spawn.is_empty():
+		print("[DIAGNOSTIC] CRITICAL: warbands_to_spawn is EMPTY. Nothing to spawn.")
+		Loggie.msg("RaidMission: No warbands to spawn! Mission may be unwinnable.").domain(LogDomains.RAID).warn()
 		if not is_defensive_mission:
 			objective_manager.call_deferred("_check_loss_condition")
 		return
 	
+	# 3. Spawn Loop
 	var units_per_row = player_spawn_formation.get("units_per_row", 5)
 	var spacing = player_spawn_formation.get("spacing", 40.0)
 	var current_squad_index = 0
 	
-	for warband in warbands:
-		if warband.is_wounded: continue
-		if warband.loyalty < 100:
-			warband.modify_loyalty(50)
-			warband.turns_idle = 0
+	if not player_spawn_pos:
+		print("[DIAGNOSTIC] CRITICAL: PlayerStartPosition node is MISSING!")
+		return
 		
+	var spawn_origin = player_spawn_pos.global_position
+	print("[DIAGNOSTIC] Spawning at origin: ", spawn_origin)
+	
+	for warband in warbands_to_spawn:
+		print("[DIAGNOSTIC] Processing Warband: ", warband.custom_name)
+		
+		if warband.is_wounded: 
+			print("[DIAGNOSTIC] - Skipped (Wounded)")
+			continue
+			
 		var unit_data = warband.unit_type
-		if not unit_data: continue
+		if not unit_data: 
+			print("[DIAGNOSTIC] - Skipped (Missing UnitData)")
+			continue
+		
+		# Validate Scene
+		var scene_ref = unit_data.load_scene()
+		if not scene_ref:
+			print("[DIAGNOSTIC] - Skipped (load_scene failed for path: %s)" % unit_data.scene_path)
+			continue
+		
+		print("[DIAGNOSTIC] - Spawning %d units..." % warband.current_manpower)
 		
 		for i in range(warband.current_manpower):
-			var unit = unit_data.scene_to_spawn.instantiate()
+			var unit = scene_ref.instantiate()
+			if not unit:
+				print("[DIAGNOSTIC] -- Instantiation failed!")
+				continue
+				
 			unit.warband_ref = warband
 			unit.data = unit_data
-			unit.collision_layer = 2
+			unit.collision_layer = 2 # Player Unit Layer
 			
 			# Naming
 			if i == 0: unit.name = warband.custom_name + "_Thegn"
@@ -141,7 +202,7 @@ func _spawn_player_garrison() -> void:
 			else: unit.name = warband.custom_name + "_Huscarl_" + str(i)
 
 			# Positioning
-			var base_pos = player_spawn_pos.global_position
+			var base_pos = spawn_origin
 			if is_defensive_mission and is_instance_valid(objective_building):
 				base_pos = objective_building.global_position + Vector2(100, 100)
 			else:
@@ -162,52 +223,56 @@ func _spawn_player_garrison() -> void:
 			rts_controller.add_unit_to_group(unit)
 			add_child(unit)
 			
+			# Apply Attrition
+			if health_modifier < 1.0:
+				unit.current_health = int(unit.current_health * health_modifier)
+				unit.modulate = Color(0.9, 0.9, 0.8)
+			
 		current_squad_index += 1
+	
+	print("[DIAGNOSTIC] Spawn complete.")
 
 func _spawn_enemy_wave() -> void:
 	var spawner = get_node_or_null(enemy_spawn_position)
-	if not spawner: return
-	
-	# 1. Validation: Do we have enemies to spawn?
-	if enemy_wave_units.is_empty():
-		Loggie.msg("RaidMission: No enemy units assigned in Inspector!").domain("RAID").warn()
+	if not spawner: 
+		Loggie.msg("RaidMission: Enemy spawn position not found!").domain(LogDomains.RAID).error()
 		return
-
-	for i in range(enemy_wave_count):
-		# 2. Pick a random enemy data from the list
-		var random_data = enemy_wave_units.pick_random()
 		
-		# 3. Load the scene using the new safe loader
+	if enemy_wave_units.is_empty():
+		Loggie.msg("RaidMission: No enemy units assigned in Inspector!").domain(LogDomains.RAID).warn()
+		return
+		
+	for i in range(enemy_wave_count):
+		var random_data = enemy_wave_units.pick_random()
 		var scene_ref = random_data.load_scene()
 		if not scene_ref: continue
 		
-		# 4. Instantiate
 		var unit = scene_ref.instantiate()
-		unit.data = random_data # Inject Data back into the unit
-		
-		# 5. Setup Layers & Groups
+		unit.data = random_data 
 		unit.collision_layer = 1 << 2 # Layer 3 (Enemy Units)
 		unit.add_to_group("enemy_units")
 		
-		# 6. Position
 		unit.global_position = spawner.global_position + Vector2(i * 40, 0)
 		add_child(unit)
 		
-		# 7. Give Orders
 		if objective_building:
 			unit.fsm_ready.connect(func(u): 
 				if u.fsm: u.fsm.command_attack(objective_building)
 			)
 
 func _spawn_fyrd_response() -> void:
-	# (Same Fyrd logic as before, triggered by signal)
 	pass
 
 func _on_fyrd_arrived() -> void:
-	# Reuse existing Fyrd logic
 	var spawner = get_node_or_null(enemy_spawn_position)
 	var origin = spawner.global_position if spawner else Vector2(1000,0)
-	var enemy_data = load("res://data/units/EnemyVikingRaider_Data.tres")
+	
+	var enemy_data_path = "res://data/units/EnemyVikingRaider_Data.tres"
+	if not ResourceLoader.exists(enemy_data_path):
+		Loggie.msg("RaidMission: Fyrd unit data missing at %s" % enemy_data_path).domain(LogDomains.RAID).error()
+		return
+		
+	var enemy_data = load(enemy_data_path)
 	
 	for i in range(20):
 		var unit = enemy_data.scene_to_spawn.instantiate()
@@ -221,8 +286,13 @@ func _on_fyrd_arrived() -> void:
 		)
 
 func _spawn_retreat_zone() -> void:
+	var zone_script_path = "res://scenes/missions/RetreatZone.gd"
+	if not ResourceLoader.exists(zone_script_path):
+		Loggie.msg("RaidMission: RetreatZone script missing!").domain(LogDomains.RAID).error()
+		return
+
 	var zone = Area2D.new()
-	zone.set_script(load("res://scenes/missions/RetreatZone.gd"))
+	zone.set_script(load(zone_script_path))
 	var poly = CollisionPolygon2D.new()
 	poly.polygon = PackedVector2Array([Vector2(-100,-100), Vector2(100,-100), Vector2(100,100), Vector2(-100,100)])
 	zone.add_child(poly)
@@ -231,18 +301,40 @@ func _spawn_retreat_zone() -> void:
 	zone.unit_evacuated.connect(objective_manager.on_unit_evacuated)
 
 func _load_test_settlement() -> void:
-	var data = load("res://data/settlements/home_base_fixed.tres")
-	if data: SettlementManager.load_settlement(data)
+	var data_path = "res://data/settlements/home_base_fixed.tres"
+	if ResourceLoader.exists(data_path):
+		var data = load(data_path)
+		if data: SettlementManager.load_settlement(data)
+	else:
+		Loggie.msg("RaidMission: Test settlement data missing at %s" % data_path).domain(LogDomains.RAID).warn()
 
 func _on_settlement_ready_for_mission(_d):
 	if not is_instance_valid(objective_manager.rts_controller):
 		initialize_mission()
 
 func _validate_nodes() -> bool:
-	if not rts_controller or not objective_manager or not grid_manager:
-		Loggie.msg("Missing nodes in RaidMission").domain("RAID").error()
+	if not rts_controller:
+		print("[DIAGNOSTIC] Missing RTSController node.")
+		return false
+	if not objective_manager:
+		print("[DIAGNOSTIC] Missing RaidObjectiveManager node.")
+		return false
+	if not grid_manager:
+		print("[DIAGNOSTIC] Missing GridManager node.")
 		return false
 	return true
 
 func _spawn_test_units() -> void:
-	pass # Keep placeholder if needed
+	# Fallback only used if everything else fails
+	print("[DIAGNOSTIC] Spawning Dummy Units (Fallback)")
+	
+	# Create a dummy unit on the fly if needed, or just load raider
+	var unit_scene = load("res://scenes/units/PlayerVikingRaider.tscn")
+	if not unit_scene:
+		print("[DIAGNOSTIC] Even fallback scene is missing!")
+		return
+		
+	for i in range(5):
+		var u = unit_scene.instantiate()
+		u.global_position = player_spawn_pos.global_position + Vector2(i*30, 0)
+		add_child(u)

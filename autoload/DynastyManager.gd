@@ -12,6 +12,13 @@ var loaded_legacy_upgrades: Array[LegacyUpgradeData] = []
 var current_raid_difficulty: int = 1 
 var pending_raid_result: Dictionary = {} 
 
+# --- NEW: RAID STAGING ---
+var outbound_raid_force: Array[WarbandData] = []
+# 0 = None, 1 = Standard (0 cost), 2 = Well-Fed (25 Food/Unit)
+var raid_provisions_level: int = 1 
+var raid_health_modifier: float = 1.0 # 1.0 = Full Health, 0.8 = 80% Health
+# -------------------------
+
 const PLAYER_JARL_PATH = "res://data/characters/PlayerJarl.tres"
 
 func _ready() -> void:
@@ -21,6 +28,12 @@ func _ready() -> void:
 
 func _load_legacy_upgrades_from_disk() -> void:
 	loaded_legacy_upgrades.clear()
+	
+	# LOGGIE: Directory Check
+	if not DirAccess.dir_exists_absolute("res://data/legacy/"):
+		Loggie.msg("DynastyManager: 'res://data/legacy/' directory missing. Cannot load upgrades.").domain(LogDomains.DYNASTY).error()
+		return
+
 	var dir = DirAccess.open("res://data/legacy/")
 	if dir:
 		dir.list_dir_begin()
@@ -52,10 +65,7 @@ func _load_player_jarl() -> void:
 	jarl_stats_updated.emit(current_jarl)
 
 func reset_dynasty(total_wipe: bool = true) -> void:
-	"""Resets the dynasty state for a new campaign.
-	If total_wipe is true, clears renown, upgrades, conquered regions, etc.
-	"""
-	# Reload base Jarl template from disk
+	"""Resets the dynasty state for a new campaign."""
 	if ResourceLoader.exists(PLAYER_JARL_PATH):
 		current_jarl = load(PLAYER_JARL_PATH) as JarlData
 	else:
@@ -72,26 +82,111 @@ func reset_dynasty(total_wipe: bool = true) -> void:
 		current_jarl.legitimacy = 0
 		current_jarl.succession_debuff_years_remaining = 0
 		current_jarl.current_authority = current_jarl.max_authority
+		current_jarl.offensive_wins = 0
 
 	# Reset runtime-only state
 	current_raid_target = null
 	is_defensive_raid = false
 	current_raid_difficulty = 1
 	pending_raid_result.clear()
+	reset_raid_state()
 
-	# Persist the wiped Jarl
 	_save_jarl_data()
-	
-	# Reload legacy upgrades from clean Jarl state
 	_load_legacy_upgrades_from_disk()
 	
 	jarl_stats_updated.emit(current_jarl)
-	Loggie.msg("DynastyManager: FULL CAMPAIGN WIPE applied. Dynasty reset to defaults.").domain("DYNASTY").warn()
+	Loggie.msg("DynastyManager: FULL CAMPAIGN WIPE applied.").domain("DYNASTY").warn()
 
 func get_current_jarl() -> JarlData:
 	if not current_jarl:
 		_load_player_jarl()
 	return current_jarl
+
+# --- RAID LOGISTICS (Phase 5) ---
+
+func reset_raid_state() -> void:
+	outbound_raid_force.clear()
+	raid_provisions_level = 1
+	raid_health_modifier = 1.0
+
+func prepare_raid_force(warbands: Array[WarbandData], provisions: int) -> void:
+	# LOGGIE: Empty Force Check
+	if warbands.is_empty():
+		Loggie.msg("DynastyManager: Warning - Raid force prepared with 0 units.").domain(LogDomains.DYNASTY).warn()
+		
+	outbound_raid_force = warbands.duplicate()
+	raid_provisions_level = provisions
+	Loggie.msg("Raid Force Prepared: %d Warbands, Provision Level %d" % [outbound_raid_force.size(), provisions]).domain("DYNASTY").info()
+
+func calculate_journey_attrition(target_distance: float) -> Dictionary:
+	"""
+	Calculates the outcome of the sea journey.
+	Returns a dictionary with 'event_title', 'event_desc', and 'damage_modifier'.
+	"""
+	# LOGGIE: Critical State Check
+	if not current_jarl:
+		Loggie.msg("DynastyManager: Critical - calculate_journey_attrition called with no Jarl!").domain(LogDomains.DYNASTY).error()
+		return {}
+	
+	# LOGGIE: Logic Error Check
+	if target_distance < 0:
+		Loggie.msg("DynastyManager: Invalid target distance (%.2f). Clamping to 0." % target_distance).domain(LogDomains.DYNASTY).warn()
+		target_distance = 0.0
+	
+	var safe_range = current_jarl.get_safe_range()
+	var report = {
+		"title": "Uneventful Journey",
+		"description": "The seas were calm. The fleet arrived intact.",
+		"modifier": 1.0
+	}
+	
+	# 1. Calculate Risk
+	var base_risk = 0.0
+	if target_distance > safe_range:
+		# e.g. (800 - 600) / 100 * 0.10 = 0.20 (20% risk)
+		base_risk = ((target_distance - safe_range) / 100.0) * current_jarl.attrition_per_100px
+	
+	# 2. Apply Mitigation (Provisions)
+	if raid_provisions_level == 2: # Well-Fed
+		base_risk -= 0.15 # Reduces risk by 15% flat
+		
+	base_risk = clampf(base_risk, 0.05, 0.90) # Always 5% chance of something
+	
+	Loggie.msg("Journey Calc: Dist %.0f / Safe %.0f. Risk: %.2f" % [target_distance, safe_range, base_risk]).domain("DYNASTY").info()
+	
+	# 3. Roll the Dice
+	var roll = randf()
+	
+	if roll < base_risk:
+		# FAILURE (Attrition Event)
+		report["title"] = "Rough Seas"
+		var damage = 0.10 # Base 10% damage
+		
+		# Worsen damage based on how badly we failed
+		if roll < (base_risk * 0.5):
+			damage = 0.25 # 25% damage
+			report["description"] = "A terrible storm scattered the fleet! Supplies were lost and men are exhausted."
+		else:
+			report["description"] = "High waves and poor winds delayed the crossing. The men are seasick and tired."
+			
+		if raid_provisions_level == 2:
+			damage *= 0.5 # Well-fed troops resist attrition better
+			report["description"] += "\n(Well-Fed: Damage Reduced)"
+			
+		report["modifier"] = 1.0 - damage
+		raid_health_modifier = report["modifier"]
+		
+	else:
+		# SUCCESS (Bonus?)
+		if raid_provisions_level == 2:
+			report["title"] = "High Morale"
+			report["description"] = "Excellent rations kept spirits high. The warriors are eager for battle!"
+			report["modifier"] = 1.1 # 10% HP Buff!
+			raid_health_modifier = 1.1
+		else:
+			raid_health_modifier = 1.0
+			
+	return report
 
 # --- AUTHORITY & RENOWN ---
 
@@ -232,6 +327,9 @@ func end_year() -> void:
 	
 	current_jarl.reset_authority()
 	_process_heir_simulation()
+	
+	# Reset raid staging for new year
+	reset_raid_state()
 	
 	_save_jarl_data()
 	jarl_stats_updated.emit(current_jarl)
