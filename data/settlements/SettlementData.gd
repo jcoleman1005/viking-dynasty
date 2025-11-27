@@ -20,6 +20,7 @@ class_name SettlementData
 # ------------------------------
 
 @export var has_stability_debuff: bool = false
+@export var unrest: int = 0 # 0-100 scale. 100 = Rebellion.
 
 # --- Fleet Logic ---
 func get_fleet_capacity() -> int:

@@ -10,12 +10,7 @@ var _current_payout: Dictionary = {}
 
 func _ready() -> void:
 	collect_button.pressed.connect(_on_collect_pressed)
-	
-	# --- MODIFICATION ---
-	# Update the button text as requested
 	collect_button.text = "Collect and return to settlement"
-	# --- END MODIFICATION ---
-	
 	hide()
 
 func display_payout(payout: Dictionary, title: String = "Welcome home!") -> void:
@@ -23,32 +18,39 @@ func display_payout(payout: Dictionary, title: String = "Welcome home!") -> void
 	
 	var text: String = "[b]%s[/b]\n\n" % title
 	
-	# 1. Add Warnings first (High Priority)
-	if payout.has("_messages"):
-		var messages = payout["_messages"]
+	# 1. Warnings / Events
+	if payout.has("_messages") and not payout["_messages"].is_empty():
 		text += "[b]Incidents:[/b]\n"
-		for msg in messages:
+		for msg in payout["_messages"]:
 			text += "%s\n" % msg
 		text += "\n"
 	
-	# 2. Add Resources
-	text += "[b]Resources gathered:[/b]\n"
+	# 2. Population News
+	if payout.has("population_growth"):
+		text += "[b]Demographics:[/b]\n"
+		text += "%s\n\n" % payout["population_growth"]
+	
+	# 3. Resources
+	text += "[b]Treasury Changes:[/b]\n"
 	var found_resources = false
 	
 	for key in payout:
-		if key.begins_with("_"): continue
-		text += "- %s: %d\n" % [key.capitalize(), payout[key]]
-		found_resources = true
+		# Skip special keys
+		if key.begins_with("_") or key == "population_growth": continue
 		
+		var val = payout[key]
+		var color_tag = ""
+		if val > 0: color_tag = "[color=green]+"
+		elif val < 0: color_tag = "[color=red]"
+		
+		if val != 0:
+			text += "- %s: %s%d[/color]\n" % [key.capitalize(), color_tag, val]
+			found_resources = true
+			
 	if not found_resources:
-		text += "(None)\n"
+		text += "(No changes)\n"
 	
-	# Assign to label
-	# IMPORTANT: If your PayoutLabel is a standard Label, you need to
-	# check 'Use Custom Formatting' or similar if available, or swap to RichTextLabel.
-	# Assuming you swap it or use a RichTextLabel:
 	payout_label.text = text
-	
 	show()
 
 func _on_collect_pressed() -> void:

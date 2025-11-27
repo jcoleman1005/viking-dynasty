@@ -194,12 +194,12 @@ func _start_end_year_sequence() -> void:
 		_finalize_end_year({})
 		return
 		
-	# 1. Calculate Income
+	# 1. Calculate Income (Now includes Pop Growth & Unrest)
 	var payout = SettlementManager.calculate_payout()
 	
 	# 2. Show Popup
 	end_of_year_popup.display_payout(payout, "Year End Report")
-
+	
 func _on_payout_collected(payout: Dictionary) -> void:
 	# 3. Deposit Resources
 	SettlementManager.deposit_resources(payout)
