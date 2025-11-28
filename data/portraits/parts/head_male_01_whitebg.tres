@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="PortraitPartData" load_steps=3 format=3 uid="uid://cowyr8hs6bo61"]
+
+[ext_resource type="Script" uid="uid://bjrx3kv6ra0nk" path="res://data/portraits/PortraitPartData.gd" id="1_6rh5f"]
+[ext_resource type="Texture2D" uid="uid://c0xsagcw6etip" path="res://art/portraits/head_male_01_whitebg.png" id="2_c4xjn"]
+
+[resource]
+script = ExtResource("1_6rh5f")
+texture = ExtResource("2_c4xjn")
+color_category = "skin"

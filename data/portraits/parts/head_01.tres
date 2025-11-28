@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="PortraitPartData" load_steps=3 format=3 uid="uid://gnqx8a5kvuvp"]
+
+[ext_resource type="Script" uid="uid://bjrx3kv6ra0nk" path="res://data/portraits/PortraitPartData.gd" id="1_prxur"]
+[ext_resource type="Texture2D" uid="uid://cukqh3t2wkmua" path="res://ui/assets/res_peasant.png" id="2_ir5gk"]
+
+[resource]
+script = ExtResource("1_prxur")
+texture = ExtResource("2_ir5gk")
+color_category = "skin"
+metadata/_custom_type_script = "uid://bjrx3kv6ra0nk"

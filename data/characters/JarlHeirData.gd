@@ -16,6 +16,7 @@ enum HeirStatus {
 @export var age: int = 16
 @export var gender: String = "Male" # "Male", "Female"
 @export var portrait: Texture2D
+@export var portrait_config: Dictionary = {}
 @export var is_designated_heir: bool = false
 
 @export_group("Status")

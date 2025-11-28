@@ -4,6 +4,8 @@ extends PanelContainer
 
 # References
 @onready var ancestors_container: HBoxContainer = $Margin/MainLayout/AncestorsScroll/AncestorsHBox
+@onready var current_jarl_panel: HBoxContainer = $Margin/MainLayout/CurrentJarlPanel
+@onready var current_jarl_portrait: TextureRect = $Margin/MainLayout/CurrentJarlPanel/Portrait
 @onready var current_jarl_name: Label = $Margin/MainLayout/CurrentJarlPanel/Stats/NameLabel
 @onready var current_jarl_stats: Label = $Margin/MainLayout/CurrentJarlPanel/Stats/StatsLabel
 @onready var heirs_container: HBoxContainer = $Margin/MainLayout/HeirsScroll/HeirsHBox
@@ -12,6 +14,7 @@ extends PanelContainer
 
 # Resources
 const HEIR_CARD_SCENE = preload("res://ui/components/HeirCard.tscn")
+const PORTRAIT_GEN_SCENE = preload("res://scenes/ui/PortraitGenerator.tscn")
 const PLACEHOLDER_ICON = preload("res://textures/placeholders/unit_placeholder.png")
 
 var selected_heir: JarlHeirData
@@ -19,10 +22,7 @@ var selected_heir: JarlHeirData
 func _ready() -> void:
 	close_button.pressed.connect(_on_close_button_pressed)
 	DynastyManager.jarl_stats_updated.connect(_on_jarl_stats_updated)
-	
-	# --- FIX: Use Signal instead of overriding show() ---
 	visibility_changed.connect(_on_visibility_changed)
-	# ---------------------------------------------------
 	
 	# Setup Context Menu
 	context_menu.add_item("Designate Heir (Cost: 1 Authority)", 0)
@@ -36,25 +36,46 @@ func _ready() -> void:
 	
 	hide()
 
-# --- NEW: Handler for visibility changes ---
 func _on_visibility_changed() -> void:
 	if visible and DynastyManager.current_jarl:
 		_on_jarl_stats_updated(DynastyManager.get_current_jarl())
-		Loggie.msg("Dynasty UI: Auto-refreshed data on visible.").domain("UI").info()
-# -------------------------------------------
 
 func _on_jarl_stats_updated(jarl: JarlData) -> void:
 	if not jarl: return
 	
-	# 1. Update Current Jarl
+	# 1. Update Current Jarl Info
 	current_jarl_name.text = jarl.display_name
 	current_jarl_stats.text = "Age: %d | Authority: %d/%d | Renown: %d" % [jarl.age, jarl.current_authority, jarl.max_authority, jarl.renown]
 
-	# 2. Update Ancestors
+	# 2. Update Jarl Portrait
+	_update_jarl_portrait(jarl)
+
+	# 3. Update Ancestors
 	_populate_ancestors(jarl.ancestors)
 
-	# 3. Update Heirs
+	# 4. Update Heirs
 	_populate_heirs(jarl.heirs)
+
+func _update_jarl_portrait(jarl: JarlData) -> void:
+	# Clear old generators attached to the texture rect parent or the rect itself
+	# Note: In the scene structure, Portrait is a child of CurrentJarlPanel. 
+	# To overlay, we add the generator as a sibling or child of the TextureRect if sizing allows.
+	# Best approach: Add as child of TextureRect (which is a Control)
+	
+	for child in current_jarl_portrait.get_children():
+		if child is PortraitGenerator:
+			child.queue_free()
+			
+	if not jarl.portrait_config.is_empty():
+		current_jarl_portrait.texture = null
+		var generator = PORTRAIT_GEN_SCENE.instantiate()
+		current_jarl_portrait.add_child(generator)
+		if generator.has_method("build_portrait"):
+			generator.build_portrait(jarl.portrait_config)
+	elif jarl.portrait:
+		current_jarl_portrait.texture = jarl.portrait
+	else:
+		current_jarl_portrait.texture = PLACEHOLDER_ICON
 
 func _populate_ancestors(ancestors_data: Array) -> void:
 	for child in ancestors_container.get_children():
@@ -65,8 +86,6 @@ func _populate_ancestors(ancestors_data: Array) -> void:
 		texture.custom_minimum_size = Vector2(64, 64)
 		texture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		texture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		
-		# Enable Mouse Interaction for Tooltips
 		texture.mouse_filter = Control.MOUSE_FILTER_STOP 
 		
 		if data.has("portrait") and data["portrait"] != null:
@@ -96,14 +115,13 @@ func _populate_heirs(heirs_data: Array[JarlHeirData]) -> void:
 func _on_heir_card_clicked(heir: JarlHeirData, mouse_pos: Vector2) -> void:
 	selected_heir = heir
 	
-	# Disable context items based on state
 	context_menu.set_item_disabled(0, false) # Designate
 	context_menu.set_item_disabled(1, false) # Expedition
 	context_menu.set_item_disabled(2, false) # Marriage
 	
 	if heir.status != JarlHeirData.HeirStatus.Available:
-		context_menu.set_item_disabled(1, true) # Cannot send on expedition
-		context_menu.set_item_disabled(2, true) # Cannot marry off
+		context_menu.set_item_disabled(1, true)
+		context_menu.set_item_disabled(2, true)
 	
 	if heir.is_designated_heir:
 		context_menu.set_item_text(0, "Designated Heir (Active)")
@@ -118,23 +136,19 @@ func _on_context_menu_item_pressed(id: int) -> void:
 	if not selected_heir: return
 	
 	match id:
-		0: # Designate Heir
-			DynastyManager.designate_heir(selected_heir)
-		
-		1: # Fund Expedition
+		0: DynastyManager.designate_heir(selected_heir)
+		1: 
 			var cost = {"gold": 500}
 			if SettlementManager.attempt_purchase(cost):
 				DynastyManager.start_heir_expedition(selected_heir)
 			else:
 				Loggie.msg("Not enough gold for expedition.").domain("UI").info()
-		
-		2: # Arrange Marriage
+		2: 
 			if DynastyManager.get_current_jarl():
 				selected_heir.status = JarlHeirData.HeirStatus.MarriedOff
 				DynastyManager.award_renown(150) 
 				Loggie.msg("Heir married off for Renown.").domain("UI").info()
-		3: # Assign Captain
-			_open_warband_assignment_dialog()
+		3: _open_warband_assignment_dialog()
 			
 func _on_close_button_pressed() -> void:
 	hide()
@@ -145,10 +159,7 @@ func _input(event: InputEvent) -> void:
 			_on_close_button_pressed()
 			get_viewport().set_input_as_handled()
 
-
 func _open_warband_assignment_dialog() -> void:
-	# Simple logic: Assign to the first available warband for now
-	# (Ideally, this would open a submenu list of warbands)
 	var settlement = SettlementManager.current_settlement
 	if not settlement or settlement.warbands.is_empty():
 		Loggie.msg("No Warbands available to lead.").domain("UI").warn()
@@ -158,7 +169,6 @@ func _open_warband_assignment_dialog() -> void:
 		if wb.assigned_heir_name == "":
 			wb.assigned_heir_name = selected_heir.display_name
 			Loggie.msg("Heir %s assigned to lead %s" % [selected_heir.display_name, wb.custom_name]).domain("UI").info()
-			# Add history log
 			wb.add_history("Year %d: Led by %s" % [DynastyManager.current_jarl.age, selected_heir.display_name])
 			return
 			

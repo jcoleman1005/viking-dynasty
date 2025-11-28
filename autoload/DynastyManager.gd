@@ -12,26 +12,118 @@ var loaded_legacy_upgrades: Array[LegacyUpgradeData] = []
 var current_raid_difficulty: int = 1 
 var pending_raid_result: Dictionary = {} 
 
-# --- NEW: RAID STAGING ---
+# --- RAID STAGING ---
 var outbound_raid_force: Array[WarbandData] = []
-# 0 = None, 1 = Standard (0 cost), 2 = Well-Fed (25 Food/Unit)
 var raid_provisions_level: int = 1 
-var raid_health_modifier: float = 1.0 # 1.0 = Full Health, 0.8 = 80% Health
-# -------------------------
+var raid_health_modifier: float = 1.0
 
 const PLAYER_JARL_PATH = "res://data/characters/PlayerJarl.tres"
+const PORTRAIT_PARTS_DIR = "res://data/portraits/parts/"
+
+# --- PORTRAIT DATABASE (Dynamic) ---
+# Format: { "HEAD": ["head_01", "head_02"], "BODY": ["body_01"] }
+var portrait_db: Dictionary = {}
+
+# Colors are still hardcoded for now (Phase 4: Move these to a Palette Resource)
+const SKIN_TONES = [
+	Color("#f5deb3"), # Wheat
+	Color("#e0ac69"), # Tan
+	Color("#8d5524")  # Dark
+]
+const HAIR_COLORS = [
+	Color("#e6ea3b"), # Blonde
+	Color("#b55239"), # Red
+	Color("#2a2a2a")  # Black
+]
 
 func _ready() -> void:
+	Loggie.set_domain_enabled(LogDomains.DYNASTY, true)
+	
+	# 1. Build the Database
+	_scan_portrait_database()
+	
+	# 2. Load Data
 	_load_player_jarl()
 	_load_legacy_upgrades_from_disk()
+	
 	EventBus.succession_choices_made.connect(_on_succession_choices_made)
+
+# --- DYNAMIC DISCOVERY ---
+func _scan_portrait_database() -> void:
+	portrait_db.clear()
+	
+	if not DirAccess.dir_exists_absolute(PORTRAIT_PARTS_DIR):
+		Loggie.msg("DynastyManager: Portrait parts directory missing!").domain(LogDomains.DYNASTY).error()
+		return
+
+	var dir = DirAccess.open(PORTRAIT_PARTS_DIR)
+	if dir:
+		dir.list_dir_begin()
+		var file_name = dir.get_next()
+		
+		while file_name != "":
+			# We only care about .tres files (and ignore remapped files in export)
+			if file_name.ends_with(".tres"):
+				_register_part(file_name)
+			
+			file_name = dir.get_next()
+			
+	Loggie.msg("DynastyManager: Portrait DB built. Categories: %s" % str(portrait_db.keys())).domain(LogDomains.DYNASTY).info()
+
+func _register_part(file_name: String) -> void:
+	var path = PORTRAIT_PARTS_DIR + file_name
+	var resource = load(path) as PortraitPartData
+	
+	if not resource: return
+	
+	# Group by Part Type (HEAD, BODY, BEARD, etc.)
+	var category = resource.part_type
+	if not portrait_db.has(category):
+		portrait_db[category] = []
+		
+	# Store the ID (filename without extension)
+	var id = file_name.get_basename()
+	portrait_db[category].append(id)
+
+# --- PORTRAIT GENERATION LOGIC ---
+func _generate_portrait_config(parent_jarl: JarlData = null) -> Dictionary:
+	var config = {}
+	
+	# 1. Assign Parts from Database
+	# We safely pick random parts. If a category is missing, we leave it blank.
+	if portrait_db.has("HEAD") and not portrait_db["HEAD"].is_empty():
+		config["head_id"] = portrait_db["HEAD"].pick_random()
+	else:
+		config["head_id"] = "" # Fallback logic in Generator handles empty strings gracefully
+		
+	if portrait_db.has("BODY") and not portrait_db["BODY"].is_empty():
+		config["body_id"] = portrait_db["BODY"].pick_random()
+	else:
+		config["body_id"] = ""
+	
+	# 2. Genetics: Skin Tone
+	# 70% chance to inherit from parent, 30% mutation
+	if parent_jarl and not parent_jarl.portrait_config.is_empty() and randf() < 0.7:
+		config["skin_color"] = parent_jarl.portrait_config.get("skin_color", SKIN_TONES.pick_random())
+	else:
+		config["skin_color"] = SKIN_TONES.pick_random()
+		
+	# 3. Genetics: Hair Color
+	if parent_jarl and not parent_jarl.portrait_config.is_empty() and randf() < 0.6:
+		config["hair_color"] = parent_jarl.portrait_config.get("hair_color", HAIR_COLORS.pick_random())
+	else:
+		config["hair_color"] = HAIR_COLORS.pick_random()
+		
+	# 4. Primary Clothing Color (Random for now)
+	config["primary_color"] = Color(randf(), randf(), randf())
+	
+	return config
+
+# --- CORE SYSTEMS ---
 
 func _load_legacy_upgrades_from_disk() -> void:
 	loaded_legacy_upgrades.clear()
-	
-	# LOGGIE: Directory Check
 	if not DirAccess.dir_exists_absolute("res://data/legacy/"):
-		Loggie.msg("DynastyManager: 'res://data/legacy/' directory missing. Cannot load upgrades.").domain(LogDomains.DYNASTY).error()
 		return
 
 	var dir = DirAccess.open("res://data/legacy/")
@@ -48,29 +140,26 @@ func _load_legacy_upgrades_from_disk() -> void:
 						unique_upgrade.current_progress = unique_upgrade.required_progress
 					loaded_legacy_upgrades.append(unique_upgrade)
 			file_name = dir.get_next()
-	
-	Loggie.msg("Loaded %d legacy upgrades." % loaded_legacy_upgrades.size()).domain("DYNASTY").info()
 
 func _load_player_jarl() -> void:
 	if ResourceLoader.exists(PLAYER_JARL_PATH):
 		current_jarl = load(PLAYER_JARL_PATH)
-		Loggie.msg("PlayerJarl.tres loaded successfully.").domain("DYNASTY").info()
 	else:
-		Loggie.msg("Failed to load Jarl data from %s. File not found!" % PLAYER_JARL_PATH).domain("DYNASTY").error()
 		current_jarl = JarlData.new()
 		current_jarl.display_name = "Fallback Jarl"
 		current_jarl.current_authority = 3
 		current_jarl.max_authority = 3
+		current_jarl.portrait_config = _generate_portrait_config()
 		
 	jarl_stats_updated.emit(current_jarl)
 
 func reset_dynasty(total_wipe: bool = true) -> void:
-	"""Resets the dynasty state for a new campaign."""
 	if ResourceLoader.exists(PLAYER_JARL_PATH):
 		current_jarl = load(PLAYER_JARL_PATH) as JarlData
 	else:
 		current_jarl = JarlData.new()
 		current_jarl.display_name = "Fallback Jarl"
+		current_jarl.portrait_config = _generate_portrait_config()
 
 	if total_wipe and current_jarl:
 		current_jarl.renown = 0
@@ -84,7 +173,6 @@ func reset_dynasty(total_wipe: bool = true) -> void:
 		current_jarl.current_authority = current_jarl.max_authority
 		current_jarl.offensive_wins = 0
 
-	# Reset runtime-only state
 	current_raid_target = null
 	is_defensive_raid = false
 	current_raid_difficulty = 1
@@ -93,16 +181,14 @@ func reset_dynasty(total_wipe: bool = true) -> void:
 
 	_save_jarl_data()
 	_load_legacy_upgrades_from_disk()
-	
 	jarl_stats_updated.emit(current_jarl)
-	Loggie.msg("DynastyManager: FULL CAMPAIGN WIPE applied.").domain("DYNASTY").warn()
 
 func get_current_jarl() -> JarlData:
 	if not current_jarl:
 		_load_player_jarl()
 	return current_jarl
 
-# --- RAID LOGISTICS (Phase 5) ---
+# --- RAID LOGISTICS ---
 
 func reset_raid_state() -> void:
 	outbound_raid_force.clear()
@@ -110,28 +196,12 @@ func reset_raid_state() -> void:
 	raid_health_modifier = 1.0
 
 func prepare_raid_force(warbands: Array[WarbandData], provisions: int) -> void:
-	# LOGGIE: Empty Force Check
-	if warbands.is_empty():
-		Loggie.msg("DynastyManager: Warning - Raid force prepared with 0 units.").domain(LogDomains.DYNASTY).warn()
-		
 	outbound_raid_force = warbands.duplicate()
 	raid_provisions_level = provisions
-	Loggie.msg("Raid Force Prepared: %d Warbands, Provision Level %d" % [outbound_raid_force.size(), provisions]).domain("DYNASTY").info()
 
 func calculate_journey_attrition(target_distance: float) -> Dictionary:
-	"""
-	Calculates the outcome of the sea journey.
-	Returns a dictionary with 'event_title', 'event_desc', and 'damage_modifier'.
-	"""
-	# LOGGIE: Critical State Check
-	if not current_jarl:
-		Loggie.msg("DynastyManager: Critical - calculate_journey_attrition called with no Jarl!").domain(LogDomains.DYNASTY).error()
-		return {}
-	
-	# LOGGIE: Logic Error Check
-	if target_distance < 0:
-		Loggie.msg("DynastyManager: Invalid target distance (%.2f). Clamping to 0." % target_distance).domain(LogDomains.DYNASTY).warn()
-		target_distance = 0.0
+	if not current_jarl: return {}
+	if target_distance < 0: target_distance = 0.0
 	
 	var safe_range = current_jarl.get_safe_range()
 	var report = {
@@ -140,104 +210,73 @@ func calculate_journey_attrition(target_distance: float) -> Dictionary:
 		"modifier": 1.0
 	}
 	
-	# 1. Calculate Risk
 	var base_risk = 0.02
 	if target_distance > safe_range:
-		# e.g. (800 - 600) / 100 * 0.10 = 0.20 (20% risk)
 		base_risk = ((target_distance - safe_range) / 100.0) * current_jarl.attrition_per_100px
 	
-	# 2. Apply Mitigation (Provisions)
-	if raid_provisions_level == 2: # Well-Fed
-		base_risk -= 0.15 # Reduces risk by 15% flat
-		
-	base_risk = clampf(base_risk, 0.05, 0.90) # Always 5% chance of something
+	if raid_provisions_level == 2: base_risk -= 0.15
+	base_risk = clampf(base_risk, 0.05, 0.90)
 	
-	# 3. Roll the Dice
 	var roll = randf()
-	
-	# --- DIAGNOSTIC PRINT ---
-	var status = "SAFE"
-	if roll < base_risk: status = "RISK EVENT!"
-	print("[DIAGNOSTIC] Journey Risk: Roll %.2f vs Chance %.2f -> %s" % [roll, base_risk, status])
-	# ------------------------
-	
 	if roll < base_risk:
-		# FAILURE (Attrition Event)
 		report["title"] = "Rough Seas"
-		var damage = 0.10 # Base 10% damage
-		
-		# Worsen damage based on how badly we failed
+		var damage = 0.10
 		if roll < (base_risk * 0.5):
-			damage = 0.25 # 25% damage
-			report["description"] = "A terrible storm scattered the fleet! Supplies were lost and men are exhausted."
+			damage = 0.25
+			report["description"] = "A terrible storm scattered the fleet!\nSupplies were lost and men are exhausted."
 		else:
 			report["description"] = "High waves and poor winds delayed the crossing. The men are seasick and tired."
 			
 		if raid_provisions_level == 2:
-			damage *= 0.5 # Well-fed troops resist attrition better
+			damage *= 0.5
 			report["description"] += "\n(Well-Fed: Damage Reduced)"
 			
 		report["modifier"] = 1.0 - damage
 		raid_health_modifier = report["modifier"]
-		
 	else:
-		# SUCCESS (Bonus?)
 		if raid_provisions_level == 2:
 			report["title"] = "High Morale"
 			report["description"] = "Excellent rations kept spirits high. The warriors are eager for battle!"
-			report["modifier"] = 1.1 # 10% HP Buff!
+			report["modifier"] = 1.1
 			raid_health_modifier = 1.1
-		else:
-			raid_health_modifier = 1.0
 			
 	return report
-# --- AUTHORITY & RENOWN ---
 
-func can_spend_authority(cost: int) -> bool:
-	if not current_jarl: return false
-	return current_jarl.can_take_action(cost)
-
-func spend_authority(cost: int) -> bool:
-	if not current_jarl: return false
-		
-	if current_jarl.spend_authority(cost):
-		_save_jarl_data()
-		jarl_stats_updated.emit(current_jarl)
-		return true
-	
-	Loggie.msg("Failed to spend %d authority. %d remaining." % [cost, current_jarl.current_authority]).domain("DYNASTY").warn()
-	return false
-
-func can_spend_renown(cost: int) -> bool:
-	if not current_jarl: return false
-	return current_jarl.renown >= cost
+# --- RENOWN & UPGRADES ---
 
 func spend_renown(cost: int) -> bool:
-	if not can_spend_renown(cost):
-		Loggie.msg("Failed to spend %d renown. %d available." % [cost, current_jarl.renown]).domain("DYNASTY").warn()
-		return false
-	
+	if not can_spend_renown(cost): return false
 	current_jarl.renown -= cost
 	_save_jarl_data()
 	jarl_stats_updated.emit(current_jarl)
 	return true
 
+func can_spend_renown(amount: int) -> bool:
+	if not current_jarl: return false
+	return current_jarl.renown >= amount
+
 func award_renown(amount: int) -> void:
 	if not current_jarl: return
-	
 	current_jarl.award_renown(amount)
 	_save_jarl_data()
 	jarl_stats_updated.emit(current_jarl)
-	Loggie.msg("Awarded %d renown. Total: %d" % [amount, current_jarl.renown]).domain("DYNASTY").info()
 
-# --- LEGACY & UNIFIER ---
+func can_spend_authority(amount: int) -> bool:
+	if not current_jarl: return false
+	return current_jarl.current_authority >= amount
+
+func spend_authority(amount: int) -> bool:
+	if not can_spend_authority(amount): return false
+	current_jarl.current_authority -= amount
+	_save_jarl_data()
+	jarl_stats_updated.emit(current_jarl)
+	return true
 
 func purchase_legacy_upgrade(upgrade_key: String) -> void:
 	if not current_jarl: return
 	if not upgrade_key in current_jarl.purchased_legacy_upgrades:
 		current_jarl.purchased_legacy_upgrades.append(upgrade_key)
 		_save_jarl_data()
-		Loggie.msg("Legacy upgrade '%s' purchased." % upgrade_key).domain("DYNASTY").info()
 
 func has_purchased_upgrade(upgrade_key: String) -> bool:
 	if not current_jarl: return false
@@ -248,13 +287,12 @@ func add_conquered_region(region_path: String) -> void:
 	if not region_path in current_jarl.conquered_regions:
 		current_jarl.conquered_regions.append(region_path)
 		_save_jarl_data()
-		Loggie.msg("Region '%s' conquered." % region_path).domain("DYNASTY").info()
 
 func has_conquered_region(region_path: String) -> bool:
 	if not current_jarl: return false
 	return region_path in current_jarl.conquered_regions
 
-# --- PROGENITOR PILLAR (HEIRS) ---
+# --- HEIR MANAGEMENT ---
 
 func get_available_heir_count() -> int:
 	if not current_jarl: return 0
@@ -263,38 +301,29 @@ func get_available_heir_count() -> int:
 func designate_heir(target_heir: JarlHeirData) -> void:
 	if not current_jarl or not target_heir: return
 	
-	var cost = 1
-	if not can_spend_authority(cost):
+	if not can_spend_authority(1):
 		Loggie.msg("Not enough Authority to designate heir.").domain("DYNASTY").warn()
 		return
 		
-	spend_authority(cost)
+	spend_authority(1)
 	for heir in current_jarl.heirs:
 		heir.is_designated_heir = false
 	target_heir.is_designated_heir = true
 	
 	_save_jarl_data()
 	jarl_stats_updated.emit(current_jarl)
-	Loggie.msg("%s is now the designated heir." % target_heir.display_name).domain("DYNASTY").info()
 
 func start_heir_expedition(heir: JarlHeirData, expedition_duration: int = 3) -> void:
-	if not current_jarl or not heir in current_jarl.heirs:
-		Loggie.msg("Tried to send an invalid heir on expedition.").domain("DYNASTY").error()
-		return
-	
+	if not current_jarl or not heir in current_jarl.heirs: return
 	heir.status = JarlHeirData.HeirStatus.OnExpedition
 	heir.expedition_years_remaining = expedition_duration
 	_save_jarl_data()
 	jarl_stats_updated.emit(current_jarl)
-	Loggie.msg("Heir %s sent on expedition for %d years." % [heir.display_name, expedition_duration]).domain("DYNASTY").info()
 
 func marry_heir_for_alliance(region_path: String) -> bool:
 	if not current_jarl: return false
-		
 	var heir_to_marry = current_jarl.get_first_available_heir()
-	if not heir_to_marry:
-		Loggie.msg("Marriage failed. No available heir.").domain("DYNASTY").warn()
-		return false
+	if not heir_to_marry: return false
 	
 	heir_to_marry.status = JarlHeirData.HeirStatus.MarriedOff
 	if not region_path in current_jarl.allied_regions:
@@ -303,7 +332,6 @@ func marry_heir_for_alliance(region_path: String) -> bool:
 	current_jarl.legitimacy = min(100, current_jarl.legitimacy + 10)
 	_save_jarl_data()
 	jarl_stats_updated.emit(current_jarl)
-	Loggie.msg("Heir %s married off to form alliance with %s" % [heir_to_marry.display_name, region_path]).domain("DYNASTY").info()
 	return true
 
 func is_allied_region(region_path: String) -> bool:
@@ -313,36 +341,26 @@ func is_allied_region(region_path: String) -> bool:
 func add_trait_to_heir(heir: JarlHeirData, trait_data: JarlTraitData) -> void:
 	if not heir: return
 	heir.traits.append(trait_data)
-	Loggie.msg("Added trait '%s' to heir '%s'." % [trait_data.display_name, heir.display_name]).domain("DYNASTY").info()
 
-# --- END OF YEAR LOGIC LOOP ---
+# --- TIME & EVENTS ---
 
 func end_year() -> void:
-	if not current_jarl:
-		Loggie.msg("Cannot end year, current Jarl is null.").domain("DYNASTY").error()
-		return
-	
+	if not current_jarl: return
 	current_jarl.age_jarl(1)
 	
-	var jarl_died = _check_for_jarl_death()
-	if jarl_died:
+	if _check_for_jarl_death():
 		return
 	
 	current_jarl.reset_authority()
 	_process_heir_simulation()
-	
-	# Reset raid staging for new year
 	reset_raid_state()
 	
 	_save_jarl_data()
 	jarl_stats_updated.emit(current_jarl)
-	
-	Loggie.msg("Year ended. Jarl is now %d." % current_jarl.age).domain("DYNASTY").info()
 	year_ended.emit()
 
 func _process_heir_simulation() -> void:
 	var heirs_to_remove: Array[JarlHeirData] = []
-	
 	for heir in current_jarl.heirs:
 		heir.age += 1
 		if heir.status == JarlHeirData.HeirStatus.OnExpedition:
@@ -350,7 +368,7 @@ func _process_heir_simulation() -> void:
 			if heir.expedition_years_remaining <= 0:
 				_resolve_expedition(heir)
 		
-		if heir.age > 50 and randf() < 0.05: 
+		if heir.age > 50 and randf() < 0.05:
 			Loggie.msg("Heir %s died of natural causes." % heir.display_name).domain("DYNASTY").info()
 			heirs_to_remove.append(heir)
 			
@@ -365,10 +383,8 @@ func _resolve_expedition(heir: JarlHeirData) -> void:
 		heir.status = JarlHeirData.HeirStatus.Available
 		var renown_gain = randi_range(100, 300)
 		award_renown(renown_gain)
-		Loggie.msg("Heir %s returned safely with %d Renown!" % [heir.display_name, renown_gain]).domain("DYNASTY").info()
 	else:
 		heir.status = JarlHeirData.HeirStatus.LostAtSea
-		Loggie.msg("Tragic news! Heir %s was lost at sea." % heir.display_name).domain("DYNASTY").info()
 
 func _try_birth_event() -> void:
 	if current_jarl.heirs.size() >= 6: return
@@ -383,18 +399,17 @@ func _generate_new_baby() -> void:
 	var baby = JarlHeirData.new()
 	baby.age = 0
 	baby.gender = "Male" if randf() > 0.5 else "Female"
+	
 	var male_names = ["Erik", "Olaf", "Knut", "Sven", "Torstein", "Leif", "Ragnar", "Bjorn"]
 	var female_names = ["Astrid", "Freya", "Ingrid", "Sigrid", "Helga", "Ylva", "Lagertha", "Gunnhild"]
-	
-	if baby.gender == "Male":
-		baby.display_name = male_names.pick_random()
-	else:
-		baby.display_name = female_names.pick_random()
+	baby.display_name = male_names.pick_random() if baby.gender == "Male" else female_names.pick_random()
 		
 	if randf() < 0.2:
 		var trait_data = JarlTraitData.new()
 		trait_data.display_name = ["Strong", "Genius", "Giant", "Frail"].pick_random()
 		baby.genetic_trait = trait_data
+	
+	baby.portrait_config = _generate_portrait_config(current_jarl)
 	
 	current_jarl.heirs.append(baby)
 	Loggie.msg("A new child, %s, was born to the Dynasty!" % baby.display_name).domain("DYNASTY").info()
@@ -411,13 +426,9 @@ func _save_jarl_data() -> void:
 	if not current_jarl: return
 	if current_jarl.resource_path.is_empty():
 		current_jarl.resource_path = PLAYER_JARL_PATH
-		
-	var error = ResourceSaver.save(current_jarl, current_jarl.resource_path)
-	if error != OK:
-		Loggie.msg("Failed to save Jarl data to %s. Error: %s" % [current_jarl.resource_path, error]).domain("DYNASTY").error()
+	ResourceSaver.save(current_jarl, current_jarl.resource_path)
 
 func debug_kill_jarl() -> void:
-	Loggie.msg("debug_kill_jarl() called. Forcing succession...").domain("DYNASTY").debug()
 	_trigger_succession()
 
 func _check_for_jarl_death() -> bool:
@@ -476,6 +487,8 @@ func _promote_heir_to_jarl(heir: JarlHeirData, predecessor: JarlData) -> JarlDat
 	new_jarl.ancestors = predecessor.ancestors.duplicate()
 	new_jarl.heirs = predecessor.heirs.duplicate()
 	
+	new_jarl.portrait_config = heir.portrait_config.duplicate()
+	
 	var new_legit = int(predecessor.legitimacy * 0.8)
 	if heir.is_designated_heir: new_legit += 20
 	new_legit = max(new_legit, minimum_inherited_legitimacy)
@@ -501,79 +514,49 @@ func _on_succession_choices_made(renown_choice: String, gold_choice: String) -> 
 			Loggie.msg("Settlement instability debuff applied due to refused gold tax.").domain("DYNASTY").info()
 	
 	EventBus.event_system_finished.emit()
-	
-# --- NEW: Defensive Loss Orchestration ---
+
 func process_defensive_loss() -> Dictionary:
-	"""
-	Orchestrates the consequences of losing a defensive mission.
-	Handles Character death, Renown loss, and calls SettlementManager for resources.
-	Returns a summary Dictionary.
-	"""
 	if not current_jarl: return {}
-	
 	var aftermath_report = {
 		"summary_text": "",
 		"jarl_died": false,
-		"heir_died": null # Name of heir if died
+		"heir_died": null
 	}
 	
-	# 1. Renown Loss (Humiliation)
 	var renown_loss = randi_range(50, 150)
 	current_jarl.renown = max(0, current_jarl.renown - renown_loss)
 	
-	# 2. Call Economy Manager for Material Loss
 	var material_losses = EconomyManager.apply_raid_damages()
 	
-	# 3. Risk of Heir Death (15% chance if heirs exist)
 	if current_jarl.heirs.size() > 0 and randf() < 0.15:
 		var victim_index = randi() % current_jarl.heirs.size()
 		var victim = current_jarl.heirs[victim_index]
 		victim.status = JarlHeirData.HeirStatus.Deceased
 		aftermath_report["heir_died"] = victim.display_name
 		current_jarl.remove_heir(victim)
-		Loggie.msg("Heir %s was killed during the sacking!" % victim.display_name).domain("DYNASTY").warn()
 		
-	# 4. Risk of Jarl Death (10% chance, higher if old)
 	var death_chance = 0.10
 	if current_jarl.age > 60: death_chance += 0.10
 	
 	if randf() < death_chance:
 		aftermath_report["jarl_died"] = true
-		Loggie.msg("The Jarl fell defending the settlement!").domain("DYNASTY").warn()
-		# We trigger succession logic immediately
 		_trigger_succession()
 	
 	_save_jarl_data()
 	jarl_stats_updated.emit(current_jarl)
 	
-	# 5. Build Summary Text
 	var text = "Defeat! The settlement has been sacked.\n\n"
 	text += "[color=salmon]Resources Lost:[/color]\n"
 	text += "- %d Gold\n" % material_losses.get("gold_lost", 0)
-	text += "- %d Wood\n" % material_losses.get("wood_lost", 0)
 	text += "- %d Renown\n" % renown_loss
 	
-	if material_losses.get("buildings_damaged", 0) > 0:
-		text += "- %d Construction sites damaged\n" % material_losses["buildings_damaged"]
-	if material_losses.get("buildings_destroyed", 0) > 0:
-		text += "- %d Blueprints destroyed completely\n" % material_losses["buildings_destroyed"]
-		
-	text += "\n[color=red]Casualties:[/color]\n"
-	if aftermath_report["jarl_died"]:
-		text += "- THE JARL HAS FALLEN!\n"
-	if aftermath_report["heir_died"]:
-		text += "- Heir %s was killed.\n" % aftermath_report["heir_died"]
-	if not aftermath_report["jarl_died"] and not aftermath_report["heir_died"]:
-		text += "The Dynasty survived physically, if not in reputation."
-		
 	aftermath_report["summary_text"] = text
 	return aftermath_report
-	
+
 func find_heir_by_name(h_name: String) -> JarlHeirData:
 	if not current_jarl: return null
 	for heir in current_jarl.heirs:
-		if heir.display_name == h_name:
-			return heir
+		if heir.display_name == h_name: return heir
 	return null
 
 func kill_heir_by_name(h_name: String, reason: String) -> void:

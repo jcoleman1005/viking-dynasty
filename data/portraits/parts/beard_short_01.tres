@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="PortraitPartData" load_steps=3 format=3 uid="uid://b8fjocwilhvjp"]
+
+[ext_resource type="Script" uid="uid://bjrx3kv6ra0nk" path="res://data/portraits/PortraitPartData.gd" id="1_8lqij"]
+[ext_resource type="Texture2D" uid="uid://c6kmvdgw7bq1p" path="res://art/portraits/beard_short_01.png" id="2_a2gse"]
+
+[resource]
+script = ExtResource("1_8lqij")
+part_type = "BEARD"
+texture = ExtResource("2_a2gse")
+color_category = "hair"

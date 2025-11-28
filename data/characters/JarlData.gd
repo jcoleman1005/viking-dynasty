@@ -4,9 +4,13 @@ extends Resource
 
 ## The Jarl's name displayed in the UI
 @export var display_name: String = "New Jarl"
-
-## The Jarl's portrait/icon for the UI
+## The Jarl's portrait/icon for the UI (legacy cache)
 @export var portrait: Texture2D
+
+@export_group("Appearance")
+## Configuration for the dynamic Norse paper doll portrait system
+@export var portrait_config: Dictionary = {}
+
 
 ## The Jarl's age in years
 @export var age: int = 25

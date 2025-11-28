@@ -1,0 +1,45 @@
+[gd_scene load_steps=2 format=3 uid="uid://dvumuyrnfxhm1"]
+
+[ext_resource type="Script" uid="uid://dvb5s5byitdv3" path="res://scenes/ui/PortraitGenerator.gd" id="1_khjrr"]
+
+[node name="PortraitGenerator" type="Control"]
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_khjrr")
+
+[node name="Background" type="TextureRect" parent="."]
+layout_mode = 0
+stretch_mode = 4
+
+[node name="Body" type="TextureRect" parent="."]
+layout_mode = 0
+stretch_mode = 4
+
+[node name="Head" type="TextureRect" parent="."]
+layout_mode = 0
+stretch_mode = 4
+
+[node name="HairBack" type="TextureRect" parent="."]
+layout_mode = 0
+stretch_mode = 4
+
+[node name="FaceDetails" type="TextureRect" parent="."]
+layout_mode = 0
+stretch_mode = 4
+
+[node name="Clothes" type="TextureRect" parent="."]
+layout_mode = 0
+stretch_mode = 4
+
+[node name="Beard" type="TextureRect" parent="."]
+layout_mode = 0
+stretch_mode = 4
+
+[node name="HairFront" type="TextureRect" parent="."]
+layout_mode = 0
+stretch_mode = 4
+
+[node name="Accessory" type="TextureRect" parent="."]
+layout_mode = 0
+stretch_mode = 4
