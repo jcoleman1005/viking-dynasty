@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://wdvc5mj564p5"]
+
+[ext_resource type="Script" uid="uid://vxa1kv6hra84" path="res://test_year_cycle.gd" id="1_g123a"]
+
+[node name="Main" type="Node"]
+
+[node name="TestRunner" type="Node" parent="."]
+script = ExtResource("1_g123a")

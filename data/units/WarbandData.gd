@@ -25,9 +25,13 @@ const MAX_GEAR_TIER: int = 3
 @export var current_manpower: int = 10
 const MAX_MANPOWER: int = 10
 
-# --- HEARTH GUARD (The Missing Link) ---
+# --- HEARTH GUARD ---
 @export var is_hearth_guard: bool = false
-# ---------------------------------------
+
+# --- NEW: BONDI FLAG ---
+## If true, this warband is composed of conscripted free farmers (Bondi).
+@export var is_bondi: bool = false
+# ----------------------
 
 @export var is_wounded: bool = false
 @export var battles_survived: int = 0
@@ -47,6 +51,9 @@ func get_level() -> int:
 	return min(1 + (experience / XP_PER_LEVEL), MAX_LEVEL)
 
 func get_level_title() -> String:
+	# Bondi are militia, distinct from professional warriors
+	if is_bondi: return "Free Farmers" 
+	
 	var lvl = get_level()
 	match lvl:
 		1: return "Rookie"
@@ -69,8 +76,8 @@ func get_gear_cost() -> int:
 
 func get_gear_name() -> String:
 	match gear_tier:
-		0: return "Peasant Garb"
-		1: return "Leather Armor"
+		0: return "Wool Tunics"
+		1: return "Leather Jerkins"
 		2: return "Chainmail"
 		3: return "Splint Armor"
 		_: return "Godly Plate"
@@ -82,6 +89,8 @@ func get_gear_damage_mult() -> float:
 	return 1.0 + (gear_tier * 0.10)
 
 func get_loyalty_description(jarl_name: String) -> String:
+	if is_bondi: return "[color=gray]Mustered Bondi[/color]"
+	
 	if loyalty >= 90: return "[color=gold]Fanatically loyal to %s[/color]" % jarl_name
 	elif loyalty >= 70: return "[color=green]Loyal to %s[/color]" % jarl_name
 	elif loyalty >= 40: return "[color=white]Content[/color]"
@@ -92,6 +101,9 @@ func modify_loyalty(amount: int) -> void:
 	loyalty = clampi(loyalty + amount, 0, 100)
 
 func _generate_warband_name(_base_name: String) -> String:
+	if is_bondi:
+		return "The Bondi"
+		
 	var prefixes = ["Iron", "Blood", "Storm", "Night", "Wolf", "Bear", "Raven"]
 	var suffixes = ["Guard", "Raiders", "Blades", "Shields", "Hunters", "Fists"]
 	return "%s %s" % [prefixes.pick_random(), suffixes.pick_random()]

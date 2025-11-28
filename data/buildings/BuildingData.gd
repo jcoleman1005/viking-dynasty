@@ -1,9 +1,7 @@
 # res://data/buildings/BuildingData.gd
-# Defines the core data for any building in the game.
 class_name BuildingData
 extends Resource
 
-## The name displayed in the UI.
 @export var display_name: String = "New Building"
 @export var scene_to_spawn: PackedScene
 @export var icon: Texture2D
@@ -20,15 +18,14 @@ extends Resource
 @export var base_labor_capacity: int = 3
 
 @export_group("Territory & Expansion")
-## If true, this building generates territory even if not connected to anything (e.g., Great Hall).
 @export var is_territory_hub: bool = false
-
-## If true, this building extends territory if connected to a Hub (e.g., Walls, Roads).
 @export var extends_territory: bool = false
-
-## The radius of buildable land this building provides around itself.
 @export var territory_radius: int = 4
-# -----------------------------------------
+
+@export_group("Demographics")
+## How many people this building 'employs' or supports via land rights.
+## e.g., A Farm supports 5, a Fishing Hut supports 3.
+@export var arable_land_capacity: int = 0 
 
 @export_group("Defensive Stats")
 @export var is_defensive_structure: bool = false

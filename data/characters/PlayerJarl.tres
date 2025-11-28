@@ -7,11 +7,12 @@
 [resource]
 script = ExtResource("1_jarl_data")
 display_name = "Lagertha"
-age = 30
+age = 33
 gender = "Female"
 renown_tier = 2
 current_authority = 7
 max_authority = 7
+years_since_action = 3
 legitimacy = 0
 command = 8
 stewardship = 8
