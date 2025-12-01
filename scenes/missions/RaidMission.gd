@@ -17,7 +17,7 @@ extends Node2D
 @onready var grid_manager: Node = $GridManager
 @onready var building_container: Node2D = $BuildingContainer
 @onready var objective_manager: RaidObjectiveManager = $RaidObjectiveManager
-
+@onready var unit_spawner: UnitSpawner = $UnitSpawner
 # --- NEW: Map Loader ---
 var map_loader: RaidMapLoader
 # -----------------------
@@ -106,63 +106,36 @@ func _on_building_destroyed_grid_update(building: BaseBuilding) -> void:
 # --- SPAWNING LOGIC (Kept here as it is Game Rule logic, not Map Gen) ---
 
 func _spawn_player_garrison() -> void:
-	if not SettlementManager.current_settlement:
-		_spawn_test_units() 
-		return
+	# 1. Get Data
+	var warbands: Array[WarbandData] = []
 	
-	var warbands = SettlementManager.current_settlement.warbands
+	if SettlementManager.has_current_settlement():
+		warbands = SettlementManager.current_settlement.warbands
+	else:
+		# Fallback for testing without a save file
+		Loggie.msg("RaidMission: No settlement data found. Spawning test garrison.").domain("RAID").warn()
+		# Create a dummy warband if needed, or just return
+		return
+
 	if warbands.is_empty():
 		if not is_defensive_mission:
 			objective_manager.call_deferred("_check_loss_condition")
 		return
 	
-	var units_per_row = player_spawn_formation.get("units_per_row", 5)
-	var spacing = player_spawn_formation.get("spacing", 40.0)
-	var current_squad_index = 0
+	# 2. Determine Spawn Point
+	var spawn_origin = player_spawn_pos.global_position
 	
-	for warband in warbands:
-		if warband.is_wounded: continue
-		if warband.loyalty < 100:
-			warband.modify_loyalty(50)
-			warband.turns_idle = 0
+	if is_defensive_mission and is_instance_valid(objective_building):
+		spawn_origin = objective_building.global_position + Vector2(100, 100)
+	elif not is_defensive_mission:
+		# Offset slightly for landing look
+		spawn_origin += landing_direction * 200.0
 		
-		var unit_data = warband.unit_type
-		if not unit_data: continue
-		
-		for i in range(warband.current_manpower):
-			var unit = unit_data.scene_to_spawn.instantiate()
-			unit.warband_ref = warband
-			unit.data = unit_data
-			unit.collision_layer = 2
-			
-			# Naming
-			if i == 0: unit.name = warband.custom_name + "_Thegn"
-			elif i == 1: unit.name = warband.custom_name + "_Banner"
-			else: unit.name = warband.custom_name + "_Huscarl_" + str(i)
-
-			# Positioning
-			var base_pos = player_spawn_pos.global_position
-			if is_defensive_mission and is_instance_valid(objective_building):
-				base_pos = objective_building.global_position + Vector2(100, 100)
-			else:
-				base_pos += landing_direction * 200.0
-			
-			var row = current_squad_index / units_per_row
-			var col = current_squad_index % units_per_row
-			
-			base_pos.x += col * (spacing * 4)
-			base_pos.y += row * (spacing * 3)
-			
-			var unit_x = (i % 5) * 25
-			var unit_y = (i / 5) * 25
-			
-			unit.global_position = base_pos + Vector2(unit_x, unit_y)
-			
-			unit.add_to_group("player_units")
-			rts_controller.add_unit_to_group(unit)
-			add_child(unit)
-			
-		current_squad_index += 1
+	# 3. Delegate to Spawner (This handles Squad Leaders vs Soldiers)
+	if unit_spawner:
+		unit_spawner.spawn_garrison(warbands, spawn_origin)
+	else:
+		Loggie.msg("CRITICAL: UnitSpawner missing in RaidMission!").domain("RAID").error()
 
 func _spawn_enemy_wave() -> void:
 	var spawner = get_node_or_null(enemy_spawn_position)

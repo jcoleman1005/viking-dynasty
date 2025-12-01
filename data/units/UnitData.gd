@@ -4,10 +4,12 @@ extends Resource
 
 @export var display_name: String = "New Unit"
 
-# --- SOFT REFERENCE ---
-# This uses the file system picker, preventing typos.
+# --- SOFT REFERENCE (Preferred) ---
 @export_file("*.tscn") var scene_path: String = ""
-# ----------------------
+
+# --- HARD REFERENCE (Legacy/Fallback) ---
+@export var scene_to_spawn: PackedScene
+# ----------------------------------------
 
 @export var icon: Texture2D
 @export var spawn_cost: Dictionary = {"food": 25}
@@ -28,18 +30,22 @@ extends Resource
 @export var linear_damping: float = 5.0
 
 @export var ai_component_scene: PackedScene
-@export var projectile_scene: PackedScene # Restoring this too just in case
+@export var projectile_scene: PackedScene
 @export var projectile_speed: float = 400.0
 
 # --- ROBUST LOADER ---
-# Instead of just load(), we verify the file exists.
 func load_scene() -> PackedScene:
-	if scene_path == "":
-		Loggie.msg("UnitData Error: No scene path assigned for %s" % display_name).domain("SYSTEM").error()
-		return null
+	# 1. Try Loading from Path (Preferred)
+	if scene_path != "":
+		if ResourceLoader.exists(scene_path):
+			return load(scene_path)
+		else:
+			Loggie.msg("UnitData Error: File not found at %s" % scene_path).domain("SYSTEM").error()
+	
+	# 2. Fallback to Hard Reference (Legacy support)
+	if scene_to_spawn:
+		return scene_to_spawn
 		
-	if not ResourceLoader.exists(scene_path):
-		Loggie.msg("UnitData Error: File not found at %s" % scene_path).domain("SYSTEM").error()
-		return null
-		
-	return load(scene_path)
+	# 3. Failure
+	Loggie.msg("UnitData Error: No scene assigned for %s" % display_name).domain("SYSTEM").error()
+	return null

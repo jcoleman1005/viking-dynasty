@@ -1,8 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://bw2amv84rt3x0"]
-
-[ext_resource type="Script" uid="uid://bqu7pti50egpb" path="res://test/WinterCrisisTest.gd" id="1_8av8w"]
-
-[node name="WinterTestRunner" type="Node2D"]
-script = ExtResource("1_8av8w")
-
-[node name="CanvasLayer" type="CanvasLayer" parent="."]

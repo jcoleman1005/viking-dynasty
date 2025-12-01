@@ -33,7 +33,7 @@ extends Node
 			Loggie.set_domain_enabled("DEBUG", value)
 
 # --- NEW: Civ Unit Data ---
-@export var civilian_data: UnitData 
+
 
 # --- New Game Configuration ---
 @export_group("New Game Settings")
@@ -59,6 +59,7 @@ var default_end_of_year_popup: PackedScene = preload("res://ui/EndOfYear_Popup.t
 @onready var building_container: Node2D = $BuildingContainer
 @onready var grid_manager: Node = $GridManager
 @onready var rts_controller: RTSController = $RTSController
+@onready var unit_spawner: UnitSpawner = $UnitSpawner
 # --- Worker & End Year UI ---
 const WORK_ASSIGNMENT_SCENE_PATH = "res://ui/WorkAssignment_UI.tscn"
 var work_assignment_ui: CanvasLayer
@@ -80,6 +81,9 @@ func _ready() -> void:
 	_initialize_settlement() 
 	_setup_ui()
 	_connect_signals()
+	if unit_spawner:
+		unit_spawner.unit_container = unit_container
+		unit_spawner.rts_controller = rts_controller
 	
 	# --- TEST DATA INJECTION ---
 	if not DynastyManager.current_jarl:
@@ -289,8 +293,11 @@ func _spawn_placed_buildings() -> void:
 	if is_instance_valid(SettlementManager.active_astar_grid):
 		SettlementManager.active_astar_grid.update()
 		
-	# --- FIX: Now that buildings (and the Great Hall) exist, spawn the villagers ---
+	if unit_spawner: unit_spawner.clear_units()
+	
+	# Trigger Unit Spawn (Now delegates to Spawner)
 	_sync_villagers()
+	_spawn_player_garrison()
 	
 func _spawn_single_building(entry: Dictionary, is_new: bool) -> BaseBuilding:
 	var building_data: BuildingData = load(entry["resource_path"])
@@ -395,80 +402,16 @@ func _process_raid_return() -> void:
 
 func _sync_villagers(_data: SettlementData = null) -> void:
 	if not SettlementManager.has_current_settlement(): return
-	
-	# --- FIX: Safety Check ---
-	# If the Great Hall hasn't spawned yet, abort. 
-	# We know _spawn_placed_buildings will call this again in a moment.
-	if not is_instance_valid(great_hall_instance):
-		# Only log if we expected it to be there (i.e. not an empty map)
-		if building_container.get_child_count() > 0:
-			Loggie.msg("SettlementBridge: Waiting for Great Hall before spawning villagers...").domain("SETTLEMENT").debug()
-		return
-	# -------------------------
+	if not is_instance_valid(great_hall_instance): return
+	if not unit_spawner: return
 	
 	var idle_count = SettlementManager.get_idle_peasants()
+	var origin = great_hall_instance.global_position
 	
-	var active_civilians = []
-	if unit_container:
-		for child in unit_container.get_children():
-			if child.is_in_group("civilians"):
-				active_civilians.append(child)
-	
-	var current_count = active_civilians.size()
-	var diff = idle_count - current_count
-	
-	if diff > 0:
-		_spawn_civilians(diff)
-	elif diff < 0:
-		_despawn_civilians(abs(diff), active_civilians)
+	# Delegate
+	unit_spawner.sync_civilians(idle_count, origin)
 		
-func _spawn_civilians(count: int) -> void:
-	if not civilian_data:
-		Loggie.msg("FAILED: No 'civilian_data' assigned in Inspector!").domain("SETTLEMENT").error()
-		return
 
-	var spawn_origin = Vector2.ZERO
-	var spawn_radius = 150.0 # Default radius
-	
-	if is_instance_valid(great_hall_instance):
-		spawn_origin = great_hall_instance.global_position
-		# Adjust radius based on building size so they don't spawn inside it
-		spawn_radius = max(100.0, (great_hall_instance.data.grid_size.x * 32.0))
-	
-	var scene_ref = civilian_data.load_scene()
-	if not scene_ref: return
-	
-	for i in range(count):
-		var civ = scene_ref.instantiate()
-		civ.data = civilian_data
-		
-		# --- FIX: Spawn in a random circle around the hall ---
-		var angle = randf() * TAU
-		var distance = randf_range(spawn_radius * 0.8, spawn_radius * 1.5)
-		var offset = Vector2(cos(angle), sin(angle)) * distance
-		
-		civ.position = spawn_origin + offset
-		# -----------------------------------------------------
-		
-		unit_container.add_child(civ)
-		
-		if is_instance_valid(rts_controller):
-			rts_controller.add_unit_to_group(civ)
-			
-		# Optional: Give them a small wander target immediately so they look alive
-		if civ.has_method("command_move_to"):
-			var wander_offset = Vector2(randf_range(-30, 30), randf_range(-30, 30))
-			civ.command_move_to(civ.position + wander_offset)
-
-func _despawn_civilians(count: int, current_list: Array) -> void:
-	for i in range(count):
-		if i < current_list.size():
-			var civ = current_list[i]
-			if is_instance_valid(civ):
-				if civ.has_method("die_without_event"):
-					civ.die_without_event()
-				else:
-					civ.queue_free()
 
 func _toggle_dynasty_view() -> void:
 	var dynasty_ui = ui_layer.get_node_or_null("Dynasty_UI")
@@ -481,3 +424,14 @@ func _toggle_dynasty_view() -> void:
 			Loggie.msg("Opening Dynasty View").domain("UI").info()
 	else:
 		Loggie.msg("Error: Dynasty_UI node not found in SettlementBridge/UI").domain("UI").error()
+
+func _spawn_player_garrison() -> void:
+	if not SettlementManager.has_current_settlement(): return
+	if not is_instance_valid(great_hall_instance): return
+	if not unit_spawner: return
+	
+	var warbands = SettlementManager.current_settlement.warbands
+	var origin = great_hall_instance.global_position
+	
+	# Delegate
+	unit_spawner.spawn_garrison(warbands, origin)

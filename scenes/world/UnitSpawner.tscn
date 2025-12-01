@@ -1,0 +1,8 @@
+[gd_scene load_steps=3 format=3 uid="uid://io325box3m4m"]
+
+[ext_resource type="Script" uid="uid://bu6n0wwl0x5ic" path="res://scripts/utility/UnitSpawner.gd" id="1_eyemm"]
+[ext_resource type="Resource" uid="uid://iiho31ik0qvb" path="res://data/units/Unit_Civilian.tres" id="2_nudm2"]
+
+[node name="UnitSpawner" type="Node"]
+script = ExtResource("1_eyemm")
+civilian_data = ExtResource("2_nudm2")

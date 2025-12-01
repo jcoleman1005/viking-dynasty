@@ -131,6 +131,7 @@ func _on_select_command(select_rect: Rect2, is_box_select: bool) -> void:
 	if not main_camera: return
 	
 	if is_box_select:
+		# 1. Calculate World Rect
 		var camera_pos = main_camera.get_screen_center_position()
 		var camera_zoom = main_camera.zoom
 		var viewport_size = get_viewport().get_visible_rect().size
@@ -138,26 +139,60 @@ func _on_select_command(select_rect: Rect2, is_box_select: bool) -> void:
 		var world_rect_max = world_rect_min + (select_rect.size / camera_zoom)
 		var world_rect = Rect2(world_rect_min, world_rect_max - world_rect_min)
 		
+		# 2. Check Leaders AND their Soldiers
 		for unit in controllable_units:
-			if world_rect.has_point(unit.global_position):
+			if _is_squad_in_rect(unit, world_rect):
 				selected_units.append(unit)
 				unit.set_selected(true)
 	else:
+		# 1. Calculate Click Position
 		var click_world_pos := main_camera.get_global_mouse_position()
-		var closest_unit: BaseUnit = null
+		var closest_leader: BaseUnit = null
 		var min_dist_sq = INF
+		var click_radius_sq = 40 * 40
 		
+		# 2. Check Distance to Leader OR any Soldier
 		for unit in controllable_units:
-			var dist_sq = unit.global_position.distance_squared_to(click_world_pos)
-			if dist_sq < min_dist_sq and dist_sq < (40 * 40): 
+			var dist_sq = _get_closest_distance_to_squad(unit, click_world_pos)
+			
+			if dist_sq < min_dist_sq and dist_sq < click_radius_sq:
 				min_dist_sq = dist_sq
-				closest_unit = unit
+				closest_leader = unit
 				
-		if closest_unit:
-			selected_units.append(closest_unit)
-			closest_unit.set_selected(true)
+		if closest_leader:
+			selected_units.append(closest_leader)
+			closest_leader.set_selected(true)
 			
 	print("DEBUG: Selection Updated. Count: ", selected_units.size())
+
+# --- NEW HELPERS ---
+
+func _is_squad_in_rect(unit: BaseUnit, rect: Rect2) -> bool:
+	# 1. Check Leader
+	if rect.has_point(unit.global_position):
+		return true
+		
+	# 2. Check Soldiers (If it's a SquadLeader)
+	if unit is SquadLeader:
+		for soldier in unit.squad_soldiers:
+			if is_instance_valid(soldier) and rect.has_point(soldier.global_position):
+				return true
+				
+	return false
+
+func _get_closest_distance_to_squad(unit: BaseUnit, point: Vector2) -> float:
+	# Start with leader distance
+	var min_d = unit.global_position.distance_squared_to(point)
+	
+	# Check soldiers if applicable
+	if unit is SquadLeader:
+		for soldier in unit.squad_soldiers:
+			if is_instance_valid(soldier):
+				var d = soldier.global_position.distance_squared_to(point)
+				if d < min_d:
+					min_d = d
+					
+	return min_d
 
 func _on_attack_command(target_node: Node2D) -> void:
 	_validate_selection()
