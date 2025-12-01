@@ -254,16 +254,27 @@ func _clear_all_buildings() -> void:
 func _initialize_settlement() -> void:
 	home_base_data = _create_default_settlement()
 	await _clear_all_buildings()
+	
+	# 1. Load Data (Fires 'settlement_loaded', but _sync_villagers will now skip if no Hall)
 	SettlementManager.load_settlement(home_base_data)
+	
 	if is_instance_valid(grid_manager) and "astar_grid" in grid_manager:
 		SettlementManager.register_active_scene_nodes(grid_manager.astar_grid, building_container, grid_manager)
+	
+	# 2. Spawn Buildings (Creates Great Hall)
 	_spawn_placed_buildings()
 
 func _spawn_placed_buildings() -> void:
 	if not SettlementManager.current_settlement: return
+	
+	# Clear existing
 	for child in building_container.get_children(): child.queue_free()
+	
+	# Spawn Placed
 	for building_entry in SettlementManager.current_settlement.placed_buildings:
 		_spawn_single_building(building_entry, false) 
+		
+	# Spawn Construction Sites
 	for building_entry in SettlementManager.current_settlement.pending_construction_buildings:
 		var b = _spawn_single_building(building_entry, false)
 		if b:
@@ -274,9 +285,13 @@ func _spawn_placed_buildings() -> void:
 				if b.has_method("add_construction_progress"): b.add_construction_progress(0) 
 			else:
 				b.set_state(BaseBuilding.BuildingState.BLUEPRINT)
+				
 	if is_instance_valid(SettlementManager.active_astar_grid):
 		SettlementManager.active_astar_grid.update()
-
+		
+	# --- FIX: Now that buildings (and the Great Hall) exist, spawn the villagers ---
+	_sync_villagers()
+	
 func _spawn_single_building(entry: Dictionary, is_new: bool) -> BaseBuilding:
 	var building_data: BuildingData = load(entry["resource_path"])
 	if building_data:
@@ -381,8 +396,18 @@ func _process_raid_return() -> void:
 func _sync_villagers(_data: SettlementData = null) -> void:
 	if not SettlementManager.has_current_settlement(): return
 	
+	# --- FIX: Safety Check ---
+	# If the Great Hall hasn't spawned yet, abort. 
+	# We know _spawn_placed_buildings will call this again in a moment.
+	if not is_instance_valid(great_hall_instance):
+		# Only log if we expected it to be there (i.e. not an empty map)
+		if building_container.get_child_count() > 0:
+			Loggie.msg("SettlementBridge: Waiting for Great Hall before spawning villagers...").domain("SETTLEMENT").debug()
+		return
+	# -------------------------
+	
 	var idle_count = SettlementManager.get_idle_peasants()
-	# Count existing civilian units
+	
 	var active_civilians = []
 	if unit_container:
 		for child in unit_container.get_children():
@@ -396,41 +421,44 @@ func _sync_villagers(_data: SettlementData = null) -> void:
 		_spawn_civilians(diff)
 	elif diff < 0:
 		_despawn_civilians(abs(diff), active_civilians)
-
+		
 func _spawn_civilians(count: int) -> void:
-	Loggie.msg("Attempting to spawn %d civilians..." % count).domain("SETTLEMENT").info()
-	
-	# 1. Validate Data exists
 	if not civilian_data:
 		Loggie.msg("FAILED: No 'civilian_data' assigned in Inspector!").domain("SETTLEMENT").error()
 		return
 
 	var spawn_origin = Vector2.ZERO
-	if great_hall_instance:
+	var spawn_radius = 150.0 # Default radius
+	
+	if is_instance_valid(great_hall_instance):
 		spawn_origin = great_hall_instance.global_position
+		# Adjust radius based on building size so they don't spawn inside it
+		spawn_radius = max(100.0, (great_hall_instance.data.grid_size.x * 32.0))
 	
-	# 2. Load the Scene safely using the new helper
 	var scene_ref = civilian_data.load_scene()
-	if not scene_ref:
-		# The error is already logged inside load_scene(), but we log here to confirm flow stop
-		Loggie.msg("FAILED: load_scene() returned null.").domain("SETTLEMENT").error()
-		return
-	
-	Loggie.msg("Scene loaded successfully. Instantiating %d units..." % count).domain("SETTLEMENT").info()
+	if not scene_ref: return
 	
 	for i in range(count):
 		var civ = scene_ref.instantiate()
-		
-		# 3. Inject Data (This re-establishes the link)
 		civ.data = civilian_data
 		
-		civ.position = spawn_origin + Vector2(randf_range(-50, 50), randf_range(-50, 50))
+		# --- FIX: Spawn in a random circle around the hall ---
+		var angle = randf() * TAU
+		var distance = randf_range(spawn_radius * 0.8, spawn_radius * 1.5)
+		var offset = Vector2(cos(angle), sin(angle)) * distance
+		
+		civ.position = spawn_origin + offset
+		# -----------------------------------------------------
+		
 		unit_container.add_child(civ)
-		# Register the new unit with the RTS Controller so it can be selected!
+		
 		if is_instance_valid(rts_controller):
 			rts_controller.add_unit_to_group(civ)
+			
+		# Optional: Give them a small wander target immediately so they look alive
 		if civ.has_method("command_move_to"):
-			civ.command_move_to(civ.position + Vector2(randf_range(-30, 30), randf_range(-30, 30)))
+			var wander_offset = Vector2(randf_range(-30, 30), randf_range(-30, 30))
+			civ.command_move_to(civ.position + wander_offset)
 
 func _despawn_civilians(count: int, current_list: Array) -> void:
 	for i in range(count):
