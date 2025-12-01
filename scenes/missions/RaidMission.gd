@@ -130,7 +130,7 @@ func _spawn_player_garrison() -> void:
 		return
 
 	if warbands.is_empty():
-	print("[DIAGNOSTIC] RaidMission: Spawning Player Garrison...")
+		print("[DIAGNOSTIC] RaidMission: Spawning Player Garrison...")
 	
 	# 1. Determine Source of Troops
 	var warbands_to_spawn: Array[WarbandData] = []

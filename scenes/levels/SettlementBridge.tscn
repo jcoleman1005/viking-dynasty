@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=4 uid="uid://c53k15q2w8c1a"]
+[gd_scene load_steps=23 format=4 uid="uid://c53k15q2w8c1a"]
 
 [ext_resource type="PackedScene" uid="uid://dqh0xu88khxct" path="res://ui/EndOfYear_Popup.tscn" id="2_5el12"]
 [ext_resource type="Script" uid="uid://dafjxa85ci2rx" path="res://scripts/buildings/SettlementBridge.gd" id="2_c48a7"]
@@ -7,7 +7,6 @@
 [ext_resource type="Script" uid="uid://koj0vo5eoaum" path="res://data/units/WarbandData.gd" id="3_vlppw"]
 [ext_resource type="PackedScene" uid="uid://btlcifwc6ckux" path="res://scenes/units/VikingRaider.tscn" id="4_c0sri"]
 [ext_resource type="Texture2D" uid="uid://c8k136eygums6" path="res://assets/Kenney/medieval_tilesheet.png" id="4_ilgdx"]
-[ext_resource type="Resource" uid="uid://iiho31ik0qvb" path="res://data/units/Unit_Civilian.tres" id="5_e2i2e"]
 [ext_resource type="PackedScene" uid="uid://dsrvmutqo7g3h" path="res://scripts/utility/GridManager.tscn" id="6_b34qi"]
 [ext_resource type="Script" uid="uid://c4bv8okjkvtt7" path="res://scripts/ui/BuildingPreviewCursor.gd" id="6_cursor"]
 [ext_resource type="PackedScene" uid="uid://c5qg2j1qa4g0b" path="res://ui/Dynasty_UI.tscn" id="7_k14p1"]
@@ -1441,14 +1440,12 @@ tile_set = SubResource("TileSet_k14p1")
 [node name="Storefront_UI" parent="UI" instance=ExtResource("3_vj45l")]
 
 [node name="Dynasty_UI" parent="UI" instance=ExtResource("7_k14p1")]
-anchors_preset = -1
 
 [node name="EndOfYear_Popup" parent="UI" instance=ExtResource("2_5el12")]
-anchors_preset = -1
 
 [node name="RestartButton" type="Button" parent="UI"]
 visible = false
-anchors_preset = -1
+anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
@@ -1462,7 +1459,6 @@ grow_vertical = 2
 text = "Return to Settlement"
 
 [node name="PauseButton" type="Button" parent="UI"]
-anchors_preset = -1
 offset_left = 10.0
 offset_top = 10.0
 offset_right = 130.0
@@ -1510,7 +1506,6 @@ region_rect = Rect2(202.20213, 73.07374, 43.015152, 43.971046)
 [node name="UnitSpawner" parent="." node_paths=PackedStringArray("unit_container", "rts_controller") instance=ExtResource("20_fmib8")]
 unit_container = NodePath("../UnitContainer")
 rts_controller = NodePath("../RTSController")
-civilian_data = ExtResource("5_e2i2e")
 
 [editable path="MapResources/Resource_Wood"]
 [editable path="MapResources/Resource_Food"]
