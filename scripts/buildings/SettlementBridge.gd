@@ -33,7 +33,7 @@ extends Node
 			Loggie.set_domain_enabled("DEBUG", value)
 
 # --- NEW: Civ Unit Data ---
-@export var civilian_data: UnitData 
+
 
 # --- New Game Configuration ---
 @export_group("New Game Settings")
@@ -59,6 +59,7 @@ var default_end_of_year_popup: PackedScene = preload("res://ui/EndOfYear_Popup.t
 @onready var building_container: Node2D = $BuildingContainer
 @onready var grid_manager: Node = $GridManager
 @onready var rts_controller: RTSController = $RTSController
+@onready var unit_spawner: UnitSpawner = $UnitSpawner
 # --- Worker & End Year UI ---
 const WORK_ASSIGNMENT_SCENE_PATH = "res://ui/WorkAssignment_UI.tscn"
 var work_assignment_ui: CanvasLayer
@@ -80,6 +81,9 @@ func _ready() -> void:
 	_initialize_settlement() 
 	_setup_ui()
 	_connect_signals()
+	if unit_spawner:
+		unit_spawner.unit_container = unit_container
+		unit_spawner.rts_controller = rts_controller
 	
 	# --- TEST DATA INJECTION ---
 	if not DynastyManager.current_jarl:
@@ -190,16 +194,19 @@ func _on_end_year_pressed() -> void:
 func _start_end_year_sequence() -> void:
 	_close_all_popups()
 	
-	if not is_instance_valid(end_of_year_popup):
-		_finalize_end_year({})
-		return
-		
-	# 1. Calculate Income (Now includes Pop Growth & Unrest)
-	var payout = SettlementManager.calculate_payout()
+	Loggie.msg("SettlementBridge: Handing off to DynastyManager for Winter Phase.").domain("SETTLEMENT").info()
 	
-	# 2. Show Popup
-	end_of_year_popup.display_payout(payout, "Year End Report")
-	
+	# The old popup logic is bypassed. 
+	# We go directly to the Winter Phase state machine.
+	DynastyManager.start_winter_phase()
+
+""""
+	Note: The old _on_payout_collected and _finalize_end_year functions in SettlementBridge are now effectively deprecated/unused, 
+	but you can leave them there for now to avoid script errors if other things reference them. 
+	The new flow handles the payout calculation inside DynastyManager.end_winter_phase()
+	 logic we wrote previously.
+"""
+
 func _on_payout_collected(payout: Dictionary) -> void:
 	# 3. Deposit Resources
 	SettlementManager.deposit_resources(payout)
@@ -251,16 +258,27 @@ func _clear_all_buildings() -> void:
 func _initialize_settlement() -> void:
 	home_base_data = _create_default_settlement()
 	await _clear_all_buildings()
+	
+	# 1. Load Data (Fires 'settlement_loaded', but _sync_villagers will now skip if no Hall)
 	SettlementManager.load_settlement(home_base_data)
+	
 	if is_instance_valid(grid_manager) and "astar_grid" in grid_manager:
 		SettlementManager.register_active_scene_nodes(grid_manager.astar_grid, building_container, grid_manager)
+	
+	# 2. Spawn Buildings (Creates Great Hall)
 	_spawn_placed_buildings()
 
 func _spawn_placed_buildings() -> void:
 	if not SettlementManager.current_settlement: return
+	
+	# Clear existing
 	for child in building_container.get_children(): child.queue_free()
+	
+	# Spawn Placed
 	for building_entry in SettlementManager.current_settlement.placed_buildings:
 		_spawn_single_building(building_entry, false) 
+		
+	# Spawn Construction Sites
 	for building_entry in SettlementManager.current_settlement.pending_construction_buildings:
 		var b = _spawn_single_building(building_entry, false)
 		if b:
@@ -271,9 +289,16 @@ func _spawn_placed_buildings() -> void:
 				if b.has_method("add_construction_progress"): b.add_construction_progress(0) 
 			else:
 				b.set_state(BaseBuilding.BuildingState.BLUEPRINT)
+				
 	if is_instance_valid(SettlementManager.active_astar_grid):
 		SettlementManager.active_astar_grid.update()
-
+		
+	if unit_spawner: unit_spawner.clear_units()
+	
+	# Trigger Unit Spawn (Now delegates to Spawner)
+	_sync_villagers()
+	_spawn_player_garrison()
+	
 func _spawn_single_building(entry: Dictionary, is_new: bool) -> BaseBuilding:
 	var building_data: BuildingData = load(entry["resource_path"])
 	if building_data:
@@ -367,6 +392,11 @@ func _process_raid_return() -> void:
 	elif outcome == "retreat": 
 		xp_gain = 20
 	
+	# --- NEW: ODIN MODIFIER ---
+	if xp_gain > 0 and DynastyManager.active_year_modifiers.has("BLOT_ODIN"):
+		xp_gain = int(xp_gain * 1.5)
+		Loggie.msg("Odin's Wisdom: XP gain increased to %d." % xp_gain).domain("SETTLEMENT").info()
+		
 	if SettlementManager.current_settlement and xp_gain > 0:
 		for warband in SettlementManager.current_settlement.warbands:
 			if not warband.is_wounded:
@@ -426,67 +456,16 @@ func _process_raid_return() -> void:
 
 func _sync_villagers(_data: SettlementData = null) -> void:
 	if not SettlementManager.has_current_settlement(): return
+	if not is_instance_valid(great_hall_instance): return
+	if not unit_spawner: return
 	
 	var idle_count = SettlementManager.get_idle_peasants()
-	# Count existing civilian units
-	var active_civilians = []
-	if unit_container:
-		for child in unit_container.get_children():
-			if child.is_in_group("civilians"):
-				active_civilians.append(child)
+	var origin = great_hall_instance.global_position
 	
-	var current_count = active_civilians.size()
-	var diff = idle_count - current_count
-	
-	if diff > 0:
-		_spawn_civilians(diff)
-	elif diff < 0:
-		_despawn_civilians(abs(diff), active_civilians)
-
-func _spawn_civilians(count: int) -> void:
-	Loggie.msg("Attempting to spawn %d civilians..." % count).domain("SETTLEMENT").info()
-	
-	# 1. Validate Data exists
-	if not civilian_data:
-		Loggie.msg("FAILED: No 'civilian_data' assigned in Inspector!").domain("SETTLEMENT").error()
-		return
-
-	var spawn_origin = Vector2.ZERO
-	if great_hall_instance:
-		spawn_origin = great_hall_instance.global_position
-	
-	# 2. Load the Scene safely using the new helper
-	var scene_ref = civilian_data.load_scene()
-	if not scene_ref:
-		# The error is already logged inside load_scene(), but we log here to confirm flow stop
-		Loggie.msg("FAILED: load_scene() returned null.").domain("SETTLEMENT").error()
-		return
-	
-	Loggie.msg("Scene loaded successfully. Instantiating %d units..." % count).domain("SETTLEMENT").info()
-	
-	for i in range(count):
-		var civ = scene_ref.instantiate()
+	# Delegate
+	unit_spawner.sync_civilians(idle_count, origin)
 		
-		# 3. Inject Data (This re-establishes the link)
-		civ.data = civilian_data
-		
-		civ.position = spawn_origin + Vector2(randf_range(-50, 50), randf_range(-50, 50))
-		unit_container.add_child(civ)
-		# Register the new unit with the RTS Controller so it can be selected!
-		if is_instance_valid(rts_controller):
-			rts_controller.add_unit_to_group(civ)
-		if civ.has_method("command_move_to"):
-			civ.command_move_to(civ.position + Vector2(randf_range(-30, 30), randf_range(-30, 30)))
 
-func _despawn_civilians(count: int, current_list: Array) -> void:
-	for i in range(count):
-		if i < current_list.size():
-			var civ = current_list[i]
-			if is_instance_valid(civ):
-				if civ.has_method("die_without_event"):
-					civ.die_without_event()
-				else:
-					civ.queue_free()
 
 func _toggle_dynasty_view() -> void:
 	var dynasty_ui = ui_layer.get_node_or_null("Dynasty_UI")
@@ -499,3 +478,14 @@ func _toggle_dynasty_view() -> void:
 			Loggie.msg("Opening Dynasty View").domain("UI").info()
 	else:
 		Loggie.msg("Error: Dynasty_UI node not found in SettlementBridge/UI").domain("UI").error()
+
+func _spawn_player_garrison() -> void:
+	if not SettlementManager.has_current_settlement(): return
+	if not is_instance_valid(great_hall_instance): return
+	if not unit_spawner: return
+	
+	var warbands = SettlementManager.current_settlement.warbands
+	var origin = great_hall_instance.global_position
+	
+	# Delegate
+	unit_spawner.spawn_garrison(warbands, origin)

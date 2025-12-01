@@ -165,15 +165,10 @@ func complete_building_construction(building_instance: BaseBuilding) -> void:
 func recruit_unit(unit_data: UnitData) -> void:
 	if not current_settlement or not unit_data: return
 	
-	# Drafting Cost
-	var population_cost = 10
-	var idle_peasants = get_idle_peasants()
-	
-	if idle_peasants < population_cost:
-		EventBus.purchase_failed.emit("Not enough idle Citizens! (Need %d)" % population_cost)
-		return
-		
-	current_settlement.population_peasants -= population_cost
+	# --- REMOVED: Population Conscription Logic ---
+	# We no longer check for idle peasants or deduct them.
+	# Recruitment is now purely a mercenary/professional contract paid in Gold/Food.
+	# ----------------------------------------------
 	
 	var new_warband = WarbandData.new(unit_data)
 	
@@ -185,10 +180,15 @@ func recruit_unit(unit_data: UnitData) -> void:
 		new_warband.add_history("Recruited")
 		
 	current_settlement.warbands.append(new_warband)
-	Loggie.msg("Drafted %d citizens into %s." % [population_cost, new_warband.custom_name]).domain("SETTLEMENT").info()
+	
+	Loggie.msg("Recruited %s (Mercenary Contract)." % new_warband.custom_name).domain(LogDomains.SETTLEMENT).info()
 	
 	save_settlement()
 	EventBus.purchase_successful.emit(unit_data.display_name)
+	
+	# Emit settlement_loaded to force the Bridge/Spawner to refresh visuals
+	# This ensures the new squad appears and villagers stay put
+	EventBus.settlement_loaded.emit(current_settlement)
 
 func upgrade_warband_gear(warband: WarbandData) -> bool:
 	if not current_settlement: return false

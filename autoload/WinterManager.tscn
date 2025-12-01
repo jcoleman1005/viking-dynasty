@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://bi1u5m00ocqe1"]
+
+[ext_resource type="Script" uid="uid://xlm4hw86iml1" path="res://autoload/WinterManager.gd" id="1_5afo2"]
+
+[node name="WinterManager" type="Node"]
+script = ExtResource("1_5afo2")

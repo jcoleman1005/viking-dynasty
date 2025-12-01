@@ -8,15 +8,16 @@ extends BaseUnit
 class_name PlayerVikingRaider
 
 func _ready() -> void:
-	# Call parent _ready first to initialize base unit systems
-	super._ready()
-	
-	# Add to player units group for RTS selection and control
+	# --- FIX: Add to group BEFORE super._ready() ---
+	# BaseUnit._ready() checks this group to apply the Thor damage buff.
 	add_to_group("player_units")
+	# -----------------------------------------------
+	
+	# Call parent _ready to initialize base unit systems (Health, AI, FSM)
+	super._ready()
 	
 	Loggie.msg("PlayerVikingRaider '%s' initialized and ready for RTS control" % name).domain("RTS").info()
 
-# --- THIS IS THE FIX ---
 # We override the command_attack function just to add a print statement,
 # then we call super.command_attack(target) to let the Base_Unit and FSM
 # handle the *actual* logic correctly.
@@ -29,7 +30,6 @@ func command_attack(target: Node2D) -> void:
 
 	# Pass the command to the base class, which will pass it to the FSM
 	super.command_attack(target)
-# --- END FIX ---
 
 # Override die method to handle player unit death
 func die() -> void:

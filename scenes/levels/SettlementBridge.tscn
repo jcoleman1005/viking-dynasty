@@ -1,4 +1,4 @@
-[gd_scene load_steps=23 format=4 uid="uid://c53k15q2w8c1a"]
+[gd_scene load_steps=24 format=4 uid="uid://c53k15q2w8c1a"]
 
 [ext_resource type="PackedScene" uid="uid://dqh0xu88khxct" path="res://ui/EndOfYear_Popup.tscn" id="2_5el12"]
 [ext_resource type="Script" uid="uid://dafjxa85ci2rx" path="res://scripts/buildings/SettlementBridge.gd" id="2_c48a7"]
@@ -19,6 +19,7 @@
 [ext_resource type="Texture2D" uid="uid://cjlq3soj1j4jj" path="res://assets/Kenney/medievalRTS_spritesheet.png" id="11_vlppw"]
 [ext_resource type="PackedScene" uid="uid://cyp3t7gbdg0wx" path="res://player/RTSController.tscn" id="18_fmib8"]
 [ext_resource type="PackedScene" uid="uid://bvsuoj3irdvcs" path="res://player/RTSInputHandler.tscn" id="19_c7ve4"]
+[ext_resource type="PackedScene" uid="uid://io325box3m4m" path="res://scenes/world/UnitSpawner.tscn" id="20_fmib8"]
 
 [sub_resource type="Resource" id="Resource_vmd61"]
 script = ExtResource("2_ggwng")
@@ -1425,7 +1426,6 @@ script = ExtResource("2_c48a7")
 home_base_data = SubResource("Resource_vmd61")
 raider_scene = ExtResource("4_c0sri")
 end_of_year_popup_scene = ExtResource("2_5el12")
-civilian_data = ExtResource("5_e2i2e")
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]
 position = Vector2(-3, 0)
@@ -1506,6 +1506,11 @@ region_rect = Rect2(202.20213, 73.07374, 43.015152, 43.971046)
 [node name="RTSController" parent="." instance=ExtResource("18_fmib8")]
 
 [node name="RtsInputHandler" parent="." instance=ExtResource("19_c7ve4")]
+
+[node name="UnitSpawner" parent="." node_paths=PackedStringArray("unit_container", "rts_controller") instance=ExtResource("20_fmib8")]
+unit_container = NodePath("../UnitContainer")
+rts_controller = NodePath("../RTSController")
+civilian_data = ExtResource("5_e2i2e")
 
 [editable path="MapResources/Resource_Wood"]
 [editable path="MapResources/Resource_Food"]

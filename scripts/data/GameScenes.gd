@@ -9,5 +9,4 @@ const WORLD_MAP := "world_map"
 # Missions
 const RAID_MISSION := "raid_mission"
 
-# You can add helper functions here later if you need 
-# to validate keys or map them to file paths.
+const WINTER_COURT := "winter_court"

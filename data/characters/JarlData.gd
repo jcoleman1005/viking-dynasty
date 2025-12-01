@@ -89,7 +89,17 @@ extends Resource
 ## Tracks progress towards Warlord trait
 @export var offensive_wins: int = 0 
 
+@export_group("Winter Court")
+var current_hall_actions: int = 0
+var max_hall_actions: int = 0
 # --- HELPER FUNCTIONS ---
+
+func calculate_hall_actions() -> void:
+	# Formula: (Stewardship + Diplomacy) / 5, clamped 2 to 5.
+	# Note: Using 'charisma' as proxy for Diplomacy if Diplomacy isn't explicitly defined yet.
+	var score = stewardship + charisma 
+	max_hall_actions = clampi(score / 5, 2, 5)
+	current_hall_actions = max_hall_actions
 
 func get_safe_range() -> float:
 	return safe_naval_range
