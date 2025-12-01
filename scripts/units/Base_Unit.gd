@@ -52,6 +52,13 @@ func _ready() -> void:
 	var hp_mult = 1.0
 	var dmg_mult = 1.0
 	# Speed is handled by UnitData base, modified by Captains only for now
+	# --- NEW: THOR MODIFIER ---
+	# Global buff for all player units
+	if is_in_group("player_units") and DynastyManager.active_year_modifiers.has("BLOT_THOR"):
+		dmg_mult *= 1.10 # +10% Damage
+		# TODO: Visual feedback (Subtle red tint handled by shader or modulate usually, 
+		# but let's just log it to keep visuals clean for now)
+		# Loggie.msg("Thor's Wrath applied to %s" % name).domain("UNIT").debug()
 	
 	if warband_ref:
 		# 1. Apply Veterancy (XP)

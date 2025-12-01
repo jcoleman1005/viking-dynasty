@@ -2,11 +2,27 @@
 class_name CivilianUnit
 extends BaseUnit
 
+# --- Mob Settings ---
+@export_group("Mob AI")
+## Stronger force to prevent stacking when idle
+@export var mob_separation_force: float = 100.0 
+## Radius to detect neighbors (should differ slightly from unit size)
+@export var mob_separation_radius: float = 45.0 
+
 # --- State ---
 var interaction_target: BaseBuilding = null
 
 func _ready() -> void:
+	# 1. Apply Mob Defaults BEFORE parent initialization
+	# This ensures BaseUnit uses these values when setting up the CollisionShape
+	separation_force = mob_separation_force
+	separation_radius = mob_separation_radius
+	separation_enabled = true
+	
+	# 2. Initialize Parent (BaseUnit)
 	super._ready()
+	
+	# 3. Group Registration
 	add_to_group("civilians")
 
 func _physics_process(delta: float) -> void:
@@ -45,18 +61,18 @@ func _check_arrival_via_geometry() -> void:
 		interaction_target = null
 
 func _perform_assignment(building: BaseBuilding) -> void:
-	Loggie.msg("Civilian attempting to enter %s..." % building.data.display_name).domain("UNIT").info()
+	Loggie.msg("Civilian attempting to enter %s..." % building.data.display_name).domain(LogDomains.UNIT).info()
 	
 	# 1. Attempt Assignment (Check Return Value)
 	var success = SettlementManager.assign_worker_from_unit(building, "peasant")
 	
 	if success:
 		# 2a. Success: Delete Self
-		Loggie.msg("Assignment Success. Despawning.").domain("UNIT").debug()
+		Loggie.msg("Assignment Success. Despawning.").domain(LogDomains.UNIT).debug()
 		die_without_event()
 	else:
 		# 2b. Failure (Full): Cancel interaction and Idle
-		Loggie.msg("Assignment Failed (Building Full). Stopping.").domain("UNIT").warn()
+		Loggie.msg("Assignment Failed (Building Full). Stopping.").domain(LogDomains.UNIT).warn()
 		interaction_target = null
 		
 		# Stop moving physically

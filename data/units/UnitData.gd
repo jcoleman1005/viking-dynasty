@@ -4,10 +4,12 @@ extends Resource
 
 @export var display_name: String = "New Unit"
 
-# --- SOFT REFERENCE ---
-# This uses the file system picker, preventing typos.
+# --- SOFT REFERENCE (Preferred) ---
 @export_file("*.tscn") var scene_path: String = ""
-# ----------------------
+
+# --- HARD REFERENCE (Legacy/Fallback) ---
+@export var scene_to_spawn: PackedScene
+# ----------------------------------------
 
 @export var icon: Texture2D
 @export var spawn_cost: Dictionary = {"food": 25}
@@ -28,7 +30,7 @@ extends Resource
 @export var linear_damping: float = 5.0
 
 @export var ai_component_scene: PackedScene
-@export var projectile_scene: PackedScene 
+@export var projectile_scene: PackedScene
 @export var projectile_speed: float = 400.0
 
 # --- ROBUST LOADER ---

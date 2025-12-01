@@ -4,6 +4,7 @@ extends Node
 @export var settlement_scene: PackedScene
 @export var world_map_scene: PackedScene
 @export var raid_mission_scene: PackedScene
+@export var winter_court_scene: PackedScene
 
 func _ready() -> void:
 	EventBus.scene_change_requested.connect(_on_scene_change_requested)
@@ -21,6 +22,8 @@ func _on_scene_change_requested(scene_key: String) -> void:
 			target_scene = world_map_scene
 		GameScenes.RAID_MISSION: 
 			target_scene = raid_mission_scene
+		GameScenes.WINTER_COURT:
+			target_scene = winter_court_scene
 		_:
 			Loggie.msg("Unknown scene key '%s'." % scene_key).domain("SCENE").error()
 			return

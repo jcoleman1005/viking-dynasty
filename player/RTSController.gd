@@ -20,41 +20,91 @@ func _ready() -> void:
 	EventBus.move_command.connect(_on_move_command)
 	EventBus.attack_command.connect(_on_attack_command)
 	EventBus.formation_move_command.connect(_on_formation_move_command)
-	
-	# --- THIS WAS CAUSING THE ERROR ---
-	# We connect it here, and define the function below
 	EventBus.interact_command.connect(_on_interact_command)
-	# ----------------------------------
 	
 	# Keyboard Commands
 	EventBus.control_group_command.connect(_on_control_group_command)
 	EventBus.formation_change_command.connect(_on_formation_change_command)
 
-# --- NEW FUNCTION: The Missing Piece ---
 func _on_interact_command(target: Node2D) -> void:
-	print("DEBUG: RTSController received INTERACT command for target: ", target.name)
-	
 	_validate_selection()
-	
-	if selected_units.is_empty():
-		print("DEBUG: ...but NO units are selected.")
-		return
+	if selected_units.is_empty(): return
 		
 	for unit in selected_units:
-		# Check if it's a worker
-		if unit.is_in_group("civilians"):
-			if unit.has_method("command_interact"):
-				print("DEBUG: Calling command_interact() on %s" % unit.name)
-				unit.command_interact(target)
-			else:
-				print("DEBUG: ERROR - %s is missing 'command_interact' method!" % unit.name)
+		if unit.is_in_group("civilians") and unit.has_method("command_interact"):
+			unit.command_interact(target)
 		else:
-			# Soldiers just move to guard it
-			print("DEBUG: Unit %s is MILITARY. Move to target." % unit.name)
+			# Soldiers move to guard the interaction point
 			unit.command_move_to(target.global_position)
-# ---------------------------------------
 
-# --- STANDARD LOGIC ---
+# --- MOVEMENT LOGIC REFACTOR ---
+
+func _on_move_command(target_position: Vector2) -> void:
+	_validate_selection()
+	if selected_units.is_empty(): return
+	
+	_handle_movement_logic(target_position, Vector2.DOWN)
+
+func _on_formation_move_command(target_position: Vector2, direction_vector: Vector2) -> void:
+	_validate_selection()
+	if selected_units.is_empty(): return
+	
+	_handle_movement_logic(target_position, direction_vector)
+
+func _handle_movement_logic(target_pos: Vector2, direction: Vector2) -> void:
+	# 1. Sort units by type
+	var soldiers: Array[Node2D] = []
+	var civilians: Array[Node2D] = []
+	
+	for unit in selected_units:
+		if unit.is_in_group("civilians"):
+			civilians.append(unit)
+		else:
+			soldiers.append(unit)
+	
+	# 2. Move Soldiers (Strict Formation)
+	if not soldiers.is_empty():
+		if soldiers.size() == 1:
+			# Single soldier just moves directly
+			if soldiers[0].has_method("command_move_to"):
+				soldiers[0].command_move_to(target_pos)
+		else:
+			_move_group_in_formation(soldiers, target_pos, direction)
+			
+	# 3. Move Civilians (Organic Mob)
+	if not civilians.is_empty():
+		_move_civilians_as_mob(civilians, target_pos)
+
+func _move_group_in_formation(unit_list: Array[Node2D], target: Vector2, direction: Vector2) -> void:
+	# --- MODIFIED: Accepts specific list now ---
+	var formation = SquadFormation.new(unit_list)
+	formation.formation_type = current_formation
+	formation.unit_spacing = 45.0
+	formation.move_to_position(target, direction)
+
+func _move_civilians_as_mob(unit_list: Array[Node2D], target: Vector2) -> void:
+	# "Mob" Logic: Everyone tries to get close to the center, 
+	# relying on Separation Steering (BaseUnit) to handle the collisions naturally.
+	
+	var unit_count = unit_list.size()
+	# Calculate a rough radius for the mob based on count so they don't ALL try to hit pixel (0,0)
+	var mob_radius = sqrt(unit_count) * 20.0 
+	
+	for unit in unit_list:
+		if not is_instance_valid(unit): continue
+		
+		# Pick a random spot within the circle
+		var angle = randf() * TAU
+		var distance = randf() * mob_radius
+		var offset = Vector2(cos(angle), sin(angle)) * distance
+		var specific_dest = target + offset
+		
+		if unit.has_method("command_move_to"):
+			unit.command_move_to(specific_dest)
+
+# ---------------------------------------------------------
+
+# ... [Keep Standard Logic: add_unit, remove_unit, _on_select_command, etc.] ...
 
 func add_unit_to_group(unit: Node2D) -> void:
 	if not unit is BaseUnit: return
@@ -81,6 +131,7 @@ func _on_select_command(select_rect: Rect2, is_box_select: bool) -> void:
 	if not main_camera: return
 	
 	if is_box_select:
+		# 1. Calculate World Rect
 		var camera_pos = main_camera.get_screen_center_position()
 		var camera_zoom = main_camera.zoom
 		var viewport_size = get_viewport().get_visible_rect().size
@@ -88,42 +139,60 @@ func _on_select_command(select_rect: Rect2, is_box_select: bool) -> void:
 		var world_rect_max = world_rect_min + (select_rect.size / camera_zoom)
 		var world_rect = Rect2(world_rect_min, world_rect_max - world_rect_min)
 		
+		# 2. Check Leaders AND their Soldiers
 		for unit in controllable_units:
-			if world_rect.has_point(unit.global_position):
+			if _is_squad_in_rect(unit, world_rect):
 				selected_units.append(unit)
 				unit.set_selected(true)
 	else:
+		# 1. Calculate Click Position
 		var click_world_pos := main_camera.get_global_mouse_position()
-		var closest_unit: BaseUnit = null
+		var closest_leader: BaseUnit = null
 		var min_dist_sq = INF
+		var click_radius_sq = 40 * 40
 		
+		# 2. Check Distance to Leader OR any Soldier
 		for unit in controllable_units:
-			var dist_sq = unit.global_position.distance_squared_to(click_world_pos)
-			if dist_sq < min_dist_sq and dist_sq < (40 * 40): 
+			var dist_sq = _get_closest_distance_to_squad(unit, click_world_pos)
+			
+			if dist_sq < min_dist_sq and dist_sq < click_radius_sq:
 				min_dist_sq = dist_sq
-				closest_unit = unit
+				closest_leader = unit
 				
-		if closest_unit:
-			selected_units.append(closest_unit)
-			closest_unit.set_selected(true)
+		if closest_leader:
+			selected_units.append(closest_leader)
+			closest_leader.set_selected(true)
 			
 	print("DEBUG: Selection Updated. Count: ", selected_units.size())
 
-func _on_move_command(target_position: Vector2) -> void:
-	_validate_selection()
-	if selected_units.is_empty(): return
-	if selected_units.size() == 1:
-		selected_units[0].command_move_to(target_position)
-	else:
-		_move_group_in_formation(target_position, Vector2.DOWN)
+# --- NEW HELPERS ---
 
-func _on_formation_move_command(target_position: Vector2, direction_vector: Vector2) -> void:
-	_validate_selection()
-	if selected_units.is_empty(): return
-	if selected_units.size() == 1:
-		selected_units[0].command_move_to(target_position)
-	else:
-		_move_group_in_formation(target_position, direction_vector)
+func _is_squad_in_rect(unit: BaseUnit, rect: Rect2) -> bool:
+	# 1. Check Leader
+	if rect.has_point(unit.global_position):
+		return true
+		
+	# 2. Check Soldiers (If it's a SquadLeader)
+	if unit is SquadLeader:
+		for soldier in unit.squad_soldiers:
+			if is_instance_valid(soldier) and rect.has_point(soldier.global_position):
+				return true
+				
+	return false
+
+func _get_closest_distance_to_squad(unit: BaseUnit, point: Vector2) -> float:
+	# Start with leader distance
+	var min_d = unit.global_position.distance_squared_to(point)
+	
+	# Check soldiers if applicable
+	if unit is SquadLeader:
+		for soldier in unit.squad_soldiers:
+			if is_instance_valid(soldier):
+				var d = soldier.global_position.distance_squared_to(point)
+				if d < min_d:
+					min_d = d
+					
+	return min_d
 
 func _on_attack_command(target_node: Node2D) -> void:
 	_validate_selection()
@@ -152,14 +221,6 @@ func _clear_selection() -> void:
 		if is_instance_valid(unit): unit.set_selected(false)
 	selected_units.clear()
 
-func _move_group_in_formation(target: Vector2, direction: Vector2) -> void:
-	var units_as_node2d: Array[Node2D] = []
-	for unit in selected_units: units_as_node2d.append(unit)
-	var formation = SquadFormation.new(units_as_node2d)
-	formation.formation_type = current_formation
-	formation.unit_spacing = 45.0
-	formation.move_to_position(target, direction)
-
 func _on_control_group_command(group_index: int, is_assigning: bool) -> void:
 	if is_assigning: _set_control_group(group_index)
 	else: _select_control_group(group_index)
@@ -182,7 +243,6 @@ func _select_control_group(num: int) -> void:
 			unit.set_selected(true)
 
 func _prune_dead_units() -> void:
-	# Rebuilds the list, keeping only valid units
 	var alive_units: Array[BaseUnit] = []
 	for unit in controllable_units:
 		if is_instance_valid(unit):

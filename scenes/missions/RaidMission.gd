@@ -17,8 +17,8 @@ extends Node2D
 @onready var grid_manager: Node = $GridManager
 @onready var building_container: Node2D = $BuildingContainer
 @onready var objective_manager: RaidObjectiveManager = $RaidObjectiveManager
-
-# --- Map Loader ---
+@onready var unit_spawner: UnitSpawner = $UnitSpawner
+# --- NEW: Map Loader ---
 var map_loader: RaidMapLoader
 
 var objective_building: BaseBuilding = null
@@ -118,6 +118,18 @@ func _on_building_destroyed_grid_update(building: BaseBuilding) -> void:
 # --- SPAWNING LOGIC ---
 
 func _spawn_player_garrison() -> void:
+	# 1. Get Data
+	var warbands: Array[WarbandData] = []
+	
+	if SettlementManager.has_current_settlement():
+		warbands = SettlementManager.current_settlement.warbands
+	else:
+		# Fallback for testing without a save file
+		Loggie.msg("RaidMission: No settlement data found. Spawning test garrison.").domain("RAID").warn()
+		# Create a dummy warband if needed, or just return
+		return
+
+	if warbands.is_empty():
 	print("[DIAGNOSTIC] RaidMission: Spawning Player Garrison...")
 	
 	# 1. Determine Source of Troops
@@ -154,83 +166,20 @@ func _spawn_player_garrison() -> void:
 			objective_manager.call_deferred("_check_loss_condition")
 		return
 	
-	# 3. Spawn Loop
-	var units_per_row = player_spawn_formation.get("units_per_row", 5)
-	var spacing = player_spawn_formation.get("spacing", 40.0)
-	var current_squad_index = 0
-	
-	if not player_spawn_pos:
-		print("[DIAGNOSTIC] CRITICAL: PlayerStartPosition node is MISSING!")
-		return
-		
+	# 2. Determine Spawn Point
 	var spawn_origin = player_spawn_pos.global_position
-	print("[DIAGNOSTIC] Spawning at origin: ", spawn_origin)
 	
-	for warband in warbands_to_spawn:
-		print("[DIAGNOSTIC] Processing Warband: ", warband.custom_name)
+	if is_defensive_mission and is_instance_valid(objective_building):
+		spawn_origin = objective_building.global_position + Vector2(100, 100)
+	elif not is_defensive_mission:
+		# Offset slightly for landing look
+		spawn_origin += landing_direction * 200.0
 		
-		if warband.is_wounded: 
-			print("[DIAGNOSTIC] - Skipped (Wounded)")
-			continue
-			
-		var unit_data = warband.unit_type
-		if not unit_data: 
-			print("[DIAGNOSTIC] - Skipped (Missing UnitData)")
-			continue
-		
-		# Validate Scene
-		var scene_ref = unit_data.load_scene()
-		if not scene_ref:
-			print("[DIAGNOSTIC] - Skipped (load_scene failed for path: %s)" % unit_data.scene_path)
-			continue
-		
-		print("[DIAGNOSTIC] - Spawning %d units..." % warband.current_manpower)
-		
-		for i in range(warband.current_manpower):
-			var unit = scene_ref.instantiate()
-			if not unit:
-				print("[DIAGNOSTIC] -- Instantiation failed!")
-				continue
-				
-			unit.warband_ref = warband
-			unit.data = unit_data
-			unit.collision_layer = 2 # Player Unit Layer
-			
-			# Naming
-			if i == 0: unit.name = warband.custom_name + "_Thegn"
-			elif i == 1: unit.name = warband.custom_name + "_Banner"
-			else: unit.name = warband.custom_name + "_Huscarl_" + str(i)
-
-			# Positioning
-			var base_pos = spawn_origin
-			if is_defensive_mission and is_instance_valid(objective_building):
-				base_pos = objective_building.global_position + Vector2(100, 100)
-			else:
-				base_pos += landing_direction * 200.0
-			
-			var row = current_squad_index / units_per_row
-			var col = current_squad_index % units_per_row
-			
-			base_pos.x += col * (spacing * 4)
-			base_pos.y += row * (spacing * 3)
-			
-			var unit_x = (i % 5) * 25
-			var unit_y = (i / 5) * 25
-			
-			unit.global_position = base_pos + Vector2(unit_x, unit_y)
-			
-			unit.add_to_group("player_units")
-			rts_controller.add_unit_to_group(unit)
-			add_child(unit)
-			
-			# Apply Attrition
-			if health_modifier < 1.0:
-				unit.current_health = int(unit.current_health * health_modifier)
-				unit.modulate = Color(0.9, 0.9, 0.8)
-			
-		current_squad_index += 1
-	
-	print("[DIAGNOSTIC] Spawn complete.")
+	# 3. Delegate to Spawner (This handles Squad Leaders vs Soldiers)
+	if unit_spawner:
+		unit_spawner.spawn_garrison(warbands, spawn_origin)
+	else:
+		Loggie.msg("CRITICAL: UnitSpawner missing in RaidMission!").domain("RAID").error()
 
 func _spawn_enemy_wave() -> void:
 	var spawner = get_node_or_null(enemy_spawn_position)
@@ -325,7 +274,8 @@ func _validate_nodes() -> bool:
 	return true
 
 func _spawn_test_units() -> void:
-	# Fallback only used if everything else fails
+	pass # Keep placeholder if needed
+	""" Fallback only used if everything else fails
 	print("[DIAGNOSTIC] Spawning Dummy Units (Fallback)")
 	
 	# Create a dummy unit on the fly if needed, or just load raider
@@ -338,3 +288,4 @@ func _spawn_test_units() -> void:
 		var u = unit_scene.instantiate()
 		u.global_position = player_spawn_pos.global_position + Vector2(i*30, 0)
 		add_child(u)
+  """
