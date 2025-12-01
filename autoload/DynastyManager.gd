@@ -12,6 +12,12 @@ var loaded_legacy_upgrades: Array[LegacyUpgradeData] = []
 var current_raid_difficulty: int = 1 
 var pending_raid_result: Dictionary = {} 
 
+var active_year_modifiers: Dictionary = {}
+var winter_upkeep_report: Dictionary = {} # Stores info for the UI
+var pending_dispute_card: DisputeEventData = null
+var winter_consumption_report: Dictionary = {}
+var winter_crisis_active: bool = false
+
 const PLAYER_JARL_PATH = "res://data/characters/PlayerJarl.tres"
 
 func _ready() -> void:
@@ -272,6 +278,11 @@ func _resolve_expedition(heir: JarlHeirData) -> void:
 func _try_birth_event() -> void:
 	if current_jarl.heirs.size() >= 6: return
 	var base_chance = 0.30
+	
+	if active_year_modifiers.has("BLOT_FREYR"):
+		base_chance += 0.50 # Huge boost
+		Loggie.msg("Freyr's Blessing is active! Birth chance increased.").domain(LogDomains.DYNASTY).info()
+	
 	if current_jarl.age > 50: base_chance -= 0.20
 	if current_jarl.age > 60: base_chance = 0.0
 	
@@ -483,3 +494,210 @@ func kill_heir_by_name(h_name: String, reason: String) -> void:
 		Loggie.msg("The Heir %s has fallen! Reason: %s" % [h_name, reason]).domain("DYNASTY").error()
 		jarl_stats_updated.emit(current_jarl)
 		_save_jarl_data()
+
+func start_winter_phase() -> void:
+	Loggie.msg("--- WINTER HAS COME ---").domain("DYNASTY").info()
+	
+	# 1. Setup Court Resources (Jarl Actions)
+	if current_jarl:
+		current_jarl.calculate_hall_actions()
+		
+	# 2. Fleet Decay logic based on Severity?
+	# We can now ask WinterManager for the current severity to tune attrition!
+	var decay = 0.2
+	if WinterManager.current_severity == WinterManager.WinterSeverity.HARSH:
+		decay = 0.4
+	
+	if SettlementManager.current_settlement:
+		SettlementManager.current_settlement.fleet_readiness = max(0.0, SettlementManager.current_settlement.fleet_readiness - decay)
+	
+	# 3. Calculate Needs (Delegated to WinterManager)
+	_calculate_winter_needs()
+	
+	# 4. Open UI
+	EventBus.scene_change_requested.emit("winter_court")
+
+func _calculate_winter_needs() -> void:
+	var settlement = SettlementManager.current_settlement
+	if not settlement: return
+	
+	# --- NEW: Call the dedicated manager ---
+	var demand_report = WinterManager.calculate_winter_demand(settlement)
+	# ---------------------------------------
+	
+	var food_cost = demand_report["food_demand"]
+	var wood_cost = demand_report["wood_demand"]
+	
+	# Check Treasury vs Demand
+	var food_stock = settlement.treasury.get("food", 0)
+	var wood_stock = settlement.treasury.get("wood", 0)
+	
+	var food_deficit = max(0, food_cost - food_stock)
+	var wood_deficit = max(0, wood_cost - wood_stock)
+	
+	# Store Report (Mapped for UI consumption)
+	winter_consumption_report = {
+		"severity": demand_report["severity_name"], # For UI flavor text
+		"multiplier": demand_report["multiplier"],
+		"food_cost": food_cost,
+		"wood_cost": wood_cost,
+		"food_deficit": food_deficit,
+		"wood_deficit": wood_deficit
+	}
+	
+	# Determine Crisis State
+	if food_deficit > 0 or wood_deficit > 0:
+		winter_crisis_active = true
+		Loggie.msg("Winter Crisis! Deficits: Food %d, Wood %d" % [food_deficit, wood_deficit]).domain("DYNASTY").warn()
+	else:
+		winter_crisis_active = false
+		_apply_winter_consumption()
+
+func _apply_winter_consumption() -> void:
+	var settlement = SettlementManager.current_settlement
+	if not settlement: return
+	
+	# Deduct the Base Costs (we assume deficits are resolved by now)
+	# If we paid gold to import, the deficit is gone. 
+	# If we sacrificed population, the cost might have lowered, but for simplicity
+	# we just zero out the treasury for the missing resource and assume the rest was "paid" by the sacrifice.
+	
+	settlement.treasury["food"] = max(0, settlement.treasury.get("food", 0) - winter_consumption_report["food_cost"])
+	settlement.treasury["wood"] = max(0, settlement.treasury.get("wood", 0) - winter_consumption_report["wood_cost"])
+	
+	EventBus.treasury_updated.emit(settlement.treasury)
+
+# --- NEW: Crisis Resolution Methods ---
+
+func resolve_crisis_with_gold() -> bool:
+	var food_def = winter_consumption_report["food_deficit"]
+	var wood_def = winter_consumption_report["wood_deficit"]
+	
+	# Import Costs: Expensive! 5 Gold per Food/Wood
+	var total_gold_cost = (food_def * 5) + (wood_def * 5)
+	
+	if SettlementManager.attempt_purchase({"gold": total_gold_cost}):
+		winter_crisis_active = false
+		_apply_winter_consumption() # Consume the stock we just "bought"
+		Loggie.msg("Winter Crisis averted via Gold imports.").domain(LogDomains.DYNASTY).info()
+		return true
+	return false
+
+func resolve_crisis_with_sacrifice(sacrifice_type: String) -> bool:
+	# Cost: 1 Hall Action
+	if not perform_hall_action(1):
+		return false
+		
+	var settlement = SettlementManager.current_settlement
+	
+	match sacrifice_type:
+		"starve_peasants":
+			# Consequence: Pop Loss
+			var deaths = max(1, int(winter_consumption_report["food_deficit"] / 5))
+			settlement.population_peasants = max(0, settlement.population_peasants - deaths)
+			Loggie.msg("Crisis Resolution: %d peasants starved." % deaths).domain(LogDomains.DYNASTY).warn()
+			
+		"disband_warband":
+			# Consequence: Lose a Unit
+			if not settlement.warbands.is_empty():
+				var wb = settlement.warbands.pop_back()
+				Loggie.msg("Crisis Resolution: %s disbanded to save food." % wb.custom_name).domain(LogDomains.DYNASTY).warn()
+				
+		"burn_ships":
+			# Consequence: Fleet Readiness 0
+			settlement.fleet_readiness = 0.0
+			Loggie.msg("Crisis Resolution: Ships burned for firewood.").domain(LogDomains.DYNASTY).warn()
+			
+	# Crisis is "Resolved" (accepted)
+	winter_crisis_active = false
+	
+	# We still deduct whatever stock we DID have
+	_apply_winter_consumption()
+	return true
+
+func _calculate_and_apply_upkeep() -> void:
+	var settlement = SettlementManager.current_settlement
+	if not settlement: return
+	
+	# Costs
+	var food_cost = (settlement.population_peasants * 1) + (settlement.warbands.size() * 5)
+	var wood_cost = 20 # Heating base cost
+	
+	# Check Treasury
+	var has_food = settlement.treasury.get("food", 0) >= food_cost
+	var has_wood = settlement.treasury.get("wood", 0) >= wood_cost
+	
+	# Apply Consumption
+	settlement.treasury["food"] = max(0, settlement.treasury.get("food", 0) - food_cost)
+	settlement.treasury["wood"] = max(0, settlement.treasury.get("wood", 0) - wood_cost)
+	
+	# Store Report for UI
+	winter_upkeep_report = {
+		"food_consumed": food_cost,
+		"wood_consumed": wood_cost,
+		"starvation": !has_food,
+		"freezing": !has_wood
+	}
+	
+	# Apply Crisis Consequences immediately
+	if not has_food:
+		var deaths = randi_range(1, 3)
+		settlement.population_peasants = max(0, settlement.population_peasants - deaths)
+		Loggie.msg("Winter Starvation! %d peasants died." % deaths).domain("DYNASTY").warn()
+		
+	if not has_wood:
+		# Maybe applies a health debuff to garrison?
+		pass
+		
+	EventBus.treasury_updated.emit(settlement.treasury)
+
+func perform_hall_action(cost: int = 1) -> bool:
+	if not current_jarl or current_jarl.current_hall_actions < cost:
+		return false
+	current_jarl.current_hall_actions -= cost
+	jarl_stats_updated.emit(current_jarl)
+	return true
+
+func end_winter_phase() -> void:
+	# This replaces the old end_year function
+	if not current_jarl: return
+	
+	# 1. Age & Death Check
+	current_jarl.age_jarl(1)
+	if _check_for_jarl_death(): return # Stops flow if dead
+	
+	# 2. Reset Authority for Summer
+	current_jarl.reset_authority()
+	
+	# 3. Clear Old Modifiers
+	active_year_modifiers.clear()
+	
+	# 4. Apply Production (The Thaw) via EconomyManager
+	# Note: EconomyManager needs to be updated to NOT deduct food again, 
+	# since we did it in start_winter(). 
+	var payout = EconomyManager.calculate_payout() 
+	SettlementManager.deposit_resources(payout)
+	
+	# 5. Save & Return to Game
+	_save_jarl_data()
+	jarl_stats_updated.emit(current_jarl)
+	EventBus.scene_change_requested.emit("settlement")
+
+# --- ACTION HELPERS ---
+
+func apply_year_modifier(key: String) -> void:
+	if key.is_empty(): return
+	active_year_modifiers[key] = true
+	Loggie.msg("Winter Decree: Modifier '%s' active for next year." % key).domain("DYNASTY").warn()
+
+func draw_dispute_card() -> DisputeEventData:
+	# In a real implementation, load all from folder.
+	# For now, return a generated test card.
+	var card = DisputeEventData.new()
+	card.title = "Stolen Cattle"
+	card.description = "A Bondi accuses a Huscarl of theft."
+	card.gold_cost = 50
+	card.renown_cost = 10
+	card.penalty_modifier_key = "angry_bondi"
+	card.penalty_description = "Recruitment halted."
+	return card

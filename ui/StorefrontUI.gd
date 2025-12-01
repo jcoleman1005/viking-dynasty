@@ -3,17 +3,6 @@ extends Control
 
 const LegacyUpgradeData = preload("res://data/legacy/LegacyUpgradeData.gd")
 
-# --- Header References (Permanent HUD) ---
-@onready var gold_label: Label = %GoldLabel
-@onready var wood_label: Label = %WoodLabel
-@onready var food_label: Label = %FoodLabel
-@onready var stone_label: Label = %StoneLabel
-@onready var unit_count_label: Label = %UnitCountLabel
-
-# --- NEW: Population References ---
-@onready var peasant_label: Label = %PeasantLabel
-@onready var thrall_label: Label = %ThrallLabel
-
 # --- Window References ---
 @onready var build_window: Control = %BuildWindow
 @onready var recruit_window: Control = %RecruitWindow
@@ -24,7 +13,7 @@ const LegacyUpgradeData = preload("res://data/legacy/LegacyUpgradeData.gd")
 @onready var recruit_list: Container = %RecruitList
 @onready var legacy_list: Container = %LegacyList
 
-# --- Legacy Stats ---
+# --- Legacy Stats (Inside Legacy Window) ---
 @onready var renown_label: Label = %RenownLabel
 @onready var authority_label: Label = %AuthorityLabel
 
@@ -40,31 +29,24 @@ const LegacyUpgradeData = preload("res://data/legacy/LegacyUpgradeData.gd")
 # --- Data ---
 @export var available_buildings: Array[BuildingData] = []
 @export var available_units: Array[UnitData] = []
-@export var default_treasury_display: Dictionary = {} 
 @export var auto_load_units_from_directory: bool = true
 
 func _ready() -> void:
-	default_treasury_display = {
-		GameResources.GOLD: 0, 
-		GameResources.WOOD: 0, 
-		GameResources.FOOD: 0, 
-		GameResources.STONE: 0
-	}
-	
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	EventBus.treasury_updated.connect(_update_treasury_display)
+	# We no longer need to listen to treasury_updated for labels (TreasuryHUD does that).
+	# We only listen to events that require refreshing the buttons (affordability checks).
 	EventBus.purchase_successful.connect(_on_purchase_successful)
 	EventBus.purchase_failed.connect(_on_purchase_failed)
 	EventBus.settlement_loaded.connect(_on_settlement_loaded)
+	
 	DynastyManager.jarl_stats_updated.connect(_update_jarl_stats_display)
-	DynastyManager.year_ended.connect(_update_garrison_display)
+	DynastyManager.year_ended.connect(_on_year_ended)
 	
 	_apply_theme_overrides()
 	_setup_dock_icons()
 	_setup_window_logic()
 	
-	call_deferred("_update_initial_treasury")
 	_load_building_data()
 	_load_unit_data()
 	
@@ -73,55 +55,15 @@ func _ready() -> void:
 	
 	_refresh_all()
 
-# --- VISUAL SETUP (CRASH PROOF) ---
+# --- VISUAL SETUP ---
 func _apply_theme_overrides() -> void:
-	var tag_path = "res://ui/assets/resource_tag.png"
-	var font_path = "res://assets/fonts/UncialAntiqua-Regular.ttf"
+	# We removed the label styling logic since TreasuryHUD handles itself.
+	# We keep the Tooltip styling if needed.
 	var tooltip_bg_path = "res://ui/assets/tooltip_bg.png"
 	var default_theme_path = "res://ui/themes/VikingDynastyTheme.tres"
 	
-	var plaque_tex = load(tag_path) if ResourceLoader.exists(tag_path) else null
-	var font = load(font_path) if ResourceLoader.exists(font_path) else null
-	var tooltip_tex = load(tooltip_bg_path) if ResourceLoader.exists(tooltip_bg_path) else null
-	
-	# 1. Resource Labels & Icons
-	if plaque_tex and font:
-		var style = StyleBoxTexture.new()
-		style.texture = plaque_tex
-		style.content_margin_left = 16
-		style.content_margin_right = 16
-		style.content_margin_top = 4 # Reduced padding
-		style.content_margin_bottom = 4
-		
-		var labels = [gold_label, wood_label, food_label, stone_label, unit_count_label, peasant_label, thrall_label]
-		for lbl in labels:
-			if lbl:
-				lbl.add_theme_stylebox_override("normal", style)
-				lbl.add_theme_font_override("font", font)
-				
-				# --- FIX 1: Smaller Font ---
-				lbl.add_theme_font_size_override("font_size", 24) 
-				# ---------------------------
-				
-				lbl.add_theme_color_override("font_color", Color("#f5e6d3"))
-				lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-				lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-				lbl.custom_minimum_size.y = 48 # Reduced height
-				
-				# --- FIX 2: Force Icon Visibility ---
-				# Look at the parent (HBox) and find any TextureRect siblings
-				var container = lbl.get_parent()
-				if container:
-					for child in container.get_children():
-						if child is TextureRect:
-							# Force the icon to expand to fit the available height
-							child.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-							child.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-							# Force a minimum size so it can't be crushed to 0
-							child.custom_minimum_size = Vector2(40, 40)
-	
-	# 2. Tooltip Styling (Keep existing logic)
-	if tooltip_tex:
+	if ResourceLoader.exists(tooltip_bg_path):
+		var tooltip_tex = load(tooltip_bg_path)
 		var style_tooltip = StyleBoxTexture.new()
 		style_tooltip.texture = tooltip_tex
 		style_tooltip.content_margin_left = 12
@@ -167,7 +109,10 @@ func _setup_window_logic() -> void:
 	btn_manage.pressed.connect(func(): EventBus.worker_management_toggled.emit())
 	btn_family.pressed.connect(func(): EventBus.dynasty_view_requested.emit())
 	btn_map.pressed.connect(func(): EventBus.scene_change_requested.emit(GameScenes.WORLD_MAP))
+	
+	# --- MODIFIED: Redirect End Year to Winter Phase ---
 	btn_end_year.pressed.connect(func(): EventBus.end_year_requested.emit())
+	# ---------------------------------------------------
 	
 	var windows = [build_window, recruit_window, legacy_window]
 	for win in windows:
@@ -195,29 +140,6 @@ func _refresh_all() -> void:
 	_update_garrison_display()
 	_populate_legacy_buttons()
 	
-func _update_treasury_display(treasury: Dictionary) -> void:
-	# Use GameResources constants to safely access the dictionary
-	gold_label.text = "%d" % treasury.get(GameResources.GOLD, 0)
-	wood_label.text = "%d" % treasury.get(GameResources.WOOD, 0)
-	food_label.text = "%d" % treasury.get(GameResources.FOOD, 0)
-	stone_label.text = "%d" % treasury.get(GameResources.STONE, 0)
-	
-	if SettlementManager.current_settlement:
-		unit_count_label.text = "%d" % SettlementManager.current_settlement.warbands.size()
-		
-		var idle_p = SettlementManager.get_idle_peasants()
-		var total_p = SettlementManager.current_settlement.population_peasants
-		var idle_t = SettlementManager.get_idle_thralls()
-		var total_t = SettlementManager.current_settlement.population_thralls
-		
-		if peasant_label: peasant_label.text = "%d/%d" % [idle_p, total_p]
-		if thrall_label: thrall_label.text = "%d/%d" % [idle_t, total_t]
-
-func _update_initial_treasury() -> void:
-	await get_tree().process_frame
-	if SettlementManager.current_settlement and SettlementManager.current_settlement.treasury:
-		_update_treasury_display(SettlementManager.current_settlement.treasury)
-
 func _on_purchase_successful(_item: String) -> void:
 	_refresh_all()
 
@@ -239,8 +161,11 @@ func _show_toast(text: String, color: Color) -> void:
 	tween.tween_property(label, "modulate:a", 0.0, 1.5).set_ease(Tween.EASE_IN)
 	tween.chain().tween_callback(label.queue_free)
 
-func _on_settlement_loaded(data: SettlementData) -> void:
-	if data: _update_treasury_display(data.treasury)
+func _on_settlement_loaded(_data: SettlementData) -> void:
+	_refresh_all()
+
+func _on_year_ended() -> void:
+	_update_garrison_display()
 	_refresh_all()
 
 func _update_jarl_stats_display(jarl_data: JarlData) -> void:
@@ -412,3 +337,9 @@ func _format_cost(cost: Dictionary) -> String:
 		s.append("%d %s" % [cost[k], display_name])
 		# ------------------------------------
 	return ", ".join(s)
+
+# Helper to find idle worker for the warning dialog
+func _select_idle_worker() -> void:
+	# Logic to find/select an idle unit could be added here if we tracked units that way.
+	# For now, opening the recruit/manage tab is sufficient.
+	EventBus.worker_management_toggled.emit()

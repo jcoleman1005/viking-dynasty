@@ -190,15 +190,18 @@ func _on_end_year_pressed() -> void:
 func _start_end_year_sequence() -> void:
 	_close_all_popups()
 	
-	if not is_instance_valid(end_of_year_popup):
-		_finalize_end_year({})
-		return
-		
-	# 1. Calculate Income
-	var payout = SettlementManager.calculate_payout()
+	Loggie.msg("SettlementBridge: Handing off to DynastyManager for Winter Phase.").domain("SETTLEMENT").info()
 	
-	# 2. Show Popup
-	end_of_year_popup.display_payout(payout, "Year End Report")
+	# The old popup logic is bypassed. 
+	# We go directly to the Winter Phase state machine.
+	DynastyManager.start_winter_phase()
+
+""""
+	Note: The old _on_payout_collected and _finalize_end_year functions in SettlementBridge are now effectively deprecated/unused, 
+	but you can leave them there for now to avoid script errors if other things reference them. 
+	The new flow handles the payout calculation inside DynastyManager.end_winter_phase()
+	 logic we wrote previously.
+"""
 
 func _on_payout_collected(payout: Dictionary) -> void:
 	# 3. Deposit Resources
@@ -343,6 +346,11 @@ func _process_raid_return() -> void:
 	if outcome == "victory": xp_gain = 50
 	elif outcome == "retreat": xp_gain = 20
 	
+	# --- NEW: ODIN MODIFIER ---
+	if xp_gain > 0 and DynastyManager.active_year_modifiers.has("BLOT_ODIN"):
+		xp_gain = int(xp_gain * 1.5)
+		Loggie.msg("Odin's Wisdom: XP gain increased to %d." % xp_gain).domain("SETTLEMENT").info()
+		
 	if SettlementManager.current_settlement and xp_gain > 0:
 		for warband in SettlementManager.current_settlement.warbands:
 			if not warband.is_wounded:
