@@ -1,8 +1,8 @@
-[gd_resource type="Resource" script_class="JarlData" load_steps=4 format=3 uid="uid://difnxy4xdv445"]
+[gd_resource type="Resource" script_class="JarlData" load_steps=4 format=3]
 
-[ext_resource type="Script" uid="uid://cql5qpafvywy1" path="res://data/characters/JarlHeirData.gd" id="1_4gouw"]
-[ext_resource type="Script" uid="uid://bm8qe8d38a1il" path="res://data/characters/JarlData.gd" id="1_jarl_data"]
-[ext_resource type="Script" uid="uid://dwh8olikns4xw" path="res://data/traits/JarlTraitData.gd" id="3_0bn2j"]
+[ext_resource type="Script" path="res://data/characters/JarlHeirData.gd" id="1_4gouw"]
+[ext_resource type="Script" path="res://data/characters/JarlData.gd" id="1_jarl_data"]
+[ext_resource type="Script" path="res://data/traits/JarlTraitData.gd" id="3_0bn2j"]
 
 [resource]
 script = ExtResource("1_jarl_data")
