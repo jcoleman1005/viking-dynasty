@@ -274,8 +274,7 @@ func _validate_nodes() -> bool:
 	return true
 
 func _spawn_test_units() -> void:
-	pass # Keep placeholder if needed
-	""" Fallback only used if everything else fails
+	# Fallback only used if everything else fails
 	print("[DIAGNOSTIC] Spawning Dummy Units (Fallback)")
 	
 	# Create a dummy unit on the fly if needed, or just load raider
@@ -288,4 +287,3 @@ func _spawn_test_units() -> void:
 		var u = unit_scene.instantiate()
 		u.global_position = player_spawn_pos.global_position + Vector2(i*30, 0)
 		add_child(u)
-  """
