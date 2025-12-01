@@ -5,7 +5,6 @@ class_name RaidLootData
 @export var collected_loot: Dictionary = {}
 
 func _init() -> void:
-	# --- FIX: Use Constants ---
 	collected_loot = {
 		GameResources.GOLD: 0,
 		GameResources.WOOD: 0,
@@ -27,10 +26,15 @@ func add_loot_from_building(building_data: BuildingData) -> void:
 	
 	if building_data is EconomicBuildingData:
 		var eco_data: EconomicBuildingData = building_data
-		var loot_amount = eco_data.fixed_payout_amount * 3
+		
+		# --- FIX: Updated property name from 'fixed_payout_amount' to 'base_passive_output' ---
+		# We multiply the passive output by 3 to represent "looting the stockpile"
+		var loot_amount = eco_data.base_passive_output * 3
+		
 		add_loot(eco_data.resource_type, loot_amount)
 	else:
-		# --- FIX: Use Constant ---
+		# Non-economic buildings (Walls, Watchtowers) yield a small amount of Gold/Materials
+		# Checking if it has a cost to refund some of it, or just flat gold
 		add_loot(GameResources.GOLD, 50)
 
 func get_total_loot() -> Dictionary:
@@ -42,7 +46,6 @@ func clear_loot() -> void:
 
 func get_loot_summary() -> String:
 	var summary_parts: Array[String] = []
-	# Use GameResources order to ensure consistent display (Gold first, then Wood...)
 	for resource_type in GameResources.ALL_CURRENCIES:
 		if collected_loot.has(resource_type) and collected_loot[resource_type] > 0:
 			var display_name = GameResources.get_display_name(resource_type)

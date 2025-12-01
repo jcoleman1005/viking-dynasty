@@ -35,17 +35,31 @@ extends Resource
 
 # --- ROBUST LOADER ---
 func load_scene() -> PackedScene:
-	# 1. Try Loading from Path (Preferred)
-	if scene_path != "":
-		if ResourceLoader.exists(scene_path):
-			return load(scene_path)
-		else:
-			Loggie.msg("UnitData Error: File not found at %s" % scene_path).domain("SYSTEM").error()
-	
-	# 2. Fallback to Hard Reference (Legacy support)
-	if scene_to_spawn:
-		return scene_to_spawn
+	# 1. Check for empty string (The issue we just faced)
+	if scene_path == "":
+		var msg = "UnitData CRITICAL: Unit '%s' has NO 'scene_path' assigned! Please fix in Inspector." % display_name
 		
-	# 3. Failure
-	Loggie.msg("UnitData Error: No scene assigned for %s" % display_name).domain("SYSTEM").error()
-	return null
+		# Log to Loggie for history
+		Loggie.msg(msg).domain("SYSTEM").error()
+		
+		# Push to Godot Debugger (Red Error)
+		push_error(msg) 
+		return null
+		
+	# 2. Check if file actually exists on disk
+	if not ResourceLoader.exists(scene_path):
+		var msg = "UnitData CRITICAL: File not found at '%s' for unit '%s'. Has it been moved?" % [scene_path, display_name]
+		Loggie.msg(msg).domain("SYSTEM").error()
+		push_error(msg)
+		return null
+		
+	# 3. Attempt load
+	var scene = load(scene_path)
+	if not scene:
+		var msg = "UnitData CRITICAL: Failed to load resource at '%s'. File may be corrupt." % scene_path
+		Loggie.msg(msg).domain("SYSTEM").error()
+		push_error(msg)
+		return null
+		
+	# 4. Success
+	return scene

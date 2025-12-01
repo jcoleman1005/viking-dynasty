@@ -7,8 +7,6 @@
 [resource]
 script = ExtResource("1_abcde")
 resource_type = "gold"
-fixed_payout_amount = 25
-storage_cap = 200
 display_name = "Monastery Chapel"
 scene_to_spawn = ExtResource("2_fghij")
 building_texture = ExtResource("1_v3nxr")

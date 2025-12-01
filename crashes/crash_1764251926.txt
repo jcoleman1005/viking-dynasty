@@ -1,0 +1,17 @@
+
+================================================================
+CrashHandlerException: Program crashed
+Engine version: Orca Engine v4.5.beta.custom_build (180403853faf0cf52bdc3e704407a285c1efd475)
+Dumping the backtrace. Please include this when reporting the bug on: https://github.com/godotengine/godot/issues
+[0] <couldn't map PC to fn name>
+[1] <couldn't map PC to fn name>
+[2] <couldn't map PC to fn name>
+[3] <couldn't map PC to fn name>
+[4] <couldn't map PC to fn name>
+[5] <couldn't map PC to fn name>
+[6] <couldn't map PC to fn name>
+[7] <couldn't map PC to fn name>
+[8] <couldn't map PC to fn name>
+[9] <couldn't map PC to fn name>
+-- END OF C++ BACKTRACE --
+================================================================

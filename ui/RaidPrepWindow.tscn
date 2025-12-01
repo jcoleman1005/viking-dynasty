@@ -1,0 +1,171 @@
+[gd_scene load_steps=2 format=3 uid="uid://ciue5kdakyr78"]
+
+[ext_resource type="Script" uid="uid://dsb5s7kg7ce80" path="res://ui/RaidPrepWindow.gd" id="1_tdrb5"]
+
+[node name="RaidPrepWindow" type="PanelContainer"]
+script = ExtResource("1_tdrb5")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="MainVBox" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="HeaderLabel" type="Label" parent="MarginContainer/MainVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Muster the Leidang"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/MainVBox"]
+layout_mode = 2
+
+[node name="ContentHBox" type="HBoxContainer" parent="MarginContainer/MainVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 20
+
+[node name="LeftCol" type="VBoxContainer" parent="MarginContainer/MainVBox/ContentHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="TargetNameLabel" type="Label" parent="MarginContainer/MainVBox/ContentHBox/LeftCol"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+theme_override_font_sizes/font_size = 20
+text = "Target Name"
+
+[node name="DescriptionLabel" type="RichTextLabel" parent="MarginContainer/MainVBox/ContentHBox/LeftCol"]
+layout_mode = 2
+size_flags_vertical = 3
+text = "Description goes here..."
+fit_content = true
+
+[node name="StatsGrid" type="GridContainer" parent="MarginContainer/MainVBox/ContentHBox/LeftCol"]
+layout_mode = 2
+columns = 2
+
+[node name="LabelDiff" type="Label" parent="MarginContainer/MainVBox/ContentHBox/LeftCol/StatsGrid"]
+modulate = Color(0.827451, 0.827451, 0.827451, 1)
+layout_mode = 2
+text = "Difficulty:"
+
+[node name="ValDiff" type="Label" parent="MarginContainer/MainVBox/ContentHBox/LeftCol/StatsGrid"]
+layout_mode = 2
+text = "1 Star"
+
+[node name="LabelCost" type="Label" parent="MarginContainer/MainVBox/ContentHBox/LeftCol/StatsGrid"]
+modulate = Color(0.827451, 0.827451, 0.827451, 1)
+layout_mode = 2
+text = "Auth Cost:"
+
+[node name="ValCost" type="Label" parent="MarginContainer/MainVBox/ContentHBox/LeftCol/StatsGrid"]
+layout_mode = 2
+text = "1"
+
+[node name="LabelTravel" type="Label" parent="MarginContainer/MainVBox/ContentHBox/LeftCol/StatsGrid"]
+modulate = Color(0.827451, 0.827451, 0.827451, 1)
+layout_mode = 2
+text = "Travel Time:"
+
+[node name="ValTravel" type="Label" parent="MarginContainer/MainVBox/ContentHBox/LeftCol/StatsGrid"]
+layout_mode = 2
+text = "Medium"
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/MainVBox/ContentHBox"]
+layout_mode = 2
+
+[node name="RightCol" type="VBoxContainer" parent="MarginContainer/MainVBox/ContentHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CapacityLabel" type="Label" parent="MarginContainer/MainVBox/ContentHBox/RightCol"]
+layout_mode = 2
+text = "Fleet Capacity: 0/4"
+horizontal_alignment = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/MainVBox/ContentHBox/RightCol"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="WarbandList" type="VBoxContainer" parent="MarginContainer/MainVBox/ContentHBox/RightCol/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BondiPanel" type="PanelContainer" parent="MarginContainer/MainVBox/ContentHBox/RightCol"]
+layout_mode = 2
+
+[node name="BondiVBox" type="VBoxContainer" parent="MarginContainer/MainVBox/ContentHBox/RightCol/BondiPanel"]
+layout_mode = 2
+
+[node name="BondiLabel" type="Label" parent="MarginContainer/MainVBox/ContentHBox/RightCol/BondiPanel/BondiVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.029002039, 0.22655004, 0.21467707, 1)
+text = "Recruit the Bondi (Farmers)"
+
+[node name="BondiSliderBox" type="HBoxContainer" parent="MarginContainer/MainVBox/ContentHBox/RightCol/BondiPanel/BondiVBox"]
+layout_mode = 2
+
+[node name="BondiSlider" type="HSlider" parent="MarginContainer/MainVBox/ContentHBox/RightCol/BondiPanel/BondiVBox/BondiSliderBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+max_value = 10.0
+
+[node name="BondiCountLabel" type="Label" parent="MarginContainer/MainVBox/ContentHBox/RightCol/BondiPanel/BondiVBox/BondiSliderBox"]
+custom_minimum_size = Vector2(60, 0)
+layout_mode = 2
+text = "0 / 10"
+horizontal_alignment = 2
+
+[node name="HSeparator2" type="HSeparator" parent="MarginContainer/MainVBox"]
+layout_mode = 2
+
+[node name="ProvisionsPanel" type="PanelContainer" parent="MarginContainer/MainVBox"]
+layout_mode = 2
+
+[node name="HBox" type="HBoxContainer" parent="MarginContainer/MainVBox/ProvisionsPanel"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/MainVBox/ProvisionsPanel/HBox"]
+layout_mode = 2
+text = "Supplies:"
+
+[node name="ProvisionSlider" type="HSlider" parent="MarginContainer/MainVBox/ProvisionsPanel/HBox"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+size_flags_vertical = 4
+max_value = 2.0
+value = 1.0
+tick_count = 3
+ticks_on_borders = true
+
+[node name="CostLabel" type="Label" parent="MarginContainer/MainVBox/ProvisionsPanel/HBox"]
+layout_mode = 2
+text = "0 Food"
+
+[node name="EffectLabel" type="Label" parent="MarginContainer/MainVBox/ProvisionsPanel/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Normal Risk"
+horizontal_alignment = 2
+
+[node name="ActionButtons" type="HBoxContainer" parent="MarginContainer/MainVBox"]
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 2
+
+[node name="CancelButton" type="Button" parent="MarginContainer/MainVBox/ActionButtons"]
+custom_minimum_size = Vector2(100, 40)
+layout_mode = 2
+text = "Cancel"
+
+[node name="LaunchButton" type="Button" parent="MarginContainer/MainVBox/ActionButtons"]
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+text = "Set Sail"

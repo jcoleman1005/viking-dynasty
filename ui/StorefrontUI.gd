@@ -20,7 +20,6 @@ const LegacyUpgradeData = preload("res://data/legacy/LegacyUpgradeData.gd")
 # --- Dock Buttons ---
 @onready var btn_build: Button = %Btn_Build
 @onready var btn_recruit: Button = %Btn_Recruit
-@onready var btn_manage: Button = %Btn_Manage
 @onready var btn_upgrades: Button = %Btn_LegacyUpgrades
 @onready var btn_family: Button = %Btn_Family
 @onready var btn_map: Button = %Btn_Map
@@ -87,7 +86,6 @@ func _apply_theme_overrides() -> void:
 func _setup_dock_icons() -> void:
 	_set_btn_icon(btn_build, "res://ui/assets/icon_build.png")
 	_set_btn_icon(btn_recruit, "res://ui/assets/icon_army.png")
-	_set_btn_icon(btn_manage, "res://ui/assets/icon_manage.png")
 	_set_btn_icon(btn_upgrades, "res://ui/assets/icon_crown.png")
 	_set_btn_icon(btn_family, "res://ui/assets/icon_family.png")
 	_set_btn_icon(btn_map, "res://ui/assets/icon_map.png")
@@ -106,7 +104,6 @@ func _setup_window_logic() -> void:
 	btn_recruit.pressed.connect(_toggle_window.bind(recruit_window))
 	btn_upgrades.pressed.connect(_toggle_window.bind(legacy_window))
 	
-	btn_manage.pressed.connect(func(): EventBus.worker_management_toggled.emit())
 	btn_family.pressed.connect(func(): EventBus.dynasty_view_requested.emit())
 	btn_map.pressed.connect(func(): EventBus.scene_change_requested.emit(GameScenes.WORLD_MAP))
 	

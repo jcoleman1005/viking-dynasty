@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="UnitData" load_steps=3 format=3 uid="uid://dpe2acwvvxthl"]
+
+[ext_resource type="Texture2D" uid="uid://cukqh3t2wkmua" path="res://ui/assets/res_peasant.png" id="1_g7i4f"]
+[ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="2_xjqxg"]
+
+[resource]
+script = ExtResource("2_xjqxg")
+display_name = "Bondi"
+scene_path = "res://scenes/units/Bondi.tscn"
+icon = ExtResource("1_g7i4f")
+spawn_cost = {
+"food": 0
+}
+max_health = 40
+attack_damage = 6
+visual_texture = ExtResource("1_g7i4f")

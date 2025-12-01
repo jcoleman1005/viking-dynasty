@@ -7,7 +7,6 @@
 [resource]
 script = ExtResource("3_svyis")
 resource_type = "food"
-fixed_payout_amount = 75
 display_name = "Farm"
 scene_to_spawn = ExtResource("2_mixjq")
 icon = ExtResource("1_lr1ah")
@@ -20,3 +19,4 @@ grid_size = Vector2i(2, 2)
 dev_color = Color(0.85490197, 0.8, 0.2, 1)
 is_player_buildable = true
 territory_radius = 0
+arable_land_capacity = 5

@@ -362,11 +362,35 @@ func _on_building_right_clicked(building: BaseBuilding) -> void:
 func _process_raid_return() -> void:
 	var result = DynastyManager.pending_raid_result
 	var outcome = result.get("outcome")
+	
+	# --- NEW: Process Returning Bondi ---
+	if SettlementManager.current_settlement:
+		var warbands_to_disband: Array[WarbandData] = []
+		
+		for warband in SettlementManager.current_settlement.warbands:
+			if warband.is_bondi:
+				# Refund Survivors
+				if warband.current_manpower > 0:
+					SettlementManager.current_settlement.population_peasants += warband.current_manpower
+					Loggie.msg("Bondi disbanded. %d returned to work." % warband.current_manpower).domain(LogDomains.SETTLEMENT).info()
+				
+				warbands_to_disband.append(warband)
+		
+		# Cleanup
+		for wb in warbands_to_disband:
+			SettlementManager.current_settlement.warbands.erase(wb)
+	# -------------------------------------
+
+	var grade = result.get("victory_grade", "Standard")
 	var loot_summary = {}
 	
 	var xp_gain = 0
-	if outcome == "victory": xp_gain = 50
-	elif outcome == "retreat": xp_gain = 20
+	if outcome == "victory": 
+		xp_gain = 50
+		if grade == "Decisive": xp_gain = 75
+		elif grade == "Pyrrhic": xp_gain = 25
+	elif outcome == "retreat": 
+		xp_gain = 20
 	
 	# --- NEW: ODIN MODIFIER ---
 	if xp_gain > 0 and DynastyManager.active_year_modifiers.has("BLOT_ODIN"):
@@ -382,10 +406,41 @@ func _process_raid_return() -> void:
 		var gold = result.get("gold_looted", 0)
 		var difficulty = DynastyManager.current_raid_difficulty
 		var bonus = 200 + (difficulty * 50)
+		
+		# Decisive Bonus
+		if grade == "Decisive":
+			bonus += 100
+			
 		loot_summary["gold"] = gold + bonus
 		loot_summary["population"] = randi_range(2, 4) * difficulty
+		
+		# --- GDD: Warlord Progression ---
+		var jarl = DynastyManager.get_current_jarl()
+		if jarl:
+			jarl.offensive_wins += 1
+			jarl.battles_won += 1
+			jarl.successful_raids += 1
+			
+			# Check Warlord Trait
+			if jarl.has_trait("Warlord") and grade == "Decisive":
+				var refund = 1 # +1 per Unifier level (simplified to 1 for now)
+				DynastyManager.current_jarl.current_authority = min(
+					DynastyManager.current_jarl.current_authority + refund, 
+					DynastyManager.current_jarl.max_authority
+				)
+				Loggie.msg("Warlord Momentum: Authority Refunded!").domain(LogDomains.DYNASTY).info()
+				
+			# Check Warlord Acquisition
+			if jarl.offensive_wins >= 5 and not jarl.has_trait("Warlord"):
+				# In a real impl, we'd load the trait resource. For now, string check logic is fine.
+				# We can emit an event or just log it.
+				Loggie.msg("Jarl has proven themselves a Warlord! (Trait pending impl)").domain(LogDomains.DYNASTY).warn()
+			
+			DynastyManager.jarl_stats_updated.emit(jarl)
+		# --------------------------------
+		
 		if is_instance_valid(end_of_year_popup):
-			end_of_year_popup.display_payout(loot_summary, "Raid Victory!")
+			end_of_year_popup.display_payout(loot_summary, "Raid Victory! (%s)" % grade)
 			
 	elif outcome == "retreat":
 		var gold = result.get("gold_looted", 0)
@@ -397,7 +452,6 @@ func _process_raid_return() -> void:
 		SettlementManager.deposit_resources(loot_summary)
 			
 	DynastyManager.pending_raid_result.clear()
-
 # --- PHYSICAL VILLAGER SYNC ---
 
 func _sync_villagers(_data: SettlementData = null) -> void:

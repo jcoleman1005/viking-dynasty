@@ -1,14 +1,13 @@
-[gd_resource type="Resource" script_class="UnitData" load_steps=5 format=3 uid="uid://ejxn3hg8xcu6"]
+[gd_resource type="Resource" script_class="UnitData" load_steps=4 format=3 uid="uid://ejxn3hg8xcu6"]
 
 [ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://cfanwutbtfcp2" path="res://scenes/units/PlayerVikingRaider.tscn" id="2_spawn_scene"]
 [ext_resource type="Texture2D" uid="uid://buwxqfjw7whon" path="res://textures/units/viking_raider_sprite.png" id="3_viking_sprite"]
 [ext_resource type="PackedScene" uid="uid://de3nko6b1rqyg" path="res://scenes/components/AttackAI.tscn" id="4_ai"]
 
 [resource]
 script = ExtResource("1_script")
 display_name = "Viking Raider"
-scene_to_spawn = ExtResource("2_spawn_scene")
+scene_path = "uid://cfanwutbtfcp2"
 icon = ExtResource("3_viking_sprite")
 spawn_cost = {
 "food": 25,
@@ -19,8 +18,8 @@ move_speed = 100.0
 attack_damage = 15
 attack_range = 80.0
 attack_speed = 0.6000000000058208
-ai_component_scene = ExtResource("4_ai")
-projectile_speed = 399.6600000000035
 visual_texture = ExtResource("3_viking_sprite")
 acceleration = 12.0
 linear_damping = 6.0
+ai_component_scene = ExtResource("4_ai")
+projectile_speed = 399.6600000000035

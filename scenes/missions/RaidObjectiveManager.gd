@@ -1,6 +1,4 @@
 # res://scenes/missions/RaidObjectiveManager.gd
-#
-# Manages all mission-specific logic: Loot, Win/Loss, Fyrd Timer, and Retreat.
 extends Node
 class_name RaidObjectiveManager
 
@@ -18,6 +16,11 @@ var enemy_units: Array[BaseUnit] = []
 var is_initialized: bool = false
 var mission_over: bool = false
 
+# --- NEW: Performance Tracking ---
+var battle_start_time: int = 0
+var units_lost_count: int = 0
+# ---------------------------------
+
 # --- RETREAT STATE ---
 var escaped_unit_count: int = 0
 
@@ -34,6 +37,8 @@ const UI_THEME = preload("res://ui/themes/VikingDynastyTheme.tres")
 
 func _ready() -> void:
 	raid_loot = RaidLootData.new()
+	# Connect to global unit death signal to track casualties
+	EventBus.player_unit_died.connect(_on_player_unit_died)
 
 func _process(delta: float) -> void:
 	if fyrd_timer_active and not mission_over:
@@ -58,7 +63,7 @@ func initialize(
 	p_enemy_units: Array[BaseUnit] = []
 ) -> void:
 	if is_initialized:
-		Loggie.msg("RaidObjectiveManager: Already initialized, skipping.").domain("RTS").info()
+		Loggie.msg("RaidObjectiveManager: Already initialized, skipping.").domain(LogDomains.RTS).info()
 		return
 		
 	self.rts_controller = p_rts_controller
@@ -72,19 +77,25 @@ func initialize(
 		push_error("RaidObjectiveManager: Failed to initialize. Received invalid node references.")
 		return
 	
-	Loggie.msg("RaidObjectiveManager: Initialized and tracking objectives.").domain("RTS").info()
+	# --- NEW: Start Clock ---
+	battle_start_time = Time.get_ticks_msec()
+	# ------------------------
+	
+	Loggie.msg("RaidObjectiveManager: Initialized and tracking objectives.").domain(LogDomains.RTS).info()
 	
 	# Connect to all necessary signals
 	if not is_defensive_mission:
 		_connect_to_building_signals()
-		
-		# --- SETUP UI (Timer + Retreat Button) ---
 		_setup_mission_ui()
 		fyrd_timer_active = true
-		# -----------------------------------------
 		
 	_setup_win_loss_conditions()
 	is_initialized = true
+
+# --- CASUALTY TRACKING ---
+func _on_player_unit_died(_unit: Node2D) -> void:
+	if not mission_over:
+		units_lost_count += 1
 
 # --- UI SETUP ---
 
@@ -123,27 +134,19 @@ func _setup_timer_ui() -> void:
 # --- RETREAT LOGIC ---
 
 func _on_retreat_ordered() -> void:
-	Loggie.msg("Retreat Ordered! All units scrambling.").domain("RTS").warn()
+	Loggie.msg("Retreat Ordered! All units scrambling.").domain(LogDomains.RTS).warn()
 	
 	var spawn_marker = get_parent().get_node_or_null("PlayerStartPosition")
 	if spawn_marker and rts_controller:
-		# --- FIX: Use Scramble instead of Formation Move ---
 		rts_controller.command_scramble(spawn_marker.global_position)
-		# ---------------------------------------------------
 
 func on_unit_evacuated(unit: BaseUnit) -> void:
 	escaped_unit_count += 1
-	
-	# 1. Clean up RTS Controller immediately
-	# This prevents "Zombie Selection" errors if the player tries to drag-select fading units
 	if is_instance_valid(rts_controller):
 		rts_controller.remove_unit(unit)
 
-	# 2. Check remaining units
-	# Since RetreatZone removed the unit from the group, this count is now accurate
 	var remaining = get_tree().get_nodes_in_group("player_units").size()
-	
-	Loggie.msg("Unit escaped. Remaining on field: %d" % remaining).domain("RTS").info()
+	Loggie.msg("Unit escaped. Remaining on field: %d" % remaining).domain(LogDomains.RTS).info()
 	
 	if remaining <= 0 and not mission_over:
 		_end_mission_via_retreat()
@@ -153,11 +156,12 @@ func _end_mission_via_retreat() -> void:
 	mission_over = true
 	
 	var raw_gold = raid_loot.collected_loot.get("gold", 0)
-	Loggie.msg("Retreat Complete. Loot secured: %d" % raw_gold).domain("RTS").info()
+	Loggie.msg("Retreat Complete. Loot secured: %d" % raw_gold).domain(LogDomains.RTS).info()
 	
 	var result = {
 		"outcome": "retreat",
-		"gold_looted": raw_gold
+		"gold_looted": raw_gold,
+		"victory_grade": "None"
 	}
 	DynastyManager.pending_raid_result = result
 	
@@ -182,7 +186,7 @@ func _on_enemy_building_destroyed_for_loot(building: BaseBuilding) -> void:
 	var building_data = building.data as BuildingData
 	if raid_loot and building_data:
 		raid_loot.add_loot_from_building(building_data)
-		Loggie.msg("Loot secured from %s" % building_data.display_name).domain("RTS").info()
+		Loggie.msg("Loot secured from %s" % building_data.display_name).domain(LogDomains.RTS).info()
 
 func _setup_win_loss_conditions() -> void:
 	if is_defensive_mission:
@@ -231,7 +235,7 @@ func _on_defensive_mission_won() -> void:
 func _on_mission_failed(reason: String) -> void:
 	if mission_over: return
 	mission_over = true
-	Loggie.msg("Mission Failed! %s" % reason).domain("RTS").info()
+	Loggie.msg("Mission Failed! %s" % reason).domain(LogDomains.RTS).info()
 	
 	if is_defensive_mission:
 		var report = DynastyManager.process_defensive_loss()
@@ -243,21 +247,54 @@ func _on_mission_failed(reason: String) -> void:
 	await get_tree().create_timer(6.0).timeout
 	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
 
+# --- VICTORY GRADING LOGIC ---
+
 func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	if mission_over: return
 	mission_over = true
 	
 	var raw_gold = raid_loot.collected_loot.get("gold", 0)
-	var result = { "outcome": "victory", "gold_looted": raw_gold }
+	
+	# 1. Calculate Grade
+	var grade = "Standard"
+	var duration_sec = (Time.get_ticks_msec() - battle_start_time) / 1000.0
+	
+	# Defaults (in case target data missing)
+	var par_time = 300
+	var casualty_limit = 2
+	
+	# Fetch Limits from Data
+	# We access the Settlement Data, but we need the RaidTargetData for specific limits.
+	# Since we don't have a direct ref to RaidTargetData here, we use Defaults or pass it in Initialize.
+	# For Phase 5, we hardcode sensible defaults or check DynastyManager if we stored it.
+	
+	if duration_sec < par_time and units_lost_count <= casualty_limit:
+		grade = "Decisive"
+	elif units_lost_count > (casualty_limit * 2):
+		grade = "Pyrrhic"
+		
+	Loggie.msg("Victory! Time: %ds, Casualties: %d. Grade: %s" % [duration_sec, units_lost_count, grade]).domain(LogDomains.RTS).info()
+	
+	var result = { 
+		"outcome": "victory", 
+		"gold_looted": raw_gold,
+		"victory_grade": grade
+	}
 	DynastyManager.pending_raid_result = result
 	
-	_show_victory_message("VICTORY!", "The settlement lies in ruins.\nReturning to ships...")
+	var sub_text = "The settlement lies in ruins."
+	if grade == "Decisive":
+		sub_text = "A glorious, swift victory!"
+	elif grade == "Pyrrhic":
+		sub_text = "Victory, but at great cost."
+		
+	_show_victory_message("VICTORY (%s)" % grade, sub_text)
 	await get_tree().create_timer(3.0).timeout
 	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
 
 func _trigger_fyrd() -> void:
 	fyrd_timer_active = false
-	Loggie.msg("The Fyrd has arrived! Run!").domain("RTS").warn()
+	Loggie.msg("The Fyrd has arrived! Run!").domain(LogDomains.RTS).warn()
 	if is_instance_valid(timer_label):
 		timer_label.text = "THE FYRD IS HERE!"
 	fyrd_arrived.emit()

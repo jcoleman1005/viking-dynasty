@@ -7,6 +7,10 @@ extends Node2D
 @export var end_year_popup_scene: PackedScene
 @export var enemy_raid_chance: float = 0.25
 
+# --- NEW: Raid Prep UI ---
+@export var raid_prep_window_scene: PackedScene = preload("res://ui/RaidPrepWindow.tscn")
+# -------------------------
+
 # --- Phase 5.1: Geography Anchor ---
 @export var player_home_marker_path: NodePath = "PlayerHomeMarker"
 @onready var player_home_marker: Marker2D = get_node_or_null(player_home_marker_path)
@@ -18,7 +22,6 @@ extends Node2D
 @onready var end_year_button: Button = $UI/Actions/VBoxContainer/EndYearButton
 @onready var region_info_panel: PanelContainer = $UI/RegionInfo
 @onready var region_name_label: Label = $UI/RegionInfo/VBoxContainer/RegionNameLabel
-# Old button is deprecated/hidden, we use the container now:
 @onready var launch_raid_button: Button = $UI/RegionInfo/VBoxContainer/LaunchRaidButton 
 @onready var target_list_container: VBoxContainer = $UI/RegionInfo/VBoxContainer/TargetList
 
@@ -36,6 +39,11 @@ const WORK_ASSIGNMENT_SCENE_PATH = "res://ui/WorkAssignment_UI.tscn"
 var work_assignment_ui: CanvasLayer
 var idle_warning_dialog: ConfirmationDialog
 var end_year_popup: PanelContainer
+
+# --- NEW: Raid Prep Instance ---
+var raid_prep_window: RaidPrepWindow
+var journey_report_dialog: AcceptDialog
+# -------------------------------
 
 # Persistence
 const SAVE_PATH = "user://campaign_map.tres"
@@ -66,10 +74,9 @@ func _ready() -> void:
 	_initialize_world_data()
 	
 	# 3. UI & Signal Connections
-	if launch_raid_button: launch_raid_button.hide() # Hide old button
+	if launch_raid_button: launch_raid_button.hide()
 	
 	DynastyManager.jarl_stats_updated.connect(_update_jarl_ui)
-	# Redraw map circles when stats (range) change
 	DynastyManager.jarl_stats_updated.connect(func(_j): queue_redraw())
 	
 	for region in regions_container.get_children():
@@ -108,6 +115,18 @@ func _ready() -> void:
 	idle_warning_dialog.canceled.connect(_on_open_worker_ui) 
 	add_child(idle_warning_dialog)
 	
+	# --- NEW: Raid Prep & Journey UI ---
+	if raid_prep_window_scene:
+		raid_prep_window = raid_prep_window_scene.instantiate()
+		$UI.add_child(raid_prep_window) # Add to UI layer
+		raid_prep_window.raid_launched.connect(_finalize_raid_launch)
+		
+	journey_report_dialog = AcceptDialog.new()
+	journey_report_dialog.title = "Journey Report"
+	journey_report_dialog.confirmed.connect(_transition_to_raid_scene)
+	add_child(journey_report_dialog)
+	# -----------------------------------
+	
 	EventBus.event_system_finished.connect(_on_event_system_finished)
 	
 	# 5. Final Cleanup
@@ -116,7 +135,52 @@ func _ready() -> void:
 	tooltip.hide()
 	queue_redraw()
 
-# --- Phase 5.3: Visualizing Range ---
+# --- NEW: Raid Preparation Logic ---
+
+func _initiate_raid(target: RaidTargetData) -> void:
+	if not raid_prep_window:
+		Loggie.msg("MacroMap: RaidPrepWindow scene not assigned!").domain(LogDomains.MAP).error()
+		return
+		
+	# 1. Hide Region Panel to declutter
+	region_info_panel.hide()
+	
+	# 2. Setup and Show Prep Window
+	raid_prep_window.setup(target)
+
+func _finalize_raid_launch(target: RaidTargetData, warbands: Array[WarbandData], provision_level: int) -> void:
+	# 1. Deduct Authority
+	var cost = target.raid_cost_authority
+	if target.authority_cost_override > -1: cost = target.authority_cost_override
+	
+	if not DynastyManager.spend_authority(cost):
+		Loggie.msg("MacroMap: Failed to spend authority at last second!").domain(LogDomains.MAP).error()
+		return
+
+	# 2. Commit Data to DynastyManager
+	DynastyManager.set_current_raid_target(target.settlement_data)
+	DynastyManager.current_raid_difficulty = target.difficulty_rating
+	DynastyManager.prepare_raid_force(warbands, provision_level)
+	
+	# 3. Calculate Journey Attrition
+	var dist = 0.0
+	if player_home_marker and is_instance_valid(selected_region_node):
+		dist = player_home_marker.global_position.distance_to(selected_region_node.get_global_center())
+		
+	var report = DynastyManager.calculate_journey_attrition(dist)
+	
+	# 4. Show Journey Report
+	journey_report_dialog.title = report.get("title", "Journey")
+	journey_report_dialog.dialog_text = report.get("description", "...")
+	journey_report_dialog.popup_centered()
+
+func _transition_to_raid_scene() -> void:
+	Loggie.msg("MacroMap: Transitioning to Raid...").domain(LogDomains.MAP).info()
+	EventBus.scene_change_requested.emit(GameScenes.RAID_MISSION)
+
+# ------------------------------------
+
+# --- Standard Visuals & Data Logic (Unchanged but included for context) ---
 func _draw() -> void:
 	if not player_home_marker: return
 	var jarl = DynastyManager.get_current_jarl()
@@ -124,14 +188,10 @@ func _draw() -> void:
 	
 	var safe_r = jarl.get_safe_range()
 	
-	# Draw Safe Zone
 	draw_circle(player_home_marker.position, safe_r, SAFE_COLOR)
 	draw_arc(player_home_marker.position, safe_r, 0, TAU, 64, Color.GREEN, 2.0)
-	
-	# Draw Visual "Risk" Gradient
 	draw_arc(player_home_marker.position, safe_r + 500, 0, TAU, 64, Color.RED, 1.0)
 
-# --- Phase 5.2: Data Generation & Persistence ---
 func _initialize_world_data() -> void:
 	if ResourceLoader.exists(SAVE_PATH):
 		Loggie.msg("MacroMap: Loading existing campaign state...").domain("MAP").info()
@@ -152,22 +212,15 @@ func _generate_new_world() -> void:
 	
 	for region in regions_container.get_children():
 		if not region is Region: continue
-		
-		# FIX: Use polygon center for accurate distance
 		var dist = player_home_marker.global_position.distance_to(region.get_global_center())
 		var tier = 1
-		
-		if dist <= safe_range:
-			tier = 1
-		elif dist <= safe_range * 1.5:
-			tier = 2
-		else:
-			tier = 3
+		if dist <= safe_range: tier = 1
+		elif dist <= safe_range * 1.5: tier = 2
+		else: tier = 3
 			
 		var data = MapDataGenerator.generate_region_data(tier)
 		region.data = data
 		map_state.region_data_map[region.name] = data
-		
 		Loggie.msg("Generated %s (Tier %d) at dist %.0f" % [data.display_name, tier, dist]).domain("MAP").info()
 
 func _apply_state_to_regions() -> void:
@@ -178,18 +231,13 @@ func _apply_state_to_regions() -> void:
 
 func _save_map_state() -> void:
 	var error = ResourceSaver.save(map_state, SAVE_PATH)
-	if error != OK:
-		push_error("MacroMap: Failed to save map state!")
-
-# --- Phase 5.4: Selection & UI Logic ---
+	if error != OK: push_error("MacroMap: Failed to save map state!")
 
 func _on_region_selected(data: WorldRegionData) -> void:
-	# 1. Deselect previous visual state
 	if is_instance_valid(selected_region_node):
 		selected_region_node.is_selected = false
 		selected_region_node.set_visual_state(false)
 	
-	# 2. Find and select the new node
 	for region in regions_container.get_children():
 		if region is Region and region.data == data:
 			selected_region_node = region
@@ -200,35 +248,30 @@ func _on_region_selected(data: WorldRegionData) -> void:
 	selected_region_data = data
 	region_name_label.text = data.display_name
 	
+	# Close other UI
+	if raid_prep_window: raid_prep_window.hide()
+	
 	var jarl = DynastyManager.get_current_jarl()
 	if not jarl: return
 	
-	# 3. Calculate Attrition Risk (Phase 5.3)
 	current_attrition_risk = 0.0
 	if player_home_marker and is_instance_valid(selected_region_node):
 		var dist = player_home_marker.global_position.distance_to(selected_region_node.get_global_center())
 		var safe_range = jarl.get_safe_range()
-		
 		if dist > safe_range:
 			var overage = dist - safe_range
 			current_attrition_risk = (overage / 100.0) * jarl.attrition_per_100px
-			current_attrition_risk = min(current_attrition_risk, 1.0) # Cap at 100%
+			current_attrition_risk = min(current_attrition_risk, 1.0)
 
-	# 4. Check Political Status
 	var is_conquered = DynastyManager.has_conquered_region(data.resource_path)
 	var is_allied = DynastyManager.is_allied_region(data.resource_path)
 	
-	# 5. Update UI Elements (Phase 5.4)
 	_populate_raid_targets(data, is_conquered, is_allied)
 	_update_diplomacy_buttons(data, is_conquered, is_allied)
-	
-	# 6. Reveal the Panel
 	region_info_panel.show()
 
 func _populate_raid_targets(data: WorldRegionData, is_conquered: bool, is_allied: bool) -> void:
-	# Clear list
-	for child in target_list_container.get_children():
-		child.queue_free()
+	for child in target_list_container.get_children(): child.queue_free()
 		
 	if is_conquered:
 		var label = Label.new()
@@ -243,90 +286,47 @@ func _populate_raid_targets(data: WorldRegionData, is_conquered: bool, is_allied
 		target_list_container.add_child(label)
 		return
 
-	# Generate Buttons
 	for target in data.raid_targets:
-		# --- FIX: Safety Check for Corrupt Data ---
-		if not target: 
-			continue
-		# ------------------------------------------
+		if not target: continue
 
 		var btn = Button.new()
 		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		
 		var risk_text = ""
-		var btn_color = Color.WHITE # Default styling
+		var btn_color = Color.WHITE
 		
-		# Re-calculate attrition for display
 		if current_attrition_risk > 0.0:
 			risk_text = " (%d%% Risk)" % int(current_attrition_risk * 100)
-			if current_attrition_risk > 0.3:
-				btn_color = Color(1.0, 0.4, 0.4) # Reddish tint
-			else:
-				btn_color = Color(1.0, 0.9, 0.4) # Yellowish tint
+			if current_attrition_risk > 0.3: btn_color = Color(1.0, 0.4, 0.4)
+			else: btn_color = Color(1.0, 0.9, 0.4)
 		
 		if is_allied:
 			btn.text = "%s (Allied)" % target.display_name
 			btn.disabled = true
 		else:
-			btn.text = "%s - Cost: %d Auth%s" % [target.display_name, target.raid_cost_authority, risk_text]
+			# Authority Cost override check
+			var auth_cost = target.raid_cost_authority
+			if target.authority_cost_override > -1: auth_cost = target.authority_cost_override
+			
+			btn.text = "%s - Cost: %d Auth%s" % [target.display_name, auth_cost, risk_text]
 			btn.modulate = btn_color
 			
-			var can_afford = DynastyManager.can_spend_authority(target.raid_cost_authority)
+			var can_afford = DynastyManager.can_spend_authority(auth_cost)
 			if not can_afford:
 				btn.disabled = true
 				btn.text += " (Low Auth)"
 			else:
+				# --- MODIFIED: Open Prep Window instead of launching ---
 				btn.pressed.connect(_initiate_raid.bind(target))
+				# -----------------------------------------------------
 		
 		target_list_container.add_child(btn)
-		
-func _initiate_raid(target: RaidTargetData) -> void:
-	# 1. Apply Attrition Gamble
-	if current_attrition_risk > 0.0:
-		_apply_attrition(current_attrition_risk)
-	
-	# 2. Set Data
-	DynastyManager.set_current_raid_target(target.settlement_data)
-	
-	# 3. Set Difficulty Context (Phase 5.5)
-	DynastyManager.current_raid_difficulty = target.difficulty_rating
-	
-	# 4. Spend Cost & Launch
-	DynastyManager.spend_authority(target.raid_cost_authority)
-	Loggie.msg("Launching raid on: %s (Diff: %d)" % [target.display_name, target.difficulty_rating]).domain("MAP").info()
-	EventBus.scene_change_requested.emit(GameScenes.RAID_MISSION)
 
-func _apply_attrition(risk_chance: float) -> void:
-	if not SettlementManager.has_current_settlement(): return
-	
-	var garrison = SettlementManager.current_settlement.garrisoned_units
-	var units_lost = 0
-	var units_to_remove: Array[String] = []
-	
-	Loggie.msg("Applying Attrition Risk: %.2f" % risk_chance).domain("MAP").info()
-	
-	for unit_path in garrison.keys():
-		var count = garrison[unit_path]
-		var surviving_count = 0
-		for i in range(count):
-			if randf() > risk_chance:
-				surviving_count += 1
-			else:
-				units_lost += 1
-		
-		if surviving_count > 0:
-			garrison[unit_path] = surviving_count
-		else:
-			units_to_remove.append(unit_path)
-			
-	for path in units_to_remove:
-		garrison.erase(path)
-		
-	SettlementManager.save_settlement()
-	if units_lost > 0:
-		Loggie.msg("ATTRITION: Lost %d units to the sea!" % units_lost).domain("MAP").info()
+func _apply_attrition(_risk_chance: float) -> void:
+	# Deprecated: Logic moved to DynastyManager.calculate_journey_attrition
+	pass
 
-func _update_diplomacy_buttons(data: WorldRegionData, is_conquered: bool, is_allied: bool) -> void:
+func _update_diplomacy_buttons(_data: WorldRegionData, is_conquered: bool, is_allied: bool) -> void:
 	if is_conquered:
 		subjugate_button.disabled = true
 		subjugate_button.text = "Subjugate (Conquered)"
@@ -334,7 +334,6 @@ func _update_diplomacy_buttons(data: WorldRegionData, is_conquered: bool, is_all
 		marry_button.text = "Marry (Conquered)"
 		return
 
-	# Subjugate
 	var base_cost = 5
 	var ally_mod = 0
 	if is_allied: ally_mod = 2
@@ -343,13 +342,11 @@ func _update_diplomacy_buttons(data: WorldRegionData, is_conquered: bool, is_all
 	subjugate_button.text = "Subjugate (Cost: %d)" % calculated_subjugate_cost
 	subjugate_button.disabled = not DynastyManager.can_spend_authority(calculated_subjugate_cost)
 	
-	# Marry
 	marry_button.text = "Marry (Cost: 1 Heir)"
 	var has_heir = DynastyManager.get_available_heir_count() > 0
 	marry_button.disabled = is_allied or not has_heir
 	if is_allied: marry_button.text = "Marry (Allied)"
 
-# --- Standard Action Handlers ---
 func _on_subjugate_pressed() -> void:
 	if not selected_region_data: return
 	var success = DynastyManager.spend_authority(calculated_subjugate_cost)
@@ -371,38 +368,29 @@ func _on_marry_pressed() -> void:
 func _on_settlement_pressed() -> void: EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
 func _on_dynasty_pressed() -> void: if dynasty_ui: dynasty_ui.show()
 
-# --- UI Management ---
-
 func close_all_ui() -> void:
-	"""Closes all open UI windows for clean year transition."""
 	var ui_closed = false
-	
-	# Close Dynasty UI
 	if dynasty_ui and dynasty_ui.visible:
 		dynasty_ui.hide()
 		ui_closed = true
-		
-	# Close Region Info Panel  
 	if region_info_panel and region_info_panel.visible:
 		region_info_panel.hide()
 		ui_closed = true
-		
-	# Close Work Assignment UI
 	if work_assignment_ui and work_assignment_ui.visible:
 		work_assignment_ui.hide()
 		ui_closed = true
+	if raid_prep_window and raid_prep_window.visible:
+		raid_prep_window.hide()
+		ui_closed = true
 		
-	# Clear region selection
 	if is_instance_valid(selected_region_node):
 		selected_region_node.is_selected = false
 		selected_region_node.set_visual_state(false)
 	selected_region_data = null
 	selected_region_node = null
 	
-	if ui_closed:
-		Loggie.msg("MacroMap: All UI closed for year transition").domain("MAP").info()
+	if ui_closed: Loggie.msg("MacroMap: All UI closed for year transition").domain("MAP").info()
 
-# --- End Year Logic ---
 func _on_end_year_pressed() -> void:
 	if not SettlementManager.has_current_settlement(): return
 	var settlement = SettlementManager.current_settlement
@@ -418,9 +406,7 @@ func _on_end_year_pressed() -> void:
 		_start_end_year_sequence()
 
 func _start_end_year_sequence() -> void:
-	# Close all UI before starting year transition
 	close_all_ui()
-	
 	if not is_instance_valid(end_year_popup):
 		_process_end_year_logic({})
 		return
@@ -464,13 +450,9 @@ func _on_region_hovered(data: WorldRegionData, _screen_position: Vector2) -> voi
 func _on_region_exited() -> void: tooltip.hide()
 
 func _on_open_worker_ui() -> void:
-	# 1. Set the flag so the next scene knows what to do
 	SettlementManager.pending_management_open = true
-	
-	# 2. Go to the settlement
 	Loggie.msg("Redirecting to Settlement for worker management...").domain("MAP").info()
 	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
-		
 		
 func _on_worker_assignments_confirmed(assignments: Dictionary) -> void:
 	if SettlementManager.current_settlement:
@@ -478,21 +460,15 @@ func _on_worker_assignments_confirmed(assignments: Dictionary) -> void:
 		SettlementManager.save_settlement()
 		
 func _unhandled_input(event: InputEvent) -> void:
-	# Detect clicks on the "Ocean" (Background)
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 			_deselect_current_region()
 
 func _deselect_current_region() -> void:
-	# 1. Reset Visuals on the old node
 	if is_instance_valid(selected_region_node):
 		selected_region_node.is_selected = false
 		selected_region_node.set_visual_state(false)
-	
-	# 2. Clear Selection Data
 	selected_region_node = null
 	selected_region_data = null
-	
-	# 3. Hide the Side Panel
-	if region_info_panel:
-		region_info_panel.hide()
+	if region_info_panel: region_info_panel.hide()
+	if raid_prep_window: raid_prep_window.hide()

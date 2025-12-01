@@ -15,3 +15,4 @@ grid_size = Vector2i(4, 4)
 is_player_buildable = true
 is_territory_hub = true
 territory_radius = 8
+arable_land_capacity = 5
