@@ -1,7 +1,6 @@
-[gd_scene load_steps=18 format=3 uid="uid://ba41qxyi1a30u"]
+[gd_scene load_steps=17 format=3 uid="uid://ba41qxyi1a30u"]
 
 [ext_resource type="Script" uid="uid://dmq8s5ifmd1dx" path="res://scenes/world_map/MacroMap.gd" id="1_macro_map"]
-[ext_resource type="PackedScene" uid="uid://dqh0xu88khxct" path="res://ui/EndOfYear_Popup.tscn" id="2_okptj"]
 [ext_resource type="PackedScene" uid="uid://cuyni4y77q51q" path="res://scenes/world_map/Region.tscn" id="2_region"]
 [ext_resource type="Texture2D" uid="uid://c32ymtbiceoe8" path="res://assets/Viking Dynasty Game Map.png" id="3_qn6r3"]
 [ext_resource type="PackedScene" uid="uid://lpxvj8dvfbnl" path="res://scenes/world_map/MacroCamera.tscn" id="5_okptj"]
@@ -53,9 +52,9 @@ metadata/_custom_type_script = "uid://dqlbgeegli821"
 
 [node name="MacroMap" type="Node2D"]
 script = ExtResource("1_macro_map")
-end_year_popup_scene = ExtResource("2_okptj")
 
 [node name="TextureRect" type="TextureRect" parent="."]
+anchors_preset = -1
 offset_left = 2.0
 offset_top = -4.0
 offset_right = 1022.0
@@ -174,7 +173,7 @@ bounds_rect = Rect2(0, 0, 1020, 775)
 layer = 10
 
 [node name="JarlInfo" type="PanelContainer" parent="UI"]
-anchors_preset = 5
+anchors_preset = -1
 anchor_left = 0.5
 anchor_right = 0.5
 offset_left = -20.0
@@ -198,7 +197,7 @@ text = "Renown: 25"
 horizontal_alignment = 1
 
 [node name="Actions" type="PanelContainer" parent="UI"]
-anchors_preset = 3
+anchors_preset = -1
 anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
@@ -212,10 +211,6 @@ mouse_filter = 2
 [node name="VBoxContainer" type="VBoxContainer" parent="UI/Actions"]
 layout_mode = 2
 
-[node name="EndYearButton" type="Button" parent="UI/Actions/VBoxContainer"]
-layout_mode = 2
-text = "End Year"
-
 [node name="SettlementButton" type="Button" parent="UI/Actions/VBoxContainer"]
 layout_mode = 2
 text = "Return to Settlement"
@@ -225,7 +220,7 @@ layout_mode = 2
 text = "Dynasty"
 
 [node name="RegionInfo" type="PanelContainer" parent="UI"]
-anchors_preset = 7
+anchors_preset = -1
 anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
@@ -264,7 +259,7 @@ disabled = true
 text = "Marry for Alliance"
 
 [node name="Tooltip" type="PanelContainer" parent="UI"]
-anchors_preset = 7
+anchors_preset = -1
 anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5

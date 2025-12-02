@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EconomicBuildingData" load_steps=3 format=3 uid="uid://couja0jua1f6q"]
+
+[ext_resource type="PackedScene" uid="uid://cws6xle5x52g4" path="res://scenes/buildings/Base_Building.tscn" id="1_17evo"]
+[ext_resource type="Script" uid="uid://d33smw07vm6y4" path="res://data/buildings/EconomicBuildingData.gd" id="2_xc2hg"]
+
+[resource]
+script = ExtResource("2_xc2hg")
+display_name = "Reykhús"
+description = "A specialized smokehouse. Converts raw food into non-perishable provisions necessary for long sea voyages."
+scene_to_spawn = ExtResource("1_17evo")
+build_cost = {
+"stone": 40,
+"wood": 80
+}
+max_health = 400
+is_player_buildable = true

@@ -2,6 +2,8 @@
 extends Control
 
 const LegacyUpgradeData = preload("res://data/legacy/LegacyUpgradeData.gd")
+# --- NEW: Preload the tooltip script ---
+const RICH_TOOLTIP_SCRIPT = preload("res://ui/components/RichTooltipButton.gd")
 
 # --- Window References ---
 @onready var build_window: Control = %BuildWindow
@@ -33,8 +35,6 @@ const LegacyUpgradeData = preload("res://data/legacy/LegacyUpgradeData.gd")
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	# We no longer need to listen to treasury_updated for labels (TreasuryHUD does that).
-	# We only listen to events that require refreshing the buttons (affordability checks).
 	EventBus.purchase_successful.connect(_on_purchase_successful)
 	EventBus.purchase_failed.connect(_on_purchase_failed)
 	EventBus.settlement_loaded.connect(_on_settlement_loaded)
@@ -54,34 +54,63 @@ func _ready() -> void:
 	
 	_refresh_all()
 
-# --- VISUAL SETUP ---
-func _apply_theme_overrides() -> void:
-	# We removed the label styling logic since TreasuryHUD handles itself.
-	# We keep the Tooltip styling if needed.
-	var tooltip_bg_path = "res://ui/assets/tooltip_bg.png"
-	var default_theme_path = "res://ui/themes/VikingDynastyTheme.tres"
+# --- BUILD TAB (UPDATED) ---
+func _populate_build_grid() -> void:
+	for child in build_grid.get_children(): child.queue_free()
 	
-	if ResourceLoader.exists(tooltip_bg_path):
-		var tooltip_tex = load(tooltip_bg_path)
-		var style_tooltip = StyleBoxTexture.new()
-		style_tooltip.texture = tooltip_tex
-		style_tooltip.content_margin_left = 12
-		style_tooltip.content_margin_right = 12
-		style_tooltip.content_margin_top = 8
-		style_tooltip.content_margin_bottom = 8
+	for b_data in available_buildings:
+		var btn = Button.new()
 		
-		if theme == null:
-			if ResourceLoader.exists(default_theme_path):
-				theme = load(default_theme_path)
-			else:
-				theme = Theme.new()
+		# --- FIX: Attach RichTooltip Logic ---
+		if RICH_TOOLTIP_SCRIPT:
+			btn.set_script(RICH_TOOLTIP_SCRIPT)
+		# -------------------------------------
+		
+		btn.custom_minimum_size = Vector2(110, 110) 
+		btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		btn.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+		btn.expand_icon = true
+		btn.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		btn.clip_text = true
+		
+		if b_data.icon:
+			btn.icon = b_data.icon
+		else:
+			btn.text = b_data.display_name 
+			
+		if b_data.icon: btn.text = b_data.display_name
+		
+		# --- FIX: Generate Detailed Tooltip ---
+		var details = ""
+		if b_data is EconomicBuildingData:
+			var eco = b_data as EconomicBuildingData
+			details = "[color=green]Production:[/color] %d %s / Year\n" % [eco.base_passive_output, eco.resource_type.capitalize()]
+			details += "Capacity: %d Workers" % eco.peasant_capacity
+		elif b_data.is_defensive_structure:
+			details = "[color=salmon]Defense:[/color] %d Dmg | Range: %.0f" % [b_data.attack_damage, b_data.attack_range]
+		
+		if b_data.is_territory_hub:
+			details += "\n[color=cyan]Territory Hub[/color]"
+		elif b_data.extends_territory:
+			details += "\n[color=cyan]Extends Territory[/color]"
+			
+		btn.tooltip_text = "[b]%s[/b]\n[i]%s[/i]\n\n%s\n\n[color=gold]Cost:[/color] %s" % [
+			b_data.display_name, 
+			b_data.description,
+			details,
+			_format_cost(b_data.build_cost)
+		]
+		# --------------------------------------
+		
+		btn.pressed.connect(func():
+			if SettlementManager.attempt_purchase(b_data.build_cost):
+				EventBus.building_ready_for_placement.emit(b_data)
+				_close_all_windows()
+		)
+		build_grid.add_child(btn)
 
-		theme = theme.duplicate() 
-		self.theme = theme
-		
-		theme.set_stylebox("panel", "TooltipPanel", style_tooltip)
-		theme.set_color("font_color", "TooltipLabel", Color.WHITE)
-		theme.set_font_size("font_size", "TooltipLabel", 18)
+# ... (Rest of the file remains identical - _setup_dock_icons, _refresh_all, etc.) ...
+# To save space, I'm omitting the unchanged functions unless you need the full file dump.
 
 func _setup_dock_icons() -> void:
 	_set_btn_icon(btn_build, "res://ui/assets/icon_build.png")
@@ -106,10 +135,7 @@ func _setup_window_logic() -> void:
 	
 	btn_family.pressed.connect(func(): EventBus.dynasty_view_requested.emit())
 	btn_map.pressed.connect(func(): EventBus.scene_change_requested.emit(GameScenes.WORLD_MAP))
-	
-	# --- MODIFIED: Redirect End Year to Winter Phase ---
 	btn_end_year.pressed.connect(func(): EventBus.end_year_requested.emit())
-	# ---------------------------------------------------
 	
 	var windows = [build_window, recruit_window, legacy_window]
 	for win in windows:
@@ -171,40 +197,6 @@ func _update_jarl_stats_display(jarl_data: JarlData) -> void:
 	if authority_label: authority_label.text = "Auth: %d/%d" % [jarl_data.current_authority, jarl_data.max_authority]
 	_populate_legacy_buttons()
 
-# --- BUILD TAB ---
-func _populate_build_grid() -> void:
-	for child in build_grid.get_children(): child.queue_free()
-	
-	for b_data in available_buildings:
-		var btn = Button.new()
-		btn.custom_minimum_size = Vector2(110, 110) 
-		btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		btn.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
-		btn.expand_icon = true
-		btn.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-		btn.clip_text = true
-		
-		if b_data.icon:
-			btn.icon = b_data.icon
-		else:
-			btn.text = b_data.display_name 
-			
-		if b_data.icon: btn.text = b_data.display_name
-		
-		btn.tooltip_text = "[b]%s[/b]\nCost: %s\n%s" % [
-			b_data.display_name, 
-			_format_cost(b_data.build_cost),
-			"Generates resources" if b_data is EconomicBuildingData else "Defensive Structure"
-		]
-		
-		btn.pressed.connect(func():
-			if SettlementManager.attempt_purchase(b_data.build_cost):
-				EventBus.building_ready_for_placement.emit(b_data)
-				_close_all_windows()
-		)
-		build_grid.add_child(btn)
-
-# --- RECRUIT TAB ---
 func _update_garrison_display() -> void:
 	if recruit_list:
 		for child in recruit_list.get_children(): child.queue_free()
@@ -268,7 +260,6 @@ func _create_warband_entry(warband: WarbandData) -> void:
 	guard.pressed.connect(SettlementManager.toggle_hearth_guard.bind(warband))
 	row.add_child(guard)
 
-# --- LEGACY TAB ---
 func _populate_legacy_buttons() -> void:
 	if not legacy_list: return
 	for child in legacy_list.get_children(): child.queue_free()
@@ -304,17 +295,42 @@ func _populate_legacy_buttons() -> void:
 		)
 		legacy_list.add_child(btn)
 
-# --- LOADING ---
 func _load_building_data() -> void:
-	var dir = DirAccess.open("res://data/buildings/")
-	if dir:
-		dir.list_dir_begin()
-		var file = dir.get_next()
-		while file != "":
-			if file.ends_with(".tres"):
-				var data = load("res://data/buildings/" + file)
-				if data and data.is_player_buildable: available_buildings.append(data)
-			file = dir.get_next()
+	available_buildings.clear()
+	# Start the recursive scan from the root buildings folder
+	_scan_directory_recursive("res://data/buildings/")
+
+func _scan_directory_recursive(path: String) -> void:
+	var dir = DirAccess.open(path)
+	if not dir:
+		printerr("StorefrontUI: Could not open directory ", path)
+		return
+
+	dir.list_dir_begin()
+	var file_name = dir.get_next()
+
+	while file_name != "":
+		# Skip navigation . and ..
+		if file_name == "." or file_name == "..":
+			file_name = dir.get_next()
+			continue
+
+		var full_path = path.path_join(file_name)
+
+		if dir.current_is_dir():
+			# RECURSION: If it's a folder (like "generated"), dive in!
+			_scan_directory_recursive(full_path)
+		else:
+			# If it's a resource file
+			if file_name.ends_with(".tres") or file_name.ends_with(".remap"):
+				# .remap checks are needed for exported projects, .tres for editor
+				var clean_path = full_path.replace(".remap", "")
+				
+				var data = load(clean_path)
+				if data is BuildingData and data.is_player_buildable:
+					available_buildings.append(data)
+		
+		file_name = dir.get_next()
 
 func _load_unit_data() -> void:
 	var dir = DirAccess.open("res://data/units/")
@@ -332,11 +348,30 @@ func _format_cost(cost: Dictionary) -> String:
 	for k in cost:
 		var display_name = GameResources.get_display_name(k)
 		s.append("%d %s" % [cost[k], display_name])
-		# ------------------------------------
 	return ", ".join(s)
 
-# Helper to find idle worker for the warning dialog
-func _select_idle_worker() -> void:
-	# Logic to find/select an idle unit could be added here if we tracked units that way.
-	# For now, opening the recruit/manage tab is sufficient.
-	EventBus.worker_management_toggled.emit()
+func _apply_theme_overrides() -> void:
+	var tooltip_bg_path = "res://ui/assets/tooltip_bg.png"
+	var default_theme_path = "res://ui/themes/VikingDynastyTheme.tres"
+	
+	if ResourceLoader.exists(tooltip_bg_path):
+		var tooltip_tex = load(tooltip_bg_path)
+		var style_tooltip = StyleBoxTexture.new()
+		style_tooltip.texture = tooltip_tex
+		style_tooltip.content_margin_left = 12
+		style_tooltip.content_margin_right = 12
+		style_tooltip.content_margin_top = 8
+		style_tooltip.content_margin_bottom = 8
+		
+		if theme == null:
+			if ResourceLoader.exists(default_theme_path):
+				theme = load(default_theme_path)
+			else:
+				theme = Theme.new()
+
+		theme = theme.duplicate() 
+		self.theme = theme
+		
+		theme.set_stylebox("panel", "TooltipPanel", style_tooltip)
+		theme.set_color("font_color", "TooltipLabel", Color.WHITE)
+		theme.set_font_size("font_size", "TooltipLabel", 18)

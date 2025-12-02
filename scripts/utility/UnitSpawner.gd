@@ -1,151 +1,166 @@
-# res://scripts/systems/UnitSpawner.gd
+# res://scripts/utility/UnitSpawner.gd
 class_name UnitSpawner
 extends Node
 
-# --- Configuration ---
 @export var unit_container: Node2D
 @export var rts_controller: RTSController
 @export var civilian_data: UnitData
 
-# --- Spawn Settings ---
 @export var spawn_radius_min: float = 100.0
 @export var spawn_radius_max: float = 250.0
 
 func _ready() -> void:
 	if not unit_container:
-		Loggie.msg("UnitSpawner: Missing unit_container reference.").domain(LogDomains.SYSTEM).warn()
+		unit_container = get_parent().get_node_or_null("UnitContainer")
+		if not unit_container:
+			Loggie.msg("UnitSpawner: CRITICAL - No UnitContainer found!").domain(LogDomains.SYSTEM).error()
 
 func clear_units() -> void:
 	if not unit_container: return
 	for child in unit_container.get_children():
 		child.queue_free()
 
-# --- MILITARY SPAWNING (Squads) ---
-
 func spawn_garrison(warbands: Array[WarbandData], spawn_origin: Vector2) -> void:
-	if not unit_container: return
+	print("[DIAGNOSTIC] UnitSpawner: Received request for %d warbands." % warbands.size())
+
+	if not unit_container: 
+		print("[DIAGNOSTIC] FAIL: UnitContainer is null!")
+		return
 	
 	var current_squad_index = 0
 	var units_per_row = 5
-	var squad_spacing = 150.0 # Spacing between LEADERS
+	var squad_spacing = 150.0
 	
 	for warband in warbands:
-		# 1. Validate
-		if warband.is_wounded: continue
+		if warband.is_wounded: 
+			print("[DIAGNOSTIC] Skipping %s: Wounded" % warband.custom_name)
+			continue
+			
 		var unit_data = warband.unit_type
-		if not unit_data: continue
+		if not unit_data: 
+			print("[DIAGNOSTIC] Skipping %s: Missing UnitData" % warband.custom_name)
+			continue
 		
-		# 2. Load Scene
 		var scene_ref = unit_data.load_scene()
-		if not scene_ref: continue
+		if not scene_ref: 
+			print("[DIAGNOSTIC] Skipping %s: Scene load failed" % warband.custom_name)
+			continue
 		
-		# 3. Instantiate Leader
 		var leader = scene_ref.instantiate()
-		
-		# 4. Swap to SquadLeader Script logic (The Shepherd System)
 		var leader_script = load("res://scripts/units/SquadLeader.gd")
 		leader.set_script(leader_script)
 		
-		# 5. Configure
 		leader.warband_ref = warband
 		leader.data = unit_data
-		leader.collision_layer = 2 # Player Unit
+		leader.collision_layer = 2 
 		
-		# 6. Position (Grid formation for squads)
+		# --- POSITIONING & CLAMPING ---
 		var row = current_squad_index / units_per_row
 		var col = current_squad_index % units_per_row
 		
-		# Offset from the Great Hall/Spawn Origin
 		var formation_offset = Vector2(
 			(col - (units_per_row / 2.0)) * squad_spacing,
-			row * squad_spacing + 200.0 # Start 200px "south" of the hall
+			row * squad_spacing + 200.0
 		)
 		
-		leader.global_position = spawn_origin + formation_offset
+		var final_pos = spawn_origin + formation_offset
 		
-		# 7. Register
+		# Apply Safety Clamp
+		final_pos = _clamp_to_grid(final_pos)
+		leader.global_position = final_pos
+		# ------------------------------
+		
 		unit_container.add_child(leader)
+		print("[DIAGNOSTIC] Spawning %s at %s" % [leader.name, leader.global_position])
 		
 		if rts_controller:
-			# RTS Controller only tracks Leaders now
 			rts_controller.add_unit_to_group(leader)
 			
 		current_squad_index += 1
 		
 	Loggie.msg("UnitSpawner: Deployed %d squads." % current_squad_index).domain(LogDomains.RTS).info()
 
-# --- CIVILIAN SPAWNING ---
+# --- NEW HELPER: Grid Clamping ---
+func _clamp_to_grid(target_pos: Vector2) -> Vector2:
+	# We check if SettlementManager has an active grid.
+	# If not, we return the raw position (fallback).
+	if not SettlementManager or not is_instance_valid(SettlementManager.active_astar_grid):
+		return target_pos
+		
+	var grid = SettlementManager.active_astar_grid
+	var region = grid.region
+	var cell_size = grid.cell_size
+	
+	# Calculate World Bounds (Pixels)
+	var min_x = region.position.x * cell_size.x
+	var min_y = region.position.y * cell_size.y
+	var max_x = region.end.x * cell_size.x
+	var max_y = region.end.y * cell_size.y
+	
+	# Apply Margin (keep units 1 cell away from the absolute edge)
+	var margin = 32.0 
+	
+	var clamped = Vector2(
+		clampf(target_pos.x, min_x + margin, max_x - margin),
+		clampf(target_pos.y, min_y + margin, max_y - margin)
+	)
+	
+	if clamped != target_pos:
+		# Log specific adjustments so you know if your level design is tight
+		# print("[DIAGNOSTIC] Clamped unit from %s to %s" % [target_pos, clamped])
+		pass
+		
+	return clamped
+
+# ... (Keep sync_civilians, _spawn_civilians, _despawn_civilians unchanged) ...
 
 func sync_civilians(idle_count: int, spawn_origin: Vector2) -> void:
 	if not unit_container or not civilian_data: return
-	
-	# 1. Count Existing (EXCLUDING BUSY WORKERS)
-	# We only want to sync units that are actually "Idle"
 	var active_idle_civilians = []
 	for child in unit_container.get_children():
-		# Check for group membership safely
 		if child.is_in_group("civilians") and not child.is_in_group("busy"):
 			active_idle_civilians.append(child)
-	
 	var current_count = active_idle_civilians.size()
 	var diff = idle_count - current_count
-	
-	# 2. Spawn or Despawn based on the "True Idle" count
 	if diff > 0:
 		_spawn_civilians(diff, spawn_origin)
 	elif diff < 0:
-		# We pass the filtered list so we don't accidentally delete a busy worker
 		_despawn_civilians(abs(diff), active_idle_civilians)
 
 func _spawn_civilians(count: int, origin: Vector2) -> void:
-	if civilian_data:
-		print("UnitSpawner: Spawning %d civilians using data: %s" % [count, civilian_data.resource_path])
-	else:
-		printerr("UnitSpawner: ERROR - Civilian Data is NULL!")
-		return
+	if not civilian_data: return
 	var scene_ref = civilian_data.load_scene()
 	if not scene_ref: return
-	
 	for i in range(count):
 		var civ = scene_ref.instantiate()
-		
-		# Ensure Civilian Script is attached (if scene is generic)
 		if not civ.get_script() or civ.get_script().resource_path != "res://scripts/units/CivilianUnit.gd":
 			civ.set_script(load("res://scripts/units/CivilianUnit.gd"))
-			
 		civ.data = civilian_data
-		
-		# Random Circle Position
 		var angle = randf() * TAU
 		var distance = randf_range(spawn_radius_min, spawn_radius_max)
 		var offset = Vector2(cos(angle), sin(angle)) * distance
 		
-		civ.position = origin + offset
-		unit_container.add_child(civ)
+		# --- FIX: Clamp Civilians too ---
+		var pos = origin + offset
+		civ.position = _clamp_to_grid(pos)
+		# --------------------------------
 		
-		# Register
-		if rts_controller:
-			rts_controller.add_unit_to_group(civ)
-			
-		# Optional: Small wander
+		unit_container.add_child(civ)
+		if rts_controller: rts_controller.add_unit_to_group(civ)
 		if civ.has_method("command_move_to"):
 			var wander = Vector2(randf_range(-20, 20), randf_range(-20, 20))
-			civ.command_move_to(civ.position + wander)
+			# Clamp wander target
+			civ.command_move_to(_clamp_to_grid(civ.position + wander))
 
 func _despawn_civilians(count: int, list: Array) -> void:
 	for i in range(count):
 		if i < list.size():
 			var civ = list[i]
 			if is_instance_valid(civ):
-				# Graceful cleanup
 				if rts_controller: rts_controller.remove_unit(civ)
 				civ.queue_free()
 
 func spawn_worker_at(location: Vector2) -> void:
 	if not civilian_data: return
-	
-	# Reuse internal logic but for count 1 and specific origin
-	# We use a small random offset so they don't clip exactly into the wall
 	_spawn_civilians(1, location)
-	
 	Loggie.msg("UnitSpawner: Worker spawned at %s" % location).domain(LogDomains.UNIT).debug()

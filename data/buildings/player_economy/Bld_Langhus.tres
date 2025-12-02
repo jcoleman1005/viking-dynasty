@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="EconomicBuildingData" load_steps=3 format=3 uid="uid://cqp5ethcro4wy"]
+
+[ext_resource type="PackedScene" uid="uid://cws6xle5x52g4" path="res://scenes/buildings/Base_Building.tscn" id="1_gc777"]
+[ext_resource type="Script" uid="uid://d33smw07vm6y4" path="res://data/buildings/EconomicBuildingData.gd" id="2_thncc"]
+
+[resource]
+script = ExtResource("2_thncc")
+display_name = "Langhús"
+description = "The fundamental unit of Norse society. A long turf dwelling where extended families live together. Increases max population."
+scene_to_spawn = ExtResource("1_gc777")
+build_cost = {
+"stone": 20,
+"wood": 100
+}
+max_health = 800
+is_player_buildable = true
+construction_effort_required = 150

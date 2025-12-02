@@ -3,13 +3,8 @@ class_name UnitData
 extends Resource
 
 @export var display_name: String = "New Unit"
-
-# --- SOFT REFERENCE (Preferred) ---
 @export_file("*.tscn") var scene_path: String = ""
-
-# --- HARD REFERENCE (Legacy/Fallback) ---
-@export var scene_to_spawn: PackedScene
-# ----------------------------------------
+@export var scene_to_spawn: PackedScene # Hard reference fallback
 
 @export var icon: Texture2D
 @export var spawn_cost: Dictionary = {"food": 25}
@@ -33,33 +28,25 @@ extends Resource
 @export var projectile_scene: PackedScene
 @export var projectile_speed: float = 400.0
 
-# --- ROBUST LOADER ---
 func load_scene() -> PackedScene:
-	# 1. Check for empty string (The issue we just faced)
+	# 1. Try Hard Reference (Fastest & Safest)
+	if scene_to_spawn:
+		return scene_to_spawn
+		
+	# 2. Try Soft Reference (Path)
 	if scene_path == "":
-		var msg = "UnitData CRITICAL: Unit '%s' has NO 'scene_path' assigned! Please fix in Inspector." % display_name
-		
-		# Log to Loggie for history
-		Loggie.msg(msg).domain("SYSTEM").error()
-		
-		# Push to Godot Debugger (Red Error)
-		push_error(msg) 
+		push_error("UnitData '%s': No scene_path AND no scene_to_spawn assigned!" % display_name)
 		return null
 		
-	# 2. Check if file actually exists on disk
-	if not ResourceLoader.exists(scene_path):
-		var msg = "UnitData CRITICAL: File not found at '%s' for unit '%s'. Has it been moved?" % [scene_path, display_name]
-		Loggie.msg(msg).domain("SYSTEM").error()
-		push_error(msg)
-		return null
+	# 3. Handle UID vs Res paths
+	# ResourceLoader.exists sometimes fails with UIDs, so we skip check if it's a UID
+	if not scene_path.begins_with("uid://"):
+		if not ResourceLoader.exists(scene_path):
+			push_error("UnitData '%s': File not found at '%s'" % [display_name, scene_path])
+			return null
 		
-	# 3. Attempt load
 	var scene = load(scene_path)
 	if not scene:
-		var msg = "UnitData CRITICAL: Failed to load resource at '%s'. File may be corrupt." % scene_path
-		Loggie.msg(msg).domain("SYSTEM").error()
-		push_error(msg)
-		return null
+		push_error("UnitData '%s': Failed to load resource at '%s'" % [display_name, scene_path])
 		
-	# 4. Success
 	return scene
