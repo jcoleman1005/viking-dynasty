@@ -2,6 +2,7 @@
 extends CanvasLayer
 
 # --- Node Refs ---
+@onready var panel_container: PanelContainer = $PanelContainer # Added for centering logic
 @onready var desc_label = $PanelContainer/MarginContainer/VBoxContainer/DescriptionLabel
 @onready var legit_label = $PanelContainer/MarginContainer/VBoxContainer/LegitimacyLabel
 @onready var renown_desc = $PanelContainer/MarginContainer/VBoxContainer/RenownTaxDescription
@@ -19,6 +20,19 @@ var renown_choice: String = "pay"
 var gold_choice: String = "pay"
 
 func _ready() -> void:
+	# --- NEW: Pause and Center Logic ---
+	# 1. Ensure this UI continues running while the game is paused
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	
+	# 2. Pause the Game
+	get_tree().paused = true
+	Loggie.msg("Succession Crisis Started. Game Paused.").domain("UI").info()
+	
+	# 3. Force Centering
+	if panel_container:
+		panel_container.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	# -----------------------------------
+
 	# Create ButtonGroups
 	var renown_group = ButtonGroup.new()
 	pay_renown_btn.button_group = renown_group
@@ -46,19 +60,15 @@ func display_crisis(jarl: JarlData, settlement: SettlementData) -> void:
 	pay_renown_btn.text = "Pay %d Renown" % renown_tax
 	refuse_renown_btn.text = "Refuse (Risk Project Setbacks)"
 	
-	# --- FIX: Update Description Text Dynamically ---
 	renown_desc.text = "Pay %d Renown to protect your legacy, or refuse and risk setbacks." % renown_tax
-	# -----------------------------------------------
-	
+
 	# Gold Tax
 	gold_tax = int(max(200, settlement.treasury.get("gold", 0) * 0.3) * tax_multiplier)
 	pay_gold_btn.text = "Pay %d Gold" % gold_tax
 	refuse_gold_btn.text = "Refuse (Risk Instability)"
 	
-	# --- FIX: Update Description Text Dynamically ---
 	gold_desc.text = "Pay %d Gold to ensure loyalty, or refuse and risk instability." % gold_tax
-	# -----------------------------------------------
-	
+
 	# Check affordability
 	if jarl.renown < renown_tax:
 		pay_renown_btn.disabled = true
@@ -93,6 +103,10 @@ func _on_confirm() -> void:
 	
 	# 2. Emit choices to EventManager/DynastyManager for consequences
 	EventBus.succession_choices_made.emit(renown_choice, gold_choice)
+	
+	# --- NEW: Unpause Game ---
+	get_tree().paused = false
+	# -------------------------
 	
 	# 3. Close the window
 	queue_free()

@@ -5,7 +5,7 @@ extends CanvasLayer
 @onready var main_container: VBoxContainer = $PanelContainer/MainMenuContainer
 @onready var resume_button: Button = $PanelContainer/MainMenuContainer/ResumeButton
 @onready var save_button: Button = $PanelContainer/MainMenuContainer/SaveButton
-@onready var debug_button: Button = $PanelContainer/MainMenuContainer/DebugButton # New
+@onready var debug_button: Button = $PanelContainer/MainMenuContainer/DebugButton
 @onready var new_game_button: Button = $PanelContainer/MainMenuContainer/NewGameButton
 @onready var quit_button: Button = $PanelContainer/MainMenuContainer/QuitButton
 
@@ -19,11 +19,9 @@ extends CanvasLayer
 @onready var btn_back: Button = $PanelContainer/DebugMenuContainer/Btn_Back
 
 func _ready() -> void:
-	# Ensure correct visibility on start
 	main_container.show()
 	if debug_container: debug_container.hide()
 	
-	# --- Main Menu Connections ---
 	resume_button.pressed.connect(_on_resume_pressed)
 	save_button.pressed.connect(_on_save_pressed)
 	
@@ -35,7 +33,6 @@ func _ready() -> void:
 		
 	quit_button.pressed.connect(_on_quit_pressed)
 	
-	# --- Debug Connections ---
 	if debug_container:
 		btn_add_gold.pressed.connect(_cheat_add_gold)
 		btn_add_renown.pressed.connect(_cheat_add_renown)
@@ -69,9 +66,16 @@ func _on_save_pressed() -> void:
 		Loggie.msg("Game saved from pause menu.").domain("UI").info()
 
 func _on_new_game_pressed() -> void:
+	# 1. Wipe old save data
 	SettlementManager.delete_save_file()
+	
+	# 2. Generate new Dynasty & Campaign State
 	if is_instance_valid(DynastyManager):
-		DynastyManager.reset_dynasty(true)
+		# --- FIX: Call the new method, not the old one ---
+		DynastyManager.start_new_campaign()
+		# -------------------------------------------------
+		
+	# 3. Unpause and go to Settlement view
 	get_tree().paused = false
 	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
 	queue_free()
@@ -80,7 +84,6 @@ func _on_quit_pressed() -> void:
 	get_tree().quit()
 
 # --- CHEATS ---
-
 func _cheat_add_gold() -> void:
 	if SettlementManager.has_current_settlement():
 		SettlementManager.deposit_resources({"gold": 1000, "wood": 1000})
@@ -95,8 +98,6 @@ func _cheat_unlock_legacy() -> void:
 	if not DynastyManager.has_purchased_upgrade("UPG_TRAINING_GROUNDS"):
 		DynastyManager.purchase_legacy_upgrade("UPG_TRAINING_GROUNDS")
 		Loggie.msg("CHEAT: Training Grounds Unlocked").domain("SYSTEM").warn()
-		
-		# Refresh UI if open behind pause menu
 		if DynastyManager.current_jarl:
 			DynastyManager.jarl_stats_updated.emit(DynastyManager.current_jarl)
 

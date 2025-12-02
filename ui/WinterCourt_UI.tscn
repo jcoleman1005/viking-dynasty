@@ -82,6 +82,7 @@ layout_mode = 2
 [node name="JarlPortrait" type="TextureRect" parent="MarginContainer/ScreenMargin/RootLayout/TopLayout/LeftPanel/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
+expand_mode = 5
 
 [node name="CenterPanel" type="VBoxContainer" parent="MarginContainer/ScreenMargin/RootLayout/TopLayout"]
 layout_mode = 2
