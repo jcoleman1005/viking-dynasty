@@ -79,19 +79,23 @@ func spawn_garrison(warbands: Array[WarbandData], spawn_origin: Vector2) -> void
 func sync_civilians(idle_count: int, spawn_origin: Vector2) -> void:
 	if not unit_container or not civilian_data: return
 	
-	# 1. Count Existing
-	var active_civilians = []
+	# 1. Count Existing (EXCLUDING BUSY WORKERS)
+	# We only want to sync units that are actually "Idle"
+	var active_idle_civilians = []
 	for child in unit_container.get_children():
-		if child.is_in_group("civilians"):
-			active_civilians.append(child)
+		# Check for group membership safely
+		if child.is_in_group("civilians") and not child.is_in_group("busy"):
+			active_idle_civilians.append(child)
 	
-	var current_count = active_civilians.size()
+	var current_count = active_idle_civilians.size()
 	var diff = idle_count - current_count
 	
+	# 2. Spawn or Despawn based on the "True Idle" count
 	if diff > 0:
 		_spawn_civilians(diff, spawn_origin)
 	elif diff < 0:
-		_despawn_civilians(abs(diff), active_civilians)
+		# We pass the filtered list so we don't accidentally delete a busy worker
+		_despawn_civilians(abs(diff), active_idle_civilians)
 
 func _spawn_civilians(count: int, origin: Vector2) -> void:
 	if civilian_data:
@@ -136,3 +140,12 @@ func _despawn_civilians(count: int, list: Array) -> void:
 				# Graceful cleanup
 				if rts_controller: rts_controller.remove_unit(civ)
 				civ.queue_free()
+
+func spawn_worker_at(location: Vector2) -> void:
+	if not civilian_data: return
+	
+	# Reuse internal logic but for count 1 and specific origin
+	# We use a small random offset so they don't clip exactly into the wall
+	_spawn_civilians(1, location)
+	
+	Loggie.msg("UnitSpawner: Worker spawned at %s" % location).domain(LogDomains.UNIT).debug()

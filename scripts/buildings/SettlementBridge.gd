@@ -9,31 +9,23 @@ extends Node
 @export var world_map_scene_path: String = "res://scenes/world_map/MacroMap.tscn"
 
 # --- REACTIVE DEBUG SETTINGS ---
-# Using setters allows you to toggle these in the Remote Scene Tree at runtime!
 @export_group("Loggie Debug Settings")
 @export var show_ui_logs: bool = false:
 	set(value):
 		show_ui_logs = value
-		if is_inside_tree(): # Prevent errors during initialization
-			Loggie.set_domain_enabled("UI", value)
+		if is_inside_tree(): Loggie.set_domain_enabled("UI", value)
 @export var show_settlement_logs: bool = false:
 	set(value):
 		show_settlement_logs = value
-		if is_inside_tree():
-			Loggie.set_domain_enabled("SETTLEMENT", value)
+		if is_inside_tree(): Loggie.set_domain_enabled("SETTLEMENT", value)
 @export var show_building_logs: bool = false:
 	set(value):
 		show_building_logs = value
-		if is_inside_tree():
-			Loggie.set_domain_enabled("BUILDING", value)
-@export var show_debug_logs: bool = true: ## General debug messages
+		if is_inside_tree(): Loggie.set_domain_enabled("BUILDING", value)
+@export var show_debug_logs: bool = true:
 	set(value):
 		show_debug_logs = value
-		if is_inside_tree():
-			Loggie.set_domain_enabled("DEBUG", value)
-
-# --- NEW: Civ Unit Data ---
-
+		if is_inside_tree(): Loggie.set_domain_enabled("DEBUG", value)
 
 # --- New Game Configuration ---
 @export_group("New Game Settings")
@@ -42,8 +34,6 @@ extends Node
 @export var start_food: int = 100
 @export var start_stone: int = 200
 @export var start_population: int = 10
-
-
 
 # --- Default Assets ---
 var default_test_building: BuildingData = preload("res://data/buildings/Bldg_Wall.tres")
@@ -60,6 +50,7 @@ var default_end_of_year_popup: PackedScene = preload("res://ui/EndOfYear_Popup.t
 @onready var grid_manager: Node = $GridManager
 @onready var rts_controller: RTSController = $RTSController
 @onready var unit_spawner: UnitSpawner = $UnitSpawner
+
 # --- Worker & End Year UI ---
 const WORK_ASSIGNMENT_SCENE_PATH = "res://ui/WorkAssignment_UI.tscn"
 var work_assignment_ui: CanvasLayer
@@ -75,7 +66,6 @@ func _ready() -> void:
 	Loggie.set_domain_enabled("UI", false)
 	Loggie.set_domain_enabled("SETTLEMENT", false)
 	Loggie.set_domain_enabled("BUILDING", false)
-	Loggie.set_domain_enabled("DEBUG", false)
 	
 	_setup_default_resources()
 	_initialize_settlement() 
@@ -96,46 +86,70 @@ func _ready() -> void:
 		
 	if storefront_ui: storefront_ui.show()
 	if end_of_year_popup: end_of_year_popup.hide()
-	# --- DEBUG CHECK ---
-	var controller = get_node_or_null("RTSController")
-	if controller:
-		print("DIAGNOSTIC: Checking RTSController connections...")
-		
-		# Check if the controller is actually listening
-		if not EventBus.select_command.is_connected(controller._on_select_command):
-			print("DIAGNOSTIC: RTSController was asleep! Forcing connections now.")
-			
-			# Manually wire up the brain
-			EventBus.select_command.connect(controller._on_select_command)
-			EventBus.move_command.connect(controller._on_move_command)
-			EventBus.attack_command.connect(controller._on_attack_command)
-			EventBus.interact_command.connect(controller._on_interact_command)
-			
-			# Inject dependencies manually just in case
-			controller.control_groups = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [], 9: [], 0: [] }
-			
-			print("DIAGNOSTIC: RTSController manually jump-started.")
-		else:
-			print("DIAGNOSTIC: RTSController is already connected.")
 			
 func _exit_tree() -> void:
 	SettlementManager.unregister_active_scene_nodes()
 
 func _connect_signals() -> void:
 	EventBus.settlement_loaded.connect(_on_settlement_loaded)
-	# --- NEW: Sync physical units to data ---
 	EventBus.settlement_loaded.connect(_sync_villagers)
-	
 	EventBus.building_ready_for_placement.connect(_on_building_ready_for_placement)
 	EventBus.building_placement_cancelled.connect(_on_building_placement_cancelled)
 	EventBus.building_right_clicked.connect(_on_building_right_clicked)
 	EventBus.dynasty_view_requested.connect(_toggle_dynasty_view)
 	EventBus.end_year_requested.connect(_on_end_year_pressed)
 	
+	# --- NEW: Worker Request Connection ---
+	EventBus.request_worker_assignment.connect(_on_worker_requested)
+	EventBus.request_worker_removal.connect(_on_worker_removal_requested)# --------------------------------------
+	
 	if building_cursor:
 		building_cursor.placement_completed.connect(_on_building_placement_completed)
 		building_cursor.placement_cancelled.connect(_on_building_placement_cancelled_by_cursor)
 
+# --- WORKER DISPATCH LOGIC ---
+func _on_worker_requested(target: BaseBuilding) -> void:
+	# 1. Find closest available worker
+	var civilians = get_tree().get_nodes_in_group("civilians")
+	var nearest_civ: CivilianUnit = null
+	var min_dist = INF
+	
+	for civ in civilians:
+		if not civ is CivilianUnit: continue
+		if civ.is_in_group("busy"): continue
+		
+		var dist = civ.global_position.distance_to(target.global_position)
+		if dist < min_dist:
+			min_dist = dist
+			nearest_civ = civ
+			
+	if nearest_civ:
+		# --- FIX START ---
+		# A. Mark as busy immediately. 
+		# This protects the unit from being deleted when the 'settlement_loaded' 
+		# signal triggers the _sync_villagers check in the next step.
+		nearest_civ.add_to_group("busy")
+		
+		# B. Attempt Data Assignment (Triggers Sync)
+		var success = SettlementManager.assign_worker_from_unit(target, "peasant")
+		
+		if success:
+			Loggie.msg("Immediate assignment success. Dispatching visual unit.").domain("RTS").info()
+			
+			# C. Dispatch Unit
+			# We tell it to skip the logic because we just did it manually above
+			nearest_civ.skip_assignment_logic = true
+			nearest_civ.command_interact(target)
+		else:
+			# D. Revert if failed (e.g. building full)
+			nearest_civ.remove_from_group("busy")
+			Loggie.msg("Assignment rejected by Manager.").domain("RTS").warn()
+			EventBus.purchase_failed.emit("Building is full.")
+		# --- FIX END ---
+		
+	else:
+		Loggie.msg("No available idle workers found!").domain("RTS").warn()
+		EventBus.purchase_failed.emit("No idle workers found nearby.")
 # --- UI SETUP ---
 func _setup_ui() -> void:
 	# End Year Popup
@@ -143,85 +157,37 @@ func _setup_ui() -> void:
 	ui_layer.add_child(end_of_year_popup)
 	end_of_year_popup.collect_button_pressed.connect(_on_payout_collected)
 	
-	# Worker UI
-	if ResourceLoader.exists(WORK_ASSIGNMENT_SCENE_PATH):
-		var scene = load(WORK_ASSIGNMENT_SCENE_PATH)
-		if scene:
-			work_assignment_ui = scene.instantiate()
-			add_child(work_assignment_ui)
-			if work_assignment_ui.has_signal("assignments_confirmed"):
-				work_assignment_ui.assignments_confirmed.connect(_on_worker_assignments_confirmed)
-	
 	# Idle Warning Dialog
 	idle_warning_dialog = ConfirmationDialog.new()
 	idle_warning_dialog.title = "Idle Villagers"
 	idle_warning_dialog.ok_button_text = "End Year Anyway"
-	idle_warning_dialog.cancel_button_text = "Select Idle Worker"
-	
+	idle_warning_dialog.cancel_button_text = "Cancel"
 	idle_warning_dialog.confirmed.connect(_start_end_year_sequence)
-	
-	# Map the cancel button to finding an idle worker
-	idle_warning_dialog.canceled.connect(func():
-		if storefront_ui and storefront_ui.has_method("_select_idle_worker"):
-			storefront_ui._select_idle_worker()
-	)
-	
 	add_child(idle_warning_dialog)
-
-# --- WORKER ASSIGNMENT LOGIC ---
-func _on_worker_assignments_confirmed(assignments: Dictionary) -> void:
-	Loggie.msg("SettlementBridge: Work assignments saved.").domain("BUILDING").info()
-	if SettlementManager.current_settlement:
-		SettlementManager.current_settlement.worker_assignments = assignments
-		SettlementManager.save_settlement()
-
-# --- END YEAR LOGIC CHAIN ---
 
 func _on_end_year_pressed() -> void:
 	Loggie.msg("SettlementBridge: End Year requested.").domain("BUILDING").info()
-	
-	# Check for Idles
 	var idle_p = SettlementManager.get_idle_peasants()
-	var idle_t = SettlementManager.get_idle_thralls()
-	var total_idle = idle_p + idle_t
+	var total_idle = idle_p # + SettlementManager.get_idle_thralls()
 	
 	if total_idle > 0:
-		idle_warning_dialog.dialog_text = "You have %d idle workers (Citizens/Thralls).\nUnassigned workers produce nothing.\n\nEnd year anyway?" % total_idle
+		idle_warning_dialog.dialog_text = "You have %d idle workers.\nUnassigned workers produce nothing.\n\nEnd year anyway?" % total_idle
 		idle_warning_dialog.popup_centered()
 	else:
 		_start_end_year_sequence()
 
 func _start_end_year_sequence() -> void:
 	_close_all_popups()
-	
-	Loggie.msg("SettlementBridge: Handing off to DynastyManager for Winter Phase.").domain("SETTLEMENT").info()
-	
-	# The old popup logic is bypassed. 
-	# We go directly to the Winter Phase state machine.
 	DynastyManager.start_winter_phase()
 
-""""
-	Note: The old _on_payout_collected and _finalize_end_year functions in SettlementBridge are now effectively deprecated/unused, 
-	but you can leave them there for now to avoid script errors if other things reference them. 
-	The new flow handles the payout calculation inside DynastyManager.end_winter_phase()
-	 logic we wrote previously.
-"""
-
 func _on_payout_collected(payout: Dictionary) -> void:
-	# 3. Deposit Resources
 	SettlementManager.deposit_resources(payout)
-	# 4. Finalize Logic
-	_finalize_end_year(payout)
-	# 5. Restore UI
-	if storefront_ui: storefront_ui.show()
-
-func _finalize_end_year(_payout: Dictionary) -> void:
 	DynastyManager.end_year()
+	if storefront_ui: storefront_ui.show()
 
 func _close_all_popups() -> void:
 	var dynasty_ui = ui_layer.get_node_or_null("Dynasty_UI")
 	if dynasty_ui: dynasty_ui.hide()
-	if work_assignment_ui: work_assignment_ui.hide()
 
 # --- SETTLEMENT LOGIC ---
 
@@ -234,23 +200,9 @@ func _clear_all_buildings() -> void:
 	if is_instance_valid(building_container):
 		for child in building_container.get_children(): child.queue_free()
 		await get_tree().process_frame
-	
 	if is_instance_valid(unit_container):
 		for child in unit_container.get_children(): child.queue_free()
 		await get_tree().process_frame
-	
-	if is_instance_valid(grid_manager):
-		if "astar_grid" in grid_manager and grid_manager.astar_grid:
-			var grid = grid_manager.astar_grid
-			var region = grid.region
-			for x in range(region.size.x):
-				for y in range(region.size.y):
-					var pos = Vector2i(x + region.position.x, y + region.position.y)
-					grid.set_point_solid(pos, false)
-			grid.update()
-		if "buildable_cells" in grid_manager: grid_manager.buildable_cells.clear()
-		if grid_manager.has_method("queue_redraw_visualizer"): grid_manager.queue_redraw_visualizer()
-	
 	great_hall_instance = null
 	game_is_over = false
 	awaiting_placement = null
@@ -258,27 +210,18 @@ func _clear_all_buildings() -> void:
 func _initialize_settlement() -> void:
 	home_base_data = _create_default_settlement()
 	await _clear_all_buildings()
-	
-	# 1. Load Data (Fires 'settlement_loaded', but _sync_villagers will now skip if no Hall)
 	SettlementManager.load_settlement(home_base_data)
-	
 	if is_instance_valid(grid_manager) and "astar_grid" in grid_manager:
 		SettlementManager.register_active_scene_nodes(grid_manager.astar_grid, building_container, grid_manager)
-	
-	# 2. Spawn Buildings (Creates Great Hall)
 	_spawn_placed_buildings()
 
 func _spawn_placed_buildings() -> void:
 	if not SettlementManager.current_settlement: return
-	
-	# Clear existing
 	for child in building_container.get_children(): child.queue_free()
 	
-	# Spawn Placed
 	for building_entry in SettlementManager.current_settlement.placed_buildings:
 		_spawn_single_building(building_entry, false) 
 		
-	# Spawn Construction Sites
 	for building_entry in SettlementManager.current_settlement.pending_construction_buildings:
 		var b = _spawn_single_building(building_entry, false)
 		if b:
@@ -294,8 +237,6 @@ func _spawn_placed_buildings() -> void:
 		SettlementManager.active_astar_grid.update()
 		
 	if unit_spawner: unit_spawner.clear_units()
-	
-	# Trigger Unit Spawn (Now delegates to Spawner)
 	_sync_villagers()
 	_spawn_player_garrison()
 	
@@ -317,9 +258,7 @@ func _create_default_settlement() -> SettlementData:
 	settlement.placed_buildings.append(great_hall_entry)
 	return settlement
 
-func _on_settlement_loaded(_settlement_data: SettlementData) -> void:
-	# Handled by _sync_villagers
-	pass
+func _on_settlement_loaded(_settlement_data: SettlementData) -> void: pass
 
 func _setup_great_hall(hall_instance: BaseBuilding) -> void:
 	if not is_instance_valid(hall_instance): return
@@ -363,27 +302,18 @@ func _process_raid_return() -> void:
 	var result = DynastyManager.pending_raid_result
 	var outcome = result.get("outcome")
 	
-	# --- NEW: Process Returning Bondi ---
 	if SettlementManager.current_settlement:
 		var warbands_to_disband: Array[WarbandData] = []
-		
 		for warband in SettlementManager.current_settlement.warbands:
 			if warband.is_bondi:
-				# Refund Survivors
 				if warband.current_manpower > 0:
 					SettlementManager.current_settlement.population_peasants += warband.current_manpower
-					Loggie.msg("Bondi disbanded. %d returned to work." % warband.current_manpower).domain(LogDomains.SETTLEMENT).info()
-				
 				warbands_to_disband.append(warband)
-		
-		# Cleanup
 		for wb in warbands_to_disband:
 			SettlementManager.current_settlement.warbands.erase(wb)
-	# -------------------------------------
 
 	var grade = result.get("victory_grade", "Standard")
 	var loot_summary = {}
-	
 	var xp_gain = 0
 	if outcome == "victory": 
 		xp_gain = 50
@@ -392,10 +322,8 @@ func _process_raid_return() -> void:
 	elif outcome == "retreat": 
 		xp_gain = 20
 	
-	# --- NEW: ODIN MODIFIER ---
 	if xp_gain > 0 and DynastyManager.active_year_modifiers.has("BLOT_ODIN"):
 		xp_gain = int(xp_gain * 1.5)
-		Loggie.msg("Odin's Wisdom: XP gain increased to %d." % xp_gain).domain("SETTLEMENT").info()
 		
 	if SettlementManager.current_settlement and xp_gain > 0:
 		for warband in SettlementManager.current_settlement.warbands:
@@ -406,38 +334,9 @@ func _process_raid_return() -> void:
 		var gold = result.get("gold_looted", 0)
 		var difficulty = DynastyManager.current_raid_difficulty
 		var bonus = 200 + (difficulty * 50)
-		
-		# Decisive Bonus
-		if grade == "Decisive":
-			bonus += 100
-			
+		if grade == "Decisive": bonus += 100
 		loot_summary["gold"] = gold + bonus
 		loot_summary["population"] = randi_range(2, 4) * difficulty
-		
-		# --- GDD: Warlord Progression ---
-		var jarl = DynastyManager.get_current_jarl()
-		if jarl:
-			jarl.offensive_wins += 1
-			jarl.battles_won += 1
-			jarl.successful_raids += 1
-			
-			# Check Warlord Trait
-			if jarl.has_trait("Warlord") and grade == "Decisive":
-				var refund = 1 # +1 per Unifier level (simplified to 1 for now)
-				DynastyManager.current_jarl.current_authority = min(
-					DynastyManager.current_jarl.current_authority + refund, 
-					DynastyManager.current_jarl.max_authority
-				)
-				Loggie.msg("Warlord Momentum: Authority Refunded!").domain(LogDomains.DYNASTY).info()
-				
-			# Check Warlord Acquisition
-			if jarl.offensive_wins >= 5 and not jarl.has_trait("Warlord"):
-				# In a real impl, we'd load the trait resource. For now, string check logic is fine.
-				# We can emit an event or just log it.
-				Loggie.msg("Jarl has proven themselves a Warlord! (Trait pending impl)").domain(LogDomains.DYNASTY).warn()
-			
-			DynastyManager.jarl_stats_updated.emit(jarl)
-		# --------------------------------
 		
 		if is_instance_valid(end_of_year_popup):
 			end_of_year_popup.display_payout(loot_summary, "Raid Victory! (%s)" % grade)
@@ -450,22 +349,15 @@ func _process_raid_return() -> void:
 			
 	if not loot_summary.is_empty():
 		SettlementManager.deposit_resources(loot_summary)
-			
 	DynastyManager.pending_raid_result.clear()
-# --- PHYSICAL VILLAGER SYNC ---
 
 func _sync_villagers(_data: SettlementData = null) -> void:
 	if not SettlementManager.has_current_settlement(): return
 	if not is_instance_valid(great_hall_instance): return
 	if not unit_spawner: return
-	
 	var idle_count = SettlementManager.get_idle_peasants()
 	var origin = great_hall_instance.global_position
-	
-	# Delegate
 	unit_spawner.sync_civilians(idle_count, origin)
-		
-
 
 func _toggle_dynasty_view() -> void:
 	var dynasty_ui = ui_layer.get_node_or_null("Dynasty_UI")
@@ -475,17 +367,29 @@ func _toggle_dynasty_view() -> void:
 		else:
 			if storefront_ui: storefront_ui.call("_close_all_windows") 
 			dynasty_ui.show()
-			Loggie.msg("Opening Dynasty View").domain("UI").info()
-	else:
-		Loggie.msg("Error: Dynasty_UI node not found in SettlementBridge/UI").domain("UI").error()
 
 func _spawn_player_garrison() -> void:
 	if not SettlementManager.has_current_settlement(): return
 	if not is_instance_valid(great_hall_instance): return
 	if not unit_spawner: return
-	
 	var warbands = SettlementManager.current_settlement.warbands
 	var origin = great_hall_instance.global_position
-	
-	# Delegate
 	unit_spawner.spawn_garrison(warbands, origin)
+
+func _on_worker_removal_requested(building: BaseBuilding) -> void:
+	# 1. Spawn the unit physically FIRST
+	# This ensures that when the data updates momentarily, the "Physical Count" 
+	# already matches the new "Idle Count", preventing a duplicate spawn at the Hall.
+	if unit_spawner:
+		# Spawn slightly offset so they aren't inside the building center
+		var spawn_pos = building.global_position + Vector2(0, 40)
+		unit_spawner.spawn_worker_at(spawn_pos)
+	
+	# 2. Update the Data
+	var success = SettlementManager.unassign_worker_from_building(building, "peasant")
+	
+	if not success:
+		# If data update failed (e.g. count was actually 0), we effectively just 
+		# created a free unit. We should probably delete it or just accept the bug 
+		# as a "free worker" (unlikely to happen with UI checks).
+		Loggie.msg("Worker removal data failed! Sync might be off.").domain("RTS").warn()

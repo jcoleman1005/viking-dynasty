@@ -72,3 +72,9 @@ signal camera_input_lock_requested(is_locked: bool)
 
 # --- NEW: Game Loop Signals ---
 signal end_year_requested()
+
+
+signal building_selected(building: BaseBuilding)
+signal building_deselected()
+signal request_worker_assignment(target_building: BaseBuilding)
+signal request_worker_removal(target_building: BaseBuilding)

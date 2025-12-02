@@ -19,36 +19,29 @@ func _ready() -> void:
 
 
 func _gui_input(event: InputEvent) -> void:
-	# We use _gui_input, which is only called if the mouse
-	# is over this Control. Since it's fullscreen,
-	# this will always be the case.
-	if event is InputEventMouseButton and event.pressed:
-		print("DEBUG: SelectionBox received click! Button: ", event.button_index)
-	if event is InputEventMouseButton:
-		# --- DEBUG: Print ALL mouse button events ---
-		var state = "DOWN" if event.pressed else "UP"
-		print("DEBUG: Mouse Btn ", event.button_index, " is ", state)
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if event.is_pressed():
+				# 1. Try to pick a building first
+				if _try_select_building(get_local_mouse_position()):
+					accept_event()
+					return
+				
+				# 2. If no building, start drag selection
 				is_dragging = true
 				start_pos = get_local_mouse_position()
-				# This is the UI-bug-fix. We consume the
-				# event so nothing else can process it.
 				accept_event()
-			elif is_dragging: # On Left-Click Release
+				
+				# Clear previous building selection when clicking ground
+				EventBus.building_deselected.emit()
+				
+			elif is_dragging: # Release
 				is_dragging = false
 				var end_pos := get_local_mouse_position()
 				var rect := Rect2(start_pos, end_pos - start_pos).abs()
-				
-				# Check if it was a "drag" or just a "click"
-				# A 'click' is a box with a very small area.
-				var is_box_select = rect.size.length_squared() > 100 # 10x10 px
-				
-				# Emit the clean command for the RTSController
-				EventBus.emit_signal("select_command", rect, is_box_select)
-				
-				queue_redraw() # Clear the box
+				var is_box_select = rect.size.length_squared() > 100
+				EventBus.select_command.emit(rect, is_box_select)
+				queue_redraw()
 				accept_event()
 		
 	# Right Click Handling
@@ -125,6 +118,35 @@ func _handle_smart_command(_screen_pos: Vector2) -> void:
 	else:
 		print("DEBUG: Ground clicked. MOVE.")
 		EventBus.move_command.emit(world_pos)
+	
+func _try_select_building(screen_pos: Vector2) -> bool:
+	var world_space = get_world_2d().direct_space_state
+	var main_camera = get_viewport().get_camera_2d()
+	if not main_camera: return false
+	
+	var world_pos = main_camera.get_global_mouse_position()
+	
+	var query = PhysicsPointQueryParameters2D.new()
+	query.position = world_pos
+	query.collide_with_bodies = true
+	query.collide_with_areas = true
+	# Layer 1 (Player Building) + 9 (Hitboxes) usually. 
+	# We check for objects that have the 'data' property or are BaseBuilding.
+	query.collision_mask = 1 # Layer 1 is Environment/Player Buildings
+	
+	var results = world_space.intersect_point(query)
+	
+	for res in results:
+		var collider = res.collider
+		# Bubble up from Hitbox if needed
+		if collider.name == "Hitbox" and collider.get_parent() is BaseBuilding:
+			collider = collider.get_parent()
+			
+		if collider is BaseBuilding:
+			EventBus.building_selected.emit(collider)
+			return true
+			
+	return false
 		
 func _draw() -> void:
 	# This function draws the selection box

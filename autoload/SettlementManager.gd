@@ -491,3 +491,24 @@ func _find_entry_for_building(building: BaseBuilding) -> Dictionary:
 		if Vector2i(entry["grid_position"]) == grid_pos: return entry
 		
 	return {}
+
+func unassign_worker_from_building(building: BaseBuilding, type: String) -> bool:
+	if not current_settlement: return false
+	
+	var entry = _find_entry_for_building(building)
+	if entry.is_empty(): return false
+	
+	# Check current count
+	var key = "peasant_count" if type == "peasant" else "thrall_count"
+	var current = entry.get(key, 0)
+	
+	if current <= 0:
+		return false # Cannot remove what isn't there
+		
+	# Decrement
+	entry[key] = current - 1
+	Loggie.msg("Worker removed from %s" % building.data.display_name).domain(LogDomains.SETTLEMENT).info()
+	
+	save_settlement()
+	EventBus.settlement_loaded.emit(current_settlement)
+	return true

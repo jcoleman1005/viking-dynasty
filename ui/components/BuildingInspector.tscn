@@ -1,0 +1,76 @@
+[gd_scene load_steps=2 format=3 uid="uid://dhobag8h7m8ip"]
+
+[ext_resource type="Script" uid="uid://dsypa2f0q7g5" path="res://ui/components/BuildingInspector.gd" id="1_sbhxe"]
+
+[node name="BuildingInspector" type="PanelContainer"]
+custom_minimum_size = Vector2(280, 0)
+script = ExtResource("1_sbhxe")
+
+[node name="@MarginContainer@48133" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="@VBoxContainer@48134" type="VBoxContainer" parent="@MarginContainer@48133"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="@HBoxContainer@48135" type="HBoxContainer" parent="@MarginContainer@48133/@VBoxContainer@48134"]
+layout_mode = 2
+alignment = 1
+
+[node name="Icon" type="TextureRect" parent="@MarginContainer@48133/@VBoxContainer@48134/@HBoxContainer@48135"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="NameLabel" type="Label" parent="@MarginContainer@48133/@VBoxContainer@48134/@HBoxContainer@48135"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"HeaderLabel"
+text = "Building Name"
+
+[node name="@HSeparator@48136" type="HSeparator" parent="@MarginContainer@48133/@VBoxContainer@48134"]
+layout_mode = 2
+
+[node name="StatsLabel" type="RichTextLabel" parent="@MarginContainer@48133/@VBoxContainer@48134"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/default_color = Color(0.16862746, 0.13333334, 0.105882354, 1)
+bbcode_enabled = true
+text = "Production: 100
+Workers: 0/5"
+fit_content = true
+scroll_active = false
+
+[node name="@HBoxContainer@48138" type="HBoxContainer" parent="@MarginContainer@48133/@VBoxContainer@48134"]
+layout_mode = 2
+alignment = 1
+
+[node name="@Label@48139" type="Label" parent="@MarginContainer@48133/@VBoxContainer@48134/@HBoxContainer@48138"]
+layout_mode = 2
+text = "Assign Worker:"
+
+[node name="BtnRemove" type="Button" parent="@MarginContainer@48133/@VBoxContainer@48134/@HBoxContainer@48138"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+text = " - "
+
+[node name="WorkerCountLabel" type="Label" parent="@MarginContainer@48133/@VBoxContainer@48134/@HBoxContainer@48138"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(60, 0)
+layout_mode = 2
+text = "0 / 5"
+horizontal_alignment = 1
+
+[node name="BtnAdd" type="Button" parent="@MarginContainer@48133/@VBoxContainer@48134/@HBoxContainer@48138"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+text = " + "
