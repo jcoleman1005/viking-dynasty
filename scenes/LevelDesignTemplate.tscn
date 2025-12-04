@@ -4,10 +4,10 @@
 [ext_resource type="Script" uid="uid://2iyfg3te1n3y" path="res://scripts/utility/GridVisualizer.gd" id="2_hrpxt"]
 [ext_resource type="Script" uid="uid://bt4qo8hj2kpn0" path="res://tools/EditorOnly.gd" id="2_qdkuo"]
 [ext_resource type="Script" uid="uid://cb2ldxc7vxxah" path="res://data/buildings/Base_Building.gd" id="3_qdkuo"]
-[ext_resource type="Resource" uid="uid://bs1e1mgqnldwq" path="res://data/buildings/player_economy/GreatHall.tres" id="4_c0j6e"]
+[ext_resource type="Resource" uid="uid://bs1e1mgqnldwq" path="res://data/buildings/GreatHall.tres" id="4_c0j6e"]
 [ext_resource type="Resource" uid="uid://b2356vlfukf14" path="res://data/buildings/Bldg_Wall.tres" id="5_04n8u"]
 [ext_resource type="Resource" uid="uid://ckedcnw210a8k" path="res://data/buildings/Monastery_Watchtower.tres" id="6_0tmrt"]
-[ext_resource type="Resource" uid="uid://drx4sih8numo1" path="res://data/buildings/player_economy/LumberYard.tres" id="7_vy6il"]
+[ext_resource type="Resource" uid="uid://drx4sih8numo1" path="res://data/buildings/LumberYard.tres" id="7_vy6il"]
 [ext_resource type="Resource" uid="uid://y7xhmemltm28" path="res://data/buildings/Player_Farm.tres" id="8_48g0g"]
 [ext_resource type="Resource" uid="uid://b7p70u4vm3uem" path="res://data/buildings/Monastery_Chapel.tres" id="9_dpnga"]
 

@@ -32,16 +32,13 @@ func _recruit_fresh_squad() -> void:
 	var soldiers_needed = max(0, warband_ref.current_manpower - 1)
 	if soldiers_needed == 0: return
 	
-	# --- FIX: Use load_scene() to support Soft References (Paths) ---
 	var base_scene = data.load_scene()
 	if not base_scene: 
-		# Fallback to hard reference if load failed or path empty
 		base_scene = data.scene_to_spawn
 	
 	if not base_scene: 
 		printerr("SquadLeader: Could not load scene for soldier spawn!")
 		return
-	# ----------------------------------------------------------------
 	
 	for i in range(soldiers_needed):
 		var soldier_instance = base_scene.instantiate()
@@ -126,15 +123,23 @@ func die() -> void:
 			
 	if not living_soldiers.is_empty():
 		var new_leader_host = living_soldiers.pop_front()
+		
 		var new_leader = duplicate()
 		new_leader.set_script(load("res://scripts/units/SquadLeader.gd"))
 		new_leader.position = new_leader_host.position
 		new_leader.current_health = new_leader_host.current_health
 		new_leader.warband_ref = warband_ref
+		
 		get_parent().add_child(new_leader)
 		new_leader.absorb_existing_soldiers(living_soldiers)
+		
+		# --- FIX: Notify RTS Controller of Promotion ---
+		EventBus.player_unit_spawned.emit(new_leader)
+		# -----------------------------------------------
+		
 		new_leader_host.queue_free()
 	else:
 		if warband_ref:
 			EventBus.player_unit_died.emit(self)
+	
 	super.die()

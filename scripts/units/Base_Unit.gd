@@ -44,6 +44,9 @@ const LAYER_PLAYER_UNIT = 2
 const LAYER_ENEMY_UNIT = 4
 const LAYER_ENEMY_BLDG = 8
 
+# --- NEW: Death State Flag ---
+var _is_dying: bool = false
+
 func _ready() -> void:
 	if not data:
 		push_warning("BaseUnit: Node '%s' is missing 'UnitData'." % name)
@@ -56,9 +59,6 @@ func _ready() -> void:
 	# Global buff for all player units
 	if is_in_group("player_units") and DynastyManager.active_year_modifiers.has("BLOT_THOR"):
 		dmg_mult *= 1.10 # +10% Damage
-		# TODO: Visual feedback (Subtle red tint handled by shader or modulate usually, 
-		# but let's just log it to keep visuals clean for now)
-		# Loggie.msg("Thor's Wrath applied to %s" % name).domain("UNIT").debug()
 	
 	if warband_ref:
 		# 1. Apply Veterancy (XP)
@@ -225,12 +225,21 @@ func _tween_color(to_color: Color, duration: float = 0.2) -> void:
 	_color_tween = create_tween()
 	_color_tween.tween_property(sprite, "modulate", to_color, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
+# --- FIX: Deferred Death Handling ---
 func take_damage(amount: int, attacker: Node2D = null) -> void:
+	# Prevent multiple damage sources triggering death in the same frame
+	if _is_dying: return
+
 	current_health = max(0, current_health - amount)
+	
 	if fsm and is_instance_valid(attacker):
 		fsm.command_defensive_attack(attacker)
+	
 	if current_health == 0:
-		die()
+		_is_dying = true
+		# Critical: Must use call_deferred to avoid modifying scene tree during physics callback
+		call_deferred("die")
+# ------------------------------------
 
 func die() -> void:
 	destroyed.emit()
@@ -283,6 +292,7 @@ func _create_unit_hitbox() -> void:
 func command_retreat(target_pos: Vector2) -> void:
 	if fsm:
 		fsm.command_retreat(target_pos)
+
 func command_start_working(target_building: BaseBuilding, target_node: ResourceNode) -> void:
 	if fsm and fsm.has_method("command_start_cycle"):
 		fsm.command_start_cycle(target_building, target_node)

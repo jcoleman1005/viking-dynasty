@@ -54,7 +54,6 @@ metadata/_custom_type_script = "uid://dqlbgeegli821"
 script = ExtResource("1_macro_map")
 
 [node name="TextureRect" type="TextureRect" parent="."]
-anchors_preset = -1
 offset_left = 2.0
 offset_top = -4.0
 offset_right = 1022.0
@@ -173,7 +172,7 @@ bounds_rect = Rect2(0, 0, 1020, 775)
 layer = 10
 
 [node name="JarlInfo" type="PanelContainer" parent="UI"]
-anchors_preset = -1
+anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
 offset_left = -20.0
@@ -197,7 +196,7 @@ text = "Renown: 25"
 horizontal_alignment = 1
 
 [node name="Actions" type="PanelContainer" parent="UI"]
-anchors_preset = -1
+anchors_preset = 3
 anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
@@ -220,7 +219,7 @@ layout_mode = 2
 text = "Dynasty"
 
 [node name="RegionInfo" type="PanelContainer" parent="UI"]
-anchors_preset = -1
+anchors_preset = 7
 anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
@@ -259,7 +258,7 @@ disabled = true
 text = "Marry for Alliance"
 
 [node name="Tooltip" type="PanelContainer" parent="UI"]
-anchors_preset = -1
+anchors_preset = 7
 anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
@@ -278,6 +277,7 @@ text = "Region Name"
 horizontal_alignment = 1
 
 [node name="Dynasty_UI" parent="UI" instance=ExtResource("6_tcdvw")]
+anchors_preset = 8
 
 [node name="PlayerHomeMarker" type="Marker2D" parent="."]
 position = Vector2(526, 485)
