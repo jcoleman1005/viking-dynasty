@@ -1,125 +1,39 @@
-# res://tools/GenerateBuildingInspector.gd
+# res://tools/GenerateThrallScene.gd
 @tool
 extends EditorScript
 
-const SCENE_PATH = "res://ui/components/BuildingInspector.tscn"
-const SCRIPT_PATH = "res://ui/components/BuildingInspector.gd"
-
-# Visual Constants matching your Theme
-const COL_INK = Color("#2b221b") 
-
 func _run() -> void:
-	print("--- Generating Building Inspector (v2) ---")
+	print("--- Generating Thrall Unit Scene ---")
 	
-	var root = PanelContainer.new()
-	root.name = "BuildingInspector"
+	var source_path = "res://scenes/units/PlayerVikingRaider.tscn"
+	var target_path = "res://scenes/units/ThrallUnit.tscn"
+	var script_path = "res://scripts/units/ThrallUnit.gd"
 	
-	if ResourceLoader.exists(SCRIPT_PATH):
-		root.set_script(load(SCRIPT_PATH))
+	if not ResourceLoader.exists(source_path):
+		printerr("Source scene not found!")
+		return
+		
+	var base_scene = load(source_path).instantiate()
 	
-	# We rely on the Theme (Parchment) instead of forcing a dark box
-	# giving it a min-width ensures it doesn't feel cramped
-	root.custom_minimum_size.x = 280
-
-	var margin = MarginContainer.new()
-	margin.add_theme_constant_override("margin_top", 16)
-	margin.add_theme_constant_override("margin_bottom", 16)
-	margin.add_theme_constant_override("margin_left", 16)
-	margin.add_theme_constant_override("margin_right", 16)
-	root.add_child(margin)
-	margin.set_owner(root)
+	# 1. Swap Script
+	var thrall_script = load(script_path)
+	base_scene.set_script(thrall_script)
 	
-	var vbox = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 12)
-	margin.add_child(vbox)
-	vbox.set_owner(root)
+	# 2. Modify Visuals (Optional default tint)
+	base_scene.modulate = Color(0.8, 0.8, 0.7) # Drab clothing
 	
-	# --- Header ---
-	var header = HBoxContainer.new()
-	header.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.add_child(header)
-	header.set_owner(root)
+	# 3. Remove incompatible children if any (like specific weapons)
+	# For now we assume the base scene is generic enough.
 	
-	var icon = TextureRect.new()
-	icon.name = "Icon"
-	icon.unique_name_in_owner = true
-	icon.custom_minimum_size = Vector2(48, 48)
-	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	header.add_child(icon)
-	icon.set_owner(root)
-	
-	var title = Label.new()
-	title.name = "NameLabel"
-	title.unique_name_in_owner = true
-	title.text = "Building Name"
-	# Use the Header variation from ThemeBuilder
-	title.theme_type_variation = "HeaderLabel" 
-	header.add_child(title)
-	title.set_owner(root)
-	
-	var sep = HSeparator.new()
-	vbox.add_child(sep)
-	sep.set_owner(root)
-	
-	# --- Stats (The Fix) ---
-	var stats = RichTextLabel.new()
-	stats.name = "StatsLabel"
-	stats.unique_name_in_owner = true
-	stats.text = "Production: 100\nWorkers: 0/5"
-	
-	# CRITICAL SETTINGS FOR VISIBILITY
-	stats.fit_content = true
-	stats.scroll_active = false # Required for fit_content to work in Containers
-	stats.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	stats.bbcode_enabled = true
-	stats.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	
-	# Force color to Ink (Dark) to ensure contrast on Parchment
-	stats.add_theme_color_override("default_color", COL_INK)
-	
-	vbox.add_child(stats)
-	stats.set_owner(root)
-	
-	# --- Worker Controls ---
-	var worker_box = HBoxContainer.new()
-	worker_box.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.add_child(worker_box)
-	worker_box.set_owner(root)
-	
-	var lbl_assign = Label.new()
-	lbl_assign.text = "Assign Worker:"
-	worker_box.add_child(lbl_assign)
-	lbl_assign.set_owner(root)
-	
-	var btn_rem = Button.new()
-	btn_rem.name = "BtnRemove"
-	btn_rem.unique_name_in_owner = true
-	btn_rem.text = " - "
-	btn_rem.custom_minimum_size = Vector2(32, 32)
-	worker_box.add_child(btn_rem)
-	btn_rem.set_owner(root)
-	
-	var count_lbl = Label.new()
-	count_lbl.name = "WorkerCountLabel"
-	count_lbl.unique_name_in_owner = true
-	count_lbl.text = "0 / 5"
-	count_lbl.custom_minimum_size.x = 60
-	count_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	worker_box.add_child(count_lbl)
-	count_lbl.set_owner(root)
-	
-	var btn_add = Button.new()
-	btn_add.name = "BtnAdd"
-	btn_add.unique_name_in_owner = true
-	btn_add.text = " + "
-	btn_add.custom_minimum_size = Vector2(32, 32)
-	worker_box.add_child(btn_add)
-	btn_add.set_owner(root)
-	
-	# Save
+	# 4. Save
 	var packed = PackedScene.new()
-	packed.pack(root)
-	ResourceSaver.save(packed, SCENE_PATH)
-	print("✅ BuildingInspector updated at: ", SCENE_PATH)
+	packed.pack(base_scene)
+	var err = ResourceSaver.save(packed, target_path)
+	
+	if err == OK:
+		print("✅ Thrall Scene Saved: ", target_path)
+	else:
+		printerr("❌ Failed to save scene: ", err)
+		
+	base_scene.queue_free()
 	EditorInterface.get_resource_filesystem().scan()

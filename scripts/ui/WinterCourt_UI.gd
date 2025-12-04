@@ -25,7 +25,7 @@ extends Control
 @onready var btn_resolve_1: Button = $DisputeOverlay/MarginContainer/VBoxContainer/HBoxContainer/Btn_Gold
 @onready var btn_resolve_2: Button = $DisputeOverlay/MarginContainer/VBoxContainer/HBoxContainer/Btn_Force
 @onready var btn_resolve_3: Button = $DisputeOverlay/MarginContainer/VBoxContainer/HBoxContainer/Btn_Ignore
-
+@onready var btn_muster: Button = $MarginContainer/ScreenMargin/RootLayout/TopLayout/CenterPanel/Btn_Refit # Repurposing 'Refit' for this example, or create a new one.
 # --- Internal State ---
 var current_dispute: DisputeEventData = null
 var winter_start_acknowledged: bool = false
@@ -37,12 +37,64 @@ func _ready() -> void:
 	btn_feast.pressed.connect(_on_feast_clicked)
 	btn_end_winter.pressed.connect(_on_end_winter_pressed)
 	btn_blot.pressed.connect(_on_blot_clicked)
+	btn_refit.text = "Gather Warband" 
+	btn_refit.pressed.disconnect(_on_refit_clicked) # Disconnect old logic
+	btn_refit.pressed.connect(_on_gather_warband_clicked) # Connect new logic
 	
 	dispute_overlay.hide()
 	
 	# 2. Initial UI Update
 	_update_ui()
+func _on_gather_warband_clicked() -> void:
+	if not DynastyManager.perform_hall_action(1):
+		return
+		
+	var jarl = DynastyManager.get_current_jarl()
+	
+	# 1. Calculate MUSTER (Who shows up?)
+	# Formula: Base (1) + Random(0-2) + (Renown / 100)
+	var base_recruits = 1 
+	var wanderers = randi_range(0, 2)
+	var fame_bonus = int(jarl.renown / 100.0)
+	
+	var total_squads_arrived = base_recruits + wanderers + fame_bonus
+	
+	# 2. Calculate CAPACITY (Do we have seats?)
+	var ship_cap = SettlementManager.get_total_ship_capacity_squads()
+	var current_squads = SettlementManager.current_settlement.warbands.size()
+	var open_slots = max(0, ship_cap - current_squads)
+	
+	# 3. The Overflow Logic
+	var accepted_squads = min(total_squads_arrived, open_slots)
+	var rejected_squads = total_squads_arrived - accepted_squads
+	
+	# 4. Execute
+	var drengr_data = load("res://data/units/Unit_Drengr.tres")
+	
+	# Add Accepted
+	DynastyManager.queue_seasonal_recruit(drengr_data, accepted_squads * WarbandData.MAX_MANPOWER)
+	
+	# Handle Rejected (The Consequence)
+	var flavor = ""
+	var result = ""
+	
+	if rejected_squads > 0:
+		# Option A: Send them home (Renown Hit)
+		# For simplicity in this step, we just turn them away automatically.
+		# In a polished version, this would be a popup choice.
+		var renown_loss = rejected_squads * 10
+		DynastyManager.spend_renown(renown_loss)
+		
+		flavor = "The hall is packed. %d squads arrived, but your ships are full.\n" % total_squads_arrived
+		flavor += "You turn away %d squads. They grumble and leave." % rejected_squads
+		result = "[color=green]Recruited: %d Squads[/color]\n[color=red]Turned Away: %d (-%d Renown)[/color]" % [accepted_squads, rejected_squads, renown_loss]
+	else:
+		flavor = "Your call is answered. %d squads of Drengir swear to your ship." % accepted_squads
+		result = "[color=green]Recruited: %d Squads[/color]" % accepted_squads
 
+	_display_action_result("The Winter Muster", flavor, result)
+	_update_ui()
+	
 func _update_ui() -> void:
 	var jarl = DynastyManager.current_jarl
 	var settlement = SettlementManager.current_settlement
@@ -204,30 +256,20 @@ func _update_button_states() -> void:
 		
 	btn_feast.tooltip_text = feast_tt
 	
-	# --- 3. REFIT BUTTON ---
-	var fleet_needs_refit = settlement.fleet_readiness < 1.0
-	btn_refit.text = "Refit Longships"
+	# --- 3. GATHER WARBAND BUTTON (The Winter Muster) ---
+	# Replaces the old "Refit" logic
+	btn_refit.text = "Gather Warband"
 	
-	var wood_cost = 50
-	var current_wood = settlement.treasury.get("wood", 0)
-	var can_afford_refit = current_wood >= wood_cost
-	
-	var refit_tt = "COST: %d Wood, 1 Hall Action\n" % wood_cost
-	refit_tt += "EFFECT: Restore Fleet Readiness to 100%."
+	var gather_tt = "COST: 1 Hall Action\n"
+	gather_tt += "EFFECT: Proclaim the raid! Attract Seasonal Drengir based on your Renown & Luck."
 	
 	if not has_actions:
 		btn_refit.disabled = true
-		refit_tt += "\n(LOCKED: No Hall Actions remaining)"
-	elif not can_afford_refit:
-		btn_refit.disabled = true
-		refit_tt += "\n(LOCKED: Not enough Wood! Need %d)" % wood_cost
-	elif not fleet_needs_refit:
-		btn_refit.disabled = true
-		refit_tt += "\n(Fleet is already in perfect condition)"
+		gather_tt += "\n(LOCKED: No Hall Actions remaining)"
 	else:
 		btn_refit.disabled = false
 		
-	btn_refit.tooltip_text = refit_tt
+	btn_refit.tooltip_text = gather_tt
 
 func _disconnect_overlay_buttons() -> void:
 	# Clean slate for signals

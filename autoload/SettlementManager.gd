@@ -35,6 +35,20 @@ func apply_raid_damages() -> Dictionary:
 	# Pure delegation.
 	return EconomyManager.apply_raid_damages()
 
+func get_total_ship_capacity_squads() -> int:
+	var total_capacity = 3 # Base: The Chieftain's personal ship (3 Squads)
+	
+	if not current_settlement: return total_capacity
+	
+	for entry in current_settlement.placed_buildings:
+		var data = load(entry["resource_path"]) as BuildingData
+		if data:
+			# --- FIX: Use the new variable, not a string check ---
+			total_capacity += data.fleet_capacity_bonus
+			# ---------------------------------------------------
+			
+	return total_capacity
+	
 # --- POPULATION & WORKER MANAGEMENT ---
 
 func get_idle_peasants() -> int:

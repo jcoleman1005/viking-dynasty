@@ -22,115 +22,33 @@ const BASE_DIR_BUILDINGS = "res://data/buildings/"
 var RAW_DATA = [
 	{
 		"type": "building",
-		"file_name": "Bld_Langhus",
-		"display_name": "Langhús",
-		"description": "The fundamental unit of Norse society. A long turf dwelling where extended families live together. Increases max population.",
-		"stats": {
-			"hp": 800,
-			"construction_effort": 150
-		},
-		"cost": {
-			"wood": 100,
-			"stone": 20
-		}
+		"file_name": "Eco_Farm",
+		"display_name": "Farmstead",
+		"description": "A cluster of crops and livestock. Yields FOOD when raided.",
+		"resource_type": "food", # Used by EconomicBuildingData
+		"base_passive_output": 100, # Base loot amount
+		"cost": { "wood": 50 },
+		"stats": { "hp": 50, "construction_effort": 50 }
 	},
 	{
 		"type": "building",
-		"file_name": "Bld_Skemma",
-		"display_name": "Skemma",
-		"description": "A raised timber storehouse used to keep supplies dry. Increases food storage capacity and reduces spoilage during winter.",
-		"stats": {
-			"hp": 300,
-			"construction_effort": 80
-		},
-		"cost": {
-			"wood": 60
-		}
+		"file_name": "Eco_Market",
+		"display_name": "Trade Stall",
+		"description": "A merchant's stall. Yields GOLD and GOODS when raided.",
+		"resource_type": "gold",
+		"base_passive_output": 75,
+		"cost": { "wood": 100 },
+		"stats": { "hp": 80, "construction_effort": 80 }
 	},
 	{
 		"type": "building",
-		"file_name": "Bld_Smidja",
-		"display_name": "Smiðja",
-		"description": "A hot, dark workshop for working bog iron. Unlocks the recruitment of armored Huscarls and weapon upgrades.",
-		"stats": {
-			"hp": 600,
-			"construction_effort": 200
-		},
-		"cost": {
-			"wood": 120,
-			"stone": 50
-		}
-	},
-	{
-		"type": "building",
-		"file_name": "Bld_Naust",
-		"display_name": "Naust",
-		"description": "A stone-walled slipway for protecting ships. Ships docked here in winter are safe from ice damage and are repaired.",
-		"stats": {
-			"hp": 1000,
-			"construction_effort": 300
-		},
-		"cost": {
-			"wood": 200,
-			"stone": 50
-		}
-	},
-	{
-		"type": "building",
-		"file_name": "Bld_Reykhus",
-		"display_name": "Reykhús",
-		"description": "A specialized smokehouse. Converts raw food into non-perishable provisions necessary for long sea voyages.",
-		"stats": {
-			"hp": 400,
-			"construction_effort": 100
-		},
-		"cost": {
-			"wood": 80,
-			"stone": 40
-		}
-	},
-	{
-		"type": "building",
-		"file_name": "Bld_Hof",
-		"display_name": "Hof",
-		"description": "A sacred wooden structure dedicated to the gods. Generates Piety passively and reduces local civil unrest.",
-		"stats": {
-			"hp": 500,
-			"construction_effort": 250
-		},
-		"cost": {
-			"wood": 150,
-			"stone": 20,
-			"gold": 50
-		}
-	},
-	{
-		"type": "building",
-		"file_name": "Bld_Skali",
-		"display_name": "Skáli",
-		"description": "A grand feasting hall for the Jarl's court. Allows you to maintain a larger retinue of elite warriors through the winter.",
-		"stats": {
-			"hp": 2500,
-			"construction_effort": 600
-		},
-		"cost": {
-			"wood": 400,
-			"stone": 100,
-			"gold": 100
-		}
-	},
-	{
-		"type": "building",
-		"file_name": "Eco_Torg",
-		"display_name": "Torg",
-		"description": "An open marketplace where craftsmen and merchants trade. Generates gold slowly, but increases the settlement's attractiveness to raiders.",
-		"stats": {
-			"hp": 300,
-			"construction_effort": 100
-		},
-		"cost": {
-			"wood": 50
-		}
+		"file_name": "Eco_Reliquary",
+		"display_name": "Reliquary",
+		"description": "A holy shrine containing silver and relics. Yields HIGH GOLD.",
+		"resource_type": "gold",
+		"base_passive_output": 150,
+		"cost": { "stone": 100, "gold": 100 },
+		"stats": { "hp": 60, "construction_effort": 120 }
 	}
 ]
 
@@ -182,6 +100,7 @@ func _create_unit(data: Dictionary) -> UnitData:
 	return u
 
 func _create_building(data: Dictionary) -> BuildingData:
+	# Default to Economic, can be changed
 	var b = EconomicBuildingData.new() 
 	b.display_name = data.get("display_name", "Unnamed")
 	b.description = data.get("description", "No description provided.")
@@ -191,12 +110,18 @@ func _create_building(data: Dictionary) -> BuildingData:
 	b.max_health = stats.get("hp", 200)
 	b.construction_effort_required = stats.get("construction_effort", 100)
 	
+	# --- NEW: Import Fleet Capacity ---
+	if data.has("fleet_capacity"):
+		b.fleet_capacity_bonus = data["fleet_capacity"]
+	# ----------------------------------
+	
 	# Assign default scenes
+	# If you have a specific Naust scene, you can change this line manually later
+	# or add logic here to pick based on name.
 	b.scene_to_spawn = load("res://scenes/buildings/Base_Building.tscn")
-	b.is_player_buildable = true # Assume player stuff is buildable
+	b.is_player_buildable = true 
 	
 	return b
-
 func _ensure_dir(path: String):
 	if not DirAccess.dir_exists_absolute(path):
 		DirAccess.make_dir_recursive_absolute(path)

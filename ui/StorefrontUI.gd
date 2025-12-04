@@ -297,8 +297,28 @@ func _populate_legacy_buttons() -> void:
 
 func _load_building_data() -> void:
 	available_buildings.clear()
-	# Start the recursive scan from the root buildings folder
-	_scan_directory_recursive("res://data/buildings/")
+	
+	# 1. Load Hand-Crafted Buildings
+	_scan_directory_for_buildings("res://data/buildings/")
+	
+	# 2. Load AI-Generated Buildings (The Naust is here!)
+	_scan_directory_for_buildings("res://data/buildings/generated/")
+
+func _scan_directory_for_buildings(path: String) -> void:
+	if not DirAccess.dir_exists_absolute(path): return
+	
+	var dir = DirAccess.open(path)
+	if dir:
+		dir.list_dir_begin()
+		var file = dir.get_next()
+		while file != "":
+			if file.ends_with(".tres"):
+				var full_path = path + file
+				var data = load(full_path)
+				# Validate it is a building and player is allowed to build it
+				if data is BuildingData and data.is_player_buildable: 
+					available_buildings.append(data)
+			file = dir.get_next()
 
 func _scan_directory_recursive(path: String) -> void:
 	var dir = DirAccess.open(path)
