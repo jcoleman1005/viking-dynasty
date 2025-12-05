@@ -2,9 +2,13 @@
 class_name MapDataGenerator
 extends RefCounted
 
-# --- Name Generation ---
-const REGION_PREFIXES = ["North", "South", "West", "East", "High", "Low", "Old", "New", "Great", "Little"]
-const REGION_NAMES = ["Vinland", "Frankia", "Saxony", "Wessex", "Mercia", "Northumbria", "Alba", "Ireland", "Rus", "Novgorod", "Agdir", "Rogaland"]
+# --- Historical Names List (Fallback) ---
+const REGION_NAMES = [
+	"Geatland", "Viken", "Swealand", "Halogaland", 
+	"Denmark", "Kvenland", "Estland", "Courland", 
+	"Samland", "Bjarmaland", "Wendland", "Saxony", 
+	"Frankland", "Britland"
+]
 
 # --- Templates ---
 const LAYOUT_MONASTERY = "res://data/settlements/monastery_base.tres"
@@ -15,14 +19,22 @@ const LAYOUT_FORTRESS = "res://data/settlements/fortress_layout.tres"
 const B_FARM = "res://data/buildings/generated/Eco_Farm.tres"
 const B_MARKET = "res://data/buildings/generated/Eco_Market.tres"
 const B_RELIC = "res://data/buildings/generated/Eco_Reliquary.tres"
-const B_HALL = "res://data/buildings/GreatHall.tres" # Ensure this exists
+const B_HALL = "res://data/buildings/GreatHall.tres"
 const B_WALL = "res://data/buildings/Bldg_Wall.tres"
 
-static func generate_region_data(tier: int) -> WorldRegionData:
+# --- MODIFIED: Added fixed_name parameter ---
+static func generate_region_data(tier: int, fixed_name: String = "") -> WorldRegionData:
 	var data = WorldRegionData.new()
-	data.display_name = _generate_name()
+	
+	# 1. Name Logic
+	if fixed_name != "":
+		data.display_name = fixed_name
+	else:
+		data.display_name = _generate_name()
+		
 	data.region_type_tag = "Province"
 	
+	# 2. Difficulty Logic
 	var base_diff = 1.0 + (float(tier - 1) * 0.8)
 	var variance = randf_range(0.0, 0.5)
 	var final_difficulty = base_diff + variance
@@ -43,6 +55,11 @@ static func generate_region_data(tier: int) -> WorldRegionData:
 	
 	return data
 
+static func _generate_name() -> String:
+	# Removed Prefix logic. Just pick a valid historical name.
+	return REGION_NAMES.pick_random()
+
+# ... (Keep _generate_target_for_tier, _pick_type_by_tier, _generate_procedural_settlement, etc. exactly as they were) ...
 static func _generate_target_for_tier(region_name: String, tier: int, difficulty: float) -> RaidTargetData:
 	var target = RaidTargetData.new()
 	var type = _pick_type_by_tier(tier)
@@ -50,10 +67,7 @@ static func _generate_target_for_tier(region_name: String, tier: int, difficulty
 	target.display_name = "%s %s" % [region_name, type]
 	target.difficulty_rating = int(round(difficulty))
 	target.raid_cost_authority = max(1, int(round(difficulty * 0.5)))
-	
-	# Generate the Settlement Data Procedurally
 	target.settlement_data = _generate_procedural_settlement(type, difficulty)
-	
 	return target
 
 static func _pick_type_by_tier(tier: int) -> String:
@@ -135,32 +149,23 @@ static func _clone_settlement_data(original: SettlementData) -> SettlementData:
 
 static func _scale_garrison(settlement: SettlementData, multiplier: float) -> void:
 	if not settlement: return
-	
-	# 1. Fallback Generation
 	if settlement.warbands.is_empty():
 		var enemy_data_path = "res://data/units/EnemyVikingRaider_Data.tres"
 		if ResourceLoader.exists(enemy_data_path):
 			var unit_data = load(enemy_data_path) as UnitData
 			var count = int(3 * multiplier)
 			count = max(1, count) 
-			
 			for i in range(count):
 				var wb = WarbandData.new(unit_data)
 				wb.custom_name = "Defenders %d" % (i + 1)
 				settlement.warbands.append(wb)
 		return
-
-	# 2. Scaling Logic (For future templates that HAVE warbands)
 	var original_count = settlement.warbands.size()
 	var target_count = int(original_count * multiplier)
 	var needed = target_count - original_count
-	
 	if needed > 0:
 		for i in range(needed):
 			var source = settlement.warbands.pick_random()
 			var new_wb = WarbandData.new(source.unit_type)
 			new_wb.custom_name = source.custom_name + " (Reinforcements)"
 			settlement.warbands.append(new_wb)
-
-static func _generate_name() -> String:
-	return "%s %s" % [REGION_PREFIXES.pick_random(), REGION_NAMES.pick_random()]

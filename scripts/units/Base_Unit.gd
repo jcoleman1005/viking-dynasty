@@ -118,17 +118,14 @@ func _setup_collision_logic() -> void:
 func _deferred_setup(damage_mult: float = 1.0) -> void:
 	_create_unit_hitbox()
 	
-	if not data.ai_component_scene:
-		push_error("CRITICAL CONFIG ERROR: Unit '%s' (%s) has NO 'ai_component_scene' assigned! It will be brainless." % [name, data.display_name])
-		return
-		
+	# 1. Attempt to setup Attack AI
 	if data.ai_component_scene:
 		attack_ai = data.ai_component_scene.instantiate() as AttackAI
 		if attack_ai:
 			add_child(attack_ai)
 			attack_ai.configure_from_data(data)
 			
-			# --- NEW: Apply Damage Buff ---
+			# Apply Damage Buff
 			attack_ai.attack_damage = int(attack_ai.attack_damage * damage_mult)
 			
 			var target_mask = 0
@@ -140,7 +137,18 @@ func _deferred_setup(damage_mult: float = 1.0) -> void:
 			attack_ai.set_target_mask(target_mask)
 		else:
 			push_error("BaseUnit: Failed to instantiate ai_component_scene for %s" % data.display_name)
-	
+			
+	else:
+		# 2. Handle Missing AI (Logic Fork)
+		# If it's NOT a civilian, this is a configuration error (Military units need brains!)
+		if not is_in_group("civilians"):
+			push_error("CRITICAL CONFIG ERROR: Unit '%s' (%s) has NO 'ai_component_scene' assigned! It will be brainless." % [name, data.display_name])
+		
+		# If it IS a civilian, we proceed silently. 
+		# They will initialize the FSM with attack_ai = null, which is valid for peaceful movement.
+
+	# 3. Always create FSM (Movement Brain)
+	# Even if attack_ai is null, the FSM handles movement logic.
 	fsm = UnitFSM.new(self, attack_ai)
 	fsm_ready.emit(self)
 	

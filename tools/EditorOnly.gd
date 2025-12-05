@@ -1,46 +1,76 @@
-# res://tools/FixUnitData.gd
+# res://tools/UpdateRegionNames.gd
 @tool
 extends EditorScript
 
-const AI_SCENE_PATH = "res://scenes/components/AttackAI.tscn"
+const SCENE_PATH = "res://scenes/world_map/MacroMap.tscn"
 
-func _run() -> void:
-	print("--- 🛠️ Repairing Unit Data ---")
+# The Historical Mapping provided by your consultant
+const NAME_MAP = {
+	"Region_Southern_Sweden": "Geatland",
+	"Region_Southern_Norway": "Viken",
+	"Region_Northern_Sweden": "Swealand",
+	"Region_Northern_Norway": "Halogaland",
+	"Region_Denmark": "Denmark",
+	"Region_Finland": "Kvenland",
+	"Region_Estonia": "Estland",
+	"Region_Northern_Baltics": "Courland",
+	"Region_Southern_Baltics": "Samland",
+	"Region_10": "Bjarmaland",
+	"Region_Germany_East": "Wendland",
+	"Region_Germany_West": "Saxony",
+	"Region_Francia": "Frankland",
+	"Region_Brittain": "Britland"
+}
+
+func _run():
+	print("--- 📜 Updating Historical Region Names ---")
 	
-	var ai_scene = load(AI_SCENE_PATH)
-	if not ai_scene:
-		printerr("CRITICAL: AttackAI scene not found at ", AI_SCENE_PATH)
+	# 1. Load the Scene
+	var scene = load(SCENE_PATH).instantiate()
+	var regions_root = scene.get_node_or_null("Regions")
+	
+	if not regions_root:
+		printerr("Error: Could not find 'Regions' node in MacroMap.tscn")
+		scene.free()
 		return
-
-	var units_to_fix = [
-		"res://data/units/Unit_Bondi.tres",
-		"res://data/units/Unit_Drengr.tres"
-	]
+		
+	var count = 0
 	
-	for path in units_to_fix:
-		if ResourceLoader.exists(path):
-			var data = load(path) as UnitData
-			var dirty = false
+	# 2. Iterate through our map
+	for node_name in NAME_MAP:
+		var region_node = regions_root.get_node_or_null(node_name)
+		
+		if region_node:
+			var new_name = NAME_MAP[node_name]
 			
-			# 1. Fix Missing AI
-			if data.ai_component_scene == null:
-				print(" > Fixing Missing AI for: ", data.display_name)
-				data.ai_component_scene = ai_scene
-				dirty = true
-				
-			# 2. Fix Zero Ranges (Safety Check)
-			if data.building_attack_range <= 1.0:
-				print(" > Fixing Zero Range for: ", data.display_name)
-				data.building_attack_range = 45.0
-				data.attack_range = 15.0
-				dirty = true
+			# Ensure Data Exists
+			if not region_node.data:
+				region_node.data = WorldRegionData.new()
+				print(" > Created missing data for %s" % node_name)
 			
-			if dirty:
-				ResourceSaver.save(data, path)
-				print(" ✅ Saved repair for ", path.get_file())
-			else:
-				print(" 👍 ", data.display_name, " is already healthy.")
+			# CRITICAL: Make Unique
+			# Many regions currently share "Resource_seg4e". 
+			# We must duplicate it so changing one doesn't change them all.
+			region_node.data = region_node.data.duplicate()
+			
+			# Update Name
+			region_node.data.display_name = new_name
+			print(" > Renamed [%s] -> %s" % [node_name, new_name])
+			count += 1
 		else:
-			print(" ⚠️ Skipped missing file: ", path)
+			printerr(" ⚠️ Node not found: ", node_name)
 			
-	print("--- Repair Complete. Restart game to apply. ---")
+	# 3. Save Changes
+	if count > 0:
+		var packed = PackedScene.new()
+		packed.pack(scene)
+		var err = ResourceSaver.save(packed, SCENE_PATH)
+		
+		if err == OK:
+			print("✅ Success! %d regions updated." % count)
+			print("   Scene saved to: ", SCENE_PATH)
+			EditorInterface.get_resource_filesystem().scan()
+		else:
+			printerr("❌ Failed to save scene. Error: ", err)
+	
+	scene.free()
