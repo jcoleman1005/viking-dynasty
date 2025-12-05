@@ -1,45 +1,29 @@
-# res://tools/GenerateDrengr.gd
+# res://tools/MakeDrengrMelee.gd
 @tool
 extends EditorScript
 
-func _run():
-	print("--- Generating Drengr Unit (Historical Update) ---")
+func _run() -> void:
+	print("--- Converting Units to Melee ---")
 	
-	# 1. Create Unit Data
-	var data = UnitData.new()
-	data.display_name = "Drengr" 
+	var paths = [
+		"res://data/units/Unit_Drengr.tres",
+		"res://data/units/Unit_Bondi.tres"
+	]
 	
-	# STATS: High Risk / High Reward
-	data.max_health = 45 
-	data.attack_damage = 12 
-	data.attack_speed = 1.4 
-	data.move_speed = 85.0 
-	data.spawn_cost = {"food": 0} 
-	
-	# Link to Scene
-	data.scene_path = "res://scenes/units/Drengr.tscn"
-	
-	# Load Icon (Reuse existing)
-	if ResourceLoader.exists("res://textures/units/viking_raider_sprite.png"):
-		data.icon = load("res://textures/units/viking_raider_sprite.png")
-		data.visual_texture = data.icon
-	
-	# Save Data
-	ResourceSaver.save(data, "res://data/units/Unit_Drengr.tres")
-	print("Saved Data: res://data/units/Unit_Drengr.tres")
-	
-	# 2. Create Visual Scene
-	var source_path = "res://scenes/units/PlayerVikingRaider.tscn"
-	if ResourceLoader.exists(source_path):
-		var base_scene = load(source_path).instantiate()
-		base_scene.modulate = Color(0.9, 0.4, 0.4) # Reddish tint
-		
-		var packed = PackedScene.new()
-		packed.pack(base_scene)
-		ResourceSaver.save(packed, "res://scenes/units/Drengr.tscn")
-		print("Saved Scene: res://scenes/units/Drengr.tscn")
-		base_scene.queue_free()
-	else:
-		printerr("Could not find source scene to clone!")
-		
-	EditorInterface.get_resource_filesystem().scan()
+	for path in paths:
+		if ResourceLoader.exists(path):
+			var data = load(path) as UnitData
+			
+			# 1. Remove Projectile (Enables Melee Mode)
+			data.projectile_scene = null
+			
+			# 2. Ensure Attack Range is Short
+			data.attack_range = 15.0
+			
+			# 3. Save
+			ResourceSaver.save(data, path)
+			print("✅ Converted %s to Melee Mode." % path.get_file())
+		else:
+			print("Skipping %s (Not found)" % path)
+			
+	print("--- Done. Re-run game. ---")

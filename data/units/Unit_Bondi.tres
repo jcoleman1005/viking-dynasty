@@ -1,16 +1,19 @@
-[gd_resource type="Resource" script_class="UnitData" load_steps=3 format=3 uid="uid://dpe2acwvvxthl"]
+[gd_resource type="Resource" script_class="UnitData" load_steps=4 format=3 uid="uid://dpe2acwvvxthl"]
 
-[ext_resource type="Texture2D" uid="uid://cukqh3t2wkmua" path="res://ui/assets/res_peasant.png" id="1_g7i4f"]
+[ext_resource type="PackedScene" uid="uid://de3nko6b1rqyg" path="res://scenes/components/AttackAI.tscn" id="1_xgb1t"]
+[ext_resource type="Texture2D" uid="uid://bqewu3c53xrvk" path="res://art/units/bondi_32x32.png" id="1_xjqxg"]
 [ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="2_xjqxg"]
 
 [resource]
 script = ExtResource("2_xjqxg")
 display_name = "Bondi"
 scene_path = "res://scenes/units/Bondi.tscn"
-icon = ExtResource("1_g7i4f")
+icon = ExtResource("1_xjqxg")
 spawn_cost = {
 "food": 0
 }
 max_health = 40
-attack_damage = 6
-visual_texture = ExtResource("1_g7i4f")
+attack_damage = 15
+attack_range = 30.0
+visual_texture = ExtResource("1_xjqxg")
+ai_component_scene = ExtResource("1_xgb1t")

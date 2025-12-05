@@ -13,6 +13,7 @@ var debug_formation_points: Array[Vector2] = []
 func _ready() -> void:
 	super._ready()
 	add_to_group("squad_leaders")
+	add_to_group("player_units")
 	
 	formation = SquadFormation.new()
 	formation.unit_spacing = 65.0 
@@ -143,3 +144,33 @@ func die() -> void:
 			EventBus.player_unit_died.emit(self)
 	
 	super.die()
+
+func on_state_changed(new_state: int) -> void:
+	super.on_state_changed(new_state)
+	
+	if new_state == UnitAIConstants.State.ATTACKING:
+		print("DEBUG LEADER: I am attacking! Ordering %d soldiers to charge." % squad_soldiers.size())
+		_order_squad_attack()
+	elif new_state == UnitAIConstants.State.IDLE or new_state == UnitAIConstants.State.MOVING:
+		_order_squad_regroup()
+
+func _order_squad_attack() -> void:
+	if not fsm or not is_instance_valid(fsm.current_target): 
+		print("DEBUG LEADER: Cannot order attack - No target in FSM.")
+		return
+	
+	var target = fsm.current_target
+	print("DEBUG LEADER: Ordering charge against %s" % target.name)
+	
+	for soldier in squad_soldiers:
+		if is_instance_valid(soldier):
+			if soldier.attack_ai:
+				soldier.attack_ai.force_target(target)
+			else:
+				push_error("DEBUG LEADER: Soldier %s has no AttackAI!" % soldier.name)
+
+func _order_squad_regroup() -> void:
+	for soldier in squad_soldiers:
+		if is_instance_valid(soldier) and soldier.attack_ai:
+			# Clear the forced target so they return to formation
+			soldier.attack_ai.stop_attacking()

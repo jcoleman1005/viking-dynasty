@@ -34,6 +34,7 @@ func change_state(new_state: UnitAIConstants.State) -> void:
 	_exit_state(current_state)
 	current_state = new_state
 	
+	# Notify Unit (Trigger visual changes / Squad Orders)
 	if is_instance_valid(unit):
 		if unit.has_method("on_state_changed"):
 			unit.on_state_changed(current_state)
@@ -74,33 +75,23 @@ func _recalculate_path() -> void:
 	if is_instance_valid(target_node):
 		target_position = target_node.global_position
 	elif target_position == Vector2.ZERO:
-		Loggie.msg("FSM: No target pos. Going Idle.").domain("AI").debug()
 		change_state(UnitAIConstants.State.IDLE)
 		return
 	
-	# --- DEBUG LOGIC ---
 	var start_pos = unit.global_position
 	# Allow partial path if we have a solid target node (like a building)
 	var allow_partial = is_instance_valid(target_node)
 	
-	Loggie.msg("FSM: Requesting path from %s to %s (Partial: %s)" % [start_pos, target_position, allow_partial]).domain("AI").debug()
-	
 	path = SettlementManager.get_astar_path(start_pos, target_position, allow_partial)
 	
 	if path.is_empty():
-		Loggie.msg("FSM: Path returned EMPTY. Dist to target: %f" % start_pos.distance_to(target_position)).domain("AI").warn()
-		
 		# FORCE move if very close (A* sometimes fails on short distances inside cell boundaries)
 		if start_pos.distance_to(target_position) < 150.0:
-			Loggie.msg("FSM: Target close. Forcing direct path.").domain("AI").warn()
-			path = [target_position] # Fake a path straight to target
+			path = [target_position] 
 		else:
 			if unit.has_method("flash_error_color"):
 				unit.flash_error_color()
 			change_state(UnitAIConstants.State.IDLE)
-			return
-	else:
-		Loggie.msg("FSM: Path found with %d points." % path.size()).domain("AI").debug()
 
 # --- RTS COMMANDS ---
 
@@ -114,15 +105,10 @@ func command_defensive_attack(attacker: Node2D) -> void:
 
 func command_attack_obstruction(target: Node2D) -> void:
 	if current_state == UnitAIConstants.State.RETREATING: return
-	
 	if not is_instance_valid(target): return
+	
 	current_target = target
-	target_position = target.global_position
-	var distance: float = unit.global_position.distance_to(target.global_position)
-	if distance <= unit.data.attack_range:
-		change_state(UnitAIConstants.State.ATTACKING)
-	else:
-		change_state(UnitAIConstants.State.MOVING)
+	change_state(UnitAIConstants.State.ATTACKING)
 
 func command_move_to_formation_pos(target_pos: Vector2) -> void:
 	target_position = target_pos
@@ -147,8 +133,12 @@ func command_attack(target: Node2D) -> void:
 	objective_target = target
 	current_target = target
 	target_position = target.global_position
-	var distance: float = unit.global_position.distance_to(target.global_position)
-	if distance <= unit.data.attack_range:
+	
+	# Immediate check if already in range
+	var radius = _get_target_radius(target)
+	var dist = unit.global_position.distance_to(target.global_position) - radius
+	
+	if dist <= unit.data.attack_range + 10.0:
 		change_state(UnitAIConstants.State.ATTACKING)
 	else:
 		change_state(UnitAIConstants.State.MOVING)
@@ -161,21 +151,12 @@ func command_retreat(target_pos: Vector2) -> void:
 	if attack_ai: attack_ai.stop_attacking()
 	change_state(UnitAIConstants.State.RETREATING)
 
-# --- NEW COMMAND: Approach / Interact ---
-func command_approach(target: Node2D) -> void:
-	command_interact_move(target)
-
 func command_interact_move(target: Node2D) -> void:
 	if not is_instance_valid(target): return
-	
-	# Set objective so we can pathfind to it
 	objective_target = target
 	current_target = null
 	target_position = target.global_position
-	
 	if attack_ai: attack_ai.stop_attacking()
-	
-	# Enter the safe "Interacting" state
 	change_state(UnitAIConstants.State.INTERACTING)
 
 # --- UPDATE LOOP ---
@@ -221,8 +202,25 @@ func _move_state(delta: float) -> void:
 	var target_node = current_target if is_instance_valid(current_target) else objective_target
 
 	if is_instance_valid(target_node):
-		var distance_to_target: float = unit.global_position.distance_to(target_node.global_position)
-		if distance_to_target <= unit.data.attack_range:
+		var required_range = unit.data.attack_range
+		var target_type = "Unit"
+		
+		if target_node is BaseBuilding or (target_node.name == "Hitbox" and target_node.get_parent() is BaseBuilding):
+			required_range = unit.data.building_attack_range
+			target_type = "Building"
+
+		var dist_to_center = unit.global_position.distance_to(target_node.global_position)
+		var radius = _get_target_radius(target_node)
+		var effective_distance = max(0, dist_to_center - radius)
+		
+		# --- DEBUG LOG ---
+		if Engine.get_frames_drawn() % 60 == 0: # Print once per second
+			print("DEBUG FSM: Moving to %s (%s)" % [target_node.name, target_type])
+			print(" > Dist Center: %.1f | Radius: %.1f | Eff Dist: %.1f" % [dist_to_center, radius, effective_distance])
+			print(" > Required: %.1f | Stopping? %s" % [required_range, effective_distance <= required_range + 5.0])
+		# -----------------
+		
+		if effective_distance <= required_range + 5.0:
 			change_state(UnitAIConstants.State.ATTACKING)
 			return
 	
@@ -241,23 +239,15 @@ func _move_state(delta: float) -> void:
 		if unit.velocity.length_squared() < 1.0:
 			stuck_timer += delta
 			if stuck_timer > 1.5: 
-				var blocking_building = _find_closest_blocking_building()
-				if is_instance_valid(blocking_building):
-					command_attack_obstruction(blocking_building)
-				else:
-					change_state(UnitAIConstants.State.IDLE) 
+				change_state(UnitAIConstants.State.IDLE) 
 				stuck_timer = 0.0 
 		else:
 			stuck_timer = 0.0 
 		return
 	
-	# Path Complete Logic
 	change_state(UnitAIConstants.State.IDLE)
 
-# --- NEW SAFE STATE ---
 func _interact_state(delta: float) -> void:
-	# This mirrors movement logic but NEVER enters attack state
-	
 	if not is_instance_valid(objective_target):
 		change_state(UnitAIConstants.State.IDLE)
 		return
@@ -270,26 +260,9 @@ func _interact_state(delta: float) -> void:
 		unit.velocity = velocity
 		unit.move_and_slide()
 		
-		# --- DEBUG PHYSICS ---
-		if unit.velocity.length() < 5.0 and velocity.length() > 10.0:
-			if Engine.get_frames_drawn() % 60 == 0:
-				print("DEBUG PHYSICS: Unit blocked! Wanted: ", velocity, " Actual: ", unit.velocity)
-		# ---------------------
-		
 		if unit.global_position.distance_to(next_waypoint) < 8.0:
 			path.pop_front()
-			
-		# Simple stuck check (Repath if stuck)
-		if unit.velocity.length_squared() < 1.0:
-			stuck_timer += delta
-			if stuck_timer > 1.0:
-				_recalculate_path()
-				stuck_timer = 0.0
-		else:
-			stuck_timer = 0.0
 	else:
-		# "The Last Mile": Path is empty, but maybe not at center (because of allow_partial).
-		# Keep pushing towards the physical building to ensure geometry overlap.
 		var dir = (objective_target.global_position - unit.global_position).normalized()
 		unit.velocity = dir * unit.data.move_speed
 		unit.move_and_slide()
@@ -305,14 +278,6 @@ func _retreat_state(delta: float) -> void:
 		
 		if unit.global_position.distance_to(next_waypoint) < 8.0:
 			path.pop_front()
-			
-		if unit.velocity.length_squared() < 1.0:
-			stuck_timer += delta
-			if stuck_timer > 1.0:
-				_recalculate_path()
-				stuck_timer = 0.0
-		else:
-			stuck_timer = 0.0
 		return
 
 	# The Last Mile for Retreat
@@ -329,14 +294,18 @@ func _attack_state(_delta: float) -> void:
 		_resume_objective()
 		return
 	
-	var distance_to_target: float = unit.global_position.distance_to(current_target.global_position)
-	if distance_to_target > unit.data.attack_range + 10:
+	# Check if target moved out of range
+	var radius = _get_target_radius(current_target)
+	var dist = unit.global_position.distance_to(current_target.global_position) - radius
+	
+	# Use max range (Buildings are bigger)
+	var max_range = max(unit.data.attack_range, unit.data.building_attack_range)
+	
+	if dist > max_range + 10:
 		_resume_objective()
 		return
 	
 	unit.velocity = Vector2.ZERO
-
-# --- HELPERS ---
 
 func _resume_objective() -> void:
 	current_target = null
@@ -344,6 +313,7 @@ func _resume_objective() -> void:
 		current_target = objective_target
 		change_state(UnitAIConstants.State.MOVING)
 	else:
+		# Auto-acquire new targets if idle
 		if attack_ai and attack_ai.ai_mode == AttackAI.AI_Mode.DEFAULT:
 			var new_target = _find_closest_enemy_in_los()
 			if is_instance_valid(new_target):
@@ -353,59 +323,18 @@ func _resume_objective() -> void:
 		else:
 			change_state(UnitAIConstants.State.IDLE)
 
-func _find_closest_blocking_building() -> Node2D:
-	var mission_node = unit.get_parent()
-	if not is_instance_valid(mission_node) or not mission_node.has_node("BuildingContainer"):
-		return null
-
-	var building_container = mission_node.get_node("BuildingContainer")
-	var buildings = building_container.get_children()
-	
-	var closest_building: Node2D = null
-	var min_dist_sq = INF
-	var valid_mask = 0
-	if attack_ai: valid_mask = attack_ai.target_collision_mask
-	var unit_pos = unit.global_position
-
-	for building in buildings:
-		if not building is BaseBuilding: continue
-		if not (building.collision_layer & valid_mask): continue
-			
-		var dist_sq = unit_pos.distance_squared_to(building.global_position)
-		if dist_sq < min_dist_sq:
-			min_dist_sq = dist_sq
-			closest_building = building
-				
-	return closest_building
-
 func _find_closest_enemy_in_los() -> Node2D:
-	var mission_node = unit.get_parent()
-	if not is_instance_valid(mission_node): return null
-
-	var closest_target: Node2D = null
-	var min_dist_sq = los_range * los_range
-	var unit_pos = unit.global_position
-
-	# 1. Enemy Buildings
-	var building_container = mission_node.get_node_or_null("BuildingContainer")
-	if is_instance_valid(building_container):
-		for building in building_container.get_children():
-			if not building is BaseBuilding or not (building.collision_layer & (1 << 3)): continue
-			var dist_sq = unit_pos.distance_squared_to(building.global_position)
-			if dist_sq < min_dist_sq:
-				min_dist_sq = dist_sq
-				closest_target = building
-
-	# 2. Enemy Units
-	var enemy_units = unit.get_tree().get_nodes_in_group("enemy_units")
-	for enemy_unit in enemy_units:
-		if not is_instance_valid(enemy_unit) or not enemy_unit is Node2D: continue
-		var dist_sq = unit_pos.distance_squared_to(enemy_unit.global_position)
-		if dist_sq < min_dist_sq:
-			min_dist_sq = dist_sq
-			closest_target = enemy_unit
-			
-	return closest_target
+	# Simple fallback to find nearby enemies
+	var enemies = unit.get_tree().get_nodes_in_group("enemy_units")
+	var closest: Node2D = null
+	var min_dist = los_range
+	
+	for e in enemies:
+		var d = unit.global_position.distance_to(e.global_position)
+		if d < min_dist:
+			min_dist = d
+			closest = e
+	return closest
 
 # --- SIGNAL CALLBACKS ---
 
@@ -413,9 +342,7 @@ func _on_ai_attack_started(target: Node2D) -> void:
 	if current_state != UnitAIConstants.State.IDLE: return
 	if current_state == UnitAIConstants.State.ATTACKING and target == current_target: return
 	if current_state == UnitAIConstants.State.RETREATING: return 
-	if current_state == UnitAIConstants.State.INTERACTING: return # Workers ignore distractions
-	
-	if attack_ai.ai_mode == AttackAI.AI_Mode.DEFENSIVE_SIEGE: return
+	if current_state == UnitAIConstants.State.INTERACTING: return 
 	
 	current_target = target
 	change_state(UnitAIConstants.State.ATTACKING)
@@ -423,3 +350,31 @@ func _on_ai_attack_started(target: Node2D) -> void:
 func _on_ai_attack_stopped() -> void:
 	if current_state == UnitAIConstants.State.ATTACKING:
 		_resume_objective()
+
+# --- HELPER: Geometry Math ---
+func _get_target_radius(target: Node2D) -> float:
+	if not is_instance_valid(target): return 0.0
+	
+	# 1. Check for Building Hitbox
+	if target.name == "Hitbox" and target.get_parent() is BaseBuilding:
+		var b = target.get_parent() as BaseBuilding
+		if b.data:
+			var size = min(b.data.grid_size.x, b.data.grid_size.y)
+			return (size * 32.0) / 2.0
+	
+	# 2. Check for BaseBuilding directly
+	if target is BaseBuilding and target.data:
+		var size = min(target.data.grid_size.x, target.data.grid_size.y)
+		return (size * 32.0) / 2.0
+
+	# 3. Check for Unit
+	if target is BaseUnit:
+		return 15.0
+		
+	# 4. Fallback: Collision Shape
+	var col = target.get_node_or_null("CollisionShape2D")
+	if col:
+		if col.shape is CircleShape2D: return col.shape.radius
+		if col.shape is RectangleShape2D: return min(col.shape.size.x, col.shape.size.y) / 2.0
+		
+	return 0.0

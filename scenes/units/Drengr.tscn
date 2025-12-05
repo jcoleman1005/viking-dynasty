@@ -6,7 +6,7 @@
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_n6s0a"]
 size = Vector2(72, 72)
 
-[node name="PlayerVikingRaider" type="CharacterBody2D"]
+[node name="Drengr" type="CharacterBody2D"]
 modulate = Color(0.9, 0.4, 0.4, 1)
 collision_layer = 2
 script = ExtResource("1_jw7fk")

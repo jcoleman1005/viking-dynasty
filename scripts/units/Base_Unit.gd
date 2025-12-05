@@ -118,6 +118,10 @@ func _setup_collision_logic() -> void:
 func _deferred_setup(damage_mult: float = 1.0) -> void:
 	_create_unit_hitbox()
 	
+	if not data.ai_component_scene:
+		push_error("CRITICAL CONFIG ERROR: Unit '%s' (%s) has NO 'ai_component_scene' assigned! It will be brainless." % [name, data.display_name])
+		return
+		
 	if data.ai_component_scene:
 		attack_ai = data.ai_component_scene.instantiate() as AttackAI
 		if attack_ai:
@@ -242,6 +246,9 @@ func take_damage(amount: int, attacker: Node2D = null) -> void:
 # ------------------------------------
 
 func die() -> void:
+	if is_in_group("player_units"):
+		EventBus.player_unit_died.emit(self)
+		
 	destroyed.emit()
 	queue_free()
 
