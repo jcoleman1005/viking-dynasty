@@ -260,7 +260,7 @@ func _populate_raid_targets(data: WorldRegionData, is_conquered: bool, is_allied
 	# --- NEW: Home Check ---
 	if is_home:
 		var label = Label.new()
-		label.text = "Home Region (Safe)"
+  label.text = "Home Region (Safe)"
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.add_theme_color_override("font_color", Color.CORNFLOWER_BLUE)
 		target_list_container.add_child(label)
@@ -304,6 +304,7 @@ func _populate_raid_targets(data: WorldRegionData, is_conquered: bool, is_allied
 			elif treasury.get("gold", 0) > 300: loot_type = "GOLD"
 			elif treasury.get("wood", 0) > 300: loot_type = "WOOD"
 			
+			# Color code the loot hint
 			if loot_type == "GOLD": btn.add_theme_color_override("font_color", Color.GOLD)
 			elif loot_type == "FOOD": btn.add_theme_color_override("font_color", Color.LIGHT_GREEN)
 			else: btn.add_theme_color_override("font_color", btn_color)
@@ -311,6 +312,7 @@ func _populate_raid_targets(data: WorldRegionData, is_conquered: bool, is_allied
 			var auth_cost = target.raid_cost_authority
 			if target.authority_cost_override > -1: auth_cost = target.authority_cost_override
 			
+			# Button Text with Loot Hint
 			btn.text = "%s [%s] (Cost: %d Auth%s)" % [target.display_name, loot_type, auth_cost, risk_text]
 			
 			var can_afford = DynastyManager.can_spend_authority(auth_cost)

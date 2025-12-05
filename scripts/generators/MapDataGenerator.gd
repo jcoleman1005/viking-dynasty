@@ -81,26 +81,71 @@ static func _generate_procedural_settlement(type: String, difficulty: float) -> 
 	var s = SettlementData.new()
 	s.placed_buildings.clear()
 	s.warbands.clear()
+	
+	# 1. Base Treasury (The "Storehouse" Loot)
 	match type:
-		"Farmstead": s.treasury = {"food": 500, "wood": 100, "gold": 20}
-		"Monastery": s.treasury = {"gold": 400, "food": 50, "wood": 0}
-		"Trading Post": s.treasury = {"gold": 250, "wood": 250, "food": 100}
-		_: s.treasury = {"gold": 100, "wood": 100, "food": 100}
+		"Farmstead":
+			s.treasury = {"food": 500, "wood": 100, "gold": 20}
+		"Monastery":
+			s.treasury = {"gold": 400, "food": 50, "wood": 0}
+		"Trading Post":
+			s.treasury = {"gold": 250, "wood": 250, "food": 100}
+		_:
+			s.treasury = {"gold": 100, "wood": 100, "food": 100}
+			
+	# 2. Place Buildings (The "Destruction" Loot)
+	# Always start with a Hall in the center (approx 30, 20 on a 60x40 grid)
 	s.placed_buildings.append({ "resource_path": B_HALL, "grid_position": Vector2i(30, 20) })
+	
 	var building_count = int(3 * difficulty)
 	var primary_bldg = B_FARM
+	
 	if type == "Monastery": primary_bldg = B_RELIC
 	elif type == "Trading Post" or type == "Village": primary_bldg = B_MARKET
+	
+	# Scatter buildings around the hall
 	for i in range(building_count):
 		var offset_x = randi_range(-6, 6)
 		var offset_y = randi_range(-6, 6)
+		# Ensure we don't overwrite the hall (simple check)
 		if abs(offset_x) < 3 and abs(offset_y) < 3: continue
+		
 		s.placed_buildings.append({
 			"resource_path": primary_bldg,
 			"grid_position": Vector2i(30 + offset_x, 20 + offset_y)
 		})
+		
+	# 3. Scale Garrison
 	_scale_garrison(s, difficulty)
+	
 	return s
+
+static func _clone_settlement_data(original: SettlementData) -> SettlementData:
+	var clone = SettlementData.new()
+	
+	# Deep copy safe properties
+	clone.treasury = original.treasury.duplicate()
+	
+	# --- FIX: Use clear() + append for strict arrays ---
+	# Do not assign [] directly, as Godot 4 treats that as a generic Array
+	# which conflicts with Array[Dictionary]
+	
+	clone.placed_buildings.clear()
+	for b in original.placed_buildings:
+		clone.placed_buildings.append(b.duplicate())
+		
+	clone.pending_construction_buildings.clear()
+	for p in original.pending_construction_buildings:
+		clone.pending_construction_buildings.append(p.duplicate())
+	# ---------------------------------------------------
+		
+	# Warbands start empty for new clones (to be scaled later)
+	clone.warbands.clear() 
+	
+	clone.population_peasants = original.population_peasants
+	clone.population_thralls = original.population_thralls
+	
+	return clone
 
 static func _scale_garrison(settlement: SettlementData, multiplier: float) -> void:
 	if not settlement: return
