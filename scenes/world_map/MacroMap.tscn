@@ -1,7 +1,6 @@
-[gd_scene load_steps=18 format=3 uid="uid://ba41qxyi1a30u"]
+[gd_scene load_steps=17 format=3 uid="uid://ba41qxyi1a30u"]
 
 [ext_resource type="Script" uid="uid://dmq8s5ifmd1dx" path="res://scenes/world_map/MacroMap.gd" id="1_macro_map"]
-[ext_resource type="PackedScene" uid="uid://dqh0xu88khxct" path="res://ui/EndOfYear_Popup.tscn" id="2_okptj"]
 [ext_resource type="PackedScene" uid="uid://cuyni4y77q51q" path="res://scenes/world_map/Region.tscn" id="2_region"]
 [ext_resource type="Texture2D" uid="uid://c32ymtbiceoe8" path="res://assets/Viking Dynasty Game Map.png" id="3_qn6r3"]
 [ext_resource type="PackedScene" uid="uid://lpxvj8dvfbnl" path="res://scenes/world_map/MacroCamera.tscn" id="5_okptj"]
@@ -53,7 +52,6 @@ metadata/_custom_type_script = "uid://dqlbgeegli821"
 
 [node name="MacroMap" type="Node2D"]
 script = ExtResource("1_macro_map")
-end_year_popup_scene = ExtResource("2_okptj")
 
 [node name="TextureRect" type="TextureRect" parent="."]
 offset_left = 2.0
@@ -212,10 +210,6 @@ mouse_filter = 2
 [node name="VBoxContainer" type="VBoxContainer" parent="UI/Actions"]
 layout_mode = 2
 
-[node name="EndYearButton" type="Button" parent="UI/Actions/VBoxContainer"]
-layout_mode = 2
-text = "End Year"
-
 [node name="SettlementButton" type="Button" parent="UI/Actions/VBoxContainer"]
 layout_mode = 2
 text = "Return to Settlement"
@@ -283,6 +277,7 @@ text = "Region Name"
 horizontal_alignment = 1
 
 [node name="Dynasty_UI" parent="UI" instance=ExtResource("6_tcdvw")]
+anchors_preset = 8
 
 [node name="PlayerHomeMarker" type="Marker2D" parent="."]
 position = Vector2(526, 485)

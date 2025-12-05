@@ -12,6 +12,11 @@ const LAYOUT_VILLAGE = "res://data/settlements/economic_base.tres"
 const LAYOUT_FORTRESS = "res://data/settlements/fortress_layout.tres"
 
 # --- Generation Logic ---
+const B_FARM = "res://data/buildings/generated/Eco_Farm.tres"
+const B_MARKET = "res://data/buildings/generated/Eco_Market.tres"
+const B_RELIC = "res://data/buildings/generated/Eco_Reliquary.tres"
+const B_HALL = "res://data/buildings/GreatHall.tres" # Ensure this exists
+const B_WALL = "res://data/buildings/Bldg_Wall.tres"
 
 static func generate_region_data(tier: int) -> WorldRegionData:
 	var data = WorldRegionData.new()
@@ -40,51 +45,66 @@ static func generate_region_data(tier: int) -> WorldRegionData:
 
 static func _generate_target_for_tier(region_name: String, tier: int, difficulty: float) -> RaidTargetData:
 	var target = RaidTargetData.new()
-	var layout_path = ""
-	var type_name = ""
+	var type = _pick_type_by_tier(tier)
 	
-	var roll = randf()
-	if tier == 1:
-		if roll < 0.4: 
-			type_name = "Monastery"
-			layout_path = LAYOUT_MONASTERY
-		else:
-			type_name = "Village"
-			layout_path = LAYOUT_VILLAGE
-	elif tier == 2:
-		if roll < 0.3:
-			type_name = "Monastery"
-			layout_path = LAYOUT_MONASTERY
-		elif roll < 0.7:
-			type_name = "Trading Post"
-			layout_path = LAYOUT_VILLAGE
-		else:
-			type_name = "Fortress"
-			layout_path = LAYOUT_FORTRESS
-	elif tier == 3:
-		if roll < 0.2:
-			type_name = "Rich Monastery"
-			layout_path = LAYOUT_MONASTERY
-		else:
-			type_name = "Fortress"
-			layout_path = LAYOUT_FORTRESS
-	
-	target.display_name = "%s %s" % [region_name, type_name]
+	target.display_name = "%s %s" % [region_name, type]
 	target.difficulty_rating = int(round(difficulty))
 	target.raid_cost_authority = max(1, int(round(difficulty * 0.5)))
 	
-	# --- FIX: Use manual cloning instead of duplicate(true) ---
-	# This prevents the Array[Object] crash by ignoring the old 'warbands' array
-	if ResourceLoader.exists(layout_path):
-		var original = load(layout_path)
-		if original:
-			target.settlement_data = _clone_settlement_data(original)
-			_scale_garrison(target.settlement_data, difficulty)
+	# Generate the Settlement Data Procedurally
+	target.settlement_data = _generate_procedural_settlement(type, difficulty)
 	
 	return target
 
+static func _pick_type_by_tier(tier: int) -> String:
+	var roll = randf()
+	match tier:
+		1: return "Farmstead" if roll < 0.6 else "Monastery"
+		2: return "Village" if roll < 0.5 else "Trading Post"
+		_: return "Fortress"
 
-# In scripts/generators/MapDataGenerator.gd
+static func _generate_procedural_settlement(type: String, difficulty: float) -> SettlementData:
+	var s = SettlementData.new()
+	s.placed_buildings.clear()
+	s.warbands.clear()
+	
+	# 1. Base Treasury (The "Storehouse" Loot)
+	match type:
+		"Farmstead":
+			s.treasury = {"food": 500, "wood": 100, "gold": 20}
+		"Monastery":
+			s.treasury = {"gold": 400, "food": 50, "wood": 0}
+		"Trading Post":
+			s.treasury = {"gold": 250, "wood": 250, "food": 100}
+		_:
+			s.treasury = {"gold": 100, "wood": 100, "food": 100}
+			
+	# 2. Place Buildings (The "Destruction" Loot)
+	# Always start with a Hall in the center (approx 30, 20 on a 60x40 grid)
+	s.placed_buildings.append({ "resource_path": B_HALL, "grid_position": Vector2i(30, 20) })
+	
+	var building_count = int(3 * difficulty)
+	var primary_bldg = B_FARM
+	
+	if type == "Monastery": primary_bldg = B_RELIC
+	elif type == "Trading Post" or type == "Village": primary_bldg = B_MARKET
+	
+	# Scatter buildings around the hall
+	for i in range(building_count):
+		var offset_x = randi_range(-6, 6)
+		var offset_y = randi_range(-6, 6)
+		# Ensure we don't overwrite the hall (simple check)
+		if abs(offset_x) < 3 and abs(offset_y) < 3: continue
+		
+		s.placed_buildings.append({
+			"resource_path": primary_bldg,
+			"grid_position": Vector2i(30 + offset_x, 20 + offset_y)
+		})
+		
+	# 3. Scale Garrison
+	_scale_garrison(s, difficulty)
+	
+	return s
 
 static func _clone_settlement_data(original: SettlementData) -> SettlementData:
 	var clone = SettlementData.new()

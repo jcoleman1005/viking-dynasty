@@ -3,6 +3,8 @@ class_name BuildingData
 extends Resource
 
 @export var display_name: String = "New Building"
+@export_multiline var description: String = "A useful structure."
+
 @export var scene_to_spawn: PackedScene
 @export var icon: Texture2D
 @export var building_texture: Texture2D
@@ -22,9 +24,12 @@ extends Resource
 @export var extends_territory: bool = false
 @export var territory_radius: int = 4
 
+# --- RESTORED: FLEET CAPACITY ---
+## How many Squads (not individual men) this building adds to your fleet capacity.
+@export var fleet_capacity_bonus: int = 0
+# --------------------------------
+
 @export_group("Demographics")
-## How many people this building 'employs' or supports via land rights.
-## e.g., A Farm supports 5, a Fishing Hut supports 3.
 @export var arable_land_capacity: int = 0 
 
 @export_group("Defensive Stats")

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="EconomicBuildingData" load_steps=4 format=3 uid="uid://b2017pygd4lr6"]
+
+[ext_resource type="PackedScene" uid="uid://cws6xle5x52g4" path="res://scenes/buildings/Base_Building.tscn" id="1_dl65s"]
+[ext_resource type="Script" uid="uid://d33smw07vm6y4" path="res://data/buildings/EconomicBuildingData.gd" id="2_sk1v1"]
+[ext_resource type="Texture2D" path="res://textures/building_icons/bld_skemma_icon.png" id="3_icon"]
+
+[resource]
+script = ExtResource("2_sk1v1")
+display_name = "Skemma"
+description = "A raised timber storehouse used to keep supplies dry. Increases food storage capacity and reduces spoilage during winter."
+scene_to_spawn = ExtResource("1_dl65s")
+icon = ExtResource("3_icon")
+build_cost = {
+"wood": 60
+}
+max_health = 300
+is_player_buildable = true
+construction_effort_required = 80

@@ -3,12 +3,14 @@
 [ext_resource type="Script" uid="uid://d33smw07vm6y4" path="res://data/buildings/EconomicBuildingData.gd" id="1_abcde"]
 [ext_resource type="Texture2D" uid="uid://cvtmpipin3j4" path="res://textures/placeholders/lumber_mill_placeholder.png" id="1_plclm"]
 [ext_resource type="PackedScene" uid="uid://cws6xle5x52g4" path="res://scenes/buildings/Base_Building.tscn" id="2_fghij"]
+[ext_resource type="Texture2D" path="res://textures/building_icons/lumber_yard_icon.png" id="3_icon"]
 
 [resource]
 script = ExtResource("1_abcde")
 fixed_payout_amount = 50
 display_name = "Lumber Yard"
 scene_to_spawn = ExtResource("2_fghij")
+icon = ExtResource("3_icon")
 building_texture = ExtResource("1_plclm")
 build_cost = {
 "wood": 50

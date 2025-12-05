@@ -4,14 +4,12 @@ extends Node2D
 # --- Scene Configuration ---
 @export var raid_mission_scene_path: String = "res://scenes/missions/RaidMission.tscn"
 @export var settlement_bridge_scene_path: String = "res://scenes/levels/SettlementBridge.tscn"
-@export var end_year_popup_scene: PackedScene
 @export var enemy_raid_chance: float = 0.25
 
 # --- NEW: Raid Prep UI ---
 @export var raid_prep_window_scene: PackedScene = preload("res://ui/RaidPrepWindow.tscn")
-# -------------------------
 
-# --- Phase 5.1: Geography Anchor ---
+# --- Geography Anchor ---
 @export var player_home_marker_path: NodePath = "PlayerHomeMarker"
 @onready var player_home_marker: Marker2D = get_node_or_null(player_home_marker_path)
 @onready var macro_camera: MacroCamera = $MacroCamera
@@ -19,7 +17,6 @@ extends Node2D
 # --- UI References ---
 @onready var authority_label: Label = $UI/JarlInfo/VBoxContainer/AuthorityLabel
 @onready var renown_label: Label = $UI/JarlInfo/VBoxContainer/RenownLabel
-@onready var end_year_button: Button = $UI/Actions/VBoxContainer/EndYearButton
 @onready var region_info_panel: PanelContainer = $UI/RegionInfo
 @onready var region_name_label: Label = $UI/RegionInfo/VBoxContainer/RegionNameLabel
 @onready var launch_raid_button: Button = $UI/RegionInfo/VBoxContainer/LaunchRaidButton 
@@ -35,15 +32,8 @@ extends Node2D
 @onready var regions_container: Node2D = $Regions
 
 # --- Systems & State ---
-const WORK_ASSIGNMENT_SCENE_PATH = "res://ui/WorkAssignment_UI.tscn"
-var work_assignment_ui: CanvasLayer
-var idle_warning_dialog: ConfirmationDialog
-var end_year_popup: PanelContainer
-
-# --- NEW: Raid Prep Instance ---
 var raid_prep_window: RaidPrepWindow
 var journey_report_dialog: AcceptDialog
-# -------------------------------
 
 # Persistence
 const SAVE_PATH = "user://campaign_map.tres"
@@ -87,55 +77,30 @@ func _ready() -> void:
 			
 	settlement_button.pressed.connect(_on_settlement_pressed)
 	subjugate_button.pressed.connect(_on_subjugate_pressed)
-	end_year_button.pressed.connect(_on_end_year_pressed)
 	dynasty_button.pressed.connect(_on_dynasty_pressed)
 	marry_button.pressed.connect(_on_marry_pressed)
 	
-	# 4. Popups Setup
-	if end_year_popup_scene:
-		end_year_popup = end_year_popup_scene.instantiate()
-		add_child(end_year_popup) 
-		if end_year_popup.has_signal("collect_button_pressed"):
-			end_year_popup.collect_button_pressed.connect(_on_end_year_payout_collected)
-		end_year_popup.hide()
-	
-	if ResourceLoader.exists(WORK_ASSIGNMENT_SCENE_PATH):
-		var scene = load(WORK_ASSIGNMENT_SCENE_PATH)
-		if scene:
-			work_assignment_ui = scene.instantiate()
-			add_child(work_assignment_ui)
-			if work_assignment_ui.has_signal("assignments_confirmed"):
-				work_assignment_ui.assignments_confirmed.connect(_on_worker_assignments_confirmed)
-	
-	idle_warning_dialog = ConfirmationDialog.new()
-	idle_warning_dialog.title = "Idle Villagers"
-	idle_warning_dialog.ok_button_text = "End Year Anyway"
-	idle_warning_dialog.cancel_button_text = "Manage Workers"
-	idle_warning_dialog.confirmed.connect(_start_end_year_sequence)
-	idle_warning_dialog.canceled.connect(_on_open_worker_ui) 
-	add_child(idle_warning_dialog)
-	
-	# --- NEW: Raid Prep & Journey UI ---
+	# 4. Raid Prep UI
 	if raid_prep_window_scene:
 		raid_prep_window = raid_prep_window_scene.instantiate()
-		$UI.add_child(raid_prep_window) # Add to UI layer
+		$UI.add_child(raid_prep_window) 
 		raid_prep_window.raid_launched.connect(_finalize_raid_launch)
 		
 	journey_report_dialog = AcceptDialog.new()
 	journey_report_dialog.title = "Journey Report"
 	journey_report_dialog.confirmed.connect(_transition_to_raid_scene)
 	add_child(journey_report_dialog)
-	# -----------------------------------
 	
+	# 5. Event System
 	EventBus.event_system_finished.connect(_on_event_system_finished)
 	
-	# 5. Final Cleanup
+	# 6. Final Cleanup
 	_update_jarl_ui(DynastyManager.get_current_jarl())
 	region_info_panel.hide()
 	tooltip.hide()
 	queue_redraw()
 
-# --- NEW: Raid Preparation Logic ---
+# --- Raid Preparation Logic ---
 
 func _initiate_raid(target: RaidTargetData) -> void:
 	if not raid_prep_window:
@@ -178,9 +143,8 @@ func _transition_to_raid_scene() -> void:
 	Loggie.msg("MacroMap: Transitioning to Raid...").domain(LogDomains.MAP).info()
 	EventBus.scene_change_requested.emit(GameScenes.RAID_MISSION)
 
-# ------------------------------------
+# --- Visuals & Data Logic ---
 
-# --- Standard Visuals & Data Logic (Unchanged but included for context) ---
 func _draw() -> void:
 	if not player_home_marker: return
 	var jarl = DynastyManager.get_current_jarl()
@@ -304,27 +268,33 @@ func _populate_raid_targets(data: WorldRegionData, is_conquered: bool, is_allied
 			btn.text = "%s (Allied)" % target.display_name
 			btn.disabled = true
 		else:
-			# Authority Cost override check
+			# --- NEW: Loot Hint Logic ---
+			var treasury = target.settlement_data.treasury
+			var loot_type = "Mixed"
+			
+			if treasury.get("food", 0) > 300: loot_type = "FOOD"
+			elif treasury.get("gold", 0) > 300: loot_type = "GOLD"
+			elif treasury.get("wood", 0) > 300: loot_type = "WOOD"
+			
+			# Color code the loot hint
+			if loot_type == "GOLD": btn.add_theme_color_override("font_color", Color.GOLD)
+			elif loot_type == "FOOD": btn.add_theme_color_override("font_color", Color.LIGHT_GREEN)
+			else: btn.add_theme_color_override("font_color", btn_color)
+
 			var auth_cost = target.raid_cost_authority
 			if target.authority_cost_override > -1: auth_cost = target.authority_cost_override
 			
-			btn.text = "%s - Cost: %d Auth%s" % [target.display_name, auth_cost, risk_text]
-			btn.modulate = btn_color
+			# Button Text with Loot Hint
+			btn.text = "%s [%s] (Cost: %d Auth%s)" % [target.display_name, loot_type, auth_cost, risk_text]
 			
 			var can_afford = DynastyManager.can_spend_authority(auth_cost)
 			if not can_afford:
 				btn.disabled = true
 				btn.text += " (Low Auth)"
 			else:
-				# --- MODIFIED: Open Prep Window instead of launching ---
 				btn.pressed.connect(_initiate_raid.bind(target))
-				# -----------------------------------------------------
 		
 		target_list_container.add_child(btn)
-
-func _apply_attrition(_risk_chance: float) -> void:
-	# Deprecated: Logic moved to DynastyManager.calculate_journey_attrition
-	pass
 
 func _update_diplomacy_buttons(_data: WorldRegionData, is_conquered: bool, is_allied: bool) -> void:
 	if is_conquered:
@@ -376,9 +346,6 @@ func close_all_ui() -> void:
 	if region_info_panel and region_info_panel.visible:
 		region_info_panel.hide()
 		ui_closed = true
-	if work_assignment_ui and work_assignment_ui.visible:
-		work_assignment_ui.hide()
-		ui_closed = true
 	if raid_prep_window and raid_prep_window.visible:
 		raid_prep_window.hide()
 		ui_closed = true
@@ -390,41 +357,6 @@ func close_all_ui() -> void:
 	selected_region_node = null
 	
 	if ui_closed: Loggie.msg("MacroMap: All UI closed for year transition").domain("MAP").info()
-
-func _on_end_year_pressed() -> void:
-	if not SettlementManager.has_current_settlement(): return
-	var settlement = SettlementManager.current_settlement
-	var total_pop = settlement.population_peasants
-	var assigned_pop = 0
-	for key in settlement.worker_assignments:
-		assigned_pop += settlement.worker_assignments[key]
-	
-	if (total_pop - assigned_pop) > 0:
-		idle_warning_dialog.dialog_text = "You have %d idle villagers.\nEnd year anyway?" % (total_pop - assigned_pop)
-		idle_warning_dialog.popup_centered()
-	else:
-		_start_end_year_sequence()
-
-func _start_end_year_sequence() -> void:
-	close_all_ui()
-	if not is_instance_valid(end_year_popup):
-		_process_end_year_logic({})
-		return
-	var payout = SettlementManager.calculate_payout()
-	end_year_popup.display_payout(payout, "End of Year Report")
-
-func _on_end_year_payout_collected(payout: Dictionary) -> void:
-	_process_end_year_logic(payout)
-
-func _process_end_year_logic(payout: Dictionary) -> void:
-	if not payout.is_empty(): SettlementManager.deposit_resources(payout)
-	DynastyManager.end_year()
-	if is_instance_valid(selected_region_node):
-		selected_region_node.is_selected = false
-		selected_region_node.set_visual_state(false)
-	selected_region_data = null
-	selected_region_node = null
-	region_info_panel.hide()
 
 func _on_event_system_finished() -> void:
 	if randf() < enemy_raid_chance:
@@ -449,16 +381,6 @@ func _on_region_hovered(data: WorldRegionData, _screen_position: Vector2) -> voi
 
 func _on_region_exited() -> void: tooltip.hide()
 
-func _on_open_worker_ui() -> void:
-	SettlementManager.pending_management_open = true
-	Loggie.msg("Redirecting to Settlement for worker management...").domain("MAP").info()
-	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
-		
-func _on_worker_assignments_confirmed(assignments: Dictionary) -> void:
-	if SettlementManager.current_settlement:
-		SettlementManager.current_settlement.worker_assignments = assignments
-		SettlementManager.save_settlement()
-		
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:

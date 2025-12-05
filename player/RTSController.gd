@@ -25,6 +25,9 @@ func _ready() -> void:
 	# Keyboard Commands
 	EventBus.control_group_command.connect(_on_control_group_command)
 	EventBus.formation_change_command.connect(_on_formation_change_command)
+	
+	# --- NEW: Listen for Field Promotions ---
+	EventBus.player_unit_spawned.connect(add_unit_to_group)
 
 func _on_interact_command(target: Node2D) -> void:
 	_validate_selection()
@@ -76,24 +79,17 @@ func _handle_movement_logic(target_pos: Vector2, direction: Vector2) -> void:
 		_move_civilians_as_mob(civilians, target_pos)
 
 func _move_group_in_formation(unit_list: Array[Node2D], target: Vector2, direction: Vector2) -> void:
-	# --- MODIFIED: Accepts specific list now ---
 	var formation = SquadFormation.new(unit_list)
 	formation.formation_type = current_formation
 	formation.unit_spacing = 45.0
 	formation.move_to_position(target, direction)
 
 func _move_civilians_as_mob(unit_list: Array[Node2D], target: Vector2) -> void:
-	# "Mob" Logic: Everyone tries to get close to the center, 
-	# relying on Separation Steering (BaseUnit) to handle the collisions naturally.
-	
 	var unit_count = unit_list.size()
-	# Calculate a rough radius for the mob based on count so they don't ALL try to hit pixel (0,0)
 	var mob_radius = sqrt(unit_count) * 20.0 
 	
 	for unit in unit_list:
 		if not is_instance_valid(unit): continue
-		
-		# Pick a random spot within the circle
 		var angle = randf() * TAU
 		var distance = randf() * mob_radius
 		var offset = Vector2(cos(angle), sin(angle)) * distance
@@ -104,12 +100,18 @@ func _move_civilians_as_mob(unit_list: Array[Node2D], target: Vector2) -> void:
 
 # ---------------------------------------------------------
 
-# ... [Keep Standard Logic: add_unit, remove_unit, _on_select_command, etc.] ...
-
 func add_unit_to_group(unit: Node2D) -> void:
 	if not unit is BaseUnit: return
 	if unit in controllable_units: return
+	
 	controllable_units.append(unit)
+	
+	# --- NEW: Auto-Select Promoted Units ---
+	# If a unit spawns (promotes) and thinks it is selected, honor that.
+	if unit.is_selected and not unit in selected_units:
+		selected_units.append(unit)
+	# ---------------------------------------
+	
 	if unit.has_signal("destroyed"):
 		unit.destroyed.connect(remove_unit.bind(unit), CONNECT_DEFERRED)
 
@@ -131,7 +133,6 @@ func _on_select_command(select_rect: Rect2, is_box_select: bool) -> void:
 	if not main_camera: return
 	
 	if is_box_select:
-		# 1. Calculate World Rect
 		var camera_pos = main_camera.get_screen_center_position()
 		var camera_zoom = main_camera.zoom
 		var viewport_size = get_viewport().get_visible_rect().size
@@ -139,19 +140,16 @@ func _on_select_command(select_rect: Rect2, is_box_select: bool) -> void:
 		var world_rect_max = world_rect_min + (select_rect.size / camera_zoom)
 		var world_rect = Rect2(world_rect_min, world_rect_max - world_rect_min)
 		
-		# 2. Check Leaders AND their Soldiers
 		for unit in controllable_units:
 			if _is_squad_in_rect(unit, world_rect):
 				selected_units.append(unit)
 				unit.set_selected(true)
 	else:
-		# 1. Calculate Click Position
 		var click_world_pos := main_camera.get_global_mouse_position()
 		var closest_leader: BaseUnit = null
 		var min_dist_sq = INF
 		var click_radius_sq = 40 * 40
 		
-		# 2. Check Distance to Leader OR any Soldier
 		for unit in controllable_units:
 			var dist_sq = _get_closest_distance_to_squad(unit, click_world_pos)
 			
@@ -165,33 +163,23 @@ func _on_select_command(select_rect: Rect2, is_box_select: bool) -> void:
 			
 	print("DEBUG: Selection Updated. Count: ", selected_units.size())
 
-# --- NEW HELPERS ---
-
 func _is_squad_in_rect(unit: BaseUnit, rect: Rect2) -> bool:
-	# 1. Check Leader
 	if rect.has_point(unit.global_position):
 		return true
-		
-	# 2. Check Soldiers (If it's a SquadLeader)
 	if unit is SquadLeader:
 		for soldier in unit.squad_soldiers:
 			if is_instance_valid(soldier) and rect.has_point(soldier.global_position):
 				return true
-				
 	return false
 
 func _get_closest_distance_to_squad(unit: BaseUnit, point: Vector2) -> float:
-	# Start with leader distance
 	var min_d = unit.global_position.distance_squared_to(point)
-	
-	# Check soldiers if applicable
 	if unit is SquadLeader:
 		for soldier in unit.squad_soldiers:
 			if is_instance_valid(soldier):
 				var d = soldier.global_position.distance_squared_to(point)
 				if d < min_d:
 					min_d = d
-					
 	return min_d
 
 func _on_attack_command(target_node: Node2D) -> void:

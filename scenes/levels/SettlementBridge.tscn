@@ -1,4 +1,4 @@
-[gd_scene load_steps=23 format=4 uid="uid://c53k15q2w8c1a"]
+[gd_scene load_steps=24 format=4 uid="uid://c53k15q2w8c1a"]
 
 [ext_resource type="PackedScene" uid="uid://dqh0xu88khxct" path="res://ui/EndOfYear_Popup.tscn" id="2_5el12"]
 [ext_resource type="Script" uid="uid://dafjxa85ci2rx" path="res://scripts/buildings/SettlementBridge.gd" id="2_c48a7"]
@@ -15,6 +15,7 @@
 [ext_resource type="PackedScene" uid="uid://1ly65bng2mep" path="res://ui/SelectionBox.tscn" id="8_cpd76"]
 [ext_resource type="Script" uid="uid://bxbqkyp1d6750" path="res://player/RTSCamera.gd" id="8_ggwng"]
 [ext_resource type="PackedScene" uid="uid://bmrx7k05of21t" path="res://scenes/world/Resource_Wood.tscn" id="9_vmd61"]
+[ext_resource type="PackedScene" uid="uid://dhobag8h7m8ip" path="res://ui/components/BuildingInspector.tscn" id="11_fmib8"]
 [ext_resource type="Texture2D" uid="uid://cjlq3soj1j4jj" path="res://assets/Kenney/medievalRTS_spritesheet.png" id="11_vlppw"]
 [ext_resource type="PackedScene" uid="uid://cyp3t7gbdg0wx" path="res://player/RTSController.tscn" id="18_fmib8"]
 [ext_resource type="PackedScene" uid="uid://bvsuoj3irdvcs" path="res://player/RTSInputHandler.tscn" id="19_c7ve4"]
@@ -1440,8 +1441,10 @@ tile_set = SubResource("TileSet_k14p1")
 [node name="Storefront_UI" parent="UI" instance=ExtResource("3_vj45l")]
 
 [node name="Dynasty_UI" parent="UI" instance=ExtResource("7_k14p1")]
+anchors_preset = 8
 
 [node name="EndOfYear_Popup" parent="UI" instance=ExtResource("2_5el12")]
+anchors_preset = 8
 
 [node name="RestartButton" type="Button" parent="UI"]
 visible = false
@@ -1465,6 +1468,18 @@ offset_right = 130.0
 offset_bottom = 50.0
 text = "PAUSE (ESC)"
 script = ExtResource("7_n23os")
+
+[node name="BuildingInspector" parent="UI" instance=ExtResource("11_fmib8")]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -120.5
+offset_top = -120.0
+offset_right = 120.5
+grow_horizontal = 2
+grow_vertical = 0
 
 [node name="BuildingCursor" type="Node2D" parent="."]
 script = ExtResource("6_cursor")

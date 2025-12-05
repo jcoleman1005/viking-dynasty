@@ -22,12 +22,22 @@ var winter_crisis_active: bool = false
 var outbound_raid_force: Array[WarbandData] = []
 var raid_provisions_level: int = 1 
 var raid_health_modifier: float = 1.0 
-# -------------------------
+
+# --- HAMINGJA / LUCK TRACKING ---
+# Did the last raid succeed? Affects recruitment.
+# "neutral", "victory", "defeat"
+var last_raid_outcome: String = "neutral" 
+
+# --- SEASONAL MUSTER ---
+# Stores UnitData resources that have promised to join in spring
+var pending_seasonal_recruits: Array[UnitData] = []
 
 # --- CONSTANTS ---
 # We check for a user save first. If not found, we fall back to the default resource.
 const USER_DYNASTY_PATH = "user://savegame_dynasty.tres"
 const DEFAULT_JARL_PATH = "res://data/characters/PlayerJarl.tres"
+
+
 
 func _ready() -> void:
 	_load_game_data()
@@ -543,12 +553,24 @@ func perform_hall_action(cost: int = 1) -> bool:
 
 func end_winter_phase() -> void:
 	if not current_jarl: return
+	
+	# 1. Process Aging
 	current_jarl.age_jarl(1)
 	if _check_for_jarl_death(): return 
+	
+	# 2. Reset Actions
 	current_jarl.reset_authority()
 	active_year_modifiers.clear()
+	
+	# 3. Calculate Economy
 	var payout = EconomyManager.calculate_payout() 
 	SettlementManager.deposit_resources(payout)
+	
+	# --- NEW: Spawn the mustered troops ---
+	commit_seasonal_recruits_to_settlement()
+	# --------------------------------------
+	
+	# 4. Save & Transition
 	_save_jarl_data()
 	jarl_stats_updated.emit(current_jarl)
 	EventBus.scene_change_requested.emit("settlement")
@@ -566,3 +588,47 @@ func draw_dispute_card() -> DisputeEventData:
 	card.penalty_modifier_key = "angry_bondi"
 	card.penalty_description = "Recruitment halted."
 	return card
+
+func queue_seasonal_recruit(unit_data: UnitData, count: int) -> void:
+	for i in range(count):
+		pending_seasonal_recruits.append(unit_data)
+
+func commit_seasonal_recruits_to_settlement() -> void:
+	"""
+	Called when Winter Ends. 
+	Converts pending individual recruits into consolidated Warbands.
+	"""
+	if pending_seasonal_recruits.is_empty(): return
+	if not SettlementManager.current_settlement: return
+	
+	var new_warbands: Array[WarbandData] = []
+	var current_batch_wb: WarbandData = null
+	
+	# Iterate through every individual soldier promised
+	for u_data in pending_seasonal_recruits:
+		
+		# 1. Do we need a new Warband? 
+		# (If we don't have one, or the current one is full, or the unit type doesn't match)
+		if current_batch_wb == null or \
+		   current_batch_wb.current_manpower >= WarbandData.MAX_MANPOWER or \
+		   current_batch_wb.unit_type != u_data:
+			
+			# Create new Squad Container
+			current_batch_wb = WarbandData.new(u_data)
+			current_batch_wb.is_seasonal = true
+			current_batch_wb.current_manpower = 0 # Start empty, add 1 below
+			current_batch_wb.custom_name = "Drengir (%s)" % _generate_oath_name()
+			current_batch_wb.add_history("Swore the oath at Yule")
+			
+			SettlementManager.current_settlement.warbands.append(current_batch_wb)
+			new_warbands.append(current_batch_wb)
+		
+		# 2. Add the man to the current squad
+		current_batch_wb.current_manpower += 1
+		
+	Loggie.msg("Spring Arrival: %d men organized into %d Warbands." % [pending_seasonal_recruits.size(), new_warbands.size()]).domain(LogDomains.DYNASTY).info()
+	pending_seasonal_recruits.clear()
+
+func _generate_oath_name() -> String:
+	var names = ["Red", "Bold", "Young", "Wild", "Sworn", "Lucky"]
+	return "The %s" % names.pick_random()

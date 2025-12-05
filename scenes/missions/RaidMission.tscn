@@ -15,10 +15,11 @@
 [node name="RaidMission" type="Node2D"]
 script = ExtResource("1_qt4qp")
 enemy_wave_units = Array[ExtResource("2_y6ix7")]([ExtResource("3_eoj4n")])
+default_enemy_base_path = "res://data/settlements/generated/raid_rich_hub_01.tres"
 enemy_spawn_position = NodePath("EnemySpawnPosition")
 
 [node name="PlayerStartPosition" type="Marker2D" parent="."]
-position = Vector2(-161, 606)
+position = Vector2(100, 600)
 
 [node name="EnemySpawnPosition" type="Marker2D" parent="."]
 position = Vector2(383, -21)

@@ -13,3 +13,7 @@ extends BuildingData
 
 ## Maximum number of Thralls this building can manage.
 @export var thrall_capacity: int = 5
+
+# --- Capacity definition ---
+## Maximum number of Peasants/Citizens this building can employ.
+@export var peasant_capacity: int = 5

@@ -13,9 +13,15 @@ func _make_custom_tooltip(for_text: String) -> Object:
 	# Otherwise it uses Godot's default grey theme
 	if theme:
 		panel.theme = theme
-	elif get_tree().root.get_node("SettlementBridge/UI").theme:
-		# Fallback: Try to grab it from the UI root if button has no theme override
-		panel.theme = get_tree().root.get_node("SettlementBridge/UI").theme
+	else:
+		# Walk up the parent chain to find a Control with a theme
+		var ui_node: Node = self
+		while ui_node and not (ui_node is Control and ui_node.theme):
+			ui_node = ui_node.get_parent()
+		
+		if ui_node and ui_node is Control and ui_node.theme:
+			panel.theme = ui_node.theme
+		# If nothing is found, panel keeps default theme
 	
 	# Optional: Use your specific "TooltipPanel" style from the theme
 	panel.theme_type_variation = "TooltipPanel" 

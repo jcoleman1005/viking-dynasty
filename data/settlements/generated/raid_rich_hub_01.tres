@@ -1,0 +1,479 @@
+[gd_resource type="Resource" script_class="SettlementData" load_steps=3 format=3 uid="uid://dar76dyrtu8ts"]
+
+[ext_resource type="Script" uid="uid://hlb8s5g0yp6k" path="res://data/settlements/SettlementData.gd" id="1_0cqgt"]
+[ext_resource type="Script" uid="uid://koj0vo5eoaum" path="res://data/units/WarbandData.gd" id="2_afm35"]
+
+[resource]
+script = ExtResource("1_0cqgt")
+treasury = {
+"food": 800,
+"gold": 2000,
+"stone": 500,
+"wood": 1000
+}
+placed_buildings = Array[Dictionary]([{
+"grid_position": Vector2i(56, 25),
+"resource_path": "res://data/buildings/GreatHall.tres"
+}, {
+"grid_position": Vector2i(47, 21),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(47, 22),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(47, 28),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(47, 29),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(48, 19),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(48, 20),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(48, 21),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(48, 22),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(48, 28),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(48, 29),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(48, 30),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(48, 31),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(49, 18),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(49, 19),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(49, 20),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(49, 30),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(49, 31),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(49, 32),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(50, 17),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(50, 18),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(50, 32),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(50, 33),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(51, 17),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(51, 18),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(51, 32),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(51, 33),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(52, 16),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(52, 17),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(52, 33),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(52, 34),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(53, 16),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(53, 17),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(53, 33),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(53, 34),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(54, 16),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(54, 34),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(55, 16),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(55, 34),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(56, 15),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(56, 16),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(56, 34),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(56, 35),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(57, 16),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(57, 34),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(58, 16),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(58, 34),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(59, 16),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(59, 17),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(59, 33),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(59, 34),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(60, 16),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(60, 17),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(60, 33),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(60, 34),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(61, 17),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(61, 18),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(61, 32),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(61, 33),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(62, 17),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(62, 18),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(62, 32),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(62, 33),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(63, 18),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(63, 19),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(63, 20),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(63, 30),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(63, 31),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(63, 32),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(64, 19),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(64, 20),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(64, 21),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(64, 22),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(64, 28),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(64, 29),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(64, 30),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(64, 31),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(65, 21),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(65, 22),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(65, 23),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(65, 24),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(65, 25),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(65, 26),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(65, 27),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(65, 28),
+"resource_path": "res://data/buildings/Bldg_Wall.tres"
+}, {
+"grid_position": Vector2i(65, 29),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(66, 25),
+"resource_path": "res://data/buildings/Monastery_Watchtower.tres"
+}, {
+"grid_position": Vector2i(62, 27),
+"resource_path": "res://data/buildings/Monastery_Scriptorium.tres"
+}, {
+"grid_position": Vector2i(61, 21),
+"resource_path": "res://data/buildings/Monastery_Scriptorium.tres"
+}, {
+"grid_position": Vector2i(50, 26),
+"resource_path": "res://data/buildings/Monastery_Library.tres"
+}, {
+"grid_position": Vector2i(53, 20),
+"resource_path": "res://data/buildings/Monastery_Scriptorium.tres"
+}, {
+"grid_position": Vector2i(56, 32),
+"resource_path": "res://data/buildings/Monastery_Library.tres"
+}, {
+"grid_position": Vector2i(56, 18),
+"resource_path": "res://data/buildings/Monastery_Library.tres"
+}, {
+"grid_position": Vector2i(62, 25),
+"resource_path": "res://data/buildings/Monastery_Library.tres"
+}, {
+"grid_position": Vector2i(50, 21),
+"resource_path": "res://data/buildings/Monastery_Library.tres"
+}, {
+"grid_position": Vector2i(62, 23),
+"resource_path": "res://data/buildings/Monastery_Library.tres"
+}, {
+"grid_position": Vector2i(53, 31),
+"resource_path": "res://data/buildings/Monastery_Library.tres"
+}, {
+"grid_position": Vector2i(39, 26),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(42, 28),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(43, 32),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(43, 35),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(46, 10),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(48, 8),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(48, 40),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(49, 35),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(50, 7),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(50, 13),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(50, 40),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(51, 44),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(55, 37),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(56, 10),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(56, 42),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(58, 6),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(59, 12),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(61, 36),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(63, 40),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(64, 34),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(66, 32),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(66, 37),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(68, 12),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(68, 16),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(68, 33),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(70, 11),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(71, 37),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(72, 26),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(73, 17),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(73, 20),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(73, 31),
+"resource_path": "res://data/buildings/Monastery_Granary.tres"
+}, {
+"grid_position": Vector2i(23, 31),
+"resource_path": "res://data/buildings/Player_Farm.tres"
+}, {
+"grid_position": Vector2i(27, 43),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(28, 27),
+"resource_path": "res://data/buildings/Player_Farm.tres"
+}, {
+"grid_position": Vector2i(30, 9),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(31, 24),
+"resource_path": "res://data/buildings/Player_Farm.tres"
+}, {
+"grid_position": Vector2i(34, 23),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(37, 39),
+"resource_path": "res://data/buildings/Player_Farm.tres"
+}, {
+"grid_position": Vector2i(38, 5),
+"resource_path": "res://data/buildings/Player_Farm.tres"
+}, {
+"grid_position": Vector2i(38, 42),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(38, 44),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(39, 2),
+"resource_path": "res://data/buildings/Player_Farm.tres"
+}, {
+"grid_position": Vector2i(40, 4),
+"resource_path": "res://data/buildings/Player_Farm.tres"
+}, {
+"grid_position": Vector2i(42, 2),
+"resource_path": "res://data/buildings/Player_Farm.tres"
+}, {
+"grid_position": Vector2i(48, 1),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(48, 47),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(56, 2),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(60, 2),
+"resource_path": "res://data/buildings/Player_Farm.tres"
+}, {
+"grid_position": Vector2i(61, 47),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(66, 4),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(70, 44),
+"resource_path": "res://data/buildings/Player_Farm.tres"
+}, {
+"grid_position": Vector2i(72, 1),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(72, 9),
+"resource_path": "res://data/buildings/Player_Farm.tres"
+}, {
+"grid_position": Vector2i(74, 47),
+"resource_path": "res://data/buildings/Player_Farm.tres"
+}, {
+"grid_position": Vector2i(76, 1),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(76, 11),
+"resource_path": "res://data/buildings/Player_Farm.tres"
+}, {
+"grid_position": Vector2i(77, 8),
+"resource_path": "res://data/buildings/LumberYard.tres"
+}, {
+"grid_position": Vector2i(77, 46),
+"resource_path": "res://data/buildings/Player_Farm.tres"
+}])
