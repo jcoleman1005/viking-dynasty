@@ -181,8 +181,16 @@ func _generate_new_world() -> void:
 		if dist <= safe_range: tier = 1
 		elif dist <= safe_range * 1.5: tier = 2
 		else: tier = 3
+		
+		# --- FIX: Preserve Historical Name ---
+		var current_name = ""
+		if region.data:
+			current_name = region.data.display_name
+		# -------------------------------------
 			
-		var data = MapDataGenerator.generate_region_data(tier)
+		# Pass the name into the generator
+		var data = MapDataGenerator.generate_region_data(tier, current_name)
+		
 		region.data = data
 		map_state.region_data_map[region.name] = data
 		Loggie.msg("Generated %s (Tier %d) at dist %.0f" % [data.display_name, tier, dist]).domain("MAP").info()
@@ -197,10 +205,14 @@ func _save_map_state() -> void:
 	var error = ResourceSaver.save(map_state, SAVE_PATH)
 	if error != OK: push_error("MacroMap: Failed to save map state!")
 
+
 func _on_region_selected(data: WorldRegionData) -> void:
 	if is_instance_valid(selected_region_node):
 		selected_region_node.is_selected = false
 		selected_region_node.set_visual_state(false)
+	
+	# Reset selection
+	selected_region_node = null
 	
 	for region in regions_container.get_children():
 		if region is Region and region.data == data:
@@ -230,13 +242,31 @@ func _on_region_selected(data: WorldRegionData) -> void:
 	var is_conquered = DynastyManager.has_conquered_region(data.resource_path)
 	var is_allied = DynastyManager.is_allied_region(data.resource_path)
 	
-	_populate_raid_targets(data, is_conquered, is_allied)
-	_update_diplomacy_buttons(data, is_conquered, is_allied)
+	# --- NEW: Check Home Status ---
+	# We read the flag from the Region node itself (set by _update_region_status_visuals)
+	var is_home = false
+	if selected_region_node and "is_home" in selected_region_node:
+		is_home = selected_region_node.is_home
+	# ------------------------------
+	
+	_populate_raid_targets(data, is_conquered, is_allied, is_home)
+	_update_diplomacy_buttons(data, is_conquered, is_allied, is_home)
+	
 	region_info_panel.show()
 
-func _populate_raid_targets(data: WorldRegionData, is_conquered: bool, is_allied: bool) -> void:
+func _populate_raid_targets(data: WorldRegionData, is_conquered: bool, is_allied: bool, is_home: bool) -> void:
 	for child in target_list_container.get_children(): child.queue_free()
-		
+	
+	# --- NEW: Home Check ---
+	if is_home:
+		var label = Label.new()
+		label.text = "Home Region (Safe)"
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.add_theme_color_override("font_color", Color.CORNFLOWER_BLUE)
+		target_list_container.add_child(label)
+		return
+	# -----------------------
+
 	if is_conquered:
 		var label = Label.new()
 		label.text = "Region Conquered"
@@ -268,15 +298,12 @@ func _populate_raid_targets(data: WorldRegionData, is_conquered: bool, is_allied
 			btn.text = "%s (Allied)" % target.display_name
 			btn.disabled = true
 		else:
-			# --- NEW: Loot Hint Logic ---
 			var treasury = target.settlement_data.treasury
 			var loot_type = "Mixed"
-			
 			if treasury.get("food", 0) > 300: loot_type = "FOOD"
 			elif treasury.get("gold", 0) > 300: loot_type = "GOLD"
 			elif treasury.get("wood", 0) > 300: loot_type = "WOOD"
 			
-			# Color code the loot hint
 			if loot_type == "GOLD": btn.add_theme_color_override("font_color", Color.GOLD)
 			elif loot_type == "FOOD": btn.add_theme_color_override("font_color", Color.LIGHT_GREEN)
 			else: btn.add_theme_color_override("font_color", btn_color)
@@ -284,7 +311,6 @@ func _populate_raid_targets(data: WorldRegionData, is_conquered: bool, is_allied
 			var auth_cost = target.raid_cost_authority
 			if target.authority_cost_override > -1: auth_cost = target.authority_cost_override
 			
-			# Button Text with Loot Hint
 			btn.text = "%s [%s] (Cost: %d Auth%s)" % [target.display_name, loot_type, auth_cost, risk_text]
 			
 			var can_afford = DynastyManager.can_spend_authority(auth_cost)
@@ -296,7 +322,16 @@ func _populate_raid_targets(data: WorldRegionData, is_conquered: bool, is_allied
 		
 		target_list_container.add_child(btn)
 
-func _update_diplomacy_buttons(_data: WorldRegionData, is_conquered: bool, is_allied: bool) -> void:
+func _update_diplomacy_buttons(_data: WorldRegionData, is_conquered: bool, is_allied: bool, is_home: bool) -> void:
+	# --- NEW: Home Check ---
+	if is_home:
+		subjugate_button.disabled = true
+		subjugate_button.text = "Home Territory"
+		marry_button.disabled = true
+		marry_button.text = "Dynasty Seat"
+		return
+	# -----------------------
+
 	if is_conquered:
 		subjugate_button.disabled = true
 		subjugate_button.text = "Subjugate (Conquered)"
@@ -371,7 +406,42 @@ func _update_jarl_ui(jarl: JarlData) -> void:
 	if not jarl: return
 	authority_label.text = "Authority: %d / %d" % [jarl.current_authority, jarl.max_authority]
 	renown_label.text = "Renown: %d" % jarl.renown
+	_update_region_status_visuals()
 	if selected_region_data: _on_region_selected(selected_region_data)
+
+func _update_region_status_visuals() -> void:
+	if not player_home_marker: return
+	
+	var closest_dist = INF
+	var home_region: Region = null
+	
+	for region in regions_container.get_children():
+		if not region is Region: continue
+		
+		# 1. Check Alliance
+		if region.data and DynastyManager.is_allied_region(region.data.resource_path):
+			region.is_allied = true
+		else:
+			region.is_allied = false
+		
+		# 2. Find Home (Closest to Marker)
+		var dist = player_home_marker.global_position.distance_to(region.get_global_center())
+		if dist < closest_dist:
+			closest_dist = dist
+			home_region = region
+			
+		# Reset home flag for now (winner takes it below)
+		region.is_home = false
+		
+		# Refresh visual state (if not currently hovered/selected)
+		if not region.is_selected:
+			region.set_visual_state(false)
+
+	# 3. Apply Home
+	if home_region:
+		home_region.is_home = true
+		if not home_region.is_selected:
+			home_region.set_visual_state(false)
 
 func _on_region_hovered(data: WorldRegionData, _screen_position: Vector2) -> void:
 	tooltip_label.text = data.display_name
