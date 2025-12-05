@@ -3,10 +3,7 @@ class_name BuildingData
 extends Resource
 
 @export var display_name: String = "New Building"
-
-# --- NEW: Description Field (Required for Tooltips & Importer) ---
 @export_multiline var description: String = "A useful structure."
-# -----------------------------------------------------------------
 
 @export var scene_to_spawn: PackedScene
 @export var icon: Texture2D
@@ -26,6 +23,11 @@ extends Resource
 @export var is_territory_hub: bool = false
 @export var extends_territory: bool = false
 @export var territory_radius: int = 4
+
+# --- RESTORED: FLEET CAPACITY ---
+## How many Squads (not individual men) this building adds to your fleet capacity.
+@export var fleet_capacity_bonus: int = 0
+# --------------------------------
 
 @export_group("Demographics")
 @export var arable_land_capacity: int = 0 

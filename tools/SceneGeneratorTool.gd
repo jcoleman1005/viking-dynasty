@@ -1,39 +1,45 @@
-# res://tools/GenerateThrallScene.gd
+# res://tools/GenerateDrengr.gd
 @tool
 extends EditorScript
 
-func _run() -> void:
-	print("--- Generating Thrall Unit Scene ---")
+func _run():
+	print("--- Generating Drengr Unit (Historical Update) ---")
 	
+	# 1. Create Unit Data
+	var data = UnitData.new()
+	data.display_name = "Drengr" 
+	
+	# STATS: High Risk / High Reward
+	data.max_health = 45 
+	data.attack_damage = 12 
+	data.attack_speed = 1.4 
+	data.move_speed = 85.0 
+	data.spawn_cost = {"food": 0} 
+	
+	# Link to Scene
+	data.scene_path = "res://scenes/units/Drengr.tscn"
+	
+	# Load Icon (Reuse existing)
+	if ResourceLoader.exists("res://textures/units/viking_raider_sprite.png"):
+		data.icon = load("res://textures/units/viking_raider_sprite.png")
+		data.visual_texture = data.icon
+	
+	# Save Data
+	ResourceSaver.save(data, "res://data/units/Unit_Drengr.tres")
+	print("Saved Data: res://data/units/Unit_Drengr.tres")
+	
+	# 2. Create Visual Scene
 	var source_path = "res://scenes/units/PlayerVikingRaider.tscn"
-	var target_path = "res://scenes/units/ThrallUnit.tscn"
-	var script_path = "res://scripts/units/ThrallUnit.gd"
-	
-	if not ResourceLoader.exists(source_path):
-		printerr("Source scene not found!")
-		return
+	if ResourceLoader.exists(source_path):
+		var base_scene = load(source_path).instantiate()
+		base_scene.modulate = Color(0.9, 0.4, 0.4) # Reddish tint
 		
-	var base_scene = load(source_path).instantiate()
-	
-	# 1. Swap Script
-	var thrall_script = load(script_path)
-	base_scene.set_script(thrall_script)
-	
-	# 2. Modify Visuals (Optional default tint)
-	base_scene.modulate = Color(0.8, 0.8, 0.7) # Drab clothing
-	
-	# 3. Remove incompatible children if any (like specific weapons)
-	# For now we assume the base scene is generic enough.
-	
-	# 4. Save
-	var packed = PackedScene.new()
-	packed.pack(base_scene)
-	var err = ResourceSaver.save(packed, target_path)
-	
-	if err == OK:
-		print("✅ Thrall Scene Saved: ", target_path)
+		var packed = PackedScene.new()
+		packed.pack(base_scene)
+		ResourceSaver.save(packed, "res://scenes/units/Drengr.tscn")
+		print("Saved Scene: res://scenes/units/Drengr.tscn")
+		base_scene.queue_free()
 	else:
-		printerr("❌ Failed to save scene: ", err)
+		printerr("Could not find source scene to clone!")
 		
-	base_scene.queue_free()
 	EditorInterface.get_resource_filesystem().scan()

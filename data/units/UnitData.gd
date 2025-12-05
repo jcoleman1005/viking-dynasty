@@ -13,8 +13,10 @@ extends Resource
 @export var max_health: int = 50
 @export var move_speed: float = 75.0
 @export var attack_damage: int = 8
-@export var attack_range: float = 10.0
 @export var attack_speed: float = 1.2
+## Distance to attack other units (keep small, e.g. 15)
+@export var attack_range: float = 15.0 
+
 
 @export_group("Visuals")
 @export var visual_texture: Texture2D
