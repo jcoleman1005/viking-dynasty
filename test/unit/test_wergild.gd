@@ -76,6 +76,7 @@ func before_each():
 	var mock_popup = PanelContainer.new() 
 	mock_popup.set_script(load("res://ui/EndOfYear_Popup.gd")) 
 	bridge_instance.end_of_year_popup = mock_popup
+	bridge_instance.add_child(mock_popup)
 	
 	add_child(bridge_instance)
 	
