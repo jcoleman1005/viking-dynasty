@@ -383,7 +383,24 @@ func _process_raid_return() -> void:
 	var result = DynastyManager.pending_raid_result
 	var outcome = result.get("outcome")
 	
-	# --- NEW: Update Hamingja History ---
+	# 1. Get Raw Gold immediately
+	var raw_gold = result.get("gold_looted", 0)
+	
+	# 2. Calculate Wergild Bill
+	var total_wergild = 0
+	var dead_count = 0
+	
+	if result.has("casualties"):
+		for u_data in result["casualties"]:
+			if u_data:
+				total_wergild += u_data.wergild_cost
+				dead_count += 1
+	
+	# 3. Calculate Net Profit
+	# We deduct the death costs from the loot.
+	var net_gold = max(0, raw_gold - total_wergild)
+	
+	# --- Update Hamingja History ---
 	if outcome == "victory":
 		DynastyManager.last_raid_outcome = "victory"
 	elif outcome == "retreat":
@@ -396,37 +413,29 @@ func _process_raid_return() -> void:
 		var warbands_to_disband: Array[WarbandData] = []
 		
 		for warband in SettlementManager.current_settlement.warbands:
-			# Disband Bondi (Farmers) AND Seasonal Drengir (Raiders)
 			if warband.is_bondi or warband.is_seasonal:
-				
-				# Bondi go back to work (Refund Pop)
 				if warband.is_bondi and warband.current_manpower > 0:
 					SettlementManager.current_settlement.population_peasants += warband.current_manpower
 					Loggie.msg("Bondi returned to fields.").domain("SETTLEMENT").info()
 				
-				# Drengir just leave with their loot (No Pop Refund)
 				if warband.is_seasonal:
-					Loggie.msg("Seasonal Drengir have departed for the winter.").domain("SETTLEMENT").info()
+					Loggie.msg("Seasonal Drengir have departed.").domain("SETTLEMENT").info()
 				
 				warbands_to_disband.append(warband)
 		
-		# Cleanup Data
 		for wb in warbands_to_disband:
 			SettlementManager.current_settlement.warbands.erase(wb)
 			
-		# Cleanup Physical SquadLeaders (IMPORTANT: Delete them so they don't persist)
 		if is_instance_valid(unit_container):
 			for child in unit_container.get_children():
 				if child is SquadLeader and child.warband_ref in warbands_to_disband:
 					if rts_controller: rts_controller.remove_unit(child)
 					child.queue_free()
 			
-			# Now sync villagers to make them appear
 			_sync_villagers()
 
+	# --- XP & Progression ---
 	var grade = result.get("victory_grade", "Standard")
-	var loot_summary = {}
-	
 	var xp_gain = 0
 	if outcome == "victory": 
 		xp_gain = 50
@@ -435,55 +444,52 @@ func _process_raid_return() -> void:
 	elif outcome == "retreat": 
 		xp_gain = 20
 	
-	# Odin Modifier
 	if xp_gain > 0 and DynastyManager.active_year_modifiers.has("BLOT_ODIN"):
 		xp_gain = int(xp_gain * 1.5)
-		Loggie.msg("Odin's Wisdom: XP gain increased to %d." % xp_gain).domain("SETTLEMENT").info()
 		
 	if SettlementManager.current_settlement and xp_gain > 0:
 		for warband in SettlementManager.current_settlement.warbands:
 			if not warband.is_wounded:
 				warband.experience += xp_gain
 
+	# --- Construct Payout & UI ---
+	var loot_summary = {}
+	var title_text = "Raid Result"
+	
 	if outcome == "victory":
-		var gold = result.get("gold_looted", 0)
 		var difficulty = DynastyManager.current_raid_difficulty
 		var bonus = 200 + (difficulty * 50)
-		
 		if grade == "Decisive": bonus += 100
-			
-		loot_summary["gold"] = gold + bonus
+		
+		# Add Bonus to Net Gold
+		loot_summary["gold"] = net_gold + bonus
 		loot_summary["population"] = randi_range(2, 4) * difficulty
 		
-		# Warlord Progression
+		title_text = "Victory! (%s)" % grade
+		
+		# Warlord Stats
 		var jarl = DynastyManager.get_current_jarl()
 		if jarl:
 			jarl.offensive_wins += 1
 			jarl.battles_won += 1
 			jarl.successful_raids += 1
-			
 			if jarl.has_trait("Warlord") and grade == "Decisive":
-				var refund = 1 
-				DynastyManager.current_jarl.current_authority = min(
-					DynastyManager.current_jarl.current_authority + refund, 
-					DynastyManager.current_jarl.max_authority
-				)
+				DynastyManager.current_jarl.current_authority += 1
 			DynastyManager.jarl_stats_updated.emit(jarl)
-		
-		if is_instance_valid(end_of_year_popup):
-			end_of_year_popup.display_payout(loot_summary, "Raid Victory! (%s)" % grade)
 			
 	elif outcome == "retreat":
-		var gold = result.get("gold_looted", 0)
-		loot_summary["gold"] = gold
-		if is_instance_valid(end_of_year_popup):
-			end_of_year_popup.display_payout(loot_summary, "Raid Retreat\n(Loot Secured)")
+		loot_summary["gold"] = net_gold
+		title_text = "Retreat (Loot Secured)"
+
+	# --- Append Wergild Note to Title ---
+	if dead_count > 0:
+		title_text += "\n(Wergild Paid: -%d Gold)" % total_wergild
+
+	if is_instance_valid(end_of_year_popup):
+		end_of_year_popup.display_payout(loot_summary, title_text)
 			
-	if not loot_summary.is_empty():
-		# We don't deposit yet if we are showing the popup (wait for Collect)
-		# But if no popup exists, deposit now
-		if not is_instance_valid(end_of_year_popup):
-			SettlementManager.deposit_resources(loot_summary)
+	if not loot_summary.is_empty() and not is_instance_valid(end_of_year_popup):
+		SettlementManager.deposit_resources(loot_summary)
 
 # --- PHYSICAL VILLAGER SYNC ---
 func _sync_villagers(_data: SettlementData = null) -> void:

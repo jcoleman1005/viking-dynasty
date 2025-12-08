@@ -18,3 +18,4 @@ attack_damage = 12
 attack_speed = 1.4
 visual_texture = ExtResource("1_15vom")
 ai_component_scene = ExtResource("1_ty6b3")
+wergild_cost = 150

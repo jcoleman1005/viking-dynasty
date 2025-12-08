@@ -11,12 +11,16 @@ var guard_post: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
 	super._ready()
-	# Remember where we spawned (or were assigned)
 	if parent_node:
 		guard_post = parent_node.global_position
 	
-	# Set target mask to PLAYER (Layer 2)
-	set_target_mask(1 << 1) 
+	# --- FIX: Widen Vision Mask ---
+	# Binary 3 = 0011 (Layer 1 + Layer 2)
+	set_target_mask(3) 
+	
+	# Force ON by default
+	set_process(true)
+	set_physics_process(true)
 
 func _on_attack_timer_timeout() -> void:
 	# 1. Check Leash

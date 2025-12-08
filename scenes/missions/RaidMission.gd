@@ -18,7 +18,7 @@ extends Node2D
 @onready var building_container: Node2D = $BuildingContainer
 @onready var objective_manager: RaidObjectiveManager = $RaidObjectiveManager
 @onready var unit_spawner: UnitSpawner = $UnitSpawner
-
+@export var fyrd_unit_scene: PackedScene
 # --- Internal ---
 var map_loader: RaidMapLoader
 var objective_building: BaseBuilding = null
@@ -197,22 +197,46 @@ func _spawn_enemy_wave() -> void:
 			)
 
 func _on_fyrd_arrived() -> void:
-	var spawner = get_node_or_null(enemy_spawn_position)
-	var origin = spawner.global_position if spawner else Vector2(1000,0)
-	var enemy_data_path = "res://data/units/EnemyVikingRaider_Data.tres"
-	if not ResourceLoader.exists(enemy_data_path): return
-	var enemy_data = load(enemy_data_path)
+	print("--- FYRD SPAWN START ---")
 	
-	for i in range(20):
-		var unit = enemy_data.scene_to_spawn.instantiate()
-		unit.data = enemy_data
-		unit.current_health = 100
-		unit.collision_layer = 1 << 2
-		unit.global_position = origin + Vector2(randf_range(-200,200), randf_range(-200,200))
+	# 1. Attempt Fallback if Inspector is empty
+	if fyrd_unit_scene == null:
+		print("DEBUG: fyrd_unit_scene is NULL. Attempting load...")
+		# CHECK THIS PATH: Verify this file exists in your FileSystem!
+		var fallback = "res://scenes/units/EnemyUnit_Template.tscn" 
+		
+		if ResourceLoader.exists(fallback):
+			fyrd_unit_scene = load(fallback)
+			print("DEBUG: Loaded fallback scene: ", fallback)
+		else:
+			printerr("CRITICAL FAILURE: Fallback file not found at: ", fallback)
+	
+	# 2. Final Abort Check
+	if fyrd_unit_scene == null:
+		printerr("ABORTING: No scene available. Please assign 'Fyrd Unit Scene' in Inspector.")
+		print("--- FYRD SPAWN END (FAILED) ---")
+		return
+
+	# 3. Spawn
+	var spawner = get_node_or_null(enemy_spawn_position)
+	var origin = spawner.global_position if spawner else Vector2(1000, 0)
+	print("DEBUG: Spawning at ", origin)
+	
+	for i in range(5):
+		var unit = fyrd_unit_scene.instantiate()
+		unit.global_position = origin + Vector2(randf_range(-100, 100), randf_range(-100, 100))
+		unit.collision_layer = 4 # Enemy Layer (Value 4)
+		unit.add_to_group("enemy_units")
 		add_child(unit)
-		unit.fsm_ready.connect(func(u): 
-			if u.fsm: u.fsm.command_move_to(player_spawn_pos.global_position)
-		)
+		
+		# 4. Command to Attack
+		# We use call_deferred to ensure the unit is fully ready before giving orders
+		if unit.has_method("get_fsm"): # Assuming BaseUnit has this or we access property
+			unit.call_deferred("command_attack_move", player_spawn_pos.global_position if player_spawn_pos else Vector2.ZERO)
+		elif unit.get("fsm"):
+			unit.fsm.command_attack_move(player_spawn_pos.global_position if player_spawn_pos else Vector2.ZERO)
+			
+	print("--- FYRD SPAWN SUCCESS ---")
 
 func _spawn_retreat_zone() -> void:
 	var zone_script_path = "res://scenes/missions/RetreatZone.gd"

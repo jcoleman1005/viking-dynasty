@@ -39,6 +39,10 @@ extends Resource
 @export var projectile_scene: PackedScene
 @export var projectile_speed: float = 400.0
 
+@export_group("Social Stats")
+## The Gold cost to compensate the family if this unit dies.
+@export var wergild_cost: int = 50
+
 func load_scene() -> PackedScene:
 	if scene_to_spawn: return scene_to_spawn
 	if scene_path == "": return null
