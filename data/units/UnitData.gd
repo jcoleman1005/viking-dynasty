@@ -29,6 +29,12 @@ extends Resource
 @export var acceleration: float = 10.0
 @export var linear_damping: float = 5.0
 
+@export_group("Raid Stats")
+## How many resource points this unit steals per second.
+@export var pillage_speed: int = 10 
+## Renown earned for burning a building.
+@export var burn_renown: int = 10
+
 @export var ai_component_scene: PackedScene
 @export var projectile_scene: PackedScene
 @export var projectile_speed: float = 400.0

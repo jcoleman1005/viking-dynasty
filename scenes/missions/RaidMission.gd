@@ -29,6 +29,7 @@ func _ready() -> void:
 	Loggie.set_domain_enabled("UI", true)
 	Loggie.set_domain_enabled("RTS", true)
 	Loggie.set_domain_enabled("RAID", true)
+	Loggie.set_domain_enabled("MAP", true)
 	# 1. Setup Unit Container (CRITICAL FIX)
 	_setup_unit_container()
 	
