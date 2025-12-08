@@ -26,7 +26,9 @@ var unit_container: Node2D # Reference to the container we will create/find
 
 func _ready() -> void:
 	print("[DIAGNOSTIC] RaidMission: _ready() called.")
-	
+	Loggie.set_domain_enabled("UI", true)
+	Loggie.set_domain_enabled("RTS", true)
+	Loggie.set_domain_enabled("RAID", true)
 	# 1. Setup Unit Container (CRITICAL FIX)
 	_setup_unit_container()
 	
@@ -58,6 +60,7 @@ func _ready() -> void:
 		call_deferred("initialize_mission")
 	else:
 		call_deferred("initialize_mission")
+	Loggie.set_domain_enabled(LogDomains.RAID, true)
 
 func _setup_unit_container() -> void:
 	# Try to find existing container

@@ -21,7 +21,7 @@ func _ready() -> void:
 	EventBus.attack_command.connect(_on_attack_command)
 	EventBus.formation_move_command.connect(_on_formation_move_command)
 	EventBus.interact_command.connect(_on_interact_command)
-	
+	EventBus.pillage_command.connect(_on_pillage_command)
 	# Keyboard Commands
 	EventBus.control_group_command.connect(_on_control_group_command)
 	EventBus.formation_change_command.connect(_on_formation_change_command)
@@ -236,3 +236,16 @@ func _prune_dead_units() -> void:
 		if is_instance_valid(unit):
 			alive_units.append(unit)
 	controllable_units = alive_units
+
+func _on_pillage_command(target_node: Node2D) -> void:
+	_validate_selection()
+	if selected_units.is_empty(): return
+	
+	Loggie.msg("RTSController: Ordering %d units to Pillage %s" % [selected_units.size(), target_node.name]).domain("RTS").info()
+	
+	for unit in selected_units:
+		if unit.fsm and unit.fsm.has_method("command_pillage"):
+			unit.fsm.command_pillage(target_node)
+		else:
+			# Fallback for units that can't pillage (move to guard)
+			unit.command_move_to(target_node.global_position)

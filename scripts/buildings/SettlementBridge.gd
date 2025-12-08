@@ -26,7 +26,11 @@ extends Node
 	set(value):
 		show_debug_logs = value
 		if is_inside_tree(): Loggie.set_domain_enabled("DEBUG", value)
-
+@export var show_raid_logs: bool = true: # Set default to true if you want it on now
+	set(value):
+		show_raid_logs = value
+		# LogDomains.RAID is defined as "RAID" in your autoload
+		if is_inside_tree(): Loggie.set_domain_enabled(LogDomains.RAID, value)
 # --- New Game Configuration ---
 @export_group("New Game Settings")
 @export var start_gold: int = 1000

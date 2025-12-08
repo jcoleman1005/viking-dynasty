@@ -378,3 +378,17 @@ func _get_target_radius(target: Node2D) -> float:
 		if col.shape is RectangleShape2D: return min(col.shape.size.x, col.shape.size.y) / 2.0
 		
 	return 0.0
+	
+func command_pillage(target: Node2D) -> void:
+	if not is_instance_valid(target): return
+	
+	# Pillage uses the same movement logic as interacting
+	objective_target = target
+	current_target = null
+	target_position = target.global_position
+	
+	if attack_ai: attack_ai.stop_attacking()
+	
+	# We reuse INTERACTING state for now. 
+	# In Batch B, we will add specific logic inside _interact_state to drain resources.
+	change_state(UnitAIConstants.State.INTERACTING)

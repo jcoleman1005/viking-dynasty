@@ -6,7 +6,7 @@ signal destroyed
 signal fsm_ready(unit)
 
 @export var data: UnitData
-
+var unit_identity: String = ""
 # --- NEW: WARBAND IDENTITY ---
 ## The specific Warband this unit belongs to.
 ## If null, this unit is temporary/mercenary.
@@ -80,7 +80,9 @@ func _ready() -> void:
 					dmg_mult *= p_bonus
 				modulate = Color(1.2, 1.2, 0.8) 
 				Loggie.msg("Unit %s buffed by Captain %s!" % [name, heir.display_name]).domain("UNIT").info()
-
+		# --- NEW: Assign Identity ---
+		if unit_identity == "":
+			unit_identity = DynastyGenerator.get_random_viking_name()
 	current_health = int(data.max_health * hp_mult)
 	
 	_apply_texture_and_scale()

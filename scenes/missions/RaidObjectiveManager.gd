@@ -93,9 +93,17 @@ func initialize(
 	is_initialized = true
 
 # --- CASUALTY TRACKING ---
-func _on_player_unit_died(_unit: Node2D) -> void:
+func _on_player_unit_died(unit: Node2D) -> void:
 	if not mission_over:
 		units_lost_count += 1
+		
+		# --- NEW: Log Identity ---
+		var ident = "A Warrior"
+		if "unit_identity" in unit:
+			ident = unit.unit_identity
+			
+		Loggie.msg("⚔️ CASUALTY: %s has fallen!" % ident).domain(LogDomains.RAID).warn()
+		# -------------------------
 
 # --- UI SETUP ---
 

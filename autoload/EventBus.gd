@@ -44,6 +44,7 @@ signal move_command(target_position: Vector2)
 signal attack_command(target_node: Node2D)
 signal formation_move_command(target_position: Vector2, direction_vector: Vector2)
 signal interact_command(target: Node2D)
+signal pillage_command(target_node: Node2D)  # Steal Loot (Enemy)
 
 # --- Keyboard Commands ---
 signal control_group_command(group_index: int, is_assigning: bool)
