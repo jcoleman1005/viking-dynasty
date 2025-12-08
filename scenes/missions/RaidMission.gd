@@ -133,7 +133,8 @@ func _setup_offensive_mode() -> void:
 			
 	_spawn_player_garrison()
 	_spawn_retreat_zone()
-
+	_spawn_enemy_garrison()
+	
 func _on_building_destroyed_grid_update(building: BaseBuilding) -> void:
 	pass
 
@@ -249,3 +250,41 @@ func _spawn_test_units() -> void:
 		u.global_position = player_spawn_pos.global_position + Vector2(i*30, 0)
 		# Ensure test units are added to the container too
 		unit_container.add_child(u)
+
+func _spawn_enemy_garrison() -> void:
+	print("DEBUG: _spawn_enemy_garrison called.")
+	
+	if not enemy_base_data:
+		print("DEBUG: FAILURE - enemy_base_data is NULL!")
+		return
+		
+	# --- FAIL-SAFE: Inject Defenders if Missing ---
+	if enemy_base_data.warbands.is_empty():
+		print("DEBUG: Data is empty (Stale File). Generating emergency garrison...")
+		
+		# Call the generator to fill the array in memory
+		# We assume Tier 1 difficulty (1.0)
+		MapDataGenerator._scale_garrison(enemy_base_data, 1.0)
+		
+		# Check if it worked
+		if enemy_base_data.warbands.is_empty():
+			print("DEBUG: CRITICAL - Emergency generation failed. Check MapDataGenerator script.")
+			return
+		else:
+			print("DEBUG: Emergency generation successful. Created %d warbands." % enemy_base_data.warbands.size())
+	# ----------------------------------------------
+	
+	if not unit_spawner:
+		print("DEBUG: FAILURE - unit_spawner node is NULL!")
+		return
+		
+	# 1. Collect Valid Guard Posts
+	var guard_buildings = []
+	for child in building_container.get_children():
+		if child is BaseBuilding:
+			guard_buildings.append(child)
+	
+	print("DEBUG: Found %d guard buildings." % guard_buildings.size())
+			
+	# 2. Call Spawner
+	unit_spawner.spawn_enemy_garrison(enemy_base_data.warbands, guard_buildings)

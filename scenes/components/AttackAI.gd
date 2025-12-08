@@ -55,8 +55,12 @@ func configure_from_data(data) -> void:
 	if "attack_damage" in data: attack_damage = data.attack_damage
 	if "attack_range" in data: attack_range = data.attack_range
 	# --- RESTORED ---
-	if "building_attack_range" in data: building_attack_range = data.building_attack_range
-	# ----------------
+	
+	if "building_attack_range" in data: 
+		building_attack_range = data.building_attack_range
+	else:
+		building_attack_range = attack_range + 30.0 # Fallback
+	
 	if "attack_speed" in data: attack_speed = data.attack_speed
 	if "projectile_scene" in data: projectile_scene = data.projectile_scene
 	if "projectile_speed" in data: projectile_speed = data.projectile_speed
@@ -68,10 +72,20 @@ func set_target_mask(mask: int) -> void:
 	if detection_area: detection_area.collision_mask = mask
 
 func force_target(target: Node2D) -> void:
-	if not is_instance_valid(target): return
-	if target is BaseBuilding and target.has_node("Hitbox"): current_target = target.get_node("Hitbox")
-	else: current_target = target
-	if current_target not in targets_in_range: targets_in_range.append(current_target)
+	print("DEBUG AI: force_target called for %s" % target.name)
+	
+	if not is_instance_valid(target): 
+		print("DEBUG AI: force_target aborted (Invalid Target)")
+		return
+	
+	var actual_target = target
+	if target is BaseBuilding and target.has_node("Hitbox"): 
+		actual_target = target.get_node("Hitbox")
+	
+	current_target = actual_target
+	if current_target not in targets_in_range: 
+		targets_in_range.append(current_target)
+	
 	_start_attacking()
 
 func stop_attacking() -> void:
@@ -236,11 +250,21 @@ func _get_target_radius(target: Node2D) -> float:
 	return 0.0
 
 func _start_attacking() -> void:
+	print("DEBUG AI: _start_attacking called.")
+	
 	if not is_attacking:
 		is_attacking = true
 		attack_started.emit(current_target)
+	
+	# Manually fire the first shot immediately
+	print("DEBUG AI: Manually calling timeout (First Shot)...")
 	_on_attack_timer_timeout()
-	if attack_timer and attack_timer.is_stopped(): attack_timer.start()
+	
+	if attack_timer.is_stopped():
+		print("DEBUG AI: Starting Timer.")
+		attack_timer.start()
+	else:
+		print("DEBUG AI: Timer already running.")
 
 func _stop_attacking() -> void:
 	if is_attacking:
@@ -249,29 +273,35 @@ func _stop_attacking() -> void:
 	if attack_timer: attack_timer.stop()
 
 func _on_attack_timer_timeout() -> void:
+	# 1. Processing Check
 	if not is_processing(): 
+		# print("DEBUG AI: Abort - Not processing.")
 		_stop_attacking()
 		return
 		
+	# 2. Target Validity
 	if not is_instance_valid(current_target):
+		print("DEBUG AI: Abort - Invalid Target.")
 		_stop_attacking()
 		return
 		
-	# --- RESTORED: Smart Range Logic ---
+	# 3. Range Check
 	var limit = attack_range
 	if current_target is BaseBuilding or (current_target.name == "Hitbox" and current_target.get_parent() is BaseBuilding):
 		limit = building_attack_range
 		
 	var dist = parent_node.global_position.distance_to(current_target.global_position)
 	var r_target = _get_target_radius(current_target)
-	var r_self = 15.0 # Approx unit radius
+	var r_self = 15.0 
 	var surface_dist = max(0, dist - r_target - r_self)
 	
+	# Tolerance buffer (10.0)
 	if surface_dist > limit + 10.0:
+		print("DEBUG AI: Abort - Out of Range! Current: %.1f > Limit: %.1f (Base: %.1f)" % [surface_dist, limit, attack_range])
 		_stop_attacking()
 		return
-	# -----------------------------------
 
+	# 4. Action
 	about_to_attack.emit(current_target, attack_damage)
 	
 	if projectile_scene:
@@ -279,8 +309,12 @@ func _on_attack_timer_timeout() -> void:
 	else:
 		var t = current_target
 		if t.name == "Hitbox": t = t.get_parent()
-		if t.has_method("take_damage"): t.take_damage(attack_damage, parent_node)
-
+		if t.has_method("take_damage"): 
+			print("DEBUG AI: HIT! Dealt %d damage to %s" % [attack_damage, t.name])
+			t.take_damage(attack_damage, parent_node)
+		else:
+			print("DEBUG AI: Abort - Target %s has no take_damage method!" % t.name)
+			
 func _spawn_projectile(target_pos: Vector2) -> void:
 	if not projectile_scene: return
 	var p = ProjectilePoolManager.get_projectile()

@@ -149,17 +149,39 @@ static func _clone_settlement_data(original: SettlementData) -> SettlementData:
 
 static func _scale_garrison(settlement: SettlementData, multiplier: float) -> void:
 	if not settlement: return
+	
 	if settlement.warbands.is_empty():
-		var enemy_data_path = "res://data/units/EnemyVikingRaider_Data.tres"
-		if ResourceLoader.exists(enemy_data_path):
-			var unit_data = load(enemy_data_path) as UnitData
+		# 1. Define a Priority List of units to spawn
+		var possible_paths = [
+			"res://data/units/EnemyVikingRaider_Data.tres", # Dedicated Enemy (Best)
+			"res://data/units/Unit_Bondi.tres",             # Common Fallback
+			"res://data/units/Unit_Drengr.tres"             # Elite Fallback
+		]
+		
+		var unit_data: UnitData = null
+		
+		# 2. Find the first valid file
+		for path in possible_paths:
+			if ResourceLoader.exists(path):
+				unit_data = load(path)
+				break
+		
+		# 3. Spawn or Error
+		if unit_data:
 			var count = int(3 * multiplier)
 			count = max(1, count) 
+			
 			for i in range(count):
+				# Create the data container
 				var wb = WarbandData.new(unit_data)
 				wb.custom_name = "Defenders %d" % (i + 1)
 				settlement.warbands.append(wb)
-		return
+				
+			print("MapGenerator: Assigned %d squads of %s to settlement." % [count, unit_data.display_name])
+		else:
+			printerr("CRITICAL: MapDataGenerator could not find ANY unit files to spawn defenders!")
+			return
+
 	var original_count = settlement.warbands.size()
 	var target_count = int(original_count * multiplier)
 	var needed = target_count - original_count

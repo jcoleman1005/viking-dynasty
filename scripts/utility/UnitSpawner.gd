@@ -164,3 +164,55 @@ func spawn_worker_at(location: Vector2) -> void:
 	if not civilian_data: return
 	_spawn_civilians(1, location)
 	Loggie.msg("UnitSpawner: Worker spawned at %s" % location).domain(LogDomains.UNIT).debug()
+	
+func spawn_enemy_garrison(warbands: Array[WarbandData], buildings: Array) -> void:
+	print("DEBUG: Spawner received %d warbands to spawn." % warbands.size())
+	
+	for i in range(warbands.size()):
+		var wb = warbands[i]
+		if not wb:
+			print("DEBUG: Warband index %d is NULL" % i)
+			continue
+			
+		var u_data = wb.unit_type
+		if not u_data: 
+			print("DEBUG: Warband %d has NO UnitData assigned." % i)
+			continue
+		
+		# 1. Load Scene
+		var scene = u_data.load_scene()
+		if not scene: 
+			print("DEBUG: Failed to load scene for unit: %s" % u_data.display_name)
+			continue
+		
+		print("DEBUG: Spawning enemy %s..." % u_data.display_name)
+		
+		var unit = scene.instantiate() as BaseUnit
+		unit.data = u_data
+		
+		# 2. Assign Enemy Team
+		unit.add_to_group("enemy_units")
+		unit.collision_layer = 4 # Enemy Layer
+		# Important: Do NOT add to RTSController
+		
+		# 3. Pick a Guard Post (Building)
+		var guard_pos = Vector2.ZERO
+		if not buildings.is_empty():
+			# Distribute defenders among buildings
+			var b_index = i % buildings.size()
+			var b = buildings[b_index]
+			if is_instance_valid(b):
+				guard_pos = b.global_position + Vector2(randf_range(-50, 50), randf_range(-50, 50))
+		
+		# 4. Finalize
+		unit.global_position = _clamp_to_grid(guard_pos)
+		unit_container.add_child(unit)
+		
+		# 5. Inject AI Logic (After added to tree)
+		if unit.attack_ai is DefenderAI:
+			(unit.attack_ai as DefenderAI).configure_guard_post(guard_pos)
+		elif unit.fsm:
+			# Fallback: Just tell FSM to stand there
+			unit.fsm.command_move_to(guard_pos)
+
+	Loggie.msg("Spawned %d enemy defenders." % warbands.size()).domain("RAID").info()

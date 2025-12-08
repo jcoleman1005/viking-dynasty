@@ -54,8 +54,14 @@ func _enter_state(state: UnitAIConstants.State) -> void:
 			_recalculate_path()
 		UnitAIConstants.State.ATTACKING:
 			unit.velocity = Vector2.ZERO
-			if attack_ai and is_instance_valid(current_target):
-				attack_ai.force_target(current_target)
+			
+			# Ensure the AI is actually running!
+			if attack_ai:
+				attack_ai.set_process(true)
+				attack_ai.set_physics_process(true)
+				
+				if is_instance_valid(current_target):
+					attack_ai.force_target(current_target)
 		UnitAIConstants.State.INTERACTING:
 			_recalculate_path()
 			if attack_ai: 
@@ -234,6 +240,11 @@ func _move_state(delta: float) -> void:
 		# -----------------
 		
 		if effective_distance <= required_range + 5.0:
+			# --- FIX: Ensure current_target is set before attacking ---
+			if not is_instance_valid(current_target) and is_instance_valid(target_node):
+				current_target = target_node
+			# ----------------------------------------------------------
+			
 			change_state(UnitAIConstants.State.ATTACKING)
 			return
 	
@@ -394,6 +405,22 @@ func _on_ai_attack_started(target: Node2D) -> void:
 
 func _on_ai_attack_stopped() -> void:
 	if current_state == UnitAIConstants.State.ATTACKING:
+		# --- FIX: Anti-Flicker Guard ---
+		# If the AI stopped, but we are still in range and the target is alive,
+		# ignore the signal. This prevents the infinite loop.
+		if is_instance_valid(current_target):
+			var limit = unit.data.attack_range
+			if current_target is BaseBuilding or (current_target.name == "Hitbox" and current_target.get_parent() is BaseBuilding):
+				limit = unit.data.building_attack_range
+			
+			var radius = _get_target_radius(current_target)
+			var dist = unit.global_position.distance_to(current_target.global_position) - radius
+			
+			# If we are still comfortably in range, assume AI is just cycling/reloading
+			if dist <= limit + 5.0:
+				return
+		# -------------------------------
+		
 		_resume_objective()
 
 # --- HELPER: Geometry Math ---
