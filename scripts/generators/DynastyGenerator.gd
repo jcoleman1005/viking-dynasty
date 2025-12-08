@@ -153,3 +153,8 @@ static func generate_newborn() -> JarlHeirData:
 	
 	baby.status = JarlHeirData.HeirStatus.Available
 	return baby
+
+static func get_random_viking_name() -> String:
+	var gender = "Male" if randf() > 0.2 else "Female" # Mostly male raiders historically
+	var list = MALE_NAMES if gender == "Male" else FEMALE_NAMES
+	return list.pick_random()

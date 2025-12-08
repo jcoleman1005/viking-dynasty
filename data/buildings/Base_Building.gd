@@ -5,6 +5,8 @@ extends StaticBody2D
 
 signal building_destroyed(building: BaseBuilding)
 signal construction_completed(building: BaseBuilding)
+signal loot_stolen(type: String, amount: int)
+signal loot_depleted(building: BaseBuilding)
 
 enum BuildingState { 
 	BLUEPRINT, 
@@ -28,6 +30,10 @@ var collision_shape: CollisionShape2D
 var hitbox_area: Area2D
 var attack_ai: Node = null 
 var border_rect: ColorRect # Kept for debug borders
+
+# --- NEW: Loot State ---
+var available_loot: Dictionary = {}
+var total_loot_value: int = 0
 
 func _ready() -> void:
 	if not data: return
@@ -59,8 +65,58 @@ func _ready() -> void:
 	input_pickable = true
 	_create_hitbox()
 	_setup_defensive_ai()
-	
+	if not Engine.is_editor_hint():
+		_initialize_loot()
+		
 	_update_visual_state()
+
+func _initialize_loot() -> void:
+	if not data is EconomicBuildingData: 
+		# Non-economic buildings have small generic loot
+		available_loot = {"gold": 25} 
+		total_loot_value = 25
+		return
+		
+	var eco = data as EconomicBuildingData
+	var type = eco.resource_type
+	# 3x the passive output is the "Storehouse" amount (Logic from RaidMapGenerator)
+	var amount = eco.base_passive_output * 3
+	
+	available_loot = {type: amount}
+	total_loot_value = amount
+	
+	# Log for debugging
+	Loggie.msg("Building %s initialized with loot: %s" % [name, available_loot]).domain("RAID").debug()
+
+# --- NEW: The Pillage Mechanic ---
+func steal_resources(max_amount: int) -> int:
+	if total_loot_value <= 0:
+		return 0
+		
+	# Find a resource that still has amount left
+	var target_res = ""
+	for key in available_loot:
+		if available_loot[key] > 0:
+			target_res = key
+			break
+			
+	if target_res == "":
+		return 0
+		
+	var available = available_loot[target_res]
+	var actual_steal = min(available, max_amount)
+	
+	available_loot[target_res] -= actual_steal
+	total_loot_value -= actual_steal
+	
+	# Notify System (RaidManager will listen to this)
+	loot_stolen.emit(target_res, actual_steal)
+	
+	if total_loot_value <= 0:
+		loot_depleted.emit(self)
+		modulate = Color(0.5, 0.5, 0.5) # Visually darken to show "Empty"
+		
+	return actual_steal
 
 func _apply_data_and_scale() -> void:
 	var cell_size = Vector2(32, 32)

@@ -18,7 +18,7 @@ var mission_over: bool = false
 
 # --- NEW: Performance Tracking ---
 var battle_start_time: int = 0
-var units_lost_count: int = 0
+var dead_units_log: Array[UnitData] = []
 # ---------------------------------
 
 # --- RETREAT STATE ---
@@ -93,9 +93,19 @@ func initialize(
 	is_initialized = true
 
 # --- CASUALTY TRACKING ---
-func _on_player_unit_died(_unit: Node2D) -> void:
+func _on_player_unit_died(unit: Node2D) -> void:
 	if not mission_over:
-		units_lost_count += 1
+		# Capture the data before the node is deleted
+		if "data" in unit and unit.data is UnitData:
+			dead_units_log.append(unit.data)
+		else:
+			# Fallback if data is missing (shouldn't happen, but safe to add generic)
+			# We insert a null or a placeholder to keep the count correct
+			dead_units_log.append(null)
+		# Flavor Log
+		var ident = "A Warrior"
+		if "unit_identity" in unit: ident = unit.unit_identity
+		Loggie.msg("⚔️ CASUALTY: %s has fallen!" % ident).domain("RAID").warn()
 
 # --- UI SETUP ---
 
@@ -172,14 +182,33 @@ func _end_mission_via_retreat() -> void:
 # --- STANDARD OBJECTIVE LOGIC ---
 
 func _connect_to_building_signals() -> void:
-	if objective_building.has_signal("building_destroyed"):
-		if not objective_building.building_destroyed.is_connected(_on_enemy_hall_destroyed):
-			objective_building.building_destroyed.connect(_on_enemy_hall_destroyed)
-	
+	# 1. Connect Objective (Great Hall)
+	if is_instance_valid(objective_building):
+		if objective_building.has_signal("building_destroyed"):
+			if not objective_building.building_destroyed.is_connected(_on_enemy_hall_destroyed):
+				objective_building.building_destroyed.connect(_on_enemy_hall_destroyed)
+
+	# 2. Connect All Buildings (Farms, Markets, etc.)
 	for building in building_container.get_children():
-		if building is BaseBuilding and building.has_signal("building_destroyed"):
-			if not building.building_destroyed.is_connected(_on_enemy_building_destroyed_for_loot):
-				building.building_destroyed.connect(_on_enemy_building_destroyed_for_loot)
+		if building is BaseBuilding:
+			# A. Listen for Destruction (Burn -> Renown)
+			if building.has_signal("building_destroyed"):
+				if not building.building_destroyed.is_connected(_on_enemy_building_destroyed_for_loot):
+					building.building_destroyed.connect(_on_enemy_building_destroyed_for_loot)
+			
+			# B. Listen for Pillage (Steal -> Gold/Food) <--- NEW CONNECTION
+			if building.has_signal("loot_stolen"):
+				if not building.loot_stolen.is_connected(_on_loot_stolen):
+					building.loot_stolen.connect(_on_loot_stolen)
+
+# --- NEW: Callback for Pillage ---
+func _on_loot_stolen(type: String, amount: int) -> void:
+	if mission_over: return
+	
+	# Add to the temporary raid stash
+	raid_loot.add_loot(type, amount)
+	
+	# Note: raid_loot.add_loot already has a Loggie print, so we don't need another one here.
 
 func _on_enemy_building_destroyed_for_loot(building: BaseBuilding) -> void:
 	if mission_over: return
@@ -248,32 +277,32 @@ func _on_mission_failed(reason: String) -> void:
 	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
 
 # --- VICTORY GRADING LOGIC ---
-
 func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	if mission_over: return
 	mission_over = true
 	
 	var raw_gold = raid_loot.collected_loot.get("gold", 0)
 	
+	# --- REFACTOR: Count casualties from array ---
+	var lost_count = dead_units_log.size()
+	# ---------------------------------------------
+	
 	# 1. Calculate Grade
 	var grade = "Standard"
 	var duration_sec = (Time.get_ticks_msec() - battle_start_time) / 1000.0
 	
-	# Defaults (in case target data missing)
+	# Defaults
 	var par_time = 300
 	var casualty_limit = 2
 	
-	# Fetch Limits from Data
-	# We access the Settlement Data, but we need the RaidTargetData for specific limits.
-	# Since we don't have a direct ref to RaidTargetData here, we use Defaults or pass it in Initialize.
-	# For Phase 5, we hardcode sensible defaults or check DynastyManager if we stored it.
-	
-	if duration_sec < par_time and units_lost_count <= casualty_limit:
+	# Compare using local variable 'lost_count'
+	if duration_sec < par_time and lost_count <= casualty_limit:
 		grade = "Decisive"
-	elif units_lost_count > (casualty_limit * 2):
+	elif lost_count > (casualty_limit * 2):
 		grade = "Pyrrhic"
 		
-	Loggie.msg("Victory! Time: %ds, Casualties: %d. Grade: %s" % [duration_sec, units_lost_count, grade]).domain(LogDomains.RTS).info()
+	# Update Log to use 'lost_count'
+	Loggie.msg("Victory! Time: %ds, Casualties: %d. Grade: %s" % [duration_sec, lost_count, grade]).domain("RTS").info()
 	
 	var result = { 
 		"outcome": "victory", 

@@ -91,34 +91,41 @@ func _handle_smart_command(_screen_pos: Vector2) -> void:
 	query.position = world_pos
 	query.collide_with_areas = true
 	query.collide_with_bodies = true
-	# 1 (Friendly/Env) + 4 (Enemy Unit) + 8 (Enemy Building) = 13
-	query.collision_mask = 13 
+	query.collision_mask = 13 # Layers 1, 4, 8
 	
 	var results: Array = world_space.intersect_point(query)
 	
 	if not results.is_empty():
 		var hit_object = results[0].collider
-		print("DEBUG: Raycast hit ", hit_object.name, " (Type: ", hit_object.get_class(), ")")
 		
-		# --- RESOLVE TARGET ---
-		# If we hit the child "Hitbox", bubble up to the parent Building
+		# Bubble up from Hitbox
 		var final_target = hit_object
 		if hit_object.name == "Hitbox" and hit_object.get_parent() is BaseBuilding:
 			final_target = hit_object.get_parent()
-			print("DEBUG: Bubbled up to parent building: ", final_target.name)
-		# ----------------------
 		
-		# Check Layer 1 (Friendly) AND Type
+		# 1. Friendly Building -> INTERACT
 		if final_target.collision_layer == 1 and final_target is BaseBuilding:
-			print("DEBUG: Friendly Building detected. INTERACT.")
+			Loggie.msg("SelectionBox: Friendly interact.").domain("UI").debug()
 			EventBus.interact_command.emit(final_target)
+			
+		# 2. Enemy Building -> CHECK MODIFIER
+		elif final_target is BaseBuilding:
+			if Input.is_key_pressed(KEY_CTRL):
+				# CTRL Held: BURN (Attack)
+				Loggie.msg("SelectionBox: CTRL held -> BURN command.").domain("UI").info()
+				EventBus.attack_command.emit(final_target)
+			else:
+				# Normal Click: PILLAGE
+				Loggie.msg("SelectionBox: Normal click -> PILLAGE command.").domain("UI").info()
+				EventBus.pillage_command.emit(final_target)
+				
+		# 3. Enemy Unit -> ALWAYS ATTACK
 		else:
-			print("DEBUG: Enemy/Other detected. ATTACK.")
 			EventBus.attack_command.emit(final_target)
+			
 	else:
-		print("DEBUG: Ground clicked. MOVE.")
 		EventBus.move_command.emit(world_pos)
-	
+
 func _try_select_building(screen_pos: Vector2) -> bool:
 	var world_space = get_world_2d().direct_space_state
 	var main_camera = get_viewport().get_camera_2d()

@@ -20,6 +20,9 @@ var move_command_position: Vector2 = Vector2.ZERO
 var objective_target: Node2D = null 
 var current_target: Node2D = null 
 
+# Add variable to track pillage timer
+var _pillage_accumulator: float = 0.0
+
 func _init(p_unit, p_attack_ai: AttackAI) -> void:
 	unit = p_unit
 	attack_ai = p_attack_ai
@@ -51,9 +54,20 @@ func _enter_state(state: UnitAIConstants.State) -> void:
 			_recalculate_path()
 		UnitAIConstants.State.ATTACKING:
 			unit.velocity = Vector2.ZERO
-			if attack_ai and is_instance_valid(current_target):
-				attack_ai.force_target(current_target)
-
+			
+			# Ensure the AI is actually running!
+			if attack_ai:
+				attack_ai.set_process(true)
+				attack_ai.set_physics_process(true)
+				
+				if is_instance_valid(current_target):
+					attack_ai.force_target(current_target)
+		UnitAIConstants.State.INTERACTING:
+			_recalculate_path()
+			if attack_ai: 
+				attack_ai.stop_attacking()
+				attack_ai.set_process(false) # Brain off
+				attack_ai.set_physics_process(false)
 func _exit_state(state: UnitAIConstants.State) -> void:
 	match state:
 		UnitAIConstants.State.MOVING, UnitAIConstants.State.INTERACTING:
@@ -68,6 +82,11 @@ func _exit_state(state: UnitAIConstants.State) -> void:
 			if attack_ai:
 				attack_ai.stop_attacking()
 			current_target = null
+		UnitAIConstants.State.INTERACTING:
+			path.clear()
+			if attack_ai:
+				attack_ai.set_process(true) # Brain on
+				attack_ai.set_physics_process(true)
 
 func _recalculate_path() -> void:
 	var target_node = current_target if is_instance_valid(current_target) else objective_target
@@ -221,6 +240,11 @@ func _move_state(delta: float) -> void:
 		# -----------------
 		
 		if effective_distance <= required_range + 5.0:
+			# --- FIX: Ensure current_target is set before attacking ---
+			if not is_instance_valid(current_target) and is_instance_valid(target_node):
+				current_target = target_node
+			# ----------------------------------------------------------
+			
 			change_state(UnitAIConstants.State.ATTACKING)
 			return
 	
@@ -252,21 +276,53 @@ func _interact_state(delta: float) -> void:
 		change_state(UnitAIConstants.State.IDLE)
 		return
 
-	if not path.is_empty():
-		var next_waypoint: Vector2 = path[0]
-		var direction: Vector2 = (next_waypoint - unit.global_position).normalized()
-		var velocity: Vector2 = direction * unit.data.move_speed
-		
-		unit.velocity = velocity
-		unit.move_and_slide()
-		
-		if unit.global_position.distance_to(next_waypoint) < 8.0:
-			path.pop_front()
+	# 1. Move to Target (Existing Logic)
+	var distance_to_target = UnitAIConstants.get_surface_distance(unit, objective_target)
+	var interact_range = 25.0 # Close range for pillaging
+	
+	if distance_to_target > interact_range:
+		# Use pathfinding if far
+		if not path.is_empty():
+			var next = path[0]
+			var dir = (next - unit.global_position).normalized()
+			unit.velocity = dir * unit.data.move_speed
+			unit.move_and_slide()
+			
+			if unit.global_position.distance_to(next) < 8.0:
+				path.pop_front()
+		else:
+			# Direct approach for last mile
+			var dir = (objective_target.global_position - unit.global_position).normalized()
+			unit.velocity = dir * unit.data.move_speed
+			unit.move_and_slide()
 	else:
-		var dir = (objective_target.global_position - unit.global_position).normalized()
-		unit.velocity = dir * unit.data.move_speed
-		unit.move_and_slide()
+		# 2. Arrived -> Perform Pillage
+		unit.velocity = Vector2.ZERO
+		
+		# Only Pillage if it's an Enemy Building
+		if objective_target is BaseBuilding and objective_target.collision_layer != 1:
+			_process_pillage_tick(delta)
 
+func _process_pillage_tick(delta: float) -> void:
+	_pillage_accumulator += delta
+	
+	if _pillage_accumulator >= 1.0: # Tick once per second
+		_pillage_accumulator = 0.0
+		
+		var building = objective_target as BaseBuilding
+		var amount = unit.data.pillage_speed
+		
+		# --- The Interaction ---
+		var stolen = building.steal_resources(amount)
+		
+		if stolen > 0:
+			# Floating text could go here later
+			pass
+		else:
+			# Building is empty!
+			Loggie.msg("%s: Building depleted. Stopping." % unit.name).domain("AI").info()
+			change_state(UnitAIConstants.State.IDLE)
+			
 func _retreat_state(delta: float) -> void:
 	if not path.is_empty():
 		var next_waypoint: Vector2 = path[0]
@@ -349,6 +405,22 @@ func _on_ai_attack_started(target: Node2D) -> void:
 
 func _on_ai_attack_stopped() -> void:
 	if current_state == UnitAIConstants.State.ATTACKING:
+		# --- FIX: Anti-Flicker Guard ---
+		# If the AI stopped, but we are still in range and the target is alive,
+		# ignore the signal. This prevents the infinite loop.
+		if is_instance_valid(current_target):
+			var limit = unit.data.attack_range
+			if current_target is BaseBuilding or (current_target.name == "Hitbox" and current_target.get_parent() is BaseBuilding):
+				limit = unit.data.building_attack_range
+			
+			var radius = _get_target_radius(current_target)
+			var dist = unit.global_position.distance_to(current_target.global_position) - radius
+			
+			# If we are still comfortably in range, assume AI is just cycling/reloading
+			if dist <= limit + 5.0:
+				return
+		# -------------------------------
+		
 		_resume_objective()
 
 # --- HELPER: Geometry Math ---
@@ -378,3 +450,17 @@ func _get_target_radius(target: Node2D) -> float:
 		if col.shape is RectangleShape2D: return min(col.shape.size.x, col.shape.size.y) / 2.0
 		
 	return 0.0
+	
+func command_pillage(target: Node2D) -> void:
+	if not is_instance_valid(target): return
+	
+	# Pillage uses the same movement logic as interacting
+	objective_target = target
+	current_target = null
+	target_position = target.global_position
+	
+	if attack_ai: attack_ai.stop_attacking()
+	
+	# We reuse INTERACTING state for now. 
+	# In Batch B, we will add specific logic inside _interact_state to drain resources.
+	change_state(UnitAIConstants.State.INTERACTING)

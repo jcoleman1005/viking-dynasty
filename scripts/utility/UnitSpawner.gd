@@ -164,3 +164,61 @@ func spawn_worker_at(location: Vector2) -> void:
 	if not civilian_data: return
 	_spawn_civilians(1, location)
 	Loggie.msg("UnitSpawner: Worker spawned at %s" % location).domain(LogDomains.UNIT).debug()
+	
+# res://scripts/utility/UnitSpawner.gd
+
+func spawn_enemy_garrison(warbands: Array[WarbandData], buildings: Array) -> void:
+	print("DEBUG: Spawner received %d warbands to spawn." % warbands.size())
+	
+	for i in range(warbands.size()):
+		var wb = warbands[i]
+		if not wb or not wb.unit_type: continue
+			
+		var u_data = wb.unit_type
+		var scene = u_data.load_scene()
+		if not scene: continue
+		
+		var unit = scene.instantiate() as BaseUnit
+		unit.data = u_data
+		unit.add_to_group("enemy_units")
+		unit.collision_layer = 4 # Enemy Layer
+		
+		# Pick Guard Post
+		var guard_pos = Vector2.ZERO
+		if not buildings.is_empty():
+			var b_index = i % buildings.size()
+			var b = buildings[b_index]
+			if is_instance_valid(b):
+				guard_pos = b.global_position + Vector2(randf_range(-50, 50), randf_range(-50, 50))
+		
+		unit.global_position = _clamp_to_grid(guard_pos)
+		
+		# --- FIX: Wait for Unit to Initialize ---
+		# We connect to fsm_ready, which BaseUnit emits after creating the AI
+		unit.fsm_ready.connect(_on_enemy_unit_ready.bind(guard_pos))
+		# ----------------------------------------
+		
+		unit_container.add_child(unit)
+
+	Loggie.msg("Spawned %d enemy defenders." % warbands.size()).domain("RAID").info()
+
+# --- NEW: Callback to Configure AI ---
+func _on_enemy_unit_ready(unit: BaseUnit, guard_pos: Vector2) -> void:
+	# Now we know attack_ai exists!
+	
+	if unit.fsm:
+		unit.fsm.change_state(0) # IDLE
+		
+	if unit.attack_ai:
+		unit.attack_ai.set_process(true)
+		unit.attack_ai.set_physics_process(true)
+		
+		# Set Vision (Layer 1 + 2)
+		if unit.attack_ai.has_method("set_target_mask"):
+			unit.attack_ai.set_target_mask(3) 
+			
+		# Set Guard Post
+		if unit.attack_ai is DefenderAI:
+			(unit.attack_ai as DefenderAI).configure_guard_post(guard_pos)
+			
+	# print("DEBUG: Enemy %s fully configured at %s" % [unit.name, guard_pos])

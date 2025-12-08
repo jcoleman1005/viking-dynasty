@@ -18,7 +18,7 @@ extends Node2D
 @onready var building_container: Node2D = $BuildingContainer
 @onready var objective_manager: RaidObjectiveManager = $RaidObjectiveManager
 @onready var unit_spawner: UnitSpawner = $UnitSpawner
-
+@export var fyrd_unit_scene: PackedScene
 # --- Internal ---
 var map_loader: RaidMapLoader
 var objective_building: BaseBuilding = null
@@ -26,7 +26,10 @@ var unit_container: Node2D # Reference to the container we will create/find
 
 func _ready() -> void:
 	print("[DIAGNOSTIC] RaidMission: _ready() called.")
-	
+	Loggie.set_domain_enabled("UI", true)
+	Loggie.set_domain_enabled("RTS", true)
+	Loggie.set_domain_enabled("RAID", true)
+	Loggie.set_domain_enabled("MAP", true)
 	# 1. Setup Unit Container (CRITICAL FIX)
 	_setup_unit_container()
 	
@@ -58,6 +61,7 @@ func _ready() -> void:
 		call_deferred("initialize_mission")
 	else:
 		call_deferred("initialize_mission")
+	Loggie.set_domain_enabled(LogDomains.RAID, true)
 
 func _setup_unit_container() -> void:
 	# Try to find existing container
@@ -129,7 +133,8 @@ func _setup_offensive_mode() -> void:
 			
 	_spawn_player_garrison()
 	_spawn_retreat_zone()
-
+	_spawn_enemy_garrison()
+	
 func _on_building_destroyed_grid_update(building: BaseBuilding) -> void:
 	pass
 
@@ -192,22 +197,46 @@ func _spawn_enemy_wave() -> void:
 			)
 
 func _on_fyrd_arrived() -> void:
-	var spawner = get_node_or_null(enemy_spawn_position)
-	var origin = spawner.global_position if spawner else Vector2(1000,0)
-	var enemy_data_path = "res://data/units/EnemyVikingRaider_Data.tres"
-	if not ResourceLoader.exists(enemy_data_path): return
-	var enemy_data = load(enemy_data_path)
+	print("--- FYRD SPAWN START ---")
 	
-	for i in range(20):
-		var unit = enemy_data.scene_to_spawn.instantiate()
-		unit.data = enemy_data
-		unit.current_health = 100
-		unit.collision_layer = 1 << 2
-		unit.global_position = origin + Vector2(randf_range(-200,200), randf_range(-200,200))
+	# 1. Attempt Fallback if Inspector is empty
+	if fyrd_unit_scene == null:
+		print("DEBUG: fyrd_unit_scene is NULL. Attempting load...")
+		# CHECK THIS PATH: Verify this file exists in your FileSystem!
+		var fallback = "res://scenes/units/EnemyUnit_Template.tscn" 
+		
+		if ResourceLoader.exists(fallback):
+			fyrd_unit_scene = load(fallback)
+			print("DEBUG: Loaded fallback scene: ", fallback)
+		else:
+			printerr("CRITICAL FAILURE: Fallback file not found at: ", fallback)
+	
+	# 2. Final Abort Check
+	if fyrd_unit_scene == null:
+		printerr("ABORTING: No scene available. Please assign 'Fyrd Unit Scene' in Inspector.")
+		print("--- FYRD SPAWN END (FAILED) ---")
+		return
+
+	# 3. Spawn
+	var spawner = get_node_or_null(enemy_spawn_position)
+	var origin = spawner.global_position if spawner else Vector2(1000, 0)
+	print("DEBUG: Spawning at ", origin)
+	
+	for i in range(5):
+		var unit = fyrd_unit_scene.instantiate()
+		unit.global_position = origin + Vector2(randf_range(-100, 100), randf_range(-100, 100))
+		unit.collision_layer = 4 # Enemy Layer (Value 4)
+		unit.add_to_group("enemy_units")
 		add_child(unit)
-		unit.fsm_ready.connect(func(u): 
-			if u.fsm: u.fsm.command_move_to(player_spawn_pos.global_position)
-		)
+		
+		# 4. Command to Attack
+		# We use call_deferred to ensure the unit is fully ready before giving orders
+		if unit.has_method("get_fsm"): # Assuming BaseUnit has this or we access property
+			unit.call_deferred("command_attack_move", player_spawn_pos.global_position if player_spawn_pos else Vector2.ZERO)
+		elif unit.get("fsm"):
+			unit.fsm.command_attack_move(player_spawn_pos.global_position if player_spawn_pos else Vector2.ZERO)
+			
+	print("--- FYRD SPAWN SUCCESS ---")
 
 func _spawn_retreat_zone() -> void:
 	var zone_script_path = "res://scenes/missions/RetreatZone.gd"
@@ -245,3 +274,41 @@ func _spawn_test_units() -> void:
 		u.global_position = player_spawn_pos.global_position + Vector2(i*30, 0)
 		# Ensure test units are added to the container too
 		unit_container.add_child(u)
+
+func _spawn_enemy_garrison() -> void:
+	print("DEBUG: _spawn_enemy_garrison called.")
+	
+	if not enemy_base_data:
+		print("DEBUG: FAILURE - enemy_base_data is NULL!")
+		return
+		
+	# --- FAIL-SAFE: Inject Defenders if Missing ---
+	if enemy_base_data.warbands.is_empty():
+		print("DEBUG: Data is empty (Stale File). Generating emergency garrison...")
+		
+		# Call the generator to fill the array in memory
+		# We assume Tier 1 difficulty (1.0)
+		MapDataGenerator._scale_garrison(enemy_base_data, 1.0)
+		
+		# Check if it worked
+		if enemy_base_data.warbands.is_empty():
+			print("DEBUG: CRITICAL - Emergency generation failed. Check MapDataGenerator script.")
+			return
+		else:
+			print("DEBUG: Emergency generation successful. Created %d warbands." % enemy_base_data.warbands.size())
+	# ----------------------------------------------
+	
+	if not unit_spawner:
+		print("DEBUG: FAILURE - unit_spawner node is NULL!")
+		return
+		
+	# 1. Collect Valid Guard Posts
+	var guard_buildings = []
+	for child in building_container.get_children():
+		if child is BaseBuilding:
+			guard_buildings.append(child)
+	
+	print("DEBUG: Found %d guard buildings." % guard_buildings.size())
+			
+	# 2. Call Spawner
+	unit_spawner.spawn_enemy_garrison(enemy_base_data.warbands, guard_buildings)
