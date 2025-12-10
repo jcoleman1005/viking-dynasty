@@ -194,8 +194,38 @@ func update(delta: float) -> void:
 			_attack_state(delta)
 		UnitAIConstants.State.INTERACTING:
 			_interact_state(delta)
-
+		UnitAIConstants.State.COLLECTING:
+			_collect_state(delta)
+		UnitAIConstants.State.ESCORTING:
+			_escort_state(delta)
+		UnitAIConstants.State.REGROUPING:
+			_regroup_state(delta)
 # --- STATE LOGIC ---
+
+func _collect_state(delta: float) -> void:
+	if is_instance_valid(objective_target):
+		_simple_move_to(objective_target.global_position, delta)
+		if unit.has_method("process_collecting_logic"):
+			unit.process_collecting_logic(delta)
+	else:
+		change_state(UnitAIConstants.State.IDLE)
+
+func _escort_state(delta: float) -> void:
+	if is_instance_valid(objective_target):
+		_simple_move_to(objective_target.global_position, delta)
+		
+		# Arrival check (Retreat Zone)
+		if unit.global_position.distance_to(objective_target.global_position) < 50.0:
+			if unit.has_method("complete_escort"):
+				unit.complete_escort()
+	else:
+		change_state(UnitAIConstants.State.IDLE)
+
+func _regroup_state(delta: float) -> void:
+	if unit.has_method("process_regroup_logic"):
+		unit.process_regroup_logic(delta)
+		if move_command_position != Vector2.ZERO:
+			_simple_move_to(move_command_position, delta)
 
 func _idle_state(_delta: float) -> void:
 	unit.velocity = Vector2.ZERO
@@ -210,7 +240,6 @@ func _formation_move_state(_delta: float) -> void:
 	var velocity: Vector2 = direction * unit.data.move_speed
 	
 	unit.velocity = velocity
-	unit.move_and_slide()
 	
 	if unit.global_position.distance_to(next_waypoint) < 8.0:
 		path.pop_front()
@@ -233,8 +262,7 @@ func _move_state(delta: float) -> void:
 
 	# Apply velocity
 	unit.velocity = direction * final_speed
-	unit.move_and_slide()
-
+	
 	# Standard Waypoint Logic (Preserved from standard RTS logic)
 	if distance_to_waypoint < 10.0: # Threshold to reach point
 		path.remove_at(0)
@@ -456,3 +484,12 @@ func command_pillage(target: Node2D) -> void:
 	# We reuse INTERACTING state for now. 
 	# In Batch B, we will add specific logic inside _interact_state to drain resources.
 	change_state(UnitAIConstants.State.INTERACTING)
+
+func _simple_move_to(target: Vector2, _delta: float) -> void:
+	var dir = (target - unit.global_position).normalized()
+	
+	var speed_mult = unit.get_speed_multiplier() if unit.has_method("get_speed_multiplier") else 1.0
+	var final_speed = unit.data.move_speed * speed_mult
+	
+	unit.velocity = dir * final_speed
+	# Note: BaseUnit._physics_process is responsible for calling move_and_slide()

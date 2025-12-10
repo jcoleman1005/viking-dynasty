@@ -11,14 +11,16 @@ const MAX_DIST_FROM_LEADER = 300.0
 const CATCHUP_DIST = 80.0
 const SPRINT_SPEED_MULT = 2.5
 
+var pending_prisoners: Array[Node2D] = [] 
+var escorted_prisoners: Array[Node2D] = []
+var retreat_zone_cache: Node2D = null
+
 func _ready() -> void:
 	separation_force = 80.0 
 	separation_radius = 25.0
 	separation_enabled = true
 	super._ready()
-	if fsm: 
-		fsm.set_script(null)
-		fsm = null
+
 	if attack_ai:
 		attack_ai.attack_started.connect(func(t): if not is_rubber_banding: brawl_target = t)
 		attack_ai.attack_stopped.connect(func(): brawl_target = null)
@@ -81,3 +83,87 @@ func _get_radius(node: Node2D) -> float:
 		var b = node.get_parent()
 		if b.data: return (min(b.data.grid_size.x, b.data.grid_size.y) * 32.0) / 2.0
 	return 15.0
+
+func assign_escort_task(prisoner: Node2D) -> void:
+	if not prisoner: return
+	
+	if not retreat_zone_cache:
+		retreat_zone_cache = get_tree().get_first_node_in_group("retreat_zone")
+	
+	# Add to queue
+	if not prisoner in pending_prisoners and not prisoner in escorted_prisoners:
+		pending_prisoners.append(prisoner)
+	
+	# Trigger FSM update if idle or already collecting
+	if fsm:
+		# If we were doing something else, start collecting
+		if fsm.current_state != UnitAIConstants.State.COLLECTING and fsm.current_state != UnitAIConstants.State.ESCORTING:
+			_set_next_collection_target()
+
+func _set_next_collection_target() -> void:
+	if pending_prisoners.size() > 0:
+		var next = pending_prisoners[0]
+		fsm.objective_target = next
+		fsm.change_state(UnitAIConstants.State.COLLECTING)
+		EventBus.floating_text_requested.emit("Got it!", global_position, Color.WHITE)
+	else:
+		# No more to collect? Go to boat.
+		_switch_to_escorting()
+
+# Called by UnitFSM
+func process_collecting_logic(_delta: float) -> void:
+	# Validation check
+	if not is_instance_valid(fsm.objective_target):
+		pending_prisoners.erase(fsm.objective_target)
+		_set_next_collection_target()
+		return
+
+	var dist = global_position.distance_to(fsm.objective_target.global_position)
+	if dist < 50.0:
+		_collect_prisoner(fsm.objective_target)
+
+func _collect_prisoner(prisoner: Node2D) -> void:
+	# Move from Pending -> Escorted
+	pending_prisoners.erase(prisoner)
+	
+	if not prisoner in escorted_prisoners:
+		escorted_prisoners.append(prisoner)
+		if prisoner.has_method("attach_to_escort"):
+			prisoner.attach_to_escort(self)
+	
+	# [HOTFIX #1] Do we have more to pick up?
+	if pending_prisoners.size() > 0:
+		_set_next_collection_target() # Keep collecting
+	else:
+		_switch_to_escorting() # Done, go to boat
+
+func _switch_to_escorting() -> void:
+	if escorted_prisoners.is_empty():
+		fsm.change_state(UnitAIConstants.State.REGROUPING)
+		return
+		
+	fsm.objective_target = retreat_zone_cache
+	fsm.change_state(UnitAIConstants.State.ESCORTING)
+
+func process_escort_logic(_delta: float) -> void:
+	# Passive logic - handled by FSM movement
+	pass
+	
+func complete_escort() -> void:
+	for p in escorted_prisoners:
+		if is_instance_valid(p):
+			p.queue_free() # In Phase 3 this becomes "Bank Loot"
+	
+	escorted_prisoners.clear()
+	EventBus.floating_text_requested.emit("Prisoners Secured", global_position, Color.GREEN)
+	fsm.change_state(UnitAIConstants.State.REGROUPING)
+
+func process_regroup_logic(_delta: float) -> void:
+	# [HOTFIX #3] Handle Dead Leader
+	if is_instance_valid(leader):
+		fsm.move_command_position = leader.global_position
+		if global_position.distance_to(leader.global_position) < 100.0:
+			fsm.change_state(UnitAIConstants.State.MOVING)
+	else:
+		# Fallback if leader died
+		fsm.change_state(UnitAIConstants.State.IDLE)

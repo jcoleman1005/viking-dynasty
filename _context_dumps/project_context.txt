@@ -1,5 +1,5 @@
 PROJECT CONTEXT SKELETON
-Generated: 2025-12-09T11:40:18
+Generated: 2025-12-10T13:03:43
 ========================================
 
 ### FILE: res://autoload/DynastyManager.gd ###
@@ -487,8 +487,7 @@ func process_warband_hunger() -> Array[String]:
 		var decay = 25
 func _on_player_unit_died(unit: Node2D) -> void:
 	pass # (Body Omitted)
-	var base_unit = unit as BaseUnit
-	var warband = base_unit.warband_ref
+	var warband = unit.get("warband_ref")
 func delete_save_file() -> void:
 	pass # (Body Omitted)
 func reset_manager_state() -> void:
@@ -954,6 +953,9 @@ extends Resource
 @export var attack_speed: float = 1.2
 @export var attack_range: float = 15.0 
 @export var building_attack_range: float = 45.0
+@export_group("Inventory & Logistics")
+@export var max_loot_capacity: int = 100 
+@export var encumbrance_speed_penalty: float = 0.5 # 50% slow at max load
 @export_group("Visuals")
 @export var visual_texture: Texture2D
 @export var target_pixel_size: Vector2 = Vector2(32, 32)
@@ -1851,15 +1853,11 @@ func _formation_move_state(_delta: float) -> void:
 	var velocity: Vector2 = direction * unit.data.move_speed
 func _move_state(delta: float) -> void:
 	pass # (Body Omitted)
-	var target_node = current_target if is_instance_valid(current_target) else objective_target
-		var required_range = unit.data.attack_range
-		var target_type = "Unit"
-		var dist_to_center = unit.global_position.distance_to(target_node.global_position)
-		var radius = _get_target_radius(target_node)
-		var effective_distance = max(0, dist_to_center - radius)
-		var next_waypoint: Vector2 = path[0]
-		var direction: Vector2 = (next_waypoint - unit.global_position).normalized()
-		var velocity: Vector2 = direction * unit.data.move_speed
+	var next_waypoint: Vector2 = path[0]
+	var direction: Vector2 = (next_waypoint - unit.global_position).normalized()
+	var distance_to_waypoint = unit.global_position.distance_to(next_waypoint)
+	var speed_mult = unit.get_speed_multiplier()
+	var final_speed = unit.data.move_speed * speed_mult
 func _interact_state(delta: float) -> void:
 	pass # (Body Omitted)
 	var distance_to_target = UnitAIConstants.get_surface_distance(unit, objective_target)
@@ -1870,8 +1868,8 @@ func _interact_state(delta: float) -> void:
 func _process_pillage_tick(delta: float) -> void:
 	pass # (Body Omitted)
 		var building = objective_target as BaseBuilding
-		var amount = unit.data.pillage_speed
-		var stolen = building.steal_resources(amount)
+		var amount_to_take = unit.data.pillage_speed
+		var stolen_amount = building.steal_resources(amount_to_take)
 func _retreat_state(delta: float) -> void:
 	pass # (Body Omitted)
 		var next_waypoint: Vector2 = path[0]
@@ -2583,6 +2581,7 @@ extends BaseUnit
 var squad_soldiers: Array[SquadSoldier] = []
 var formation: SquadFormation
 var last_facing_direction: Vector2 = Vector2.DOWN
+var attached_thralls: Array[ThrallUnit] = []
 var debug_formation_points: Array[Vector2] = []
 func _ready() -> void:
 	pass # (Body Omitted)
@@ -2594,6 +2593,10 @@ func _recruit_fresh_squad() -> void:
 	var base_scene = data.load_scene()
 		var soldier_instance = base_scene.instantiate()
 		var soldier_script = load("res://scripts/units/SquadSoldier.gd")
+func attach_thrall(thrall: ThrallUnit) -> void:
+	pass # (Body Omitted)
+		var angle = randf_range(PI/4, 3*PI/4) # Behind (90 to 270 degrees roughly)
+		var dist = randf_range(40.0, 80.0)
 func _physics_process(delta: float) -> void:
 	pass # (Body Omitted)
 func _update_formation_targets(snap_to_position: bool = false) -> void:
@@ -2652,6 +2655,23 @@ func _physics_process(delta: float) -> void:
 func _get_radius(node: Node2D) -> float:
 	pass # (Body Omitted)
 		var b = node.get_parent()
+
+
+### FILE: res://scripts/units/ThrallUnit.gd ###
+class_name ThrallUnit
+extends BaseUnit
+var assigned_leader: Node2D = null
+var follow_offset: Vector2 = Vector2.ZERO
+func _ready() -> void:
+	pass # (Body Omitted)
+func _physics_process(delta: float) -> void:
+	pass # (Body Omitted)
+func _process_baggage_movement(delta: float) -> void:
+	pass # (Body Omitted)
+	var target_pos = assigned_leader.global_position + follow_offset
+	var dist = global_position.distance_to(target_pos)
+		var dir = (target_pos - global_position).normalized()
+		var move_speed = data.move_speed
 
 
 ### FILE: res://scripts/utility/GridManager.gd ###
@@ -2984,6 +3004,47 @@ func test_ui_locking_during_crisis():
 	var btn_end = ui.find_child("Btn_EndWinter", true, false)
 
 
+### FILE: res://test/test_year_cycle.gd ###
+extends Node
+func _ready():
+	pass # (Body Omitted)
+func test_starvation():
+	pass # (Body Omitted)
+	var settlement = SettlementData.new()
+	var jarl = JarlData.new()
+	var payout = EconomyManager.calculate_payout()
+func test_overpopulation():
+	pass # (Body Omitted)
+	var settlement = SettlementData.new()
+	var jarl = JarlData.new()
+	var payout = EconomyManager.calculate_payout()
+func test_draft_and_raid_solution():
+	pass # (Body Omitted)
+	var settlement = SettlementData.new()
+	var jarl = JarlData.new()
+	var bondi_data
+	var raid_loot = {
+	var payout = EconomyManager.calculate_payout()
+
+
+### FILE: res://test/unit/test_inventory_mechanics.gd ###
+extends GutTestBase
+var unit: BaseUnit
+var unit_data: UnitData
+func before_each():
+	pass # (Body Omitted)
+func after_each():
+	pass # (Body Omitted)
+func test_add_loot_under_cap():
+	pass # (Body Omitted)
+	var added = unit.add_loot("gold", 50)
+func test_add_loot_over_cap():
+	pass # (Body Omitted)
+	var added = unit.add_loot("gold", 50) # Try adding 50 more (only 20 space left)
+func test_encumbrance_math():
+	pass # (Body Omitted)
+
+
 ### FILE: res://test/unit/test_squad_math.gd ###
 extends GutTestBase
 var formation: SquadFormation
@@ -3001,6 +3062,24 @@ func test_box_formation_rotation():
 	var facing = Vector2.RIGHT 
 	var points = formation._calculate_formation_positions(center, facing)
 	var p2 = points[1]
+
+
+### FILE: res://test/unit/test_thrall_capture.gd ###
+extends GutTestBase
+var leader: SquadLeader
+var soldier: SquadSoldier
+var civilian: CivilianUnit
+var dummy_data: UnitData # [NEW] Shared data for mocks
+func before_each():
+	pass # (Body Omitted)
+	var t = ThrallUnit.new()
+	var packed = PackedScene.new()
+	var result = packed.pack(t)
+func test_surrender_to_leader():
+	pass # (Body Omitted)
+		var new_thrall = leader.attached_thralls[0]
+func test_surrender_to_soldier():
+	pass # (Body Omitted)
 
 
 ### FILE: res://test/unit/test_wergild.gd ###
@@ -3054,29 +3133,6 @@ func test_demand_calculation_harsh():
 	pass # (Body Omitted)
 	var settlement = SettlementData.new()
 	var report = WinterManager.calculate_winter_demand(settlement)
-
-
-### FILE: res://test_year_cycle.gd ###
-extends Node
-func _ready():
-	pass # (Body Omitted)
-func test_starvation():
-	pass # (Body Omitted)
-	var settlement = SettlementData.new()
-	var jarl = JarlData.new()
-	var payout = EconomyManager.calculate_payout()
-func test_overpopulation():
-	pass # (Body Omitted)
-	var settlement = SettlementData.new()
-	var jarl = JarlData.new()
-	var payout = EconomyManager.calculate_payout()
-func test_draft_and_raid_solution():
-	pass # (Body Omitted)
-	var settlement = SettlementData.new()
-	var jarl = JarlData.new()
-	var bondi_data
-	var raid_loot = {
-	var payout = EconomyManager.calculate_payout()
 
 
 ### FILE: res://tools/AIContentImporter.gd ###

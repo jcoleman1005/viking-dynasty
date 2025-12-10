@@ -187,3 +187,42 @@ func _order_squad_regroup() -> void:
 		if is_instance_valid(soldier) and soldier.attack_ai:
 			# Clear the forced target so they return to formation
 			soldier.attack_ai.stop_attacking()
+
+func request_escort_for(civilian: Node2D) -> void:
+	var best_candidate: SquadSoldier = null
+	var min_dist = INF
+	
+	var max_batch_dist = 300.0
+	var max_prisoners = 3
+	
+	# Priority 1: Batching
+	for soldier in squad_soldiers:
+		if not is_instance_valid(soldier): continue
+		
+		if soldier.fsm.current_state in [UnitAIConstants.State.COLLECTING, UnitAIConstants.State.ESCORTING]:
+			# Check TOTAL workload (current + pending)
+			var total_load = soldier.escorted_prisoners.size() + soldier.pending_prisoners.size()
+			
+			if total_load < max_prisoners:
+				var dist = soldier.global_position.distance_to(civilian.global_position)
+				if dist < max_batch_dist:
+					best_candidate = soldier
+					break 
+	
+	# Priority 2: New Volunteer
+	if not best_candidate:
+		var closest_combatant = null
+		var closest_d = INF
+		
+		for soldier in squad_soldiers:
+			if soldier.fsm.current_state in [UnitAIConstants.State.IDLE, UnitAIConstants.State.ATTACKING, UnitAIConstants.State.MOVING]:
+				var dist = soldier.global_position.distance_to(civilian.global_position)
+				if dist < closest_d:
+					closest_d = dist
+					closest_combatant = soldier
+		
+		best_candidate = closest_combatant
+
+	if best_candidate:
+		best_candidate.assign_escort_task(civilian)
+		

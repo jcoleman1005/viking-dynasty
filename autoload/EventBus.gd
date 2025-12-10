@@ -59,3 +59,5 @@ signal camera_input_lock_requested(is_locked: bool)
 
 # --- Game Loop Signals ---
 signal end_year_requested()
+
+signal floating_text_requested(text: String, world_position: Vector2, color: Color)
