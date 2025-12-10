@@ -6,7 +6,7 @@ extends BaseUnit
 var squad_soldiers: Array[SquadSoldier] = []
 var formation: SquadFormation
 var last_facing_direction: Vector2 = Vector2.DOWN
-
+var attached_thralls: Array[ThrallUnit] = []
 # Debug
 var debug_formation_points: Array[Vector2] = []
 
@@ -57,6 +57,19 @@ func _recruit_fresh_squad() -> void:
 
 	_refresh_formation_registry()
 	_update_formation_targets(true)
+
+func attach_thrall(thrall: ThrallUnit) -> void:
+	if not thrall in attached_thralls:
+		attached_thralls.append(thrall)
+		thrall.assigned_leader = self
+		# Assign a random offset "behind" the leader (assuming Down is default, we adjust dynamically)
+		# For simplicity, we assign a random circle offset around the "rear" area
+		var angle = randf_range(PI/4, 3*PI/4) # Behind (90 to 270 degrees roughly)
+		var dist = randf_range(40.0, 80.0)
+		thrall.follow_offset = Vector2(cos(angle), sin(angle)) * dist
+		
+		# Log it or Juice it
+		EventBus.floating_text_requested.emit("Thrall Captured!", thrall.global_position, Color.CYAN)
 
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)

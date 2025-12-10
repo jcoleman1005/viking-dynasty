@@ -218,58 +218,36 @@ func _formation_move_state(_delta: float) -> void:
 			change_state(UnitAIConstants.State.IDLE)
 
 func _move_state(delta: float) -> void:
-	var target_node = current_target if is_instance_valid(current_target) else objective_target
-
-	if is_instance_valid(target_node):
-		var required_range = unit.data.attack_range
-		var target_type = "Unit"
-		
-		if target_node is BaseBuilding or (target_node.name == "Hitbox" and target_node.get_parent() is BaseBuilding):
-			required_range = unit.data.building_attack_range
-			target_type = "Building"
-
-		var dist_to_center = unit.global_position.distance_to(target_node.global_position)
-		var radius = _get_target_radius(target_node)
-		var effective_distance = max(0, dist_to_center - radius)
-		
-		# --- DEBUG LOG ---
-		if Engine.get_frames_drawn() % 60 == 0: # Print once per second
-			print("DEBUG FSM: Moving to %s (%s)" % [target_node.name, target_type])
-			print(" > Dist Center: %.1f | Radius: %.1f | Eff Dist: %.1f" % [dist_to_center, radius, effective_distance])
-			print(" > Required: %.1f | Stopping? %s" % [required_range, effective_distance <= required_range + 5.0])
-		# -----------------
-		
-		if effective_distance <= required_range + 5.0:
-			# --- FIX: Ensure current_target is set before attacking ---
-			if not is_instance_valid(current_target) and is_instance_valid(target_node):
-				current_target = target_node
-			# ----------------------------------------------------------
-			
-			change_state(UnitAIConstants.State.ATTACKING)
-			return
-	
-	if not path.is_empty():
-		var next_waypoint: Vector2 = path[0]
-		var direction: Vector2 = (next_waypoint - unit.global_position).normalized()
-		var velocity: Vector2 = direction * unit.data.move_speed
-		
-		unit.velocity = velocity
-		unit.move_and_slide()
-		
-		if unit.global_position.distance_to(next_waypoint) < 8.0:
-			path.pop_front()
-		
-		# Stuck Logic
-		if unit.velocity.length_squared() < 1.0:
-			stuck_timer += delta
-			if stuck_timer > 1.5: 
-				change_state(UnitAIConstants.State.IDLE) 
-				stuck_timer = 0.0 
-		else:
-			stuck_timer = 0.0 
+	if path.is_empty():
+		change_state(UnitAIConstants.State.IDLE)
 		return
-	
-	change_state(UnitAIConstants.State.IDLE)
+
+	var next_waypoint: Vector2 = path[0]
+	var direction: Vector2 = (next_waypoint - unit.global_position).normalized()
+	var distance_to_waypoint = unit.global_position.distance_to(next_waypoint)
+
+	# [NEW] Apply Encumbrance Logic Here
+	# We fetch the multiplier (e.g., 0.5) from the Unit and apply it to the base stat
+	var speed_mult = unit.get_speed_multiplier()
+	var final_speed = unit.data.move_speed * speed_mult
+
+	# Apply velocity
+	unit.velocity = direction * final_speed
+	unit.move_and_slide()
+
+	# Standard Waypoint Logic (Preserved from standard RTS logic)
+	if distance_to_waypoint < 10.0: # Threshold to reach point
+		path.remove_at(0)
+		if path.is_empty():
+			# If we were moving to a specific target (like a building), switch to Interact/Attack
+			if is_instance_valid(objective_target):
+				 # Simple check to decide next state based on target type
+				if objective_target is BaseBuilding:
+					change_state(UnitAIConstants.State.INTERACTING) # Pillage
+				else:
+					change_state(UnitAIConstants.State.ATTACKING)
+			else:
+				change_state(UnitAIConstants.State.IDLE)
 
 func _interact_state(delta: float) -> void:
 	if not is_instance_valid(objective_target):
@@ -305,24 +283,38 @@ func _interact_state(delta: float) -> void:
 
 func _process_pillage_tick(delta: float) -> void:
 	_pillage_accumulator += delta
-	
 	if _pillage_accumulator >= 1.0: # Tick once per second
 		_pillage_accumulator = 0.0
 		
-		var building = objective_target as BaseBuilding
-		var amount = unit.data.pillage_speed
-		
-		# --- The Interaction ---
-		var stolen = building.steal_resources(amount)
-		
-		if stolen > 0:
-			# Floating text could go here later
-			pass
-		else:
-			# Building is empty!
-			Loggie.msg("%s: Building depleted. Stopping." % unit.name).domain("AI").info()
+		if not is_instance_valid(objective_target):
 			change_state(UnitAIConstants.State.IDLE)
+			return
+
+		var building = objective_target as BaseBuilding
+		
+		# 1. Check Capacity BEFORE stealing
+		if unit.current_loot_weight >= unit.data.max_loot_capacity:
+			# Visual Feedback for "Full"
+			EventBus.floating_text_requested.emit("FULL!", unit.global_position, Color.YELLOW)
+			# Optional: Auto-stop or keep burning? 
+			# For now, we stop stealing but stay in state (player must move them)
+			return
+
+		# 2. Steal
+		var amount_to_take = unit.data.pillage_speed
+		var stolen_amount = building.steal_resources(amount_to_take)
+		
+		if stolen_amount > 0:
+			# 3. Pocket the loot
+			unit.add_loot("gold", stolen_amount)
 			
+			# Juice
+			EventBus.floating_text_requested.emit("+%d" % stolen_amount, unit.global_position, Color.GOLD)
+		else:
+			# Building empty
+			EventBus.floating_text_requested.emit("Empty", unit.global_position, Color.GRAY)
+			change_state(UnitAIConstants.State.IDLE)
+
 func _retreat_state(delta: float) -> void:
 	if not path.is_empty():
 		var next_waypoint: Vector2 = path[0]

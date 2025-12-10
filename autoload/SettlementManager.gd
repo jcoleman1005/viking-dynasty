@@ -260,19 +260,25 @@ func process_warband_hunger() -> Array[String]:
 
 func _on_player_unit_died(unit: Node2D) -> void:
 	if not current_settlement: return
-	var base_unit = unit as BaseUnit
-	if not base_unit or not base_unit.warband_ref: return 
+	
+	# Safe Check: Does this node have a 'warband_ref' property?
+	var warband = unit.get("warband_ref")
+	if not warband: return 
 
-	var warband = base_unit.warband_ref
 	if warband in current_settlement.warbands:
 		warband.current_manpower -= 1
+		
 		if warband.current_manpower <= 0:
+			# Handle Heir Death
 			if warband.assigned_heir_name != "":
 				DynastyManager.kill_heir_by_name(warband.assigned_heir_name, "Slain leading the %s" % warband.custom_name)
+			
 			current_settlement.warbands.erase(warband)
+			
 			Loggie.msg("☠️ Warband Destroyed: %s" % warband.custom_name).domain("SETTLEMENT").warn()
 		else:
 			Loggie.msg("⚔️ Casualty in %s. Remaining: %d" % [warband.custom_name, warband.current_manpower]).domain("SETTLEMENT").info()
+		
 		save_settlement()
 
 # --- PERSISTENCE ---

@@ -6,6 +6,9 @@
 
 [node name="Civilian" instance=ExtResource("1_7jnl1")]
 script = ExtResource("2_7jnl1")
+mob_separation_force = 100.0
+mob_separation_radius = 45.0
+thrall_unit_scene = null
 data = ExtResource("3_obgkw")
 
 [node name="Sprite2D" parent="." index="0"]
