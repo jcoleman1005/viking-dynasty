@@ -40,11 +40,62 @@ func _ready() -> void:
 		btn_trigger_raid.pressed.connect(_cheat_trigger_raid)
 		btn_kill_jarl.pressed.connect(_cheat_kill_jarl)
 		btn_back.pressed.connect(_on_back_pressed)
+	var container = find_child("VBoxContainer", true, false) # Adjust if your layout is named differently
+	if container:
+		var debug_raid_btn = Button.new()
+		debug_raid_btn.text = "DEBUG: Instant Raid"
+		debug_raid_btn.name = "Btn_DebugRaid"
+		debug_raid_btn.pressed.connect(_on_debug_raid_pressed)
+		
+		# Add a separator for cleanliness
+		container.add_child(HSeparator.new()) 
+		container.add_child(debug_raid_btn)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_pause"):
 		get_viewport().set_input_as_handled()
 		_on_resume_pressed()
+
+func _on_debug_raid_pressed() -> void:
+	print("[DEBUG] Launching Instant Raid Sequence...")
+	
+	# 1. Setup Mock Target Data (Prevent "Null Target" crash)
+	var debug_target = RaidTargetData.new()
+	debug_target.display_name = "Debug Monastery"
+	debug_target.raid_cost_authority = 0
+	
+	# Load a valid enemy base to prevent "Ghost Wall" bugs
+	# Ensure this path matches your project structure
+	var base_path = "res://data/settlements/monastery_base.tres"
+	if ResourceLoader.exists(base_path):
+		debug_target.settlement_data = load(base_path)
+	
+	DynastyManager.set_current_raid_target(debug_target)
+	
+	# 2. Setup Mock Army
+	# If we have a settlement, send all current warbands.
+	# If not (e.g. testing from title screen), create a dummy squad.
+	var army: Array[WarbandData] = []
+	
+	if SettlementManager.has_current_settlement():
+		army = SettlementManager.current_settlement.warbands.duplicate()
+	
+	if army.is_empty():
+		# Fallback: Spawn 1 generic raider squad
+		var unit_data = load("res://data/units/Unit_PlayerRaider.tres") # Check path!
+		if unit_data:
+			var wb = WarbandData.new(unit_data)
+			wb.custom_name = "Debug Raiders"
+			army.append(wb)
+	
+	DynastyManager.outbound_raid_force = army
+	
+	# 3. Unpause and Switch Scene
+	get_tree().paused = false
+	EventBus.scene_change_requested.emit(GameScenes.RAID_MISSION)
+	
+	# Close the menu
+	queue_free()
 
 # --- Navigation ---
 func _on_resume_pressed() -> void:

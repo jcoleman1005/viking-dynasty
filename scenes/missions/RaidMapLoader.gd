@@ -1,88 +1,60 @@
-# res://scenes/missions/RaidMapLoader.gd
 class_name RaidMapLoader
 extends Node
 
-# References needed to build the map
 var building_container: Node2D
-var grid_manager: Node
 
-func setup(p_container: Node2D, p_grid_manager: Node) -> void:
+# [CHANGED] Setup now takes the enemy data directly
+func setup(p_container: Node2D, enemy_data: SettlementData) -> void:
 	building_container = p_container
-	grid_manager = p_grid_manager
+	
+	# 1. Take Authority: Tell Manager we are now viewing the Enemy Base
+	SettlementManager.active_map_data = enemy_data
+	
+	# 2. Register container so place_building works
+	SettlementManager.register_active_scene_nodes(p_container)
+	
+	# 3. Force a Refresh: This draws the enemy walls onto the shared AStarGrid
+	SettlementManager._refresh_grid_state()
 
 func load_base(data: SettlementData, is_player_owner: bool) -> BaseBuilding:
-	"""
-	Loads a settlement layout into the scene.
-	Returns the 'Objective Building' (Great Hall) if found.
-	"""
-	if not data: return null
-	
 	var objective_ref: BaseBuilding = null
 	
-	# 1. Load Placed Buildings
+	# Spawn Placed
 	for entry in data.placed_buildings:
-		var building = _spawn_single_building(entry, is_player_owner)
-		if building:
-			if building.data.display_name.to_lower().contains("hall"):
-				objective_ref = building
-
-	# 2. Load Blueprints (Only for Player Defense)
-	if is_player_owner:
-		for entry in data.pending_construction_buildings:
-			var building = _spawn_single_building(entry, true)
-			if building:
-				building.set_state(BaseBuilding.BuildingState.BLUEPRINT)
-	
+		var building = _spawn_single_building_visual(entry)
+		if building and building.data.is_territory_hub and not is_player_owner:
+			objective_ref = building # Assume Main Hall is hub
+			
 	return objective_ref
 
-func _spawn_single_building(entry: Dictionary, is_player: bool) -> BaseBuilding:
+func _spawn_single_building_visual(entry: Dictionary) -> BaseBuilding:
 	var res_path = entry["resource_path"]
-	var grid_pos = Vector2i(entry["grid_position"])
-	
+	var grid_pos = Vector2i(entry["grid_position"].x, entry["grid_position"].y)
 	var b_data = load(res_path) as BuildingData
-	if not b_data or not b_data.scene_to_spawn: return null
 	
-	# Instantiate
+	if not b_data: return null
+	
 	var instance = b_data.scene_to_spawn.instantiate() as BaseBuilding
+	
+	# [FIX] Assign Data BEFORE adding to tree
 	instance.data = b_data
 	
-	# Positioning
-	var cell_size = Vector2(32, 32)
-	if grid_manager: cell_size = Vector2(grid_manager.cell_size, grid_manager.cell_size)
-	
-	var world_pos = Vector2(grid_pos) * cell_size
+	var cell_size = SettlementManager.get_active_grid_cell_size()
 	var center_offset = (Vector2(b_data.grid_size) * cell_size) / 2.0
-	instance.global_position = world_pos + center_offset
+	instance.global_position = (Vector2(grid_pos) * cell_size) + center_offset
 	
-	# Naming & Layers
-	if is_player:
-		instance.name = b_data.display_name + "_Player"
-		# Layer 1 (Environment) for Player buildings
-		instance.set_collision_layer(1) 
-	else:
-		instance.name = b_data.display_name + "_Enemy"
-		# Layer 4 (Enemy Buildings) for AI targeting
-		instance.add_to_group("enemy_buildings")
-		instance.set_collision_layer(1 << 3) 
-
-	instance.set_collision_mask(0) # Static
+	building_container.add_child(instance) # Triggers _ready
 	
-	# Add to Scene
-	building_container.add_child(instance)
+	# [FIX] Force Enemy Collision Layer
+	# Layer 1 = Environment, Layer 2 = Player, Layer 4 = Enemy Unit, Layer 8 = Enemy Building
+	# We set it to 8 so Player AI (Attack) targets it.
+	# We also keep Layer 1 on so it still blocks movement (Pathfinding solids handle logic, this handles physics).
+	instance.collision_layer = 1 | 8 
+	instance.collision_mask = 0 # Buildings usually don't need to scan for things
 	
-	# Pathfinding Update
-	_apply_to_grid(instance, grid_pos)
-	
+	# [FIX] Ensure the Hitbox (Area2D) also matches if it exists
+	if instance.has_node("Hitbox"):
+		var hitbox = instance.get_node("Hitbox")
+		hitbox.collision_layer = 8
+		
 	return instance
-
-func _apply_to_grid(building: BaseBuilding, grid_pos: Vector2i) -> void:
-	if not building.data.blocks_pathfinding: return
-	
-	for x in range(building.data.grid_size.x):
-		for y in range(building.data.grid_size.y):
-			var cell = grid_pos + Vector2i(x, y)
-			# Call the manager to update A*
-			SettlementManager.set_astar_point_solid(cell, true)
-	
-	if grid_manager and "astar_grid" in grid_manager:
-		grid_manager.astar_grid.update()

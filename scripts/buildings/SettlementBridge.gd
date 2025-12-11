@@ -277,57 +277,84 @@ func _clear_all_buildings() -> void:
 
 func _initialize_settlement() -> void:
 	home_base_data = _create_default_settlement()
-	await _clear_all_buildings()
 	
-	# 1. Load Data
+	# 1. Register Container FIRST so Manager knows about it
+	SettlementManager.register_active_scene_nodes(building_container)
+	
+	# 2. Load Data (Authority)
+	# This clears the container, builds the grid, and sets active_map_data
 	SettlementManager.load_settlement(home_base_data)
 	
-	if is_instance_valid(grid_manager) and "astar_grid" in grid_manager:
-		SettlementManager.register_active_scene_nodes(grid_manager.astar_grid, building_container, grid_manager)
-	
-	# 2. Spawn Buildings
+	# 3. Spawn Visuals (Now safe)
 	_spawn_placed_buildings()
-
+	
+	# 4. Trigger Unit Spawn
+	# Add a small delay to ensure physics world is ready
+	await get_tree().process_frame 
+	_sync_villagers()
+	_spawn_player_garrison()
+	
 func _spawn_placed_buildings() -> void:
 	if not SettlementManager.current_settlement: return
 	
 	# Clear existing
 	for child in building_container.get_children(): child.queue_free()
 	
+	# Reset Hall Reference
+	great_hall_instance = null 
+	
 	# Spawn Placed
 	for building_entry in SettlementManager.current_settlement.placed_buildings:
-		_spawn_single_building(building_entry, false) 
+		var b = _spawn_single_building(building_entry, false) 
+		
+		# [FIX] Capture the Great Hall reference immediately when we find it
+		if b and b.data.is_territory_hub: # Assuming Great Hall is the main hub
+			great_hall_instance = b
+			print("SettlementBridge: Great Hall registered at ", b.global_position)
 		
 	# Spawn Construction Sites
 	for building_entry in SettlementManager.current_settlement.pending_construction_buildings:
-		var b = _spawn_single_building(building_entry, false)
+		var b = _spawn_single_building(building_entry, true)
 		if b:
 			var progress = building_entry.get("progress", 0)
 			if progress > 0:
 				b.construction_progress = progress
 				b.set_state(BaseBuilding.BuildingState.UNDER_CONSTRUCTION)
-				if b.has_method("add_construction_progress"): b.add_construction_progress(0) 
+				if b.has_method("update_visual_state"): b.update_visual_state() 
 			else:
 				b.set_state(BaseBuilding.BuildingState.BLUEPRINT)
-				
-	if is_instance_valid(SettlementManager.active_astar_grid):
-		SettlementManager.active_astar_grid.update()
-		
+	
 	if unit_spawner: unit_spawner.clear_units()
 	
-	# Trigger Unit Spawn
-	_sync_villagers()
-	_spawn_player_garrison()
-	
 func _spawn_single_building(entry: Dictionary, is_new: bool) -> BaseBuilding:
-	var building_data: BuildingData = load(entry["resource_path"])
-	if building_data:
-		var new_building = SettlementManager.place_building(building_data, entry["grid_position"], is_new)
-		if new_building and new_building.data.display_name == "Great Hall":
-			_setup_great_hall(new_building)
-		return new_building
-	return null
+	var res_path = entry["resource_path"]
+	var grid_pos = Vector2i(entry["grid_position"].x, entry["grid_position"].y)
+	var building_data = load(res_path) as BuildingData
+	
+	if not building_data: return null
 
+	# Instantiate
+	var new_building = building_data.scene_to_spawn.instantiate()
+	
+	# [FIX] Assign Data BEFORE adding to tree so _ready() finds it!
+	new_building.data = building_data 
+	
+	# Position
+	var cell = SettlementManager.get_active_grid_cell_size()
+	var center_offset = (Vector2(building_data.grid_size) * cell) / 2.0
+	new_building.global_position = (Vector2(grid_pos) * cell) + center_offset
+	
+	# Add to Scene (Triggers _ready)
+	building_container.add_child(new_building)
+	
+	# Restore State
+	if is_new:
+		new_building.set_state(BaseBuilding.BuildingState.UNDER_CONSTRUCTION)
+	else:
+		new_building.set_state(BaseBuilding.BuildingState.ACTIVE)
+		
+	return new_building
+	
 func _create_default_settlement() -> SettlementData:
 	var settlement = SettlementData.new()
 	settlement.treasury = { "gold": start_gold, "wood": start_wood, "food": start_food, "stone": start_stone }

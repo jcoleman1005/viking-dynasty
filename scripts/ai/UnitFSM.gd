@@ -204,10 +204,17 @@ func update(delta: float) -> void:
 
 func _collect_state(delta: float) -> void:
 	if is_instance_valid(objective_target):
+		# [FIX] Ensure we actually move!
 		_simple_move_to(objective_target.global_position, delta)
+		
+		# Debug Distance
+		var dist = unit.global_position.distance_to(objective_target.global_position)
+		# print("Debug Collect: Dist to Target: ", dist) 
+		
 		if unit.has_method("process_collecting_logic"):
 			unit.process_collecting_logic(delta)
 	else:
+		print("UnitFSM: Collect State Failed - No Target!")
 		change_state(UnitAIConstants.State.IDLE)
 
 func _escort_state(delta: float) -> void:
@@ -306,7 +313,9 @@ func _interact_state(delta: float) -> void:
 		unit.velocity = Vector2.ZERO
 		
 		# Only Pillage if it's an Enemy Building
-		if objective_target is BaseBuilding and objective_target.collision_layer != 1:
+		if objective_target is BaseBuilding:
+			# Removed the strict "collision_layer != 1" check if it's confusing, 
+			# or ensure the Loader sets Layer 8 (which we did in Step 1).
 			_process_pillage_tick(delta)
 
 func _process_pillage_tick(delta: float) -> void:

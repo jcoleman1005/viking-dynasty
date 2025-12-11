@@ -192,23 +192,21 @@ func _physics_process(delta: float) -> void:
 	var fsm_velocity = Vector2.ZERO
 	if fsm:
 		fsm.update(delta)
-		fsm_velocity = velocity
-		velocity = Vector2.ZERO 
+		# [FIX] Changed 'unit.velocity' to just 'velocity'
+		fsm_velocity = velocity 
 	
-	var target_fsm_velocity = Vector2.ZERO
-	
-	if fsm and (fsm.current_state == UnitAIConstants.State.MOVING or fsm.current_state == UnitAIConstants.State.FORMATION_MOVING):
-		target_fsm_velocity = fsm_velocity
-	
-	if target_fsm_velocity.length() > 0.1:
-		velocity = velocity.lerp(target_fsm_velocity, data.acceleration * delta)
+	# Logic Branch: AI Control vs Physics Slide
+	if fsm_velocity.length_squared() > 0.1:
+		# AI is driving: Accelerate towards target speed
+		velocity = velocity.lerp(fsm_velocity, data.acceleration * delta)
 	else:
+		# AI is idle: Apply Friction
 		velocity = velocity.lerp(Vector2.ZERO, data.linear_damping * delta)
 	
 	if separation_enabled:
 		var separation_push = _calculate_separation_push(delta)
 		velocity += separation_push
-		
+
 	move_and_slide()
 
 func _calculate_separation_push(delta: float) -> Vector2:

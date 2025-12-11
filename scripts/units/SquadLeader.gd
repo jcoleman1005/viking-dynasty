@@ -189,40 +189,54 @@ func _order_squad_regroup() -> void:
 			soldier.attack_ai.stop_attacking()
 
 func request_escort_for(civilian: Node2D) -> void:
+	print("SquadLeader: Received request to escort %s" % civilian.name)
+	
 	var best_candidate: SquadSoldier = null
 	var min_dist = INF
 	
+	# Tuning Params
 	var max_batch_dist = 300.0
 	var max_prisoners = 3
 	
-	# Priority 1: Batching
+	# Priority 1: Batching (Find someone already working)
 	for soldier in squad_soldiers:
-		if not is_instance_valid(soldier): continue
+		if not is_instance_valid(soldier) or not soldier.is_inside_tree(): continue
 		
+		# Check state string/enum based on your setup
 		if soldier.fsm.current_state in [UnitAIConstants.State.COLLECTING, UnitAIConstants.State.ESCORTING]:
-			# Check TOTAL workload (current + pending)
 			var total_load = soldier.escorted_prisoners.size() + soldier.pending_prisoners.size()
-			
 			if total_load < max_prisoners:
 				var dist = soldier.global_position.distance_to(civilian.global_position)
 				if dist < max_batch_dist:
 					best_candidate = soldier
+					print("SquadLeader: Found BATCH candidate (Dist: %s)" % dist)
 					break 
 	
-	# Priority 2: New Volunteer
+	# Priority 2: New Volunteer (Pull from combat)
 	if not best_candidate:
 		var closest_combatant = null
 		var closest_d = INF
 		
 		for soldier in squad_soldiers:
-			if soldier.fsm.current_state in [UnitAIConstants.State.IDLE, UnitAIConstants.State.ATTACKING, UnitAIConstants.State.MOVING]:
+			if not is_instance_valid(soldier): continue
+			
+			# Check logic: Are they busy?
+			# We accept IDLE, ATTACKING, MOVING (Formation)
+			# We DO NOT accept RETREATING or dead units
+			var state = soldier.fsm.current_state
+			if state in [UnitAIConstants.State.IDLE, UnitAIConstants.State.ATTACKING, UnitAIConstants.State.MOVING, UnitAIConstants.State.FORMATION_MOVING]:
 				var dist = soldier.global_position.distance_to(civilian.global_position)
+				print("SquadLeader: Candidate %s is valid (Dist: %s)" % [soldier.name, dist])
 				if dist < closest_d:
 					closest_d = dist
 					closest_combatant = soldier
+			else:
+				print("SquadLeader: Candidate %s REJECTED (State: %s)" % [soldier.name, state])
 		
 		best_candidate = closest_combatant
 
 	if best_candidate:
+		print("SquadLeader: Assigning task to %s" % best_candidate.name)
 		best_candidate.assign_escort_task(civilian)
-		
+	else:
+		print("SquadLeader: FAILED to find any candidate! Squad size: %d" % squad_soldiers.size())

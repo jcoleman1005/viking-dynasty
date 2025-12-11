@@ -182,24 +182,16 @@ func _end_mission_via_retreat() -> void:
 # --- STANDARD OBJECTIVE LOGIC ---
 
 func _connect_to_building_signals() -> void:
-	# 1. Connect Objective (Great Hall)
-	if is_instance_valid(objective_building):
-		if objective_building.has_signal("building_destroyed"):
-			if not objective_building.building_destroyed.is_connected(_on_enemy_hall_destroyed):
-				objective_building.building_destroyed.connect(_on_enemy_hall_destroyed)
-
-	# 2. Connect All Buildings (Farms, Markets, etc.)
-	for building in building_container.get_children():
-		if building is BaseBuilding:
-			# A. Listen for Destruction (Burn -> Renown)
-			if building.has_signal("building_destroyed"):
-				if not building.building_destroyed.is_connected(_on_enemy_building_destroyed_for_loot):
-					building.building_destroyed.connect(_on_enemy_building_destroyed_for_loot)
-			
-			# B. Listen for Pillage (Steal -> Gold/Food) <--- NEW CONNECTION
-			if building.has_signal("loot_stolen"):
-				if not building.loot_stolen.is_connected(_on_loot_stolen):
-					building.loot_stolen.connect(_on_loot_stolen)
+	if not building_container: return
+	
+	for child in building_container.get_children():
+		if child.has_signal("loot_stolen"):
+			if not child.loot_stolen.is_connected(_on_loot_stolen):
+				child.loot_stolen.connect(_on_loot_stolen)
+				
+		if child.has_signal("building_destroyed"):
+			if not child.building_destroyed.is_connected(_on_enemy_building_destroyed_for_loot):
+				child.building_destroyed.connect(_on_enemy_building_destroyed_for_loot)
 
 # --- NEW: Callback for Pillage ---
 func _on_loot_stolen(type: String, amount: int) -> void:
