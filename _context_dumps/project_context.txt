@@ -1,5 +1,5 @@
 PROJECT CONTEXT SKELETON
-Generated: 2025-12-11T10:26:57
+Generated: 2025-12-11T11:30:40
 ========================================
 
 ### FILE: res://autoload/DynastyManager.gd ###
@@ -1463,7 +1463,10 @@ func on_unit_evacuated(unit: BaseUnit) -> void:
 func _end_mission_via_retreat() -> void:
 	pass # (Body Omitted)
 	var raw_gold = raid_loot.collected_loot.get("gold", 0)
+	var final_loot = raid_loot.collected_loot if raid_loot else {}
 	var result = {
+	var gold = final_loot.get("gold", 0)
+	var thralls = final_loot.get("thrall", 0)
 func _connect_to_building_signals() -> void:
 	pass # (Body Omitted)
 func _on_loot_stolen(type: String, amount: int) -> void:
@@ -1488,7 +1491,8 @@ func _on_mission_failed(reason: String) -> void:
 		var full_reason = reason + "\n\n" + report.get("summary_text", "")
 func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	pass # (Body Omitted)
-	var raw_gold = raid_loot.collected_loot.get("gold", 0)
+	var final_loot = raid_loot.collected_loot if raid_loot else {}
+	var gold = final_loot.get("gold", 0)
 	var lost_count = dead_units_log.size()
 	var grade = "Standard"
 	var duration_sec = (Time.get_ticks_msec() - battle_start_time) / 1000.0
@@ -2019,9 +2023,6 @@ func _close_all_popups() -> void:
 	var dynasty_ui = ui_layer.get_node_or_null("Dynasty_UI")
 func _clear_all_buildings() -> void:
 	pass # (Body Omitted)
-		var grid = grid_manager.astar_grid
-		var region = grid.region
-				var pos = Vector2i(x + region.position.x, y + region.position.y)
 func _initialize_settlement() -> void:
 	pass # (Body Omitted)
 func _spawn_placed_buildings() -> void:
@@ -2053,7 +2054,7 @@ func _on_building_placement_cancelled(_building_data: BuildingData) -> void: pas
 	pass # (Body Omitted)
 func _on_building_placement_completed() -> void:
 	pass # (Body Omitted)
-		var snapped_grid_pos = Vector2i(building_cursor.global_position / grid_manager.cell_size)
+		var snapped_grid_pos = SettlementManager.CELL_SIZE_PX
 func _on_building_placement_cancelled_by_cursor() -> void:
 	pass # (Body Omitted)
 func _on_building_right_clicked(building: BaseBuilding) -> void:
@@ -2278,7 +2279,6 @@ class_name BuildingPreviewCursor
 var current_building_data: BuildingData
 var preview_sprite: Sprite2D
 var is_active: bool = false
-var cell_size: int = 32 
 var grid_overlay: Node2D
 var can_place: bool = false
 var valid_color: Color = Color(0.0, 1.0, 0.0, 0.7)    # Green
@@ -2288,12 +2288,12 @@ var tether_color_valid: Color = Color(0.2, 1.0, 0.2, 0.8) # Green
 var tether_color_invalid: Color = Color(1.0, 0.2, 0.2, 0.8) # Red
 signal placement_completed
 signal placement_cancelled
-var grid_manager: Node = null
 func _ready() -> void:
 	pass # (Body Omitted)
 func set_building_preview(building_data: BuildingData) -> void:
 	pass # (Body Omitted)
-		var target_size = Vector2(building_data.grid_size) * cell_size
+		var cs = SettlementManager.CELL_SIZE_PX
+		var target_size = Vector2(building_data.grid_size) * cs
 		var tex_size = preview_sprite.texture.get_size()
 func _process(_delta: float) -> void:
 	pass # (Body Omitted)
@@ -2314,8 +2314,10 @@ func _draw() -> void:
 		var color = tether_color_valid if is_in_range else tether_color_invalid
 func _world_to_grid(world_pos: Vector2) -> Vector2i:
 	pass # (Body Omitted)
+	var cs = SettlementManager.CELL_SIZE_PX
 func _grid_to_world(grid_pos: Vector2i) -> Vector2:
 	pass # (Body Omitted)
+	var cs = SettlementManager.CELL_SIZE_PX
 func _can_place_at_position(grid_pos: Vector2i) -> bool:
 	pass # (Body Omitted)
 func _update_visual_feedback() -> void:
@@ -2329,7 +2331,8 @@ func _cleanup_preview() -> void:
 	pass # (Body Omitted)
 func _create_grid_outline(grid_size: Vector2i) -> void:
 	pass # (Body Omitted)
-	var rect_size = Vector2(grid_size.x * cell_size, grid_size.y * cell_size)
+	var cs = SettlementManager.CELL_SIZE_PX
+	var rect_size = Vector2(grid_size.x * cs, grid_size.y * cs)
 	var points = [Vector2(0,0), Vector2(rect_size.x, 0), Vector2(rect_size.x, rect_size.y), Vector2(0, rect_size.y), Vector2(0,0)]
 	var line = Line2D.new()
 func _clear_grid_overlay() -> void:
@@ -2778,42 +2781,6 @@ func _process_baggage_movement(delta: float) -> void:
 	var dist = global_position.distance_to(target_pos)
 		var dir = (target_pos - global_position).normalized()
 		var move_speed = data.move_speed
-
-
-### FILE: res://scripts/utility/GridManager.gd ###
-extends Node
-@export_group("Grid Configuration")
-@export var grid_width: int = 60
-@export var grid_height: int = 40
-@export var cell_size: int = 32
-var astar_grid: AStarGrid2D
-var buildable_cells: Dictionary = {}
-func _ready() -> void:
-	pass # (Body Omitted)
-	var playable_rect := Rect2i(0, 0, grid_width, grid_height)
-func recalculate_territory(placed_buildings: Array) -> void:
-	pass # (Body Omitted)
-	var active_sources: Array[Dictionary] = []
-	var candidate_connectors: Array[Dictionary] = []
-		var pos = entry["grid_position"]
-		var grid_pos = Vector2(pos.x, pos.y) if pos is Vector2i else pos
-		var data = load(entry["resource_path"]) as BuildingData
-		var center_pos = grid_pos + (Vector2(data.grid_size) / 2.0)
-		var info = {
-	var new_connection_found = true
-		var next_candidates: Array[Dictionary] = []
-			var is_powered = false
-				var distance = source["center"].distance_to(connector["center"])
-func _apply_territory_to_grid(source_info: Dictionary) -> void:
-	pass # (Body Omitted)
-	var center = Vector2i(source_info["grid_pos"]) + (source_info["data"].grid_size / 2)
-	var r = source_info["radius"]
-			var cell = center + Vector2i(x, y)
-func queue_redraw_visualizer() -> void:
-	pass # (Body Omitted)
-	var visualizer = get_parent().get_node_or_null("GridVisualizer")
-func is_cell_buildable(grid_pos: Vector2i) -> bool:
-	pass # (Body Omitted)
 
 
 ### FILE: res://scripts/utility/GridUtils.gd ###

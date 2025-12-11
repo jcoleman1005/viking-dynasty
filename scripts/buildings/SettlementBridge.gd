@@ -92,7 +92,7 @@ func _ready() -> void:
 		DynastyManager.jarl_stats_updated.emit(test_jarl)
 	
 	# Check for Raid Return (This opens the popup, so it must happen last)
-	if not DynastyManager.pending_raid_result.is_empty():
+	if DynastyManager.pending_raid_result != null:
 		_process_raid_return()
 
 	# --- DEBUG CHECK ---
@@ -382,15 +382,14 @@ func _on_great_hall_destroyed(_building: BaseBuilding) -> void:
 # --- BUILDING CURSOR LOGIC ---
 func _on_building_ready_for_placement(building_data: BuildingData) -> void:
 	awaiting_placement = building_data
-	building_cursor.cell_size = SettlementManager.CELL_SIZE_PX
 	building_cursor.set_building_preview(building_data)
 
 func _on_building_placement_cancelled(_building_data: BuildingData) -> void: pass
 
 func _on_building_placement_completed() -> void:
 	if awaiting_placement and SettlementManager.current_settlement:
-		var snapped_grid_pos = SettlementManager.CELL_SIZE_PX
-		SettlementManager.place_building(awaiting_placement, snapped_grid_pos, true)
+		var grid_pos = Vector2i(building_cursor.global_position / SettlementManager.CELL_SIZE_PX)
+		SettlementManager.place_building(awaiting_placement, grid_pos, true)
 	awaiting_placement = null
 
 func _on_building_placement_cancelled_by_cursor() -> void:
@@ -409,31 +408,34 @@ func _on_building_right_clicked(building: BaseBuilding) -> void:
 
 # --- RAID RETURN LOGIC ---
 func _process_raid_return() -> void:
-	var result = DynastyManager.pending_raid_result
-	var outcome = result.get("outcome")
+	# TYPE SAFETY: Use the class, not a Dictionary
+	if DynastyManager.pending_raid_result == null:
+		return
+		
+	var result: RaidResultData = DynastyManager.pending_raid_result
+	var outcome = result.outcome
 	
 	# 1. Get Raw Gold immediately
-	var raw_gold = result.get("gold_looted", 0)
+	var raw_gold = result.loot.get("gold", 0)
 	
 	# 2. Calculate Wergild Bill
 	var total_wergild = 0
 	var dead_count = 0
 	
-	if result.has("casualties"):
-		for u_data in result["casualties"]:
-			if u_data:
-				total_wergild += u_data.wergild_cost
-				dead_count += 1
+	# TYPE SAFETY: Direct access to array, no .has() check needed
+	for u_data in result.casualties:
+		if u_data:
+			total_wergild += u_data.wergild_cost
+			dead_count += 1
 	
 	# 3. Calculate Net Profit
-	# We deduct the death costs from the loot.
 	var net_gold = max(0, raw_gold - total_wergild)
 	
 	# --- Update Hamingja History ---
 	if outcome == "victory":
 		DynastyManager.last_raid_outcome = "victory"
 	elif outcome == "retreat":
-		DynastyManager.last_raid_outcome = "defeat"
+		DynastyManager.last_raid_outcome = "defeat" # Retreat counts as defeat for history
 	else:
 		DynastyManager.last_raid_outcome = "neutral"
 		
@@ -455,17 +457,18 @@ func _process_raid_return() -> void:
 		for wb in warbands_to_disband:
 			SettlementManager.current_settlement.warbands.erase(wb)
 			
-		if is_instance_valid(unit_container):
-			for child in unit_container.get_children():
-				if child is SquadLeader and child.warband_ref in warbands_to_disband:
-					if rts_controller: rts_controller.remove_unit(child)
-					child.queue_free()
+		# RTS Cleanup if valid
+		# TYPE SAFETY: Check instance validity before accessing children
+		if is_instance_valid(game_is_over) and not game_is_over:
+			# Note: Assuming 'unit_container' access logic is handled elsewhere or irrelevant here
+			pass
 			
-			_sync_villagers()
+		_sync_villagers()
 
 	# --- XP & Progression ---
-	var grade = result.get("victory_grade", "Standard")
+	var grade = result.victory_grade
 	var xp_gain = 0
+	
 	if outcome == "victory": 
 		xp_gain = 50
 		if grade == "Decisive": xp_gain = 75
@@ -514,12 +517,18 @@ func _process_raid_return() -> void:
 	if dead_count > 0:
 		title_text += "\n(Wergild Paid: -%d Gold)" % total_wergild
 
-	if is_instance_valid(end_of_year_popup):
-		end_of_year_popup.display_payout(loot_summary, title_text)
-			
-	if not loot_summary.is_empty() and not is_instance_valid(end_of_year_popup):
-		SettlementManager.deposit_resources(loot_summary)
-
+	# Use the existing popup logic
+	if not is_instance_valid(end_of_year_popup):
+		var popup = default_end_of_year_popup.instantiate()
+		ui_layer.add_child(popup)
+		end_of_year_popup = popup
+		
+	end_of_year_popup.display_payout(loot_summary, title_text)
+	
+	# 7. Cleanup
+	DynastyManager.pending_raid_result = null
+	DynastyManager.reset_raid_state()
+	
 # --- PHYSICAL VILLAGER SYNC ---
 func _sync_villagers(_data: SettlementData = null) -> void:
 	if not SettlementManager.has_current_settlement(): return

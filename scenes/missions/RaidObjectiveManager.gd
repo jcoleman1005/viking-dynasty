@@ -185,27 +185,24 @@ func _end_mission_via_retreat() -> void:
 	if mission_over: return
 	mission_over = true
 	
-	var raw_gold = raid_loot.collected_loot.get("gold", 0)
-	Loggie.msg("Retreat Complete. Loot secured: %d" % raw_gold).domain(LogDomains.RTS).info()
+	Loggie.msg("Ending mission via Retreat").domain(LogDomains.RAID).info()
 	
-	# [FIX] Send the FULL loot dictionary (contains gold, thralls, items)
-	var final_loot = raid_loot.collected_loot if raid_loot else {}
+	var mission_result = RaidResultData.new()
+	mission_result.outcome = "retreat"
+	mission_result.victory_grade = "Tactical Withdrawal"
+	mission_result.renown_earned = 0 
 	
-	var result = {
-		"outcome": "retreat",
-		"loot": final_loot, # Now includes "thrall": X
-		"casualties": dead_units_log,
-		"victory_grade": "Tactical Withdrawal"
-	}
-	DynastyManager.pending_raid_result = result
-	
-	var gold = final_loot.get("gold", 0)
-	var thralls = final_loot.get("thrall", 0)
-	_show_victory_message("Retreat Successful", "Escaped with %d Gold and %d Thralls." % [gold, thralls])
-	await get_tree().create_timer(3.0).timeout
-	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
+	# Populate Loot & Casualties (Cleaned up)
+	mission_result.loot = raid_loot.collected_loot.duplicate() if raid_loot else {}
+	mission_result.casualties = dead_units_log.duplicate()
 
-# --- STANDARD OBJECTIVE LOGIC ---
+	DynastyManager.pending_raid_result = mission_result
+	
+	# Note: SettlementBridge will convert "retreat" outcome to "defeat" for history stats later,
+	# so we don't strictly need to set last_raid_outcome here, but it doesn't hurt.
+	DynastyManager.last_raid_outcome = "retreat"
+	
+	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
 
 func _connect_to_building_signals() -> void:
 	if not building_container: return
@@ -299,46 +296,45 @@ func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	if mission_over: return
 	mission_over = true
 	
-	var final_loot = raid_loot.collected_loot if raid_loot else {}
-	var gold = final_loot.get("gold", 0)
-	
-	# --- REFACTOR: Count casualties from array ---
-	var lost_count = dead_units_log.size()
-	# ---------------------------------------------
-	
-	# 1. Calculate Grade
-	var grade = "Standard"
 	var duration_sec = (Time.get_ticks_msec() - battle_start_time) / 1000.0
-	
-	# Defaults
-	var par_time = 300
+	var grade = "Standard"
 	var casualty_limit = 2
+	var lost_count = dead_units_log.size()
 	
-	# Compare using local variable 'lost_count'
-	if duration_sec < par_time and lost_count <= casualty_limit:
+	# Simple Grading Logic
+	if lost_count == 0 and duration_sec < 300:
 		grade = "Decisive"
-	elif lost_count > (casualty_limit * 2):
+	elif lost_count > casualty_limit:
 		grade = "Pyrrhic"
 		
-	# Update Log to use 'lost_count'
-	Loggie.msg("Victory! Time: %ds, Casualties: %d. Grade: %s" % [duration_sec, lost_count, grade]).domain("RTS").info()
+	var mission_result = RaidResultData.new()
+	mission_result.outcome = "victory"
+	mission_result.victory_grade = grade
 	
-	var result = { 
-		"outcome": "victory", 
-		"gold_looted": gold,
-		"victory_grade": grade
-	}
-	DynastyManager.pending_raid_result = result
+	# Calculate Loot (Base + Bonus)
+	var final_loot = raid_loot.collected_loot if raid_loot else {}
+	var total_loot = final_loot.duplicate()
 	
-	var sub_text = "The settlement lies in ruins."
-	if grade == "Decisive":
-		sub_text = "A glorious, swift victory!"
-	elif grade == "Pyrrhic":
-		sub_text = "Victory, but at great cost."
-		
-	_show_victory_message("VICTORY (%s)" % grade, sub_text)
-	await get_tree().create_timer(3.0).timeout
-	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
+	# Add Victory Bonus
+	for key in victory_bonus_loot:
+		var amount = victory_bonus_loot[key]
+		var current = total_loot.get(key, 0)
+		total_loot[key] = current + amount
+	
+	mission_result.loot = total_loot
+	
+	# Calculate Renown
+	var difficulty = DynastyManager.current_raid_difficulty
+	# Base 200 + 50 per star
+	mission_result.renown_earned = 200 + (difficulty * 50)
+	
+	mission_result.casualties = dead_units_log.duplicate()
+	
+	DynastyManager.pending_raid_result = mission_result
+	DynastyManager.last_raid_outcome = "victory"
+	
+	Loggie.msg("Raid Victory!").domain(LogDomains.RAID).ctx("Grade", grade).info()
+	_show_victory_message("Victory!", "The settlement lies in ruins.")
 
 func _trigger_fyrd() -> void:
 	fyrd_timer_active = false
