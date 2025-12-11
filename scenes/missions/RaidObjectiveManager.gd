@@ -39,6 +39,7 @@ func _ready() -> void:
 	raid_loot = RaidLootData.new()
 	# Connect to global unit death signal to track casualties
 	EventBus.player_unit_died.connect(_on_player_unit_died)
+	EventBus.raid_loot_secured.connect(_on_raid_loot_secured)
 
 func _process(delta: float) -> void:
 	if fyrd_timer_active and not mission_over:
@@ -90,6 +91,17 @@ func initialize(
 		fyrd_timer_active = true
 		
 	_setup_win_loss_conditions()
+	is_initialized = true
+	
+	var zones = get_tree().get_nodes_in_group("retreat_zone")
+	if not zones.is_empty():
+		var zone = zones[0]
+		if not zone.unit_evacuated.is_connected(on_unit_evacuated):
+			zone.unit_evacuated.connect(on_unit_evacuated)
+			print("RaidObjectiveManager: Connected to Retreat Zone.")
+	else:
+		print("RaidObjectiveManager: WARNING - No Retreat Zone found to connect!")
+
 	is_initialized = true
 
 # --- CASUALTY TRACKING ---
@@ -155,10 +167,18 @@ func on_unit_evacuated(unit: BaseUnit) -> void:
 	if is_instance_valid(rts_controller):
 		rts_controller.remove_unit(unit)
 
-	var remaining = get_tree().get_nodes_in_group("player_units").size()
-	Loggie.msg("Unit escaped. Remaining on field: %d" % remaining).domain(LogDomains.RTS).info()
+	var remaining_units = get_tree().get_nodes_in_group("player_units")
+	var living_count = 0
 	
-	if remaining <= 0 and not mission_over:
+	for u in remaining_units:
+		# Filter out dead or queued-for-deletion units just to be safe
+		if is_instance_valid(u) and not u.is_queued_for_deletion():
+			living_count += 1
+			
+	print("RaidObjectiveManager: Evacuated! Remaining: %d" % (living_count - 1))
+	
+	if living_count <= 1:
+		print("RaidObjectiveManager: All units evacuated. Ending Mission.")
 		_end_mission_via_retreat()
 
 func _end_mission_via_retreat() -> void:
@@ -168,14 +188,20 @@ func _end_mission_via_retreat() -> void:
 	var raw_gold = raid_loot.collected_loot.get("gold", 0)
 	Loggie.msg("Retreat Complete. Loot secured: %d" % raw_gold).domain(LogDomains.RTS).info()
 	
+	# [FIX] Send the FULL loot dictionary (contains gold, thralls, items)
+	var final_loot = raid_loot.collected_loot if raid_loot else {}
+	
 	var result = {
 		"outcome": "retreat",
-		"gold_looted": raw_gold,
-		"victory_grade": "None"
+		"loot": final_loot, # Now includes "thrall": X
+		"casualties": dead_units_log,
+		"victory_grade": "Tactical Withdrawal"
 	}
 	DynastyManager.pending_raid_result = result
 	
-	_show_victory_message("RETREAT", "We escaped with what we could carry.")
+	var gold = final_loot.get("gold", 0)
+	var thralls = final_loot.get("thrall", 0)
+	_show_victory_message("Retreat Successful", "Escaped with %d Gold and %d Thralls." % [gold, thralls])
 	await get_tree().create_timer(3.0).timeout
 	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
 
@@ -273,7 +299,8 @@ func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	if mission_over: return
 	mission_over = true
 	
-	var raw_gold = raid_loot.collected_loot.get("gold", 0)
+	var final_loot = raid_loot.collected_loot if raid_loot else {}
+	var gold = final_loot.get("gold", 0)
 	
 	# --- REFACTOR: Count casualties from array ---
 	var lost_count = dead_units_log.size()
@@ -298,7 +325,7 @@ func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	
 	var result = { 
 		"outcome": "victory", 
-		"gold_looted": raw_gold,
+		"gold_looted": gold,
 		"victory_grade": grade
 	}
 	DynastyManager.pending_raid_result = result
@@ -356,3 +383,20 @@ func _add_popup_to_canvas(popup: Control) -> void:
 	var canvas = get_parent().get_node_or_null("CanvasLayer")
 	if canvas: canvas.add_child(popup)
 	else: get_tree().current_scene.add_child(popup)
+
+func _on_raid_loot_secured(type: String, amount: int) -> void:
+	if not raid_loot:
+		raid_loot = RaidLootData.new()
+		
+	raid_loot.add_loot(type, amount)
+	
+	# Visual Feedback
+	var color = Color.GOLD if type == "gold" else Color.WHITE
+	if type == "thrall": color = Color.CYAN
+	
+	# We can spawn floating text at the Retreat Zone center (approximate)
+	# or just update a UI counter. For now, let's just log it.
+	print("RaidObjectiveManager: Secured %d %s!" % [amount, type])
+	
+	# Trigger UI update if you have a Loot HUD
+	# EventBus.ui_update_loot.emit(raid_loot.collected_loot)

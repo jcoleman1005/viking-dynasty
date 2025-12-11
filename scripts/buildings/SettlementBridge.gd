@@ -51,7 +51,6 @@ var default_end_of_year_popup: PackedScene = preload("res://ui/EndOfYear_Popup.t
 
 # --- Local Node References ---
 @onready var building_container: Node2D = $BuildingContainer
-@onready var grid_manager: Node = $GridManager
 @onready var rts_controller: RTSController = $RTSController
 @onready var unit_spawner: UnitSpawner = $UnitSpawner
 
@@ -262,14 +261,17 @@ func _clear_all_buildings() -> void:
 		for child in unit_container.get_children(): child.queue_free()
 		await get_tree().process_frame
 	
-	if is_instance_valid(grid_manager) and "astar_grid" in grid_manager:
-		var grid = grid_manager.astar_grid
-		var region = grid.region
-		for x in range(region.size.x):
-			for y in range(region.size.y):
-				var pos = Vector2i(x + region.position.x, y + region.position.y)
-				grid.set_point_solid(pos, false)
-		grid.update()
+	if SettlementManager.current_settlement:
+		# Clear the saved building data (the source of truth)
+		SettlementManager.current_settlement.placed_buildings.clear()
+		SettlementManager.current_settlement.pending_construction_buildings.clear()
+		
+		# Clear units/warbands if necessary for a full reset
+		SettlementManager.current_settlement.warbands.clear()
+
+		# Recalculate the physical grid based on the empty data
+		# (This internally calls active_astar_grid.fill_solid_region(..., false))
+		SettlementManager._refresh_grid_state()
 	
 	great_hall_instance = null
 	game_is_over = false
@@ -380,14 +382,14 @@ func _on_great_hall_destroyed(_building: BaseBuilding) -> void:
 # --- BUILDING CURSOR LOGIC ---
 func _on_building_ready_for_placement(building_data: BuildingData) -> void:
 	awaiting_placement = building_data
-	building_cursor.cell_size = grid_manager.cell_size
+	building_cursor.cell_size = SettlementManager.CELL_SIZE_PX
 	building_cursor.set_building_preview(building_data)
 
 func _on_building_placement_cancelled(_building_data: BuildingData) -> void: pass
 
 func _on_building_placement_completed() -> void:
 	if awaiting_placement and SettlementManager.current_settlement:
-		var snapped_grid_pos = Vector2i(building_cursor.global_position / grid_manager.cell_size)
+		var snapped_grid_pos = SettlementManager.CELL_SIZE_PX
 		SettlementManager.place_building(awaiting_placement, snapped_grid_pos, true)
 	awaiting_placement = null
 

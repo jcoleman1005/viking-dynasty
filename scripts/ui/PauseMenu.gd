@@ -153,8 +153,41 @@ func _cheat_unlock_legacy() -> void:
 			DynastyManager.jarl_stats_updated.emit(DynastyManager.current_jarl)
 
 func _cheat_trigger_raid() -> void:
-	DynastyManager.is_defensive_raid = true
-	EventBus.scene_change_requested.emit("raid_mission")
+	# 1. Flag as Standard (Offensive) Raid
+	DynastyManager.is_defensive_raid = false
+	
+	# 2. Setup Debug Target
+	# We create the wrapper to hold the data nicely...
+	var debug_target = RaidTargetData.new()
+	debug_target.display_name = "Cheat Target"
+	debug_target.raid_cost_authority = 0
+	debug_target.difficulty_rating = 1
+	
+	# Load the default monastery
+	var base_path = "res://data/settlements/monastery_base.tres"
+	if ResourceLoader.exists(base_path):
+		debug_target.settlement_data = load(base_path)
+	
+	# [FIX] Unwrap the data!
+	# DynastyManager expects the inner SettlementData, not the RaidTargetData wrapper.
+	if debug_target.settlement_data:
+		DynastyManager.set_current_raid_target(debug_target.settlement_data)
+		# Manually sync difficulty since we aren't passing the wrapper
+		DynastyManager.current_raid_difficulty = debug_target.difficulty_rating
+	else:
+		print("Error: Could not load 'monastery_base.tres'. Raid aborted.")
+		return
+
+	# 3. Ensure Army
+	if DynastyManager.outbound_raid_force.is_empty():
+		var unit_data = load("res://data/units/Unit_PlayerRaider.tres")
+		if unit_data:
+			var wb = WarbandData.new(unit_data)
+			wb.custom_name = "Cheat Squad"
+			DynastyManager.outbound_raid_force.append(wb)
+
+	# 4. Launch
+	EventBus.scene_change_requested.emit(GameScenes.RAID_MISSION) # Use constant if available
 	get_tree().paused = false
 	queue_free()
 

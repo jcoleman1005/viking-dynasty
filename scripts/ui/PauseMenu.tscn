@@ -61,7 +61,7 @@ text = "Unlock Training Grounds"
 
 [node name="Btn_TriggerRaid" type="Button" parent="PanelContainer/DebugMenuContainer"]
 layout_mode = 2
-text = "Trigger Defensive Raid"
+text = "Trigger Raid"
 
 [node name="Btn_KillJarl" type="Button" parent="PanelContainer/DebugMenuContainer"]
 layout_mode = 2

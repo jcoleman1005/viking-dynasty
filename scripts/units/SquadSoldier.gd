@@ -168,9 +168,28 @@ func process_escort_logic(_delta: float) -> void:
 	pass
 	
 func complete_escort() -> void:
-	for p in escorted_prisoners:
-		if is_instance_valid(p):
-			p.queue_free() # In Phase 3 this becomes "Bank Loot"
+	if escorted_prisoners.is_empty():
+		fsm.change_state(UnitAIConstants.State.REGROUPING)
+		return
+
+	var count = 0
+	for prisoner in escorted_prisoners:
+		if is_instance_valid(prisoner):
+			# [PHASE 3] Secure the loot!
+			# "thrall" is the resource key for population
+			EventBus.raid_loot_secured.emit("thrall", 1) 
+			
+			# Juice
+			EventBus.floating_text_requested.emit("+1 Thrall", prisoner.global_position, Color.CYAN)
+			
+			prisoner.queue_free()
+			count += 1
+	
+	print("SquadSoldier: Banked %d prisoners." % count)
+	escorted_prisoners.clear()
+	
+	# Return to fight
+	fsm.change_state(UnitAIConstants.State.REGROUPING)
 	
 	escorted_prisoners.clear()
 	EventBus.floating_text_requested.emit("Prisoners Secured", global_position, Color.GREEN)

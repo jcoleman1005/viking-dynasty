@@ -1,5 +1,5 @@
 PROJECT CONTEXT SKELETON
-Generated: 2025-12-10T13:03:43
+Generated: 2025-12-11T10:26:57
 ========================================
 
 ### FILE: res://autoload/DynastyManager.gd ###
@@ -260,6 +260,7 @@ signal pathfinding_grid_updated(grid_position: Vector2i)
 signal treasury_updated(new_treasury: Dictionary)
 signal purchase_successful(item_name: String)
 signal purchase_failed(reason: String)
+signal raid_loot_secured(type: String, amount: int)
 signal scene_change_requested(scene_key: String)
 signal world_map_opened()
 signal raid_mission_started(target_type: String)
@@ -280,6 +281,7 @@ signal event_system_finished()
 signal succession_choices_made(renown_choice: String, gold_choice: String)
 signal camera_input_lock_requested(is_locked: bool)
 signal end_year_requested()
+signal floating_text_requested(text: String, world_position: Vector2, color: Color)
 
 
 ### FILE: res://autoload/EventManager.gd ###
@@ -419,12 +421,85 @@ func _on_scene_change_requested(scene_key: String) -> void:
 extends Node
 const USER_SAVE_PATH := "user://savegame.tres"
 const MAP_SAVE_PATH := "user://campaign_map.tres"
-var current_settlement: SettlementData
+var current_settlement: SettlementData # The Player's Home Economy (Always running)
+var active_map_data: SettlementData    # The Map currently displayed (Home OR Raid Target)
 var active_astar_grid: AStarGrid2D = null
+var buildable_cells: Dictionary = {} # Cached territory map
+const GRID_WIDTH = 60
+const GRID_HEIGHT = 40
+const CELL_SIZE_PX = 32
 var active_building_container: Node2D = null
-var grid_manager_node: Node = null 
 var pending_management_open: bool = false
 func _ready() -> void:
+	pass # (Body Omitted)
+func _init_grid() -> void:
+	pass # (Body Omitted)
+func _refresh_grid_state() -> void:
+	pass # (Body Omitted)
+	var region = active_astar_grid.region
+func _apply_building_to_grid(entry: Dictionary, is_solid: bool) -> void:
+	pass # (Body Omitted)
+	var path = entry.get("resource_path", "")
+	var raw_pos = entry["grid_position"]
+	var pos = Vector2i(raw_pos.x, raw_pos.y)
+	var data = load(path) as BuildingData
+func _mark_rect_solid(top_left_pos: Vector2i, size: Vector2i, is_solid: bool) -> void:
+	pass # (Body Omitted)
+			var cell = top_left_pos + Vector2i(x, y)
+func is_tile_buildable(grid_pos: Vector2i) -> bool:
+	pass # (Body Omitted)
+func get_active_grid_cell_size() -> Vector2:
+	pass # (Body Omitted)
+func get_astar_path(start_pos: Vector2, end_pos: Vector2, allow_partial_path: bool = false) -> PackedVector2Array:
+	pass # (Body Omitted)
+	var cell_size = active_astar_grid.cell_size
+	var start = Vector2i(start_pos / cell_size)
+	var end = Vector2i(end_pos / cell_size)
+	var bounds = active_astar_grid.region
+func set_astar_point_solid(grid_position: Vector2i, solid: bool) -> void:
+	pass # (Body Omitted)
+func place_building(building_data: BuildingData, grid_position: Vector2i, is_new_construction: bool = false) -> BaseBuilding:
+	pass # (Body Omitted)
+	var new_building = building_data.scene_to_spawn.instantiate()
+	var cell = get_active_grid_cell_size()
+	var pos = Vector2(grid_position) * cell + (Vector2(building_data.grid_size) * cell / 2.0)
+	var entry = {
+func remove_building(building_instance: BaseBuilding) -> void:
+	pass # (Body Omitted)
+	var cell_size = get_active_grid_cell_size()
+	var top_left = building_instance.global_position - (Vector2(building_instance.data.grid_size) * cell_size / 2.0)
+	var grid_pos = Vector2i(round(top_left.x / cell_size.x), round(top_left.y / cell_size.y))
+	var removed_placed = _remove_from_list(active_map_data.placed_buildings, grid_pos)
+	var removed_pending = _remove_from_list(active_map_data.pending_construction_buildings, grid_pos)
+func _remove_from_list(list: Array, grid_pos: Vector2i) -> bool:
+	pass # (Body Omitted)
+		var entry = list[i]
+		var entry_pos = entry["grid_position"]
+		var current_pos_i = Vector2i(entry_pos.x, entry_pos.y)
+func is_placement_valid(grid_position: Vector2i, building_size: Vector2i, building_data: BuildingData = null) -> bool:
+	pass # (Body Omitted)
+func _is_within_district_range(grid_pos: Vector2i, size: Vector2i, data: EconomicBuildingData) -> bool:
+	pass # (Body Omitted)
+	var cell = get_active_grid_cell_size()
+	var center = (Vector2(grid_pos) * cell) + (Vector2(size) * cell / 2.0)
+	var nodes = get_tree().get_nodes_in_group("resource_nodes")
+func register_active_scene_nodes(container: Node2D) -> void:
+	pass # (Body Omitted)
+func unregister_active_scene_nodes() -> void:
+	pass # (Body Omitted)
+func load_settlement(data: SettlementData) -> void:
+	pass # (Body Omitted)
+		var saved_data = load(USER_SAVE_PATH)
+func _load_fallback_data(data: SettlementData) -> void:
+	pass # (Body Omitted)
+func save_settlement() -> void:
+	pass # (Body Omitted)
+	var error = ResourceSaver.save(current_settlement, USER_SAVE_PATH)
+func delete_save_file() -> void:
+	pass # (Body Omitted)
+func reset_manager_state() -> void:
+	pass # (Body Omitted)
+func has_current_settlement() -> bool:
 	pass # (Body Omitted)
 func calculate_payout() -> Dictionary:
 	pass # (Body Omitted)
@@ -436,7 +511,7 @@ func apply_raid_damages() -> Dictionary:
 	pass # (Body Omitted)
 func get_total_ship_capacity_squads() -> int:
 	pass # (Body Omitted)
-	var total_capacity = 3 # Base: The Chieftain's personal ship (3 Squads)
+	var total_capacity = 3
 		var data = load(entry["resource_path"]) as BuildingData
 func get_idle_peasants() -> int:
 	pass # (Body Omitted)
@@ -451,7 +526,7 @@ func assign_worker(building_index: int, type: String, amount: int) -> void:
 	var key = "peasant_count" if type == "peasant" else "thrall_count"
 	var cap = data.peasant_capacity if type == "peasant" else data.thrall_capacity
 	var current = entry.get(key, 0)
-	var new_val = current + amount
+	var new_val = clampi(current + amount, 0, cap)
 		var idle = get_idle_peasants() if type == "peasant" else get_idle_thralls()
 func assign_construction_worker(index: int, type: String, amount: int) -> void:
 	pass # (Body Omitted)
@@ -460,7 +535,7 @@ func assign_construction_worker(index: int, type: String, amount: int) -> void:
 	var key = "peasant_count" if type == "peasant" else "thrall_count"
 	var cap = data.base_labor_capacity 
 	var current = entry.get(key, 0)
-	var new_val = current + amount
+	var new_val = clampi(current + amount, 0, cap)
 		var idle = get_idle_peasants() if type == "peasant" else get_idle_thralls()
 func process_construction_labor() -> void:
 	pass # (Body Omitted)
@@ -488,64 +563,6 @@ func process_warband_hunger() -> Array[String]:
 func _on_player_unit_died(unit: Node2D) -> void:
 	pass # (Body Omitted)
 	var warband = unit.get("warband_ref")
-func delete_save_file() -> void:
-	pass # (Body Omitted)
-func reset_manager_state() -> void:
-	pass # (Body Omitted)
-func load_settlement(data: SettlementData) -> void:
-	pass # (Body Omitted)
-		var saved_data = load(USER_SAVE_PATH)
-func _load_fallback_data(data: SettlementData) -> void:
-	pass # (Body Omitted)
-func save_settlement() -> void:
-	pass # (Body Omitted)
-	var error = ResourceSaver.save(current_settlement, USER_SAVE_PATH)
-func has_current_settlement() -> bool:
-	pass # (Body Omitted)
-func register_active_scene_nodes(grid: AStarGrid2D, container: Node2D, manager_node: Node = null) -> void:
-	pass # (Body Omitted)
-func unregister_active_scene_nodes() -> void:
-	pass # (Body Omitted)
-func _trigger_territory_update() -> void:
-	pass # (Body Omitted)
-		var all_buildings = current_settlement.placed_buildings + current_settlement.pending_construction_buildings
-func get_active_grid_cell_size() -> Vector2:
-	pass # (Body Omitted)
-func place_building(building_data: BuildingData, grid_position: Vector2i, is_new_construction: bool = false) -> BaseBuilding:
-	pass # (Body Omitted)
-	var new_building = building_data.scene_to_spawn.instantiate()
-	var cell = get_active_grid_cell_size()
-	var pos = Vector2(grid_position) * cell + (Vector2(building_data.grid_size) * cell / 2.0)
-				var cell_pos = grid_position + Vector2i(x, y)
-func remove_building(building_instance: BaseBuilding) -> void:
-	pass # (Body Omitted)
-	var cell_size = get_active_grid_cell_size()
-	var grid_pos = Vector2i((building_instance.global_position - (Vector2(building_instance.data.grid_size) * cell_size / 2.0)) / cell_size)
-				var cell = grid_pos + Vector2i(x, y)
-	var removed = _remove_from_list(current_settlement.placed_buildings, grid_pos)
-func _remove_from_list(list: Array, grid_pos: Vector2i) -> bool:
-	pass # (Body Omitted)
-		var entry_pos = list[i]["grid_position"]
-		var current_pos_i = Vector2i(entry_pos) if (entry_pos is Vector2 or entry_pos is Vector2i) else Vector2i.ZERO
-func is_placement_valid(grid_position: Vector2i, building_size: Vector2i, building_data: BuildingData = null) -> bool:
-	pass # (Body Omitted)
-			var cell_pos = grid_position + Vector2i(x, y)
-func _is_within_district_range(grid_pos: Vector2i, size: Vector2i, data: EconomicBuildingData) -> bool:
-	pass # (Body Omitted)
-	var cell = get_active_grid_cell_size()
-	var center = (Vector2(grid_pos) * cell) + (Vector2(size) * cell / 2.0)
-	var nodes = get_tree().get_nodes_in_group("resource_nodes")
-func _is_cell_within_bounds(grid_position: Vector2i) -> bool:
-	pass # (Body Omitted)
-	var bounds = active_astar_grid.region
-func get_astar_path(start_pos: Vector2, end_pos: Vector2, allow_partial_path: bool = false) -> PackedVector2Array:
-	pass # (Body Omitted)
-	var cell_size = active_astar_grid.cell_size
-	var start = Vector2i(start_pos / cell_size)
-	var end = Vector2i(end_pos / cell_size)
-	var bounds = active_astar_grid.region
-func set_astar_point_solid(grid_position: Vector2i, solid: bool) -> void:
-	pass # (Body Omitted)
 func assign_worker_from_unit(building: BaseBuilding, type: String) -> bool:
 	pass # (Body Omitted)
 	var entry = _find_entry_for_building(building)
@@ -1302,26 +1319,21 @@ func _on_lifetime_timeout() -> void:
 class_name RaidMapLoader
 extends Node
 var building_container: Node2D
-var grid_manager: Node
-func setup(p_container: Node2D, p_grid_manager: Node) -> void:
+func setup(p_container: Node2D, enemy_data: SettlementData) -> void:
 	pass # (Body Omitted)
 func load_base(data: SettlementData, is_player_owner: bool) -> BaseBuilding:
 	pass # (Body Omitted)
 	var objective_ref: BaseBuilding = null
-		var building = _spawn_single_building(entry, is_player_owner)
-			var building = _spawn_single_building(entry, true)
-func _spawn_single_building(entry: Dictionary, is_player: bool) -> BaseBuilding:
+		var building = _spawn_single_building_visual(entry)
+func _spawn_single_building_visual(entry: Dictionary) -> BaseBuilding:
 	pass # (Body Omitted)
 	var res_path = entry["resource_path"]
-	var grid_pos = Vector2i(entry["grid_position"])
+	var grid_pos = Vector2i(entry["grid_position"].x, entry["grid_position"].y)
 	var b_data = load(res_path) as BuildingData
 	var instance = b_data.scene_to_spawn.instantiate() as BaseBuilding
-	var cell_size = Vector2(32, 32)
-	var world_pos = Vector2(grid_pos) * cell_size
+	var cell_size = SettlementManager.get_active_grid_cell_size()
 	var center_offset = (Vector2(b_data.grid_size) * cell_size) / 2.0
-func _apply_to_grid(building: BaseBuilding, grid_pos: Vector2i) -> void:
-	pass # (Body Omitted)
-			var cell = grid_pos + Vector2i(x, y)
+		var hitbox = instance.get_node("Hitbox")
 
 
 ### FILE: res://scenes/missions/RaidMission.gd ###
@@ -1346,7 +1358,7 @@ func _exit_tree() -> void:
 	pass # (Body Omitted)
 func initialize_mission() -> void:
 	pass # (Body Omitted)
-	var local_astar_grid = grid_manager.astar_grid
+			var debug_spawn_pos = Vector2(200, 300) 
 func _setup_defensive_mode() -> void:
 	pass # (Body Omitted)
 	var settlement = SettlementManager.current_settlement
@@ -1390,6 +1402,13 @@ func _spawn_test_units() -> void:
 func _spawn_enemy_garrison() -> void:
 	pass # (Body Omitted)
 	var guard_buildings = []
+func _on_node_added(node: Node) -> void:
+	pass # (Body Omitted)
+func _on_civilian_surrender(civilian: Node2D) -> void:
+	pass # (Body Omitted)
+	var best_leader = null
+	var min_dist = INF
+		var dist = leader.global_position.distance_to(civilian.global_position)
 
 
 ### FILE: res://scenes/missions/RaidObjectiveManager.gd ###
@@ -1422,6 +1441,8 @@ func _process(delta: float) -> void:
 			var seconds = int(time_remaining) % 60
 func initialize(
 	pass # (Body Omitted)
+	var zones = get_tree().get_nodes_in_group("retreat_zone")
+		var zone = zones[0]
 func _on_player_unit_died(unit: Node2D) -> void:
 	pass # (Body Omitted)
 		var ident = "A Warrior"
@@ -1437,7 +1458,8 @@ func _on_retreat_ordered() -> void:
 	var spawn_marker = get_parent().get_node_or_null("PlayerStartPosition")
 func on_unit_evacuated(unit: BaseUnit) -> void:
 	pass # (Body Omitted)
-	var remaining = get_tree().get_nodes_in_group("player_units").size()
+	var remaining_units = get_tree().get_nodes_in_group("player_units")
+	var living_count = 0
 func _end_mission_via_retreat() -> void:
 	pass # (Body Omitted)
 	var raw_gold = raid_loot.collected_loot.get("gold", 0)
@@ -1492,6 +1514,9 @@ func _create_popup_base() -> Control:
 func _add_popup_to_canvas(popup: Control) -> void:
 	pass # (Body Omitted)
 	var canvas = get_parent().get_node_or_null("CanvasLayer")
+func _on_raid_loot_secured(type: String, amount: int) -> void:
+	pass # (Body Omitted)
+	var color = Color.GOLD if type == "gold" else Color.WHITE
 
 
 ### FILE: res://scenes/missions/RetreatZone.gd ###
@@ -1508,6 +1533,11 @@ func _draw() -> void:
 	var font = ThemeDB.get_fallback_font()
 func _on_body_entered(body: Node2D) -> void:
 	pass # (Body Omitted)
+		var unit = body as BaseUnit
+func _bank_unit_inventory(unit: BaseUnit) -> void:
+	pass # (Body Omitted)
+	var total_value = 0
+		var amount = unit.inventory[type]
 func _evacuate_unit(unit: BaseUnit) -> void:
 	pass # (Body Omitted)
 	var tween = create_tween()
@@ -1844,6 +1874,13 @@ func command_interact_move(target: Node2D) -> void:
 	pass # (Body Omitted)
 func update(delta: float) -> void:
 	pass # (Body Omitted)
+func _collect_state(delta: float) -> void:
+	pass # (Body Omitted)
+		var dist = unit.global_position.distance_to(objective_target.global_position)
+func _escort_state(delta: float) -> void:
+	pass # (Body Omitted)
+func _regroup_state(delta: float) -> void:
+	pass # (Body Omitted)
 func _idle_state(_delta: float) -> void:
 	pass # (Body Omitted)
 func _formation_move_state(_delta: float) -> void:
@@ -1906,6 +1943,11 @@ func _get_target_radius(target: Node2D) -> float:
 	var col = target.get_node_or_null("CollisionShape2D")
 func command_pillage(target: Node2D) -> void:
 	pass # (Body Omitted)
+func _simple_move_to(target: Vector2, _delta: float) -> void:
+	pass # (Body Omitted)
+	var dir = (target - unit.global_position).normalized()
+	var speed_mult = unit.get_speed_multiplier() if unit.has_method("get_speed_multiplier") else 1.0
+	var final_speed = unit.data.move_speed * speed_mult
 
 
 ### FILE: res://scripts/buildings/SettlementBridge.gd ###
@@ -1984,12 +2026,17 @@ func _initialize_settlement() -> void:
 	pass # (Body Omitted)
 func _spawn_placed_buildings() -> void:
 	pass # (Body Omitted)
-		var b = _spawn_single_building(building_entry, false)
+		var b = _spawn_single_building(building_entry, false) 
+		var b = _spawn_single_building(building_entry, true)
 			var progress = building_entry.get("progress", 0)
 func _spawn_single_building(entry: Dictionary, is_new: bool) -> BaseBuilding:
 	pass # (Body Omitted)
-	var building_data: BuildingData = load(entry["resource_path"])
-		var new_building = SettlementManager.place_building(building_data, entry["grid_position"], is_new)
+	var res_path = entry["resource_path"]
+	var grid_pos = Vector2i(entry["grid_position"].x, entry["grid_position"].y)
+	var building_data = load(res_path) as BuildingData
+	var new_building = building_data.scene_to_spawn.instantiate()
+	var cell = SettlementManager.get_active_grid_cell_size()
+	var center_offset = (Vector2(building_data.grid_size) * cell) / 2.0
 func _create_default_settlement() -> SettlementData:
 	pass # (Body Omitted)
 	var settlement = SettlementData.new()
@@ -2295,8 +2342,17 @@ func _input(event: InputEvent) -> void:
 extends CanvasLayer
 func _ready() -> void:
 	pass # (Body Omitted)
+	var container = find_child("VBoxContainer", true, false) # Adjust if your layout is named differently
+		var debug_raid_btn = Button.new()
 func _unhandled_input(event: InputEvent) -> void:
 	pass # (Body Omitted)
+func _on_debug_raid_pressed() -> void:
+	pass # (Body Omitted)
+	var debug_target = RaidTargetData.new()
+	var base_path = "res://data/settlements/monastery_base.tres"
+	var army: Array[WarbandData] = []
+		var unit_data = load("res://data/units/Unit_PlayerRaider.tres") # Check path!
+			var wb = WarbandData.new(unit_data)
 func _on_resume_pressed() -> void:
 	pass # (Body Omitted)
 func _on_debug_menu_pressed() -> void:
@@ -2317,6 +2373,10 @@ func _cheat_unlock_legacy() -> void:
 	pass # (Body Omitted)
 func _cheat_trigger_raid() -> void:
 	pass # (Body Omitted)
+	var debug_target = RaidTargetData.new()
+	var base_path = "res://data/settlements/monastery_base.tres"
+		var unit_data = load("res://data/units/Unit_PlayerRaider.tres")
+			var wb = WarbandData.new(unit_data)
 func _cheat_kill_jarl() -> void:
 	pass # (Body Omitted)
 
@@ -2455,6 +2515,9 @@ const LAYER_PLAYER_UNIT = 2
 const LAYER_ENEMY_UNIT = 4
 const LAYER_ENEMY_BLDG = 8
 var _is_dying: bool = false
+signal inventory_updated(current_load: int, max_load: int)
+var inventory: Dictionary = {} 
+var current_loot_weight: int = 0
 func _ready() -> void:
 	pass # (Body Omitted)
 	var hp_mult = 1.0
@@ -2483,7 +2546,6 @@ func _on_grid_updated(_grid_pos: Vector2i) -> void:
 func _physics_process(delta: float) -> void:
 	pass # (Body Omitted)
 	var fsm_velocity = Vector2.ZERO
-	var target_fsm_velocity = Vector2.ZERO
 		var separation_push = _calculate_separation_push(delta)
 func _calculate_separation_push(delta: float) -> Vector2:
 	pass # (Body Omitted)
@@ -2525,6 +2587,16 @@ func command_retreat(target_pos: Vector2) -> void:
 	pass # (Body Omitted)
 func command_start_working(target_building: BaseBuilding, target_node: ResourceNode) -> void:
 	pass # (Body Omitted)
+func add_loot(resource_type: String, amount: int) -> int:
+	pass # (Body Omitted)
+	var cap = data.max_loot_capacity if "max_loot_capacity" in data else 0
+	var space_left = cap - current_loot_weight
+	var actual_amount = min(amount, space_left)
+func get_speed_multiplier() -> float:
+	pass # (Body Omitted)
+	var cap = data.max_loot_capacity if "max_loot_capacity" in data else 0
+	var penalty = data.encumbrance_speed_penalty if "encumbrance_speed_penalty" in data else 0.0
+	var ratio = float(current_loot_weight) / float(cap)
 
 
 ### FILE: res://scripts/units/CivilianUnit.gd ###
@@ -2533,28 +2605,28 @@ extends BaseUnit
 @export_group("Mob AI")
 @export var mob_separation_force: float = 100.0 
 @export var mob_separation_radius: float = 45.0 
+@export var thrall_unit_scene: PackedScene 
+@export var surrender_hp_threshold: int = 10 # Triggers when HP <= 10
+signal surrender_requested(civilian_node: Node2D)
 var interaction_target: BaseBuilding = null
-var skip_assignment_logic: bool = false # NEW FLAG
+var skip_assignment_logic: bool = false
+var _is_surrendered: bool = false
+var escort_target: Node2D = null
 func _ready() -> void:
 	pass # (Body Omitted)
 func _physics_process(delta: float) -> void:
 	pass # (Body Omitted)
+func take_damage(amount: int, attacker: Node2D = null) -> void:
+	pass # (Body Omitted)
+func _trigger_surrender() -> void:
+	pass # (Body Omitted)
+func attach_to_escort(soldier: Node2D) -> void:
+	pass # (Body Omitted)
+func _process_surrender_behavior(_delta: float) -> void:
+	pass # (Body Omitted)
+		var dist = global_position.distance_to(escort_target.global_position)
+			var dir = (escort_target.global_position - global_position).normalized()
 func command_interact(target: Node2D) -> void:
-	pass # (Body Omitted)
-func _check_arrival_via_geometry() -> void:
-	pass # (Body Omitted)
-	var cell_size = Vector2(32, 32) 
-	var b_grid_size = Vector2(interaction_target.data.grid_size)
-	var b_size_px = b_grid_size * cell_size
-	var top_left = interaction_target.global_position - (b_size_px / 2.0)
-	var building_rect = Rect2(top_left, b_size_px)
-	var interaction_zone = building_rect.grow(15.0)
-func _finalize_interaction(building: BaseBuilding) -> void:
-	pass # (Body Omitted)
-func _perform_assignment(building: BaseBuilding) -> void:
-	pass # (Body Omitted)
-	var success = SettlementManager.assign_worker_from_unit(building, "peasant")
-func die_without_event() -> void:
 	pass # (Body Omitted)
 
 
@@ -2627,6 +2699,18 @@ func _order_squad_attack() -> void:
 	var target = fsm.current_target
 func _order_squad_regroup() -> void:
 	pass # (Body Omitted)
+func request_escort_for(civilian: Node2D) -> void:
+	pass # (Body Omitted)
+	var best_candidate: SquadSoldier = null
+	var min_dist = INF
+	var max_batch_dist = 300.0
+	var max_prisoners = 3
+			var total_load = soldier.escorted_prisoners.size() + soldier.pending_prisoners.size()
+				var dist = soldier.global_position.distance_to(civilian.global_position)
+		var closest_combatant = null
+		var closest_d = INF
+			var state = soldier.fsm.current_state
+				var dist = soldier.global_position.distance_to(civilian.global_position)
 
 
 ### FILE: res://scripts/units/SquadSoldier.gd ###
@@ -2639,6 +2723,9 @@ var is_rubber_banding: bool = false
 const MAX_DIST_FROM_LEADER = 300.0
 const CATCHUP_DIST = 80.0
 const SPRINT_SPEED_MULT = 2.5
+var pending_prisoners: Array[Node2D] = [] 
+var escorted_prisoners: Array[Node2D] = []
+var retreat_zone_cache: Node2D = null
 func _ready() -> void:
 	pass # (Body Omitted)
 func _physics_process(delta: float) -> void:
@@ -2655,6 +2742,25 @@ func _physics_process(delta: float) -> void:
 func _get_radius(node: Node2D) -> float:
 	pass # (Body Omitted)
 		var b = node.get_parent()
+func assign_escort_task(prisoner: Node2D) -> void:
+	pass # (Body Omitted)
+func _set_next_collection_target() -> void:
+	pass # (Body Omitted)
+		var next = pending_prisoners[0]
+func process_collecting_logic(_delta: float) -> void:
+	pass # (Body Omitted)
+	var dist = global_position.distance_to(fsm.objective_target.global_position)
+func _collect_prisoner(prisoner: Node2D) -> void:
+	pass # (Body Omitted)
+func _switch_to_escorting() -> void:
+	pass # (Body Omitted)
+func process_escort_logic(_delta: float) -> void:
+	pass # (Body Omitted)
+func complete_escort() -> void:
+	pass # (Body Omitted)
+	var count = 0
+func process_regroup_logic(_delta: float) -> void:
+	pass # (Body Omitted)
 
 
 ### FILE: res://scripts/units/ThrallUnit.gd ###
@@ -2710,38 +2816,48 @@ func is_cell_buildable(grid_pos: Vector2i) -> bool:
 	pass # (Body Omitted)
 
 
+### FILE: res://scripts/utility/GridUtils.gd ###
+class_name GridUtils
+extends RefCounted
+			var cell = top_left_pos + Vector2i(x, y)
+	var buildable_map: Dictionary = {}
+		var path = entry.get("resource_path", "")
+		var data = load(path) as BuildingData
+			var raw_pos = entry["grid_position"]
+			var center = Vector2i(raw_pos.x, raw_pos.y)
+			var r = data.territory_radius
+			var r_sq = r * r
+					var cell = Vector2i(x, y)
+
+
 ### FILE: res://scripts/utility/GridVisualizer.gd ###
 class_name GridVisualizer
 extends Node2D
 const GRID_LINE_COLOR := Color(1.0, 1.0, 1.0, 0.05)
-const SOLID_CELL_COLOR := Color(1.0, 0.0, 0.0, 0.3) # Red for blocked
-const TERRITORY_COLOR := Color(0.0, 1.0, 0.0, 0.1) # Light Green for territory
+const SOLID_CELL_COLOR := Color(1.0, 0.0, 0.0, 0.3) 
+const TERRITORY_COLOR := Color(0.0, 1.0, 0.0, 0.1) 
 @export_group("Border Settings")
 @export var show_border: bool = true
-var grid_width: int = 0
-var grid_height: int = 0
-var cell_size: int = 0
-var astar_grid: AStarGrid2D = null
-var grid_manager: Node = null
+var cell_size: int = 32
 func _ready() -> void:
 	pass # (Body Omitted)
-		var total_width = grid_width * cell_size
-		var total_height = grid_height * cell_size
+	var grid_width = SettlementManager.GRID_WIDTH
+	var grid_height = SettlementManager.GRID_HEIGHT
+	var s = SettlementManager.get_active_grid_cell_size()
+		var grid_w = SettlementManager.GRID_WIDTH
+		var grid_h = SettlementManager.GRID_HEIGHT
 func _exit_tree() -> void:
+	pass # (Body Omitted)
+func _on_grid_updated(_pos):
 	pass # (Body Omitted)
 func _draw() -> void:
 	pass # (Body Omitted)
-		var buildable = grid_manager.buildable_cells
-			var rect = Rect2(cell.x * cell_size, cell.y * cell_size, cell_size, cell_size)
-	var map_width = grid_width * cell_size
-	var map_height = grid_height * cell_size
-		var y = float(i) * cell_size
-		var x = float(j) * cell_size
-		var cell_draw_size = cell_size * 0.6
-		var cell_offset = cell_size * 0.2
-					var rect_top_left = Vector2(float(i * cell_size) + cell_offset, float(j * cell_size) + cell_offset)
-func _on_pathfinding_grid_updated(_grid_position: Vector2i) -> void:
-	pass # (Body Omitted)
+	var buildable = SettlementManager.buildable_cells
+		var rect = Rect2(cell.x * cell_size, cell.y * cell_size, cell_size, cell_size)
+	var grid = SettlementManager.active_astar_grid
+		var region = grid.region
+				var cell = Vector2i(x, y)
+					var rect = Rect2(x * cell_size, y * cell_size, cell_size, cell_size)
 
 
 ### FILE: res://scripts/utility/RTSInputHandler.gd ###
@@ -2795,12 +2911,12 @@ func _clamp_to_grid(target_pos: Vector2) -> Vector2:
 	var max_y = region.end.y * cell_size.y
 	var margin = 32.0 
 	var clamped = Vector2(
-func sync_civilians(idle_count: int, spawn_origin: Vector2) -> void:
+func sync_civilians(target_count: int, spawn_origin: Vector2, is_enemy: bool = false) -> void:
 	pass # (Body Omitted)
-	var active_idle_civilians = []
-	var current_count = active_idle_civilians.size()
-	var diff = idle_count - current_count
-func _spawn_civilians(count: int, origin: Vector2) -> void:
+	var current_civs = []
+	var current_count = current_civs.size()
+	var diff = target_count - current_count
+func _spawn_civilians(count: int, origin: Vector2, is_enemy: bool) -> void:
 	pass # (Body Omitted)
 	var scene_ref = civilian_data.load_scene()
 		var civ = scene_ref.instantiate()
@@ -2808,7 +2924,6 @@ func _spawn_civilians(count: int, origin: Vector2) -> void:
 		var distance = randf_range(spawn_radius_min, spawn_radius_max)
 		var offset = Vector2(cos(angle), sin(angle)) * distance
 		var pos = origin + offset
-			var wander = Vector2(randf_range(-20, 20), randf_range(-20, 20))
 func _despawn_civilians(count: int, list: Array) -> void:
 	pass # (Body Omitted)
 			var civ = list[i]
@@ -2878,6 +2993,32 @@ func _verify_spawn_results() -> void:
 	var minions = []
 
 
+### FILE: res://test/fixtures/TestUtils.gd ###
+class_name TestUtils
+extends RefCounted
+	var d = UnitData.new()
+	var unit = unit_class.new()
+	var sprite = Sprite2D.new()
+	var img = Image.create(32, 32, false, Image.FORMAT_RGBA8)
+	var col = CollisionShape2D.new()
+	var timer = Timer.new()
+	var sep = Area2D.new()
+	var sep_col = CollisionShape2D.new()
+	var root = PanelContainer.new()
+	var margin = MarginContainer.new()
+	var vbox = VBoxContainer.new()
+	var label = RichTextLabel.new()
+	var loot_panel = PanelContainer.new()
+	var slider = HSlider.new()
+	var dist_label = Label.new()
+	var btn = Button.new()
+	var script = load("res://ui/EndOfYear_Popup.gd")
+	var bridge_script = load("res://scripts/buildings/SettlementBridge.gd")
+	var bridge = bridge_script.new()
+	var unit_cont = Node2D.new()
+	var ui_node = CanvasLayer.new()
+
+
 ### FILE: res://test/integration/test_economy_flow.gd ###
 extends GutTestBase
 func test_population_growth_with_surplus():
@@ -2890,6 +3031,28 @@ func test_construction_labor_deduction():
 	var s = create_mock_settlement(10, 100)
 	var blueprint = {
 	var updated_bp = s.pending_construction_buildings[0]
+
+
+### FILE: res://test/integration/test_escort_cycle.gd ###
+extends GutTestBase
+var leader: SquadLeader
+var soldier: SquadSoldier
+var civilian: CivilianUnit
+var retreat_zone: Area2D
+func before_each():
+	pass # (Body Omitted)
+func test_civilian_surrender_signal():
+	pass # (Body Omitted)
+func test_leader_finds_volunteer():
+	pass # (Body Omitted)
+func test_soldier_collects_prisoner():
+	pass # (Body Omitted)
+func test_escort_completion():
+	pass # (Body Omitted)
+func test_batching_logic():
+	pass # (Body Omitted)
+	var civ1 = TestUtils.create_mock_unit(CivilianUnit, self)
+	var civ2 = TestUtils.create_mock_unit(CivilianUnit, self)
 
 
 ### FILE: res://test/integration/test_fleet_mechanics.gd ###
@@ -3064,57 +3227,24 @@ func test_box_formation_rotation():
 	var p2 = points[1]
 
 
-### FILE: res://test/unit/test_thrall_capture.gd ###
-extends GutTestBase
-var leader: SquadLeader
-var soldier: SquadSoldier
-var civilian: CivilianUnit
-var dummy_data: UnitData # [NEW] Shared data for mocks
-func before_each():
-	pass # (Body Omitted)
-	var t = ThrallUnit.new()
-	var packed = PackedScene.new()
-	var result = packed.pack(t)
-func test_surrender_to_leader():
-	pass # (Body Omitted)
-		var new_thrall = leader.attached_thralls[0]
-func test_surrender_to_soldier():
-	pass # (Body Omitted)
-
-
 ### FILE: res://test/unit/test_wergild.gd ###
-extends GutTest
-var bridge_script = load("res://scripts/buildings/SettlementBridge.gd")
+extends GutTestBase
 var bridge_instance = null
 var bondi_data = null
 var drengr_data = null
+var popup_instance = null
 func before_each():
-	pass # (Body Omitted)
-	var ui_node = CanvasLayer.new()
-	var store_ui = Control.new()
-	var store_code = "extends Control\n"
-	var store_script = GDScript.new()
-	var curs = Node2D.new()
-	var curs_code = "extends Node2D\n"
-	var curs_script = GDScript.new()
-	var b_cont = Node2D.new()
-	var grid = Node2D.new()
-	var rts = Node2D.new()
-	var spawner = Node2D.new()
-	var u_cont = Node2D.new()
-	var mock_popup = PanelContainer.new() 
-func after_each():
 	pass # (Body Omitted)
 func test_wergild_calculation_simple():
 	pass # (Body Omitted)
 	var result = {
+	var total_wergild = 0
+	var net_gold = result.gold_looted - total_wergild
 func test_wergild_bankruptcy_protection():
 	pass # (Body Omitted)
 	var result = {
-	var net_gold = max(0, result.gold_looted - result.casualties[0].wergild_cost)
-func test_wergild_with_victory_bonus():
-	pass # (Body Omitted)
-	var result = {
+	var total_wergild = result.casualties[0].wergild_cost
+	var net_gold = max(0, result.gold_looted - total_wergild)
 
 
 ### FILE: res://test/unit/test_winter_math.gd ###
@@ -3929,5 +4059,3 @@ func _update_prediction_display(data: Dictionary) -> void:
 	var completed = data.get("buildings_completing", [])
 func _on_confirm_pressed() -> void:
 	pass # (Body Omitted)
-
-

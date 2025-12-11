@@ -14,7 +14,6 @@ extends Node2D
 # --- References ---
 @onready var player_spawn_pos: Marker2D = $PlayerStartPosition
 @onready var rts_controller: RTSController = $RTSController
-@onready var grid_manager: Node = $GridManager
 @onready var building_container: Node2D = $BuildingContainer
 @onready var objective_manager: RaidObjectiveManager = $RaidObjectiveManager
 @onready var unit_spawner: UnitSpawner = $UnitSpawner
@@ -109,6 +108,8 @@ func initialize_mission() -> void:
 	objective_building = map_loader.load_base(enemy_base_data, false)
 	
 	# [FIXED] 4. Spawn Enemy Civilians/Thralls
+	
+	
 	if enemy_base_data and enemy_base_data.population_peasants > 0:
 		if unit_spawner:
 			# A. Assign the container property first (The Fix)
@@ -299,7 +300,6 @@ func _on_settlement_ready_for_mission(_d):
 func _validate_nodes() -> bool:
 	if not rts_controller: return false
 	if not objective_manager: return false
-	if not grid_manager: return false
 	return true
 
 func _spawn_test_units() -> void:

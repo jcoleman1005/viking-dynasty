@@ -1,6 +1,5 @@
-[gd_scene load_steps=11 format=3 uid="uid://c1j8x0a4xfyvg"]
+[gd_scene load_steps=10 format=3 uid="uid://c1j8x0a4xfyvg"]
 
-[ext_resource type="Script" uid="uid://dv4ktmb4jw6n6" path="res://scripts/utility/GridManager.gd" id="1_aaohu"]
 [ext_resource type="Script" uid="uid://2iyfg3te1n3y" path="res://scripts/utility/GridVisualizer.gd" id="2_hrpxt"]
 [ext_resource type="Script" uid="uid://bt4qo8hj2kpn0" path="res://tools/EditorOnly.gd" id="2_qdkuo"]
 [ext_resource type="Script" uid="uid://cb2ldxc7vxxah" path="res://data/buildings/Base_Building.gd" id="3_qdkuo"]
@@ -12,11 +11,6 @@
 [ext_resource type="Resource" uid="uid://b7p70u4vm3uem" path="res://data/buildings/Monastery_Chapel.tres" id="9_dpnga"]
 
 [node name="LevelDesignTemplate" type="Node2D"]
-
-[node name="GridManager" type="Node" parent="."]
-script = ExtResource("1_aaohu")
-grid_width = 120
-grid_height = 80
 
 [node name="LevelDesignerTools" type="Node2D" parent="."]
 script = ExtResource("2_qdkuo")
