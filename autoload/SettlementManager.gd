@@ -18,6 +18,7 @@ const CELL_SIZE_PX = 32
 # --- Scene Refs ---
 var active_building_container: Node2D = null
 var pending_management_open: bool = false
+var pending_seasonal_recruits: Array[UnitData] = []
 
 func _ready() -> void:
 	EventBus.player_unit_died.connect(_on_player_unit_died)
@@ -589,3 +590,50 @@ func get_building_index(building_instance: Node2D) -> int:
 			return i
 			
 	return -1
+
+func queue_seasonal_recruit(unit_data: UnitData, count: int) -> void:
+	for i in range(count):
+		pending_seasonal_recruits.append(unit_data)
+
+func commit_seasonal_recruits() -> void:
+	"""
+	Called when Winter Ends. 
+	Converts pending individual recruits into consolidated Warbands.
+	"""
+	if pending_seasonal_recruits.is_empty(): return
+	if not current_settlement: return
+	
+	var new_warbands: Array[WarbandData] = []
+	var current_batch_wb: WarbandData = null
+	
+	# Iterate through every individual soldier promised
+	for u_data in pending_seasonal_recruits:
+		
+		# 1. Do we need a new Warband?
+		# (If we don't have one, or the current one is full, or the unit type doesn't match)
+		if current_batch_wb == null or \
+		   current_batch_wb.current_manpower >= WarbandData.MAX_MANPOWER or \
+		   current_batch_wb.unit_type != u_data:
+			
+			# Create new Squad Container
+			current_batch_wb = WarbandData.new(u_data)
+			current_batch_wb.is_seasonal = true
+			current_batch_wb.current_manpower = 0 # Start empty, add 1 below
+			current_batch_wb.custom_name = "Drengir (%s)" % _generate_oath_name()
+			current_batch_wb.add_history("Swore the oath at Yule")
+			
+			current_settlement.warbands.append(current_batch_wb)
+			new_warbands.append(current_batch_wb)
+		
+		# 2. Add the man to the current squad
+		current_batch_wb.current_manpower += 1
+		
+	Loggie.msg("Spring Arrival: %d men organized into %d Warbands." % [pending_seasonal_recruits.size(), new_warbands.size()]).domain("SETTLEMENT").info()
+	pending_seasonal_recruits.clear()
+	
+	save_settlement()
+	EventBus.settlement_loaded.emit(current_settlement)
+
+func _generate_oath_name() -> String:
+	var names = ["Red", "Bold", "Young", "Wild", "Sworn", "Lucky"]
+	return "The %s" % names.pick_random()

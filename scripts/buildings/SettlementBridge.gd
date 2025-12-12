@@ -90,7 +90,7 @@ func _ready() -> void:
 		DynastyManager.current_jarl = test_jarl
 		DynastyManager.jarl_stats_updated.emit(test_jarl)
 	
-	# Check for Raid Return (This opens the popup, so it must happen last)
+	# Check for Raid Return via RaidManager
 	if RaidManager.pending_raid_result != null:
 		_process_raid_return()
 
@@ -162,11 +162,10 @@ func _on_worker_assignments_confirmed(assignments: Dictionary) -> void:
 		SettlementManager.save_settlement()
 
 # =========================================================
-# === [FIX START] ROBUST WORKER ASSIGNMENT LOGIC ===
+# === WORKER ASSIGNMENT LOGIC ===
 # =========================================================
 
 func _on_worker_requested(target: BaseBuilding) -> void:
-	# 1. FETCH CORRECT DATA (Fixes the Index Crash)
 	var index = SettlementManager.get_building_index(target)
 	if index == -1: 
 		Loggie.msg("Building Index Not Found").domain("SETTLEMENT").error()
@@ -180,13 +179,10 @@ func _on_worker_requested(target: BaseBuilding) -> void:
 	else:
 		entry = SettlementManager.current_settlement.placed_buildings[index]
 	
-	# 2. CALCULATE TRUE CAPACITY (Fixes Over-booking)
-	# We must count workers currently INSIDE + workers currently WALKING
 	var current_count = entry.get("peasant_count", 0)
-	var incoming_count = target.get_meta("incoming_workers", 0) # <--- NEW META TRACKER
+	var incoming_count = target.get_meta("incoming_workers", 0)
 	var total_allocated = current_count + incoming_count
 	
-	# Determine Capacity
 	var capacity = 0
 	if is_construction:
 		capacity = target.data.base_labor_capacity
@@ -202,7 +198,6 @@ func _on_worker_requested(target: BaseBuilding) -> void:
 		EventBus.floating_text_requested.emit("No Peasants", target.global_position, Color.RED)
 		return
 
-	# 3. FIND UNIT
 	var civilians = get_tree().get_nodes_in_group("civilians")
 	var nearest_civ: CivilianUnit = null
 	var min_dist = INF
@@ -210,18 +205,14 @@ func _on_worker_requested(target: BaseBuilding) -> void:
 	for civ in civilians:
 		if civ.has_meta("booked") or civ.is_queued_for_deletion(): continue
 		
-		# Only pick idle units
 		if civ.fsm and civ.fsm.current_state == UnitAIConstants.State.IDLE:
 			var dist = civ.global_position.distance_to(target.global_position)
 			if dist < min_dist:
 				min_dist = dist
 				nearest_civ = civ
 	
-	# 4. EXECUTE
 	if nearest_civ:
 		nearest_civ.set_meta("booked", true)
-		
-		# Increment "Incoming" so next click fails immediately
 		target.set_meta("incoming_workers", incoming_count + 1)
 		
 		var tween = create_tween()
@@ -229,11 +220,9 @@ func _on_worker_requested(target: BaseBuilding) -> void:
 		var time = min_dist / walk_speed
 		
 		tween.tween_property(nearest_civ, "global_position", target.global_position, time)
-		
 		var civ_ref = weakref(nearest_civ)
 		
 		tween.tween_callback(func(): 
-			# Decrement "Incoming" upon arrival (success or fail)
 			var current_inc = target.get_meta("incoming_workers", 1)
 			target.set_meta("incoming_workers", max(0, current_inc - 1))
 			
@@ -244,14 +233,11 @@ func _on_worker_requested(target: BaseBuilding) -> void:
 				Loggie.msg("Worker died en route.").domain("SETTLEMENT").warn()
 		)
 	else:
-		# Instant assign fallback
 		_finalize_worker_assignment(target, null)
 
 func _finalize_worker_assignment(target: BaseBuilding, unit_node: Node2D) -> void:
 	var index = SettlementManager.get_building_index(target)
 	if index != -1:
-		# Double Check Capacity (Race Condition Safety)
-		# We repeat the check just in case logic changed while walking
 		var is_construction = (target.current_state != BaseBuilding.BuildingState.ACTIVE)
 		var entry
 		if is_construction:
@@ -263,7 +249,6 @@ func _finalize_worker_assignment(target: BaseBuilding, unit_node: Node2D) -> voi
 		var cap = target.data.base_labor_capacity if is_construction else (target.data as EconomicBuildingData).peasant_capacity
 		
 		if current < cap:
-			# SUCCESS: Add to DB and Delete Unit
 			if is_construction:
 				SettlementManager.assign_construction_worker(index, "peasant", 1)
 			else:
@@ -274,11 +259,9 @@ func _finalize_worker_assignment(target: BaseBuilding, unit_node: Node2D) -> voi
 			if is_instance_valid(unit_node):
 				unit_node.queue_free()
 		else:
-			# FAIL: Building filled up while walking? Release unit.
 			Loggie.msg("Building full on arrival. Releasing unit.").domain("SETTLEMENT").warn()
 			if is_instance_valid(unit_node):
-				unit_node.set_meta("booked", null) # Unbook
-				# Optional: Make them walk away to look natural
+				unit_node.set_meta("booked", null)
 	else:
 		if is_instance_valid(unit_node):
 			unit_node.set_meta("booked", null)
@@ -289,7 +272,6 @@ func _on_worker_removal_requested(target: BaseBuilding) -> void:
 	var index = SettlementManager.get_building_index(target)
 	if index == -1: return
 	
-	# 1. Fetch Correct Data
 	var entry
 	var is_construction = (target.current_state != BaseBuilding.BuildingState.ACTIVE)
 	
@@ -301,14 +283,11 @@ func _on_worker_removal_requested(target: BaseBuilding) -> void:
 	var current_workers = entry.get("peasant_count", 0)
 	
 	if current_workers > 0:
-		# 2. Spawn Visual (First)
 		if unit_spawner:
-			# [FIX] Randomize spawn location to prevent stacking
 			var random_offset = Vector2(randf_range(-20, 20), randf_range(20, 40))
 			var spawn_pos = target.global_position + random_offset
 			unit_spawner.spawn_worker_at(spawn_pos)
 			
-		# 3. Decrement Data (Second)
 		if is_construction:
 			SettlementManager.assign_construction_worker(index, "peasant", -1)
 		else:
@@ -325,7 +304,7 @@ func _force_inspector_refresh(target: BaseBuilding) -> void:
 		inspector.call("_refresh_data")
 
 # =========================================================
-# === [FIX END] ===========================================
+# === WINTER PHASE TRANSITION ===
 # =========================================================
 
 func _on_end_year_pressed() -> void:
@@ -343,11 +322,12 @@ func _on_end_year_pressed() -> void:
 
 func _start_end_year_sequence() -> void:
 	_close_all_popups()
-	Loggie.msg("SettlementBridge: Handing off to DynastyManager for Winter Phase.").domain("SETTLEMENT").info()
-	DynastyManager.start_winter_phase()
+	Loggie.msg("SettlementBridge: Handing off to DynastyManager for Winter Cycle.").domain("SETTLEMENT").info()
+	
+	# FIX: Call DynastyManager to prep the Jarl, not WinterManager directly
+	DynastyManager.start_winter_cycle()
 
 func _on_payout_collected(payout: Dictionary) -> void:
-	# --- Handle Renown from Loot Distribution ---
 	if payout.has("renown"):
 		var amount = payout["renown"]
 		if amount != 0:
@@ -357,6 +337,8 @@ func _on_payout_collected(payout: Dictionary) -> void:
 		payout.erase("renown")
 	
 	SettlementManager.deposit_resources(payout)
+	
+	# Reset Managers
 	RaidManager.pending_raid_result = null
 	
 	if storefront_ui: storefront_ui.show()
@@ -430,8 +412,6 @@ func _spawn_single_building(entry: Dictionary, is_new: bool) -> BaseBuilding:
 
 	var new_building = building_data.scene_to_spawn.instantiate()
 	new_building.data = building_data
-	
-	# PRESERVED: Ensure Tag is set here for lookup logic
 	new_building.grid_coordinate = grid_pos 
 	
 	var cell = SettlementManager.get_active_grid_cell_size()
@@ -495,9 +475,8 @@ func _on_building_right_clicked(building: BaseBuilding) -> void:
 	if SettlementManager.attempt_purchase(cost):
 		EventBus.building_ready_for_placement.emit(data)
 
-# --- PRESERVED: Process Raid Return (Legacy/Updated Hybrid) ---
+# --- Process Raid Return ---
 func _process_raid_return() -> void:
-	# FIX: Check RaidManager
 	if RaidManager.pending_raid_result == null:
 		return
 		
@@ -517,7 +496,6 @@ func _process_raid_return() -> void:
 	
 	var net_gold = max(0, raw_gold - total_wergild)
 	
-	# FIX: Update RaidManager history
 	if outcome == "victory":
 		RaidManager.last_raid_outcome = "victory"
 	elif outcome == "retreat":
@@ -554,7 +532,6 @@ func _process_raid_return() -> void:
 	elif outcome == "retreat": 
 		xp_gain = 20
 	
-	# Note: active_year_modifiers stays in DynastyManager (Phase 4), so this is valid:
 	if xp_gain > 0 and DynastyManager.active_year_modifiers.has("BLOT_ODIN"):
 		xp_gain = int(xp_gain * 1.5)
 		
@@ -569,7 +546,6 @@ func _process_raid_return() -> void:
 	var title_text = "Raid Result"
 	
 	if outcome == "victory":
-		# FIX: Get difficulty from RaidManager
 		var difficulty = RaidManager.current_raid_difficulty
 		var bonus = 200 + (difficulty * 50)
 		if grade == "Decisive": bonus += 100
@@ -615,7 +591,6 @@ func _process_raid_return() -> void:
 		
 	end_of_year_popup.display_payout(loot_summary, title_text)
 	
-	# FIX: Reset via RaidManager
 	RaidManager.pending_raid_result = null
 	RaidManager.reset_raid_state()
 	
