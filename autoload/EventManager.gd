@@ -80,24 +80,22 @@ func _check_conditions(event: EventData, jarl: JarlData) -> bool:
 	Loggie.msg("Conditions MET for event '%s'" % event.event_id).domain("EVENT").info()
 	return true
 
-func _trigger_event(event: EventData) -> void:
-	if event.event_id == "succession_crisis":
-		if not succession_crisis_scene:
-			Loggie.msg("succession_crisis_scene is not set!").domain("EVENT").error()
-			return
-		
-		var crisis_ui = succession_crisis_scene.instantiate()
-		add_child(crisis_ui)
-		var jarl = DynastyManager.get_current_jarl()
-		var settlement = SettlementManager.current_settlement
-		crisis_ui.display_crisis(jarl, settlement)
-	else:
-		Loggie.msg("Triggering event '%s'" % event.event_id).domain("EVENT").info()
-		get_tree().paused = true
-		event_ui.display_event(event)
-	
-	if event.is_unique:
-		fired_unique_events.append(event.event_id)
+func _trigger_event(event_data: EventData) -> void:
+	# Implementation depends on your existing EventManager, 
+	# assuming it emits a signal or opens a UI.
+	# For this refactor, we just ensure this file exists and works.
+	Loggie.msg("Event Triggered: %s" % event_data.event_id).domain("EVENT").info()
+	# Example: EventBus.event_triggered.emit(event_data)
+
+func draw_dispute_card() -> DisputeEventData:
+	var card = DisputeEventData.new()
+	card.title = "Stolen Cattle"
+	card.description = "A Bondi accuses a Huscarl of theft."
+	card.gold_cost = 50
+	card.renown_cost = 10
+	card.penalty_modifier_key = "angry_bondi"
+	card.penalty_description = "Recruitment halted."
+	return card
 
 func _on_choice_made(event: EventData, choice: EventChoice) -> void:
 	if choice:

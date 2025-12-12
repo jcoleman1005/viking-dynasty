@@ -202,11 +202,11 @@ func _end_mission_via_retreat() -> void:
 	mission_result.loot = raid_loot.collected_loot.duplicate() if raid_loot else {}
 	mission_result.casualties = dead_units_log.duplicate()
 
-	DynastyManager.pending_raid_result = mission_result
+	RaidManager.pending_raid_result = mission_result
 	
 	# Note: SettlementBridge will convert "retreat" outcome to "defeat" for history stats later,
 	# so we don't strictly need to set last_raid_outcome here, but it doesn't hurt.
-	DynastyManager.last_raid_outcome = "retreat"
+	RaidManager.last_raid_outcome = "retreat"
 	
 	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
 
@@ -330,14 +330,14 @@ func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	mission_result.loot = total_loot
 	
 	# Calculate Renown
-	var difficulty = DynastyManager.current_raid_difficulty
+	var difficulty = RaidManager.current_raid_difficulty
 	# Base 200 + 50 per star
 	mission_result.renown_earned = 200 + (difficulty * 50)
 	
 	mission_result.casualties = dead_units_log.duplicate()
 	
-	DynastyManager.pending_raid_result = mission_result
-	DynastyManager.last_raid_outcome = "victory"
+	RaidManager.pending_raid_result = mission_result
+	RaidManager.last_raid_outcome = "victory"
 	
 	Loggie.msg("Raid Victory!").domain(LogDomains.RAID).ctx("Grade", grade).info()
 	_show_victory_message("Victory!", "The settlement lies in ruins.")

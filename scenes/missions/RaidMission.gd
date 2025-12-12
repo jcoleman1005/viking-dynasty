@@ -44,10 +44,10 @@ func _ready() -> void:
 	add_child(map_loader)
 	
 	# Check Context
-	if DynastyManager.is_defensive_raid:
+	if RaidManager.is_defensive_raid:
 		self.is_defensive_mission = true
 		objective_manager.is_defensive_mission = true
-		DynastyManager.is_defensive_raid = false
+		RaidManager.is_defensive_raid = false
 		print("[DIAGNOSTIC] RaidMission: Mode set to DEFENSIVE.")
 	else:
 		print("[DIAGNOSTIC] RaidMission: Mode set to OFFENSIVE (Raid).")
@@ -181,8 +181,8 @@ func _spawn_player_garrison() -> void:
 		if SettlementManager.current_settlement:
 			warbands_to_spawn = SettlementManager.current_settlement.warbands
 	else:
-		if not DynastyManager.outbound_raid_force.is_empty():
-			warbands_to_spawn = DynastyManager.outbound_raid_force
+		if not RaidManager.outbound_raid_force.is_empty():
+			warbands_to_spawn = RaidManager.outbound_raid_force
 		else:
 			if SettlementManager.current_settlement:
 				warbands_to_spawn = SettlementManager.current_settlement.warbands
