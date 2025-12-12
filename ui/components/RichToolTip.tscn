@@ -1,0 +1,30 @@
+[gd_scene load_steps=2 format=3 uid="uid://cl47qn4t07afo"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_urrbu"]
+bg_color = Color(0.101960786, 0.101960786, 0.101960786, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="RichToolTip" type="PanelContainer"]
+offset_right = 300.0
+offset_bottom = 50.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_urrbu")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="RichTextLabel" type="RichTextLabel" parent="MarginContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(300, 0)
+bbcode_enabled = true
+text = "Line 1
+[color=red]Warning[/color]"
+fit_content = true
+scroll_active = false
+autowrap_mode = 2

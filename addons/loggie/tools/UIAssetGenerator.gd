@@ -175,7 +175,7 @@ func _gen_tooltip_bg() -> void:
 	img.save_png(OUT_PATH + "tooltip_bg.png")
 
 func _gen_resource_icons() -> void:
-	var resources = ["res_gold", "res_wood", "res_food", "res_stone", "res_peasant", "res_thrall"]
+	var resources = ["res_gold", "res_wood", "res_food", "res_iron", "res_peasant", "res_thrall"]
 	
 	for name in resources:
 		var img = Image.create(64, 64, false, Image.FORMAT_RGBA8)
@@ -211,7 +211,7 @@ func _gen_resource_icons() -> void:
 				fill_circle.call(Vector2(32, 36), 20, Color("#cd5c5c")) # Meat
 				fill_rect.call(Rect2i(30, 10, 4, 10), Color.WHITE) # Bone/Stem
 				
-			"res_stone":
+			"res_iron":
 				# Grey Boulder
 				fill_circle.call(Vector2(32, 32), 22, Color.GRAY)
 				fill_circle.call(Vector2(24, 24), 8, Color.LIGHT_GRAY) # Highlight

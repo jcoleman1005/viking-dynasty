@@ -7,6 +7,8 @@ extends Node
 @export var raider_scene: PackedScene
 @export var end_of_year_popup_scene: PackedScene
 @export var world_map_scene_path: String = "res://scenes/world_map/MacroMap.tscn"
+@export var resource_bar: ResourceBar 
+@export var date_controls: DateAndControls
 
 # --- REACTIVE DEBUG SETTINGS ---
 @export_group("Loggie Debug Settings")
@@ -36,7 +38,7 @@ extends Node
 @export var start_gold: int = 1000
 @export var start_wood: int = 500
 @export var start_food: int = 100
-@export var start_stone: int = 200
+@export var start_iron: int = 200
 @export var start_population: int = 10
 
 # --- Default Assets ---
@@ -48,6 +50,7 @@ var default_end_of_year_popup: PackedScene = preload("res://ui/EndOfYear_Popup.t
 @onready var ui_layer: CanvasLayer = $UI
 @onready var storefront_ui: Control = $UI/Storefront_UI
 @onready var building_cursor: Node2D = $BuildingCursor
+
 
 # --- Local Node References ---
 @onready var building_container: Node2D = $BuildingContainer
@@ -102,6 +105,14 @@ func _ready() -> void:
 		EventBus.attack_command.connect(rts_controller._on_attack_command)
 		EventBus.interact_command.connect(rts_controller._on_interact_command)
 		
+	# Ensure the new UI components initialize with current data
+	if resource_bar and SettlementManager.current_settlement:
+		resource_bar._on_treasury_updated(SettlementManager.current_settlement.treasury)
+		
+	if date_controls:
+		date_controls._update_date()
+
+
 func _exit_tree() -> void:
 	SettlementManager.unregister_active_scene_nodes()
 
@@ -429,7 +440,7 @@ func _spawn_single_building(entry: Dictionary, is_new: bool) -> BaseBuilding:
 	
 func _create_default_settlement() -> SettlementData:
 	var settlement = SettlementData.new()
-	settlement.treasury = { "gold": start_gold, "wood": start_wood, "food": start_food, "stone": start_stone }
+	settlement.treasury = { "gold": start_gold, "wood": start_wood, "food": start_food, "iron": start_iron }
 	settlement.population_peasants = start_population
 	settlement.resource_path = "res://data/settlements/home_base_fixed.tres"
 	var great_hall_entry = { "resource_path": "res://data/buildings/GreatHall.tres", "grid_position": Vector2i(28, 18) }

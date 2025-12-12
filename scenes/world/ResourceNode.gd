@@ -29,7 +29,7 @@ signal node_depleted(node: ResourceNode)
 const DEBUG_COLORS = {
 	"wood": Color.FOREST_GREEN,
 	"food": Color.GOLDENROD,
-	"stone": Color.LIGHT_SLATE_GRAY,
+	"iron": Color.LIGHT_SLATE_GRAY,
 	"gold": Color.GOLD
 }
 

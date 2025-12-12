@@ -1,0 +1,27 @@
+[gd_scene load_steps=2 format=3 uid="uid://b1bm5oqt4ck7j"]
+
+[ext_resource type="Script" uid="uid://b1vvwjvhaveas" path="res://ui/components/DateAndControls.gd" id="1_oa3w2"]
+
+[node name="DateAndControls" type="PanelContainer" node_paths=PackedStringArray("label_date", "btn_end_year")]
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("1_oa3w2")
+label_date = NodePath("MarginContainer/HBoxContainer/Label_Date")
+btn_end_year = NodePath("MarginContainer/HBoxContainer/Btn_EndWinter")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="Btn_EndWinter" type="Button" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+text = "Begin Winter"
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="Label_Date" type="Label" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+text = "Year 800 AD"

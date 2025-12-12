@@ -9,7 +9,7 @@ func _init() -> void:
 		GameResources.GOLD: 0,
 		GameResources.WOOD: 0,
 		GameResources.FOOD: 0,
-		GameResources.STONE: 0
+		GameResources.IRON: 0
 	}
 
 func add_loot(resource_type: String, amount: int) -> void:

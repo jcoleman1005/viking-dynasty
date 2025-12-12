@@ -1,0 +1,113 @@
+[gd_scene load_steps=9 format=3 uid="uid://blb8t7lsjt8co"]
+
+[ext_resource type="Script" uid="uid://dofn84ky4encf" path="res://ui/components/ResourceBar.gd" id="1_tse0x"]
+[ext_resource type="Theme" uid="uid://63duv3n1vwhg" path="res://ui/themes/VikingDynastyTheme.tres" id="1_u2ssb"]
+[ext_resource type="Texture2D" uid="uid://d08kc6hrja6ev" path="res://ui/assets/res_gold.png" id="3_fpi3c"]
+[ext_resource type="Texture2D" uid="uid://m6tx1fv7imra" path="res://ui/assets/res_wood.png" id="4_qldcb"]
+[ext_resource type="Texture2D" uid="uid://ck3gpx751ywcw" path="res://ui/assets/res_food.png" id="5_tr3j7"]
+[ext_resource type="Texture2D" uid="uid://denkxl6ex742y" path="res://ui/assets/res_stone.png" id="6_j6ga4"]
+[ext_resource type="Texture2D" uid="uid://kskg7pj2c4ia" path="res://ui/assets/icon_crown.png" id="7_qbfpr"]
+[ext_resource type="Texture2D" uid="uid://cukqh3t2wkmua" path="res://ui/assets/res_peasant.png" id="8_5huwg"]
+
+[node name="ResourceBar" type="PanelContainer" node_paths=PackedStringArray("label_gold", "label_wood", "label_food", "label_iron", "label_renown", "label_pop", "food_container")]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -275.0
+offset_right = 275.0
+offset_bottom = 114.0
+grow_horizontal = 2
+theme = ExtResource("1_u2ssb")
+script = ExtResource("1_tse0x")
+label_gold = NodePath("MarginContainer/HBoxContainer/Gold/Label")
+label_wood = NodePath("MarginContainer/HBoxContainer/Wood/Label")
+label_food = NodePath("MarginContainer/HBoxContainer/Food/Label")
+label_iron = NodePath("MarginContainer/HBoxContainer/Iron/Label")
+label_renown = NodePath("MarginContainer/HBoxContainer/Renown/Label")
+label_pop = NodePath("MarginContainer/HBoxContainer/Population/Label")
+food_container = NodePath("MarginContainer/HBoxContainer/Food")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="Gold" type="HBoxContainer" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/HBoxContainer/Gold"]
+layout_mode = 2
+text = "0"
+
+[node name="TextureRect" type="TextureRect" parent="MarginContainer/HBoxContainer/Gold"]
+layout_mode = 2
+texture = ExtResource("3_fpi3c")
+stretch_mode = 5
+
+[node name="Wood" type="HBoxContainer" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/HBoxContainer/Wood"]
+layout_mode = 2
+text = "0"
+
+[node name="TextureRect" type="TextureRect" parent="MarginContainer/HBoxContainer/Wood"]
+layout_mode = 2
+texture = ExtResource("4_qldcb")
+stretch_mode = 5
+
+[node name="Food" type="HBoxContainer" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/HBoxContainer/Food"]
+layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="MarginContainer/HBoxContainer/Food"]
+layout_mode = 2
+texture = ExtResource("5_tr3j7")
+stretch_mode = 5
+
+[node name="Iron" type="HBoxContainer" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/HBoxContainer/Iron"]
+layout_mode = 2
+text = "0"
+
+[node name="TextureRect" type="TextureRect" parent="MarginContainer/HBoxContainer/Iron"]
+layout_mode = 2
+texture = ExtResource("6_j6ga4")
+stretch_mode = 5
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/HBoxContainer/Iron"]
+layout_mode = 2
+
+[node name="Renown" type="HBoxContainer" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/HBoxContainer/Renown"]
+layout_mode = 2
+text = "0"
+
+[node name="TextureRect" type="TextureRect" parent="MarginContainer/HBoxContainer/Renown"]
+layout_mode = 2
+texture = ExtResource("7_qbfpr")
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="Population" type="HBoxContainer" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/HBoxContainer/Population"]
+layout_mode = 2
+text = "0"
+
+[node name="TextureRect" type="TextureRect" parent="MarginContainer/HBoxContainer/Population"]
+layout_mode = 2
+texture = ExtResource("8_5huwg")

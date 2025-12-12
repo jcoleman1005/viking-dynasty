@@ -124,7 +124,7 @@ func _save_resource() -> void:
 		
 	var s_data = SettlementData.new()
 	s_data.placed_buildings = placed_list
-	s_data.treasury = {"gold": 2000, "wood": 1000, "food": 800, "stone": 500}
+	s_data.treasury = {"gold": 2000, "wood": 1000, "food": 800, "iron": 500}
 	
 	# --- FIX: Use clear() instead of assignment to respect strict typing ---
 	s_data.warbands.clear() 

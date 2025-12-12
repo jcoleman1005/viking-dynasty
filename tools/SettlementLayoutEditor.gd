@@ -124,7 +124,7 @@ func get_building_name(path: String) -> String:
 
 func save_layout(layout: Array[Dictionary], path: String):
 	var settlement = SettlementData.new()
-	settlement.treasury = {"gold": 1000, "wood": 500, "food": 200, "stone": 300}
+	settlement.treasury = {"gold": 1000, "wood": 500, "food": 200, "iron": 300}
 	settlement.placed_buildings = layout
 	settlement.garrisoned_units = {"res://data/units/Unit_PlayerRaider.tres": 3}
 	

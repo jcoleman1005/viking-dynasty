@@ -25,7 +25,7 @@ func _run():
 	# 3. Create the Data Object
 	var settlement_data = SettlementData.new()
 	# Default treasury for a raid target (can be edited in Inspector later)
-	settlement_data.treasury = {"gold": 500, "wood": 500, "food": 500, "stone": 200}
+	settlement_data.treasury = {"gold": 500, "wood": 500, "food": 500, "iron": 200}
 	settlement_data.placed_buildings = []
 	# Initialize garrison with default enemy
 	settlement_data.warbands = [] 

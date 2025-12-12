@@ -6,7 +6,7 @@ class_name SettlementData
 	GameResources.GOLD: 0, 
 	GameResources.WOOD: 0, 
 	GameResources.FOOD: 0, 
-	GameResources.STONE: 0
+	GameResources.IRON: 0
 }
 
 @export var placed_buildings: Array[Dictionary] = []

@@ -6,14 +6,14 @@ extends RefCounted
 const GOLD := "gold"
 const WOOD := "wood"
 const FOOD := "food"
-const STONE := "stone"
+const IRON := "iron"
 
 # -- Population --
 const POP_PEASANT := "peasant"
 const POP_THRALL := "thrall"
 
 # -- Helpers for UI Iteration --
-const ALL_CURRENCIES = [GOLD, WOOD, FOOD, STONE]
+const ALL_CURRENCIES = [GOLD, WOOD, FOOD, IRON]
 const ALL_POPULATION = [POP_PEASANT, POP_THRALL]
 
 # Optional: Centralized display names
@@ -22,7 +22,7 @@ static func get_display_name(key: String) -> String:
 		GOLD: return "Gold"
 		WOOD: return "Wood"
 		FOOD: return "Food"
-		STONE: return "Stone"
+		IRON: return "iron"
 		POP_PEASANT: return "Villager"
 		POP_THRALL: return "Thrall"
 		_: return "Unknown"

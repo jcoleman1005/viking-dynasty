@@ -47,7 +47,7 @@ var RAW_DATA = [
 		"description": "A holy shrine containing silver and relics. Yields HIGH GOLD.",
 		"resource_type": "gold",
 		"base_passive_output": 150,
-		"cost": { "stone": 100, "gold": 100 },
+		"cost": { "iron": 100, "gold": 100 },
 		"stats": { "hp": 60, "construction_effort": 120 }
 	}
 ]

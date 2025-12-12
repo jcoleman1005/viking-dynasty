@@ -34,7 +34,7 @@ func _update_treasury_display(treasury: Dictionary) -> void:
 	gold_label.text = "%d" % treasury.get(GameResources.GOLD, 0)
 	wood_label.text = "%d" % treasury.get(GameResources.WOOD, 0)
 	food_label.text = "%d" % treasury.get(GameResources.FOOD, 0)
-	stone_label.text = "%d" % treasury.get(GameResources.STONE, 0)
+	stone_label.text = "%d" % treasury.get(GameResources.IRON, 0)
 	
 	if SettlementManager.current_settlement:
 		# Army Count

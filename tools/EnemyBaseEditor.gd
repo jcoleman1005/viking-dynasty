@@ -38,7 +38,7 @@ func _run():
 # Helper function to create new enemy base layouts
 static func create_enemy_base_layout(buildings: Array[Dictionary], save_path: String):
 	var settlement = SettlementData.new()
-	settlement.treasury = {"gold": 500, "wood": 200, "food": 150, "stone": 100}
+	settlement.treasury = {"gold": 500, "wood": 200, "food": 150, "iron": 100}
 	settlement.placed_buildings = buildings
 	
 	ResourceSaver.save(settlement, save_path)
