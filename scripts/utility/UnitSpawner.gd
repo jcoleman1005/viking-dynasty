@@ -71,6 +71,7 @@ func spawn_garrison(warbands: Array[WarbandData], spawn_origin: Vector2) -> void
 		# ------------------------------
 		
 		unit_container.add_child(leader)
+		EventBus.player_unit_spawned.emit(leader)
 		print("[DIAGNOSTIC] Spawning %s at %s" % [leader.name, leader.global_position])
 		
 		if rts_controller:
@@ -140,22 +141,17 @@ func _spawn_civilians(count: int, origin: Vector2, is_enemy: bool) -> void:
 	for i in range(count):
 		var civ = scene_ref.instantiate()
 		
-		# [FIX] Set Team Identity BEFORE adding to tree
+		# Team Identity
 		if is_enemy:
-			# Set to Enemy Layer (Layer 3/Value 4)
-			# Standard: 1=Env, 2=Player, 4=Enemy
 			civ.collision_layer = 4 
-			# Add to Enemy Group so logic knows it's hostile
 			civ.add_to_group("enemy_units")
-			# Remove from Player Group if the scene adds it by default
 			if civ.is_in_group("player_units"):
 				civ.remove_from_group("player_units")
 		else:
-			# Default Player Layer
 			civ.collision_layer = 2
 			civ.add_to_group("player_units")
 			
-		# Position (Random scatter)
+		# Position
 		var angle = randf() * TAU
 		var distance = randf_range(spawn_radius_min, spawn_radius_max)
 		var offset = Vector2(cos(angle), sin(angle)) * distance
@@ -164,6 +160,10 @@ func _spawn_civilians(count: int, origin: Vector2, is_enemy: bool) -> void:
 		
 		if unit_container:
 			unit_container.add_child(civ)
+			
+		# [FIX] Announce to RTS Controller
+		if not is_enemy:
+			EventBus.player_unit_spawned.emit(civ)
 
 func _despawn_civilians(count: int, list: Array) -> void:
 	for i in range(count):
@@ -175,10 +175,21 @@ func _despawn_civilians(count: int, list: Array) -> void:
 
 func spawn_worker_at(location: Vector2) -> void:
 	if not civilian_data: return
-	_spawn_civilians(1, location, false)
-	Loggie.msg("UnitSpawner: Worker spawned at %s" % location).domain(LogDomains.UNIT).debug()
 	
-# res://scripts/utility/UnitSpawner.gd
+	var scene_ref = civilian_data.load_scene()
+	if not scene_ref: return
+	
+	var civ = scene_ref.instantiate()
+	civ.global_position = location
+	
+	# Set properties for "Home" mode
+	civ.collision_layer = 2 # Player layer
+	civ.add_to_group("player_units")
+	civ.add_to_group("civilians") # Important for the "Available" check
+	
+	if unit_container:
+		unit_container.add_child(civ)
+		EventBus.player_unit_spawned.emit(civ)
 
 func spawn_enemy_garrison(warbands: Array[WarbandData], buildings: Array) -> void:
 	print("DEBUG: Spawner received %d warbands to spawn." % warbands.size())

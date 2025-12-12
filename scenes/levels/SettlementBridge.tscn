@@ -1425,6 +1425,9 @@ script = ExtResource("2_c48a7")
 home_base_data = SubResource("Resource_vmd61")
 raider_scene = ExtResource("4_c0sri")
 end_of_year_popup_scene = ExtResource("2_5el12")
+show_ui_logs = true
+show_settlement_logs = true
+show_building_logs = true
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]
 position = Vector2(-3, 0)

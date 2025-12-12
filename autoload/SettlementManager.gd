@@ -132,6 +132,7 @@ func place_building(building_data: BuildingData, grid_position: Vector2i, is_new
 	
 	# [FIX] Assign Data BEFORE adding to tree
 	new_building.data = building_data
+	new_building.grid_coordinate = grid_position
 	
 	var cell = get_active_grid_cell_size()
 	var pos = Vector2(grid_position) * cell + (Vector2(building_data.grid_size) * cell / 2.0)
@@ -502,14 +503,37 @@ func assign_worker_from_unit(building: BaseBuilding, type: String) -> bool:
 	return true
 	
 func _find_entry_for_building(building: BaseBuilding) -> Dictionary:
+	# 1. OPTIMIZATION: Check the Tag first (O(1) Lookup)
+	if "grid_coordinate" in building:
+		var tagged_pos = building.grid_coordinate
+		if tagged_pos != Vector2i(-999, -999):
+			# Search Placed
+			for entry in current_settlement.placed_buildings:
+				if Vector2i(entry["grid_position"].x, entry["grid_position"].y) == tagged_pos:
+					return entry
+			# Search Pending
+			for entry in current_settlement.pending_construction_buildings:
+				if Vector2i(entry["grid_position"].x, entry["grid_position"].y) == tagged_pos:
+					return entry
+	
+	# 2. FALLBACK: Old Math (Only used if tag is missing/corrupted)
 	var cell_size = get_active_grid_cell_size()
 	var half_size = (Vector2(building.data.grid_size) * cell_size) / 2.0
-	var grid_pos = Vector2i((building.global_position - half_size) / cell_size)
+	# Use round() to be safer with float errors
+	var top_left = building.global_position - half_size
+	var grid_pos = Vector2i(round(top_left.x / cell_size.x), round(top_left.y / cell_size.y))
 	
 	for entry in current_settlement.placed_buildings:
-		if Vector2i(entry["grid_position"].x, entry["grid_position"].y) == grid_pos: return entry
+		if Vector2i(entry["grid_position"].x, entry["grid_position"].y) == grid_pos: 
+			# Self-Repair: Fix the missing tag for next time
+			building.grid_coordinate = grid_pos
+			return entry
+			
 	for entry in current_settlement.pending_construction_buildings:
-		if Vector2i(entry["grid_position"].x, entry["grid_position"].y) == grid_pos: return entry
+		if Vector2i(entry["grid_position"].x, entry["grid_position"].y) == grid_pos: 
+			building.grid_coordinate = grid_pos
+			return entry
+			
 	return {}
 
 func unassign_worker_from_building(building: BaseBuilding, type: String) -> bool:
@@ -523,3 +547,45 @@ func unassign_worker_from_building(building: BaseBuilding, type: String) -> bool
 	save_settlement()
 	EventBus.settlement_loaded.emit(current_settlement)
 	return true
+
+func get_building_index(building_instance: Node2D) -> int:
+	var data_to_search = active_map_data if active_map_data else current_settlement
+	if not data_to_search: return -1
+
+	# [FIX] Strict State Checking
+	# Determine EXACTLY which list to search. Do not search both.
+	var search_placed = true
+	
+	if "current_state" in building_instance:
+		# If it is ANYTHING other than ACTIVE, it is a construction project.
+		if building_instance.current_state != BaseBuilding.BuildingState.ACTIVE:
+			search_placed = false
+	
+	var target_list = data_to_search.placed_buildings if search_placed else data_to_search.pending_construction_buildings
+
+	# 1. OPTIMIZATION: Check the Tag
+	if "grid_coordinate" in building_instance:
+		var tagged_pos = building_instance.get("grid_coordinate")
+		if tagged_pos != Vector2i(-999, -999):
+			for i in range(target_list.size()):
+				var entry = target_list[i]
+				var pos = entry["grid_position"]
+				if Vector2i(pos.x, pos.y) == tagged_pos:
+					return i
+
+	# 2. FALLBACK: Math
+	var cell_size = get_active_grid_cell_size()
+	var size = Vector2i(1, 1)
+	if "data" in building_instance and building_instance.data:
+		size = building_instance.data.grid_size
+		
+	var grid_pos = Vector2i((building_instance.global_position - (Vector2(size) * cell_size / 2.0)) / cell_size)
+	
+	# Only search the VALID list
+	for i in range(target_list.size()):
+		var entry = target_list[i]
+		var pos = entry["grid_position"]
+		if Vector2i(pos.x, pos.y) == grid_pos: 
+			return i
+			
+	return -1

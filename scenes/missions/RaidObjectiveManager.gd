@@ -177,6 +177,12 @@ func on_unit_evacuated(unit: BaseUnit) -> void:
 			
 	print("RaidObjectiveManager: Evacuated! Remaining: %d" % (living_count - 1))
 	
+	if unit is CivilianUnit:
+		# Assuming CivilianUnit has a flag or we just count all evacuated civs as thralls
+		if raid_loot:
+			raid_loot.add_loot("thrall", 1)
+			Loggie.msg("Thrall captured!").domain(LogDomains.RAID).info()
+	
 	if living_count <= 1:
 		print("RaidObjectiveManager: All units evacuated. Ending Mission.")
 		_end_mission_via_retreat()

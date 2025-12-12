@@ -8,6 +8,9 @@ signal construction_completed(building: BaseBuilding)
 signal loot_stolen(type: String, amount: int)
 signal loot_depleted(building: BaseBuilding)
 
+# Defaults to a specific "Invalid" vector so we know if it wasn't set.
+var grid_coordinate: Vector2i = Vector2i(-999, -999)
+
 enum BuildingState { 
 	BLUEPRINT, 
 	UNDER_CONSTRUCTION, 

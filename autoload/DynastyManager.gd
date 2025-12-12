@@ -77,7 +77,7 @@ func start_new_campaign() -> void:
 	current_raid_target = null
 	is_defensive_raid = false
 	current_raid_difficulty = 1
-	pending_raid_result.clear()
+	pending_raid_result = null
 	reset_raid_state()
 	active_year_modifiers.clear()
 	

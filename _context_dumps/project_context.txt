@@ -1,5 +1,5 @@
 PROJECT CONTEXT SKELETON
-Generated: 2025-12-11T11:30:40
+Generated: 2025-12-12T08:15:48
 ========================================
 
 ### FILE: res://autoload/DynastyManager.gd ###
@@ -12,7 +12,7 @@ var is_defensive_raid: bool = false
 var minimum_inherited_legitimacy: int = 0
 var loaded_legacy_upgrades: Array[LegacyUpgradeData] = []
 var current_raid_difficulty: int = 1 
-var pending_raid_result: Dictionary = {} 
+var pending_raid_result: RaidResultData = null 
 var active_year_modifiers: Dictionary = {}
 var winter_upkeep_report: Dictionary = {} 
 var pending_dispute_card: DisputeEventData = null
@@ -915,6 +915,16 @@ func get_loot_summary() -> String:
 			var display_name = GameResources.get_display_name(resource_type)
 
 
+### FILE: res://data/missions/RaidResultData.gd ###
+class_name RaidResultData
+extends Resource
+@export var loot: Dictionary = {}
+@export var casualties: Array[UnitData] = []
+@export var outcome: String = "neutral" 
+@export var victory_grade: String = "Standard"
+@export var renown_earned: int = 0
+
+
 ### FILE: res://data/settlements/SettlementData.gd ###
 extends Resource
 class_name SettlementData
@@ -1462,11 +1472,7 @@ func on_unit_evacuated(unit: BaseUnit) -> void:
 	var living_count = 0
 func _end_mission_via_retreat() -> void:
 	pass # (Body Omitted)
-	var raw_gold = raid_loot.collected_loot.get("gold", 0)
-	var final_loot = raid_loot.collected_loot if raid_loot else {}
-	var result = {
-	var gold = final_loot.get("gold", 0)
-	var thralls = final_loot.get("thrall", 0)
+	var mission_result = RaidResultData.new()
 func _connect_to_building_signals() -> void:
 	pass # (Body Omitted)
 func _on_loot_stolen(type: String, amount: int) -> void:
@@ -1491,15 +1497,16 @@ func _on_mission_failed(reason: String) -> void:
 		var full_reason = reason + "\n\n" + report.get("summary_text", "")
 func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	pass # (Body Omitted)
-	var final_loot = raid_loot.collected_loot if raid_loot else {}
-	var gold = final_loot.get("gold", 0)
-	var lost_count = dead_units_log.size()
-	var grade = "Standard"
 	var duration_sec = (Time.get_ticks_msec() - battle_start_time) / 1000.0
-	var par_time = 300
+	var grade = "Standard"
 	var casualty_limit = 2
-	var result = { 
-	var sub_text = "The settlement lies in ruins."
+	var lost_count = dead_units_log.size()
+	var mission_result = RaidResultData.new()
+	var final_loot = raid_loot.collected_loot if raid_loot else {}
+	var total_loot = final_loot.duplicate()
+		var amount = victory_bonus_loot[key]
+		var current = total_loot.get(key, 0)
+	var difficulty = DynastyManager.current_raid_difficulty
 func _trigger_fyrd() -> void:
 	pass # (Body Omitted)
 func _show_failure_message(reason: String) -> void:
@@ -2054,7 +2061,7 @@ func _on_building_placement_cancelled(_building_data: BuildingData) -> void: pas
 	pass # (Body Omitted)
 func _on_building_placement_completed() -> void:
 	pass # (Body Omitted)
-		var snapped_grid_pos = SettlementManager.CELL_SIZE_PX
+		var grid_pos = Vector2i(building_cursor.global_position / SettlementManager.CELL_SIZE_PX)
 func _on_building_placement_cancelled_by_cursor() -> void:
 	pass # (Body Omitted)
 func _on_building_right_clicked(building: BaseBuilding) -> void:
@@ -2063,20 +2070,21 @@ func _on_building_right_clicked(building: BaseBuilding) -> void:
 	var cost = data.build_cost
 func _process_raid_return() -> void:
 	pass # (Body Omitted)
-	var result = DynastyManager.pending_raid_result
-	var outcome = result.get("outcome")
-	var raw_gold = result.get("gold_looted", 0)
+	var result: RaidResultData = DynastyManager.pending_raid_result
+	var outcome = result.outcome
+	var raw_gold = result.loot.get("gold", 0)
 	var total_wergild = 0
 	var dead_count = 0
 	var net_gold = max(0, raw_gold - total_wergild)
 		var warbands_to_disband: Array[WarbandData] = []
-	var grade = result.get("victory_grade", "Standard")
+	var grade = result.victory_grade
 	var xp_gain = 0
 	var loot_summary = {}
 	var title_text = "Raid Result"
 		var difficulty = DynastyManager.current_raid_difficulty
 		var bonus = 200 + (difficulty * 50)
 		var jarl = DynastyManager.get_current_jarl()
+		var popup = default_end_of_year_popup.instantiate()
 func _sync_villagers(_data: SettlementData = null) -> void:
 	pass # (Body Omitted)
 	var idle_count = SettlementManager.get_idle_peasants()
@@ -4026,3 +4034,5 @@ func _update_prediction_display(data: Dictionary) -> void:
 	var completed = data.get("buildings_completing", [])
 func _on_confirm_pressed() -> void:
 	pass # (Body Omitted)
+
+
