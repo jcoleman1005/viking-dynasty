@@ -114,7 +114,7 @@ func _initiate_raid(target: RaidTargetData) -> void:
 	raid_prep_window.setup(target)
 
 func _finalize_raid_launch(target: RaidTargetData, warbands: Array[WarbandData], provision_level: int) -> void:
-	# 1. Deduct Authority
+	# 1. Deduct Authority (Stays in DynastyManager)
 	var cost = target.raid_cost_authority
 	if target.authority_cost_override > -1: cost = target.authority_cost_override
 	
@@ -122,17 +122,17 @@ func _finalize_raid_launch(target: RaidTargetData, warbands: Array[WarbandData],
 		Loggie.msg("MacroMap: Failed to spend authority at last second!").domain(LogDomains.MAP).error()
 		return
 
-	# 2. Commit Data to DynastyManager
-	DynastyManager.set_current_raid_target(target.settlement_data)
-	DynastyManager.current_raid_difficulty = target.difficulty_rating
-	DynastyManager.prepare_raid_force(warbands, provision_level)
+	# 2. Commit Data to RaidManager (FIXED)
+	RaidManager.set_current_raid_target(target.settlement_data)
+	RaidManager.current_raid_difficulty = target.difficulty_rating
+	RaidManager.prepare_raid_force(warbands, provision_level)
 	
-	# 3. Calculate Journey Attrition
+	# 3. Calculate Journey Attrition (FIXED)
 	var dist = 0.0
 	if player_home_marker and is_instance_valid(selected_region_node):
 		dist = player_home_marker.global_position.distance_to(selected_region_node.get_global_center())
 		
-	var report = DynastyManager.calculate_journey_attrition(dist)
+	var report = RaidManager.calculate_journey_attrition(dist)
 	
 	# 4. Show Journey Report
 	journey_report_dialog.title = report.get("title", "Journey")
@@ -243,7 +243,6 @@ func _on_region_selected(data: WorldRegionData) -> void:
 	var is_allied = DynastyManager.is_allied_region(data.resource_path)
 	
 	# --- NEW: Check Home Status ---
-	# We read the flag from the Region node itself (set by _update_region_status_visuals)
 	var is_home = false
 	if selected_region_node and "is_home" in selected_region_node:
 		is_home = selected_region_node.is_home
@@ -261,7 +260,6 @@ func _populate_raid_targets(data: WorldRegionData, is_conquered: bool, is_allied
 	# --- NEW: Home Check ---
 	if is_home:
 		var label = Label.new()
-		# These lines were dedented in your snippet; now they are aligned.
 		label.text = "Home Region (Safe)"
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.add_theme_color_override("font_color", Color.CORNFLOWER_BLUE)
@@ -398,7 +396,10 @@ func close_all_ui() -> void:
 func _on_event_system_finished() -> void:
 	if randf() < enemy_raid_chance:
 		Loggie.msg("--- ENEMY RAID TRIGGERED ---").domain("MAP").info()
-		DynastyManager.is_defensive_raid = true
+		
+		# FIX: Use RaidManager for defensive state
+		RaidManager.is_defensive_raid = true
+		
 		EventBus.scene_change_requested.emit(GameScenes.RAID_MISSION)
 	else:
 		Loggie.msg("No enemy raid this year.").domain("MAP").info()

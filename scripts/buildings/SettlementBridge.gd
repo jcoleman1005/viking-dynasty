@@ -91,7 +91,7 @@ func _ready() -> void:
 		DynastyManager.jarl_stats_updated.emit(test_jarl)
 	
 	# Check for Raid Return (This opens the popup, so it must happen last)
-	if DynastyManager.pending_raid_result != null:
+	if RaidManager.pending_raid_result != null:
 		_process_raid_return()
 
 	# PRESERVED: RTS Debug Connections
@@ -357,7 +357,7 @@ func _on_payout_collected(payout: Dictionary) -> void:
 		payout.erase("renown")
 	
 	SettlementManager.deposit_resources(payout)
-	DynastyManager.pending_raid_result = null
+	RaidManager.pending_raid_result = null
 	
 	if storefront_ui: storefront_ui.show()
 
@@ -497,10 +497,11 @@ func _on_building_right_clicked(building: BaseBuilding) -> void:
 
 # --- PRESERVED: Process Raid Return (Legacy/Updated Hybrid) ---
 func _process_raid_return() -> void:
-	if DynastyManager.pending_raid_result == null:
+	# FIX: Check RaidManager
+	if RaidManager.pending_raid_result == null:
 		return
 		
-	var result: RaidResultData = DynastyManager.pending_raid_result
+	var result: RaidResultData = RaidManager.pending_raid_result
 	var outcome = result.outcome
 	
 	Loggie.msg("Processing Raid Return: %s" % outcome).domain(LogDomains.SETTLEMENT).info()
@@ -516,12 +517,13 @@ func _process_raid_return() -> void:
 	
 	var net_gold = max(0, raw_gold - total_wergild)
 	
+	# FIX: Update RaidManager history
 	if outcome == "victory":
-		DynastyManager.last_raid_outcome = "victory"
+		RaidManager.last_raid_outcome = "victory"
 	elif outcome == "retreat":
-		DynastyManager.last_raid_outcome = "defeat"
+		RaidManager.last_raid_outcome = "defeat"
 	else:
-		DynastyManager.last_raid_outcome = "neutral"
+		RaidManager.last_raid_outcome = "neutral"
 		
 	if SettlementManager.current_settlement:
 		var warbands_to_disband: Array[WarbandData] = []
@@ -552,6 +554,7 @@ func _process_raid_return() -> void:
 	elif outcome == "retreat": 
 		xp_gain = 20
 	
+	# Note: active_year_modifiers stays in DynastyManager (Phase 4), so this is valid:
 	if xp_gain > 0 and DynastyManager.active_year_modifiers.has("BLOT_ODIN"):
 		xp_gain = int(xp_gain * 1.5)
 		
@@ -566,7 +569,8 @@ func _process_raid_return() -> void:
 	var title_text = "Raid Result"
 	
 	if outcome == "victory":
-		var difficulty = DynastyManager.current_raid_difficulty
+		# FIX: Get difficulty from RaidManager
+		var difficulty = RaidManager.current_raid_difficulty
 		var bonus = 200 + (difficulty * 50)
 		if grade == "Decisive": bonus += 100
 		
@@ -611,8 +615,9 @@ func _process_raid_return() -> void:
 		
 	end_of_year_popup.display_payout(loot_summary, title_text)
 	
-	DynastyManager.pending_raid_result = null
-	DynastyManager.reset_raid_state()
+	# FIX: Reset via RaidManager
+	RaidManager.pending_raid_result = null
+	RaidManager.reset_raid_state()
 	
 func _sync_villagers(_data: SettlementData = null) -> void:
 	if not SettlementManager.has_current_settlement(): return

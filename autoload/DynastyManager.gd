@@ -5,12 +5,8 @@ signal jarl_stats_updated(jarl_data: JarlData)
 signal year_ended
 
 var current_jarl: JarlData
-var current_raid_target: SettlementData
-var is_defensive_raid: bool = false
 var minimum_inherited_legitimacy: int = 0
 var loaded_legacy_upgrades: Array[LegacyUpgradeData] = []
-var current_raid_difficulty: int = 1 
-var pending_raid_result: RaidResultData = null 
 
 var active_year_modifiers: Dictionary = {}
 var winter_upkeep_report: Dictionary = {} 
@@ -18,26 +14,13 @@ var pending_dispute_card: DisputeEventData = null
 var winter_consumption_report: Dictionary = {}
 var winter_crisis_active: bool = false
 
-# --- RAID STAGING ---
-var outbound_raid_force: Array[WarbandData] = []
-var raid_provisions_level: int = 1 
-var raid_health_modifier: float = 1.0 
-
-# --- HAMINGJA / LUCK TRACKING ---
-# Did the last raid succeed? Affects recruitment.
-# "neutral", "victory", "defeat"
-var last_raid_outcome: String = "neutral" 
-
 # --- SEASONAL MUSTER ---
 # Stores UnitData resources that have promised to join in spring
 var pending_seasonal_recruits: Array[UnitData] = []
 
 # --- CONSTANTS ---
-# We check for a user save first. If not found, we fall back to the default resource.
 const USER_DYNASTY_PATH = "user://savegame_dynasty.tres"
 const DEFAULT_JARL_PATH = "res://data/characters/PlayerJarl.tres"
-
-
 
 func _ready() -> void:
 	_load_game_data()
@@ -71,26 +54,22 @@ func start_new_campaign() -> void:
 	
 	# 1. Generate Fresh Data
 	current_jarl = DynastyGenerator.generate_random_dynasty()
-	current_jarl.resource_path = USER_DYNASTY_PATH # Important: Bind it to the user save path
+	current_jarl.resource_path = USER_DYNASTY_PATH 
 	
 	# 2. Reset Runtime State
-	current_raid_target = null
-	is_defensive_raid = false
-	current_raid_difficulty = 1
-	pending_raid_result = null
-	reset_raid_state()
+	# REFACTOR: Raid state now handled by RaidManager
+	RaidManager.reset_raid_state()
+	
 	active_year_modifiers.clear()
 	
-	# 3. Reset Legacy Progress (Optional: Keep this if you want roguelite meta-progression)
-	_load_legacy_upgrades_from_disk() # Reloads fresh assets from res://
+	# 3. Reset Legacy Progress
+	_load_legacy_upgrades_from_disk() 
 	
 	# 4. Save immediately
 	_save_jarl_data()
 	
 	jarl_stats_updated.emit(current_jarl)
 
-# --- REPLACED: _load_legacy_upgrades_from_disk ---
-# (Keep existing implementation from context, just ensuring it's called correctly in _load_game_data)
 func _load_legacy_upgrades_from_disk() -> void:
 	loaded_legacy_upgrades.clear()
 	
@@ -117,70 +96,7 @@ func get_current_jarl() -> JarlData:
 		_load_game_data()
 	return current_jarl
 
-# --- [KEEP ALL EXISTING RAID LOGISTICS, AUTHORITY, HEIR, AND WINTER LOGIC UNTOUCHED BELOW] ---
-# (I am omitting the rest of the file for brevity as it remains identical to the Project Context provided,
-# specifically everything from reset_raid_state() downwards).
-
-func reset_raid_state() -> void:
-	outbound_raid_force.clear()
-	raid_provisions_level = 1
-	raid_health_modifier = 1.0
-
-func prepare_raid_force(warbands: Array[WarbandData], provisions: int) -> void:
-	if warbands.is_empty():
-		Loggie.msg("DynastyManager: Warning - Raid force prepared with 0 units.").domain(LogDomains.DYNASTY).warn()
-	outbound_raid_force = warbands.duplicate()
-	raid_provisions_level = provisions
-	Loggie.msg("Raid Force Prepared: %d Warbands, Provision Level %d" % [outbound_raid_force.size(), provisions]).domain("DYNASTY").info()
-
-func calculate_journey_attrition(target_distance: float) -> Dictionary:
-	if not current_jarl: return {}
-	if target_distance < 0: target_distance = 0.0
-	
-	var safe_range = current_jarl.get_safe_range()
-	var report = {
-		"title": "Uneventful Journey",
-		"description": "The seas were calm. The fleet arrived intact.",
-		"modifier": 1.0
-	}
-	
-	var base_risk = 0.02
-	if target_distance > safe_range:
-		base_risk = ((target_distance - safe_range) / 100.0) * current_jarl.attrition_per_100px
-	
-	if raid_provisions_level == 2:
-		base_risk -= 0.15 
-		
-	base_risk = clampf(base_risk, 0.05, 0.90) 
-	
-	var roll = randf()
-	
-	if roll < base_risk:
-		report["title"] = "Rough Seas"
-		var damage = 0.10 
-		
-		if roll < (base_risk * 0.5):
-			damage = 0.25 
-			report["description"] = "A terrible storm scattered the fleet! Supplies were lost and men are exhausted."
-		else:
-			report["description"] = "High waves and poor winds delayed the crossing. The men are seasick and tired."
-			
-		if raid_provisions_level == 2:
-			damage *= 0.5 
-			report["description"] += "\n(Well-Fed: Damage Reduced)"
-			
-		report["modifier"] = 1.0 - damage
-		raid_health_modifier = report["modifier"]
-	else:
-		if raid_provisions_level == 2:
-			report["title"] = "High Morale"
-			report["description"] = "Excellent rations kept spirits high. The warriors are eager for battle!"
-			report["modifier"] = 1.1 
-			raid_health_modifier = 1.1
-		else:
-			raid_health_modifier = 1.0
-			
-	return report
+# --- AUTHORITY & LEGACY LOGIC ---
 
 func can_spend_authority(cost: int) -> bool:
 	if not current_jarl: return false
@@ -231,6 +147,8 @@ func has_conquered_region(region_path: String) -> bool:
 	if not current_jarl: return false
 	return region_path in current_jarl.conquered_regions
 
+# --- HEIR MANAGEMENT ---
+
 func get_available_heir_count() -> int:
 	if not current_jarl: return 0
 	return current_jarl.get_available_heir_count()
@@ -276,6 +194,22 @@ func add_trait_to_heir(heir: JarlHeirData, trait_data: JarlTraitData) -> void:
 	if not heir: return
 	heir.traits.append(trait_data)
 
+func find_heir_by_name(h_name: String) -> JarlHeirData:
+	if not current_jarl: return null
+	for heir in current_jarl.heirs:
+		if heir.display_name == h_name: return heir
+	return null
+
+func kill_heir_by_name(h_name: String, reason: String) -> void:
+	var heir = find_heir_by_name(h_name)
+	if heir:
+		heir.status = JarlHeirData.HeirStatus.Deceased
+		current_jarl.remove_heir(heir)
+		jarl_stats_updated.emit(current_jarl)
+		_save_jarl_data()
+
+# --- END OF YEAR LOOP ---
+
 func end_year() -> void:
 	if not current_jarl: return
 	current_jarl.age_jarl(1)
@@ -283,7 +217,10 @@ func end_year() -> void:
 	if jarl_died: return
 	current_jarl.reset_authority()
 	_process_heir_simulation()
-	reset_raid_state()
+	
+	# REFACTOR: Reset raid state via the new manager
+	RaidManager.reset_raid_state()
+	
 	_save_jarl_data()
 	jarl_stats_updated.emit(current_jarl)
 	Loggie.msg("Year ended. Jarl is now %d." % current_jarl.age).domain("DYNASTY").info()
@@ -327,25 +264,11 @@ func _try_birth_event() -> void:
 		_generate_new_baby()
 
 func _generate_new_baby() -> void:
-	# --- UPDATED: Use the Generator ---
 	var baby = DynastyGenerator.generate_newborn()
-	
 	current_jarl.heirs.append(baby)
-	
-	# Log the event
 	Loggie.msg("A new child, %s, was born to the Dynasty!" % baby.display_name).domain("DYNASTY").info()
-	
-	# Save the changes
 	_save_jarl_data()
 	jarl_stats_updated.emit(current_jarl)
-
-func set_current_raid_target(data: SettlementData) -> void:
-	current_raid_target = data
-
-func get_current_raid_target() -> SettlementData:
-	var target = current_raid_target
-	current_raid_target = null
-	return target
 
 func _save_jarl_data() -> void:
 	if not current_jarl: return
@@ -418,7 +341,7 @@ func _promote_heir_to_jarl(heir: JarlHeirData, predecessor: JarlData) -> JarlDat
 	
 	new_jarl.legitimacy = new_legit
 	new_jarl.succession_debuff_years_remaining = 3 
-	new_jarl.take_over_path(USER_DYNASTY_PATH) # Ensure saving to user dir
+	new_jarl.take_over_path(USER_DYNASTY_PATH)
 	return new_jarl
 
 func _on_succession_choices_made(renown_choice: String, gold_choice: String) -> void:
@@ -432,50 +355,7 @@ func _on_succession_choices_made(renown_choice: String, gold_choice: String) -> 
 			SettlementManager.current_settlement.has_stability_debuff = true
 	EventBus.event_system_finished.emit()
 
-func process_defensive_loss() -> Dictionary:
-	if not current_jarl: return {}
-	var aftermath_report = {
-		"summary_text": "",
-		"jarl_died": false,
-		"heir_died": null 
-	}
-	
-	var renown_loss = randi_range(50, 150)
-	current_jarl.renown = max(0, current_jarl.renown - renown_loss)
-	var material_losses = EconomyManager.apply_raid_damages()
-	
-	if current_jarl.heirs.size() > 0 and randf() < 0.15:
-		var victim = current_jarl.heirs.pick_random()
-		victim.status = JarlHeirData.HeirStatus.Deceased
-		aftermath_report["heir_died"] = victim.display_name
-		current_jarl.remove_heir(victim)
-		
-	var death_chance = 0.10
-	if current_jarl.age > 60: death_chance += 0.10
-	if randf() < death_chance:
-		aftermath_report["jarl_died"] = true
-		_trigger_succession()
-	
-	_save_jarl_data()
-	jarl_stats_updated.emit(current_jarl)
-	
-	var text = "Defeat! The settlement has been sacked.\n\n[color=salmon]Resources Lost:[/color]\n- %d Gold\n- %d Wood\n- %d Renown\n" % [material_losses.get("gold_lost", 0), material_losses.get("wood_lost", 0), renown_loss]
-	aftermath_report["summary_text"] = text
-	return aftermath_report
-
-func find_heir_by_name(h_name: String) -> JarlHeirData:
-	if not current_jarl: return null
-	for heir in current_jarl.heirs:
-		if heir.display_name == h_name: return heir
-	return null
-
-func kill_heir_by_name(h_name: String, reason: String) -> void:
-	var heir = find_heir_by_name(h_name)
-	if heir:
-		heir.status = JarlHeirData.HeirStatus.Deceased
-		current_jarl.remove_heir(heir)
-		jarl_stats_updated.emit(current_jarl)
-		_save_jarl_data()
+# --- WINTER & RECRUITMENT LOGIC (Pending Move in Phases 2 & 3) ---
 
 func start_winter_phase() -> void:
 	if current_jarl: current_jarl.calculate_hall_actions()
@@ -607,7 +487,7 @@ func commit_seasonal_recruits_to_settlement() -> void:
 	# Iterate through every individual soldier promised
 	for u_data in pending_seasonal_recruits:
 		
-		# 1. Do we need a new Warband? 
+		# 1. Do we need a new Warband?
 		# (If we don't have one, or the current one is full, or the unit type doesn't match)
 		if current_batch_wb == null or \
 		   current_batch_wb.current_manpower >= WarbandData.MAX_MANPOWER or \
