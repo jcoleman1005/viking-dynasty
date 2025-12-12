@@ -1,5 +1,5 @@
 PROJECT CONTEXT SKELETON
-Generated: 2025-12-12T08:15:48
+Generated: 2025-12-12T10:32:11
 ========================================
 
 ### FILE: res://autoload/DynastyManager.gd ###
@@ -571,14 +571,29 @@ func assign_worker_from_unit(building: BaseBuilding, type: String) -> bool:
 	var current = 0
 func _find_entry_for_building(building: BaseBuilding) -> Dictionary:
 	pass # (Body Omitted)
+		var tagged_pos = building.grid_coordinate
 	var cell_size = get_active_grid_cell_size()
 	var half_size = (Vector2(building.data.grid_size) * cell_size) / 2.0
-	var grid_pos = Vector2i((building.global_position - half_size) / cell_size)
+	var top_left = building.global_position - half_size
+	var grid_pos = Vector2i(round(top_left.x / cell_size.x), round(top_left.y / cell_size.y))
 func unassign_worker_from_building(building: BaseBuilding, type: String) -> bool:
 	pass # (Body Omitted)
 	var entry = _find_entry_for_building(building)
 	var key = "peasant_count" if type == "peasant" else "thrall_count"
 	var current = entry.get(key, 0)
+func get_building_index(building_instance: Node2D) -> int:
+	pass # (Body Omitted)
+	var data_to_search = active_map_data if active_map_data else current_settlement
+	var search_placed = true
+	var target_list = data_to_search.placed_buildings if search_placed else data_to_search.pending_construction_buildings
+		var tagged_pos = building_instance.get("grid_coordinate")
+				var entry = target_list[i]
+				var pos = entry["grid_position"]
+	var cell_size = get_active_grid_cell_size()
+	var size = Vector2i(1, 1)
+	var grid_pos = Vector2i((building_instance.global_position - (Vector2(size) * cell_size / 2.0)) / cell_size)
+		var entry = target_list[i]
+		var pos = entry["grid_position"]
 
 
 ### FILE: res://autoload/WinterManager.gd ###
@@ -612,6 +627,7 @@ signal building_destroyed(building: BaseBuilding)
 signal construction_completed(building: BaseBuilding)
 signal loot_stolen(type: String, amount: int)
 signal loot_depleted(building: BaseBuilding)
+var grid_coordinate: Vector2i = Vector2i(-999, -999)
 enum BuildingState { 
 @export var data: BuildingData
 var current_health: int = 100
@@ -1973,7 +1989,7 @@ extends Node
 @export var show_settlement_logs: bool = false:
 @export var show_building_logs: bool = false:
 @export var show_debug_logs: bool = true:
-@export var show_raid_logs: bool = true: # Set default to true if you want it on now
+@export var show_raid_logs: bool = true:
 @export_group("New Game Settings")
 @export var start_gold: int = 1000
 @export var start_wood: int = 500
@@ -2005,15 +2021,42 @@ func _on_worker_assignments_confirmed(assignments: Dictionary) -> void:
 	pass # (Body Omitted)
 func _on_worker_requested(target: BaseBuilding) -> void:
 	pass # (Body Omitted)
+	var index = SettlementManager.get_building_index(target)
+	var is_construction = (target.current_state != BaseBuilding.BuildingState.ACTIVE)
+	var entry
+	var current_count = entry.get("peasant_count", 0)
+	var incoming_count = target.get_meta("incoming_workers", 0) # <--- NEW META TRACKER
+	var total_allocated = current_count + incoming_count
+	var capacity = 0
+		var eco_data = target.data as EconomicBuildingData
 	var civilians = get_tree().get_nodes_in_group("civilians")
 	var nearest_civ: CivilianUnit = null
 	var min_dist = INF
-		var dist = civ.global_position.distance_to(target.global_position)
-		var success = SettlementManager.assign_worker_from_unit(target, "peasant")
-func _on_worker_removal_requested(building: BaseBuilding) -> void:
+			var dist = civ.global_position.distance_to(target.global_position)
+		var tween = create_tween()
+		var walk_speed = 100.0
+		var time = min_dist / walk_speed
+		var civ_ref = weakref(nearest_civ)
+			var current_inc = target.get_meta("incoming_workers", 1)
+			var civ = civ_ref.get_ref()
+func _finalize_worker_assignment(target: BaseBuilding, unit_node: Node2D) -> void:
 	pass # (Body Omitted)
-		var spawn_pos = building.global_position + Vector2(0, 40)
-	var success = SettlementManager.unassign_worker_from_building(building, "peasant")
+	var index = SettlementManager.get_building_index(target)
+		var is_construction = (target.current_state != BaseBuilding.BuildingState.ACTIVE)
+		var entry
+		var current = entry.get("peasant_count", 0)
+		var cap = target.data.base_labor_capacity if is_construction else (target.data as EconomicBuildingData).peasant_capacity
+func _on_worker_removal_requested(target: BaseBuilding) -> void:
+	pass # (Body Omitted)
+	var index = SettlementManager.get_building_index(target)
+	var entry
+	var is_construction = (target.current_state != BaseBuilding.BuildingState.ACTIVE)
+	var current_workers = entry.get("peasant_count", 0)
+			var random_offset = Vector2(randf_range(-20, 20), randf_range(20, 40))
+			var spawn_pos = target.global_position + random_offset
+func _force_inspector_refresh(target: BaseBuilding) -> void:
+	pass # (Body Omitted)
+	var inspector = ui_layer.get_node_or_null("BuildingInspector")
 func _on_end_year_pressed() -> void:
 	pass # (Body Omitted)
 	var idle_p = SettlementManager.get_idle_peasants()
@@ -2079,11 +2122,12 @@ func _process_raid_return() -> void:
 		var warbands_to_disband: Array[WarbandData] = []
 	var grade = result.victory_grade
 	var xp_gain = 0
-	var loot_summary = {}
+	var loot_summary = result.loot.duplicate()
 	var title_text = "Raid Result"
 		var difficulty = DynastyManager.current_raid_difficulty
 		var bonus = 200 + (difficulty * 50)
 		var jarl = DynastyManager.get_current_jarl()
+		var total_loot_count = 0
 		var popup = default_end_of_year_popup.instantiate()
 func _sync_villagers(_data: SettlementData = null) -> void:
 	pass # (Body Omitted)
@@ -2904,6 +2948,8 @@ func _despawn_civilians(count: int, list: Array) -> void:
 			var civ = list[i]
 func spawn_worker_at(location: Vector2) -> void:
 	pass # (Body Omitted)
+	var scene_ref = civilian_data.load_scene()
+	var civ = scene_ref.instantiate()
 func spawn_enemy_garrison(warbands: Array[WarbandData], buildings: Array) -> void:
 	pass # (Body Omitted)
 		var wb = warbands[i]
