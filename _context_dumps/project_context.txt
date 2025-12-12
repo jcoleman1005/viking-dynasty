@@ -1,0 +1,4038 @@
+PROJECT CONTEXT SKELETON
+Generated: 2025-12-12T08:15:48
+========================================
+
+### FILE: res://autoload/DynastyManager.gd ###
+extends Node
+signal jarl_stats_updated(jarl_data: JarlData)
+signal year_ended
+var current_jarl: JarlData
+var current_raid_target: SettlementData
+var is_defensive_raid: bool = false
+var minimum_inherited_legitimacy: int = 0
+var loaded_legacy_upgrades: Array[LegacyUpgradeData] = []
+var current_raid_difficulty: int = 1 
+var pending_raid_result: RaidResultData = null 
+var active_year_modifiers: Dictionary = {}
+var winter_upkeep_report: Dictionary = {} 
+var pending_dispute_card: DisputeEventData = null
+var winter_consumption_report: Dictionary = {}
+var winter_crisis_active: bool = false
+var outbound_raid_force: Array[WarbandData] = []
+var raid_provisions_level: int = 1 
+var raid_health_modifier: float = 1.0 
+var last_raid_outcome: String = "neutral" 
+var pending_seasonal_recruits: Array[UnitData] = []
+const USER_DYNASTY_PATH = "user://savegame_dynasty.tres"
+const DEFAULT_JARL_PATH = "res://data/characters/PlayerJarl.tres"
+func _ready() -> void:
+	pass # (Body Omitted)
+func _load_game_data() -> void:
+	pass # (Body Omitted)
+func start_new_campaign() -> void:
+	pass # (Body Omitted)
+func _load_legacy_upgrades_from_disk() -> void:
+	pass # (Body Omitted)
+	var dir = DirAccess.open("res://data/legacy/")
+		var file_name = dir.get_next()
+				var path = "res://data/legacy/" + file_name
+				var upgrade_data = load(path) as LegacyUpgradeData
+					var unique_upgrade = upgrade_data.duplicate()
+func get_current_jarl() -> JarlData:
+	pass # (Body Omitted)
+func reset_raid_state() -> void:
+	pass # (Body Omitted)
+func prepare_raid_force(warbands: Array[WarbandData], provisions: int) -> void:
+	pass # (Body Omitted)
+func calculate_journey_attrition(target_distance: float) -> Dictionary:
+	pass # (Body Omitted)
+	var safe_range = current_jarl.get_safe_range()
+	var report = {
+	var base_risk = 0.02
+	var roll = randf()
+		var damage = 0.10 
+func can_spend_authority(cost: int) -> bool:
+	pass # (Body Omitted)
+func spend_authority(cost: int) -> bool:
+	pass # (Body Omitted)
+func can_spend_renown(cost: int) -> bool:
+	pass # (Body Omitted)
+func spend_renown(cost: int) -> bool:
+	pass # (Body Omitted)
+func award_renown(amount: int) -> void:
+	pass # (Body Omitted)
+func purchase_legacy_upgrade(upgrade_key: String) -> void:
+	pass # (Body Omitted)
+func has_purchased_upgrade(upgrade_key: String) -> bool:
+	pass # (Body Omitted)
+func add_conquered_region(region_path: String) -> void:
+	pass # (Body Omitted)
+func has_conquered_region(region_path: String) -> bool:
+	pass # (Body Omitted)
+func get_available_heir_count() -> int:
+	pass # (Body Omitted)
+func designate_heir(target_heir: JarlHeirData) -> void:
+	pass # (Body Omitted)
+func start_heir_expedition(heir: JarlHeirData, expedition_duration: int = 3) -> void:
+	pass # (Body Omitted)
+func marry_heir_for_alliance(region_path: String) -> bool:
+	pass # (Body Omitted)
+	var heir_to_marry = current_jarl.get_first_available_heir()
+func is_allied_region(region_path: String) -> bool:
+	pass # (Body Omitted)
+func add_trait_to_heir(heir: JarlHeirData, trait_data: JarlTraitData) -> void:
+	pass # (Body Omitted)
+func end_year() -> void:
+	pass # (Body Omitted)
+	var jarl_died = _check_for_jarl_death()
+func _process_heir_simulation() -> void:
+	pass # (Body Omitted)
+	var heirs_to_remove: Array[JarlHeirData] = []
+func _resolve_expedition(heir: JarlHeirData) -> void:
+	pass # (Body Omitted)
+	var roll = randf()
+		var renown_gain = randi_range(100, 300)
+func _try_birth_event() -> void:
+	pass # (Body Omitted)
+	var base_chance = 0.30
+func _generate_new_baby() -> void:
+	pass # (Body Omitted)
+	var baby = DynastyGenerator.generate_newborn()
+func set_current_raid_target(data: SettlementData) -> void:
+	pass # (Body Omitted)
+func get_current_raid_target() -> SettlementData:
+	pass # (Body Omitted)
+	var target = current_raid_target
+func _save_jarl_data() -> void:
+	pass # (Body Omitted)
+	var error = ResourceSaver.save(current_jarl, current_jarl.resource_path)
+func debug_kill_jarl() -> void:
+	pass # (Body Omitted)
+func _check_for_jarl_death() -> bool:
+	pass # (Body Omitted)
+	var jarl = get_current_jarl()
+	var death_chance = 0.0
+func _trigger_succession() -> void:
+	pass # (Body Omitted)
+	var old_jarl = current_jarl
+	var heir = null
+	var new_jarl = _promote_heir_to_jarl(heir, old_jarl)
+	var ancestor_entry = {
+	var succession_event_data = EventData.new() 
+func _promote_heir_to_jarl(heir: JarlHeirData, predecessor: JarlData) -> JarlData:
+	pass # (Body Omitted)
+	var new_jarl = JarlData.new()
+	var new_legit = int(predecessor.legitimacy * 0.8)
+func _on_succession_choices_made(renown_choice: String, gold_choice: String) -> void:
+	pass # (Body Omitted)
+func process_defensive_loss() -> Dictionary:
+	pass # (Body Omitted)
+	var aftermath_report = {
+	var renown_loss = randi_range(50, 150)
+	var material_losses = EconomyManager.apply_raid_damages()
+		var victim = current_jarl.heirs.pick_random()
+	var death_chance = 0.10
+	var text = "Defeat! The settlement has been sacked.\n\n[color=salmon]Resources Lost:[/color]\n- %d Gold\n- %d Wood\n- %d Renown\n" % [material_losses.get("gold_lost", 0), material_losses.get("wood_lost", 0), renown_loss]
+func find_heir_by_name(h_name: String) -> JarlHeirData:
+	pass # (Body Omitted)
+func kill_heir_by_name(h_name: String, reason: String) -> void:
+	pass # (Body Omitted)
+	var heir = find_heir_by_name(h_name)
+func start_winter_phase() -> void:
+	pass # (Body Omitted)
+	var decay = 0.2
+func _calculate_winter_needs() -> void:
+	pass # (Body Omitted)
+	var settlement = SettlementManager.current_settlement
+	var demand_report = WinterManager.calculate_winter_demand(settlement)
+	var food_cost = demand_report["food_demand"]
+	var wood_cost = demand_report["wood_demand"]
+	var food_stock = settlement.treasury.get("food", 0)
+	var wood_stock = settlement.treasury.get("wood", 0)
+	var food_deficit = max(0, food_cost - food_stock)
+	var wood_deficit = max(0, wood_cost - wood_stock)
+func _apply_winter_consumption() -> void:
+	pass # (Body Omitted)
+	var settlement = SettlementManager.current_settlement
+func resolve_crisis_with_gold() -> bool:
+	pass # (Body Omitted)
+	var total_gold_cost = (winter_consumption_report["food_deficit"] * 5) + (winter_consumption_report["wood_deficit"] * 5)
+func resolve_crisis_with_sacrifice(sacrifice_type: String) -> bool:
+	pass # (Body Omitted)
+	var settlement = SettlementManager.current_settlement
+			var deaths = max(1, int(winter_consumption_report["food_deficit"] / 5))
+func perform_hall_action(cost: int = 1) -> bool:
+	pass # (Body Omitted)
+func end_winter_phase() -> void:
+	pass # (Body Omitted)
+	var payout = EconomyManager.calculate_payout() 
+func apply_year_modifier(key: String) -> void:
+	pass # (Body Omitted)
+func draw_dispute_card() -> DisputeEventData:
+	pass # (Body Omitted)
+	var card = DisputeEventData.new()
+func queue_seasonal_recruit(unit_data: UnitData, count: int) -> void:
+	pass # (Body Omitted)
+func commit_seasonal_recruits_to_settlement() -> void:
+	pass # (Body Omitted)
+	var new_warbands: Array[WarbandData] = []
+	var current_batch_wb: WarbandData = null
+func _generate_oath_name() -> String:
+	pass # (Body Omitted)
+	var names = ["Red", "Bold", "Young", "Wild", "Sworn", "Lucky"]
+
+
+### FILE: res://autoload/EconomyManager.gd ###
+extends Node
+const BUILDER_EFFICIENCY: int = 25
+const GATHERER_EFFICIENCY: int = 10 
+const BASE_GATHERING_CAPACITY: int = 2
+const FOOD_PER_PERSON_PER_YEAR: int = 10
+const BASE_GROWTH_RATE: float = 0.02 # 2% natural growth
+const STARVATION_PENALTY: float = -0.15 # 15% death rate
+const UNREST_PER_LANDLESS_PEASANT: int = 2
+func calculate_payout() -> Dictionary:
+	pass # (Body Omitted)
+	var settlement = SettlementManager.current_settlement
+	var hunger_warnings = SettlementManager.process_warband_hunger()
+	var total_payout: Dictionary = {
+	var stewardship_bonus := 1.0
+	var jarl = DynastyManager.get_current_jarl()
+		var skill = jarl.get_effective_skill("stewardship")
+		var b_data = load(entry["resource_path"])
+			var type = b_data.resource_type
+			var p_count = entry.get("peasant_count", 0)
+			var p_out = p_count * b_data.base_passive_output
+			var t_count = entry.get("thrall_count", 0)
+			var t_out = t_count * b_data.output_per_thrall
+			var production = int((p_out + t_out) * stewardship_bonus)
+			var r_data = load(region_path)
+func _calculate_demographics(settlement: SettlementData, payout_report: Dictionary, jarl: JarlData) -> void:
+	pass # (Body Omitted)
+	var pop = settlement.population_peasants
+	var current_food = settlement.treasury.get(GameResources.FOOD, 0)
+	var new_food = payout_report.get(GameResources.FOOD, 0)
+	var total_food_available = current_food + new_food
+	var food_required = pop * FOOD_PER_PERSON_PER_YEAR
+	var growth_rate = BASE_GROWTH_RATE
+	var event_msg = ""
+		var food_consumed = food_required
+	var net_change = int(pop * growth_rate)
+	var pop_change_str = ""
+	var land_capacity = _calculate_total_land_capacity(settlement)
+		var excess_men = settlement.population_peasants - land_capacity
+		var unrest_gain = excess_men * UNREST_PER_LANDLESS_PEASANT
+func _calculate_total_land_capacity(settlement: SettlementData) -> int:
+	pass # (Body Omitted)
+	var total_cap = 5 # Base capacity (The Jarl's own land)
+		var data = load(entry["resource_path"]) as BuildingData
+func deposit_resources(loot: Dictionary) -> void:
+	pass # (Body Omitted)
+	var settlement = SettlementManager.current_settlement
+		var amount = loot[resource_type]
+func attempt_purchase(item_cost: Dictionary) -> bool:
+	pass # (Body Omitted)
+	var settlement = SettlementManager.current_settlement
+			var res_name = res.capitalize()
+func apply_raid_damages() -> Dictionary:
+	pass # (Body Omitted)
+	var settlement = SettlementManager.current_settlement
+	var report = { 
+	var loss_ratio = randf_range(0.2, 0.4)
+	var g_loss = int(settlement.treasury.get(GameResources.GOLD, 0) * loss_ratio)
+	var w_loss = int(settlement.treasury.get(GameResources.WOOD, 0) * loss_ratio)
+	var indices_to_remove: Array[int] = []
+		var entry = settlement.pending_construction_buildings[i]
+
+
+### FILE: res://autoload/EventBus.gd ###
+extends Node
+signal building_right_clicked(building: Node2D)
+signal building_state_changed(building: BaseBuilding, new_state: int)
+signal build_request_made(building_data: BuildingData, grid_position: Vector2i)
+signal building_ready_for_placement(building_data: BuildingData)
+signal building_placement_cancelled(building_data: BuildingData)
+signal building_selected(building: BaseBuilding)
+signal building_deselected()
+signal request_worker_assignment(target_building: BaseBuilding)
+signal request_worker_removal(target_building: BaseBuilding)
+signal pathfinding_grid_updated(grid_position: Vector2i)
+signal treasury_updated(new_treasury: Dictionary)
+signal purchase_successful(item_name: String)
+signal purchase_failed(reason: String)
+signal raid_loot_secured(type: String, amount: int)
+signal scene_change_requested(scene_key: String)
+signal world_map_opened()
+signal raid_mission_started(target_type: String)
+signal settlement_loaded(settlement_data: SettlementData)
+signal player_unit_died(unit: Node2D)
+signal player_unit_spawned(unit: Node2D)
+signal worker_management_toggled()
+signal dynasty_view_requested()
+signal select_command(select_rect: Rect2, is_box_select: bool)
+signal move_command(target_position: Vector2)
+signal attack_command(target_node: Node2D)
+signal formation_move_command(target_position: Vector2, direction_vector: Vector2)
+signal interact_command(target: Node2D)
+signal pillage_command(target_node: Node2D)  # Steal Loot (Enemy)
+signal control_group_command(group_index: int, is_assigning: bool)
+signal formation_change_command(formation_type: int)
+signal event_system_finished()
+signal succession_choices_made(renown_choice: String, gold_choice: String)
+signal camera_input_lock_requested(is_locked: bool)
+signal end_year_requested()
+signal floating_text_requested(text: String, world_position: Vector2, color: Color)
+
+
+### FILE: res://autoload/EventManager.gd ###
+extends Node
+@export var event_ui_scene: PackedScene
+@export var succession_crisis_scene: PackedScene
+var event_ui: EventUI
+var available_events: Array[EventData] = []
+var fired_unique_events: Array[String] = []
+const TRAIT_RIVAL = preload("res://data/traits/Trait_Rival.tres")
+func _ready() -> void:
+	pass # (Body Omitted)
+func initialize_event_system() -> void:
+	pass # (Body Omitted)
+func _load_events_from_disk() -> void:
+	pass # (Body Omitted)
+	var dir = DirAccess.open("res://data/events/")
+		var file_name = dir.get_next()
+				var path = "res://data/events/" + file_name
+				var event_data = load(path) as EventData 
+func _on_year_ended() -> void:
+	pass # (Body Omitted)
+	var event_was_triggered: bool = _check_event_triggers()
+func _check_event_triggers() -> bool:
+	pass # (Body Omitted)
+	var jarl = DynastyManager.get_current_jarl()
+func _check_conditions(event: EventData, jarl: JarlData) -> bool:
+	pass # (Body Omitted)
+func _trigger_event(event: EventData) -> void:
+	pass # (Body Omitted)
+		var crisis_ui = succession_crisis_scene.instantiate()
+		var jarl = DynastyManager.get_current_jarl()
+		var settlement = SettlementManager.current_settlement
+func _on_choice_made(event: EventData, choice: EventChoice) -> void:
+	pass # (Body Omitted)
+func _apply_event_consequences(event: EventData, choice: EventChoice) -> void:
+	pass # (Body Omitted)
+			var heir = DynastyManager.get_current_jarl().get_first_available_heir()
+
+
+### FILE: res://autoload/LogDomains.gd ###
+class_name LogDomains
+const DYNASTY = "DYNASTY"
+const SETTLEMENT = "SETTLEMENT"
+const ECONOMY = "ECONOMY"
+const EVENT = "EVENT"
+const SCENE = "SCENE"
+const RTS = "RTS"
+const UNIT = "UNIT"
+const AI = "AI"
+const RAID = "RAID"
+const MAP = "MAP"
+const NAVIGATION = "NAVIGATION"
+const UI = "UI"
+const SYSTEM = "SYSTEM"
+const BUILD = "BUILD"
+
+
+### FILE: res://autoload/NavigationManager.gd ###
+extends Node
+var active_astar_grid: AStarGrid2D = null
+var grid_owner_node: Node = null # Debug ref (who owns this grid?)
+func register_grid(grid: AStarGrid2D, owner_node: Node) -> void:
+	pass # (Body Omitted)
+func unregister_grid() -> void:
+	pass # (Body Omitted)
+func get_astar_path(start_pos: Vector2, end_pos: Vector2, allow_partial_path: bool = false) -> PackedVector2Array:
+	pass # (Body Omitted)
+	var cell_size = active_astar_grid.cell_size
+	var start = Vector2i(start_pos / cell_size)
+	var end = Vector2i(end_pos / cell_size)
+	var bounds = active_astar_grid.region
+func set_point_solid(grid_pos: Vector2i, solid: bool) -> void:
+	pass # (Body Omitted)
+func is_point_solid(grid_pos: Vector2i) -> bool:
+	pass # (Body Omitted)
+func _is_cell_within_bounds(grid_pos: Vector2i) -> bool:
+	pass # (Body Omitted)
+	var bounds = active_astar_grid.region
+func get_cell_size() -> Vector2:
+	pass # (Body Omitted)
+
+
+### FILE: res://autoload/PauseManager.gd ###
+extends Node
+@export var pause_menu_scene: PackedScene
+func _ready() -> void:
+	pass # (Body Omitted)
+func _unhandled_input(event: InputEvent) -> void:
+	pass # (Body Omitted)
+		var current_pause_state := get_tree().paused
+func _pause_game() -> void:
+	pass # (Body Omitted)
+		var error_msg := "PauseManager: 'pause_menu_scene' is not set in Project Settings!"
+	var menu := pause_menu_scene.instantiate()
+		var root_children := get_tree().root.get_children()
+func request_pause() -> void:
+	pass # (Body Omitted)
+func is_game_paused() -> bool:
+	pass # (Body Omitted)
+	var paused := get_tree().paused
+func on_game_unpaused() -> void:
+	pass # (Body Omitted)
+
+
+### FILE: res://autoload/ProjectilePoolManager.gd ###
+extends Node
+@export var projectile_scene: PackedScene = preload("res://scenes/effects/Projectile.tscn")
+@export var initial_pool_size: int = 50
+var available_projectiles: Array[Projectile] = []
+var projectile_container: Node
+func _ready() -> void:
+	pass # (Body Omitted)
+		var p = projectile_scene.instantiate() as Projectile
+func get_projectile() -> Projectile:
+	pass # (Body Omitted)
+		var p = projectile_scene.instantiate() as Projectile
+func return_projectile(projectile: Projectile) -> void:
+	pass # (Body Omitted)
+
+
+### FILE: res://autoload/SceneManager.gd ###
+extends Node
+@export var settlement_scene: PackedScene
+@export var world_map_scene: PackedScene
+@export var raid_mission_scene: PackedScene
+@export var winter_court_scene: PackedScene
+func _ready() -> void:
+	pass # (Body Omitted)
+func _on_scene_change_requested(scene_key: String) -> void:
+	pass # (Body Omitted)
+	var target_scene: PackedScene = null
+	var error = get_tree().change_scene_to_packed(target_scene)
+
+
+### FILE: res://autoload/SettlementManager.gd ###
+extends Node
+const USER_SAVE_PATH := "user://savegame.tres"
+const MAP_SAVE_PATH := "user://campaign_map.tres"
+var current_settlement: SettlementData # The Player's Home Economy (Always running)
+var active_map_data: SettlementData    # The Map currently displayed (Home OR Raid Target)
+var active_astar_grid: AStarGrid2D = null
+var buildable_cells: Dictionary = {} # Cached territory map
+const GRID_WIDTH = 60
+const GRID_HEIGHT = 40
+const CELL_SIZE_PX = 32
+var active_building_container: Node2D = null
+var pending_management_open: bool = false
+func _ready() -> void:
+	pass # (Body Omitted)
+func _init_grid() -> void:
+	pass # (Body Omitted)
+func _refresh_grid_state() -> void:
+	pass # (Body Omitted)
+	var region = active_astar_grid.region
+func _apply_building_to_grid(entry: Dictionary, is_solid: bool) -> void:
+	pass # (Body Omitted)
+	var path = entry.get("resource_path", "")
+	var raw_pos = entry["grid_position"]
+	var pos = Vector2i(raw_pos.x, raw_pos.y)
+	var data = load(path) as BuildingData
+func _mark_rect_solid(top_left_pos: Vector2i, size: Vector2i, is_solid: bool) -> void:
+	pass # (Body Omitted)
+			var cell = top_left_pos + Vector2i(x, y)
+func is_tile_buildable(grid_pos: Vector2i) -> bool:
+	pass # (Body Omitted)
+func get_active_grid_cell_size() -> Vector2:
+	pass # (Body Omitted)
+func get_astar_path(start_pos: Vector2, end_pos: Vector2, allow_partial_path: bool = false) -> PackedVector2Array:
+	pass # (Body Omitted)
+	var cell_size = active_astar_grid.cell_size
+	var start = Vector2i(start_pos / cell_size)
+	var end = Vector2i(end_pos / cell_size)
+	var bounds = active_astar_grid.region
+func set_astar_point_solid(grid_position: Vector2i, solid: bool) -> void:
+	pass # (Body Omitted)
+func place_building(building_data: BuildingData, grid_position: Vector2i, is_new_construction: bool = false) -> BaseBuilding:
+	pass # (Body Omitted)
+	var new_building = building_data.scene_to_spawn.instantiate()
+	var cell = get_active_grid_cell_size()
+	var pos = Vector2(grid_position) * cell + (Vector2(building_data.grid_size) * cell / 2.0)
+	var entry = {
+func remove_building(building_instance: BaseBuilding) -> void:
+	pass # (Body Omitted)
+	var cell_size = get_active_grid_cell_size()
+	var top_left = building_instance.global_position - (Vector2(building_instance.data.grid_size) * cell_size / 2.0)
+	var grid_pos = Vector2i(round(top_left.x / cell_size.x), round(top_left.y / cell_size.y))
+	var removed_placed = _remove_from_list(active_map_data.placed_buildings, grid_pos)
+	var removed_pending = _remove_from_list(active_map_data.pending_construction_buildings, grid_pos)
+func _remove_from_list(list: Array, grid_pos: Vector2i) -> bool:
+	pass # (Body Omitted)
+		var entry = list[i]
+		var entry_pos = entry["grid_position"]
+		var current_pos_i = Vector2i(entry_pos.x, entry_pos.y)
+func is_placement_valid(grid_position: Vector2i, building_size: Vector2i, building_data: BuildingData = null) -> bool:
+	pass # (Body Omitted)
+func _is_within_district_range(grid_pos: Vector2i, size: Vector2i, data: EconomicBuildingData) -> bool:
+	pass # (Body Omitted)
+	var cell = get_active_grid_cell_size()
+	var center = (Vector2(grid_pos) * cell) + (Vector2(size) * cell / 2.0)
+	var nodes = get_tree().get_nodes_in_group("resource_nodes")
+func register_active_scene_nodes(container: Node2D) -> void:
+	pass # (Body Omitted)
+func unregister_active_scene_nodes() -> void:
+	pass # (Body Omitted)
+func load_settlement(data: SettlementData) -> void:
+	pass # (Body Omitted)
+		var saved_data = load(USER_SAVE_PATH)
+func _load_fallback_data(data: SettlementData) -> void:
+	pass # (Body Omitted)
+func save_settlement() -> void:
+	pass # (Body Omitted)
+	var error = ResourceSaver.save(current_settlement, USER_SAVE_PATH)
+func delete_save_file() -> void:
+	pass # (Body Omitted)
+func reset_manager_state() -> void:
+	pass # (Body Omitted)
+func has_current_settlement() -> bool:
+	pass # (Body Omitted)
+func calculate_payout() -> Dictionary:
+	pass # (Body Omitted)
+func deposit_resources(loot: Dictionary) -> void:
+	pass # (Body Omitted)
+func attempt_purchase(item_cost: Dictionary) -> bool:
+	pass # (Body Omitted)
+func apply_raid_damages() -> Dictionary:
+	pass # (Body Omitted)
+func get_total_ship_capacity_squads() -> int:
+	pass # (Body Omitted)
+	var total_capacity = 3
+		var data = load(entry["resource_path"]) as BuildingData
+func get_idle_peasants() -> int:
+	pass # (Body Omitted)
+	var employed = 0
+func get_idle_thralls() -> int:
+	pass # (Body Omitted)
+	var employed = 0
+func assign_worker(building_index: int, type: String, amount: int) -> void:
+	pass # (Body Omitted)
+	var entry = current_settlement.placed_buildings[building_index]
+	var data = load(entry["resource_path"]) as EconomicBuildingData
+	var key = "peasant_count" if type == "peasant" else "thrall_count"
+	var cap = data.peasant_capacity if type == "peasant" else data.thrall_capacity
+	var current = entry.get(key, 0)
+	var new_val = clampi(current + amount, 0, cap)
+		var idle = get_idle_peasants() if type == "peasant" else get_idle_thralls()
+func assign_construction_worker(index: int, type: String, amount: int) -> void:
+	pass # (Body Omitted)
+	var entry = current_settlement.pending_construction_buildings[index]
+	var data = load(entry["resource_path"]) as BuildingData
+	var key = "peasant_count" if type == "peasant" else "thrall_count"
+	var cap = data.base_labor_capacity 
+	var current = entry.get(key, 0)
+	var new_val = clampi(current + amount, 0, cap)
+		var idle = get_idle_peasants() if type == "peasant" else get_idle_thralls()
+func process_construction_labor() -> void:
+	pass # (Body Omitted)
+	var completed_indices: Array[int] = []
+		var entry = current_settlement.pending_construction_buildings[i]
+		var b_data = load(entry["resource_path"]) as BuildingData
+		var peasants = entry.get("peasant_count", 0)
+		var thralls = entry.get("thrall_count", 0)
+		var labor_points = (peasants + thralls) * EconomyManager.BUILDER_EFFICIENCY
+func complete_building_construction(building_instance: BaseBuilding) -> void:
+	pass # (Body Omitted)
+func recruit_unit(unit_data: UnitData) -> void:
+	pass # (Body Omitted)
+	var new_warband = WarbandData.new(unit_data)
+func upgrade_warband_gear(warband: WarbandData) -> bool:
+	pass # (Body Omitted)
+	var cost = warband.get_gear_cost()
+func toggle_hearth_guard(warband: WarbandData) -> void:
+	pass # (Body Omitted)
+func process_warband_hunger() -> Array[String]:
+	pass # (Body Omitted)
+	var deserters: Array[WarbandData] = []
+	var warnings: Array[String] = []
+		var decay = 25
+func _on_player_unit_died(unit: Node2D) -> void:
+	pass # (Body Omitted)
+	var warband = unit.get("warband_ref")
+func assign_worker_from_unit(building: BaseBuilding, type: String) -> bool:
+	pass # (Body Omitted)
+	var entry = _find_entry_for_building(building)
+	var data = building.data
+	var cap = 0
+	var current = 0
+func _find_entry_for_building(building: BaseBuilding) -> Dictionary:
+	pass # (Body Omitted)
+	var cell_size = get_active_grid_cell_size()
+	var half_size = (Vector2(building.data.grid_size) * cell_size) / 2.0
+	var grid_pos = Vector2i((building.global_position - half_size) / cell_size)
+func unassign_worker_from_building(building: BaseBuilding, type: String) -> bool:
+	pass # (Body Omitted)
+	var entry = _find_entry_for_building(building)
+	var key = "peasant_count" if type == "peasant" else "thrall_count"
+	var current = entry.get(key, 0)
+
+
+### FILE: res://autoload/WinterManager.gd ###
+extends Node
+enum WinterSeverity { MILD, NORMAL, HARSH }
+@export_group("Probabilities")
+@export_range(0.0, 1.0) var harsh_chance: float = 0.20
+@export_range(0.0, 1.0) var mild_chance: float = 0.05
+@export_group("Multipliers")
+@export var harsh_multiplier: float = 1.5
+@export var mild_multiplier: float = 0.75
+var current_severity: WinterSeverity = WinterSeverity.NORMAL
+func calculate_winter_demand(settlement: SettlementData) -> Dictionary:
+	pass # (Body Omitted)
+	var mult: float = 1.0
+	var base_food = (settlement.population_peasants * 1) + (settlement.warbands.size() * 5)
+	var base_wood = 20
+	var final_food = int(base_food * mult)
+	var final_wood = int(base_wood * mult)
+func _roll_severity() -> void:
+	pass # (Body Omitted)
+	var roll = randf()
+func _get_empty_report() -> Dictionary:
+	pass # (Body Omitted)
+
+
+### FILE: res://data/buildings/Base_Building.gd ###
+class_name BaseBuilding
+extends StaticBody2D
+signal building_destroyed(building: BaseBuilding)
+signal construction_completed(building: BaseBuilding)
+signal loot_stolen(type: String, amount: int)
+signal loot_depleted(building: BaseBuilding)
+enum BuildingState { 
+@export var data: BuildingData
+var current_health: int = 100
+var current_state: BuildingState = BuildingState.ACTIVE 
+var construction_progress: int = 0
+var hud: BuildingInfoHUD
+const HUD_SCENE = preload("res://ui/components/BuildingInfoHUD.tscn")
+var sprite: Sprite2D
+var collision_shape: CollisionShape2D
+var hitbox_area: Area2D
+var attack_ai: Node = null 
+var border_rect: ColorRect # Kept for debug borders
+var available_loot: Dictionary = {}
+var total_loot_value: int = 0
+func _ready() -> void:
+	pass # (Body Omitted)
+func _initialize_loot() -> void:
+	pass # (Body Omitted)
+	var eco = data as EconomicBuildingData
+	var type = eco.resource_type
+	var amount = eco.base_passive_output * 3
+func steal_resources(max_amount: int) -> int:
+	pass # (Body Omitted)
+	var target_res = ""
+	var available = available_loot[target_res]
+	var actual_steal = min(available, max_amount)
+func _apply_data_and_scale() -> void:
+	pass # (Body Omitted)
+	var cell_size = Vector2(32, 32)
+	var size = Vector2(data.grid_size) * cell_size
+		var texture_size = sprite.texture.get_size()
+func set_state(new_state: BuildingState) -> void:
+	pass # (Body Omitted)
+	var old_state = current_state
+		construction_completed.emit(self)
+func _update_visual_state() -> void:
+	pass # (Body Omitted)
+func _update_logic_state() -> void:
+	pass # (Body Omitted)
+func add_construction_progress(amount: int) -> void:
+	pass # (Body Omitted)
+	construction_progress += amount
+func take_damage(amount: int, _attacker: Node2D = null) -> void:
+	pass # (Body Omitted)
+func die() -> void:
+	pass # (Body Omitted)
+func _input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
+	pass # (Body Omitted)
+func _create_hitbox() -> void:
+	pass # (Body Omitted)
+	var s = CollisionShape2D.new()
+func _setup_defensive_ai() -> void:
+	pass # (Body Omitted)
+
+
+### FILE: res://data/buildings/BuildingData.gd ###
+class_name BuildingData
+extends Resource
+@export var display_name: String = "New Building"
+@export_multiline var description: String = "A useful structure."
+@export var scene_to_spawn: PackedScene
+@export var icon: Texture2D
+@export var building_texture: Texture2D
+@export var build_cost: Dictionary
+@export var max_health: int = 100
+@export var blocks_pathfinding: bool = true
+@export var grid_size: Vector2i = Vector2i.ONE
+@export var dev_color: Color = Color.GRAY
+@export var is_player_buildable: bool = false
+@export_group("Construction")
+@export var construction_effort_required: int = 100
+@export var base_labor_capacity: int = 3
+@export_group("Territory & Expansion")
+@export var is_territory_hub: bool = false
+@export var extends_territory: bool = false
+@export var territory_radius: int = 4
+@export var fleet_capacity_bonus: int = 0
+@export_group("Demographics")
+@export var arable_land_capacity: int = 0 
+@export_group("Defensive Stats")
+@export var is_defensive_structure: bool = false
+@export var attack_damage: int = 5
+@export var attack_range: float = 200.0
+@export var attack_speed: float = 1.0
+@export var ai_component_scene: PackedScene
+@export var projectile_scene: PackedScene
+@export var projectile_speed: float = 400.0
+
+
+### FILE: res://data/buildings/EconomicBuildingData.gd ###
+class_name EconomicBuildingData
+extends BuildingData
+@export_group("Thrall Economy")
+@export var resource_type: String = "wood"
+@export var base_passive_output: int = 50
+@export var output_per_thrall: int = 50
+@export var thrall_capacity: int = 5
+@export var peasant_capacity: int = 5
+
+
+### FILE: res://data/characters/JarlData.gd ###
+class_name JarlData
+extends Resource
+@export var display_name: String = "New Jarl"
+@export var portrait: Texture2D
+@export var age: int = 25
+@export var gender: String = "Male" # "Male", "Female"
+@export_group("Dynasty & Authority")
+@export var renown: int = 0
+@export var renown_tier: int = 0
+@export var current_authority: int = 3
+@export var max_authority: int = 3
+@export var years_since_action: int = 0
+@export var legitimacy: int = 20
+@export var succession_debuff_years_remaining: int = 0
+@export_group("Lineage History")
+@export var ancestors: Array[Dictionary] = []
+@export var heir_starting_renown_bonus: int = 0
+@export var purchased_legacy_upgrades: Array[String] = []
+@export var conquered_regions: Array[String] = []
+@export var allied_regions: Array[String] = []
+@export_group("Naval Logistics")
+@export var safe_naval_range: float = 600.0
+@export var attrition_per_100px: float = 0.10
+@export_group("Base Skills")
+@export var command: int = 10
+@export var diplomacy: int = 10
+@export var stewardship: int = 10
+@export var learning: int = 10
+@export var prowess: int = 10
+@export var charisma: int = 10
+@export_group("Traits")
+@export var traits: Array[JarlTraitData] = []
+@export var legacy_trait_names: Array[String] = []
+@export var is_wounded: bool = false
+@export var wound_recovery_turns: int = 0
+@export_group("Family & Succession")
+@export var spouse_name: String = ""
+@export var heirs: Array[JarlHeirData] = []
+@export_group("Political Status")
+@export var title: String = "Jarl"
+@export var vassal_count: int = 0
+@export var reputation: int = 0
+@export var is_in_exile: bool = false
+@export_group("Combat & Mission State")
+@export var is_on_mission: bool = false
+@export var battles_fought: int = 0
+@export var battles_won: int = 0
+@export var successful_raids: int = 0
+@export var offensive_wins: int = 0 
+@export_group("Winter Court")
+var current_hall_actions: int = 0
+var max_hall_actions: int = 0
+func calculate_hall_actions() -> void:
+	pass # (Body Omitted)
+	var score = stewardship + charisma 
+func get_safe_range() -> float:
+	pass # (Body Omitted)
+func get_available_heir_count() -> int:
+	pass # (Body Omitted)
+	var count = 0
+func get_first_available_heir() -> JarlHeirData:
+	pass # (Body Omitted)
+func remove_heir(heir_to_remove: JarlHeirData) -> bool:
+	pass # (Body Omitted)
+func check_has_valid_heir() -> bool:
+	pass # (Body Omitted)
+func get_effective_skill(skill_name: String) -> int:
+	pass # (Body Omitted)
+	var base_value: int = 0
+	var trait_modifier: int = 0
+func add_trait(trait_data: JarlTraitData) -> void:
+	pass # (Body Omitted)
+func has_trait(trait_name: String) -> bool:
+	pass # (Body Omitted)
+func get_authority_cap() -> int:
+	pass # (Body Omitted)
+func can_take_action(authority_cost: int = 1) -> bool:
+	pass # (Body Omitted)
+func spend_authority(cost: int = 1) -> bool:
+	pass # (Body Omitted)
+func award_renown(amount: int) -> void:
+	pass # (Body Omitted)
+func _update_renown_tier() -> void:
+	pass # (Body Omitted)
+func reset_authority() -> void:
+	pass # (Body Omitted)
+		var legit_multiplier = legitimacy / 100.0
+		var authority_gained = int(round(max_authority * legit_multiplier))
+func age_jarl(years: int = 1) -> void:
+	pass # (Body Omitted)
+func remove_trait(trait_name: String) -> bool:
+	pass # (Body Omitted)
+
+
+### FILE: res://data/characters/JarlHeirData.gd ###
+class_name JarlHeirData
+extends Resource
+enum HeirStatus {
+@export_group("Identity")
+@export var display_name: String = "New Heir"
+@export var age: int = 16
+@export var gender: String = "Male" # "Male", "Female"
+@export var portrait: Texture2D
+@export var is_designated_heir: bool = false
+@export_group("Status")
+@export var status: HeirStatus = HeirStatus.Available
+@export var expedition_years_remaining: int = 0
+@export_group("Skills & Traits")
+@export var command: int = 8
+@export var stewardship: int = 8
+@export var learning: int = 8
+@export var prowess: int = 8
+@export var traits: Array[JarlTraitData] = []
+@export var genetic_trait: JarlTraitData
+
+
+### FILE: res://data/events/DisputeEventData.gd ###
+class_name DisputeEventData
+extends Resource
+@export_group("Narrative")
+@export var title: String = "Dispute Title"
+@export_multiline var description: String = "Description of the conflict."
+@export_group("Costs")
+@export var gold_cost: int = 100
+@export var renown_cost: int = 25
+@export var bans_unit: bool = false
+@export_group("Consequences")
+@export var penalty_modifier_key: String = ""
+@export var penalty_description: String = "Recruitment costs double next year."
+
+
+### FILE: res://data/events/EventChoice.gd ###
+class_name EventChoice
+extends Resource
+@export var choice_text: String = "Choice Text"
+@export var tooltip_text: String = "Tooltip"
+@export var effect_key: String = ""
+
+
+### FILE: res://data/events/EventData.gd ###
+class_name EventData
+extends Resource
+@export_group("Event Display")
+@export var title: String = "An Event Occurs"
+@export_multiline var description: String = "Event description..."
+@export var portrait: Texture2D
+@export_group("Event Triggering")
+@export var event_id: String = "unique_event_id"
+@export var is_unique: bool = true
+@export var base_chance: float = 0.5
+@export var prerequisites: Array[String] = []
+@export_group("Event Conditions")
+@export var min_stewardship: int = -1
+@export var min_command: int = -1
+@export var min_prowess: int = -1
+@export var min_renown: int = -1
+@export var must_have_trait: String = ""
+@export var must_not_have_trait: String = ""
+@export var min_available_heirs: int = -1
+@export var min_conquered_regions: int = -1
+@export_group("Event Choices")
+@export var choices: Array[EventChoice] = []
+
+
+### FILE: res://data/legacy/LegacyUpgradeData.gd ###
+class_name LegacyUpgradeData
+extends Resource
+@export var display_name: String = "New Legacy Upgrade"
+@export var icon: Texture2D
+@export_multiline var description: String = "A permanent dynasty upgrade."
+@export var renown_cost: int = 100
+@export var authority_cost: int = 1
+@export_group("Progress")
+@export var required_progress: int = 1
+@export var current_progress: int = 0
+@export var effect_key: String = ""
+@export var prerequisite_key: String = ""
+var is_purchased: bool:
+
+
+### FILE: res://data/missions/RaidLootData.gd ###
+extends Resource
+class_name RaidLootData
+@export var collected_loot: Dictionary = {}
+func _init() -> void:
+	pass # (Body Omitted)
+func add_loot(resource_type: String, amount: int) -> void:
+	pass # (Body Omitted)
+func add_loot_from_building(building_data: BuildingData) -> void:
+	pass # (Body Omitted)
+		var eco_data: EconomicBuildingData = building_data
+		var loot_amount = eco_data.base_passive_output * 3
+func get_total_loot() -> Dictionary:
+	pass # (Body Omitted)
+func clear_loot() -> void:
+	pass # (Body Omitted)
+func get_loot_summary() -> String:
+	pass # (Body Omitted)
+	var summary_parts: Array[String] = []
+			var display_name = GameResources.get_display_name(resource_type)
+
+
+### FILE: res://data/missions/RaidResultData.gd ###
+class_name RaidResultData
+extends Resource
+@export var loot: Dictionary = {}
+@export var casualties: Array[UnitData] = []
+@export var outcome: String = "neutral" 
+@export var victory_grade: String = "Standard"
+@export var renown_earned: int = 0
+
+
+### FILE: res://data/settlements/SettlementData.gd ###
+extends Resource
+class_name SettlementData
+@export var treasury: Dictionary = {
+@export var placed_buildings: Array[Dictionary] = []
+@export var pending_construction_buildings: Array = []
+@export var warbands: Array[WarbandData] = []
+@export var max_garrison_bonus: int = 0
+@export var population_peasants: int = 10 # Free Peasants
+@export var population_thralls: int = 5 # Captive Workers
+@export var worker_assignments: Dictionary = {}
+@export var has_stability_debuff: bool = false
+@export var unrest: int = 0 # 0-100 scale. 100 = Rebellion.
+@export_group("Naval State")
+@export var fleet_readiness: float = 1.0 
+func get_fleet_capacity() -> int:
+	pass # (Body Omitted)
+	var capacity = 2 # Base capacity (2 Warbands)
+		var res_path = entry["resource_path"]
+
+
+### FILE: res://data/traits/JarlTraitData.gd ###
+class_name JarlTraitData
+extends Resource
+@export var display_name: String = ""
+@export var description: String = ""
+@export var is_visible: bool = true # Should the player/AI know about this trait?
+@export_group("Skill Modifiers")
+@export var command_modifier: int = 0
+@export var stewardship_modifier: int = 0
+@export var intrigue_modifier: int = 0
+@export_group("Macro Modifiers")
+@export var renown_per_year_modifier: float = 0.0 # Used for passive Renown gain/loss
+@export var vassal_opinion_modifier: int = 0  # Global change to vassal opinion of Jarl
+@export var alliance_cost_modifier: float = 1.0 # Multiplier for alliance Authority cost
+@export_group("Behavior Flags")
+@export var is_wounded_trait: bool = false # e.g., Maimed, Crippled
+@export var is_dishonorable_trait: bool = false # e.g., Betrayer, Cowardly
+
+
+### FILE: res://data/units/UnitData.gd ###
+class_name UnitData
+extends Resource
+@export var display_name: String = "New Unit"
+@export_file("*.tscn") var scene_path: String = ""
+@export var scene_to_spawn: PackedScene 
+@export var icon: Texture2D
+@export var spawn_cost: Dictionary = {"food": 25}
+@export_group("Combat Stats")
+@export var max_health: int = 50
+@export var move_speed: float = 75.0
+@export var attack_damage: int = 8
+@export var attack_speed: float = 1.2
+@export var attack_range: float = 15.0 
+@export var building_attack_range: float = 45.0
+@export_group("Inventory & Logistics")
+@export var max_loot_capacity: int = 100 
+@export var encumbrance_speed_penalty: float = 0.5 # 50% slow at max load
+@export_group("Visuals")
+@export var visual_texture: Texture2D
+@export var target_pixel_size: Vector2 = Vector2(32, 32)
+@export_group("Movement Feel")
+@export var acceleration: float = 10.0
+@export var linear_damping: float = 5.0
+@export_group("Raid Stats")
+@export var pillage_speed: int = 10 
+@export var burn_renown: int = 10
+@export var ai_component_scene: PackedScene
+@export var projectile_scene: PackedScene
+@export var projectile_speed: float = 400.0
+@export_group("Social Stats")
+@export var wergild_cost: int = 50
+func load_scene() -> PackedScene:
+	pass # (Body Omitted)
+
+
+### FILE: res://data/units/WarbandData.gd ###
+class_name WarbandData
+extends Resource
+@export var custom_name: String = "New Warband"
+@export var unit_type: UnitData
+@export var experience: int = 0
+const XP_PER_LEVEL: int = 100
+const MAX_LEVEL: int = 5
+@export var gear_tier: int = 0
+const MAX_GEAR_TIER: int = 3
+@export var assigned_heir_name: String = ""
+@export var loyalty: int = 100
+@export var turns_idle: int = 0
+@export var current_manpower: int = 10
+const MAX_MANPOWER: int = 10
+@export var is_hearth_guard: bool = false
+@export var is_bondi: bool = false
+@export var is_seasonal: bool = false
+@export var is_wounded: bool = false
+@export var battles_survived: int = 0
+@export var history_log: Array[String] = []
+func _init(p_unit_type: UnitData = null) -> void:
+	pass # (Body Omitted)
+func add_history(entry: String) -> void:
+	pass # (Body Omitted)
+func get_level() -> int:
+	pass # (Body Omitted)
+func get_level_title() -> String:
+	pass # (Body Omitted)
+	var lvl = get_level()
+func get_stat_multiplier() -> float:
+	pass # (Body Omitted)
+	var lvl = get_level()
+func get_gear_cost() -> int:
+	pass # (Body Omitted)
+func get_gear_name() -> String:
+	pass # (Body Omitted)
+func get_gear_health_mult() -> float:
+	pass # (Body Omitted)
+func get_gear_damage_mult() -> float:
+	pass # (Body Omitted)
+func get_loyalty_description(jarl_name: String) -> String:
+	pass # (Body Omitted)
+func modify_loyalty(amount: int) -> void:
+	pass # (Body Omitted)
+func _generate_warband_name(_base_name: String) -> String:
+	pass # (Body Omitted)
+	var prefixes = ["Iron", "Blood", "Storm", "Night", "Wolf", "Bear", "Raven"]
+	var suffixes = ["Guard", "Raiders", "Blades", "Shields", "Hunters", "Fists"]
+
+
+### FILE: res://data/world_map/MapState.gd ###
+class_name MapState
+extends Resource
+@export var region_data_map: Dictionary = {}
+@export var turns_elapsed: int = 0
+
+
+### FILE: res://data/world_map/RaidTargetData.gd ###
+class_name RaidTargetData
+extends Resource
+@export var display_name: String = "Monastery"
+@export_multiline var description: String = "A small, undefended religious site."
+@export var settlement_data: SettlementData
+@export_group("Raid Costs")
+@export var raid_cost_authority: int = 1
+@export var authority_cost_override: int = -1
+@export var difficulty_rating: int = 1 # 1-5 Stars
+@export_group("Victory Conditions")
+@export var par_time_seconds: int = 300 
+@export var decisive_casualty_limit: int = 2
+
+
+### FILE: res://data/world_map/WorldRegionData.gd ###
+class_name WorldRegionData
+extends Resource
+@export var display_name: String = "New Region"
+@export_multiline var description: String = "A description of this region."
+@export var raid_targets: Array[RaidTargetData] = []
+@export var region_type_tag: String = "Province"
+@export var yearly_income: Dictionary = {"gold": 10}
+@export var base_authority_cost: int = 1
+
+
+### FILE: res://player/RTSCamera.gd ###
+extends Camera2D
+class_name RTSCamera
+@export_group("Movement")
+@export var camera_speed: float = 400.0
+@export var edge_pan_margin: float = 20.0
+@export var enable_edge_panning: bool = true
+@export var enable_wasd_movement: bool = true
+@export var enable_drag_panning: bool = true
+@export_group("Zoom")
+@export var min_zoom: float = 0.5  # Far away
+@export var max_zoom: float = 2.0  # Close up
+@export var zoom_speed: float = 0.1
+@export var zoom_smoothing: float = 10.0
+@export_group("Bounds")
+@export var bounds_enabled: bool = true
+@export var bounds_rect: Rect2 = Rect2(-1000, -1000, 3000, 2500)
+var target_zoom: Vector2 = Vector2.ONE
+var is_dragging: bool = false
+var drag_start_mouse_pos: Vector2 = Vector2.ZERO
+var drag_start_camera_pos: Vector2 = Vector2.ZERO
+var input_locked: bool = false
+func _ready() -> void:
+	pass # (Body Omitted)
+func _unhandled_input(event: InputEvent) -> void:
+	pass # (Body Omitted)
+		var current_mouse_pos = get_viewport().get_mouse_position()
+		var mouse_delta = drag_start_mouse_pos - current_mouse_pos
+func _process(delta: float) -> void:
+	pass # (Body Omitted)
+func _handle_keyboard_movement(delta: float) -> void:
+	pass # (Body Omitted)
+	var movement_vector := Vector2.ZERO
+	var viewport_size = get_viewport().get_visible_rect().size
+	var mouse_pos = get_viewport().get_mouse_position()
+		var zoom_multiplier = 1.0 / zoom.x
+func _zoom_in() -> void:
+	pass # (Body Omitted)
+func _zoom_out() -> void:
+	pass # (Body Omitted)
+func _clamp_zoom() -> void:
+	pass # (Body Omitted)
+func _clamp_position() -> void:
+	pass # (Body Omitted)
+func _on_input_lock_requested(locked: bool) -> void:
+	pass # (Body Omitted)
+
+
+### FILE: res://player/RTSController.gd ###
+extends Node
+class_name RTSController
+var selected_units: Array[BaseUnit] = []
+var controllable_units: Array[BaseUnit] = []
+var current_formation: SquadFormation.FormationType = SquadFormation.FormationType.LINE
+var control_groups: Dictionary = {
+func _ready() -> void:
+	pass # (Body Omitted)
+func _on_interact_command(target: Node2D) -> void:
+	pass # (Body Omitted)
+func _on_move_command(target_position: Vector2) -> void:
+	pass # (Body Omitted)
+func _on_formation_move_command(target_position: Vector2, direction_vector: Vector2) -> void:
+	pass # (Body Omitted)
+func _handle_movement_logic(target_pos: Vector2, direction: Vector2) -> void:
+	pass # (Body Omitted)
+	var soldiers: Array[Node2D] = []
+	var civilians: Array[Node2D] = []
+func _move_group_in_formation(unit_list: Array[Node2D], target: Vector2, direction: Vector2) -> void:
+	pass # (Body Omitted)
+	var formation = SquadFormation.new(unit_list)
+func _move_civilians_as_mob(unit_list: Array[Node2D], target: Vector2) -> void:
+	pass # (Body Omitted)
+	var unit_count = unit_list.size()
+	var mob_radius = sqrt(unit_count) * 20.0 
+		var angle = randf() * TAU
+		var distance = randf() * mob_radius
+		var offset = Vector2(cos(angle), sin(angle)) * distance
+		var specific_dest = target + offset
+func add_unit_to_group(unit: Node2D) -> void:
+	pass # (Body Omitted)
+func remove_unit(unit: BaseUnit) -> void:
+	pass # (Body Omitted)
+	var unit_id = unit.get_instance_id()
+func _on_select_command(select_rect: Rect2, is_box_select: bool) -> void:
+	pass # (Body Omitted)
+	var main_camera: Camera2D = get_viewport().get_camera_2d()
+		var camera_pos = main_camera.get_screen_center_position()
+		var camera_zoom = main_camera.zoom
+		var viewport_size = get_viewport().get_visible_rect().size
+		var world_rect_min = camera_pos - (viewport_size / (2.0 * camera_zoom)) + (select_rect.position / camera_zoom)
+		var world_rect_max = world_rect_min + (select_rect.size / camera_zoom)
+		var world_rect = Rect2(world_rect_min, world_rect_max - world_rect_min)
+		var click_world_pos := main_camera.get_global_mouse_position()
+		var closest_leader: BaseUnit = null
+		var min_dist_sq = INF
+		var click_radius_sq = 40 * 40
+			var dist_sq = _get_closest_distance_to_squad(unit, click_world_pos)
+func _is_squad_in_rect(unit: BaseUnit, rect: Rect2) -> bool:
+	pass # (Body Omitted)
+func _get_closest_distance_to_squad(unit: BaseUnit, point: Vector2) -> float:
+	pass # (Body Omitted)
+	var min_d = unit.global_position.distance_squared_to(point)
+				var d = soldier.global_position.distance_squared_to(point)
+func _on_attack_command(target_node: Node2D) -> void:
+	pass # (Body Omitted)
+func command_scramble(target_position: Vector2) -> void:
+	pass # (Body Omitted)
+		var panic_offset = Vector2(randf_range(-80, 80), randf_range(-80, 80))
+		var unique_dest = target_position + panic_offset
+func _validate_selection() -> void:
+	pass # (Body Omitted)
+	var valid_units: Array[BaseUnit] = []
+func _clear_selection() -> void:
+	pass # (Body Omitted)
+func _on_control_group_command(group_index: int, is_assigning: bool) -> void:
+	pass # (Body Omitted)
+func _on_formation_change_command(formation_type: int) -> void:
+	pass # (Body Omitted)
+func _set_control_group(num: int) -> void:
+	pass # (Body Omitted)
+func _select_control_group(num: int) -> void:
+	pass # (Body Omitted)
+	var new_group_ids = control_groups[num]
+		var unit = instance_from_id(unit_id) as BaseUnit
+func _prune_dead_units() -> void:
+	pass # (Body Omitted)
+	var alive_units: Array[BaseUnit] = []
+func _on_pillage_command(target_node: Node2D) -> void:
+	pass # (Body Omitted)
+
+
+### FILE: res://scenes/components/AttackAI.gd ###
+class_name AttackAI
+extends Node2D
+signal attack_started(target: Node2D)
+signal attack_stopped()
+signal about_to_attack(target: Node2D, damage: int)
+enum AI_Mode { DEFAULT, DEFENSIVE_SIEGE }
+@export var ai_mode: AI_Mode = AI_Mode.DEFAULT
+@export var great_hall_los_range: float = 600.0
+@export var attack_damage: int = 10
+@export var attack_range: float = 200.0
+@export var attack_speed: float = 1.0 
+@export var projectile_scene: PackedScene
+var building_attack_range: float = 45.0
+var target_collision_mask: int = 0
+var projectile_speed: float = 400.0
+var parent_node: Node2D
+var current_target: Node2D = null
+var targets_in_range: Array[Node2D] = []
+var is_attacking: bool = false
+func _ready() -> void:
+	pass # (Body Omitted)
+func _setup_ai() -> void:
+	pass # (Body Omitted)
+			var s = detection_area.get_child(0) as CollisionShape2D
+func configure_from_data(data) -> void:
+	pass # (Body Omitted)
+func set_target_mask(mask: int) -> void:
+	pass # (Body Omitted)
+func force_target(target: Node2D) -> void:
+	pass # (Body Omitted)
+	var actual_target = target
+func stop_attacking() -> void:
+	pass # (Body Omitted)
+func _on_target_entered(body: Node2D) -> void:
+	pass # (Body Omitted)
+func _on_target_exited(body: Node2D) -> void:
+	pass # (Body Omitted)
+func _select_target() -> void:
+	pass # (Body Omitted)
+func _select_target_default() -> void:
+	pass # (Body Omitted)
+	var unit_targets: Array[Node2D] = []
+	var building_targets: Array[Node2D] = []
+	var closest_target: Node2D = null
+	var closest_distance: float = INF
+	var search_list = unit_targets if not unit_targets.is_empty() else building_targets
+		var dist_center = parent_node.global_position.distance_to(target.global_position)
+		var radius = _get_target_radius(target)
+		var distance = max(0, dist_center - radius)
+func _select_target_defensive_siege() -> void:
+	pass # (Body Omitted)
+	var unit_parent = parent_node as BaseUnit
+	var great_hall = unit_parent.fsm.objective_target
+		var hall_pos = great_hall.global_position
+		var distance_to_hall = parent_node.global_position.distance_to(hall_pos)
+	var closest_building: Node2D = null
+	var closest_distance: float = INF
+			var dist_center = parent_node.global_position.distance_to(target.global_position)
+			var radius = _get_target_radius(target)
+			var distance = max(0, dist_center - radius)
+func _get_target_radius(target: Node2D) -> float:
+	pass # (Body Omitted)
+		var building = target.get_parent() as BaseBuilding
+			var size = min(building.data.grid_size.x, building.data.grid_size.y)
+	var col = target.get_node_or_null("CollisionShape2D")
+			var extents = col.shape.size / 2.0
+func _start_attacking() -> void:
+	pass # (Body Omitted)
+func _stop_attacking() -> void:
+	pass # (Body Omitted)
+func _on_attack_timer_timeout() -> void:
+	pass # (Body Omitted)
+	var limit = attack_range
+	var dist = parent_node.global_position.distance_to(current_target.global_position)
+	var r_target = _get_target_radius(current_target)
+	var r_self = 15.0 
+	var surface_dist = max(0, dist - r_target - r_self)
+		var t = current_target
+func _spawn_projectile(target_pos: Vector2) -> void:
+	pass # (Body Omitted)
+	var p = ProjectilePoolManager.get_projectile()
+
+
+### FILE: res://scenes/effects/Projectile.gd ###
+class_name Projectile
+extends Area2D
+var damage: int = 0
+var speed: float = 400.0
+var direction: Vector2 = Vector2.RIGHT
+var firer: Node2D = null
+func _ready() -> void:
+	pass # (Body Omitted)
+func _physics_process(delta: float) -> void:
+	pass # (Body Omitted)
+func setup(start_position: Vector2, target_position: Vector2, projectile_damage: int, projectile_speed: float = 400.0, collision_mask_value: int = 0) -> void:
+	pass # (Body Omitted)
+func return_to_pool() -> void:
+	pass # (Body Omitted)
+func _on_area_entered(area: Area2D) -> void:
+	pass # (Body Omitted)
+func _on_body_entered(body: Node2D) -> void:
+	pass # (Body Omitted)
+func _handle_impact(target: Node2D) -> void:
+	pass # (Body Omitted)
+func _on_lifetime_timeout() -> void:
+	pass # (Body Omitted)
+
+
+### FILE: res://scenes/missions/RaidMapLoader.gd ###
+class_name RaidMapLoader
+extends Node
+var building_container: Node2D
+func setup(p_container: Node2D, enemy_data: SettlementData) -> void:
+	pass # (Body Omitted)
+func load_base(data: SettlementData, is_player_owner: bool) -> BaseBuilding:
+	pass # (Body Omitted)
+	var objective_ref: BaseBuilding = null
+		var building = _spawn_single_building_visual(entry)
+func _spawn_single_building_visual(entry: Dictionary) -> BaseBuilding:
+	pass # (Body Omitted)
+	var res_path = entry["resource_path"]
+	var grid_pos = Vector2i(entry["grid_position"].x, entry["grid_position"].y)
+	var b_data = load(res_path) as BuildingData
+	var instance = b_data.scene_to_spawn.instantiate() as BaseBuilding
+	var cell_size = SettlementManager.get_active_grid_cell_size()
+	var center_offset = (Vector2(b_data.grid_size) * cell_size) / 2.0
+		var hitbox = instance.get_node("Hitbox")
+
+
+### FILE: res://scenes/missions/RaidMission.gd ###
+extends Node2D
+@export var enemy_wave_units: Array[UnitData] = []
+@export var enemy_wave_count: int = 5
+@export var enemy_base_data: SettlementData
+@export var default_enemy_base_path: String = "res://data/settlements/monastery_base.tres"
+@export var player_spawn_formation: Dictionary = {"units_per_row": 5, "spacing": 40}
+@export var is_defensive_mission: bool = false
+@export var enemy_spawn_position: NodePath
+@export var landing_direction: Vector2 = Vector2.RIGHT
+@export var fyrd_unit_scene: PackedScene
+var map_loader: RaidMapLoader
+var objective_building: BaseBuilding = null
+var unit_container: Node2D # Reference to the container we will create/find
+func _ready() -> void:
+	pass # (Body Omitted)
+func _setup_unit_container() -> void:
+	pass # (Body Omitted)
+func _exit_tree() -> void:
+	pass # (Body Omitted)
+func initialize_mission() -> void:
+	pass # (Body Omitted)
+			var debug_spawn_pos = Vector2(200, 300) 
+func _setup_defensive_mode() -> void:
+	pass # (Body Omitted)
+	var settlement = SettlementManager.current_settlement
+func _setup_offensive_mode() -> void:
+	pass # (Body Omitted)
+func _on_building_destroyed_grid_update(building: BaseBuilding) -> void:
+	pass # (Body Omitted)
+func _spawn_player_garrison() -> void:
+	pass # (Body Omitted)
+	var warbands_to_spawn: Array[WarbandData] = []
+	var spawn_origin = player_spawn_pos.global_position
+func _spawn_enemy_wave() -> void:
+	pass # (Body Omitted)
+	var spawner = get_node_or_null(enemy_spawn_position)
+		var random_data = enemy_wave_units.pick_random()
+		var scene_ref = random_data.load_scene()
+		var unit = scene_ref.instantiate()
+func _on_fyrd_arrived() -> void:
+	pass # (Body Omitted)
+		var fallback = "res://scenes/units/EnemyUnit_Template.tscn" 
+	var spawner = get_node_or_null(enemy_spawn_position)
+	var origin = spawner.global_position if spawner else Vector2(1000, 0)
+		var unit = fyrd_unit_scene.instantiate()
+func _spawn_retreat_zone() -> void:
+	pass # (Body Omitted)
+	var zone_script_path = "res://scenes/missions/RetreatZone.gd"
+	var zone = Area2D.new()
+	var poly = CollisionPolygon2D.new()
+func _load_test_settlement() -> void:
+	pass # (Body Omitted)
+	var data_path = "res://data/settlements/home_base_fixed.tres"
+		var data = load(data_path)
+func _on_settlement_ready_for_mission(_d):
+	pass # (Body Omitted)
+func _validate_nodes() -> bool:
+	pass # (Body Omitted)
+func _spawn_test_units() -> void:
+	pass # (Body Omitted)
+	var unit_scene = load("res://scenes/units/PlayerVikingRaider.tscn")
+		var u = unit_scene.instantiate()
+func _spawn_enemy_garrison() -> void:
+	pass # (Body Omitted)
+	var guard_buildings = []
+func _on_node_added(node: Node) -> void:
+	pass # (Body Omitted)
+func _on_civilian_surrender(civilian: Node2D) -> void:
+	pass # (Body Omitted)
+	var best_leader = null
+	var min_dist = INF
+		var dist = leader.global_position.distance_to(civilian.global_position)
+
+
+### FILE: res://scenes/missions/RaidObjectiveManager.gd ###
+extends Node
+class_name RaidObjectiveManager
+@export var victory_bonus_loot: Dictionary = {"gold": 200}
+@export var settlement_bridge_scene_path: String = "res://scenes/levels/SettlementBridge.tscn"
+@export var is_defensive_mission: bool = false
+var raid_loot: RaidLootData
+var rts_controller: RTSController
+var objective_building: BaseBuilding
+var building_container: Node2D
+var enemy_units: Array[BaseUnit] = [] 
+var is_initialized: bool = false
+var mission_over: bool = false
+var battle_start_time: int = 0
+var dead_units_log: Array[UnitData] = []
+var escaped_unit_count: int = 0
+const FYRD_ARRIVAL_TIME: float = 120.0 # 2 Minutes
+var time_remaining: float = FYRD_ARRIVAL_TIME
+var fyrd_timer_active: bool = false
+var timer_label: Label
+signal fyrd_arrived()
+const UI_THEME = preload("res://ui/themes/VikingDynastyTheme.tres")
+func _ready() -> void:
+	pass # (Body Omitted)
+func _process(delta: float) -> void:
+	pass # (Body Omitted)
+			var minutes = int(time_remaining / 60)
+			var seconds = int(time_remaining) % 60
+func initialize(
+	pass # (Body Omitted)
+	var zones = get_tree().get_nodes_in_group("retreat_zone")
+		var zone = zones[0]
+func _on_player_unit_died(unit: Node2D) -> void:
+	pass # (Body Omitted)
+		var ident = "A Warrior"
+func _setup_mission_ui() -> void:
+	pass # (Body Omitted)
+	var canvas = get_parent().get_node_or_null("CanvasLayer")
+		var retreat_btn = Button.new()
+func _setup_timer_ui() -> void:
+	pass # (Body Omitted)
+	var canvas = get_parent().get_node_or_null("CanvasLayer")
+func _on_retreat_ordered() -> void:
+	pass # (Body Omitted)
+	var spawn_marker = get_parent().get_node_or_null("PlayerStartPosition")
+func on_unit_evacuated(unit: BaseUnit) -> void:
+	pass # (Body Omitted)
+	var remaining_units = get_tree().get_nodes_in_group("player_units")
+	var living_count = 0
+func _end_mission_via_retreat() -> void:
+	pass # (Body Omitted)
+	var mission_result = RaidResultData.new()
+func _connect_to_building_signals() -> void:
+	pass # (Body Omitted)
+func _on_loot_stolen(type: String, amount: int) -> void:
+	pass # (Body Omitted)
+func _on_enemy_building_destroyed_for_loot(building: BaseBuilding) -> void:
+	pass # (Body Omitted)
+	var building_data = building.data as BuildingData
+func _setup_win_loss_conditions() -> void:
+	pass # (Body Omitted)
+func _check_loss_condition() -> void:
+	pass # (Body Omitted)
+	var remaining_units = 0
+func _check_defensive_win_condition() -> void:
+	pass # (Body Omitted)
+func _on_player_hall_destroyed(_building: BaseBuilding) -> void:
+	pass # (Body Omitted)
+func _on_defensive_mission_won() -> void:
+	pass # (Body Omitted)
+func _on_mission_failed(reason: String) -> void:
+	pass # (Body Omitted)
+		var report = DynastyManager.process_defensive_loss()
+		var full_reason = reason + "\n\n" + report.get("summary_text", "")
+func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
+	pass # (Body Omitted)
+	var duration_sec = (Time.get_ticks_msec() - battle_start_time) / 1000.0
+	var grade = "Standard"
+	var casualty_limit = 2
+	var lost_count = dead_units_log.size()
+	var mission_result = RaidResultData.new()
+	var final_loot = raid_loot.collected_loot if raid_loot else {}
+	var total_loot = final_loot.duplicate()
+		var amount = victory_bonus_loot[key]
+		var current = total_loot.get(key, 0)
+	var difficulty = DynastyManager.current_raid_difficulty
+func _trigger_fyrd() -> void:
+	pass # (Body Omitted)
+func _show_failure_message(reason: String) -> void:
+	pass # (Body Omitted)
+	var popup = _create_popup_base()
+	var label = Label.new()
+func _show_victory_message(title: String, subtitle: String) -> void:
+	pass # (Body Omitted)
+	var popup = _create_popup_base()
+	var label = Label.new()
+func _create_popup_base() -> Control:
+	pass # (Body Omitted)
+	var popup = Control.new()
+	var bg = Panel.new()
+	var container = VBoxContainer.new()
+func _add_popup_to_canvas(popup: Control) -> void:
+	pass # (Body Omitted)
+	var canvas = get_parent().get_node_or_null("CanvasLayer")
+func _on_raid_loot_secured(type: String, amount: int) -> void:
+	pass # (Body Omitted)
+	var color = Color.GOLD if type == "gold" else Color.WHITE
+
+
+### FILE: res://scenes/missions/RetreatZone.gd ###
+class_name RetreatZone
+extends Area2D
+signal unit_evacuated(unit: BaseUnit)
+const COLOR_FILL = Color(0.2, 1.0, 0.2, 0.2) # Transparent Green
+const COLOR_BORDER = Color(0.2, 1.0, 0.2, 0.8) # Solid Green Border
+func _ready() -> void:
+	pass # (Body Omitted)
+func _draw() -> void:
+	pass # (Body Omitted)
+	var rect = Rect2(-100, -100, 200, 200)
+	var font = ThemeDB.get_fallback_font()
+func _on_body_entered(body: Node2D) -> void:
+	pass # (Body Omitted)
+		var unit = body as BaseUnit
+func _bank_unit_inventory(unit: BaseUnit) -> void:
+	pass # (Body Omitted)
+	var total_value = 0
+		var amount = unit.inventory[type]
+func _evacuate_unit(unit: BaseUnit) -> void:
+	pass # (Body Omitted)
+	var tween = create_tween()
+
+
+### FILE: res://scenes/world/ResourceNode.gd ###
+class_name ResourceNode
+extends Area2D
+signal node_depleted(node: ResourceNode)
+@export_group("District Settings")
+@export var resource_type: String = "wood":
+@export var district_radius: float = 192.0:
+@export_group("Pool Settings")
+@export var max_pool: int = 1000
+@export var current_pool: int = 1000
+@export var is_infinite: bool = false
+const DEBUG_COLORS = {
+func _ready() -> void:
+	pass # (Body Omitted)
+func _draw() -> void:
+	pass # (Body Omitted)
+		var color = DEBUG_COLORS.get(resource_type, Color.WHITE)
+func harvest(amount: int) -> int:
+	pass # (Body Omitted)
+	var actual_amount = min(amount, current_pool)
+func is_depleted() -> bool:
+	pass # (Body Omitted)
+func is_position_in_district(world_pos: Vector2) -> bool:
+	pass # (Body Omitted)
+func _on_depletion() -> void:
+	pass # (Body Omitted)
+
+
+### FILE: res://scenes/world_map/MacroCamera.gd ###
+extends Camera2D 
+class_name MacroCamera
+@export_group("Movement")
+@export var camera_speed: float = 500.0
+@export var edge_pan_margin: float = 20.0
+@export var enable_edge_panning: bool = true
+@export var enable_keyboard_movement: bool = true
+@export_group("Zoom")
+@export var min_zoom: float = 0.5  # Far away
+@export var max_zoom: float = 2.0  # Close up
+@export var zoom_speed: float = 0.1
+@export var zoom_smoothing: float = 10.0
+@export_group("Bounds")
+@export var bounds_enabled: bool = true 
+@export var bounds_rect: Rect2 = Rect2(0, 0, 1920, 1080)
+var target_zoom: Vector2 = Vector2.ONE
+var is_dragging: bool = false
+var drag_start_pos: Vector2
+func _ready() -> void:
+	pass # (Body Omitted)
+func snap_to_target(target_position: Vector2) -> void:
+	pass # (Body Omitted)
+func _process(delta: float) -> void:
+	pass # (Body Omitted)
+func _handle_movement(delta: float) -> void:
+	pass # (Body Omitted)
+	var movement_vector := Vector2.ZERO
+	var viewport_size = get_viewport().get_visible_rect().size
+	var mouse_pos = get_viewport().get_mouse_position()
+		var zoom_multiplier = 1.0 / zoom.x
+func _unhandled_input(event: InputEvent) -> void:
+	pass # (Body Omitted)
+func _zoom_in() -> void:
+	pass # (Body Omitted)
+func _zoom_out() -> void:
+	pass # (Body Omitted)
+func _clamp_zoom() -> void:
+	pass # (Body Omitted)
+func _clamp_camera_to_bounds() -> void:
+	pass # (Body Omitted)
+		var view_size = get_viewport_rect().size / zoom
+		var min_x = bounds_rect.position.x + view_size.x / 2
+		var max_x = bounds_rect.end.x - view_size.x / 2
+		var min_y = bounds_rect.position.y + view_size.y / 2
+		var max_y = bounds_rect.end.y - view_size.y / 2
+
+
+### FILE: res://scenes/world_map/MacroMap.gd ###
+extends Node2D
+@export var raid_mission_scene_path: String = "res://scenes/missions/RaidMission.tscn"
+@export var settlement_bridge_scene_path: String = "res://scenes/levels/SettlementBridge.tscn"
+@export var enemy_raid_chance: float = 0.25
+@export var raid_prep_window_scene: PackedScene = preload("res://ui/RaidPrepWindow.tscn")
+@export var player_home_marker_path: NodePath = "PlayerHomeMarker"
+var raid_prep_window: RaidPrepWindow
+var journey_report_dialog: AcceptDialog
+const SAVE_PATH = "user://campaign_map.tres"
+var map_state: MapState
+var selected_region_data: WorldRegionData
+var selected_region_node: Region = null
+var calculated_subjugate_cost: int = 5 
+var current_attrition_risk: float = 0.0
+const SAFE_COLOR := Color(0.2, 0.8, 0.2, 0.1)   # Green
+const RISK_COLOR := Color(1.0, 0.6, 0.0, 0.1)   # Orange
+const HIGH_RISK_COLOR := Color(1.0, 0.0, 0.0, 0.1) # Red
+func _ready() -> void:
+	pass # (Body Omitted)
+func _initiate_raid(target: RaidTargetData) -> void:
+	pass # (Body Omitted)
+func _finalize_raid_launch(target: RaidTargetData, warbands: Array[WarbandData], provision_level: int) -> void:
+	pass # (Body Omitted)
+	var cost = target.raid_cost_authority
+	var dist = 0.0
+	var report = DynastyManager.calculate_journey_attrition(dist)
+func _transition_to_raid_scene() -> void:
+	pass # (Body Omitted)
+func _draw() -> void:
+	pass # (Body Omitted)
+	var jarl = DynastyManager.get_current_jarl()
+	var safe_r = jarl.get_safe_range()
+func _initialize_world_data() -> void:
+	pass # (Body Omitted)
+func _generate_new_world() -> void:
+	pass # (Body Omitted)
+	var jarl = DynastyManager.get_current_jarl()
+	var safe_range = jarl.get_safe_range()
+		var dist = player_home_marker.global_position.distance_to(region.get_global_center())
+		var tier = 1
+		var current_name = ""
+		var data = MapDataGenerator.generate_region_data(tier, current_name)
+func _apply_state_to_regions() -> void:
+	pass # (Body Omitted)
+func _save_map_state() -> void:
+	pass # (Body Omitted)
+	var error = ResourceSaver.save(map_state, SAVE_PATH)
+func _on_region_selected(data: WorldRegionData) -> void:
+	pass # (Body Omitted)
+	var jarl = DynastyManager.get_current_jarl()
+		var dist = player_home_marker.global_position.distance_to(selected_region_node.get_global_center())
+		var safe_range = jarl.get_safe_range()
+			var overage = dist - safe_range
+	var is_conquered = DynastyManager.has_conquered_region(data.resource_path)
+	var is_allied = DynastyManager.is_allied_region(data.resource_path)
+	var is_home = false
+func _populate_raid_targets(data: WorldRegionData, is_conquered: bool, is_allied: bool, is_home: bool) -> void:
+	pass # (Body Omitted)
+		var label = Label.new()
+		var label = Label.new()
+		var label = Label.new()
+		var btn = Button.new()
+		var risk_text = ""
+		var btn_color = Color.WHITE
+			var treasury = target.settlement_data.treasury
+			var loot_type = "Mixed"
+			var auth_cost = target.raid_cost_authority
+			var can_afford = DynastyManager.can_spend_authority(auth_cost)
+func _update_diplomacy_buttons(_data: WorldRegionData, is_conquered: bool, is_allied: bool, is_home: bool) -> void:
+	pass # (Body Omitted)
+	var base_cost = 5
+	var ally_mod = 0
+	var has_heir = DynastyManager.get_available_heir_count() > 0
+func _on_subjugate_pressed() -> void:
+	pass # (Body Omitted)
+	var success = DynastyManager.spend_authority(calculated_subjugate_cost)
+		var jarl = DynastyManager.get_current_jarl()
+func _on_marry_pressed() -> void:
+	pass # (Body Omitted)
+	var success = DynastyManager.marry_heir_for_alliance(selected_region_data.resource_path)
+func _on_settlement_pressed() -> void: EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
+	pass # (Body Omitted)
+func _on_dynasty_pressed() -> void: if dynasty_ui: dynasty_ui.show()
+	pass # (Body Omitted)
+func close_all_ui() -> void:
+	pass # (Body Omitted)
+	var ui_closed = false
+func _on_event_system_finished() -> void:
+	pass # (Body Omitted)
+func _update_jarl_ui(jarl: JarlData) -> void:
+	pass # (Body Omitted)
+func _update_region_status_visuals() -> void:
+	pass # (Body Omitted)
+	var closest_dist = INF
+	var home_region: Region = null
+		var dist = player_home_marker.global_position.distance_to(region.get_global_center())
+func _on_region_hovered(data: WorldRegionData, _screen_position: Vector2) -> void:
+	pass # (Body Omitted)
+	var mouse_pos = get_viewport().get_mouse_position()
+func _on_region_exited() -> void: tooltip.hide()
+	pass # (Body Omitted)
+func _unhandled_input(event: InputEvent) -> void:
+	pass # (Body Omitted)
+func _deselect_current_region() -> void:
+	pass # (Body Omitted)
+
+
+### FILE: res://scenes/world_map/Region.gd ###
+class_name Region
+extends Area2D
+signal region_hovered(data: WorldRegionData, screen_position: Vector2)
+signal region_exited()
+signal region_selected(data: WorldRegionData)
+@export var data: WorldRegionData
+var default_color: Color = Color(0, 0, 0, 0)       # Invisible
+var hover_color: Color = Color(1.0, 1.0, 1.0, 0.2) # Faint White
+var selected_color: Color = Color(1.0, 0.9, 0.2, 0.4) # Yellowish
+var home_color: Color = Color(0.2, 0.4, 0.8, 0.25) # Royal Blue (Owned)
+var allied_hover_color: Color = Color(0.2, 0.8, 1.0, 0.3) # Cyan (Friendly)
+var is_selected: bool = false
+var is_home: bool = false   # Is this the player's starting region?
+var is_allied: bool = false # Is this region allied via marriage?
+func _ready() -> void:
+	pass # (Body Omitted)
+func _sync_collision_shape() -> void:
+	pass # (Body Omitted)
+func set_visual_state(is_hovered: bool) -> void:
+	pass # (Body Omitted)
+	var target_color: Color
+	var should_be_visible = true
+	var tween = create_tween()
+func _on_mouse_entered() -> void:
+	pass # (Body Omitted)
+func _on_mouse_exited() -> void:
+	pass # (Body Omitted)
+func _on_input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
+	pass # (Body Omitted)
+func get_global_center() -> Vector2:
+	pass # (Body Omitted)
+	var sum = Vector2.ZERO
+
+
+### FILE: res://scripts/ai/DefenderAI.gd ###
+class_name DefenderAI
+extends AttackAI
+@export var guard_radius: float = 300.0
+@export var return_speed: float = 100.0
+var guard_post: Vector2 = Vector2.ZERO
+func _ready() -> void:
+	pass # (Body Omitted)
+func _on_attack_timer_timeout() -> void:
+	pass # (Body Omitted)
+	var dist_from_post = parent_node.global_position.distance_to(guard_post)
+func _return_to_post() -> void:
+	pass # (Body Omitted)
+func configure_guard_post(pos: Vector2) -> void:
+	pass # (Body Omitted)
+
+
+### FILE: res://scripts/ai/SentryAI.gd ###
+extends Node2D
+class_name SentryAI
+@export var detection_radius: float = 80.0
+@export var attack_damage: int = 25
+@export var attack_cooldown: float = 1.5
+var detection_area: Area2D
+var attack_timer: float = 0.0
+var current_target: Node2D = null
+signal enemy_detected(target: Node2D)
+signal attack_executed(target: Node2D, damage: int)
+func _ready() -> void:
+	pass # (Body Omitted)
+func _setup_detection_area() -> void:
+	pass # (Body Omitted)
+	var collision_shape = CollisionShape2D.new()
+	var circle_shape = CircleShape2D.new()
+func _process(delta: float) -> void:
+	pass # (Body Omitted)
+func _on_body_entered(body: Node2D) -> void:
+	pass # (Body Omitted)
+func _on_body_exited(body: Node2D) -> void:
+	pass # (Body Omitted)
+func _attack_target(target: Node2D) -> void:
+	pass # (Body Omitted)
+	var distance = global_position.distance_to(target.global_position)
+func get_detection_radius() -> float:
+	pass # (Body Omitted)
+func set_detection_radius(new_radius: float) -> void:
+	pass # (Body Omitted)
+		var collision_shape = detection_area.get_child(0) as CollisionShape2D
+func is_actively_defending() -> bool:
+	pass # (Body Omitted)
+
+
+### FILE: res://scripts/ai/UnitAIConstants.gd ###
+class_name UnitAIConstants
+extends RefCounted
+enum State { 
+enum Stance { 
+	var dist_center = unit_node.global_position.distance_to(target_node.global_position)
+	var r_target = _get_radius(target_node)
+	var r_self = _get_radius(unit_node)
+		var size = min(node.data.grid_size.x, node.data.grid_size.y)
+		var b = node.get_parent()
+		var size = min(b.data.grid_size.x, b.data.grid_size.y)
+	var col = node.get_node_or_null("CollisionShape2D")
+			var size = min(col.shape.size.x, col.shape.size.y)
+
+
+### FILE: res://scripts/ai/UnitFSM.gd ###
+class_name UnitFSM
+var unit 
+var attack_ai: AttackAI 
+var current_state: UnitAIConstants.State = UnitAIConstants.State.IDLE
+var stance: UnitAIConstants.Stance = UnitAIConstants.Stance.DEFENSIVE
+var path: Array = []
+var stuck_timer: float = 0.0
+var los_range: float = 450.0
+var target_position: Vector2 = Vector2.ZERO
+var move_command_position: Vector2 = Vector2.ZERO
+var objective_target: Node2D = null 
+var current_target: Node2D = null 
+var _pillage_accumulator: float = 0.0
+func _init(p_unit, p_attack_ai: AttackAI) -> void:
+	pass # (Body Omitted)
+func change_state(new_state: UnitAIConstants.State) -> void:
+	pass # (Body Omitted)
+func _enter_state(state: UnitAIConstants.State) -> void:
+	pass # (Body Omitted)
+func _exit_state(state: UnitAIConstants.State) -> void:
+	pass # (Body Omitted)
+func _recalculate_path() -> void:
+	pass # (Body Omitted)
+	var target_node = current_target if is_instance_valid(current_target) else objective_target
+	var start_pos = unit.global_position
+	var allow_partial = is_instance_valid(target_node)
+func command_defensive_attack(attacker: Node2D) -> void:
+	pass # (Body Omitted)
+func command_attack_obstruction(target: Node2D) -> void:
+	pass # (Body Omitted)
+func command_move_to_formation_pos(target_pos: Vector2) -> void:
+	pass # (Body Omitted)
+func command_move_to(target_pos: Vector2) -> void:
+	pass # (Body Omitted)
+func command_attack(target: Node2D) -> void:
+	pass # (Body Omitted)
+	var radius = _get_target_radius(target)
+	var dist = unit.global_position.distance_to(target.global_position) - radius
+func command_retreat(target_pos: Vector2) -> void:
+	pass # (Body Omitted)
+func command_interact_move(target: Node2D) -> void:
+	pass # (Body Omitted)
+func update(delta: float) -> void:
+	pass # (Body Omitted)
+func _collect_state(delta: float) -> void:
+	pass # (Body Omitted)
+		var dist = unit.global_position.distance_to(objective_target.global_position)
+func _escort_state(delta: float) -> void:
+	pass # (Body Omitted)
+func _regroup_state(delta: float) -> void:
+	pass # (Body Omitted)
+func _idle_state(_delta: float) -> void:
+	pass # (Body Omitted)
+func _formation_move_state(_delta: float) -> void:
+	pass # (Body Omitted)
+	var next_waypoint: Vector2 = path[0]
+	var direction: Vector2 = (next_waypoint - unit.global_position).normalized()
+	var velocity: Vector2 = direction * unit.data.move_speed
+func _move_state(delta: float) -> void:
+	pass # (Body Omitted)
+	var next_waypoint: Vector2 = path[0]
+	var direction: Vector2 = (next_waypoint - unit.global_position).normalized()
+	var distance_to_waypoint = unit.global_position.distance_to(next_waypoint)
+	var speed_mult = unit.get_speed_multiplier()
+	var final_speed = unit.data.move_speed * speed_mult
+func _interact_state(delta: float) -> void:
+	pass # (Body Omitted)
+	var distance_to_target = UnitAIConstants.get_surface_distance(unit, objective_target)
+	var interact_range = 25.0 # Close range for pillaging
+			var next = path[0]
+			var dir = (next - unit.global_position).normalized()
+			var dir = (objective_target.global_position - unit.global_position).normalized()
+func _process_pillage_tick(delta: float) -> void:
+	pass # (Body Omitted)
+		var building = objective_target as BaseBuilding
+		var amount_to_take = unit.data.pillage_speed
+		var stolen_amount = building.steal_resources(amount_to_take)
+func _retreat_state(delta: float) -> void:
+	pass # (Body Omitted)
+		var next_waypoint: Vector2 = path[0]
+		var direction: Vector2 = (next_waypoint - unit.global_position).normalized()
+		var velocity: Vector2 = direction * unit.data.move_speed
+	var dist_to_final = unit.global_position.distance_to(target_position)
+		var direction = (target_position - unit.global_position).normalized()
+func _attack_state(_delta: float) -> void:
+	pass # (Body Omitted)
+	var radius = _get_target_radius(current_target)
+	var dist = unit.global_position.distance_to(current_target.global_position) - radius
+	var max_range = max(unit.data.attack_range, unit.data.building_attack_range)
+func _resume_objective() -> void:
+	pass # (Body Omitted)
+			var new_target = _find_closest_enemy_in_los()
+func _find_closest_enemy_in_los() -> Node2D:
+	pass # (Body Omitted)
+	var enemies = unit.get_tree().get_nodes_in_group("enemy_units")
+	var closest: Node2D = null
+	var min_dist = los_range
+		var d = unit.global_position.distance_to(e.global_position)
+func _on_ai_attack_started(target: Node2D) -> void:
+	pass # (Body Omitted)
+func _on_ai_attack_stopped() -> void:
+	pass # (Body Omitted)
+			var limit = unit.data.attack_range
+			var radius = _get_target_radius(current_target)
+			var dist = unit.global_position.distance_to(current_target.global_position) - radius
+func _get_target_radius(target: Node2D) -> float:
+	pass # (Body Omitted)
+		var b = target.get_parent() as BaseBuilding
+			var size = min(b.data.grid_size.x, b.data.grid_size.y)
+		var size = min(target.data.grid_size.x, target.data.grid_size.y)
+	var col = target.get_node_or_null("CollisionShape2D")
+func command_pillage(target: Node2D) -> void:
+	pass # (Body Omitted)
+func _simple_move_to(target: Vector2, _delta: float) -> void:
+	pass # (Body Omitted)
+	var dir = (target - unit.global_position).normalized()
+	var speed_mult = unit.get_speed_multiplier() if unit.has_method("get_speed_multiplier") else 1.0
+	var final_speed = unit.data.move_speed * speed_mult
+
+
+### FILE: res://scripts/buildings/SettlementBridge.gd ###
+extends Node
+@export var home_base_data: SettlementData
+@export var test_building_data: BuildingData
+@export var raider_scene: PackedScene
+@export var end_of_year_popup_scene: PackedScene
+@export var world_map_scene_path: String = "res://scenes/world_map/MacroMap.tscn"
+@export_group("Loggie Debug Settings")
+@export var show_ui_logs: bool = false:
+@export var show_settlement_logs: bool = false:
+@export var show_building_logs: bool = false:
+@export var show_debug_logs: bool = true:
+@export var show_raid_logs: bool = true: # Set default to true if you want it on now
+@export_group("New Game Settings")
+@export var start_gold: int = 1000
+@export var start_wood: int = 500
+@export var start_food: int = 100
+@export var start_stone: int = 200
+@export var start_population: int = 10
+var default_test_building: BuildingData = preload("res://data/buildings/Bldg_Wall.tres")
+var default_end_of_year_popup: PackedScene = preload("res://ui/EndOfYear_Popup.tscn")
+const WORK_ASSIGNMENT_SCENE_PATH = "res://ui/WorkAssignment_UI.tscn"
+var work_assignment_ui: CanvasLayer
+var end_of_year_popup: PanelContainer
+var idle_warning_dialog: ConfirmationDialog
+var great_hall_instance: BaseBuilding = null
+var game_is_over: bool = false
+var awaiting_placement: BuildingData = null
+func _ready() -> void:
+	pass # (Body Omitted)
+		var test_jarl = DynastyTestDataGenerator.generate_test_dynasty()
+func _exit_tree() -> void:
+	pass # (Body Omitted)
+func _connect_signals() -> void:
+	pass # (Body Omitted)
+func _setup_default_resources() -> void:
+	pass # (Body Omitted)
+func _setup_ui() -> void:
+	pass # (Body Omitted)
+		var scene = load(WORK_ASSIGNMENT_SCENE_PATH)
+func _on_worker_assignments_confirmed(assignments: Dictionary) -> void:
+	pass # (Body Omitted)
+func _on_worker_requested(target: BaseBuilding) -> void:
+	pass # (Body Omitted)
+	var civilians = get_tree().get_nodes_in_group("civilians")
+	var nearest_civ: CivilianUnit = null
+	var min_dist = INF
+		var dist = civ.global_position.distance_to(target.global_position)
+		var success = SettlementManager.assign_worker_from_unit(target, "peasant")
+func _on_worker_removal_requested(building: BaseBuilding) -> void:
+	pass # (Body Omitted)
+		var spawn_pos = building.global_position + Vector2(0, 40)
+	var success = SettlementManager.unassign_worker_from_building(building, "peasant")
+func _on_end_year_pressed() -> void:
+	pass # (Body Omitted)
+	var idle_p = SettlementManager.get_idle_peasants()
+	var idle_t = SettlementManager.get_idle_thralls()
+	var total_idle = idle_p + idle_t
+func _start_end_year_sequence() -> void:
+	pass # (Body Omitted)
+func _on_payout_collected(payout: Dictionary) -> void:
+	pass # (Body Omitted)
+		var amount = payout["renown"]
+			var msg = "Renown %s %d (Loot Distribution)" % ["gained" if amount > 0 else "lost", abs(amount)]
+func _close_all_popups() -> void:
+	pass # (Body Omitted)
+	var dynasty_ui = ui_layer.get_node_or_null("Dynasty_UI")
+func _clear_all_buildings() -> void:
+	pass # (Body Omitted)
+func _initialize_settlement() -> void:
+	pass # (Body Omitted)
+func _spawn_placed_buildings() -> void:
+	pass # (Body Omitted)
+		var b = _spawn_single_building(building_entry, false) 
+		var b = _spawn_single_building(building_entry, true)
+			var progress = building_entry.get("progress", 0)
+func _spawn_single_building(entry: Dictionary, is_new: bool) -> BaseBuilding:
+	pass # (Body Omitted)
+	var res_path = entry["resource_path"]
+	var grid_pos = Vector2i(entry["grid_position"].x, entry["grid_position"].y)
+	var building_data = load(res_path) as BuildingData
+	var new_building = building_data.scene_to_spawn.instantiate()
+	var cell = SettlementManager.get_active_grid_cell_size()
+	var center_offset = (Vector2(building_data.grid_size) * cell) / 2.0
+func _create_default_settlement() -> SettlementData:
+	pass # (Body Omitted)
+	var settlement = SettlementData.new()
+	var great_hall_entry = { "resource_path": "res://data/buildings/GreatHall.tres", "grid_position": Vector2i(28, 18) }
+func _on_settlement_loaded(_settlement_data: SettlementData) -> void:
+	pass # (Body Omitted)
+func _setup_great_hall(hall_instance: BaseBuilding) -> void:
+	pass # (Body Omitted)
+func _on_great_hall_destroyed(_building: BaseBuilding) -> void:
+	pass # (Body Omitted)
+func _on_building_ready_for_placement(building_data: BuildingData) -> void:
+	pass # (Body Omitted)
+func _on_building_placement_cancelled(_building_data: BuildingData) -> void: pass
+	pass # (Body Omitted)
+func _on_building_placement_completed() -> void:
+	pass # (Body Omitted)
+		var grid_pos = Vector2i(building_cursor.global_position / SettlementManager.CELL_SIZE_PX)
+func _on_building_placement_cancelled_by_cursor() -> void:
+	pass # (Body Omitted)
+func _on_building_right_clicked(building: BaseBuilding) -> void:
+	pass # (Body Omitted)
+	var data = building.data
+	var cost = data.build_cost
+func _process_raid_return() -> void:
+	pass # (Body Omitted)
+	var result: RaidResultData = DynastyManager.pending_raid_result
+	var outcome = result.outcome
+	var raw_gold = result.loot.get("gold", 0)
+	var total_wergild = 0
+	var dead_count = 0
+	var net_gold = max(0, raw_gold - total_wergild)
+		var warbands_to_disband: Array[WarbandData] = []
+	var grade = result.victory_grade
+	var xp_gain = 0
+	var loot_summary = {}
+	var title_text = "Raid Result"
+		var difficulty = DynastyManager.current_raid_difficulty
+		var bonus = 200 + (difficulty * 50)
+		var jarl = DynastyManager.get_current_jarl()
+		var popup = default_end_of_year_popup.instantiate()
+func _sync_villagers(_data: SettlementData = null) -> void:
+	pass # (Body Omitted)
+	var idle_count = SettlementManager.get_idle_peasants()
+	var origin = great_hall_instance.global_position
+func _toggle_dynasty_view() -> void:
+	pass # (Body Omitted)
+	var dynasty_ui = ui_layer.get_node_or_null("Dynasty_UI")
+func _spawn_player_garrison() -> void:
+	pass # (Body Omitted)
+	var warbands = SettlementManager.current_settlement.warbands
+	var origin = great_hall_instance.global_position
+
+
+### FILE: res://scripts/data/GameResources.gd ###
+class_name GameResources
+extends RefCounted
+const GOLD := "gold"
+const WOOD := "wood"
+const FOOD := "food"
+const STONE := "stone"
+const POP_PEASANT := "peasant"
+const POP_THRALL := "thrall"
+const ALL_CURRENCIES = [GOLD, WOOD, FOOD, STONE]
+const ALL_POPULATION = [POP_PEASANT, POP_THRALL]
+
+
+### FILE: res://scripts/data/GameScenes.gd ###
+class_name GameScenes
+extends RefCounted
+const SETTLEMENT := "settlement"
+const WORLD_MAP := "world_map"
+const RAID_MISSION := "raid_mission"
+const WINTER_COURT := "winter_court"
+
+
+### FILE: res://scripts/formations/SquadFormation.gd ###
+class_name SquadFormation
+enum FormationType {
+var formation_type: FormationType = FormationType.LINE
+var unit_spacing: float = 40.0
+var max_units_per_row: int = 4
+var units: Array[Node2D] = []
+var leader_position: Vector2 = Vector2.ZERO
+var target_position: Vector2 = Vector2.ZERO
+var formation_center: Vector2 = Vector2.ZERO
+var is_moving: bool = false
+var move_speed: float = 100.0
+func _init(squad_units: Array[Node2D] = []) -> void:
+	pass # (Body Omitted)
+func add_unit(unit: Node2D) -> void:
+	pass # (Body Omitted)
+func remove_unit(unit: Node2D) -> void:
+	pass # (Body Omitted)
+func set_formation_type(new_type: FormationType) -> void:
+	pass # (Body Omitted)
+func move_to_position(target_pos: Vector2, direction: Vector2 = Vector2.DOWN) -> void:
+	pass # (Body Omitted)
+	var formation_positions = _calculate_formation_positions(target_pos, direction)
+		var unit = units[i]
+		var target_formation_pos = formation_positions[i]
+func _calculate_formation_positions(center_pos: Vector2, direction: Vector2) -> Array[Vector2]:
+	pass # (Body Omitted)
+	var positions: Array[Vector2] = []
+	var unit_count = units.size()
+	var rotation_angle = Vector2.DOWN.angle_to(direction * -1.0)
+	var rotated_positions: Array[Vector2] = []
+		var relative_pos = pos - center_pos
+		var rotated_relative_pos = relative_pos.rotated(rotation_angle)
+func _calculate_line_formation(center_pos: Vector2, unit_count: int) -> Array[Vector2]:
+	pass # (Body Omitted)
+	var positions: Array[Vector2] = []
+	var start_x = center_pos.x - (unit_count - 1) * unit_spacing * 0.5
+		var pos = Vector2(start_x + i * unit_spacing, center_pos.y)
+func _calculate_column_formation(center_pos: Vector2, unit_count: int) -> Array[Vector2]:
+	pass # (Body Omitted)
+	var positions: Array[Vector2] = []
+	var start_y = center_pos.y - (unit_count - 1) * unit_spacing * 0.5
+		var pos = Vector2(center_pos.x, start_y + i * unit_spacing)
+func _calculate_wedge_formation(center_pos: Vector2, unit_count: int) -> Array[Vector2]:
+	pass # (Body Omitted)
+	var positions: Array[Vector2] = []
+	var side_offset = unit_spacing * 0.7  # 70% spacing for tighter formation
+	var rear_offset = unit_spacing
+		var row = (i + 1) / 2  # Which row behind the leader
+		var side = 1 if i % 2 == 1 else -1  # Left or right side
+		var pos = Vector2(
+func _calculate_box_formation(center_pos: Vector2, unit_count: int) -> Array[Vector2]:
+	pass # (Body Omitted)
+	var positions: Array[Vector2] = []
+	var rows = int(ceil(float(unit_count) / max_units_per_row))
+	var cols = min(unit_count, max_units_per_row)
+	var start_x = center_pos.x - (cols - 1) * unit_spacing * 0.5
+	var start_y = center_pos.y - (rows - 1) * unit_spacing * 0.5
+		var row = i / max_units_per_row
+		var col = i % max_units_per_row
+		var row_unit_count = min(max_units_per_row, unit_count - row * max_units_per_row)
+		var row_start_x = center_pos.x - (row_unit_count - 1) * unit_spacing * 0.5
+		var pos = Vector2(
+func _calculate_circle_formation(center_pos: Vector2, unit_count: int) -> Array[Vector2]:
+	pass # (Body Omitted)
+	var positions: Array[Vector2] = []
+	var radius = max(unit_spacing, unit_count * unit_spacing / (2 * PI))
+		var angle = (2 * PI * i) / unit_count
+		var pos = Vector2(
+func _move_unit_to_position(unit: Node2D, target_pos: Vector2) -> void:
+	pass # (Body Omitted)
+func _simple_unit_movement(unit: Node2D, target_pos: Vector2) -> void:
+	pass # (Body Omitted)
+		var movement_script = """
+var target_position: Vector2 = Vector2.ZERO
+var move_speed: float = 100.0
+var is_moving: bool = false
+func set_target_position(pos: Vector2) -> void:
+	pass # (Body Omitted)
+func _physics_process(delta: float) -> void:
+	pass # (Body Omitted)
+		var direction = (target_position - global_position).normalized()
+		var distance = global_position.distance_to(target_position)
+		var script = GDScript.new()
+		var existing_script = unit.get_script()
+func _update_formation_positions() -> void:
+	pass # (Body Omitted)
+func _calculate_center_position() -> Vector2:
+	pass # (Body Omitted)
+	var total_pos = Vector2.ZERO
+func get_unit_count() -> int:
+	pass # (Body Omitted)
+func is_squad_moving() -> bool:
+	pass # (Body Omitted)
+func get_formation_info() -> Dictionary:
+	pass # (Body Omitted)
+
+
+### FILE: res://scripts/generators/DynastyGenerator.gd ###
+class_name DynastyGenerator
+extends RefCounted
+const MALE_NAMES = ["Ragnar", "Bjorn", "Ivar", "Sigurd", "Ubbe", "Halfdan", "Harald", "Erik", "Leif", "Sven", "Olaf", "Knut", "Torstein", "Floki", "Rollo", "Arvid"]
+const FEMALE_NAMES = ["Lagertha", "Aslaug", "Gunnhild", "Torvi", "Helga", "Siggy", "Astrid", "Freydis", "Ylva", "Thyra", "Ingrid", "Ragnhild", "Sif", "Hilda"]
+const SURNAMES = ["Lothbrok", "Ironside", "the Boneless", "Snake-in-the-Eye", "Fairhair", "Red", "the Lucky", "Forkbeard"]
+const PORTRAIT_PATHS = {
+	var jarl = JarlData.new()
+	var heir_count = randi_range(1, 2)
+		var heir = _generate_heir(jarl.age)
+	var heir = JarlHeirData.new()
+	var max_age = max(0, parent_age - 16)
+	var name_list = MALE_NAMES if gender == "Male" else FEMALE_NAMES
+	var first = name_list.pick_random()
+		var last = SURNAMES.pick_random()
+	var age_category = "Adult"
+		var paths = PORTRAIT_PATHS[gender][age_category]
+			var path = paths.pick_random()
+	var baby = JarlHeirData.new()
+		var trait_data = JarlTraitData.new()
+	var gender = "Male" if randf() > 0.2 else "Female" # Mostly male raiders historically
+	var list = MALE_NAMES if gender == "Male" else FEMALE_NAMES
+
+
+### FILE: res://scripts/generators/MapDataGenerator.gd ###
+class_name MapDataGenerator
+extends RefCounted
+const REGION_NAMES = [
+const LAYOUT_MONASTERY = "res://data/settlements/monastery_base.tres"
+const LAYOUT_VILLAGE = "res://data/settlements/economic_base.tres"
+const LAYOUT_FORTRESS = "res://data/settlements/fortress_layout.tres"
+const B_FARM = "res://data/buildings/generated/Eco_Farm.tres"
+const B_MARKET = "res://data/buildings/generated/Eco_Market.tres"
+const B_RELIC = "res://data/buildings/generated/Eco_Reliquary.tres"
+const B_HALL = "res://data/buildings/GreatHall.tres"
+const B_WALL = "res://data/buildings/Bldg_Wall.tres"
+	var data = WorldRegionData.new()
+	var base_diff = 1.0 + (float(tier - 1) * 0.8)
+	var variance = randf_range(0.0, 0.5)
+	var final_difficulty = base_diff + variance
+	var target_count = randi_range(1, 3)
+	var min_cost = 999 
+		var target = _generate_target_for_tier(data.display_name, tier, final_difficulty)
+	var target = RaidTargetData.new()
+	var type = _pick_type_by_tier(tier)
+	var roll = randf()
+	var s = SettlementData.new()
+	var building_count = int(3 * difficulty)
+	var primary_bldg = B_FARM
+		var offset_x = randi_range(-6, 6)
+		var offset_y = randi_range(-6, 6)
+	var clone = SettlementData.new()
+		var possible_paths = [
+		var unit_data: UnitData = null
+			var count = int(3 * multiplier)
+				var wb = WarbandData.new(unit_data)
+	var original_count = settlement.warbands.size()
+	var target_count = int(original_count * multiplier)
+	var needed = target_count - original_count
+			var source = settlement.warbands.pick_random()
+			var new_wb = WarbandData.new(source.unit_type)
+
+
+### FILE: res://scripts/ui/BuildingPreviewCursor.gd ###
+extends Node2D
+class_name BuildingPreviewCursor
+var current_building_data: BuildingData
+var preview_sprite: Sprite2D
+var is_active: bool = false
+var grid_overlay: Node2D
+var can_place: bool = false
+var valid_color: Color = Color(0.0, 1.0, 0.0, 0.7)    # Green
+var invalid_color: Color = Color(1.0, 0.0, 0.0, 0.7)  # Red
+var nearest_node: ResourceNode = null
+var tether_color_valid: Color = Color(0.2, 1.0, 0.2, 0.8) # Green
+var tether_color_invalid: Color = Color(1.0, 0.2, 0.2, 0.8) # Red
+signal placement_completed
+signal placement_cancelled
+func _ready() -> void:
+	pass # (Body Omitted)
+func set_building_preview(building_data: BuildingData) -> void:
+	pass # (Body Omitted)
+		var cs = SettlementManager.CELL_SIZE_PX
+		var target_size = Vector2(building_data.grid_size) * cs
+		var tex_size = preview_sprite.texture.get_size()
+func _process(_delta: float) -> void:
+	pass # (Body Omitted)
+	var mouse_pos = get_global_mouse_position()
+	var grid_pos = _world_to_grid(mouse_pos)
+func _find_nearest_resource_node(world_pos: Vector2) -> void:
+	pass # (Body Omitted)
+	var target_type = (current_building_data as EconomicBuildingData).resource_type
+	var min_dist = INF
+	var nodes = get_tree().get_nodes_in_group("resource_nodes")
+			var dist = world_pos.distance_to(node.global_position)
+func _draw() -> void:
+	pass # (Body Omitted)
+		var start = Vector2.ZERO
+		var end = to_local(nearest_node.global_position)
+		var dist = global_position.distance_to(nearest_node.global_position)
+		var is_in_range = dist <= nearest_node.district_radius
+		var color = tether_color_valid if is_in_range else tether_color_invalid
+func _world_to_grid(world_pos: Vector2) -> Vector2i:
+	pass # (Body Omitted)
+	var cs = SettlementManager.CELL_SIZE_PX
+func _grid_to_world(grid_pos: Vector2i) -> Vector2:
+	pass # (Body Omitted)
+	var cs = SettlementManager.CELL_SIZE_PX
+func _can_place_at_position(grid_pos: Vector2i) -> bool:
+	pass # (Body Omitted)
+func _update_visual_feedback() -> void:
+	pass # (Body Omitted)
+func place_building() -> void:
+	pass # (Body Omitted)
+	var grid_pos = _world_to_grid(global_position)
+func cancel_preview() -> void:
+	pass # (Body Omitted)
+func _cleanup_preview() -> void:
+	pass # (Body Omitted)
+func _create_grid_outline(grid_size: Vector2i) -> void:
+	pass # (Body Omitted)
+	var cs = SettlementManager.CELL_SIZE_PX
+	var rect_size = Vector2(grid_size.x * cs, grid_size.y * cs)
+	var points = [Vector2(0,0), Vector2(rect_size.x, 0), Vector2(rect_size.x, rect_size.y), Vector2(0, rect_size.y), Vector2(0,0)]
+	var line = Line2D.new()
+func _clear_grid_overlay() -> void:
+	pass # (Body Omitted)
+func _input(event: InputEvent) -> void:
+	pass # (Body Omitted)
+
+
+### FILE: res://scripts/ui/PauseMenu.gd ###
+extends CanvasLayer
+func _ready() -> void:
+	pass # (Body Omitted)
+	var container = find_child("VBoxContainer", true, false) # Adjust if your layout is named differently
+		var debug_raid_btn = Button.new()
+func _unhandled_input(event: InputEvent) -> void:
+	pass # (Body Omitted)
+func _on_debug_raid_pressed() -> void:
+	pass # (Body Omitted)
+	var debug_target = RaidTargetData.new()
+	var base_path = "res://data/settlements/monastery_base.tres"
+	var army: Array[WarbandData] = []
+		var unit_data = load("res://data/units/Unit_PlayerRaider.tres") # Check path!
+			var wb = WarbandData.new(unit_data)
+func _on_resume_pressed() -> void:
+	pass # (Body Omitted)
+func _on_debug_menu_pressed() -> void:
+	pass # (Body Omitted)
+func _on_back_pressed() -> void:
+	pass # (Body Omitted)
+func _on_save_pressed() -> void:
+	pass # (Body Omitted)
+func _on_new_game_pressed() -> void:
+	pass # (Body Omitted)
+func _on_quit_pressed() -> void:
+	pass # (Body Omitted)
+func _cheat_add_gold() -> void:
+	pass # (Body Omitted)
+func _cheat_add_renown() -> void:
+	pass # (Body Omitted)
+func _cheat_unlock_legacy() -> void:
+	pass # (Body Omitted)
+func _cheat_trigger_raid() -> void:
+	pass # (Body Omitted)
+	var debug_target = RaidTargetData.new()
+	var base_path = "res://data/settlements/monastery_base.tres"
+		var unit_data = load("res://data/units/Unit_PlayerRaider.tres")
+			var wb = WarbandData.new(unit_data)
+func _cheat_kill_jarl() -> void:
+	pass # (Body Omitted)
+
+
+### FILE: res://scripts/ui/WinterCourt_UI.gd ###
+class_name WinterCourtUI
+extends Control
+var current_dispute: DisputeEventData = null
+var winter_start_acknowledged: bool = false
+func _ready() -> void:
+	pass # (Body Omitted)
+func _on_gather_warband_clicked() -> void:
+	pass # (Body Omitted)
+	var jarl = DynastyManager.get_current_jarl()
+	var base_recruits = 1 
+	var wanderers = randi_range(0, 2)
+	var fame_bonus = int(jarl.renown / 100.0)
+	var total_squads_arrived = base_recruits + wanderers + fame_bonus
+	var ship_cap = SettlementManager.get_total_ship_capacity_squads()
+	var current_squads = SettlementManager.current_settlement.warbands.size()
+	var open_slots = max(0, ship_cap - current_squads)
+	var accepted_squads = min(total_squads_arrived, open_slots)
+	var rejected_squads = total_squads_arrived - accepted_squads
+	var drengr_data = load("res://data/units/Unit_Drengr.tres")
+	var flavor = ""
+	var result = ""
+		var renown_loss = rejected_squads * 10
+func _update_ui() -> void:
+	pass # (Body Omitted)
+	var jarl = DynastyManager.current_jarl
+	var settlement = SettlementManager.current_settlement
+	var readiness_pct := int(settlement.fleet_readiness * 100)
+func _show_winter_start_popup() -> void:
+	pass # (Body Omitted)
+	var report = DynastyManager.winter_consumption_report
+	var severity = report.get("severity", "NORMAL")
+	var flavor = ""
+	var color_tag = "white"
+	var desc = "[center][color=%s][b]%s WINTER[/b][/color][/center]\n\n" % [color_tag, severity]
+func _show_crisis_state() -> void:
+	pass # (Body Omitted)
+	var report = DynastyManager.winter_consumption_report
+	var text = "[center][color=red][b]CRISIS: SHORTAGES[/b][/color][/center]\n"
+func _show_normal_state() -> void:
+	pass # (Body Omitted)
+	var report = DynastyManager.winter_upkeep_report
+	var text = "[b]Winter Log:[/b]\n"
+func _update_button_states() -> void:
+	pass # (Body Omitted)
+	var has_actions := DynastyManager.current_jarl.current_hall_actions > 0
+	var settlement = SettlementManager.current_settlement
+	var warband_count = settlement.warbands.size()
+	var food_cost = max(100, warband_count * 50)
+	var current_food = settlement.treasury.get("food", 0)
+	var can_afford_feast = current_food >= food_cost
+	var feast_tt = "COST: %d Food, 1 Hall Action\n" % food_cost
+	var gather_tt = "COST: 1 Hall Action\n"
+func _disconnect_overlay_buttons() -> void:
+	pass # (Body Omitted)
+	var buttons = [btn_resolve_1, btn_resolve_2, btn_resolve_3]
+func _display_crisis_overlay() -> void:
+	pass # (Body Omitted)
+	var report = DynastyManager.winter_consumption_report
+	var food_def = report["food_deficit"]
+	var wood_def = report["wood_deficit"]
+	var food_total = report.get("food_cost", 0)
+	var wood_total = report.get("wood_cost", 0)
+	var narrative_title = ""
+	var narrative_body = ""
+	var text = "[center]%s[/center]\n\n" % narrative_body
+	var missing_items = []
+	var gold_cost = (food_def * 5) + (wood_def * 5)
+	var has_action = DynastyManager.current_jarl.current_hall_actions > 0
+		var deaths = max(1, int(food_def / 5))
+func _display_dispute(card: DisputeEventData) -> void:
+	pass # (Body Omitted)
+	var can_afford_gold = SettlementManager.current_settlement.treasury.get("gold", 0) >= card.gold_cost
+func _close_overlay() -> void:
+	pass # (Body Omitted)
+func _on_dispute_pay_gold() -> void:
+	pass # (Body Omitted)
+func _on_dispute_pay_force() -> void:
+	pass # (Body Omitted)
+		var s = SettlementManager.current_settlement
+			var v = s.warbands.pick_random()
+func _on_dispute_ignore() -> void:
+	pass # (Body Omitted)
+func _on_refit_clicked() -> void:
+	pass # (Body Omitted)
+func _on_feast_clicked() -> void:
+	pass # (Body Omitted)
+	var settlement = SettlementManager.current_settlement
+	var food_cost = max(100, settlement.warbands.size() * 50)
+			var flavor = "The mead flows freely, and the bards sing tales of your ancestors. The warriors clash mugs and swear oaths of loyalty to your name."
+			var result = "[color=green]+50 Renown\nWarband Loyalty Restored[/color]"
+func _on_thing_clicked() -> void:
+	pass # (Body Omitted)
+		var card = DynastyManager.draw_dispute_card()
+func _on_end_winter_pressed() -> void:
+	pass # (Body Omitted)
+func _display_action_result(title: String, flavor_text: String, result_text: String) -> void:
+	pass # (Body Omitted)
+	var full_text = "%s\n\n[b]RESULT:[/b]\n%s" % [flavor_text, result_text]
+func _on_blot_clicked() -> void:
+	pass # (Body Omitted)
+	var food_cost = 50
+	var settlement = SettlementManager.current_settlement
+func _display_blot_options() -> void:
+	pass # (Body Omitted)
+func _commit_blot(modifier_key: String, god_name: String) -> void:
+	pass # (Body Omitted)
+		var flavor = ""
+		var result = ""
+
+
+### FILE: res://scripts/units/Base_Unit.gd ###
+class_name BaseUnit
+extends CharacterBody2D
+signal destroyed
+signal fsm_ready(unit)
+@export var data: UnitData
+var unit_identity: String = ""
+var warband_ref: WarbandData
+var fsm
+var current_health: int = 50
+var attack_ai: AttackAI = null
+@export_group("AI")
+@export var separation_enabled: bool = true
+@export var separation_force: float = 30.0
+@export var separation_radius: float = 40.0
+var _color_tween: Tween
+const STATE_COLORS := {
+const ERROR_COLOR := Color(0.7, 0.3, 1.0)
+const LAYER_ENV = 1
+const LAYER_PLAYER_UNIT = 2
+const LAYER_ENEMY_UNIT = 4
+const LAYER_ENEMY_BLDG = 8
+var _is_dying: bool = false
+signal inventory_updated(current_load: int, max_load: int)
+var inventory: Dictionary = {} 
+var current_loot_weight: int = 0
+func _ready() -> void:
+	pass # (Body Omitted)
+	var hp_mult = 1.0
+	var dmg_mult = 1.0
+		var level_mult = warband_ref.get_stat_multiplier()
+			var heir = DynastyManager.find_heir_by_name(warband_ref.assigned_heir_name)
+					var p_bonus = 1.0 + ((heir.prowess - 5) * 0.10)
+	var area_shape = separation_area.get_node_or_null("CollisionShape2D")
+func _setup_collision_logic() -> void:
+	pass # (Body Omitted)
+	var physics_mask = 0
+	var separation_mask = 0
+	var is_player = (collision_layer & LAYER_PLAYER_UNIT) != 0
+	var is_enemy = (collision_layer & LAYER_ENEMY_UNIT) != 0
+func _deferred_setup(damage_mult: float = 1.0) -> void:
+	pass # (Body Omitted)
+			var target_mask = 0
+func _apply_texture_and_scale() -> void:
+	pass # (Body Omitted)
+	var target_size: Vector2 = data.target_pixel_size
+		var texture_size: Vector2 = sprite.texture.get_size()
+func _exit_tree() -> void:
+	pass # (Body Omitted)
+func _on_grid_updated(_grid_pos: Vector2i) -> void:
+	pass # (Body Omitted)
+func _physics_process(delta: float) -> void:
+	pass # (Body Omitted)
+	var fsm_velocity = Vector2.ZERO
+		var separation_push = _calculate_separation_push(delta)
+func _calculate_separation_push(delta: float) -> Vector2:
+	pass # (Body Omitted)
+	var push_vector = Vector2.ZERO
+	var neighbors = separation_area.get_overlapping_bodies()
+		var away_vector = global_position - neighbor.global_position
+		var distance_sq = away_vector.length_squared()
+			var push_strength = 1.0 - (sqrt(distance_sq) / separation_radius)
+func on_state_changed(state: UnitAIConstants.State) -> void:
+	pass # (Body Omitted)
+	var to_color: Color = STATE_COLORS.get(state, Color.WHITE)
+func flash_error_color() -> void:
+	pass # (Body Omitted)
+	var back_color: Color = STATE_COLORS.get(fsm.current_state, Color.WHITE)
+	var t := create_tween()
+func _tween_color(to_color: Color, duration: float = 0.2) -> void:
+	pass # (Body Omitted)
+func take_damage(amount: int, attacker: Node2D = null) -> void:
+	pass # (Body Omitted)
+func die() -> void:
+	pass # (Body Omitted)
+func command_move_to(target_pos: Vector2) -> void:
+	pass # (Body Omitted)
+func command_attack(target: Node2D) -> void:
+	pass # (Body Omitted)
+var is_selected: bool = false
+func set_selected(selected: bool) -> void:
+	pass # (Body Omitted)
+func _draw() -> void:
+	pass # (Body Omitted)
+		var radius = 25.0
+func _create_unit_hitbox() -> void:
+	pass # (Body Omitted)
+	var hitbox_area = Area2D.new()
+	var layer_value = 0
+	var hitbox_shape = CollisionShape2D.new()
+	var shape_to_use
+func command_retreat(target_pos: Vector2) -> void:
+	pass # (Body Omitted)
+func command_start_working(target_building: BaseBuilding, target_node: ResourceNode) -> void:
+	pass # (Body Omitted)
+func add_loot(resource_type: String, amount: int) -> int:
+	pass # (Body Omitted)
+	var cap = data.max_loot_capacity if "max_loot_capacity" in data else 0
+	var space_left = cap - current_loot_weight
+	var actual_amount = min(amount, space_left)
+func get_speed_multiplier() -> float:
+	pass # (Body Omitted)
+	var cap = data.max_loot_capacity if "max_loot_capacity" in data else 0
+	var penalty = data.encumbrance_speed_penalty if "encumbrance_speed_penalty" in data else 0.0
+	var ratio = float(current_loot_weight) / float(cap)
+
+
+### FILE: res://scripts/units/CivilianUnit.gd ###
+class_name CivilianUnit
+extends BaseUnit
+@export_group("Mob AI")
+@export var mob_separation_force: float = 100.0 
+@export var mob_separation_radius: float = 45.0 
+@export var thrall_unit_scene: PackedScene 
+@export var surrender_hp_threshold: int = 10 # Triggers when HP <= 10
+signal surrender_requested(civilian_node: Node2D)
+var interaction_target: BaseBuilding = null
+var skip_assignment_logic: bool = false
+var _is_surrendered: bool = false
+var escort_target: Node2D = null
+func _ready() -> void:
+	pass # (Body Omitted)
+func _physics_process(delta: float) -> void:
+	pass # (Body Omitted)
+func take_damage(amount: int, attacker: Node2D = null) -> void:
+	pass # (Body Omitted)
+func _trigger_surrender() -> void:
+	pass # (Body Omitted)
+func attach_to_escort(soldier: Node2D) -> void:
+	pass # (Body Omitted)
+func _process_surrender_behavior(_delta: float) -> void:
+	pass # (Body Omitted)
+		var dist = global_position.distance_to(escort_target.global_position)
+			var dir = (escort_target.global_position - global_position).normalized()
+func command_interact(target: Node2D) -> void:
+	pass # (Body Omitted)
+
+
+### FILE: res://scripts/units/EnemyVikingRaider.gd ###
+extends BaseUnit
+func set_attack_target(target: BaseBuilding) -> void:
+	pass # (Body Omitted)
+
+
+### FILE: res://scripts/units/PlayerVikingRaider.gd ###
+extends BaseUnit
+class_name PlayerVikingRaider
+func _ready() -> void:
+	pass # (Body Omitted)
+func command_attack(target: Node2D) -> void:
+	pass # (Body Omitted)
+func die() -> void:
+	pass # (Body Omitted)
+
+
+### FILE: res://scripts/units/SquadLeader.gd ###
+class_name SquadLeader
+extends BaseUnit
+var squad_soldiers: Array[SquadSoldier] = []
+var formation: SquadFormation
+var last_facing_direction: Vector2 = Vector2.DOWN
+var attached_thralls: Array[ThrallUnit] = []
+var debug_formation_points: Array[Vector2] = []
+func _ready() -> void:
+	pass # (Body Omitted)
+func _initialize_squad() -> void:
+	pass # (Body Omitted)
+func _recruit_fresh_squad() -> void:
+	pass # (Body Omitted)
+	var soldiers_needed = max(0, warband_ref.current_manpower - 1)
+	var base_scene = data.load_scene()
+		var soldier_instance = base_scene.instantiate()
+		var soldier_script = load("res://scripts/units/SquadSoldier.gd")
+func attach_thrall(thrall: ThrallUnit) -> void:
+	pass # (Body Omitted)
+		var angle = randf_range(PI/4, 3*PI/4) # Behind (90 to 270 degrees roughly)
+		var dist = randf_range(40.0, 80.0)
+func _physics_process(delta: float) -> void:
+	pass # (Body Omitted)
+func _update_formation_targets(snap_to_position: bool = false) -> void:
+	pass # (Body Omitted)
+	var slots = formation._calculate_formation_positions(global_position, last_facing_direction)
+		var soldier = squad_soldiers[i]
+			var target = slots[i+1]
+func _draw() -> void:
+	pass # (Body Omitted)
+			var point = to_local(debug_formation_points[i])
+func remove_soldier(soldier: SquadSoldier) -> void:
+	pass # (Body Omitted)
+func absorb_existing_soldiers(list: Array[SquadSoldier]) -> void:
+	pass # (Body Omitted)
+func _refresh_formation_registry() -> void:
+	pass # (Body Omitted)
+func set_selected(val: bool) -> void:
+	pass # (Body Omitted)
+func die() -> void:
+	pass # (Body Omitted)
+	var living_soldiers: Array[SquadSoldier] = []
+		var new_leader_host = living_soldiers.pop_front()
+		var new_leader = duplicate()
+func on_state_changed(new_state: int) -> void:
+	pass # (Body Omitted)
+func _order_squad_attack() -> void:
+	pass # (Body Omitted)
+	var target = fsm.current_target
+func _order_squad_regroup() -> void:
+	pass # (Body Omitted)
+func request_escort_for(civilian: Node2D) -> void:
+	pass # (Body Omitted)
+	var best_candidate: SquadSoldier = null
+	var min_dist = INF
+	var max_batch_dist = 300.0
+	var max_prisoners = 3
+			var total_load = soldier.escorted_prisoners.size() + soldier.pending_prisoners.size()
+				var dist = soldier.global_position.distance_to(civilian.global_position)
+		var closest_combatant = null
+		var closest_d = INF
+			var state = soldier.fsm.current_state
+				var dist = soldier.global_position.distance_to(civilian.global_position)
+
+
+### FILE: res://scripts/units/SquadSoldier.gd ###
+class_name SquadSoldier
+extends BaseUnit
+var leader: SquadLeader
+var formation_target: Vector2 = Vector2.ZERO
+var brawl_target: Node2D = null
+var is_rubber_banding: bool = false
+const MAX_DIST_FROM_LEADER = 300.0
+const CATCHUP_DIST = 80.0
+const SPRINT_SPEED_MULT = 2.5
+var pending_prisoners: Array[Node2D] = [] 
+var escorted_prisoners: Array[Node2D] = []
+var retreat_zone_cache: Node2D = null
+func _ready() -> void:
+	pass # (Body Omitted)
+func _physics_process(delta: float) -> void:
+	pass # (Body Omitted)
+	var speed = data.move_speed
+	var dist_leader = global_position.distance_to(leader.global_position)
+	var final_dest = formation_target
+	var stop_dist = 5.0
+		var range_limit = data.attack_range
+		var r_target = _get_radius(brawl_target)
+		var dist = global_position.distance_to(final_dest)
+			var dir = (final_dest - global_position).normalized()
+			var push = Vector2.ZERO
+func _get_radius(node: Node2D) -> float:
+	pass # (Body Omitted)
+		var b = node.get_parent()
+func assign_escort_task(prisoner: Node2D) -> void:
+	pass # (Body Omitted)
+func _set_next_collection_target() -> void:
+	pass # (Body Omitted)
+		var next = pending_prisoners[0]
+func process_collecting_logic(_delta: float) -> void:
+	pass # (Body Omitted)
+	var dist = global_position.distance_to(fsm.objective_target.global_position)
+func _collect_prisoner(prisoner: Node2D) -> void:
+	pass # (Body Omitted)
+func _switch_to_escorting() -> void:
+	pass # (Body Omitted)
+func process_escort_logic(_delta: float) -> void:
+	pass # (Body Omitted)
+func complete_escort() -> void:
+	pass # (Body Omitted)
+	var count = 0
+func process_regroup_logic(_delta: float) -> void:
+	pass # (Body Omitted)
+
+
+### FILE: res://scripts/units/ThrallUnit.gd ###
+class_name ThrallUnit
+extends BaseUnit
+var assigned_leader: Node2D = null
+var follow_offset: Vector2 = Vector2.ZERO
+func _ready() -> void:
+	pass # (Body Omitted)
+func _physics_process(delta: float) -> void:
+	pass # (Body Omitted)
+func _process_baggage_movement(delta: float) -> void:
+	pass # (Body Omitted)
+	var target_pos = assigned_leader.global_position + follow_offset
+	var dist = global_position.distance_to(target_pos)
+		var dir = (target_pos - global_position).normalized()
+		var move_speed = data.move_speed
+
+
+### FILE: res://scripts/utility/GridUtils.gd ###
+class_name GridUtils
+extends RefCounted
+			var cell = top_left_pos + Vector2i(x, y)
+	var buildable_map: Dictionary = {}
+		var path = entry.get("resource_path", "")
+		var data = load(path) as BuildingData
+			var raw_pos = entry["grid_position"]
+			var center = Vector2i(raw_pos.x, raw_pos.y)
+			var r = data.territory_radius
+			var r_sq = r * r
+					var cell = Vector2i(x, y)
+
+
+### FILE: res://scripts/utility/GridVisualizer.gd ###
+class_name GridVisualizer
+extends Node2D
+const GRID_LINE_COLOR := Color(1.0, 1.0, 1.0, 0.05)
+const SOLID_CELL_COLOR := Color(1.0, 0.0, 0.0, 0.3) 
+const TERRITORY_COLOR := Color(0.0, 1.0, 0.0, 0.1) 
+@export_group("Border Settings")
+@export var show_border: bool = true
+var cell_size: int = 32
+func _ready() -> void:
+	pass # (Body Omitted)
+	var grid_width = SettlementManager.GRID_WIDTH
+	var grid_height = SettlementManager.GRID_HEIGHT
+	var s = SettlementManager.get_active_grid_cell_size()
+		var grid_w = SettlementManager.GRID_WIDTH
+		var grid_h = SettlementManager.GRID_HEIGHT
+func _exit_tree() -> void:
+	pass # (Body Omitted)
+func _on_grid_updated(_pos):
+	pass # (Body Omitted)
+func _draw() -> void:
+	pass # (Body Omitted)
+	var buildable = SettlementManager.buildable_cells
+		var rect = Rect2(cell.x * cell_size, cell.y * cell_size, cell_size, cell_size)
+	var grid = SettlementManager.active_astar_grid
+		var region = grid.region
+				var cell = Vector2i(x, y)
+					var rect = Rect2(x * cell_size, y * cell_size, cell_size, cell_size)
+
+
+### FILE: res://scripts/utility/RTSInputHandler.gd ###
+class_name RTSInputHandler
+extends Node
+var input_enabled: bool = true
+func _ready() -> void:
+	pass # (Body Omitted)
+func _unhandled_input(event: InputEvent) -> void:
+	pass # (Body Omitted)
+func _handle_control_groups(event: InputEventKey) -> void:
+	pass # (Body Omitted)
+		var group_index = event.keycode - KEY_0
+func _handle_formations(event: InputEventKey) -> void:
+	pass # (Body Omitted)
+
+
+### FILE: res://scripts/utility/UnitSpawner.gd ###
+class_name UnitSpawner
+extends Node
+@export var unit_container: Node2D
+@export var rts_controller: RTSController
+@export var civilian_data: UnitData
+@export var spawn_radius_min: float = 100.0
+@export var spawn_radius_max: float = 250.0
+func _ready() -> void:
+	pass # (Body Omitted)
+func clear_units() -> void:
+	pass # (Body Omitted)
+func spawn_garrison(warbands: Array[WarbandData], spawn_origin: Vector2) -> void:
+	pass # (Body Omitted)
+	var current_squad_index = 0
+	var units_per_row = 5
+	var squad_spacing = 150.0
+		var unit_data = warband.unit_type
+		var scene_ref = unit_data.load_scene()
+		var leader = scene_ref.instantiate()
+		var leader_script = load("res://scripts/units/SquadLeader.gd")
+		var row = current_squad_index / units_per_row
+		var col = current_squad_index % units_per_row
+		var formation_offset = Vector2(
+		var final_pos = spawn_origin + formation_offset
+func _clamp_to_grid(target_pos: Vector2) -> Vector2:
+	pass # (Body Omitted)
+	var grid = SettlementManager.active_astar_grid
+	var region = grid.region
+	var cell_size = grid.cell_size
+	var min_x = region.position.x * cell_size.x
+	var min_y = region.position.y * cell_size.y
+	var max_x = region.end.x * cell_size.x
+	var max_y = region.end.y * cell_size.y
+	var margin = 32.0 
+	var clamped = Vector2(
+func sync_civilians(target_count: int, spawn_origin: Vector2, is_enemy: bool = false) -> void:
+	pass # (Body Omitted)
+	var current_civs = []
+	var current_count = current_civs.size()
+	var diff = target_count - current_count
+func _spawn_civilians(count: int, origin: Vector2, is_enemy: bool) -> void:
+	pass # (Body Omitted)
+	var scene_ref = civilian_data.load_scene()
+		var civ = scene_ref.instantiate()
+		var angle = randf() * TAU
+		var distance = randf_range(spawn_radius_min, spawn_radius_max)
+		var offset = Vector2(cos(angle), sin(angle)) * distance
+		var pos = origin + offset
+func _despawn_civilians(count: int, list: Array) -> void:
+	pass # (Body Omitted)
+			var civ = list[i]
+func spawn_worker_at(location: Vector2) -> void:
+	pass # (Body Omitted)
+func spawn_enemy_garrison(warbands: Array[WarbandData], buildings: Array) -> void:
+	pass # (Body Omitted)
+		var wb = warbands[i]
+		var u_data = wb.unit_type
+		var scene = u_data.load_scene()
+		var unit = scene.instantiate() as BaseUnit
+		var guard_pos = Vector2.ZERO
+			var b_index = i % buildings.size()
+			var b = buildings[b_index]
+func _on_enemy_unit_ready(unit: BaseUnit, guard_pos: Vector2) -> void:
+	pass # (Body Omitted)
+
+
+### FILE: res://test/base/GutTestBase.gd ###
+class_name GutTestBase
+extends GutTest
+func before_each():
+	pass # (Body Omitted)
+func create_mock_jarl(authority: int = 3, renown: int = 100) -> JarlData:
+	pass # (Body Omitted)
+	var jarl = JarlData.new()
+func create_mock_settlement(pop: int = 10, food: int = 100) -> SettlementData:
+	pass # (Body Omitted)
+	var s = SettlementData.new()
+func create_mock_warband(unit_data: UnitData = null) -> WarbandData:
+	pass # (Body Omitted)
+	var wb = WarbandData.new(unit_data)
+
+
+### FILE: res://test/fixtures/DynastyTestDataGenerator.gd ###
+class_name DynastyTestDataGenerator
+extends RefCounted
+	var jarl = JarlData.new()
+	var ancestors_data: Array[Dictionary] = [
+	var heir1 = JarlHeirData.new()
+	var heir2 = JarlHeirData.new()
+	var heir3 = JarlHeirData.new()
+	var heir4 = JarlHeirData.new()
+
+
+### FILE: res://test/fixtures/SmokeTest.gd ###
+extends Node2D
+const UNIT_SPAWNER_SCRIPT = preload("res://scripts/utility/UnitSpawner.gd")
+const PLAYER_UNIT_DATA_PATH = "res://data/units/Unit_PlayerRaider.tres"
+var spawner: UnitSpawner
+var unit_container: Node2D
+var rts_controller: RTSController
+func _ready() -> void:
+	pass # (Body Omitted)
+	var warbands = _create_mock_warbands()
+func _setup_scene_tree() -> void:
+	pass # (Body Omitted)
+func _create_mock_warbands() -> Array[WarbandData]:
+	pass # (Body Omitted)
+	var list: Array[WarbandData] = []
+	var u_data = load(PLAYER_UNIT_DATA_PATH)
+	var wb = WarbandData.new()
+func _verify_spawn_results() -> void:
+	pass # (Body Omitted)
+	var leaders = []
+	var leader = leaders[0]
+	var minions = []
+
+
+### FILE: res://test/fixtures/TestUtils.gd ###
+class_name TestUtils
+extends RefCounted
+	var d = UnitData.new()
+	var unit = unit_class.new()
+	var sprite = Sprite2D.new()
+	var img = Image.create(32, 32, false, Image.FORMAT_RGBA8)
+	var col = CollisionShape2D.new()
+	var timer = Timer.new()
+	var sep = Area2D.new()
+	var sep_col = CollisionShape2D.new()
+	var root = PanelContainer.new()
+	var margin = MarginContainer.new()
+	var vbox = VBoxContainer.new()
+	var label = RichTextLabel.new()
+	var loot_panel = PanelContainer.new()
+	var slider = HSlider.new()
+	var dist_label = Label.new()
+	var btn = Button.new()
+	var script = load("res://ui/EndOfYear_Popup.gd")
+	var bridge_script = load("res://scripts/buildings/SettlementBridge.gd")
+	var bridge = bridge_script.new()
+	var unit_cont = Node2D.new()
+	var ui_node = CanvasLayer.new()
+
+
+### FILE: res://test/integration/test_economy_flow.gd ###
+extends GutTestBase
+func test_population_growth_with_surplus():
+	pass # (Body Omitted)
+	var s = create_mock_settlement(10, 500) # 10 Pop, 500 Food (Abundance)
+	var payout = EconomyManager.calculate_payout()
+	var growth_str = payout.get("population_growth", "")
+func test_construction_labor_deduction():
+	pass # (Body Omitted)
+	var s = create_mock_settlement(10, 100)
+	var blueprint = {
+	var updated_bp = s.pending_construction_buildings[0]
+
+
+### FILE: res://test/integration/test_escort_cycle.gd ###
+extends GutTestBase
+var leader: SquadLeader
+var soldier: SquadSoldier
+var civilian: CivilianUnit
+var retreat_zone: Area2D
+func before_each():
+	pass # (Body Omitted)
+func test_civilian_surrender_signal():
+	pass # (Body Omitted)
+func test_leader_finds_volunteer():
+	pass # (Body Omitted)
+func test_soldier_collects_prisoner():
+	pass # (Body Omitted)
+func test_escort_completion():
+	pass # (Body Omitted)
+func test_batching_logic():
+	pass # (Body Omitted)
+	var civ1 = TestUtils.create_mock_unit(CivilianUnit, self)
+	var civ2 = TestUtils.create_mock_unit(CivilianUnit, self)
+
+
+### FILE: res://test/integration/test_fleet_mechanics.gd ###
+extends GutTestBase
+const NAUST_PATH = "res://data/buildings/generated/Bldg_Naust.tres"
+func before_each():
+	pass # (Body Omitted)
+func test_base_fleet_capacity():
+	pass # (Body Omitted)
+	var cap = SettlementManager.get_total_ship_capacity_squads()
+func test_naust_increases_capacity():
+	pass # (Body Omitted)
+	var entry = {
+	var cap = SettlementManager.get_total_ship_capacity_squads()
+func test_overflow_logic():
+	pass # (Body Omitted)
+	var s = SettlementManager.current_settlement
+	var arriving_squads = 5
+	var capacity = SettlementManager.get_total_ship_capacity_squads() # Should be 3
+	var current_filled = s.warbands.size() # 3
+	var open_slots = max(0, capacity - current_filled)
+	var accepted = min(arriving_squads, open_slots)
+	var rejected = arriving_squads - accepted
+func test_naust_solves_overflow():
+	pass # (Body Omitted)
+	var s = SettlementManager.current_settlement
+	var capacity = SettlementManager.get_total_ship_capacity_squads() # Should be 6 now
+	var arriving_squads = 2
+	var current_filled = s.warbands.size() # 3
+	var open_slots = max(0, capacity - current_filled) # 6 - 3 = 3 slots
+	var accepted = min(arriving_squads, open_slots)
+	var rejected = arriving_squads - accepted
+
+
+### FILE: res://test/integration/test_military_spawning.gd ###
+extends GutTestBase
+var spawner: UnitSpawner
+var unit_container: Node2D
+var rts_controller: RTSController
+const RAIDER_DATA_PATH = "res://data/units/Unit_PlayerRaider.tres"
+func before_each():
+	pass # (Body Omitted)
+func test_spawn_full_strength_squad():
+	pass # (Body Omitted)
+	var unit_data = load(RAIDER_DATA_PATH)
+	var warband = create_mock_warband(unit_data)
+	var child_count = unit_container.get_child_count()
+	var leaders = get_nodes_by_class(unit_container, "SquadLeader")
+		var leader = leaders[0] as SquadLeader
+	var minions = get_nodes_by_class(unit_container, "SquadSoldier")
+func test_wounded_warband_skipped():
+	pass # (Body Omitted)
+	var unit_data = load(RAIDER_DATA_PATH)
+	var warband = create_mock_warband(unit_data)
+func test_multiple_squad_offset():
+	pass # (Body Omitted)
+	var unit_data = load(RAIDER_DATA_PATH)
+	var wb1 = create_mock_warband(unit_data)
+	var wb2 = create_mock_warband(unit_data)
+	var leaders = get_nodes_by_class(unit_container, "SquadLeader")
+		var l1 = leaders[0]
+		var l2 = leaders[1]
+		var dist = l1.global_position.distance_to(Vector2(1000, 1000))
+func get_nodes_by_class(parent: Node, class_name_str: String) -> Array:
+	pass # (Body Omitted)
+	var result = []
+
+
+### FILE: res://test/integration/test_new_game_flow.gd ###
+extends GutTest
+const USER_SAVE_PATH = "user://savegame_dynasty.tres"
+func before_each():
+	pass # (Body Omitted)
+func after_all():
+	pass # (Body Omitted)
+func test_generator_produces_valid_jarl():
+	pass # (Body Omitted)
+	var jarl = DynastyGenerator.generate_random_dynasty()
+	var designated_found = false
+func test_heir_age_logic():
+	pass # (Body Omitted)
+	var jarl = DynastyGenerator.generate_random_dynasty()
+		var max_possible_age = jarl.age - 16
+func test_start_new_campaign_flow():
+	pass # (Body Omitted)
+	var current = DynastyManager.current_jarl
+func test_persistence_loading():
+	pass # (Body Omitted)
+	var original_name = DynastyManager.current_jarl.display_name
+	var loaded_jarl = DynastyManager.get_current_jarl()
+
+
+### FILE: res://test/integration/test_winter_systems.gd ###
+extends GutTest
+func before_each():
+	pass # (Body Omitted)
+	var jarl = JarlData.new()
+func after_all():
+	pass # (Body Omitted)
+func test_winter_crisis_detection_starvation():
+	pass # (Body Omitted)
+	var settlement = SettlementData.new()
+	var report = DynastyManager.winter_consumption_report
+func test_winter_crisis_resolution_via_gold():
+	pass # (Body Omitted)
+	var settlement = SettlementData.new()
+	var success = DynastyManager.resolve_crisis_with_gold()
+func test_ui_locking_during_crisis():
+	pass # (Body Omitted)
+	var settlement = SettlementData.new()
+	var ui = autoqfree(load("res://ui/WinterCourt_UI.tscn").instantiate())
+	var btn_end = ui.find_child("Btn_EndWinter", true, false)
+
+
+### FILE: res://test/test_year_cycle.gd ###
+extends Node
+func _ready():
+	pass # (Body Omitted)
+func test_starvation():
+	pass # (Body Omitted)
+	var settlement = SettlementData.new()
+	var jarl = JarlData.new()
+	var payout = EconomyManager.calculate_payout()
+func test_overpopulation():
+	pass # (Body Omitted)
+	var settlement = SettlementData.new()
+	var jarl = JarlData.new()
+	var payout = EconomyManager.calculate_payout()
+func test_draft_and_raid_solution():
+	pass # (Body Omitted)
+	var settlement = SettlementData.new()
+	var jarl = JarlData.new()
+	var bondi_data
+	var raid_loot = {
+	var payout = EconomyManager.calculate_payout()
+
+
+### FILE: res://test/unit/test_inventory_mechanics.gd ###
+extends GutTestBase
+var unit: BaseUnit
+var unit_data: UnitData
+func before_each():
+	pass # (Body Omitted)
+func after_each():
+	pass # (Body Omitted)
+func test_add_loot_under_cap():
+	pass # (Body Omitted)
+	var added = unit.add_loot("gold", 50)
+func test_add_loot_over_cap():
+	pass # (Body Omitted)
+	var added = unit.add_loot("gold", 50) # Try adding 50 more (only 20 space left)
+func test_encumbrance_math():
+	pass # (Body Omitted)
+
+
+### FILE: res://test/unit/test_squad_math.gd ###
+extends GutTestBase
+var formation: SquadFormation
+func before_each():
+	pass # (Body Omitted)
+func test_line_formation_positions():
+	pass # (Body Omitted)
+	var center = Vector2(100, 100)
+	var facing = Vector2.DOWN
+	var count = 3
+	var points = formation._calculate_formation_positions(center, facing)
+func test_box_formation_rotation():
+	pass # (Body Omitted)
+	var center = Vector2.ZERO
+	var facing = Vector2.RIGHT 
+	var points = formation._calculate_formation_positions(center, facing)
+	var p2 = points[1]
+
+
+### FILE: res://test/unit/test_wergild.gd ###
+extends GutTestBase
+var bridge_instance = null
+var bondi_data = null
+var drengr_data = null
+var popup_instance = null
+func before_each():
+	pass # (Body Omitted)
+func test_wergild_calculation_simple():
+	pass # (Body Omitted)
+	var result = {
+	var total_wergild = 0
+	var net_gold = result.gold_looted - total_wergild
+func test_wergild_bankruptcy_protection():
+	pass # (Body Omitted)
+	var result = {
+	var total_wergild = result.casualties[0].wergild_cost
+	var net_gold = max(0, result.gold_looted - total_wergild)
+
+
+### FILE: res://test/unit/test_winter_math.gd ###
+extends GutTest
+var _default_harsh: float
+var _default_mild: float
+func before_all():
+	pass # (Body Omitted)
+func after_each():
+	pass # (Body Omitted)
+func test_demand_calculation_normal():
+	pass # (Body Omitted)
+	var settlement = SettlementData.new()
+	var report = WinterManager.calculate_winter_demand(settlement)
+func test_demand_calculation_harsh():
+	pass # (Body Omitted)
+	var settlement = SettlementData.new()
+	var report = WinterManager.calculate_winter_demand(settlement)
+
+
+### FILE: res://tools/AIContentImporter.gd ###
+extends EditorScript
+const BASE_DIR_UNITS = "res://data/units/"
+const BASE_DIR_BUILDINGS = "res://data/buildings/"
+var RAW_DATA = [
+func _run():
+	pass # (Body Omitted)
+	var count = 0
+		var res: Resource
+		var base_path = ""
+		var sub_folder = entry.get("sub_folder", "generated") # Default to 'generated' if missing
+			var target_dir = base_path.path_join(sub_folder)
+			var full_path = target_dir.path_join(entry["file_name"] + ".tres")
+			var error = ResourceSaver.save(res, full_path)
+func _create_unit(data: Dictionary) -> UnitData:
+	pass # (Body Omitted)
+	var u = UnitData.new()
+	var stats = data.get("stats", {})
+func _create_building(data: Dictionary) -> BuildingData:
+	pass # (Body Omitted)
+	var b = EconomicBuildingData.new() 
+	var stats = data.get("stats", {})
+func _ensure_dir(path: String):
+	pass # (Body Omitted)
+
+
+### FILE: res://tools/AIContentImporter_Template.gd ###
+extends EditorScript
+const SAVE_DIR_UNITS = "res://data/units/generated/"
+const SAVE_DIR_BUILDINGS = "res://data/buildings/generated/"
+var RAW_DATA = [
+func _run():
+	pass # (Body Omitted)
+	var count = 0
+		var res: Resource
+		var path: String
+			var error = ResourceSaver.save(res, path)
+func _create_unit(data: Dictionary) -> UnitData:
+	pass # (Body Omitted)
+	var u = UnitData.new()
+	var stats = data.get("stats", {})
+func _create_building(data: Dictionary) -> BuildingData:
+	pass # (Body Omitted)
+	var b = EconomicBuildingData.new() 
+	var stats = data.get("stats", {})
+func _ensure_dir(path: String):
+	pass # (Body Omitted)
+
+
+### FILE: res://tools/ContextGenerator.gd ###
+extends EditorScript
+const OUTPUT_DIR = "res://_context_dumps"
+const OUTPUT_FILENAME = "project_context.txt"
+const OUTPUT_PATH = OUTPUT_DIR + "/" + OUTPUT_FILENAME
+const IGNORE_DIRS = ["res://addons", "res://.godot"]
+const INCLUDE_EXTENSIONS = ["gd"] 
+func _run() -> void:
+	pass # (Body Omitted)
+		var err = DirAccess.make_dir_recursive_absolute(OUTPUT_DIR)
+	var context_content = "PROJECT CONTEXT SKELETON\n"
+	var files = _get_all_files("res://")
+	var file = FileAccess.open(OUTPUT_PATH, FileAccess.WRITE)
+		var global_path = ProjectSettings.globalize_path(OUTPUT_DIR)
+func _get_all_files(path: String) -> Array[String]:
+	pass # (Body Omitted)
+	var files: Array[String] = []
+	var dir = DirAccess.open(path)
+		var file_name = dir.get_next()
+			var full_path = path + "/" + file_name
+					var skip = false
+func _parse_script(path: String) -> String:
+	pass # (Body Omitted)
+	var file = FileAccess.open(path, FileAccess.READ)
+	var output = "### FILE: " + path + " ###\n"
+		var line = file.get_line()
+		var stripped = line.strip_edges()
+
+
+### FILE: res://tools/EditorOnly.gd ###
+extends EditorScript
+const SCENE_PATH = "res://scenes/world_map/MacroMap.tscn"
+const NAME_MAP = {
+func _run():
+	pass # (Body Omitted)
+	var scene = load(SCENE_PATH).instantiate()
+	var regions_root = scene.get_node_or_null("Regions")
+	var count = 0
+		var region_node = regions_root.get_node_or_null(node_name)
+			var new_name = NAME_MAP[node_name]
+		var packed = PackedScene.new()
+		var err = ResourceSaver.save(packed, SCENE_PATH)
+
+
+### FILE: res://tools/EnemyBaseEditor.gd ###
+extends EditorScript
+func _run():
+	pass # (Body Omitted)
+	var settlement_path = "res://data/settlements/monastery_base.tres"
+	var settlement_data: SettlementData = load(settlement_path)
+		var building = settlement_data.placed_buildings[i]
+		var pos = building["grid_position"]
+		var building_data: BuildingData = load(building["resource_path"])
+		var name = building_data.display_name if building_data else "Unknown"
+	var settlement = SettlementData.new()
+	var buildings = [
+
+
+### FILE: res://tools/GenerateBandContent.gd ###
+extends EditorScript
+func _run():
+	pass # (Body Omitted)
+	var bondi_data = UnitData.new()
+	var source_path = "res://scenes/units/PlayerVikingRaider.tscn"
+		var base_scene = load(source_path).instantiate()
+		var packed = PackedScene.new()
+
+
+### FILE: res://tools/GenerateRaidMap.gd ###
+extends EditorScript
+const TARGET_PATH = "res://data/settlements/generated/raid_rich_hub_01.tres"
+const GRID_W = 80 
+const GRID_H = 50
+const BEACH_WIDTH = 15 
+const B_HALL = "res://data/buildings/GreatHall.tres"
+const B_WALL = "res://data/buildings/Bldg_Wall.tres"
+const B_TOWER = "res://data/buildings/Monastery_Watchtower.tres"
+const RICH_BUILDINGS = [
+const MID_BUILDINGS = [
+const POOR_BUILDINGS = [
+var occupied_cells: Dictionary = {}
+var placed_list: Array[Dictionary] = []
+func _run() -> void:
+	pass # (Body Omitted)
+	var center = Vector2i(int(GRID_W * 0.7), int(GRID_H * 0.5))
+func _reset() -> void:
+	pass # (Body Omitted)
+func _generate_citadel_layer(center: Vector2i, radius_min: int, radius_max: int) -> void:
+	pass # (Body Omitted)
+			var pos = Vector2i(x, y)
+			var dist = Vector2(pos).distance_to(Vector2(center))
+	var attempts = 20
+		var building = RICH_BUILDINGS.pick_random()
+		var offset = Vector2(randf_range(-1, 1), randf_range(-1, 1)).normalized() * randf_range(radius_min, radius_max - 2)
+		var pos = center + Vector2i(offset)
+func _generate_scatter_layer(center: Vector2i, r_min: int, r_max: int, palette: Array, density: float) -> void:
+	pass # (Body Omitted)
+			var pos = Vector2i(x, y)
+			var dist = Vector2(pos).distance_to(Vector2(center))
+					var b = palette.pick_random()
+func _try_place(path: String, grid_pos: Vector2i) -> void:
+	pass # (Body Omitted)
+	var data = load(path) as BuildingData
+	var size = data.grid_size
+			var check = grid_pos + Vector2i(x, y)
+func _place_building(path: String, grid_pos: Vector2i) -> void:
+	pass # (Body Omitted)
+	var data = load(path) as BuildingData
+	var size = data.grid_size
+func _save_resource() -> void:
+	pass # (Body Omitted)
+	var dir = TARGET_PATH.get_base_dir()
+	var s_data = SettlementData.new()
+	var err = ResourceSaver.save(s_data, TARGET_PATH)
+
+
+### FILE: res://tools/LevelExporter.gd ###
+extends EditorScript
+const TARGET_SAVE_PATH = "res://data/settlements/new_raid_map.tres"
+const CONTAINER_NAME = "BuildingContainer"
+const CELL_SIZE = Vector2(32, 32)
+func _run():
+	pass # (Body Omitted)
+	var root = EditorInterface.get_edited_scene_root()
+	var container = root.get_node_or_null(CONTAINER_NAME)
+	var settlement_data = SettlementData.new()
+	var buildings = container.get_children()
+	var count = 0
+			var building_size_px = Vector2(node.data.grid_size) * CELL_SIZE
+			var top_left_pos = node.position - (building_size_px / 2.0)
+			var grid_x = round(top_left_pos.x / CELL_SIZE.x)
+			var grid_y = round(top_left_pos.y / CELL_SIZE.y)
+			var grid_pos = Vector2i(grid_x, grid_y)
+			var entry = {
+	var error = ResourceSaver.save(settlement_data, TARGET_SAVE_PATH)
+
+
+### FILE: res://tools/Raid_prep_generatory.gd ###
+extends EditorScript
+const SCENE_PATH = "res://ui/RaidPrepWindow.tscn"
+const SCRIPT_PATH = "res://ui/RaidPrepWindow.gd"
+func _run() -> void:
+	pass # (Body Omitted)
+	var root = PanelContainer.new()
+	var script = load(SCRIPT_PATH)
+	var margin = MarginContainer.new()
+	var main_vbox = VBoxContainer.new()
+	var header = Label.new()
+	var sep1 = HSeparator.new()
+	var content_hbox = HBoxContainer.new()
+	var left_col = VBoxContainer.new()
+	var target_name = Label.new()
+	var desc_label = RichTextLabel.new()
+	var stats_grid = GridContainer.new()
+	var vsep = VSeparator.new()
+	var right_col = VBoxContainer.new()
+	var cap_label = Label.new()
+	var scroll = ScrollContainer.new()
+	var warband_list = VBoxContainer.new()
+	var bondi_panel = PanelContainer.new()
+	var bondi_vbox = VBoxContainer.new()
+	var bondi_label = Label.new()
+	var bondi_slider_box = HBoxContainer.new()
+	var bondi_slider = HSlider.new()
+	var bondi_count_lbl = Label.new()
+	var sep2 = HSeparator.new()
+	var prov_panel = PanelContainer.new()
+	var prov_hbox = HBoxContainer.new()
+	var l_supplies = Label.new()
+	var slider = HSlider.new()
+	var cost_l = Label.new()
+	var eff_l = Label.new()
+	var actions = HBoxContainer.new()
+	var btn_cancel = Button.new()
+	var btn_launch = Button.new()
+	var packed_scene = PackedScene.new()
+	var error = ResourceSaver.save(packed_scene, SCENE_PATH)
+func _add_stat_row(parent, owner, label_name, label_text, val_name, val_text):
+	pass # (Body Omitted)
+	var l = Label.new()
+	var v = Label.new()
+
+
+### FILE: res://tools/SceneGeneratorTool.gd ###
+extends EditorScript
+func _run() -> void:
+	pass # (Body Omitted)
+	var paths = [
+			var data = load(path) as UnitData
+
+
+### FILE: res://tools/SettlementLayoutEditor.gd ###
+extends EditorScript
+const BUILDINGS = {
+func _run():
+	pass # (Body Omitted)
+	var small_defensive = create_small_defensive_layout()
+	var economic = create_economic_layout()
+	var monastery = create_monastery_layout()
+func create_small_defensive_layout() -> Array[Dictionary]:
+	pass # (Body Omitted)
+func create_economic_layout() -> Array[Dictionary]:
+	pass # (Body Omitted)
+func create_monastery_layout() -> Array[Dictionary]:
+	pass # (Body Omitted)
+func print_layout(layout: Array[Dictionary]):
+	pass # (Body Omitted)
+		var building = layout[i]
+		var name = get_building_name(building["resource_path"])
+		var pos = building["grid_position"]
+func get_building_name(path: String) -> String:
+	pass # (Body Omitted)
+func save_layout(layout: Array[Dictionary], path: String):
+	pass # (Body Omitted)
+	var settlement = SettlementData.new()
+	var error = ResourceSaver.save(settlement, path)
+
+
+### FILE: res://tools/TestPopulationLogic.gd ###
+extends EditorScript
+const FOOD_PER_PERSON = 10
+const BASE_GROWTH = 0.02
+const STARVATION_RATE = -0.15
+const UNREST_PER_EXCESS = 2
+func _run():
+	pass # (Body Omitted)
+func _test_scenario(title: String, pop: int, food: int, land_cap: int) -> void:
+	pass # (Body Omitted)
+	var food_req = pop * FOOD_PER_PERSON
+	var growth_rate = BASE_GROWTH
+	var status = "Normal"
+	var net_change = int(pop * growth_rate)
+	var new_pop = pop + net_change
+		var excess = new_pop - land_cap
+		var unrest = excess * UNREST_PER_EXCESS
+
+
+### FILE: res://tools/ThemeBuilder.gd ###
+extends EditorScript
+const THEME_PATH = "res://ui/themes/VikingDynastyTheme.tres"
+const ASSET_PATH = "res://ui/assets/"
+const FONT_PATH = "res://assets/fonts/"
+const COL_INK = Color("#2b221b")
+const COL_PARCHMENT = Color("#f5e6d3")
+const COL_GOLD = Color("#c5a54e")
+func _run() -> void:
+	pass # (Body Omitted)
+	var theme = Theme.new()
+	var font_header = _try_load_font("UncialAntiqua-Regular.ttf")
+	var font_body = _try_load_font("CrimsonText-Regular.ttf")
+	var wood_tex = load(ASSET_PATH + "wood_bg.png")
+		var style_normal = StyleBoxTexture.new()
+		var style_hover = style_normal.duplicate()
+		var style_pressed = style_normal.duplicate()
+		var style_disabled = style_normal.duplicate()
+	var parchment_tex = load(ASSET_PATH + "parchment_bg.png")
+		var style_panel = StyleBoxTexture.new()
+	var tag_tex = load(ASSET_PATH + "resource_tag.png")
+		var style_tag = StyleBoxTexture.new()
+	var tooltip_tex = load(ASSET_PATH + "tooltip_bg.png")
+		var style_tooltip = StyleBoxTexture.new()
+	var error = ResourceSaver.save(theme, THEME_PATH)
+func _try_load_font(filename: String) -> Font:
+	pass # (Body Omitted)
+	var path = FONT_PATH + filename
+
+
+### FILE: res://ui/components/BuildingInfoHUD.gd ###
+extends Control
+class_name BuildingInfoHUD
+var style_fill: StyleBoxFlat
+func _ready() -> void:
+	pass # (Body Omitted)
+func setup(display_name: String, size_pixels: Vector2) -> void:
+	pass # (Body Omitted)
+func update_health(current: int, max_hp: int) -> void:
+	pass # (Body Omitted)
+func update_construction(current: int, required: int) -> void:
+	pass # (Body Omitted)
+	var percent = int((float(current) / required) * 100)
+func set_blueprint_mode() -> void:
+	pass # (Body Omitted)
+func set_active_mode(display_name: String) -> void:
+	pass # (Body Omitted)
+func hide_progress() -> void:
+	pass # (Body Omitted)
+
+
+### FILE: res://ui/components/BuildingInspector.gd ###
+extends PanelContainer
+var current_building: BaseBuilding
+var current_entry: Dictionary 
+func _ready() -> void:
+	pass # (Body Omitted)
+func _on_building_selected(building: BaseBuilding) -> void:
+	pass # (Body Omitted)
+func _refresh_data() -> void:
+	pass # (Body Omitted)
+	var data = current_building.data
+	var p_count = current_entry.get("peasant_count", 0)
+	var capacity = 0
+	var text = ""
+			var eco = data as EconomicBuildingData
+			var production = (eco.base_passive_output * p_count) 
+		var progress = current_entry.get("progress", 0)
+		var req = data.construction_effort_required
+		var pct = 0
+		var labor_per_year = p_count * EconomyManager.BUILDER_EFFICIENCY
+			var remaining = req - progress
+			var years = ceil(float(remaining) / labor_per_year)
+	var can_add = p_count < capacity
+func _on_add_worker() -> void:
+	pass # (Body Omitted)
+func _on_remove_worker() -> void:
+	pass # (Body Omitted)
+
+
+### FILE: res://ui/components/HeirCard.gd ###
+extends PanelContainer
+class_name HeirCard
+signal card_clicked(heir_data: JarlHeirData, global_pos: Vector2)
+var heir_data: JarlHeirData
+func setup(data: JarlHeirData) -> void:
+	pass # (Body Omitted)
+	var trait_text = "None"
+func _update_status_visuals() -> void:
+	pass # (Body Omitted)
+func _gui_input(event: InputEvent) -> void:
+	pass # (Body Omitted)
+
+
+### FILE: res://ui/components/RichTooltipButton.gd ###
+class_name RichTooltipButton
+extends Button
+func _make_custom_tooltip(for_text: String) -> Object:
+	pass # (Body Omitted)
+	var panel = PanelContainer.new()
+		var ui_node: Node = self
+	var rtl = RichTextLabel.new()
+
+
+### FILE: res://ui/components/TreasuryHUD.gd ###
+class_name TreasuryHUD
+extends PanelContainer
+func _ready() -> void:
+	pass # (Body Omitted)
+func _refresh_from_manager() -> void:
+	pass # (Body Omitted)
+func _update_treasury_display(treasury: Dictionary) -> void:
+	pass # (Body Omitted)
+		var idle_p = SettlementManager.get_idle_peasants()
+		var total_p = SettlementManager.current_settlement.population_peasants
+		var idle_t = SettlementManager.get_idle_thralls()
+		var total_t = SettlementManager.current_settlement.population_thralls
+
+
+### FILE: res://ui/components/WorkerTag.gd ###
+class_name WorkerTag
+extends Control
+var building_index: int = -1
+var is_pending: bool = false # NEW FLAG
+var caps = {"peasant": 0, "thrall": 0}
+func _ready() -> void:
+	pass # (Body Omitted)
+func setup(idx: int, p_count: int, p_cap: int, t_count: int, t_cap: int, _pending: bool = false) -> void:
+	pass # (Body Omitted)
+func _on_mod(type: String, amount: int) -> void:
+	pass # (Body Omitted)
+func _update_labels(p_val: int, t_val: int) -> void:
+	pass # (Body Omitted)
+
+
+### FILE: res://ui/DynastyUI.gd ###
+class_name DynastyUI
+extends PanelContainer
+const HEIR_CARD_SCENE = preload("res://ui/components/HeirCard.tscn")
+const PLACEHOLDER_ICON = preload("res://textures/placeholders/unit_placeholder.png")
+var selected_heir: JarlHeirData
+func _ready() -> void:
+	pass # (Body Omitted)
+func _on_visibility_changed() -> void:
+	pass # (Body Omitted)
+func _on_jarl_stats_updated(jarl: JarlData) -> void:
+	pass # (Body Omitted)
+	var prowess = jarl.get_effective_skill("prowess")
+	var stewardship = jarl.get_effective_skill("stewardship")
+	var command = jarl.get_effective_skill("command")
+	var learning = jarl.get_effective_skill("learning")
+	var stats_text = "Age: %d  |  Renown: %d  |  Authority: %d/%d\n" % [jarl.age, jarl.renown, jarl.current_authority, jarl.max_authority]
+func _populate_ancestors(ancestors_data: Array) -> void:
+	pass # (Body Omitted)
+		var texture = TextureRect.new()
+func _populate_heirs(heirs_data: Array[JarlHeirData]) -> void:
+	pass # (Body Omitted)
+		var card = HEIR_CARD_SCENE.instantiate()
+func _on_heir_card_clicked(heir: JarlHeirData, mouse_pos: Vector2) -> void:
+	pass # (Body Omitted)
+func _on_context_menu_item_pressed(id: int) -> void:
+	pass # (Body Omitted)
+			var cost = {"gold": 500}
+func _on_close_button_pressed() -> void:
+	pass # (Body Omitted)
+func _input(event: InputEvent) -> void:
+	pass # (Body Omitted)
+func _open_warband_assignment_dialog() -> void:
+	pass # (Body Omitted)
+	var settlement = SettlementManager.current_settlement
+
+
+### FILE: res://ui/EndOfYear_Popup.gd ###
+extends PanelContainer
+signal collect_button_pressed(payout: Dictionary)
+var _base_payout: Dictionary = {}
+var _final_payout: Dictionary = {}
+var _total_loot_gold: int = 0
+func _ready() -> void:
+	pass # (Body Omitted)
+func display_payout(payout: Dictionary, title: String = "Welcome home!") -> void:
+	pass # (Body Omitted)
+	var is_raid = title.contains("Raid") or title.contains("Victory")
+func _update_distribution_preview(percent_shared: float) -> void:
+	pass # (Body Omitted)
+	var share_pct = percent_shared / 100.0
+	var gold_shared = int(_total_loot_gold * share_pct)
+	var gold_kept = _total_loot_gold - gold_shared
+	var renown_change = 0
+		var sign_str = "+" if renown_change > 0 else ""
+func _update_text_display(title: String) -> void:
+	pass # (Body Omitted)
+	var text: String = "[b]%s[/b]\n\n" % title
+		var val = _base_payout[key]
+			var col = "green" if val > 0 else "salmon" # Brighter red
+func _on_collect_pressed() -> void:
+	pass # (Body Omitted)
+
+
+### FILE: res://ui/Event_UI.gd ###
+class_name EventUI
+extends CanvasLayer
+signal choice_made(event: EventData, choice: EventChoice)
+var current_event: EventData
+func _ready() -> void:
+	pass # (Body Omitted)
+func display_event(event_data: EventData) -> void:
+	pass # (Body Omitted)
+		var ok_button = Button.new()
+			var choice_button = Button.new()
+	var first_button = choice_buttons_container.get_child(0) as Button
+func _on_choice_button_pressed(choice: EventChoice) -> void:
+	pass # (Body Omitted)
+
+
+### FILE: res://ui/PauseButton.gd ###
+extends Button
+func _ready():
+	pass # (Body Omitted)
+func _unhandled_input(event: InputEvent) -> void:
+	pass # (Body Omitted)
+func _on_pause_pressed():
+	pass # (Body Omitted)
+		var pause_manager = get_node_or_null("/root/PauseManager")
+func _create_simple_pause_menu():
+	pass # (Body Omitted)
+		var existing_overlay = get_tree().get_first_node_in_group("pause_overlay")
+	var pause_overlay = ColorRect.new()
+	var vbox = VBoxContainer.new()
+	var title_label = Label.new()
+	var resume_button = Button.new()
+	var quit_button = Button.new()
+func _resume_game():
+	pass # (Body Omitted)
+	var existing_overlay = get_tree().get_first_node_in_group("pause_overlay")
+func _quit_to_menu():
+	pass # (Body Omitted)
+
+
+### FILE: res://ui/RaidPrepWindow.gd ###
+class_name RaidPrepWindow
+extends PanelContainer
+signal raid_launched(target: RaidTargetData, warbands: Array[WarbandData], provision_level: int)
+signal closed
+var current_target: RaidTargetData
+var selected_warbands: Array[WarbandData] = []
+var max_capacity: int = 0
+var current_provision_level: int = 1
+var calculated_food_cost: int = 0
+var available_idle_peasants: int = 0
+const FOOD_COST_PER_HEAD_WELL_FED = 25
+const BONDI_UNIT_DATA_PATH = "res://data/units/Unit_Bondi.tres"
+func _ready() -> void:
+	pass # (Body Omitted)
+func setup(target: RaidTargetData) -> void:
+	pass # (Body Omitted)
+	var auth_cost = target.raid_cost_authority
+func _populate_warband_list() -> void:
+	pass # (Body Omitted)
+	var warbands = SettlementManager.current_settlement.warbands
+		var checkbox = CheckBox.new()
+func _on_warband_toggled(is_checked: bool, warband: WarbandData, checkbox_node: CheckBox) -> void:
+	pass # (Body Omitted)
+func _on_bondi_slider_changed(_value: float) -> void:
+	pass # (Body Omitted)
+func _update_bondi_ui() -> void:
+	pass # (Body Omitted)
+	var count = int(bondi_slider.value)
+func _get_total_fleet_usage() -> int:
+	pass # (Body Omitted)
+	var slots = selected_warbands.size()
+	var bondi_count = int(bondi_slider.value)
+		var bondi_bands = ceil(float(bondi_count) / WarbandData.MAX_MANPOWER)
+func _update_capacity_ui() -> void:
+	pass # (Body Omitted)
+	var usage = _get_total_fleet_usage()
+func _validate_launch_readiness() -> void:
+	pass # (Body Omitted)
+	var cost = current_target.raid_cost_authority
+	var current_food = SettlementManager.current_settlement.treasury.get(GameResources.FOOD, 0)
+func _on_launch_pressed() -> void:
+	pass # (Body Omitted)
+	var bondi_count = int(bondi_slider.value)
+func _create_and_append_bondi(count: int) -> void:
+	pass # (Body Omitted)
+	var unit_data = load(BONDI_UNIT_DATA_PATH)
+	var remaining = count
+		var batch_size = min(remaining, WarbandData.MAX_MANPOWER)
+		var bondi_band = WarbandData.new(unit_data)
+func _on_cancel_pressed() -> void:
+	pass # (Body Omitted)
+func _update_provision_cost() -> void:
+	pass # (Body Omitted)
+	var total_men = 0
+func _on_provision_slider_changed(value: float) -> void:
+	pass # (Body Omitted)
+func _update_provision_ui() -> void:
+	pass # (Body Omitted)
+func _shake_capacity_label() -> void:
+	pass # (Body Omitted)
+	var tween = create_tween()
+	var original_pos = capacity_label.position.x
+
+
+### FILE: res://ui/SelectionBox.gd ###
+extends Control
+var is_dragging := false
+var start_pos := Vector2.ZERO
+var is_command_dragging := false
+var command_start_pos := Vector2.ZERO
+func _ready() -> void:
+	pass # (Body Omitted)
+func _gui_input(event: InputEvent) -> void:
+	pass # (Body Omitted)
+				var end_pos := get_local_mouse_position()
+				var rect := Rect2(start_pos, end_pos - start_pos).abs()
+				var is_box_select = rect.size.length_squared() > 100
+				var end_pos = get_local_mouse_position()
+				var drag_vector = end_pos - command_start_pos
+					var main_camera = get_viewport().get_camera_2d()
+						var world_end = main_camera.get_global_mouse_position()
+						var world_start = world_end - (drag_vector / main_camera.zoom)
+						var dir = (world_end - world_start).normalized()
+func _handle_smart_command(_screen_pos: Vector2) -> void:
+	pass # (Body Omitted)
+	var world_space: PhysicsDirectSpaceState2D = get_world_2d().direct_space_state
+	var main_camera: Camera2D = get_viewport().get_camera_2d()
+	var world_pos: Vector2 = main_camera.get_global_mouse_position()
+	var query := PhysicsPointQueryParameters2D.new()
+	var results: Array = world_space.intersect_point(query)
+		var hit_object = results[0].collider
+		var final_target = hit_object
+func _try_select_building(screen_pos: Vector2) -> bool:
+	pass # (Body Omitted)
+	var world_space = get_world_2d().direct_space_state
+	var main_camera = get_viewport().get_camera_2d()
+	var world_pos = main_camera.get_global_mouse_position()
+	var query = PhysicsPointQueryParameters2D.new()
+	var results = world_space.intersect_point(query)
+		var collider = res.collider
+func _draw() -> void:
+	pass # (Body Omitted)
+		var current_pos := get_local_mouse_position()
+		var rect := Rect2(start_pos, current_pos - start_pos).abs()
+		var current_pos := get_local_mouse_position()
+
+
+### FILE: res://ui/StorefrontUI.gd ###
+extends Control
+const LegacyUpgradeData = preload("res://data/legacy/LegacyUpgradeData.gd")
+const RICH_TOOLTIP_SCRIPT = preload("res://ui/components/RichTooltipButton.gd")
+@export var available_buildings: Array[BuildingData] = []
+@export var available_units: Array[UnitData] = []
+@export var auto_load_units_from_directory: bool = true
+func _ready() -> void:
+	pass # (Body Omitted)
+func _populate_build_grid() -> void:
+	pass # (Body Omitted)
+		var btn = Button.new()
+		var details = ""
+			var eco = b_data as EconomicBuildingData
+func _setup_dock_icons() -> void:
+	pass # (Body Omitted)
+func _set_btn_icon(btn: Button, path: String) -> void:
+	pass # (Body Omitted)
+func _setup_window_logic() -> void:
+	pass # (Body Omitted)
+	var windows = [build_window, recruit_window, legacy_window]
+func _toggle_window(target_window: Control) -> void:
+	pass # (Body Omitted)
+func _close_all_windows() -> void:
+	pass # (Body Omitted)
+func _refresh_all() -> void:
+	pass # (Body Omitted)
+func _on_purchase_successful(_item: String) -> void:
+	pass # (Body Omitted)
+func _on_purchase_failed(reason: String) -> void:
+	pass # (Body Omitted)
+func _show_toast(text: String, color: Color) -> void:
+	pass # (Body Omitted)
+	var label = Label.new()
+	var tween = create_tween()
+func _on_settlement_loaded(_data: SettlementData) -> void:
+	pass # (Body Omitted)
+func _on_year_ended() -> void:
+	pass # (Body Omitted)
+func _update_jarl_stats_display(jarl_data: JarlData) -> void:
+	pass # (Body Omitted)
+func _update_garrison_display() -> void:
+	pass # (Body Omitted)
+		var header = Label.new()
+		var sep = HSeparator.new()
+		var header2 = Label.new()
+			var btn = Button.new()
+func _create_warband_entry(warband: WarbandData) -> void:
+	pass # (Body Omitted)
+	var row = HBoxContainer.new()
+	var lbl = RichTextLabel.new()
+	var jarl_name = "Jarl"
+		var btn = Button.new()
+	var guard = Button.new()
+func _populate_legacy_buttons() -> void:
+	pass # (Body Omitted)
+		var label = Label.new()
+	var jarl = DynastyManager.get_current_jarl()
+	var is_pious = jarl.has_trait("Pious")
+		var current_renown_cost = upgrade_data.renown_cost
+		var btn = Button.new()
+		var cost_text = "Cost: %d Renown, %d Auth" % [current_renown_cost, upgrade_data.authority_cost]
+func _load_building_data() -> void:
+	pass # (Body Omitted)
+func _scan_directory_for_buildings(path: String) -> void:
+	pass # (Body Omitted)
+	var dir = DirAccess.open(path)
+		var file = dir.get_next()
+				var full_path = path + file
+				var data = load(full_path)
+func _scan_directory_recursive(path: String) -> void:
+	pass # (Body Omitted)
+	var dir = DirAccess.open(path)
+	var file_name = dir.get_next()
+		var full_path = path.path_join(file_name)
+				var clean_path = full_path.replace(".remap", "")
+				var data = load(clean_path)
+func _load_unit_data() -> void:
+	pass # (Body Omitted)
+	var dir = DirAccess.open("res://data/units/")
+		var file = dir.get_next()
+				var data = load("res://data/units/" + file)
+func _format_cost(cost: Dictionary) -> String:
+	pass # (Body Omitted)
+	var s = []
+		var display_name = GameResources.get_display_name(k)
+func _apply_theme_overrides() -> void:
+	pass # (Body Omitted)
+	var tooltip_bg_path = "res://ui/assets/tooltip_bg.png"
+	var default_theme_path = "res://ui/themes/VikingDynastyTheme.tres"
+		var tooltip_tex = load(tooltip_bg_path)
+		var style_tooltip = StyleBoxTexture.new()
+
+
+### FILE: res://ui/Succession_Crisis_UI.gd ###
+extends CanvasLayer
+var renown_tax: int = 0
+var gold_tax: int = 0
+var renown_choice: String = "pay"
+var gold_choice: String = "pay"
+func _ready() -> void:
+	pass # (Body Omitted)
+	var renown_group = ButtonGroup.new()
+	var gold_group = ButtonGroup.new()
+func display_crisis(jarl: JarlData, settlement: SettlementData) -> void:
+	pass # (Body Omitted)
+	var legitimacy = jarl.legitimacy
+	var tax_multiplier = 1.0 - (legitimacy / 100.0) # 100 legit = 0x, 20 legit = 0.8x
+func _on_renown_choice(choice: String) -> void:
+	pass # (Body Omitted)
+func _on_gold_choice(choice: String) -> void:
+	pass # (Body Omitted)
+func _on_confirm() -> void:
+	pass # (Body Omitted)
+
+
+### FILE: res://ui/WorkAssignment_UI.gd ###
+extends CanvasLayer
+signal assignments_confirmed(assignments: Dictionary)
+var prediction_label: RichTextLabel
+var current_settlement: SettlementData
+var temp_assignments: Dictionary = {}
+var total_population: int = 0
+var available_population: int = 0
+var labor_capacities: Dictionary = {} 
+var sliders: Dictionary = {} 
+var labels: Dictionary = {}  
+func _ready() -> void:
+	pass # (Body Omitted)
+	var container = $PanelContainer/MarginContainer/VBoxContainer
+func setup(settlement: SettlementData) -> void:
+	pass # (Body Omitted)
+func _rebuild_ui() -> void:
+	pass # (Body Omitted)
+	var categories = ["construction", "food", "wood", "stone"]
+func _create_slider_row(category: String) -> void:
+	pass # (Body Omitted)
+	var row = HBoxContainer.new()
+	var name_label = Label.new()
+	var capacity = labor_capacities.get(category, 0)
+	var max_assignable = min(total_population, capacity)
+	var slider = HSlider.new()
+	var value_label = Label.new()
+func _on_slider_changed(value: float, category: String) -> void:
+	pass # (Body Omitted)
+	var new_val = int(value)
+	var current_usage = 0
+func _update_calculations() -> void:
+	pass # (Body Omitted)
+	var assigned_count = 0
+			var capacity = labor_capacities.get(key, 0)
+		var prediction = SettlementManager.simulate_turn(temp_assignments)
+func _update_prediction_display(data: Dictionary) -> void:
+	pass # (Body Omitted)
+	var text = "[b]Estimated Outcome:[/b]\n"
+	var res = data.get("resources_gained", {})
+	var res_str = ""
+			var color_tag = "[color=white]"
+	var completed = data.get("buildings_completing", [])
+func _on_confirm_pressed() -> void:
+	pass # (Body Omitted)
+
+

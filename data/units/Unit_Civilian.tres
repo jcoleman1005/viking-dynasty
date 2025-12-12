@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="UnitData" load_steps=3 format=3 uid="uid://iiho31ik0qvb"]
 
 [ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="1_4oj7p"]
-[ext_resource type="Texture2D" uid="uid://cukqh3t2wkmua" path="res://ui/assets/res_peasant.png" id="1_ca617"]
+[ext_resource type="Texture2D" uid="uid://bf5iebrbljx12" path="res://art/units/Villager_Norse_Male_Libre.png" id="1_ca617"]
 
 [resource]
 script = ExtResource("1_4oj7p")

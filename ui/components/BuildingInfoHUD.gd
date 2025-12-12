@@ -26,6 +26,7 @@ func _ready() -> void:
 
 func setup(display_name: String, size_pixels: Vector2) -> void:
 	name_label.text = display_name
+	set_anchors_preset(Control.PRESET_TOP_LEFT)
 	custom_minimum_size = size_pixels
 	size = size_pixels
 	# Center the pivot for nice animations

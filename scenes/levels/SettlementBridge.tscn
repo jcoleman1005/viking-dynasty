@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=4 uid="uid://c53k15q2w8c1a"]
+[gd_scene load_steps=23 format=4 uid="uid://c53k15q2w8c1a"]
 
 [ext_resource type="PackedScene" uid="uid://dqh0xu88khxct" path="res://ui/EndOfYear_Popup.tscn" id="2_5el12"]
 [ext_resource type="Script" uid="uid://dafjxa85ci2rx" path="res://scripts/buildings/SettlementBridge.gd" id="2_c48a7"]
@@ -7,7 +7,6 @@
 [ext_resource type="Script" uid="uid://koj0vo5eoaum" path="res://data/units/WarbandData.gd" id="3_vlppw"]
 [ext_resource type="PackedScene" uid="uid://btlcifwc6ckux" path="res://scenes/units/VikingRaider.tscn" id="4_c0sri"]
 [ext_resource type="Texture2D" uid="uid://c8k136eygums6" path="res://assets/Kenney/medieval_tilesheet.png" id="4_ilgdx"]
-[ext_resource type="PackedScene" uid="uid://dsrvmutqo7g3h" path="res://scripts/utility/GridManager.tscn" id="6_b34qi"]
 [ext_resource type="Script" uid="uid://c4bv8okjkvtt7" path="res://scripts/ui/BuildingPreviewCursor.gd" id="6_cursor"]
 [ext_resource type="PackedScene" uid="uid://c5qg2j1qa4g0b" path="res://ui/Dynasty_UI.tscn" id="7_k14p1"]
 [ext_resource type="Script" uid="uid://6speiwju5o1r" path="res://ui/PauseButton.gd" id="7_n23os"]
@@ -1426,6 +1425,9 @@ script = ExtResource("2_c48a7")
 home_base_data = SubResource("Resource_vmd61")
 raider_scene = ExtResource("4_c0sri")
 end_of_year_popup_scene = ExtResource("2_5el12")
+show_ui_logs = true
+show_settlement_logs = true
+show_building_logs = true
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]
 position = Vector2(-3, 0)
@@ -1485,8 +1487,6 @@ grow_vertical = 0
 script = ExtResource("6_cursor")
 
 [node name="BuildingContainer" type="Node2D" parent="."]
-
-[node name="GridManager" parent="." instance=ExtResource("6_b34qi")]
 
 [node name="GridVisualizer" parent="." instance=ExtResource("7_oq6tm")]
 

@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="UnitData" load_steps=4 format=3 uid="uid://dtgp7yi7grl6g"]
+
+[ext_resource type="PackedScene" uid="uid://de3nko6b1rqyg" path="res://scenes/components/AttackAI.tscn" id="1_ji81e"]
+[ext_resource type="Texture2D" uid="uid://ignmy4ooj1v1" path="res://art/units/Thrall_Male_Libre.png" id="2_4x1q2"]
+[ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="3_tk336"]
+
+[resource]
+script = ExtResource("3_tk336")
+display_name = "Thrall"
+scene_path = "uid://c4id53apf1ynt"
+icon = ExtResource("2_4x1q2")
+max_health = 30
+move_speed = 60.0
+attack_damage = 0
+max_loot_capacity = 300
+encumbrance_speed_penalty = 0.3
+visual_texture = ExtResource("2_4x1q2")
+pillage_speed = 15
+burn_renown = 0
+ai_component_scene = ExtResource("1_ji81e")
+wergild_cost = 15
+metadata/_custom_type_script = "uid://cq155t20ujb2j"

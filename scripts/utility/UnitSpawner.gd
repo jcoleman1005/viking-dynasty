@@ -71,6 +71,7 @@ func spawn_garrison(warbands: Array[WarbandData], spawn_origin: Vector2) -> void
 		# ------------------------------
 		
 		unit_container.add_child(leader)
+		EventBus.player_unit_spawned.emit(leader)
 		print("[DIAGNOSTIC] Spawning %s at %s" % [leader.name, leader.global_position])
 		
 		if rts_controller:
@@ -114,43 +115,55 @@ func _clamp_to_grid(target_pos: Vector2) -> Vector2:
 
 # ... (Keep sync_civilians, _spawn_civilians, _despawn_civilians unchanged) ...
 
-func sync_civilians(idle_count: int, spawn_origin: Vector2) -> void:
-	if not unit_container or not civilian_data: return
-	var active_idle_civilians = []
-	for child in unit_container.get_children():
-		if child.is_in_group("civilians") and not child.is_in_group("busy"):
-			active_idle_civilians.append(child)
-	var current_count = active_idle_civilians.size()
-	var diff = idle_count - current_count
+func sync_civilians(target_count: int, spawn_origin: Vector2, is_enemy: bool = false) -> void:
+	# Calculate how many we have vs how many we need
+	# We filter children to find existing civilians
+	var current_civs = []
+	if unit_container:
+		for child in unit_container.get_children():
+			if child is CivilianUnit:
+				current_civs.append(child)
+	
+	var current_count = current_civs.size()
+	var diff = target_count - current_count
+	
 	if diff > 0:
-		_spawn_civilians(diff, spawn_origin)
+		_spawn_civilians(diff, spawn_origin, is_enemy)
 	elif diff < 0:
-		_despawn_civilians(abs(diff), active_idle_civilians)
+		_despawn_civilians(abs(diff), current_civs)
 
-func _spawn_civilians(count: int, origin: Vector2) -> void:
+func _spawn_civilians(count: int, origin: Vector2, is_enemy: bool) -> void:
 	if not civilian_data: return
+	
 	var scene_ref = civilian_data.load_scene()
 	if not scene_ref: return
+	
 	for i in range(count):
 		var civ = scene_ref.instantiate()
-		if not civ.get_script() or civ.get_script().resource_path != "res://scripts/units/CivilianUnit.gd":
-			civ.set_script(load("res://scripts/units/CivilianUnit.gd"))
-		civ.data = civilian_data
+		
+		# Team Identity
+		if is_enemy:
+			civ.collision_layer = 4 
+			civ.add_to_group("enemy_units")
+			if civ.is_in_group("player_units"):
+				civ.remove_from_group("player_units")
+		else:
+			civ.collision_layer = 2
+			civ.add_to_group("player_units")
+			
+		# Position
 		var angle = randf() * TAU
 		var distance = randf_range(spawn_radius_min, spawn_radius_max)
 		var offset = Vector2(cos(angle), sin(angle)) * distance
-		
-		# --- FIX: Clamp Civilians too ---
 		var pos = origin + offset
-		civ.position = _clamp_to_grid(pos)
-		# --------------------------------
+		civ.global_position = pos
 		
-		unit_container.add_child(civ)
-		if rts_controller: rts_controller.add_unit_to_group(civ)
-		if civ.has_method("command_move_to"):
-			var wander = Vector2(randf_range(-20, 20), randf_range(-20, 20))
-			# Clamp wander target
-			civ.command_move_to(_clamp_to_grid(civ.position + wander))
+		if unit_container:
+			unit_container.add_child(civ)
+			
+		# [FIX] Announce to RTS Controller
+		if not is_enemy:
+			EventBus.player_unit_spawned.emit(civ)
 
 func _despawn_civilians(count: int, list: Array) -> void:
 	for i in range(count):
@@ -162,10 +175,21 @@ func _despawn_civilians(count: int, list: Array) -> void:
 
 func spawn_worker_at(location: Vector2) -> void:
 	if not civilian_data: return
-	_spawn_civilians(1, location)
-	Loggie.msg("UnitSpawner: Worker spawned at %s" % location).domain(LogDomains.UNIT).debug()
 	
-# res://scripts/utility/UnitSpawner.gd
+	var scene_ref = civilian_data.load_scene()
+	if not scene_ref: return
+	
+	var civ = scene_ref.instantiate()
+	civ.global_position = location
+	
+	# Set properties for "Home" mode
+	civ.collision_layer = 2 # Player layer
+	civ.add_to_group("player_units")
+	civ.add_to_group("civilians") # Important for the "Available" check
+	
+	if unit_container:
+		unit_container.add_child(civ)
+		EventBus.player_unit_spawned.emit(civ)
 
 func spawn_enemy_garrison(warbands: Array[WarbandData], buildings: Array) -> void:
 	print("DEBUG: Spawner received %d warbands to spawn." % warbands.size())

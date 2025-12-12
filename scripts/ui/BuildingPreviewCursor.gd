@@ -7,7 +7,7 @@ var preview_sprite: Sprite2D
 var is_active: bool = false
 
 # Grid and placement
-var cell_size: int = 32 
+# [REMOVED] var cell_size: int = 32  <-- We now use SettlementManager.CELL_SIZE_PX
 var grid_overlay: Node2D
 var can_place: bool = false
 
@@ -23,15 +23,14 @@ var tether_color_invalid: Color = Color(1.0, 0.2, 0.2, 0.8) # Red
 signal placement_completed
 signal placement_cancelled
 
-# Reference to GridManager
-var grid_manager: Node = null
+# [REMOVED] var grid_manager: Node = null
 
 func _ready() -> void:
 	z_index = 100
 	grid_overlay = Node2D.new()
 	grid_overlay.name = "GridOverlay"
 	add_child(grid_overlay)
-	grid_manager = get_parent().get_node_or_null("GridManager")
+	# [REMOVED] grid_manager lookup
 
 func set_building_preview(building_data: BuildingData) -> void:
 	if not building_data: return
@@ -42,8 +41,10 @@ func set_building_preview(building_data: BuildingData) -> void:
 	preview_sprite = Sprite2D.new()
 	if building_data.building_texture:
 		preview_sprite.texture = building_data.building_texture
-		# Simple scaling logic
-		var target_size = Vector2(building_data.grid_size) * cell_size
+		
+		# [FIX] Use Authority Constant for scaling
+		var cs = SettlementManager.CELL_SIZE_PX
+		var target_size = Vector2(building_data.grid_size) * cs
 		var tex_size = preview_sprite.texture.get_size()
 		preview_sprite.scale = target_size / tex_size
 
@@ -97,13 +98,17 @@ func _draw() -> void:
 		draw_circle(end, 5.0, color)
 
 func _world_to_grid(world_pos: Vector2) -> Vector2i:
-	return Vector2i(int(world_pos.x / cell_size), int(world_pos.y / cell_size))
+	# [FIX] Use Authority Constant
+	var cs = SettlementManager.CELL_SIZE_PX
+	return Vector2i(int(world_pos.x / cs), int(world_pos.y / cs))
 
 func _grid_to_world(grid_pos: Vector2i) -> Vector2:
-	return Vector2(grid_pos.x * cell_size, grid_pos.y * cell_size)
+	# [FIX] Use Authority Constant
+	var cs = SettlementManager.CELL_SIZE_PX
+	return Vector2(grid_pos.x * cs, grid_pos.y * cs)
 
 func _can_place_at_position(grid_pos: Vector2i) -> bool:
-	if not SettlementManager: return false
+	# [FIX] Delegate directly to SettlementManager (Authority)
 	return SettlementManager.is_placement_valid(grid_pos, current_building_data.grid_size, current_building_data)
 
 func _update_visual_feedback() -> void:
@@ -113,7 +118,10 @@ func _update_visual_feedback() -> void:
 func place_building() -> void:
 	if not is_active or not can_place: return
 	var grid_pos = _world_to_grid(global_position)
+	
+	# [FIX] Calls Authority to place (Data + Grid Update)
 	SettlementManager.place_building(current_building_data, grid_pos, true)
+	
 	placement_completed.emit()
 	cancel_preview()
 
@@ -130,7 +138,11 @@ func _cleanup_preview() -> void:
 
 func _create_grid_outline(grid_size: Vector2i) -> void:
 	_clear_grid_overlay()
-	var rect_size = Vector2(grid_size.x * cell_size, grid_size.y * cell_size)
+	
+	# [FIX] Use Authority Constant
+	var cs = SettlementManager.CELL_SIZE_PX
+	var rect_size = Vector2(grid_size.x * cs, grid_size.y * cs)
+	
 	var points = [Vector2(0,0), Vector2(rect_size.x, 0), Vector2(rect_size.x, rect_size.y), Vector2(0, rect_size.y), Vector2(0,0)]
 	var line = Line2D.new()
 	line.points = points

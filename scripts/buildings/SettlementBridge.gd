@@ -26,11 +26,11 @@ extends Node
 	set(value):
 		show_debug_logs = value
 		if is_inside_tree(): Loggie.set_domain_enabled("DEBUG", value)
-@export var show_raid_logs: bool = true: # Set default to true if you want it on now
+@export var show_raid_logs: bool = true:
 	set(value):
 		show_raid_logs = value
-		# LogDomains.RAID is defined as "RAID" in your autoload
 		if is_inside_tree(): Loggie.set_domain_enabled(LogDomains.RAID, value)
+
 # --- New Game Configuration ---
 @export_group("New Game Settings")
 @export var start_gold: int = 1000
@@ -51,7 +51,6 @@ var default_end_of_year_popup: PackedScene = preload("res://ui/EndOfYear_Popup.t
 
 # --- Local Node References ---
 @onready var building_container: Node2D = $BuildingContainer
-@onready var grid_manager: Node = $GridManager
 @onready var rts_controller: RTSController = $RTSController
 @onready var unit_spawner: UnitSpawner = $UnitSpawner
 
@@ -81,22 +80,21 @@ func _ready() -> void:
 		unit_spawner.unit_container = unit_container
 		unit_spawner.rts_controller = rts_controller
 	
-	# --- FIX: Set default UI state BEFORE checking for raid results ---
+	# PRESERVED: Set default UI state BEFORE checking for raid results
 	if storefront_ui: storefront_ui.show()
 	if end_of_year_popup: end_of_year_popup.hide()
-	# -----------------------------------------------------------------
 
-	# --- TEST DATA INJECTION ---
+	# PRESERVED: Test Data Injection
 	if not DynastyManager.current_jarl:
 		var test_jarl = DynastyTestDataGenerator.generate_test_dynasty()
 		DynastyManager.current_jarl = test_jarl
 		DynastyManager.jarl_stats_updated.emit(test_jarl)
 	
 	# Check for Raid Return (This opens the popup, so it must happen last)
-	if not DynastyManager.pending_raid_result.is_empty():
+	if DynastyManager.pending_raid_result != null:
 		_process_raid_return()
 
-	# --- DEBUG CHECK ---
+	# PRESERVED: RTS Debug Connections
 	if rts_controller and not EventBus.select_command.is_connected(rts_controller._on_select_command):
 		print("DIAGNOSTIC: Forcing RTSController connections.")
 		EventBus.select_command.connect(rts_controller._on_select_command)
@@ -124,13 +122,11 @@ func _connect_signals() -> void:
 		building_cursor.placement_completed.connect(_on_building_placement_completed)
 		building_cursor.placement_cancelled.connect(_on_building_placement_cancelled_by_cursor)
 
-# --- RESOURCE LOADING (The missing function!) ---
 func _setup_default_resources() -> void:
 	if not test_building_data: test_building_data = default_test_building
 	if not raider_scene: raider_scene = load("res://scenes/units/VikingRaider.tscn")
 	if not end_of_year_popup_scene: end_of_year_popup_scene = default_end_of_year_popup
 
-# --- UI SETUP ---
 func _setup_ui() -> void:
 	# End Year Popup
 	end_of_year_popup = end_of_year_popup_scene.instantiate()
@@ -159,53 +155,178 @@ func _setup_ui() -> void:
 	
 	add_child(idle_warning_dialog)
 
-# --- WORKER ASSIGNMENT LOGIC ---
 func _on_worker_assignments_confirmed(assignments: Dictionary) -> void:
 	Loggie.msg("SettlementBridge: Work assignments saved.").domain("BUILDING").info()
 	if SettlementManager.current_settlement:
 		SettlementManager.current_settlement.worker_assignments = assignments
 		SettlementManager.save_settlement()
 
+# =========================================================
+# === [FIX START] ROBUST WORKER ASSIGNMENT LOGIC ===
+# =========================================================
+
 func _on_worker_requested(target: BaseBuilding) -> void:
+	# 1. FETCH CORRECT DATA (Fixes the Index Crash)
+	var index = SettlementManager.get_building_index(target)
+	if index == -1: 
+		Loggie.msg("Building Index Not Found").domain("SETTLEMENT").error()
+		return
+	
+	var is_construction = (target.current_state != BaseBuilding.BuildingState.ACTIVE)
+	var entry
+	
+	if is_construction:
+		entry = SettlementManager.current_settlement.pending_construction_buildings[index]
+	else:
+		entry = SettlementManager.current_settlement.placed_buildings[index]
+	
+	# 2. CALCULATE TRUE CAPACITY (Fixes Over-booking)
+	# We must count workers currently INSIDE + workers currently WALKING
+	var current_count = entry.get("peasant_count", 0)
+	var incoming_count = target.get_meta("incoming_workers", 0) # <--- NEW META TRACKER
+	var total_allocated = current_count + incoming_count
+	
+	# Determine Capacity
+	var capacity = 0
+	if is_construction:
+		capacity = target.data.base_labor_capacity
+	else:
+		var eco_data = target.data as EconomicBuildingData
+		if eco_data: capacity = eco_data.peasant_capacity
+		
+	if total_allocated >= capacity:
+		EventBus.floating_text_requested.emit("Full (Incoming)", target.global_position, Color.RED)
+		return
+
+	if SettlementManager.get_idle_peasants() <= 0:
+		EventBus.floating_text_requested.emit("No Peasants", target.global_position, Color.RED)
+		return
+
+	# 3. FIND UNIT
 	var civilians = get_tree().get_nodes_in_group("civilians")
 	var nearest_civ: CivilianUnit = null
 	var min_dist = INF
 	
 	for civ in civilians:
-		if not civ is CivilianUnit: continue
-		if civ.is_in_group("busy"): continue
+		if civ.has_meta("booked") or civ.is_queued_for_deletion(): continue
 		
-		var dist = civ.global_position.distance_to(target.global_position)
-		if dist < min_dist:
-			min_dist = dist
-			nearest_civ = civ
-			
-	if nearest_civ:
-		nearest_civ.add_to_group("busy")
-		var success = SettlementManager.assign_worker_from_unit(target, "peasant")
-		
-		if success:
-			Loggie.msg("Immediate assignment success. Dispatching visual unit.").domain("RTS").info()
-			nearest_civ.interaction_target = target # Set target directly
-			nearest_civ.command_interact(target)
-		else:
-			nearest_civ.remove_from_group("busy")
-			Loggie.msg("Assignment rejected by Manager.").domain("RTS").warn()
-			EventBus.purchase_failed.emit("Building is full.")
-	else:
-		Loggie.msg("No available idle workers found!").domain("RTS").warn()
-		EventBus.purchase_failed.emit("No idle workers found nearby.")
-
-func _on_worker_removal_requested(building: BaseBuilding) -> void:
-	if unit_spawner:
-		var spawn_pos = building.global_position + Vector2(0, 40)
-		unit_spawner.spawn_worker_at(spawn_pos)
+		# Only pick idle units
+		if civ.fsm and civ.fsm.current_state == UnitAIConstants.State.IDLE:
+			var dist = civ.global_position.distance_to(target.global_position)
+			if dist < min_dist:
+				min_dist = dist
+				nearest_civ = civ
 	
-	var success = SettlementManager.unassign_worker_from_building(building, "peasant")
-	if not success:
-		Loggie.msg("Worker removal data failed! Sync might be off.").domain("RTS").warn()
+	# 4. EXECUTE
+	if nearest_civ:
+		nearest_civ.set_meta("booked", true)
+		
+		# Increment "Incoming" so next click fails immediately
+		target.set_meta("incoming_workers", incoming_count + 1)
+		
+		var tween = create_tween()
+		var walk_speed = 100.0
+		var time = min_dist / walk_speed
+		
+		tween.tween_property(nearest_civ, "global_position", target.global_position, time)
+		
+		var civ_ref = weakref(nearest_civ)
+		
+		tween.tween_callback(func(): 
+			# Decrement "Incoming" upon arrival (success or fail)
+			var current_inc = target.get_meta("incoming_workers", 1)
+			target.set_meta("incoming_workers", max(0, current_inc - 1))
+			
+			var civ = civ_ref.get_ref()
+			if civ:
+				_finalize_worker_assignment(target, civ)
+			else:
+				Loggie.msg("Worker died en route.").domain("SETTLEMENT").warn()
+		)
+	else:
+		# Instant assign fallback
+		_finalize_worker_assignment(target, null)
 
-# --- END YEAR LOGIC CHAIN ---
+func _finalize_worker_assignment(target: BaseBuilding, unit_node: Node2D) -> void:
+	var index = SettlementManager.get_building_index(target)
+	if index != -1:
+		# Double Check Capacity (Race Condition Safety)
+		# We repeat the check just in case logic changed while walking
+		var is_construction = (target.current_state != BaseBuilding.BuildingState.ACTIVE)
+		var entry
+		if is_construction:
+			entry = SettlementManager.current_settlement.pending_construction_buildings[index]
+		else:
+			entry = SettlementManager.current_settlement.placed_buildings[index]
+			
+		var current = entry.get("peasant_count", 0)
+		var cap = target.data.base_labor_capacity if is_construction else (target.data as EconomicBuildingData).peasant_capacity
+		
+		if current < cap:
+			# SUCCESS: Add to DB and Delete Unit
+			if is_construction:
+				SettlementManager.assign_construction_worker(index, "peasant", 1)
+			else:
+				SettlementManager.assign_worker(index, "peasant", 1)
+				
+			EventBus.floating_text_requested.emit("+1 Worker", target.global_position, Color.GREEN)
+			
+			if is_instance_valid(unit_node):
+				unit_node.queue_free()
+		else:
+			# FAIL: Building filled up while walking? Release unit.
+			Loggie.msg("Building full on arrival. Releasing unit.").domain("SETTLEMENT").warn()
+			if is_instance_valid(unit_node):
+				unit_node.set_meta("booked", null) # Unbook
+				# Optional: Make them walk away to look natural
+	else:
+		if is_instance_valid(unit_node):
+			unit_node.set_meta("booked", null)
+
+	_force_inspector_refresh(target)
+
+func _on_worker_removal_requested(target: BaseBuilding) -> void:
+	var index = SettlementManager.get_building_index(target)
+	if index == -1: return
+	
+	# 1. Fetch Correct Data
+	var entry
+	var is_construction = (target.current_state != BaseBuilding.BuildingState.ACTIVE)
+	
+	if is_construction:
+		entry = SettlementManager.current_settlement.pending_construction_buildings[index]
+	else:
+		entry = SettlementManager.current_settlement.placed_buildings[index]
+		
+	var current_workers = entry.get("peasant_count", 0)
+	
+	if current_workers > 0:
+		# 2. Spawn Visual (First)
+		if unit_spawner:
+			# [FIX] Randomize spawn location to prevent stacking
+			var random_offset = Vector2(randf_range(-20, 20), randf_range(20, 40))
+			var spawn_pos = target.global_position + random_offset
+			unit_spawner.spawn_worker_at(spawn_pos)
+			
+		# 3. Decrement Data (Second)
+		if is_construction:
+			SettlementManager.assign_construction_worker(index, "peasant", -1)
+		else:
+			SettlementManager.assign_worker(index, "peasant", -1)
+			
+		EventBus.floating_text_requested.emit("Worker Removed", target.global_position, Color.YELLOW)
+		_force_inspector_refresh(target)
+	else:
+		Loggie.msg("Cannot remove: 0 workers").domain("SETTLEMENT").warn()
+
+func _force_inspector_refresh(target: BaseBuilding) -> void:
+	var inspector = ui_layer.get_node_or_null("BuildingInspector")
+	if inspector and inspector.visible and inspector.current_building == target:
+		inspector.call("_refresh_data")
+
+# =========================================================
+# === [FIX END] ===========================================
+# =========================================================
 
 func _on_end_year_pressed() -> void:
 	Loggie.msg("SettlementBridge: End Year requested.").domain("BUILDING").info()
@@ -226,22 +347,17 @@ func _start_end_year_sequence() -> void:
 	DynastyManager.start_winter_phase()
 
 func _on_payout_collected(payout: Dictionary) -> void:
-	# --- NEW: Handle Renown from Loot Distribution ---
+	# --- Handle Renown from Loot Distribution ---
 	if payout.has("renown"):
 		var amount = payout["renown"]
 		if amount != 0:
 			DynastyManager.award_renown(amount)
 			var msg = "Renown %s %d (Loot Distribution)" % ["gained" if amount > 0 else "lost", abs(amount)]
 			Loggie.msg(msg).domain(LogDomains.DYNASTY).info()
-		
-		# Remove it so it doesn't try to go into the Resource Treasury
 		payout.erase("renown")
-	# -------------------------------------------------
 	
 	SettlementManager.deposit_resources(payout)
-	
-	# Clear the pending result so it doesn't show up again on reload
-	DynastyManager.pending_raid_result.clear()
+	DynastyManager.pending_raid_result = null
 	
 	if storefront_ui: storefront_ui.show()
 
@@ -250,8 +366,6 @@ func _close_all_popups() -> void:
 	if dynasty_ui: dynasty_ui.hide()
 	if work_assignment_ui: work_assignment_ui.hide()
 	if end_of_year_popup: end_of_year_popup.hide()
-
-# --- SETTLEMENT LOGIC ---
 
 func _clear_all_buildings() -> void:
 	if is_instance_valid(building_container):
@@ -262,14 +376,11 @@ func _clear_all_buildings() -> void:
 		for child in unit_container.get_children(): child.queue_free()
 		await get_tree().process_frame
 	
-	if is_instance_valid(grid_manager) and "astar_grid" in grid_manager:
-		var grid = grid_manager.astar_grid
-		var region = grid.region
-		for x in range(region.size.x):
-			for y in range(region.size.y):
-				var pos = Vector2i(x + region.position.x, y + region.position.y)
-				grid.set_point_solid(pos, false)
-		grid.update()
+	if SettlementManager.current_settlement:
+		SettlementManager.current_settlement.placed_buildings.clear()
+		SettlementManager.current_settlement.pending_construction_buildings.clear()
+		SettlementManager.current_settlement.warbands.clear()
+		SettlementManager._refresh_grid_state()
 	
 	great_hall_instance = null
 	game_is_over = false
@@ -277,57 +388,65 @@ func _clear_all_buildings() -> void:
 
 func _initialize_settlement() -> void:
 	home_base_data = _create_default_settlement()
-	await _clear_all_buildings()
-	
-	# 1. Load Data
+	SettlementManager.register_active_scene_nodes(building_container)
 	SettlementManager.load_settlement(home_base_data)
-	
-	if is_instance_valid(grid_manager) and "astar_grid" in grid_manager:
-		SettlementManager.register_active_scene_nodes(grid_manager.astar_grid, building_container, grid_manager)
-	
-	# 2. Spawn Buildings
 	_spawn_placed_buildings()
-
+	
+	await get_tree().process_frame 
+	_sync_villagers()
+	_spawn_player_garrison()
+	
 func _spawn_placed_buildings() -> void:
 	if not SettlementManager.current_settlement: return
 	
-	# Clear existing
 	for child in building_container.get_children(): child.queue_free()
+	great_hall_instance = null 
 	
-	# Spawn Placed
 	for building_entry in SettlementManager.current_settlement.placed_buildings:
-		_spawn_single_building(building_entry, false) 
+		var b = _spawn_single_building(building_entry, false) 
+		if b and b.data.is_territory_hub: 
+			great_hall_instance = b
+			print("SettlementBridge: Great Hall registered at ", b.global_position)
 		
-	# Spawn Construction Sites
 	for building_entry in SettlementManager.current_settlement.pending_construction_buildings:
-		var b = _spawn_single_building(building_entry, false)
+		var b = _spawn_single_building(building_entry, true)
 		if b:
 			var progress = building_entry.get("progress", 0)
 			if progress > 0:
 				b.construction_progress = progress
 				b.set_state(BaseBuilding.BuildingState.UNDER_CONSTRUCTION)
-				if b.has_method("add_construction_progress"): b.add_construction_progress(0) 
+				if b.has_method("update_visual_state"): b.update_visual_state() 
 			else:
 				b.set_state(BaseBuilding.BuildingState.BLUEPRINT)
-				
-	if is_instance_valid(SettlementManager.active_astar_grid):
-		SettlementManager.active_astar_grid.update()
-		
+	
 	if unit_spawner: unit_spawner.clear_units()
 	
-	# Trigger Unit Spawn
-	_sync_villagers()
-	_spawn_player_garrison()
-	
 func _spawn_single_building(entry: Dictionary, is_new: bool) -> BaseBuilding:
-	var building_data: BuildingData = load(entry["resource_path"])
-	if building_data:
-		var new_building = SettlementManager.place_building(building_data, entry["grid_position"], is_new)
-		if new_building and new_building.data.display_name == "Great Hall":
-			_setup_great_hall(new_building)
-		return new_building
-	return null
+	var res_path = entry["resource_path"]
+	var grid_pos = Vector2i(entry["grid_position"].x, entry["grid_position"].y)
+	var building_data = load(res_path) as BuildingData
+	
+	if not building_data: return null
 
+	var new_building = building_data.scene_to_spawn.instantiate()
+	new_building.data = building_data
+	
+	# PRESERVED: Ensure Tag is set here for lookup logic
+	new_building.grid_coordinate = grid_pos 
+	
+	var cell = SettlementManager.get_active_grid_cell_size()
+	var center_offset = (Vector2(building_data.grid_size) * cell) / 2.0
+	new_building.global_position = (Vector2(grid_pos) * cell) + center_offset
+	
+	building_container.add_child(new_building)
+	
+	if is_new:
+		new_building.set_state(BaseBuilding.BuildingState.UNDER_CONSTRUCTION)
+	else:
+		new_building.set_state(BaseBuilding.BuildingState.ACTIVE)
+		
+	return new_building
+	
 func _create_default_settlement() -> SettlementData:
 	var settlement = SettlementData.new()
 	settlement.treasury = { "gold": start_gold, "wood": start_wood, "food": start_food, "stone": start_stone }
@@ -338,7 +457,7 @@ func _create_default_settlement() -> SettlementData:
 	return settlement
 
 func _on_settlement_loaded(_settlement_data: SettlementData) -> void:
-	pass # Handled by _sync_villagers
+	pass
 
 func _setup_great_hall(hall_instance: BaseBuilding) -> void:
 	if not is_instance_valid(hall_instance): return
@@ -350,18 +469,16 @@ func _on_great_hall_destroyed(_building: BaseBuilding) -> void:
 	if is_instance_valid(unit_container):
 		for enemy in unit_container.get_children(): enemy.queue_free()
 
-# --- BUILDING CURSOR LOGIC ---
 func _on_building_ready_for_placement(building_data: BuildingData) -> void:
 	awaiting_placement = building_data
-	building_cursor.cell_size = grid_manager.cell_size
 	building_cursor.set_building_preview(building_data)
 
 func _on_building_placement_cancelled(_building_data: BuildingData) -> void: pass
 
 func _on_building_placement_completed() -> void:
 	if awaiting_placement and SettlementManager.current_settlement:
-		var snapped_grid_pos = Vector2i(building_cursor.global_position / grid_manager.cell_size)
-		SettlementManager.place_building(awaiting_placement, snapped_grid_pos, true)
+		var grid_pos = Vector2i(building_cursor.global_position / SettlementManager.CELL_SIZE_PX)
+		SettlementManager.place_building(awaiting_placement, grid_pos, true)
 	awaiting_placement = null
 
 func _on_building_placement_cancelled_by_cursor() -> void:
@@ -378,29 +495,27 @@ func _on_building_right_clicked(building: BaseBuilding) -> void:
 	if SettlementManager.attempt_purchase(cost):
 		EventBus.building_ready_for_placement.emit(data)
 
-# --- RAID RETURN LOGIC ---
+# --- PRESERVED: Process Raid Return (Legacy/Updated Hybrid) ---
 func _process_raid_return() -> void:
-	var result = DynastyManager.pending_raid_result
-	var outcome = result.get("outcome")
+	if DynastyManager.pending_raid_result == null:
+		return
+		
+	var result: RaidResultData = DynastyManager.pending_raid_result
+	var outcome = result.outcome
 	
-	# 1. Get Raw Gold immediately
-	var raw_gold = result.get("gold_looted", 0)
+	Loggie.msg("Processing Raid Return: %s" % outcome).domain(LogDomains.SETTLEMENT).info()
 	
-	# 2. Calculate Wergild Bill
+	var raw_gold = result.loot.get("gold", 0)
 	var total_wergild = 0
 	var dead_count = 0
 	
-	if result.has("casualties"):
-		for u_data in result["casualties"]:
-			if u_data:
-				total_wergild += u_data.wergild_cost
-				dead_count += 1
+	for u_data in result.casualties:
+		if u_data:
+			total_wergild += u_data.wergild_cost
+			dead_count += 1
 	
-	# 3. Calculate Net Profit
-	# We deduct the death costs from the loot.
 	var net_gold = max(0, raw_gold - total_wergild)
 	
-	# --- Update Hamingja History ---
 	if outcome == "victory":
 		DynastyManager.last_raid_outcome = "victory"
 	elif outcome == "retreat":
@@ -408,7 +523,6 @@ func _process_raid_return() -> void:
 	else:
 		DynastyManager.last_raid_outcome = "neutral"
 		
-	# --- Process Returning Bondi ---
 	if SettlementManager.current_settlement:
 		var warbands_to_disband: Array[WarbandData] = []
 		
@@ -426,17 +540,11 @@ func _process_raid_return() -> void:
 		for wb in warbands_to_disband:
 			SettlementManager.current_settlement.warbands.erase(wb)
 			
-		if is_instance_valid(unit_container):
-			for child in unit_container.get_children():
-				if child is SquadLeader and child.warband_ref in warbands_to_disband:
-					if rts_controller: rts_controller.remove_unit(child)
-					child.queue_free()
-			
-			_sync_villagers()
+		_sync_villagers()
 
-	# --- XP & Progression ---
-	var grade = result.get("victory_grade", "Standard")
+	var grade = result.victory_grade
 	var xp_gain = 0
+	
 	if outcome == "victory": 
 		xp_gain = 50
 		if grade == "Decisive": xp_gain = 75
@@ -452,8 +560,9 @@ func _process_raid_return() -> void:
 			if not warband.is_wounded:
 				warband.experience += xp_gain
 
-	# --- Construct Payout & UI ---
-	var loot_summary = {}
+	var loot_summary = result.loot.duplicate()
+	loot_summary["gold"] = net_gold
+	
 	var title_text = "Raid Result"
 	
 	if outcome == "victory":
@@ -461,13 +570,13 @@ func _process_raid_return() -> void:
 		var bonus = 200 + (difficulty * 50)
 		if grade == "Decisive": bonus += 100
 		
-		# Add Bonus to Net Gold
 		loot_summary["gold"] = net_gold + bonus
-		loot_summary["population"] = randi_range(2, 4) * difficulty
+		
+		if not loot_summary.has("thrall"):
+			loot_summary["population"] = randi_range(2, 4) * difficulty
 		
 		title_text = "Victory! (%s)" % grade
 		
-		# Warlord Stats
 		var jarl = DynastyManager.get_current_jarl()
 		if jarl:
 			jarl.offensive_wins += 1
@@ -478,20 +587,33 @@ func _process_raid_return() -> void:
 			DynastyManager.jarl_stats_updated.emit(jarl)
 			
 	elif outcome == "retreat":
-		loot_summary["gold"] = net_gold
-		title_text = "Retreat (Loot Secured)"
+		title_text = "Retreat"
+		var total_loot_count = 0
+		for k in loot_summary:
+			if k != "gold": total_loot_count += loot_summary[k]
+		total_loot_count += net_gold
+		
+		if total_loot_count > 0:
+			title_text += "\n(Loot Secured)"
+		else:
+			title_text += "\n(Empty Handed)"
 
-	# --- Append Wergild Note to Title ---
 	if dead_count > 0:
 		title_text += "\n(Wergild Paid: -%d Gold)" % total_wergild
 
-	if is_instance_valid(end_of_year_popup):
-		end_of_year_popup.display_payout(loot_summary, title_text)
-			
-	if not loot_summary.is_empty() and not is_instance_valid(end_of_year_popup):
-		SettlementManager.deposit_resources(loot_summary)
+	if result.renown_earned != 0:
+		loot_summary["renown"] = result.renown_earned
 
-# --- PHYSICAL VILLAGER SYNC ---
+	if not is_instance_valid(end_of_year_popup):
+		var popup = default_end_of_year_popup.instantiate()
+		ui_layer.add_child(popup)
+		end_of_year_popup = popup
+		
+	end_of_year_popup.display_payout(loot_summary, title_text)
+	
+	DynastyManager.pending_raid_result = null
+	DynastyManager.reset_raid_state()
+	
 func _sync_villagers(_data: SettlementData = null) -> void:
 	if not SettlementManager.has_current_settlement(): return
 	if not is_instance_valid(great_hall_instance): return

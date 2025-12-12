@@ -10,7 +10,7 @@ var is_defensive_raid: bool = false
 var minimum_inherited_legitimacy: int = 0
 var loaded_legacy_upgrades: Array[LegacyUpgradeData] = []
 var current_raid_difficulty: int = 1 
-var pending_raid_result: Dictionary = {} 
+var pending_raid_result: RaidResultData = null 
 
 var active_year_modifiers: Dictionary = {}
 var winter_upkeep_report: Dictionary = {} 
@@ -77,7 +77,7 @@ func start_new_campaign() -> void:
 	current_raid_target = null
 	is_defensive_raid = false
 	current_raid_difficulty = 1
-	pending_raid_result.clear()
+	pending_raid_result = null
 	reset_raid_state()
 	active_year_modifiers.clear()
 	

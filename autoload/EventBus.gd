@@ -21,7 +21,7 @@ signal pathfinding_grid_updated(grid_position: Vector2i)
 signal treasury_updated(new_treasury: Dictionary)
 signal purchase_successful(item_name: String)
 signal purchase_failed(reason: String)
-
+signal raid_loot_secured(type: String, amount: int)
 # --- Navigation Signals ---
 signal scene_change_requested(scene_key: String)
 signal world_map_opened()
@@ -59,3 +59,5 @@ signal camera_input_lock_requested(is_locked: bool)
 
 # --- Game Loop Signals ---
 signal end_year_requested()
+
+signal floating_text_requested(text: String, world_position: Vector2, color: Color)

@@ -47,6 +47,11 @@ const LAYER_ENEMY_BLDG = 8
 # --- NEW: Death State Flag ---
 var _is_dying: bool = false
 
+#Inventory State
+signal inventory_updated(current_load: int, max_load: int)
+var inventory: Dictionary = {} 
+var current_loot_weight: int = 0
+
 func _ready() -> void:
 	if not data:
 		push_warning("BaseUnit: Node '%s' is missing 'UnitData'." % name)
@@ -187,17 +192,15 @@ func _physics_process(delta: float) -> void:
 	var fsm_velocity = Vector2.ZERO
 	if fsm:
 		fsm.update(delta)
-		fsm_velocity = velocity
-		velocity = Vector2.ZERO 
+		# [FIX] Changed 'unit.velocity' to just 'velocity'
+		fsm_velocity = velocity 
 	
-	var target_fsm_velocity = Vector2.ZERO
-	
-	if fsm and (fsm.current_state == UnitAIConstants.State.MOVING or fsm.current_state == UnitAIConstants.State.FORMATION_MOVING):
-		target_fsm_velocity = fsm_velocity
-	
-	if target_fsm_velocity.length() > 0.1:
-		velocity = velocity.lerp(target_fsm_velocity, data.acceleration * delta)
+	# Logic Branch: AI Control vs Physics Slide
+	if fsm_velocity.length_squared() > 0.1:
+		# AI is driving: Accelerate towards target speed
+		velocity = velocity.lerp(fsm_velocity, data.acceleration * delta)
 	else:
+		# AI is idle: Apply Friction
 		velocity = velocity.lerp(Vector2.ZERO, data.linear_damping * delta)
 	
 	if separation_enabled:
@@ -315,3 +318,34 @@ func command_start_working(target_building: BaseBuilding, target_node: ResourceN
 		fsm.command_start_cycle(target_building, target_node)
 	else:
 		push_warning("Unit %s tried to start working, but FSM missing 'command_start_cycle'." % name)
+
+func add_loot(resource_type: String, amount: int) -> int:
+	if not data: return 0
+	
+	# Duck typing check for UnitData properties
+	var cap = data.max_loot_capacity if "max_loot_capacity" in data else 0
+	var space_left = cap - current_loot_weight
+	
+	if space_left <= 0: return 0
+		
+	var actual_amount = min(amount, space_left)
+	
+	if not inventory.has(resource_type):
+		inventory[resource_type] = 0
+		
+	inventory[resource_type] += actual_amount
+	current_loot_weight += actual_amount
+	
+	inventory_updated.emit(current_loot_weight, cap)
+	return actual_amount
+
+# [RESTORED PHASE 1] Logic: Calculate Speed
+func get_speed_multiplier() -> float:
+	if not data: return 1.0
+	var cap = data.max_loot_capacity if "max_loot_capacity" in data else 0
+	
+	if cap <= 0: return 1.0
+	
+	var penalty = data.encumbrance_speed_penalty if "encumbrance_speed_penalty" in data else 0.0
+	var ratio = float(current_loot_weight) / float(cap)
+	return 1.0 - (ratio * penalty)

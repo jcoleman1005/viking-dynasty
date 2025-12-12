@@ -9,13 +9,17 @@ enum State {
 	FORMATION_MOVING, 
 	ATTACKING, 
 	RETREATING,
-	INTERACTING 
+	INTERACTING,
+	COLLECTING, # New
+	ESCORTING,  # New
+	REGROUPING 
 }
 
 # Defines behavior stances
 enum Stance { 
+	AGGRESSIVE, 
 	DEFENSIVE, 
-	HOLD_POSITION 
+	PASSIVE 
 }
 static func get_surface_distance(unit_node: Node2D, target_node: Node2D) -> float:
 	if not is_instance_valid(unit_node) or not is_instance_valid(target_node):

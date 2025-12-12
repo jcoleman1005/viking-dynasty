@@ -39,6 +39,7 @@ func _ready() -> void:
 	raid_loot = RaidLootData.new()
 	# Connect to global unit death signal to track casualties
 	EventBus.player_unit_died.connect(_on_player_unit_died)
+	EventBus.raid_loot_secured.connect(_on_raid_loot_secured)
 
 func _process(delta: float) -> void:
 	if fyrd_timer_active and not mission_over:
@@ -90,6 +91,17 @@ func initialize(
 		fyrd_timer_active = true
 		
 	_setup_win_loss_conditions()
+	is_initialized = true
+	
+	var zones = get_tree().get_nodes_in_group("retreat_zone")
+	if not zones.is_empty():
+		var zone = zones[0]
+		if not zone.unit_evacuated.is_connected(on_unit_evacuated):
+			zone.unit_evacuated.connect(on_unit_evacuated)
+			print("RaidObjectiveManager: Connected to Retreat Zone.")
+	else:
+		print("RaidObjectiveManager: WARNING - No Retreat Zone found to connect!")
+
 	is_initialized = true
 
 # --- CASUALTY TRACKING ---
@@ -155,51 +167,60 @@ func on_unit_evacuated(unit: BaseUnit) -> void:
 	if is_instance_valid(rts_controller):
 		rts_controller.remove_unit(unit)
 
-	var remaining = get_tree().get_nodes_in_group("player_units").size()
-	Loggie.msg("Unit escaped. Remaining on field: %d" % remaining).domain(LogDomains.RTS).info()
+	var remaining_units = get_tree().get_nodes_in_group("player_units")
+	var living_count = 0
 	
-	if remaining <= 0 and not mission_over:
+	for u in remaining_units:
+		# Filter out dead or queued-for-deletion units just to be safe
+		if is_instance_valid(u) and not u.is_queued_for_deletion():
+			living_count += 1
+			
+	print("RaidObjectiveManager: Evacuated! Remaining: %d" % (living_count - 1))
+	
+	if unit is CivilianUnit:
+		# Assuming CivilianUnit has a flag or we just count all evacuated civs as thralls
+		if raid_loot:
+			raid_loot.add_loot("thrall", 1)
+			Loggie.msg("Thrall captured!").domain(LogDomains.RAID).info()
+	
+	if living_count <= 1:
+		print("RaidObjectiveManager: All units evacuated. Ending Mission.")
 		_end_mission_via_retreat()
 
 func _end_mission_via_retreat() -> void:
 	if mission_over: return
 	mission_over = true
 	
-	var raw_gold = raid_loot.collected_loot.get("gold", 0)
-	Loggie.msg("Retreat Complete. Loot secured: %d" % raw_gold).domain(LogDomains.RTS).info()
+	Loggie.msg("Ending mission via Retreat").domain(LogDomains.RAID).info()
 	
-	var result = {
-		"outcome": "retreat",
-		"gold_looted": raw_gold,
-		"victory_grade": "None"
-	}
-	DynastyManager.pending_raid_result = result
+	var mission_result = RaidResultData.new()
+	mission_result.outcome = "retreat"
+	mission_result.victory_grade = "Tactical Withdrawal"
+	mission_result.renown_earned = 0 
 	
-	_show_victory_message("RETREAT", "We escaped with what we could carry.")
-	await get_tree().create_timer(3.0).timeout
+	# Populate Loot & Casualties (Cleaned up)
+	mission_result.loot = raid_loot.collected_loot.duplicate() if raid_loot else {}
+	mission_result.casualties = dead_units_log.duplicate()
+
+	DynastyManager.pending_raid_result = mission_result
+	
+	# Note: SettlementBridge will convert "retreat" outcome to "defeat" for history stats later,
+	# so we don't strictly need to set last_raid_outcome here, but it doesn't hurt.
+	DynastyManager.last_raid_outcome = "retreat"
+	
 	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
 
-# --- STANDARD OBJECTIVE LOGIC ---
-
 func _connect_to_building_signals() -> void:
-	# 1. Connect Objective (Great Hall)
-	if is_instance_valid(objective_building):
-		if objective_building.has_signal("building_destroyed"):
-			if not objective_building.building_destroyed.is_connected(_on_enemy_hall_destroyed):
-				objective_building.building_destroyed.connect(_on_enemy_hall_destroyed)
-
-	# 2. Connect All Buildings (Farms, Markets, etc.)
-	for building in building_container.get_children():
-		if building is BaseBuilding:
-			# A. Listen for Destruction (Burn -> Renown)
-			if building.has_signal("building_destroyed"):
-				if not building.building_destroyed.is_connected(_on_enemy_building_destroyed_for_loot):
-					building.building_destroyed.connect(_on_enemy_building_destroyed_for_loot)
-			
-			# B. Listen for Pillage (Steal -> Gold/Food) <--- NEW CONNECTION
-			if building.has_signal("loot_stolen"):
-				if not building.loot_stolen.is_connected(_on_loot_stolen):
-					building.loot_stolen.connect(_on_loot_stolen)
+	if not building_container: return
+	
+	for child in building_container.get_children():
+		if child.has_signal("loot_stolen"):
+			if not child.loot_stolen.is_connected(_on_loot_stolen):
+				child.loot_stolen.connect(_on_loot_stolen)
+				
+		if child.has_signal("building_destroyed"):
+			if not child.building_destroyed.is_connected(_on_enemy_building_destroyed_for_loot):
+				child.building_destroyed.connect(_on_enemy_building_destroyed_for_loot)
 
 # --- NEW: Callback for Pillage ---
 func _on_loot_stolen(type: String, amount: int) -> void:
@@ -281,45 +302,45 @@ func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	if mission_over: return
 	mission_over = true
 	
-	var raw_gold = raid_loot.collected_loot.get("gold", 0)
-	
-	# --- REFACTOR: Count casualties from array ---
-	var lost_count = dead_units_log.size()
-	# ---------------------------------------------
-	
-	# 1. Calculate Grade
-	var grade = "Standard"
 	var duration_sec = (Time.get_ticks_msec() - battle_start_time) / 1000.0
-	
-	# Defaults
-	var par_time = 300
+	var grade = "Standard"
 	var casualty_limit = 2
+	var lost_count = dead_units_log.size()
 	
-	# Compare using local variable 'lost_count'
-	if duration_sec < par_time and lost_count <= casualty_limit:
+	# Simple Grading Logic
+	if lost_count == 0 and duration_sec < 300:
 		grade = "Decisive"
-	elif lost_count > (casualty_limit * 2):
+	elif lost_count > casualty_limit:
 		grade = "Pyrrhic"
 		
-	# Update Log to use 'lost_count'
-	Loggie.msg("Victory! Time: %ds, Casualties: %d. Grade: %s" % [duration_sec, lost_count, grade]).domain("RTS").info()
+	var mission_result = RaidResultData.new()
+	mission_result.outcome = "victory"
+	mission_result.victory_grade = grade
 	
-	var result = { 
-		"outcome": "victory", 
-		"gold_looted": raw_gold,
-		"victory_grade": grade
-	}
-	DynastyManager.pending_raid_result = result
+	# Calculate Loot (Base + Bonus)
+	var final_loot = raid_loot.collected_loot if raid_loot else {}
+	var total_loot = final_loot.duplicate()
 	
-	var sub_text = "The settlement lies in ruins."
-	if grade == "Decisive":
-		sub_text = "A glorious, swift victory!"
-	elif grade == "Pyrrhic":
-		sub_text = "Victory, but at great cost."
-		
-	_show_victory_message("VICTORY (%s)" % grade, sub_text)
-	await get_tree().create_timer(3.0).timeout
-	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
+	# Add Victory Bonus
+	for key in victory_bonus_loot:
+		var amount = victory_bonus_loot[key]
+		var current = total_loot.get(key, 0)
+		total_loot[key] = current + amount
+	
+	mission_result.loot = total_loot
+	
+	# Calculate Renown
+	var difficulty = DynastyManager.current_raid_difficulty
+	# Base 200 + 50 per star
+	mission_result.renown_earned = 200 + (difficulty * 50)
+	
+	mission_result.casualties = dead_units_log.duplicate()
+	
+	DynastyManager.pending_raid_result = mission_result
+	DynastyManager.last_raid_outcome = "victory"
+	
+	Loggie.msg("Raid Victory!").domain(LogDomains.RAID).ctx("Grade", grade).info()
+	_show_victory_message("Victory!", "The settlement lies in ruins.")
 
 func _trigger_fyrd() -> void:
 	fyrd_timer_active = false
@@ -364,3 +385,20 @@ func _add_popup_to_canvas(popup: Control) -> void:
 	var canvas = get_parent().get_node_or_null("CanvasLayer")
 	if canvas: canvas.add_child(popup)
 	else: get_tree().current_scene.add_child(popup)
+
+func _on_raid_loot_secured(type: String, amount: int) -> void:
+	if not raid_loot:
+		raid_loot = RaidLootData.new()
+		
+	raid_loot.add_loot(type, amount)
+	
+	# Visual Feedback
+	var color = Color.GOLD if type == "gold" else Color.WHITE
+	if type == "thrall": color = Color.CYAN
+	
+	# We can spawn floating text at the Retreat Zone center (approximate)
+	# or just update a UI counter. For now, let's just log it.
+	print("RaidObjectiveManager: Secured %d %s!" % [amount, type])
+	
+	# Trigger UI update if you have a Loot HUD
+	# EventBus.ui_update_loot.emit(raid_loot.collected_loot)

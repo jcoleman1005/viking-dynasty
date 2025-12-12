@@ -14,7 +14,6 @@ extends Node2D
 # --- References ---
 @onready var player_spawn_pos: Marker2D = $PlayerStartPosition
 @onready var rts_controller: RTSController = $RTSController
-@onready var grid_manager: Node = $GridManager
 @onready var building_container: Node2D = $BuildingContainer
 @onready var objective_manager: RaidObjectiveManager = $RaidObjectiveManager
 @onready var unit_spawner: UnitSpawner = $UnitSpawner
@@ -62,6 +61,7 @@ func _ready() -> void:
 	else:
 		call_deferred("initialize_mission")
 	Loggie.set_domain_enabled(LogDomains.RAID, true)
+	get_tree().node_added.connect(_on_node_added)
 
 func _setup_unit_container() -> void:
 	# Try to find existing container
@@ -83,32 +83,68 @@ func _exit_tree() -> void:
 func initialize_mission() -> void:
 	print("[DIAGNOSTIC] RaidMission: Initializing...")
 	
+	if not enemy_base_data:
+		if default_enemy_base_path != "":
+			enemy_base_data = load(default_enemy_base_path) as SettlementData
+		
+		if not enemy_base_data:
+			Loggie.msg("RaidMission: Critical - No enemy_base_data assigned!").domain(LogDomains.RAID).error()
+			return
+
 	if not _validate_nodes(): 
-		print("[DIAGNOSTIC] RaidMission: Node validation FAILED.")
 		return
 	
-	# 1. Setup Grid
-	var local_astar_grid = grid_manager.astar_grid
-	# Note: We pass unit_container here if needed, but mostly it uses building_container
-	SettlementManager.register_active_scene_nodes(local_astar_grid, building_container)
+	# 1. Register Scene Nodes (Grid Authority)
+	SettlementManager.register_active_scene_nodes(unit_container)
 	
 	# 2. Configure Map Loader
-	map_loader.setup(building_container, grid_manager)
+	if not map_loader:
+		map_loader = RaidMapLoader.new()
+		add_child(map_loader)
 	
-	# 3. Generate Map
+	map_loader.setup(unit_container, enemy_base_data) 
+	
+	# 3. Generate Map Visuals (Enemy Base)
+	objective_building = map_loader.load_base(enemy_base_data, false)
+	
+	# [FIXED] 4. Spawn Enemy Civilians/Thralls
+	
+	
+	if enemy_base_data and enemy_base_data.population_peasants > 0:
+		if unit_spawner:
+			# A. Assign the container property first (The Fix)
+			unit_spawner.unit_container = unit_container
+			
+			# B. Find Spawn Origin
+			#var civ_origin = objective_building.global_position if objective_building else Vector2(500, 500)
+			# OLD: var civ_origin = objective_building.global_position ...
+			
+			# NEW: Spawn them right in front of the player's starting zone
+			# This bypasses all building collision/pathfinding issues.
+			var debug_spawn_pos = Vector2(200, 300) 
+			
+			unit_spawner.sync_civilians(
+				enemy_base_data.population_peasants,
+				debug_spawn_pos,#TODO: remove this after debugging
+				true 
+			)
+			
+	# 5. Spawn Player Units (Military)
 	if is_defensive_mission:
 		_setup_defensive_mode()
 	else:
 		_setup_offensive_mode()
 	
-	# 4. Finalize Objective
+	# 5. Finalize Objective (Start tracking AFTER units exist)
 	if is_instance_valid(objective_building):
-		objective_manager.initialize(rts_controller, objective_building, building_container)
-		if not objective_manager.fyrd_arrived.is_connected(_on_fyrd_arrived):
-			objective_manager.fyrd_arrived.connect(_on_fyrd_arrived)
+		if objective_manager:
+			objective_manager.initialize(rts_controller, objective_building, unit_container)
+			if not objective_manager.fyrd_arrived.is_connected(_on_fyrd_arrived):
+				objective_manager.fyrd_arrived.connect(_on_fyrd_arrived)
 	else:
 		Loggie.msg("RaidMission: Critical - No Objective Building found!").domain(LogDomains.RAID).error()
-
+		
+		
 func _setup_defensive_mode() -> void:
 	var settlement = SettlementManager.current_settlement
 	if settlement:
@@ -247,6 +283,7 @@ func _spawn_retreat_zone() -> void:
 	poly.polygon = PackedVector2Array([Vector2(-100,-100), Vector2(100,-100), Vector2(100,100), Vector2(-100,100)])
 	zone.add_child(poly)
 	zone.global_position = player_spawn_pos.global_position
+	zone.add_to_group("retreat_zone")
 	add_child(zone)
 	zone.unit_evacuated.connect(objective_manager.on_unit_evacuated)
 
@@ -263,7 +300,6 @@ func _on_settlement_ready_for_mission(_d):
 func _validate_nodes() -> bool:
 	if not rts_controller: return false
 	if not objective_manager: return false
-	if not grid_manager: return false
 	return true
 
 func _spawn_test_units() -> void:
@@ -312,3 +348,22 @@ func _spawn_enemy_garrison() -> void:
 			
 	# 2. Call Spawner
 	unit_spawner.spawn_enemy_garrison(enemy_base_data.warbands, guard_buildings)
+func _on_node_added(node: Node) -> void:
+	if node is CivilianUnit:
+		if not node.surrender_requested.is_connected(_on_civilian_surrender):
+			node.surrender_requested.connect(_on_civilian_surrender)
+
+func _on_civilian_surrender(civilian: Node2D) -> void:
+	print("RaidMission: Civilian signal received. Dispatching Squad Leader.")
+	var best_leader = null
+	var min_dist = INF
+	
+	# Find closest SquadLeader
+	for leader in get_tree().get_nodes_in_group("squad_leaders"):
+		var dist = leader.global_position.distance_to(civilian.global_position)
+		if dist < min_dist:
+			min_dist = dist
+			best_leader = leader
+			
+	if best_leader:
+		best_leader.request_escort_for(civilian)

@@ -1,0 +1,7 @@
+[gd_scene load_steps=3 format=3 uid="uid://c4id53apf1ynt"]
+
+[ext_resource type="PackedScene" uid="uid://c7powse34uuxc" path="res://scenes/units/Civilian.tscn" id="1_nf5h2"]
+[ext_resource type="Script" uid="uid://i86w1ypvmn5o" path="res://scripts/units/ThrallUnit.gd" id="2_x7cfk"]
+
+[node name="Thrall" instance=ExtResource("1_nf5h2")]
+script = ExtResource("2_x7cfk")
