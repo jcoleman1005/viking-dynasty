@@ -19,6 +19,10 @@ class_name SettlementData
 @export var population_thralls: int = 5 # Captive Workers
 @export var worker_assignments: Dictionary = {}
 
+# --- Terrain PERSISTENCE DNA ---
+## The unique seed that ensures this map always looks the same.
+@export var map_seed: int = 0
+
 # --- Stability ---
 @export var has_stability_debuff: bool = false
 @export var unrest: int = 0 # 0-100 scale. 100 = Rebellion.

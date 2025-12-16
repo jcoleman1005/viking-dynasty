@@ -1,5 +1,6 @@
-[gd_resource type="Resource" script_class="BuildingData" load_steps=3 format=3 uid="uid://bs1e1mgqnldwq"]
+[gd_resource type="Resource" script_class="BuildingData" load_steps=4 format=3 uid="uid://bs1e1mgqnldwq"]
 
+[ext_resource type="Texture2D" uid="uid://l7tag00sibtb" path="res://assets/Gemini/building sprites/longhouse_64x64.png" id="1_6qqwl"]
 [ext_resource type="Script" uid="uid://js4bbqgeyd6c" path="res://data/buildings/BuildingData.gd" id="1_i2pmy"]
 [ext_resource type="PackedScene" uid="uid://cws6xle5x52g4" path="res://scenes/buildings/Base_Building.tscn" id="2_hptna"]
 
@@ -7,6 +8,8 @@
 script = ExtResource("1_i2pmy")
 display_name = "Great Hall"
 scene_to_spawn = ExtResource("2_hptna")
+icon = ExtResource("1_6qqwl")
+building_texture = ExtResource("1_6qqwl")
 build_cost = {
 "gold": 100,
 "wood": 250

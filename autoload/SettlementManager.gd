@@ -13,7 +13,13 @@ var active_astar_grid: AStarGrid2D = null
 var buildable_cells: Dictionary = {} # Cached territory map
 const GRID_WIDTH = 60
 const GRID_HEIGHT = 40
-const CELL_SIZE_PX = 32
+
+# --- ISOMETRIC SETTINGS ---
+# Standard for pixel art isometric (2:1 ratio)
+const TILE_WIDTH: int = 64
+const TILE_HEIGHT: int = 32
+const TILE_HALF_SIZE := Vector2(TILE_WIDTH * 0.5, TILE_HEIGHT * 0.5)
+# --------------------------
 
 # --- Scene Refs ---
 var active_building_container: Node2D = null
@@ -24,12 +30,28 @@ func _ready() -> void:
 	EventBus.player_unit_died.connect(_on_player_unit_died)
 	_init_grid()
 
+# --- ISOMETRIC PROJECTION HELPERS ---
+
+## Converts Logical Grid Coords (x, y) -> Screen Position (Pixels)
+## Note: Returns the CENTER of the tile.
+func grid_to_world(grid_pos: Vector2) -> Vector2:
+	var x = (grid_pos.x - grid_pos.y) * TILE_HALF_SIZE.x
+	var y = (grid_pos.x + grid_pos.y) * TILE_HALF_SIZE.y
+	return Vector2(x, y)
+
+## Converts Screen Position (Pixels) -> Logical Grid Coords (x, y)
+func world_to_grid(world_pos: Vector2) -> Vector2i:
+	var x = (world_pos.x / TILE_HALF_SIZE.x + world_pos.y / TILE_HALF_SIZE.y) * 0.5
+	var y = (world_pos.y / TILE_HALF_SIZE.y - world_pos.x / TILE_HALF_SIZE.x) * 0.5
+	return Vector2i(floor(x), floor(y))
+
 # --- GRID AUTHORITY SYSTEM ---
 
 func _init_grid() -> void:
 	active_astar_grid = AStarGrid2D.new()
 	active_astar_grid.region = Rect2i(0, 0, GRID_WIDTH, GRID_HEIGHT)
-	active_astar_grid.cell_size = Vector2(CELL_SIZE_PX, CELL_SIZE_PX)
+	# LOGICAL SIZE ONLY: We separate Physics (1,1) from Visuals (64,32)
+	active_astar_grid.cell_size = Vector2(1, 1) 
 	active_astar_grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_NEVER
 	active_astar_grid.update()
 	
@@ -63,7 +85,6 @@ func _refresh_grid_state() -> void:
 		_apply_building_to_grid(entry, true)
 		
 	# 4. Recalculate Territory (Buildable Green Tiles)
-	# Note: We use the stateless GridUtils library for the math
 	buildable_cells = GridUtils.calculate_territory(
 		active_map_data.placed_buildings, 
 		active_astar_grid.region
@@ -100,14 +121,14 @@ func is_tile_buildable(grid_pos: Vector2i) -> bool:
 	return buildable_cells.has(grid_pos) and not active_astar_grid.is_point_solid(grid_pos)
 
 func get_active_grid_cell_size() -> Vector2:
-	return Vector2(CELL_SIZE_PX, CELL_SIZE_PX)
+	return Vector2(TILE_WIDTH, TILE_HEIGHT)
 
 func get_astar_path(start_pos: Vector2, end_pos: Vector2, allow_partial_path: bool = false) -> PackedVector2Array:
 	if not is_instance_valid(active_astar_grid): return PackedVector2Array()
 	
-	var cell_size = active_astar_grid.cell_size
-	var start = Vector2i(start_pos / cell_size)
-	var end = Vector2i(end_pos / cell_size)
+	# 1. Convert World Pixels -> Logical Grid
+	var start = world_to_grid(start_pos)
+	var end = world_to_grid(end_pos)
 	
 	if not GridUtils.is_within_bounds(active_astar_grid, start): return PackedVector2Array()
 	
@@ -116,7 +137,18 @@ func get_astar_path(start_pos: Vector2, end_pos: Vector2, allow_partial_path: bo
 	end.x = clampi(end.x, bounds.position.x, bounds.end.x - 1)
 	end.y = clampi(end.y, bounds.position.y, bounds.end.y - 1)
 	
-	return active_astar_grid.get_point_path(start, end, allow_partial_path)
+	# 2. Get Logical Path (e.g., (1,1) -> (1,2))
+	var logical_path = active_astar_grid.get_point_path(start, end, allow_partial_path)
+	
+	# 3. Convert Logical Path -> World Pixels
+	var world_path = PackedVector2Array()
+	for point in logical_path:
+		# AStar returns centered logical coords (e.g. 1.5, 2.5) if logic is 1,1
+		# We want to treat that as the center of the tile
+		# Since logic size is 1, 'point' is effectively grid coordinates
+		world_path.append(grid_to_world(point))
+		
+	return world_path
 
 func set_astar_point_solid(grid_position: Vector2i, solid: bool) -> void:
 	if is_instance_valid(active_astar_grid) and GridUtils.is_within_bounds(active_astar_grid, grid_position):
@@ -135,9 +167,19 @@ func place_building(building_data: BuildingData, grid_position: Vector2i, is_new
 	new_building.data = building_data
 	new_building.grid_coordinate = grid_position
 	
-	var cell = get_active_grid_cell_size()
-	var pos = Vector2(grid_position) * cell + (Vector2(building_data.grid_size) * cell / 2.0)
-	new_building.global_position = pos
+	# --- ISOMETRIC POSITIONING ---
+	var origin_pos = grid_to_world(grid_position)
+	
+	# Center the building on its footprint
+	# Isometric depth moves down-right and down-left.
+	# We calculate the offset to center the sprite visually over the diamond footprint.
+	var size_offset_x = (building_data.grid_size.x - building_data.grid_size.y) * TILE_HALF_SIZE.x * 0.5
+	var size_offset_y = (building_data.grid_size.x + building_data.grid_size.y) * TILE_HALF_SIZE.y * 0.5
+	
+	# For most standard pivots (bottom-center), we usually just place at origin or slightly offset
+	# Depending on your art, you might check this line:
+	new_building.global_position = origin_pos
+	# -----------------------------
 	
 	active_building_container.add_child(new_building)
 	
@@ -171,9 +213,9 @@ func place_building(building_data: BuildingData, grid_position: Vector2i, is_new
 func remove_building(building_instance: BaseBuilding) -> void:
 	if not active_map_data or not is_instance_valid(building_instance): return
 	
-	var cell_size = get_active_grid_cell_size()
-	var top_left = building_instance.global_position - (Vector2(building_instance.data.grid_size) * cell_size / 2.0)
-	var grid_pos = Vector2i(round(top_left.x / cell_size.x), round(top_left.y / cell_size.y))
+	# ISOMETRIC REVERSE LOOKUP
+	var grid_pos = world_to_grid(building_instance.global_position)
+	# Snap to ensure integer
 	
 	# Try removing from both lists
 	var removed_placed = _remove_from_list(active_map_data.placed_buildings, grid_pos)
@@ -211,20 +253,21 @@ func is_placement_valid(grid_position: Vector2i, building_size: Vector2i, buildi
 	return true
 
 func _is_within_district_range(grid_pos: Vector2i, size: Vector2i, data: EconomicBuildingData) -> bool:
-	var cell = get_active_grid_cell_size()
-	var center = (Vector2(grid_pos) * cell) + (Vector2(size) * cell / 2.0)
+	# Convert grid center to World position for distance checking
+	var center_x = grid_pos.x + (size.x / 2.0)
+	var center_y = grid_pos.y + (size.y / 2.0)
+	var center_world = grid_to_world(Vector2(center_x, center_y))
+
 	var nodes = get_tree().get_nodes_in_group("resource_nodes")
 	for node in nodes:
 		if node is ResourceNode and node.resource_type == data.resource_type:
-			if node.is_position_in_district(center) and not node.is_depleted(): return true
+			if node.is_position_in_district(center_world) and not node.is_depleted(): return true
 	return false
 
 # --- SCENE MANAGEMENT ---
 
 func register_active_scene_nodes(container: Node2D) -> void:
 	active_building_container = container
-	# If we have data loaded but no visuals yet, refresh grid to match
-
 
 func unregister_active_scene_nodes() -> void:
 	active_building_container = null
@@ -517,12 +560,8 @@ func _find_entry_for_building(building: BaseBuilding) -> Dictionary:
 				if Vector2i(entry["grid_position"].x, entry["grid_position"].y) == tagged_pos:
 					return entry
 	
-	# 2. FALLBACK: Old Math (Only used if tag is missing/corrupted)
-	var cell_size = get_active_grid_cell_size()
-	var half_size = (Vector2(building.data.grid_size) * cell_size) / 2.0
-	# Use round() to be safer with float errors
-	var top_left = building.global_position - half_size
-	var grid_pos = Vector2i(round(top_left.x / cell_size.x), round(top_left.y / cell_size.y))
+	# 2. FALLBACK: Use Inverse Projection
+	var grid_pos = world_to_grid(building.global_position)
 	
 	for entry in current_settlement.placed_buildings:
 		if Vector2i(entry["grid_position"].x, entry["grid_position"].y) == grid_pos: 
@@ -575,12 +614,8 @@ func get_building_index(building_instance: Node2D) -> int:
 					return i
 
 	# 2. FALLBACK: Math
-	var cell_size = get_active_grid_cell_size()
-	var size = Vector2i(1, 1)
-	if "data" in building_instance and building_instance.data:
-		size = building_instance.data.grid_size
-		
-	var grid_pos = Vector2i((building_instance.global_position - (Vector2(size) * cell_size / 2.0)) / cell_size)
+	# Use inverse projection to find grid coord
+	var grid_pos = world_to_grid(building_instance.global_position)
 	
 	# Only search the VALID list
 	for i in range(target_list.size()):
@@ -628,7 +663,7 @@ func commit_seasonal_recruits() -> void:
 		# 2. Add the man to the current squad
 		current_batch_wb.current_manpower += 1
 		
-	Loggie.msg("Spring Arrival: %d men organized into %d Warbands." % [pending_seasonal_recruits.size(), new_warbands.size()]).domain("SETTLEMENT").info()
+	Loggie.msg("Spring Arrival: %d men organized into %d  Warbands." % [pending_seasonal_recruits.size(), new_warbands.size()]).domain("SETTLEMENT").info()
 	pending_seasonal_recruits.clear()
 	
 	save_settlement()

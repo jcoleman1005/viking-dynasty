@@ -1,5 +1,5 @@
 PROJECT CONTEXT SKELETON
-Generated: 2025-12-12T10:32:11
+Generated: 2025-12-15T14:24:30
 ========================================
 
 ### FILE: res://autoload/DynastyManager.gd ###
@@ -7,22 +7,9 @@ extends Node
 signal jarl_stats_updated(jarl_data: JarlData)
 signal year_ended
 var current_jarl: JarlData
-var current_raid_target: SettlementData
-var is_defensive_raid: bool = false
 var minimum_inherited_legitimacy: int = 0
 var loaded_legacy_upgrades: Array[LegacyUpgradeData] = []
-var current_raid_difficulty: int = 1 
-var pending_raid_result: RaidResultData = null 
 var active_year_modifiers: Dictionary = {}
-var winter_upkeep_report: Dictionary = {} 
-var pending_dispute_card: DisputeEventData = null
-var winter_consumption_report: Dictionary = {}
-var winter_crisis_active: bool = false
-var outbound_raid_force: Array[WarbandData] = []
-var raid_provisions_level: int = 1 
-var raid_health_modifier: float = 1.0 
-var last_raid_outcome: String = "neutral" 
-var pending_seasonal_recruits: Array[UnitData] = []
 const USER_DYNASTY_PATH = "user://savegame_dynasty.tres"
 const DEFAULT_JARL_PATH = "res://data/characters/PlayerJarl.tres"
 func _ready() -> void:
@@ -40,17 +27,6 @@ func _load_legacy_upgrades_from_disk() -> void:
 					var unique_upgrade = upgrade_data.duplicate()
 func get_current_jarl() -> JarlData:
 	pass # (Body Omitted)
-func reset_raid_state() -> void:
-	pass # (Body Omitted)
-func prepare_raid_force(warbands: Array[WarbandData], provisions: int) -> void:
-	pass # (Body Omitted)
-func calculate_journey_attrition(target_distance: float) -> Dictionary:
-	pass # (Body Omitted)
-	var safe_range = current_jarl.get_safe_range()
-	var report = {
-	var base_risk = 0.02
-	var roll = randf()
-		var damage = 0.10 
 func can_spend_authority(cost: int) -> bool:
 	pass # (Body Omitted)
 func spend_authority(cost: int) -> bool:
@@ -82,9 +58,16 @@ func is_allied_region(region_path: String) -> bool:
 	pass # (Body Omitted)
 func add_trait_to_heir(heir: JarlHeirData, trait_data: JarlTraitData) -> void:
 	pass # (Body Omitted)
-func end_year() -> void:
+func find_heir_by_name(h_name: String) -> JarlHeirData:
 	pass # (Body Omitted)
-	var jarl_died = _check_for_jarl_death()
+func kill_heir_by_name(h_name: String, reason: String) -> void:
+	pass # (Body Omitted)
+	var heir = find_heir_by_name(h_name)
+func start_winter_cycle() -> void:
+	pass # (Body Omitted)
+func end_winter_cycle_complete() -> void:
+	pass # (Body Omitted)
+	var payout = EconomyManager.calculate_payout() 
 func _process_heir_simulation() -> void:
 	pass # (Body Omitted)
 	var heirs_to_remove: Array[JarlHeirData] = []
@@ -98,11 +81,6 @@ func _try_birth_event() -> void:
 func _generate_new_baby() -> void:
 	pass # (Body Omitted)
 	var baby = DynastyGenerator.generate_newborn()
-func set_current_raid_target(data: SettlementData) -> void:
-	pass # (Body Omitted)
-func get_current_raid_target() -> SettlementData:
-	pass # (Body Omitted)
-	var target = current_raid_target
 func _save_jarl_data() -> void:
 	pass # (Body Omitted)
 	var error = ResourceSaver.save(current_jarl, current_jarl.resource_path)
@@ -125,58 +103,10 @@ func _promote_heir_to_jarl(heir: JarlHeirData, predecessor: JarlData) -> JarlDat
 	var new_legit = int(predecessor.legitimacy * 0.8)
 func _on_succession_choices_made(renown_choice: String, gold_choice: String) -> void:
 	pass # (Body Omitted)
-func process_defensive_loss() -> Dictionary:
-	pass # (Body Omitted)
-	var aftermath_report = {
-	var renown_loss = randi_range(50, 150)
-	var material_losses = EconomyManager.apply_raid_damages()
-		var victim = current_jarl.heirs.pick_random()
-	var death_chance = 0.10
-	var text = "Defeat! The settlement has been sacked.\n\n[color=salmon]Resources Lost:[/color]\n- %d Gold\n- %d Wood\n- %d Renown\n" % [material_losses.get("gold_lost", 0), material_losses.get("wood_lost", 0), renown_loss]
-func find_heir_by_name(h_name: String) -> JarlHeirData:
-	pass # (Body Omitted)
-func kill_heir_by_name(h_name: String, reason: String) -> void:
-	pass # (Body Omitted)
-	var heir = find_heir_by_name(h_name)
-func start_winter_phase() -> void:
-	pass # (Body Omitted)
-	var decay = 0.2
-func _calculate_winter_needs() -> void:
-	pass # (Body Omitted)
-	var settlement = SettlementManager.current_settlement
-	var demand_report = WinterManager.calculate_winter_demand(settlement)
-	var food_cost = demand_report["food_demand"]
-	var wood_cost = demand_report["wood_demand"]
-	var food_stock = settlement.treasury.get("food", 0)
-	var wood_stock = settlement.treasury.get("wood", 0)
-	var food_deficit = max(0, food_cost - food_stock)
-	var wood_deficit = max(0, wood_cost - wood_stock)
-func _apply_winter_consumption() -> void:
-	pass # (Body Omitted)
-	var settlement = SettlementManager.current_settlement
-func resolve_crisis_with_gold() -> bool:
-	pass # (Body Omitted)
-	var total_gold_cost = (winter_consumption_report["food_deficit"] * 5) + (winter_consumption_report["wood_deficit"] * 5)
-func resolve_crisis_with_sacrifice(sacrifice_type: String) -> bool:
-	pass # (Body Omitted)
-	var settlement = SettlementManager.current_settlement
-			var deaths = max(1, int(winter_consumption_report["food_deficit"] / 5))
 func perform_hall_action(cost: int = 1) -> bool:
 	pass # (Body Omitted)
-func end_winter_phase() -> void:
-	pass # (Body Omitted)
-	var payout = EconomyManager.calculate_payout() 
 func apply_year_modifier(key: String) -> void:
 	pass # (Body Omitted)
-func draw_dispute_card() -> DisputeEventData:
-	pass # (Body Omitted)
-	var card = DisputeEventData.new()
-func queue_seasonal_recruit(unit_data: UnitData, count: int) -> void:
-	pass # (Body Omitted)
-func commit_seasonal_recruits_to_settlement() -> void:
-	pass # (Body Omitted)
-	var new_warbands: Array[WarbandData] = []
-	var current_batch_wb: WarbandData = null
 func _generate_oath_name() -> String:
 	pass # (Body Omitted)
 	var names = ["Red", "Bold", "Young", "Wild", "Sworn", "Lucky"]
@@ -310,11 +240,11 @@ func _check_event_triggers() -> bool:
 	var jarl = DynastyManager.get_current_jarl()
 func _check_conditions(event: EventData, jarl: JarlData) -> bool:
 	pass # (Body Omitted)
-func _trigger_event(event: EventData) -> void:
+func _trigger_event(event_data: EventData) -> void:
 	pass # (Body Omitted)
-		var crisis_ui = succession_crisis_scene.instantiate()
-		var jarl = DynastyManager.get_current_jarl()
-		var settlement = SettlementManager.current_settlement
+func draw_dispute_card() -> DisputeEventData:
+	pass # (Body Omitted)
+	var card = DisputeEventData.new()
 func _on_choice_made(event: EventData, choice: EventChoice) -> void:
 	pass # (Body Omitted)
 func _apply_event_consequences(event: EventData, choice: EventChoice) -> void:
@@ -403,6 +333,45 @@ func return_projectile(projectile: Projectile) -> void:
 	pass # (Body Omitted)
 
 
+### FILE: res://autoload/RaidManager.gd ###
+extends Node
+signal raid_state_updated
+var current_raid_target: SettlementData
+var is_defensive_raid: bool = false
+var current_raid_difficulty: int = 1
+var pending_raid_result: RaidResultData = null
+var outbound_raid_force: Array[WarbandData] = []
+var raid_provisions_level: int = 1
+var raid_health_modifier: float = 1.0
+var last_raid_outcome: String = "neutral"
+func reset_raid_state() -> void:
+	pass # (Body Omitted)
+func prepare_raid_force(warbands: Array[WarbandData], provisions: int) -> void:
+	pass # (Body Omitted)
+func set_current_raid_target(data: SettlementData) -> void:
+	pass # (Body Omitted)
+func get_current_raid_target() -> SettlementData:
+	pass # (Body Omitted)
+	var target = current_raid_target
+func calculate_journey_attrition(target_distance: float) -> Dictionary:
+	pass # (Body Omitted)
+	var jarl = DynastyManager.current_jarl
+	var safe_range = jarl.get_safe_range()
+	var report = {
+	var base_risk = 0.02
+	var roll = randf()
+		var damage = 0.10 
+func process_defensive_loss() -> Dictionary:
+	pass # (Body Omitted)
+	var jarl = DynastyManager.current_jarl
+	var aftermath_report = {
+	var renown_loss = randi_range(50, 150)
+	var material_losses = EconomyManager.apply_raid_damages()
+		var victim = jarl.heirs.pick_random()
+	var death_chance = 0.10
+	var text = "Defeat! The settlement has been sacked.\n\n[color=salmon]Resources Lost:[/color]\n- %d Gold\n- %d Wood\n- %d Renown\n" % [material_losses.get("gold_lost", 0), material_losses.get("wood_lost", 0), renown_loss]
+
+
 ### FILE: res://autoload/SceneManager.gd ###
 extends Node
 @export var settlement_scene: PackedScene
@@ -430,6 +399,7 @@ const GRID_HEIGHT = 40
 const CELL_SIZE_PX = 32
 var active_building_container: Node2D = null
 var pending_management_open: bool = false
+var pending_seasonal_recruits: Array[UnitData] = []
 func _ready() -> void:
 	pass # (Body Omitted)
 func _init_grid() -> void:
@@ -594,10 +564,21 @@ func get_building_index(building_instance: Node2D) -> int:
 	var grid_pos = Vector2i((building_instance.global_position - (Vector2(size) * cell_size / 2.0)) / cell_size)
 		var entry = target_list[i]
 		var pos = entry["grid_position"]
+func queue_seasonal_recruit(unit_data: UnitData, count: int) -> void:
+	pass # (Body Omitted)
+func commit_seasonal_recruits() -> void:
+	pass # (Body Omitted)
+	var new_warbands: Array[WarbandData] = []
+	var current_batch_wb: WarbandData = null
+func _generate_oath_name() -> String:
+	pass # (Body Omitted)
+	var names = ["Red", "Bold", "Young", "Wild", "Sworn", "Lucky"]
 
 
 ### FILE: res://autoload/WinterManager.gd ###
 extends Node
+signal winter_started
+signal winter_ended
 enum WinterSeverity { MILD, NORMAL, HARSH }
 @export_group("Probabilities")
 @export_range(0.0, 1.0) var harsh_chance: float = 0.20
@@ -606,6 +587,13 @@ enum WinterSeverity { MILD, NORMAL, HARSH }
 @export var harsh_multiplier: float = 1.5
 @export var mild_multiplier: float = 0.75
 var current_severity: WinterSeverity = WinterSeverity.NORMAL
+var winter_consumption_report: Dictionary = {}
+var winter_upkeep_report: Dictionary = {} 
+var winter_crisis_active: bool = false
+func start_winter_phase() -> void:
+	pass # (Body Omitted)
+func end_winter_phase() -> void:
+	pass # (Body Omitted)
 func calculate_winter_demand(settlement: SettlementData) -> Dictionary:
 	pass # (Body Omitted)
 	var mult: float = 1.0
@@ -613,6 +601,32 @@ func calculate_winter_demand(settlement: SettlementData) -> Dictionary:
 	var base_wood = 20
 	var final_food = int(base_food * mult)
 	var final_wood = int(base_wood * mult)
+func _calculate_winter_needs() -> void:
+	pass # (Body Omitted)
+	var settlement = SettlementManager.current_settlement
+	var demand_report = calculate_winter_demand(settlement)
+	var food_cost = demand_report["food_demand"]
+	var wood_cost = demand_report["wood_demand"]
+	var food_stock = settlement.treasury.get("food", 0)
+	var wood_stock = settlement.treasury.get("wood", 0)
+	var food_deficit = max(0, food_cost - food_stock)
+	var wood_deficit = max(0, wood_cost - wood_stock)
+func _apply_winter_consumption() -> void:
+	pass # (Body Omitted)
+	var settlement = SettlementManager.current_settlement
+	var f_cost = winter_consumption_report.get("food_cost", 0)
+	var w_cost = winter_consumption_report.get("wood_cost", 0)
+func _apply_environmental_decay() -> void:
+	pass # (Body Omitted)
+	var decay = 0.2
+		var current = SettlementManager.current_settlement.fleet_readiness
+func resolve_crisis_with_gold() -> bool:
+	pass # (Body Omitted)
+	var total_gold_cost = (winter_consumption_report["food_deficit"] * 5) + (winter_consumption_report["wood_deficit"] * 5)
+func resolve_crisis_with_sacrifice(sacrifice_type: String) -> bool:
+	pass # (Body Omitted)
+	var settlement = SettlementManager.current_settlement
+			var deaths = max(1, int(winter_consumption_report["food_deficit"] / 5))
 func _roll_severity() -> void:
 	pass # (Body Omitted)
 	var roll = randf()
@@ -1522,7 +1536,7 @@ func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	var total_loot = final_loot.duplicate()
 		var amount = victory_bonus_loot[key]
 		var current = total_loot.get(key, 0)
-	var difficulty = DynastyManager.current_raid_difficulty
+	var difficulty = RaidManager.current_raid_difficulty
 func _trigger_fyrd() -> void:
 	pass # (Body Omitted)
 func _show_failure_message(reason: String) -> void:
@@ -1672,7 +1686,7 @@ func _finalize_raid_launch(target: RaidTargetData, warbands: Array[WarbandData],
 	pass # (Body Omitted)
 	var cost = target.raid_cost_authority
 	var dist = 0.0
-	var report = DynastyManager.calculate_journey_attrition(dist)
+	var report = RaidManager.calculate_journey_attrition(dist)
 func _transition_to_raid_scene() -> void:
 	pass # (Body Omitted)
 func _draw() -> void:
@@ -1984,6 +1998,8 @@ extends Node
 @export var raider_scene: PackedScene
 @export var end_of_year_popup_scene: PackedScene
 @export var world_map_scene_path: String = "res://scenes/world_map/MacroMap.tscn"
+@export var resource_bar: ResourceBar 
+@export var date_controls: DateAndControls
 @export_group("Loggie Debug Settings")
 @export var show_ui_logs: bool = false:
 @export var show_settlement_logs: bool = false:
@@ -1994,7 +2010,7 @@ extends Node
 @export var start_gold: int = 1000
 @export var start_wood: int = 500
 @export var start_food: int = 100
-@export var start_stone: int = 200
+@export var start_iron: int = 200
 @export var start_population: int = 10
 var default_test_building: BuildingData = preload("res://data/buildings/Bldg_Wall.tres")
 var default_end_of_year_popup: PackedScene = preload("res://ui/EndOfYear_Popup.tscn")
@@ -2025,7 +2041,7 @@ func _on_worker_requested(target: BaseBuilding) -> void:
 	var is_construction = (target.current_state != BaseBuilding.BuildingState.ACTIVE)
 	var entry
 	var current_count = entry.get("peasant_count", 0)
-	var incoming_count = target.get_meta("incoming_workers", 0) # <--- NEW META TRACKER
+	var incoming_count = target.get_meta("incoming_workers", 0)
 	var total_allocated = current_count + incoming_count
 	var capacity = 0
 		var eco_data = target.data as EconomicBuildingData
@@ -2113,7 +2129,7 @@ func _on_building_right_clicked(building: BaseBuilding) -> void:
 	var cost = data.build_cost
 func _process_raid_return() -> void:
 	pass # (Body Omitted)
-	var result: RaidResultData = DynastyManager.pending_raid_result
+	var result: RaidResultData = RaidManager.pending_raid_result
 	var outcome = result.outcome
 	var raw_gold = result.loot.get("gold", 0)
 	var total_wergild = 0
@@ -2124,7 +2140,7 @@ func _process_raid_return() -> void:
 	var xp_gain = 0
 	var loot_summary = result.loot.duplicate()
 	var title_text = "Raid Result"
-		var difficulty = DynastyManager.current_raid_difficulty
+		var difficulty = RaidManager.current_raid_difficulty
 		var bonus = 200 + (difficulty * 50)
 		var jarl = DynastyManager.get_current_jarl()
 		var total_loot_count = 0
@@ -2148,10 +2164,10 @@ extends RefCounted
 const GOLD := "gold"
 const WOOD := "wood"
 const FOOD := "food"
-const STONE := "stone"
+const IRON := "iron"
 const POP_PEASANT := "peasant"
 const POP_THRALL := "thrall"
-const ALL_CURRENCIES = [GOLD, WOOD, FOOD, STONE]
+const ALL_CURRENCIES = [GOLD, WOOD, FOOD, IRON]
 const ALL_POPULATION = [POP_PEASANT, POP_THRALL]
 
 
@@ -2443,22 +2459,6 @@ var current_dispute: DisputeEventData = null
 var winter_start_acknowledged: bool = false
 func _ready() -> void:
 	pass # (Body Omitted)
-func _on_gather_warband_clicked() -> void:
-	pass # (Body Omitted)
-	var jarl = DynastyManager.get_current_jarl()
-	var base_recruits = 1 
-	var wanderers = randi_range(0, 2)
-	var fame_bonus = int(jarl.renown / 100.0)
-	var total_squads_arrived = base_recruits + wanderers + fame_bonus
-	var ship_cap = SettlementManager.get_total_ship_capacity_squads()
-	var current_squads = SettlementManager.current_settlement.warbands.size()
-	var open_slots = max(0, ship_cap - current_squads)
-	var accepted_squads = min(total_squads_arrived, open_slots)
-	var rejected_squads = total_squads_arrived - accepted_squads
-	var drengr_data = load("res://data/units/Unit_Drengr.tres")
-	var flavor = ""
-	var result = ""
-		var renown_loss = rejected_squads * 10
 func _update_ui() -> void:
 	pass # (Body Omitted)
 	var jarl = DynastyManager.current_jarl
@@ -2466,18 +2466,18 @@ func _update_ui() -> void:
 	var readiness_pct := int(settlement.fleet_readiness * 100)
 func _show_winter_start_popup() -> void:
 	pass # (Body Omitted)
-	var report = DynastyManager.winter_consumption_report
-	var severity = report.get("severity", "NORMAL")
+	var report = WinterManager.winter_consumption_report
+	var severity = report.get("severity_name", "NORMAL")
 	var flavor = ""
 	var color_tag = "white"
 	var desc = "[center][color=%s][b]%s WINTER[/b][/color][/center]\n\n" % [color_tag, severity]
 func _show_crisis_state() -> void:
 	pass # (Body Omitted)
-	var report = DynastyManager.winter_consumption_report
+	var report = WinterManager.winter_consumption_report
 	var text = "[center][color=red][b]CRISIS: SHORTAGES[/b][/color][/center]\n"
 func _show_normal_state() -> void:
 	pass # (Body Omitted)
-	var report = DynastyManager.winter_upkeep_report
+	var report = WinterManager.winter_upkeep_report
 	var text = "[b]Winter Log:[/b]\n"
 func _update_button_states() -> void:
 	pass # (Body Omitted)
@@ -2487,64 +2487,65 @@ func _update_button_states() -> void:
 	var food_cost = max(100, warband_count * 50)
 	var current_food = settlement.treasury.get("food", 0)
 	var can_afford_feast = current_food >= food_cost
-	var feast_tt = "COST: %d Food, 1 Hall Action\n" % food_cost
-	var gather_tt = "COST: 1 Hall Action\n"
+	var feast_tt = "COST: %d Food, 1 Hall Action\nEFFECT: +50 Renown, Maximize Loyalty." % food_cost
+	var gather_tt = "COST: 1 Hall Action\nEFFECT: Attract Seasonal Drengir."
 func _disconnect_overlay_buttons() -> void:
 	pass # (Body Omitted)
 	var buttons = [btn_resolve_1, btn_resolve_2, btn_resolve_3]
 func _display_crisis_overlay() -> void:
 	pass # (Body Omitted)
-	var report = DynastyManager.winter_consumption_report
+	var report = WinterManager.winter_consumption_report
 	var food_def = report["food_deficit"]
 	var wood_def = report["wood_deficit"]
 	var food_total = report.get("food_cost", 0)
 	var wood_total = report.get("wood_cost", 0)
-	var narrative_title = ""
+	var narrative_title = "HARDSHIP"
 	var narrative_body = ""
 	var text = "[center]%s[/center]\n\n" % narrative_body
 	var missing_items = []
 	var gold_cost = (food_def * 5) + (wood_def * 5)
 	var has_action = DynastyManager.current_jarl.current_hall_actions > 0
 		var deaths = max(1, int(food_def / 5))
-func _display_dispute(card: DisputeEventData) -> void:
+func _on_end_winter_pressed() -> void:
 	pass # (Body Omitted)
-	var can_afford_gold = SettlementManager.current_settlement.treasury.get("gold", 0) >= card.gold_cost
-func _close_overlay() -> void:
+func _on_gather_warband_clicked() -> void:
+	pass # (Body Omitted)
+	var jarl = DynastyManager.get_current_jarl()
+	var total_squads_arrived = 1 + randi_range(0, 2) + int(jarl.renown / 100.0)
+	var ship_cap = SettlementManager.get_total_ship_capacity_squads()
+	var current_squads = SettlementManager.current_settlement.warbands.size()
+	var open_slots = max(0, ship_cap - current_squads)
+	var accepted = min(total_squads_arrived, open_slots)
+	var rejected = total_squads_arrived - accepted
+		var drengr = load("res://data/units/Unit_Drengr.tres")
+	var result_text = "[color=green]Recruited: %d Squads[/color]" % accepted
+		var renown_loss = rejected * 10
+func _on_thing_clicked() -> void:
+	pass # (Body Omitted)
+		var card = EventManager.draw_dispute_card()
+func _display_dispute(card: DisputeEventData) -> void:
 	pass # (Body Omitted)
 func _on_dispute_pay_gold() -> void:
 	pass # (Body Omitted)
 func _on_dispute_pay_force() -> void:
 	pass # (Body Omitted)
 		var s = SettlementManager.current_settlement
-			var v = s.warbands.pick_random()
 func _on_dispute_ignore() -> void:
-	pass # (Body Omitted)
-func _on_refit_clicked() -> void:
 	pass # (Body Omitted)
 func _on_feast_clicked() -> void:
 	pass # (Body Omitted)
-	var settlement = SettlementManager.current_settlement
-	var food_cost = max(100, settlement.warbands.size() * 50)
-			var flavor = "The mead flows freely, and the bards sing tales of your ancestors. The warriors clash mugs and swear oaths of loyalty to your name."
-			var result = "[color=green]+50 Renown\nWarband Loyalty Restored[/color]"
-func _on_thing_clicked() -> void:
-	pass # (Body Omitted)
-		var card = DynastyManager.draw_dispute_card()
-func _on_end_winter_pressed() -> void:
-	pass # (Body Omitted)
-func _display_action_result(title: String, flavor_text: String, result_text: String) -> void:
-	pass # (Body Omitted)
-	var full_text = "%s\n\n[b]RESULT:[/b]\n%s" % [flavor_text, result_text]
+	var s = SettlementManager.current_settlement
+	var cost = max(100, s.warbands.size() * 50)
 func _on_blot_clicked() -> void:
 	pass # (Body Omitted)
-	var food_cost = 50
-	var settlement = SettlementManager.current_settlement
 func _display_blot_options() -> void:
 	pass # (Body Omitted)
-func _commit_blot(modifier_key: String, god_name: String) -> void:
+func _commit_blot(key: String, god: String) -> void:
 	pass # (Body Omitted)
-		var flavor = ""
-		var result = ""
+func _display_action_result(title: String, flavor: String, result: String) -> void:
+	pass # (Body Omitted)
+func _close_overlay() -> void:
+	pass # (Body Omitted)
 
 
 ### FILE: res://scripts/units/Base_Unit.gd ###
@@ -3229,6 +3230,31 @@ func test_encumbrance_math():
 	pass # (Body Omitted)
 
 
+### FILE: res://test/unit/test_RaidManager.gd ###
+extends GutTest
+var raid_manager
+var mock_jarl
+func before_each():
+	pass # (Body Omitted)
+func after_each():
+	pass # (Body Omitted)
+func test_initial_state():
+	pass # (Body Omitted)
+func test_prepare_raid_force():
+	pass # (Body Omitted)
+	var warband = WarbandData.new()
+	var force: Array[WarbandData] = [warband]
+func test_attrition_safe_range():
+	pass # (Body Omitted)
+	var result = raid_manager.calculate_journey_attrition(10.0)
+func test_attrition_risky_range():
+	pass # (Body Omitted)
+	var result = raid_manager.calculate_journey_attrition(5000.0)
+func test_defensive_loss_renoun():
+	pass # (Body Omitted)
+	var result = raid_manager.process_defensive_loss()
+
+
 ### FILE: res://test/unit/test_squad_math.gd ###
 extends GutTestBase
 var formation: SquadFormation
@@ -3266,6 +3292,30 @@ func test_wergild_bankruptcy_protection():
 	var result = {
 	var total_wergild = result.casualties[0].wergild_cost
 	var net_gold = max(0, result.gold_looted - total_wergild)
+
+
+### FILE: res://test/unit/test_WinterManager.gd.gd ###
+extends GutTest
+var winter_manager
+var mock_settlement
+var mock_jarl
+func before_each():
+	pass # (Body Omitted)
+func after_each():
+	pass # (Body Omitted)
+func test_calculate_demand_normal():
+	pass # (Body Omitted)
+	var report = winter_manager.calculate_winter_demand(mock_settlement)
+func test_consumption_applied_when_affordable():
+	pass # (Body Omitted)
+func test_crisis_trigger():
+	pass # (Body Omitted)
+func test_resolve_crisis_with_gold():
+	pass # (Body Omitted)
+	var success = winter_manager.resolve_crisis_with_gold()
+func test_resolve_sacrifice_burn_ships():
+	pass # (Body Omitted)
+	var success = winter_manager.resolve_crisis_with_sacrifice("burn_ships")
 
 
 ### FILE: res://test/unit/test_winter_math.gd ###
@@ -3652,6 +3702,29 @@ func _on_remove_worker() -> void:
 	pass # (Body Omitted)
 
 
+### FILE: res://ui/components/DateAndControls.gd ###
+class_name DateAndControls
+extends PanelContainer
+@export var label_date: Label
+@export var btn_end_year: Button
+func _ready() -> void:
+	pass # (Body Omitted)
+func _update_date() -> void:
+	pass # (Body Omitted)
+	var jarl = DynastyManager.current_jarl
+func _on_end_year_pressed() -> void:
+	pass # (Body Omitted)
+func _on_treasury_updated(_treasury: Dictionary) -> void:
+	pass # (Body Omitted)
+func _update_winter_tooltip() -> void:
+	pass # (Body Omitted)
+	var current_food = SettlementManager.current_settlement.treasury.get("food", 0)
+	var report = WinterManager.calculate_winter_demand(SettlementManager.current_settlement)
+	var demand = report.get("food_demand", 0)
+	var status = "Safe"
+	var text = "End the Year\n"
+
+
 ### FILE: res://ui/components/HeirCard.gd ###
 extends PanelContainer
 class_name HeirCard
@@ -3666,14 +3739,38 @@ func _gui_input(event: InputEvent) -> void:
 	pass # (Body Omitted)
 
 
-### FILE: res://ui/components/RichTooltipButton.gd ###
-class_name RichTooltipButton
-extends Button
-func _make_custom_tooltip(for_text: String) -> Object:
+### FILE: res://ui/components/ResourceBar.gd ###
+class_name ResourceBar
+extends PanelContainer
+@export var label_gold: Label
+@export var label_wood: Label
+@export var label_food: Label
+@export var label_stone: Label
+@export var label_renown: Label
+@export var label_pop: Label
+func _ready() -> void:
 	pass # (Body Omitted)
-	var panel = PanelContainer.new()
-		var ui_node: Node = self
-	var rtl = RichTextLabel.new()
+func _on_settlement_loaded(data: SettlementData) -> void:
+	pass # (Body Omitted)
+func _on_treasury_updated(treasury: Dictionary) -> void:
+	pass # (Body Omitted)
+func _on_jarl_stats_updated(jarl: JarlData) -> void:
+	pass # (Body Omitted)
+func _update_population(data: SettlementData) -> void:
+	pass # (Body Omitted)
+	var idle_p = SettlementManager.get_idle_peasants()
+	var idle_t = SettlementManager.get_idle_thralls()
+	var total_idle = idle_p + idle_t
+	var total_pop = data.population_peasants + data.population_thralls
+
+
+### FILE: res://ui/components/RichTooltipButton.gd ###
+extends Button
+const TOOLTIP_SCENE = preload("res://ui/components/RichTooltip.tscn")
+func _make_custom_tooltip(for_text: String) -> Control:
+	pass # (Body Omitted)
+	var tooltip_instance = TOOLTIP_SCENE.instantiate()
+	var label = tooltip_instance.find_child("RichTextLabel", true, false)
 
 
 ### FILE: res://ui/components/TreasuryHUD.gd ###

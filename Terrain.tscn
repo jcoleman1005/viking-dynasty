@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=4 uid="uid://bq6j42x1inb6r"]
+
+[ext_resource type="TileSet" uid="uid://c4t78fgft7wus" path="res://resources/Isometric_Tileset.tres" id="1_46jbc"]
+
+[node name="TileMapLayer" type="TileMapLayer"]
+tile_map_data = PackedByteArray("AAAAAAAAAQABAAYAAAAAAP//AQACAAUAAAD/////AQAAAAYAAAD//wAAAQAAAAUAAAD//wEAAQABAAUAAAAAAAEAAQAAAAcAAAABAAEAAQABAAcAAAA=")
+tile_set = ExtResource("1_46jbc")

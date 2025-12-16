@@ -1,4 +1,3 @@
-# res://scripts/generators/MapDataGenerator.gd
 class_name MapDataGenerator
 extends RefCounted
 
@@ -22,7 +21,7 @@ const B_RELIC = "res://data/buildings/generated/Eco_Reliquary.tres"
 const B_HALL = "res://data/buildings/GreatHall.tres"
 const B_WALL = "res://data/buildings/Bldg_Wall.tres"
 
-# --- MODIFIED: Added fixed_name parameter ---
+# --- Main Generation Function ---
 static func generate_region_data(tier: int, fixed_name: String = "") -> WorldRegionData:
 	var data = WorldRegionData.new()
 	
@@ -56,10 +55,8 @@ static func generate_region_data(tier: int, fixed_name: String = "") -> WorldReg
 	return data
 
 static func _generate_name() -> String:
-	# Removed Prefix logic. Just pick a valid historical name.
 	return REGION_NAMES.pick_random()
 
-# ... (Keep _generate_target_for_tier, _pick_type_by_tier, _generate_procedural_settlement, etc. exactly as they were) ...
 static func _generate_target_for_tier(region_name: String, tier: int, difficulty: float) -> RaidTargetData:
 	var target = RaidTargetData.new()
 	var type = _pick_type_by_tier(tier)
@@ -79,6 +76,11 @@ static func _pick_type_by_tier(tier: int) -> String:
 
 static func _generate_procedural_settlement(type: String, difficulty: float) -> SettlementData:
 	var s = SettlementData.new()
+	
+	# [NEW] Assign a permanent seed for terrain generation
+	# This ensures that if we revisit this target, the grass/coastline is identical.
+	s.map_seed = randi()
+	
 	s.placed_buildings.clear()
 	s.warbands.clear()
 	
@@ -94,7 +96,11 @@ static func _generate_procedural_settlement(type: String, difficulty: float) -> 
 			s.treasury = {"gold": 100, "wood": 100, "food": 100}
 			
 	# 2. Place Buildings (The "Destruction" Loot)
-	# Always start with a Hall in the center (approx 30, 20 on a 60x40 grid)
+	# Center is (30, 20). 
+	# Note: In TerrainGenerator, "Beach" starts at Y=28.
+	# Buildings placed at Y=20 +/- 6 range from Y=14 to Y=26.
+	# This safely places them on the "Grass" biome.
+	
 	s.placed_buildings.append({ "resource_path": B_HALL, "grid_position": Vector2i(30, 20) })
 	
 	var building_count = int(3 * difficulty)
@@ -107,6 +113,7 @@ static func _generate_procedural_settlement(type: String, difficulty: float) -> 
 	for i in range(building_count):
 		var offset_x = randi_range(-6, 6)
 		var offset_y = randi_range(-6, 6)
+		
 		# Ensure we don't overwrite the hall (simple check)
 		if abs(offset_x) < 3 and abs(offset_y) < 3: continue
 		
@@ -123,12 +130,10 @@ static func _generate_procedural_settlement(type: String, difficulty: float) -> 
 static func _clone_settlement_data(original: SettlementData) -> SettlementData:
 	var clone = SettlementData.new()
 	
-	# Deep copy safe properties
-	clone.treasury = original.treasury.duplicate()
+	# [NEW] Copy the seed so the clone generates the same terrain
+	clone.map_seed = original.map_seed
 	
-	# --- FIX: Use clear() + append for strict arrays ---
-	# Do not assign [] directly, as Godot 4 treats that as a generic Array
-	# which conflicts with Array[Dictionary]
+	clone.treasury = original.treasury.duplicate()
 	
 	clone.placed_buildings.clear()
 	for b in original.placed_buildings:
@@ -137,7 +142,6 @@ static func _clone_settlement_data(original: SettlementData) -> SettlementData:
 	clone.pending_construction_buildings.clear()
 	for p in original.pending_construction_buildings:
 		clone.pending_construction_buildings.append(p.duplicate())
-	# ---------------------------------------------------
 		
 	# Warbands start empty for new clones (to be scaled later)
 	clone.warbands.clear() 

@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3 uid="uid://d3ifdm0rvd5kl"]
+[gd_scene load_steps=13 format=3 uid="uid://d3ifdm0rvd5kl"]
 
 [ext_resource type="Script" uid="uid://cuw68f180xbui" path="res://scenes/missions/RaidMission.gd" id="1_qt4qp"]
 [ext_resource type="PackedScene" uid="uid://cyp3t7gbdg0wx" path="res://player/RTSController.tscn" id="2_8icmc"]
@@ -11,6 +11,7 @@
 [ext_resource type="PackedScene" uid="uid://ptujtdi5jtsk" path="res://scripts/utility/GridVisualizer.tscn" id="6_l8hqj"]
 [ext_resource type="Script" uid="uid://by77ij2ft60cp" path="res://scenes/missions/RaidObjectiveManager.gd" id="6_olj83"]
 [ext_resource type="PackedScene" uid="uid://io325box3m4m" path="res://scenes/world/UnitSpawner.tscn" id="11_eoj4n"]
+[ext_resource type="TileSet" uid="uid://c4t78fgft7wus" path="res://resources/Isometric_Tileset.tres" id="12_k882g"]
 
 [node name="RaidMission" type="Node2D"]
 script = ExtResource("1_qt4qp")
@@ -18,6 +19,9 @@ enemy_wave_units = Array[ExtResource("2_y6ix7")]([ExtResource("3_eoj4n")])
 default_enemy_base_path = "res://data/settlements/generated/raid_rich_hub_01.tres"
 enemy_spawn_position = NodePath("EnemySpawnPosition")
 fyrd_unit_scene = ExtResource("4_k882g")
+
+[node name="TileMapLayer" type="TileMapLayer" parent="."]
+tile_set = ExtResource("12_k882g")
 
 [node name="PlayerStartPosition" type="Marker2D" parent="."]
 position = Vector2(100, 600)

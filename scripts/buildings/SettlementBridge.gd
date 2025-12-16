@@ -51,7 +51,6 @@ var default_end_of_year_popup: PackedScene = preload("res://ui/EndOfYear_Popup.t
 @onready var storefront_ui: Control = $UI/Storefront_UI
 @onready var building_cursor: Node2D = $BuildingCursor
 
-
 # --- Local Node References ---
 @onready var building_container: Node2D = $BuildingContainer
 @onready var rts_controller: RTSController = $RTSController
@@ -83,21 +82,17 @@ func _ready() -> void:
 		unit_spawner.unit_container = unit_container
 		unit_spawner.rts_controller = rts_controller
 	
-	# PRESERVED: Set default UI state BEFORE checking for raid results
 	if storefront_ui: storefront_ui.show()
 	if end_of_year_popup: end_of_year_popup.hide()
 
-	# PRESERVED: Test Data Injection
 	if not DynastyManager.current_jarl:
 		var test_jarl = DynastyTestDataGenerator.generate_test_dynasty()
 		DynastyManager.current_jarl = test_jarl
 		DynastyManager.jarl_stats_updated.emit(test_jarl)
 	
-	# Check for Raid Return via RaidManager
 	if RaidManager.pending_raid_result != null:
 		_process_raid_return()
 
-	# PRESERVED: RTS Debug Connections
 	if rts_controller and not EventBus.select_command.is_connected(rts_controller._on_select_command):
 		print("DIAGNOSTIC: Forcing RTSController connections.")
 		EventBus.select_command.connect(rts_controller._on_select_command)
@@ -105,13 +100,11 @@ func _ready() -> void:
 		EventBus.attack_command.connect(rts_controller._on_attack_command)
 		EventBus.interact_command.connect(rts_controller._on_interact_command)
 		
-	# Ensure the new UI components initialize with current data
 	if resource_bar and SettlementManager.current_settlement:
 		resource_bar._on_treasury_updated(SettlementManager.current_settlement.treasury)
 		
 	if date_controls:
 		date_controls._update_date()
-
 
 func _exit_tree() -> void:
 	SettlementManager.unregister_active_scene_nodes()
@@ -139,12 +132,10 @@ func _setup_default_resources() -> void:
 	if not end_of_year_popup_scene: end_of_year_popup_scene = default_end_of_year_popup
 
 func _setup_ui() -> void:
-	# End Year Popup
 	end_of_year_popup = end_of_year_popup_scene.instantiate()
 	ui_layer.add_child(end_of_year_popup)
 	end_of_year_popup.collect_button_pressed.connect(_on_payout_collected)
 	
-	# Worker UI
 	if ResourceLoader.exists(WORK_ASSIGNMENT_SCENE_PATH):
 		var scene = load(WORK_ASSIGNMENT_SCENE_PATH)
 		if scene:
@@ -153,7 +144,6 @@ func _setup_ui() -> void:
 			if work_assignment_ui.has_signal("assignments_confirmed"):
 				work_assignment_ui.assignments_confirmed.connect(_on_worker_assignments_confirmed)
 	
-	# Idle Warning Dialog
 	idle_warning_dialog = ConfirmationDialog.new()
 	idle_warning_dialog.title = "Idle Villagers"
 	idle_warning_dialog.ok_button_text = "End Year Anyway"
@@ -334,8 +324,6 @@ func _on_end_year_pressed() -> void:
 func _start_end_year_sequence() -> void:
 	_close_all_popups()
 	Loggie.msg("SettlementBridge: Handing off to DynastyManager for Winter Cycle.").domain("SETTLEMENT").info()
-	
-	# FIX: Call DynastyManager to prep the Jarl, not WinterManager directly
 	DynastyManager.start_winter_cycle()
 
 func _on_payout_collected(payout: Dictionary) -> void:
@@ -348,8 +336,6 @@ func _on_payout_collected(payout: Dictionary) -> void:
 		payout.erase("renown")
 	
 	SettlementManager.deposit_resources(payout)
-	
-	# Reset Managers
 	RaidManager.pending_raid_result = null
 	
 	if storefront_ui: storefront_ui.show()
@@ -381,8 +367,27 @@ func _clear_all_buildings() -> void:
 
 func _initialize_settlement() -> void:
 	home_base_data = _create_default_settlement()
+	
+	# 1. LOAD DATA FIRST (To get the seed)
 	SettlementManager.register_active_scene_nodes(building_container)
 	SettlementManager.load_settlement(home_base_data)
+	
+	var current_data = SettlementManager.current_settlement
+	
+	# 2. GENERATE OR LOCK SEED
+	if current_data.map_seed == 0:
+		current_data.map_seed = randi() # Create DNA for the first time
+		SettlementManager.save_settlement() # Save it immediately
+		
+	# 3. PAINT MAP (Using the seed)
+	if has_node("TileMapLayer"):
+		TerrainGenerator.generate_base_terrain(
+			$TileMapLayer, 
+			SettlementManager.GRID_WIDTH, 
+			SettlementManager.GRID_HEIGHT,
+			current_data.map_seed
+		)
+	
 	_spawn_placed_buildings()
 	
 	await get_tree().process_frame 
@@ -425,9 +430,20 @@ func _spawn_single_building(entry: Dictionary, is_new: bool) -> BaseBuilding:
 	new_building.data = building_data
 	new_building.grid_coordinate = grid_pos 
 	
-	var cell = SettlementManager.get_active_grid_cell_size()
-	var center_offset = (Vector2(building_data.grid_size) * cell) / 2.0
-	new_building.global_position = (Vector2(grid_pos) * cell) + center_offset
+	# [FIX] ISOMETRIC POSITIONING
+	var origin_pos = SettlementManager.grid_to_world(grid_pos)
+	
+	# Calculate offset to center the sprite on the diamond footprint
+	var half_size = SettlementManager.TILE_HALF_SIZE
+	var size_offset_x = (building_data.grid_size.x - building_data.grid_size.y) * half_size.x * 0.5
+	var size_offset_y = (building_data.grid_size.x + building_data.grid_size.y) * half_size.y * 0.5
+	
+	# Apply final position
+	new_building.global_position = origin_pos
+	
+	# Optional: Apply visual offset if the sprite pivot isn't bottom-center
+	# new_building.position.x += size_offset_x
+	# new_building.position.y += size_offset_y
 	
 	building_container.add_child(new_building)
 	
@@ -468,7 +484,8 @@ func _on_building_placement_cancelled(_building_data: BuildingData) -> void: pas
 
 func _on_building_placement_completed() -> void:
 	if awaiting_placement and SettlementManager.current_settlement:
-		var grid_pos = Vector2i(building_cursor.global_position / SettlementManager.CELL_SIZE_PX)
+		# [FIX] Use world_to_grid helper instead of manual division
+		var grid_pos = SettlementManager.world_to_grid(building_cursor.global_position)
 		SettlementManager.place_building(awaiting_placement, grid_pos, true)
 	awaiting_placement = null
 

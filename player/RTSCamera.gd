@@ -2,7 +2,6 @@
 # Basic RTS-style camera controller for Phase 3
 # Provides WASD movement, mouse edge panning, drag panning, and zooming.
 # Keeps camera controls simple and focused on tactical gameplay.
-
 extends Camera2D
 class_name RTSCamera
 
@@ -18,13 +17,19 @@ class_name RTSCamera
 @export_group("Zoom")
 @export var min_zoom: float = 0.5  # Far away
 @export var max_zoom: float = 2.0  # Close up
-@export var zoom_speed: float = 0.1
+@export var zoom_speed: float = 0.25 # Steps of 0.25 are cleaner for pixels
 @export var zoom_smoothing: float = 10.0
 
 # --- Bounds Settings ---
 @export_group("Bounds")
 @export var bounds_enabled: bool = true
-@export var bounds_rect: Rect2 = Rect2(-1000, -1000, 3000, 2500)
+# [UPDATED] Bounds for 60x40 Isometric Map (Diamonds extend negative X)
+# Left: -1280 (With buffer -1500)
+# Right: 1920 (With buffer 2500)
+# Top: 0 (With buffer -500)
+# Bottom: 1600 (With buffer 2000)
+# Rect2(x, y, width, height)
+@export var bounds_rect: Rect2 = Rect2(-1500, -500, 4000, 2500)
 
 # Internal State
 var target_zoom: Vector2 = Vector2.ONE
@@ -34,7 +39,7 @@ var drag_start_camera_pos: Vector2 = Vector2.ZERO
 var input_locked: bool = false
 
 func _ready() -> void:
-	Loggie.msg("RTS Camera Initialized").domain("RTS").info() # Check your Output tab for this!
+	Loggie.msg("RTS Camera Initialized").domain("RTS").info()
 	# Initialize target zoom to current zoom
 	target_zoom = zoom
 	make_current()
@@ -76,7 +81,11 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _process(delta: float) -> void:
 	# 1. Apply Smooth Zoom
-	zoom = zoom.lerp(target_zoom, zoom_smoothing * delta)
+	# [FIX] Snap the target to clean fractions (0.5, 0.75, 1.0) to prevent shimmering
+	var snapped_target = snapped(target_zoom.x, 0.1) 
+	var v_target = Vector2(snapped_target, snapped_target)
+	
+	zoom = zoom.lerp(v_target, zoom_smoothing * delta)
 	
 	# 2. Handle Keyboard/Edge Movement (Only if not dragging)
 	if not is_dragging:

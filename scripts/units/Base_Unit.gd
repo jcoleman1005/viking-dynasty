@@ -7,11 +7,7 @@ signal fsm_ready(unit)
 
 @export var data: UnitData
 var unit_identity: String = ""
-# --- NEW: WARBAND IDENTITY ---
-## The specific Warband this unit belongs to.
-## If null, this unit is temporary/mercenary.
 var warband_ref: WarbandData
-# -----------------------------
 
 var fsm
 var current_health: int = 50
@@ -19,89 +15,115 @@ var attack_ai: AttackAI = null
 
 # Node refs
 @onready var attack_timer: Timer = $AttackTimer
-@onready var sprite: Sprite2D = $Sprite2D
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
 @onready var separation_area: Area2D = $SeparationArea
+
+# --- VISUAL SYSTEM UPDATE ---
+@onready var sprite_2d: Sprite2D = $Sprite2D
+# Note: Add 'AnimatedSprite2D' to your scene in the Editor!
+@onready var animated_sprite: AnimatedSprite2D = get_node_or_null("AnimatedSprite2D")
+
+# We track which node is actually being used
+var _active_visual: Node2D = null
+# -----------------------------
 
 @export_group("AI")
 @export var separation_enabled: bool = true
 @export var separation_force: float = 30.0
 @export var separation_radius: float = 40.0
 
-# Visual state system
 var _color_tween: Tween
 const STATE_COLORS := {
-	UnitAIConstants.State.IDLE: Color(0.3, 0.6, 1.0),     # Blue
-	UnitAIConstants.State.MOVING: Color(0.4, 1.0, 0.4),   # Green
-	UnitAIConstants.State.FORMATION_MOVING: Color(0.4, 1.0, 0.4), # Green
-	UnitAIConstants.State.ATTACKING: Color(1.0, 0.3, 0.3) # Red
+	UnitAIConstants.State.IDLE: Color(0.3, 0.6, 1.0),
+	UnitAIConstants.State.MOVING: Color(0.4, 1.0, 0.4),
+	UnitAIConstants.State.FORMATION_MOVING: Color(0.4, 1.0, 0.4),
+	UnitAIConstants.State.ATTACKING: Color(1.0, 0.3, 0.3)
 }
 const ERROR_COLOR := Color(0.7, 0.3, 1.0)
 
-# --- Collision Layer Constants ---
 const LAYER_ENV = 1
 const LAYER_PLAYER_UNIT = 2
 const LAYER_ENEMY_UNIT = 4
 const LAYER_ENEMY_BLDG = 8
 
-# --- NEW: Death State Flag ---
 var _is_dying: bool = false
 
-#Inventory State
 signal inventory_updated(current_load: int, max_load: int)
-var inventory: Dictionary = {} 
+var inventory: Dictionary[String, int] = {} 
 var current_loot_weight: int = 0
 
 func _ready() -> void:
 	if not data:
-		push_warning("BaseUnit: Node '%s' is missing 'UnitData'." % name)
+		Loggie.msg("BaseUnit: Node '%s' is missing 'UnitData'." % name).domain(LogDomains.UNIT).error()
 		return
+	
+	_setup_visuals()
 	
 	var hp_mult = 1.0
 	var dmg_mult = 1.0
-	# Speed is handled by UnitData base, modified by Captains only for now
-	# --- NEW: THOR MODIFIER ---
-	# Global buff for all player units
+	
 	if is_in_group("player_units") and DynastyManager.active_year_modifiers.has("BLOT_THOR"):
-		dmg_mult *= 1.10 # +10% Damage
+		dmg_mult *= 1.10
 	
 	if warband_ref:
-		# 1. Apply Veterancy (XP)
 		var level_mult = warband_ref.get_stat_multiplier()
 		hp_mult *= level_mult
 		dmg_mult *= level_mult
 		
-		# 2. Apply Gear (Gold) - NEW
 		hp_mult *= warband_ref.get_gear_health_mult()
 		dmg_mult *= warband_ref.get_gear_damage_mult()
-		# -----------------------------
 		
-		# 3. Apply Heir Leadership
-		if warband_ref.assigned_heir_name != "":
-			var heir = DynastyManager.find_heir_by_name(warband_ref.assigned_heir_name)
-			if heir:
-				if heir.prowess > 5:
-					var p_bonus = 1.0 + ((heir.prowess - 5) * 0.10)
-					dmg_mult *= p_bonus
-				modulate = Color(1.2, 1.2, 0.8) 
-				Loggie.msg("Unit %s buffed by Captain %s!" % [name, heir.display_name]).domain("UNIT").info()
-		# --- NEW: Assign Identity ---
 		if unit_identity == "":
 			unit_identity = DynastyGenerator.get_random_viking_name()
+			
 	current_health = int(data.max_health * hp_mult)
 	
-	_apply_texture_and_scale()
 	_setup_collision_logic()
 	call_deferred("_deferred_setup", dmg_mult)
 	
-	sprite.modulate = STATE_COLORS.get(UnitAIConstants.State.IDLE, Color.WHITE)
+	# Initial state color/animation
+	on_state_changed(UnitAIConstants.State.IDLE)
+		
 	EventBus.pathfinding_grid_updated.connect(_on_grid_updated)
 	
 	var area_shape = separation_area.get_node_or_null("CollisionShape2D")
 	if area_shape and area_shape.shape is CircleShape2D:
 		area_shape.shape.radius = separation_radius
+
+func _setup_visuals() -> void:
+	# Priority 1: SCENE CONFIGURATION (Editor Handling)
+	# If you set up an AnimatedSprite2D in the scene and gave it frames, we use that.
+	if animated_sprite and animated_sprite.sprite_frames:
+		_active_visual = animated_sprite
+		animated_sprite.visible = true
+		if sprite_2d: sprite_2d.visible = false
+		Loggie.msg("Unit %s using Scene-Based Animations" % name).domain(LogDomains.UNIT).debug()
+		
+	# Priority 2: STATIC FALLBACK (Data Handling)
+	# If no animations are set up, we fall back to the static texture from UnitData.
+	elif data.visual_texture and sprite_2d:
+		_active_visual = sprite_2d
+		sprite_2d.texture = data.visual_texture
+		sprite_2d.visible = true
+		if animated_sprite: animated_sprite.visible = false
+		
 	else:
-		push_warning("'%s' has no 'SeparationArea/CollisionShape2D' with a CircleShape!" % name)
+		_active_visual = sprite_2d # Ultimate fallback
+		
+	# Apply Scaling (Optional: Only if target_pixel_size is set in UnitData)
+	if _active_visual and data.target_pixel_size.x > 0:
+		var tex_size = Vector2.ONE
+		if _active_visual is Sprite2D and _active_visual.texture:
+			tex_size = _active_visual.texture.get_size()
+		elif _active_visual is AnimatedSprite2D and _active_visual.sprite_frames:
+			# Grab size of the first frame of 'idle' or 'default'
+			var anim = "idle" if _active_visual.sprite_frames.has_animation("idle") else "default"
+			if _active_visual.sprite_frames.has_animation(anim):
+				var texture = _active_visual.sprite_frames.get_frame_texture(anim, 0)
+				if texture: tex_size = texture.get_size()
+			
+		if tex_size.x > 0 and tex_size.y > 0:
+			_active_visual.scale = data.target_pixel_size / tex_size
 
 func _setup_collision_logic() -> void:
 	var physics_mask = 0
@@ -125,14 +147,11 @@ func _setup_collision_logic() -> void:
 func _deferred_setup(damage_mult: float = 1.0) -> void:
 	_create_unit_hitbox()
 	
-	# 1. Attempt to setup Attack AI
 	if data.ai_component_scene:
 		attack_ai = data.ai_component_scene.instantiate() as AttackAI
 		if attack_ai:
 			add_child(attack_ai)
 			attack_ai.configure_from_data(data)
-			
-			# Apply Damage Buff
 			attack_ai.attack_damage = int(attack_ai.attack_damage * damage_mult)
 			
 			var target_mask = 0
@@ -142,41 +161,9 @@ func _deferred_setup(damage_mult: float = 1.0) -> void:
 				target_mask = LAYER_ENV | LAYER_PLAYER_UNIT
 			
 			attack_ai.set_target_mask(target_mask)
-		else:
-			push_error("BaseUnit: Failed to instantiate ai_component_scene for %s" % data.display_name)
-			
-	else:
-		# 2. Handle Missing AI (Logic Fork)
-		# If it's NOT a civilian, this is a configuration error (Military units need brains!)
-		if not is_in_group("civilians"):
-			push_error("CRITICAL CONFIG ERROR: Unit '%s' (%s) has NO 'ai_component_scene' assigned! It will be brainless." % [name, data.display_name])
-		
-		# If it IS a civilian, we proceed silently. 
-		# They will initialize the FSM with attack_ai = null, which is valid for peaceful movement.
-
-	# 3. Always create FSM (Movement Brain)
-	# Even if attack_ai is null, the FSM handles movement logic.
+	
 	fsm = UnitFSM.new(self, attack_ai)
 	fsm_ready.emit(self)
-	
-func _apply_texture_and_scale() -> void:
-	if data.target_pixel_size.x <= 0 or data.target_pixel_size.y <= 0:
-		return
-	var target_size: Vector2 = data.target_pixel_size
-
-	# 1. Apply Texture override from Data (if present)
-	if data.visual_texture:
-		sprite.texture = data.visual_texture
-	
-	# 2. Apply Scaling (Always runs, even if using the default Scene texture)
-	if sprite.texture:
-		var texture_size: Vector2 = sprite.texture.get_size()
-		if texture_size.x > 0 and texture_size.y > 0:
-			sprite.scale = target_size / texture_size
-	
-	# 3. Apply Collision Sizing
-	if collision_shape and collision_shape.shape is RectangleShape2D:
-		collision_shape.shape.size = target_size
 
 func _exit_tree() -> void:
 	if EventBus.is_connected("pathfinding_grid_updated", _on_grid_updated):
@@ -192,15 +179,20 @@ func _physics_process(delta: float) -> void:
 	var fsm_velocity = Vector2.ZERO
 	if fsm:
 		fsm.update(delta)
-		# [FIX] Changed 'unit.velocity' to just 'velocity'
 		fsm_velocity = velocity 
 	
-	# Logic Branch: AI Control vs Physics Slide
 	if fsm_velocity.length_squared() > 0.1:
-		# AI is driving: Accelerate towards target speed
 		velocity = velocity.lerp(fsm_velocity, data.acceleration * delta)
+		
+		# --- FLIP LOGIC ---
+		# Flip the active visual based on movement direction
+		if _active_visual:
+			if fsm_velocity.x < -0.1: 
+				_active_visual.flip_h = true
+			elif fsm_velocity.x > 0.1: 
+				_active_visual.flip_h = false
+		# ------------------
 	else:
-		# AI is idle: Apply Friction
 		velocity = velocity.lerp(Vector2.ZERO, data.linear_damping * delta)
 	
 	if separation_enabled:
@@ -227,26 +219,47 @@ func _calculate_separation_push(delta: float) -> Vector2:
 	return push_vector * separation_force * delta
 
 func on_state_changed(state: UnitAIConstants.State) -> void:
+	# 1. Color Feedback (Kept for debug/status clarity)
 	var to_color: Color = STATE_COLORS.get(state, Color.WHITE)
 	_tween_color(to_color, 0.2)
+	
+	# 2. Animation Handling (The Editor Way)
+	if _active_visual is AnimatedSprite2D:
+		var anim_name = "idle"
+		
+		match state:
+			UnitAIConstants.State.IDLE:
+				anim_name = "idle"
+			UnitAIConstants.State.MOVING, UnitAIConstants.State.FORMATION_MOVING:
+				anim_name = "walk"
+			UnitAIConstants.State.ATTACKING:
+				anim_name = "attack"
+			# Add 'work' case here later if needed
+			
+		# Safe play: check if animation exists in the SpriteFrames
+		if (_active_visual as AnimatedSprite2D).sprite_frames.has_animation(anim_name):
+			(_active_visual as AnimatedSprite2D).play(anim_name)
+		else:
+			# Fallback if "attack" or "walk" is missing
+			if (_active_visual as AnimatedSprite2D).sprite_frames.has_animation("idle"):
+				(_active_visual as AnimatedSprite2D).play("idle")
 
 func flash_error_color() -> void:
+	if not _active_visual: return
 	var back_color: Color = STATE_COLORS.get(fsm.current_state, Color.WHITE)
 	var t := create_tween()
-	t.tween_property(sprite, "modulate", ERROR_COLOR, 0.08).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	t.tween_property(sprite, "modulate", back_color, 0.18).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	t.tween_property(_active_visual, "modulate", ERROR_COLOR, 0.08).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	t.tween_property(_active_visual, "modulate", back_color, 0.18).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 func _tween_color(to_color: Color, duration: float = 0.2) -> void:
+	if not _active_visual: return
 	if _color_tween and _color_tween.is_running():
 		_color_tween.kill()
 	_color_tween = create_tween()
-	_color_tween.tween_property(sprite, "modulate", to_color, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_color_tween.tween_property(_active_visual, "modulate", to_color, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
-# --- FIX: Deferred Death Handling ---
 func take_damage(amount: int, attacker: Node2D = null) -> void:
-	# Prevent multiple damage sources triggering death in the same frame
 	if _is_dying: return
-
 	current_health = max(0, current_health - amount)
 	
 	if fsm and is_instance_valid(attacker):
@@ -254,14 +267,14 @@ func take_damage(amount: int, attacker: Node2D = null) -> void:
 	
 	if current_health == 0:
 		_is_dying = true
-		# Critical: Must use call_deferred to avoid modifying scene tree during physics callback
 		call_deferred("die")
-# ------------------------------------
 
 func die() -> void:
+	# Optional: Play death animation before freeing
+	# if _active_visual is AnimatedSprite2D and has "die": 
+	#    await animation_finished
 	if is_in_group("player_units"):
 		EventBus.player_unit_died.emit(self)
-		
 	destroyed.emit()
 	queue_free()
 
@@ -310,42 +323,28 @@ func _create_unit_hitbox() -> void:
 	add_child(hitbox_area)
 	
 func command_retreat(target_pos: Vector2) -> void:
-	if fsm:
-		fsm.command_retreat(target_pos)
+	if fsm: fsm.command_retreat(target_pos)
 
 func command_start_working(target_building: BaseBuilding, target_node: ResourceNode) -> void:
 	if fsm and fsm.has_method("command_start_cycle"):
 		fsm.command_start_cycle(target_building, target_node)
-	else:
-		push_warning("Unit %s tried to start working, but FSM missing 'command_start_cycle'." % name)
 
 func add_loot(resource_type: String, amount: int) -> int:
 	if not data: return 0
-	
-	# Duck typing check for UnitData properties
 	var cap = data.max_loot_capacity if "max_loot_capacity" in data else 0
 	var space_left = cap - current_loot_weight
-	
 	if space_left <= 0: return 0
-		
 	var actual_amount = min(amount, space_left)
-	
-	if not inventory.has(resource_type):
-		inventory[resource_type] = 0
-		
+	if not inventory.has(resource_type): inventory[resource_type] = 0
 	inventory[resource_type] += actual_amount
 	current_loot_weight += actual_amount
-	
 	inventory_updated.emit(current_loot_weight, cap)
 	return actual_amount
 
-# [RESTORED PHASE 1] Logic: Calculate Speed
 func get_speed_multiplier() -> float:
 	if not data: return 1.0
 	var cap = data.max_loot_capacity if "max_loot_capacity" in data else 0
-	
 	if cap <= 0: return 1.0
-	
 	var penalty = data.encumbrance_speed_penalty if "encumbrance_speed_penalty" in data else 0.0
 	var ratio = float(current_loot_weight) / float(cap)
 	return 1.0 - (ratio * penalty)

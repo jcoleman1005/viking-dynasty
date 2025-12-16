@@ -1,6 +1,7 @@
-[gd_resource type="Resource" script_class="SettlementData" load_steps=2 format=3 uid="uid://dsgbqyqqlvlwn"]
+[gd_resource type="Resource" script_class="SettlementData" load_steps=3 format=3 uid="uid://dsgbqyqqlvlwn"]
 
 [ext_resource type="Script" uid="uid://hlb8s5g0yp6k" path="res://data/settlements/SettlementData.gd" id="1_settlement_data"]
+[ext_resource type="Script" uid="uid://koj0vo5eoaum" path="res://data/units/WarbandData.gd" id="2_051ys"]
 
 [resource]
 script = ExtResource("1_settlement_data")
@@ -68,9 +69,7 @@ pending_construction_buildings = [{
 "progress": 0,
 "resource_path": "res://data/buildings/Bldg_Wall.tres"
 }]
-garrisoned_units = {
-"res://data/units/Unit_PlayerRaider.tres": 16
-}
+population_thralls = 0
 worker_assignments = {
 "construction": 1,
 "food": 0,

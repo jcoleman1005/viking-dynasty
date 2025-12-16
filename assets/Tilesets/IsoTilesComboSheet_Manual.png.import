@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cbuhtwu7ldanl"
-path="res://.godot/imported/PC _ Computer - Age of Empires II - Buildings - House.png-fc1ff7fda36912a246f58d8892ba4fd2.ctex"
+uid="uid://bs7ixfepjvtd3"
+path="res://.godot/imported/IsoTilesComboSheet_Manual.png-dec3b8a1f8f07367fea3fe0ae60575cd.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/PC _ Computer - Age of Empires II - Buildings - House.png"
-dest_files=["res://.godot/imported/PC _ Computer - Age of Empires II - Buildings - House.png-fc1ff7fda36912a246f58d8892ba4fd2.ctex"]
+source_file="res://assets/Tilesets/IsoTilesComboSheet_Manual.png"
+dest_files=["res://.godot/imported/IsoTilesComboSheet_Manual.png-dec3b8a1f8f07367fea3fe0ae60575cd.ctex"]
 
 [params]
 

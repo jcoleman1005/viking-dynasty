@@ -23,7 +23,10 @@ extends Resource
 @export var encumbrance_speed_penalty: float = 0.5 # 50% slow at max load
 
 @export_group("Visuals")
+## Static texture for simple units (fallback).
 @export var visual_texture: Texture2D
+## Animated frames. If set, this takes priority over visual_texture.
+@export var sprite_frames: SpriteFrames 
 @export var target_pixel_size: Vector2 = Vector2(32, 32)
 
 @export_group("Movement Feel")

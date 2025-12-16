@@ -1,16 +1,90 @@
-[gd_scene load_steps=4 format=3 uid="uid://c7powse34uuxc"]
+[gd_scene load_steps=14 format=3 uid="uid://c7powse34uuxc"]
 
 [ext_resource type="PackedScene" uid="uid://bky4c6y8fkk8g" path="res://scenes/units/Base_Unit.tscn" id="1_7jnl1"]
 [ext_resource type="Script" uid="uid://cumpki2vfwt1e" path="res://scripts/units/CivilianUnit.gd" id="2_7jnl1"]
 [ext_resource type="Resource" uid="uid://iiho31ik0qvb" path="res://data/units/Unit_Civilian.tres" id="3_obgkw"]
+[ext_resource type="Texture2D" uid="uid://c7uhhrtomrun7" path="res://art/units/Villager_Norse_Male_Scaled-Sheet.png" id="4_y5bl7"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_tgpqe"]
+atlas = ExtResource("4_y5bl7")
+region = Rect2(0, 0, 70, 78)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ntucm"]
+atlas = ExtResource("4_y5bl7")
+region = Rect2(70, 0, 70, 78)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_kblp5"]
+atlas = ExtResource("4_y5bl7")
+region = Rect2(140, 0, 70, 78)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_vhjtk"]
+atlas = ExtResource("4_y5bl7")
+region = Rect2(210, 0, 70, 78)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_n61ao"]
+atlas = ExtResource("4_y5bl7")
+region = Rect2(280, 0, 70, 78)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_022ak"]
+atlas = ExtResource("4_y5bl7")
+region = Rect2(350, 0, 70, 78)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7epyv"]
+atlas = ExtResource("4_y5bl7")
+region = Rect2(420, 0, 70, 78)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_trdyw"]
+atlas = ExtResource("4_y5bl7")
+region = Rect2(490, 0, 70, 78)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_tgpqe"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_tgpqe")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ntucm")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_kblp5")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_vhjtk")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_n61ao")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_022ak")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_7epyv")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_trdyw")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 10.0
+}]
 
 [node name="Civilian" instance=ExtResource("1_7jnl1")]
 script = ExtResource("2_7jnl1")
 mob_separation_force = 100.0
 mob_separation_radius = 45.0
 thrall_unit_scene = null
+surrender_hp_threshold = 10
 data = ExtResource("3_obgkw")
 
 [node name="Sprite2D" parent="." index="0"]
+visible = false
 modulate = Color(1, 1, 0, 1)
 region_rect = Rect2(509.90704, 170.3761, 21.10736, 26.607208)
+
+[node name="AnimatedSprite2D" parent="." index="1"]
+visible = true
+position = Vector2(3.5000029, -2.500001)
+scale = Vector2(1.2428572, 1.1923077)
+sprite_frames = SubResource("SpriteFrames_tgpqe")
+animation = &"idle"
