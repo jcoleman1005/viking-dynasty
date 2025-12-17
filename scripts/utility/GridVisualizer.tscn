@@ -4,10 +4,3 @@
 
 [node name="GridVisualizer" type="Node2D"]
 script = ExtResource("1_4xql8")
-
-[node name="ReferenceRect" type="ReferenceRect" parent="."]
-custom_minimum_size = Vector2(1920, 1280)
-anchors_preset = -1
-offset_right = 40.0
-offset_bottom = 40.0
-border_width = 4.0

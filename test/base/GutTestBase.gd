@@ -11,11 +11,12 @@ func before_each():
 		SettlementManager.current_settlement = null
 		
 	if DynastyManager:
-		DynastyManager.winter_crisis_active = false
-		DynastyManager.winter_consumption_report.clear()
 		DynastyManager.active_year_modifiers.clear()
 		DynastyManager.current_jarl = null
 		
+	if WinterManager:
+		WinterManager.winter_crisis_active = false
+		WinterManager.winter_consumption_report.clear()
 	# 2. Silence Logs during testing (Optional, keeps output clean)
 	# Loggie.set_domain_enabled(LogDomains.SYSTEM, false)
 
