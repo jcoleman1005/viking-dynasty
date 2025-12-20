@@ -101,6 +101,7 @@ func _ready() -> void:
 		EventBus.move_command.connect(rts_controller._on_move_command)
 		EventBus.attack_command.connect(rts_controller._on_attack_command)
 		EventBus.interact_command.connect(rts_controller._on_interact_command)
+	
 		
 func _exit_tree() -> void:
 	SettlementManager.unregister_active_scene_nodes()
@@ -372,6 +373,16 @@ func _initialize_settlement() -> void:
 	home_base_data = _create_default_settlement()
 	SettlementManager.register_active_scene_nodes(building_container)
 	SettlementManager.load_settlement(home_base_data)
+	if home_base_data.map_seed == 0:
+		home_base_data.map_seed = randi()
+	# 3. GENERATE MAP (Passing all 4 arguments)
+	if has_node("TileMapLayer"):
+		TerrainGenerator.generate_base_terrain(
+			$TileMapLayer,                # Arg 1: The Node
+			SettlementManager.GRID_WIDTH, # Arg 2: Width (60)
+			SettlementManager.GRID_HEIGHT,# Arg 3: Height (40)
+			home_base_data.map_seed       # Arg 4: The Seed
+		)
 	_spawn_placed_buildings()
 	
 	await get_tree().process_frame 

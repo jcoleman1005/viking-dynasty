@@ -7,13 +7,36 @@ var building_container: Node2D
 func setup(p_container: Node2D, enemy_data: SettlementData) -> void:
 	building_container = p_container
 	
-	# 1. Take Authority: Tell Manager we are now viewing the Enemy Base
+	# 1. Take Authority
 	SettlementManager.active_map_data = enemy_data
-	
-	# 2. Register container so place_building works
 	SettlementManager.register_active_scene_nodes(p_container)
 	
-	# 3. Force a Refresh: This draws the enemy walls onto the shared AStarGrid
+	# --- TERRAIN GENERATION (NEW) ---
+	# We assume the RaidMission scene has a "TileMapLayer" as a sibling to the BuildingContainer
+	var root_node = p_container.get_parent() 
+	var tile_map = root_node.get_node_or_null("TileMapLayer")
+	
+	if tile_map:
+		# Safety: Ensure the enemy has a seed. If not, generate one now.
+		if enemy_data.map_seed == 0:
+			enemy_data.map_seed = randi()
+			# Note: We don't save this permanently to disk for temporary raid targets, 
+			# but it keeps the map stable for the duration of this mission.
+			
+		TerrainGenerator.generate_base_terrain(
+			tile_map,
+			SettlementManager.GRID_WIDTH,  # 60
+			SettlementManager.GRID_HEIGHT, # 60
+			enemy_data.map_seed
+		)
+		
+		# Optional: Spawn trees/rocks for the raid too!
+		# You'll need to reference your ResourceSpawner node here if you added one.
+	else:
+		printerr("RaidMapLoader: Could not find TileMapLayer in Raid Scene!")
+	# -------------------------------
+	
+	# 2. Refresh Grid for Pathfinding
 	SettlementManager._refresh_grid_state()
 
 func load_base(data: SettlementData, is_player_owner: bool) -> BaseBuilding:

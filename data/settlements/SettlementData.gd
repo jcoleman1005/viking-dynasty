@@ -28,6 +28,7 @@ class_name SettlementData
 ## 0.0 (Rotting) to 1.0 (Pristine). Affects journey attrition.
 @export var fleet_readiness: float = 1.0 
 
+@export var map_seed: int = 0
 # --- Helper Functions ---
 func get_fleet_capacity() -> int:
 	var capacity = 2 # Base capacity (2 Warbands)

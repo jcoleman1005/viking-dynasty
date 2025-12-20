@@ -11,9 +11,14 @@ var active_map_data: SettlementData    # The Map currently displayed (Home OR Ra
 # --- Grid Authority (Phase 1 Refactor) ---
 var active_astar_grid: AStarGrid2D = null
 var buildable_cells: Dictionary = {} # Cached territory map
+# --- ISOMETRIC CONSTANTS ---
+const TILE_WIDTH = 64
+const TILE_HEIGHT = 32
+const TILE_HALF_SIZE = Vector2(TILE_WIDTH * 0.5, TILE_HEIGHT * 0.5)
+
+# 60x40 is a good size for this scale
 const GRID_WIDTH = 60
-const GRID_HEIGHT = 40
-const CELL_SIZE_PX = 32
+const GRID_HEIGHT = 60
 
 # --- Scene Refs ---
 var active_building_container: Node2D = null
@@ -25,15 +30,37 @@ func _ready() -> void:
 	_init_grid()
 
 # --- GRID AUTHORITY SYSTEM ---
+func grid_to_world(grid_pos: Vector2i) -> Vector2:
+	var x = (grid_pos.x - grid_pos.y) * TILE_HALF_SIZE.x
+	var y = (grid_pos.x + grid_pos.y) * TILE_HALF_SIZE.y
+	return Vector2(x, y)
+
+# Convert World (Diamond) -> Grid (Square)
+# Usage: var clicked_cell = world_to_grid(get_global_mouse_position())
+func world_to_grid(world_pos: Vector2) -> Vector2i:
+	# Adjust for the center offset since (0,0) is the top tip
+	var x = (world_pos.x / TILE_HALF_SIZE.x + world_pos.y / TILE_HALF_SIZE.y) / 2.0
+	var y = (world_pos.y / TILE_HALF_SIZE.y - (world_pos.x / TILE_HALF_SIZE.x)) / 2.0
+	return Vector2i(floor(x), floor(y))
+	
 
 func _init_grid() -> void:
 	active_astar_grid = AStarGrid2D.new()
 	active_astar_grid.region = Rect2i(0, 0, GRID_WIDTH, GRID_HEIGHT)
-	active_astar_grid.cell_size = Vector2(CELL_SIZE_PX, CELL_SIZE_PX)
+	
+	# [FIX 1] Use the new Isometric Dimensions
+	# Was: Vector2(CELL_SIZE_PX, CELL_SIZE_PX)
+	active_astar_grid.cell_size = Vector2(TILE_WIDTH, TILE_HEIGHT)
+	
+	# [FIX 2] Tell AStar we are in Isometric Mode
+	# This magically makes get_point_path() return the correct
+	# Diamond World Coordinates instead of Square ones!
+	active_astar_grid.cell_shape = AStarGrid2D.CELL_SHAPE_ISOMETRIC_DOWN
+	
+	# Keep this as is (Standard 4-way movement on the logical grid)
 	active_astar_grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_NEVER
 	active_astar_grid.update()
 	
-	# Register with NavigationManager so Units can find it
 	if NavigationManager:
 		NavigationManager.register_grid(active_astar_grid, self)
 
@@ -100,7 +127,7 @@ func is_tile_buildable(grid_pos: Vector2i) -> bool:
 	return buildable_cells.has(grid_pos) and not active_astar_grid.is_point_solid(grid_pos)
 
 func get_active_grid_cell_size() -> Vector2:
-	return Vector2(CELL_SIZE_PX, CELL_SIZE_PX)
+	return Vector2(TILE_WIDTH, TILE_HEIGHT)
 
 func get_astar_path(start_pos: Vector2, end_pos: Vector2, allow_partial_path: bool = false) -> PackedVector2Array:
 	if not is_instance_valid(active_astar_grid): return PackedVector2Array()

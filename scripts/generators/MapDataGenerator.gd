@@ -95,7 +95,10 @@ static func _generate_procedural_settlement(type: String, difficulty: float) -> 
 			
 	# 2. Place Buildings (The "Destruction" Loot)
 	# Always start with a Hall in the center (approx 30, 20 on a 60x40 grid)
-	s.placed_buildings.append({ "resource_path": B_HALL, "grid_position": Vector2i(30, 20) })
+	s.placed_buildings.append({ 
+	"resource_path": B_HALL, 
+	"grid_position": Vector2i(30, 10) 
+})
 	
 	var building_count = int(3 * difficulty)
 	var primary_bldg = B_FARM
