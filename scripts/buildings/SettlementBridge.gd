@@ -414,6 +414,7 @@ func _spawn_placed_buildings() -> void:
 	
 	if unit_spawner: unit_spawner.clear_units()
 	
+
 func _spawn_single_building(entry: Dictionary, is_new: bool) -> BaseBuilding:
 	var res_path = entry["resource_path"]
 	var grid_pos = Vector2i(entry["grid_position"].x, entry["grid_position"].y)
@@ -423,11 +424,20 @@ func _spawn_single_building(entry: Dictionary, is_new: bool) -> BaseBuilding:
 
 	var new_building = building_data.scene_to_spawn.instantiate()
 	new_building.data = building_data
-	new_building.grid_coordinate = grid_pos 
+	new_building.grid_coordinate = grid_pos
 	
-	var cell = SettlementManager.get_active_grid_cell_size()
-	var center_offset = (Vector2(building_data.grid_size) * cell) / 2.0
-	new_building.global_position = (Vector2(grid_pos) * cell) + center_offset
+	# --- FIX: ISOMETRIC POSITIONING ---
+	# 1. Calculate the logical center of the building on the grid
+	var center_grid_x = float(grid_pos.x) + (float(building_data.grid_size.x) / 2.0)
+	var center_grid_y = float(grid_pos.y) + (float(building_data.grid_size.y) / 2.0)
+	
+	# 2. Convert Grid Center -> World Pixels (Isometric Formula)
+	#    Formula matches SettlementManager.place_building logic
+	var final_x = (center_grid_x - center_grid_y) * SettlementManager.TILE_HALF_SIZE.x
+	var final_y = (center_grid_x + center_grid_y) * SettlementManager.TILE_HALF_SIZE.y
+	
+	new_building.global_position = Vector2(final_x, final_y)
+	# ----------------------------------
 	
 	building_container.add_child(new_building)
 	
@@ -437,7 +447,7 @@ func _spawn_single_building(entry: Dictionary, is_new: bool) -> BaseBuilding:
 		new_building.set_state(BaseBuilding.BuildingState.ACTIVE)
 		
 	return new_building
-	
+
 func _create_default_settlement() -> SettlementData:
 	var settlement = SettlementData.new()
 	settlement.treasury = { "gold": start_gold, "wood": start_wood, "food": start_food, "stone": start_stone }
@@ -468,7 +478,9 @@ func _on_building_placement_cancelled(_building_data: BuildingData) -> void: pas
 
 func _on_building_placement_completed() -> void:
 	if awaiting_placement and SettlementManager.current_settlement:
-		var grid_pos = Vector2i(building_cursor.global_position / SettlementManager.CELL_SIZE_PX)
+		# --- FIX: Use Manager API for Coordinate Conversion ---
+		# This handles the Isometric Math automatically
+		var grid_pos = SettlementManager.world_to_grid(building_cursor.global_position)
 		SettlementManager.place_building(awaiting_placement, grid_pos, true)
 	awaiting_placement = null
 

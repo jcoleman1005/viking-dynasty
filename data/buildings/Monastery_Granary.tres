@@ -1,17 +1,13 @@
-[gd_resource type="Resource" script_class="EconomicBuildingData" load_steps=4 format=3 uid="uid://bscr3flprg5ts"]
+[gd_resource type="Resource" script_class="EconomicBuildingData" load_steps=3 format=3 uid="uid://bscr3flprg5ts"]
 
 [ext_resource type="Script" uid="uid://d33smw07vm6y4" path="res://data/buildings/EconomicBuildingData.gd" id="1_abcde"]
-[ext_resource type="Texture2D" uid="uid://cq15assok65xd" path="res://assets/Gemini/windmill_edited.png" id="1_e6pft"]
 [ext_resource type="PackedScene" uid="uid://cws6xle5x52g4" path="res://scenes/buildings/Base_Building.tscn" id="2_fghij"]
 
 [resource]
 script = ExtResource("1_abcde")
 resource_type = "food"
-fixed_payout_amount = 20
-storage_cap = 300
 display_name = "Monastery Granary"
 scene_to_spawn = ExtResource("2_fghij")
-building_texture = ExtResource("1_e6pft")
 build_cost = {
 "gold": 60,
 "stone": 40,

@@ -62,9 +62,19 @@ func _spawn_single_building_visual(entry: Dictionary) -> BaseBuilding:
 	# [FIX] Assign Data BEFORE adding to tree
 	instance.data = b_data
 	
-	var cell_size = SettlementManager.get_active_grid_cell_size()
-	var center_offset = (Vector2(b_data.grid_size) * cell_size) / 2.0
-	instance.global_position = (Vector2(grid_pos) * cell_size) + center_offset
+	# --- FIX: ISOMETRIC POSITIONING ---
+	# 1. Calculate the logical center of the building on the grid
+	#    (e.g., A 2x2 building at (0,0) has a center at (1.0, 1.0))
+	var center_grid_x = float(grid_pos.x) + (float(b_data.grid_size.x) / 2.0)
+	var center_grid_y = float(grid_pos.y) + (float(b_data.grid_size.y) / 2.0)
+	
+	# 2. Convert Grid Center -> World Pixels (Isometric Formula)
+	#    Formula matches SettlementManager.place_building logic
+	var final_x = (center_grid_x - center_grid_y) * SettlementManager.TILE_HALF_SIZE.x
+	var final_y = (center_grid_x + center_grid_y) * SettlementManager.TILE_HALF_SIZE.y
+	
+	instance.global_position = Vector2(final_x, final_y)
+	# ----------------------------------
 	
 	building_container.add_child(instance) # Triggers _ready
 	

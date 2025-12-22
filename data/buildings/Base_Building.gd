@@ -1,4 +1,3 @@
-# res://data/buildings/Base_Building.gd
 @tool
 class_name BaseBuilding
 extends StaticBody2D
@@ -17,24 +16,29 @@ enum BuildingState {
 	ACTIVE 
 }
 
-@export var data: BuildingData
+@export var data: BuildingData:
+	set(value):
+		data = value
+		if Engine.is_editor_hint():
+			_apply_data_and_scale()
+			queue_redraw()
+
 var current_health: int = 100
 var current_state: BuildingState = BuildingState.ACTIVE 
 var construction_progress: int = 0
 
-# --- NEW: HUD Component Reference ---
+# --- Visual Components ---
+var sprite: Sprite2D
+var iso_placeholder: Node2D # Reference to the procedural shape
 var hud: BuildingInfoHUD
 const HUD_SCENE = preload("res://ui/components/BuildingInfoHUD.tscn")
-# ------------------------------------
 
-# Node refs (Physical)
-var sprite: Sprite2D
+# --- Physics Components ---
 var collision_shape: CollisionShape2D
 var hitbox_area: Area2D
 var attack_ai: Node = null 
-var border_rect: ColorRect # Kept for debug borders
 
-# --- NEW: Loot State ---
+# --- Loot State ---
 var available_loot: Dictionary = {}
 var total_loot_value: int = 0
 
@@ -48,16 +52,14 @@ func _ready() -> void:
 		collision_shape.shape = RectangleShape2D.new()
 		add_child(collision_shape)
 	
-	# 2. Setup Sprite
-	if data.building_texture and not sprite:
-		sprite = Sprite2D.new()
-		sprite.texture = data.building_texture
-		add_child(sprite)
+	# 2. Setup Visuals (Sprite OR IsoPlaceholder)
+	_setup_visual_style()
 	
 	# 3. Setup HUD (Visuals)
 	if not hud:
-		hud = HUD_SCENE.instantiate()
-		add_child(hud)
+		if HUD_SCENE:
+			hud = HUD_SCENE.instantiate()
+			add_child(hud)
 	
 	_apply_data_and_scale()
 	
@@ -68,43 +70,65 @@ func _ready() -> void:
 	input_pickable = true
 	_create_hitbox()
 	_setup_defensive_ai()
-	if not Engine.is_editor_hint():
-		_initialize_loot()
+	_initialize_loot()
 		
 	_update_visual_state()
 
+func _setup_visual_style() -> void:
+	# Clear existing to be safe
+	if sprite: 
+		sprite.queue_free()
+		sprite = null
+	if iso_placeholder: 
+		iso_placeholder.queue_free()
+		iso_placeholder = null
+
+	# Decision: Texture vs Placeholder
+	if data.building_texture != null:
+		# Use Sprite
+		sprite = Sprite2D.new()
+		sprite.texture = data.building_texture
+		# Y-Sort Offset: Center bottom of sprite should be at node origin
+		sprite.centered = true 
+		sprite.offset.y = -data.building_texture.get_height() / 2.0
+		add_child(sprite)
+	else:
+		# Use Procedural Iso Placeholder
+		# We attach a Node2D and add the script we wrote previously
+		iso_placeholder = Node2D.new()
+		iso_placeholder.name = "IsoPlaceholder"
+		
+		# Attach the script dynamically if not a scene
+		var script = load("res://scripts/utility/IsoPlaceholder.gd")
+		if script:
+			iso_placeholder.set_script(script)
+			iso_placeholder.set("data", data) # Pass data to it
+			
+		add_child(iso_placeholder)
+
 func _initialize_loot() -> void:
 	if not data is EconomicBuildingData: 
-		# Non-economic buildings have small generic loot
 		available_loot = {"gold": 25} 
 		total_loot_value = 25
 		return
 		
 	var eco = data as EconomicBuildingData
 	var type = eco.resource_type
-	# 3x the passive output is the "Storehouse" amount (Logic from RaidMapGenerator)
 	var amount = eco.base_passive_output * 3
 	
 	available_loot = {type: amount}
 	total_loot_value = amount
-	
-	# Log for debugging
-	Loggie.msg("Building %s initialized with loot: %s" % [name, available_loot]).domain("RAID").debug()
 
-# --- NEW: The Pillage Mechanic ---
 func steal_resources(max_amount: int) -> int:
-	if total_loot_value <= 0:
-		return 0
+	if total_loot_value <= 0: return 0
 		
-	# Find a resource that still has amount left
 	var target_res = ""
 	for key in available_loot:
 		if available_loot[key] > 0:
 			target_res = key
 			break
 			
-	if target_res == "":
-		return 0
+	if target_res == "": return 0
 		
 	var available = available_loot[target_res]
 	var actual_steal = min(available, max_amount)
@@ -112,38 +136,43 @@ func steal_resources(max_amount: int) -> int:
 	available_loot[target_res] -= actual_steal
 	total_loot_value -= actual_steal
 	
-	# Notify System (RaidManager will listen to this)
 	loot_stolen.emit(target_res, actual_steal)
 	
 	if total_loot_value <= 0:
 		loot_depleted.emit(self)
-		modulate = Color(0.5, 0.5, 0.5) # Visually darken to show "Empty"
+		modulate = Color(0.5, 0.5, 0.5)
 		
 	return actual_steal
 
 func _apply_data_and_scale() -> void:
-	var cell_size = Vector2(32, 32)
-	if not Engine.is_editor_hint() and SettlementManager:
-		cell_size = SettlementManager.get_active_grid_cell_size()
+	if not data: return
 	
-	var size = Vector2(data.grid_size) * cell_size
-	
-	# Update Collision
+	# Determine logical size in pixels based on Grid
+	# (Note: IsoPlaceholder handles its own drawing size, we just pass Data)
+	if iso_placeholder:
+		iso_placeholder.set("data", data)
+		
+	# Update Collision (Approximate box for clicking)
+	# For Isometric, a box at (0,0) is "okay" for clicking, 
+	# but technically it covers empty corners. 
+	# For now, we size it to the total width/height of the diamond.
 	if collision_shape and collision_shape.shape: 
-		collision_shape.shape.size = size
+		var cell_size = Vector2(64, 32) # Default
+		if SettlementManager: cell_size = SettlementManager.get_active_grid_cell_size()
+		
+		# A 2x2 grid is 2 cells wide and 2 cells tall in Iso view
+		# Total Width = (Rows + Cols) * HalfWidth
+		# Total Height = (Rows + Cols) * HalfHeight
+		var total_w = (data.grid_size.x + data.grid_size.y) * (cell_size.x * 0.5)
+		var total_h = (data.grid_size.x + data.grid_size.y) * (cell_size.y * 0.5)
+		
+		collision_shape.shape.size = Vector2(total_w, total_h)
 	
-	# Update Sprite
-	if sprite and sprite.texture:
-		var texture_size = sprite.texture.get_size()
-		sprite.scale = size / texture_size
-		# Ensure sprite is behind HUD
-		sprite.z_index = 0
-		hud.z_index = 1
-	
-	# Update HUD
+	# Update HUD Position
 	if hud:
-		hud.setup(data.display_name, size)
-		hud.position = -size / 2.0 # Center it
+		hud.setup(data.display_name, Vector2(64, 64)) # Generic size
+		# Raise HUD above the building visual
+		hud.position = Vector2(0, -64) 
 
 func set_state(new_state: BuildingState) -> void:
 	var old_state = current_state
@@ -162,23 +191,21 @@ func _update_visual_state() -> void:
 	match current_state:
 		BuildingState.BLUEPRINT:
 			hud.set_blueprint_mode()
-			if sprite: sprite.modulate = Color(0.4, 0.6, 1.0, 0.5)
+			modulate = Color(0.4, 0.6, 1.0, 0.8)
 			
 		BuildingState.UNDER_CONSTRUCTION:
 			hud.update_construction(construction_progress, data.construction_effort_required)
-			if sprite: sprite.modulate = Color(0.8, 0.8, 0.8, 1.0)
+			modulate = Color(0.8, 0.8, 0.8, 1.0)
 			
 		BuildingState.ACTIVE:
 			hud.set_active_mode(data.display_name)
 			hud.update_health(current_health, data.max_health)
-			if sprite: sprite.modulate = Color.WHITE
+			modulate = Color.WHITE
 
 func _update_logic_state() -> void:
-	# (Same logic as before, just cleaner file)
 	match current_state:
 		BuildingState.BLUEPRINT, BuildingState.UNDER_CONSTRUCTION:
 			if collision_shape: collision_shape.disabled = true
-			# Hitbox: ENABLED (Mouse can click it)
 			if hitbox_area: 
 				hitbox_area.monitorable = true
 				hitbox_area.monitoring = true
@@ -198,9 +225,7 @@ func add_construction_progress(amount: int) -> void:
 		set_state(BuildingState.UNDER_CONSTRUCTION)
 		
 	construction_progress += amount
-	Loggie.msg("Building %s progress: %d" % [name, construction_progress]).domain("BUILDING").info()
 	
-	# Update HUD
 	if hud:
 		hud.update_construction(construction_progress, data.construction_effort_required)
 
@@ -226,7 +251,7 @@ func _create_hitbox() -> void:
 	hitbox_area = Area2D.new()
 	hitbox_area.name = "Hitbox"
 	if self.collision_layer & 1: hitbox_area.collision_layer = 1
-	else: hitbox_area.collision_layer = 8 # Enemy building layer default
+	else: hitbox_area.collision_layer = 8 
 	hitbox_area.collision_mask = 0
 	hitbox_area.monitorable = true
 	var s = CollisionShape2D.new()
@@ -241,4 +266,4 @@ func _setup_defensive_ai() -> void:
 	attack_ai = data.ai_component_scene.instantiate()
 	add_child(attack_ai)
 	if attack_ai.has_method("configure_from_data"): attack_ai.configure_from_data(data)
-	if attack_ai.has_method("set_target_mask"): attack_ai.set_target_mask(1 << 1) # Default Target Player
+	if attack_ai.has_method("set_target_mask"): attack_ai.set_target_mask(1 << 1)
