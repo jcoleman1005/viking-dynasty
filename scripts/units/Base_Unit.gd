@@ -7,17 +7,14 @@ signal fsm_ready(unit)
 
 @export var data: UnitData
 var unit_identity: String = ""
-# --- NEW: WARBAND IDENTITY ---
-## The specific Warband this unit belongs to.
-## If null, this unit is temporary/mercenary.
 var warband_ref: WarbandData
-# -----------------------------
 
 var fsm
 var current_health: int = 50
 var attack_ai: AttackAI = null
+var _last_pos: Vector2 = Vector2.ZERO
+var _stuck_timer: float = 0.0
 
-# Node refs
 @onready var attack_timer: Timer = $AttackTimer
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
@@ -27,27 +24,43 @@ var attack_ai: AttackAI = null
 @export var separation_enabled: bool = true
 @export var separation_force: float = 30.0
 @export var separation_radius: float = 40.0
+# --- NEW: Obstacle Avoidance ---
+@export var avoidance_enabled: bool = true
+@export var avoidance_force: float = 150.0 
+@export var whisker_length: float = 40.0
 
-# Visual state system
+# --- NEW: Hierarchy System ---
+# Higher number = "I push you, you don't push me"
+@export var avoidance_priority: int = 1
+# -------------------------------
+
+#Debug Toggle
+@export var debug_avoidance_logs: bool = true
+var _debug_log_timer: float = 0.0
+
+# --- NEW: Control Protocol ---
+# If true, child classes (SquadSoldier) control velocity directly.
+# BaseUnit will skip FSM updates but still apply Separation/Avoidance.
+var uses_external_steering: bool = false
+var _last_avoid_dir: Vector2 = Vector2.ZERO
+# -----------------------------
+
 var _color_tween: Tween
 const STATE_COLORS := {
-	UnitAIConstants.State.IDLE: Color(0.3, 0.6, 1.0),     # Blue
-	UnitAIConstants.State.MOVING: Color(0.4, 1.0, 0.4),   # Green
-	UnitAIConstants.State.FORMATION_MOVING: Color(0.4, 1.0, 0.4), # Green
-	UnitAIConstants.State.ATTACKING: Color(1.0, 0.3, 0.3) # Red
+	UnitAIConstants.State.IDLE: Color(0.3, 0.6, 1.0),
+	UnitAIConstants.State.MOVING: Color(0.4, 1.0, 0.4),
+	UnitAIConstants.State.FORMATION_MOVING: Color(0.4, 1.0, 0.4),
+	UnitAIConstants.State.ATTACKING: Color(1.0, 0.3, 0.3)
 }
 const ERROR_COLOR := Color(0.7, 0.3, 1.0)
 
-# --- Collision Layer Constants ---
 const LAYER_ENV = 1
 const LAYER_PLAYER_UNIT = 2
 const LAYER_ENEMY_UNIT = 4
 const LAYER_ENEMY_BLDG = 8
 
-# --- NEW: Death State Flag ---
 var _is_dying: bool = false
 
-#Inventory State
 signal inventory_updated(current_load: int, max_load: int)
 var inventory: Dictionary = {} 
 var current_loot_weight: int = 0
@@ -59,24 +72,18 @@ func _ready() -> void:
 	
 	var hp_mult = 1.0
 	var dmg_mult = 1.0
-	# Speed is handled by UnitData base, modified by Captains only for now
-	# --- NEW: THOR MODIFIER ---
-	# Global buff for all player units
+	
 	if is_in_group("player_units") and DynastyManager.active_year_modifiers.has("BLOT_THOR"):
-		dmg_mult *= 1.10 # +10% Damage
+		dmg_mult *= 1.10 
 	
 	if warband_ref:
-		# 1. Apply Veterancy (XP)
 		var level_mult = warband_ref.get_stat_multiplier()
 		hp_mult *= level_mult
 		dmg_mult *= level_mult
 		
-		# 2. Apply Gear (Gold) - NEW
 		hp_mult *= warband_ref.get_gear_health_mult()
 		dmg_mult *= warband_ref.get_gear_damage_mult()
-		# -----------------------------
 		
-		# 3. Apply Heir Leadership
 		if warband_ref.assigned_heir_name != "":
 			var heir = DynastyManager.find_heir_by_name(warband_ref.assigned_heir_name)
 			if heir:
@@ -84,10 +91,10 @@ func _ready() -> void:
 					var p_bonus = 1.0 + ((heir.prowess - 5) * 0.10)
 					dmg_mult *= p_bonus
 				modulate = Color(1.2, 1.2, 0.8) 
-				Loggie.msg("Unit %s buffed by Captain %s!" % [name, heir.display_name]).domain("UNIT").info()
-		# --- NEW: Assign Identity ---
+				
 		if unit_identity == "":
 			unit_identity = DynastyGenerator.get_random_viking_name()
+			
 	current_health = int(data.max_health * hp_mult)
 	
 	_apply_texture_and_scale()
@@ -100,8 +107,6 @@ func _ready() -> void:
 	var area_shape = separation_area.get_node_or_null("CollisionShape2D")
 	if area_shape and area_shape.shape is CircleShape2D:
 		area_shape.shape.radius = separation_radius
-	else:
-		push_warning("'%s' has no 'SeparationArea/CollisionShape2D' with a CircleShape!" % name)
 
 func _setup_collision_logic() -> void:
 	var physics_mask = 0
@@ -124,15 +129,11 @@ func _setup_collision_logic() -> void:
 
 func _deferred_setup(damage_mult: float = 1.0) -> void:
 	_create_unit_hitbox()
-	
-	# 1. Attempt to setup Attack AI
 	if data.ai_component_scene:
 		attack_ai = data.ai_component_scene.instantiate() as AttackAI
 		if attack_ai:
 			add_child(attack_ai)
 			attack_ai.configure_from_data(data)
-			
-			# Apply Damage Buff
 			attack_ai.attack_damage = int(attack_ai.attack_damage * damage_mult)
 			
 			var target_mask = 0
@@ -142,39 +143,24 @@ func _deferred_setup(damage_mult: float = 1.0) -> void:
 				target_mask = LAYER_ENV | LAYER_PLAYER_UNIT
 			
 			attack_ai.set_target_mask(target_mask)
-		else:
-			push_error("BaseUnit: Failed to instantiate ai_component_scene for %s" % data.display_name)
-			
 	else:
-		# 2. Handle Missing AI (Logic Fork)
-		# If it's NOT a civilian, this is a configuration error (Military units need brains!)
 		if not is_in_group("civilians"):
-			push_error("CRITICAL CONFIG ERROR: Unit '%s' (%s) has NO 'ai_component_scene' assigned! It will be brainless." % [name, data.display_name])
-		
-		# If it IS a civilian, we proceed silently. 
-		# They will initialize the FSM with attack_ai = null, which is valid for peaceful movement.
+			push_error("Config Error: Unit '%s' missing AI." % name)
 
-	# 3. Always create FSM (Movement Brain)
-	# Even if attack_ai is null, the FSM handles movement logic.
 	fsm = UnitFSM.new(self, attack_ai)
 	fsm_ready.emit(self)
 	
 func _apply_texture_and_scale() -> void:
-	if data.target_pixel_size.x <= 0 or data.target_pixel_size.y <= 0:
-		return
+	if data.target_pixel_size.x <= 0 or data.target_pixel_size.y <= 0: return
 	var target_size: Vector2 = data.target_pixel_size
 
-	# 1. Apply Texture override from Data (if present)
-	if data.visual_texture:
-		sprite.texture = data.visual_texture
+	if data.visual_texture: sprite.texture = data.visual_texture
 	
-	# 2. Apply Scaling (Always runs, even if using the default Scene texture)
 	if sprite.texture:
 		var texture_size: Vector2 = sprite.texture.get_size()
 		if texture_size.x > 0 and texture_size.y > 0:
 			sprite.scale = target_size / texture_size
 	
-	# 3. Apply Collision Sizing
 	if collision_shape and collision_shape.shape is RectangleShape2D:
 		collision_shape.shape.size = target_size
 
@@ -189,42 +175,166 @@ func _on_grid_updated(_grid_pos: Vector2i) -> void:
 func _physics_process(delta: float) -> void:
 	if not data: return
 
-	var fsm_velocity = Vector2.ZERO
-	if fsm:
-		fsm.update(delta)
-		# [FIX] Changed 'unit.velocity' to just 'velocity'
-		fsm_velocity = velocity 
+	var desired_velocity = Vector2.ZERO
 	
-	# Logic Branch: AI Control vs Physics Slide
-	if fsm_velocity.length_squared() > 0.1:
-		# AI is driving: Accelerate towards target speed
-		velocity = velocity.lerp(fsm_velocity, data.acceleration * delta)
+	# 1. Determine Input Velocity
+	if uses_external_steering:
+		# Trust that the child class (SquadSoldier) set 'velocity' correctly
+		desired_velocity = velocity
 	else:
-		# AI is idle: Apply Friction
-		velocity = velocity.lerp(Vector2.ZERO, data.linear_damping * delta)
+		# Standard FSM Control
+		if fsm:
+			fsm.update(delta)
+			desired_velocity = velocity 
+	
+	# 2. Context Steering: Add Forces (Shared by ALL units)
+	var final_velocity = desired_velocity
 	
 	if separation_enabled:
-		var separation_push = _calculate_separation_push(delta)
-		velocity += separation_push
-
+		# Calculate separation (prevents stacking)
+		final_velocity += _calculate_separation_push(delta)
+	
+	if avoidance_enabled and final_velocity.length_squared() > 10.0:
+		# Calculate whiskers (prevents corner stuck)
+		final_velocity += _calculate_obstacle_avoidance()
+	
+	# 3. Inertia & Movement
+	if final_velocity.length_squared() > 1.0:
+		velocity = velocity.lerp(final_velocity, data.acceleration * delta)
+	else:
+		velocity = velocity.lerp(Vector2.ZERO, data.linear_damping * delta)
+	
 	move_and_slide()
+	
+	# 4. Anti-Stuck Logic
+	if not uses_external_steering and fsm and fsm.current_state == UnitAIConstants.State.MOVING:
+		_check_stuck_timer(delta)
+			
+	_last_pos = global_position
 
 func _calculate_separation_push(delta: float) -> Vector2:
 	var push_vector = Vector2.ZERO
+	if not separation_area: return Vector2.ZERO
+	
 	var neighbors = separation_area.get_overlapping_bodies()
-	if neighbors.is_empty():
-		return Vector2.ZERO
+	if neighbors.is_empty(): return Vector2.ZERO
 		
 	for neighbor in neighbors:
-		if neighbor == self or not neighbor is CharacterBody2D:
-			continue
-		var away_vector = global_position - neighbor.global_position
-		var distance_sq = away_vector.length_squared()
-		if distance_sq > 0.01 and distance_sq < separation_radius * separation_radius:
-			var push_strength = 1.0 - (sqrt(distance_sq) / separation_radius)
-			push_vector += away_vector.normalized() * push_strength
+		if neighbor == self: continue
+		
+		# Only push against units (CharacterBody2D)
+		if neighbor is CharacterBody2D:
+			var away_vector = global_position - neighbor.global_position
+			var distance_sq = away_vector.length_squared()
+			if distance_sq < 1.0: distance_sq = 1.0
 			
-	return push_vector * separation_force * delta
+			if distance_sq < separation_radius * separation_radius:
+				var current_push_strength = 1.0 - (sqrt(distance_sq) / separation_radius)
+				
+				# --- ANCESTOR'S LEGACY FIX: Rank Check ---
+				if neighbor is BaseUnit:
+					# Case A: They are lower rank (Leader vs Soldier)
+					# Result: I ignore them (or barely feel them). They will move instead.
+					if neighbor.avoidance_priority < self.avoidance_priority:
+						current_push_strength *= 0.1 # 90% resistance to being pushed by minions
+					
+					# Case B: They are higher rank (Soldier vs Leader)
+					# Result: I get out of the way FAST.
+					elif neighbor.avoidance_priority > self.avoidance_priority:
+						current_push_strength *= 2.0 # Double panic to clear the path
+				# -----------------------------------------
+				
+				push_vector += away_vector.normalized() * current_push_strength
+	
+	return push_vector * separation_force * 2.0
+
+# --- NEW: Whisker Logic ---
+func _calculate_obstacle_avoidance() -> Vector2:
+	if velocity.length_squared() < 1.0: return Vector2.ZERO
+	
+	var space_state = get_world_2d().direct_space_state
+	var speed_ratio = velocity.length() / max(data.move_speed, 1.0)
+	var current_whisker_len = whisker_length * clamp(speed_ratio, 0.2, 1.2)
+	
+	var angles = [0.0, deg_to_rad(-35), deg_to_rad(35)]
+	var hit_count = 0
+	var total_escape_dir = Vector2.ZERO
+	
+	# Debug Data
+	var log_hits = []
+	
+	for angle in angles:
+		var dir = velocity.normalized().rotated(angle)
+		var query = PhysicsRayQueryParameters2D.create(
+			global_position, 
+			global_position + (dir * current_whisker_len),
+			LAYER_ENV
+		)
+		var result = space_state.intersect_ray(query)
+		
+		if result:
+			hit_count += 1
+			var hit_normal = result.normal
+			
+			# 1. Calculate Tangents
+			var tangent_left = Vector2(-hit_normal.y, hit_normal.x)
+			var tangent_right = Vector2(hit_normal.y, -hit_normal.x)
+			
+			# 2. Score Tangents
+			var dot_left = tangent_left.dot(velocity)
+			var dot_right = tangent_right.dot(velocity)
+			var best_tangent = tangent_left
+			
+			if dot_right > dot_left:
+				best_tangent = tangent_right
+			
+			# 3. Apply Force with "Anti-Brake" Logic
+			var normal_influence = 0.05 # Default: Only 5% pushback, 95% slide
+			
+			# FIX: If Head-On (Center Ray), use 100% Slide (No Brake)
+			if abs(angle) < 0.01: 
+				normal_influence = 0.0
+			
+			var escape_dir = (best_tangent * (1.0 - normal_influence)) + (hit_normal * normal_influence)
+			total_escape_dir += escape_dir.normalized()
+			
+			if debug_avoidance_logs:
+				log_hits.append({"angle": rad_to_deg(angle), "normal": hit_normal, "escape": escape_dir})
+
+	var final_steer = Vector2.ZERO
+	if hit_count > 0:
+		# FIX: Average the direction, don't sum the magnitude!
+		# This ensures force remains constant (150) regardless of 1, 2, or 3 hits.
+		var avg_dir = total_escape_dir / hit_count
+		final_steer = avg_dir.normalized() * avoidance_force
+
+	# --- DEBUG LOGGER ---
+	if debug_avoidance_logs and hit_count > 0:
+		_debug_log_timer += get_process_delta_time()
+		if _debug_log_timer > 0.5:
+			_debug_log_timer = 0.0
+			print("\n[AVOIDANCE DEBUG] Unit: %s" % name)
+			print(" -> Velocity: %s" % velocity)
+			print(" -> Hits: %d | Final Steer: %s" % [hit_count, final_steer])
+			print("------------------------------------------------")
+			
+	return final_steer
+
+func _check_stuck_timer(delta: float) -> void:
+	var distance_moved = global_position.distance_squared_to(_last_pos)
+	if distance_moved < 1.0:
+		_stuck_timer += delta
+		if _stuck_timer > 1.5:
+			_handle_stuck_unit()
+	else:
+		_stuck_timer = 0.0
+
+func _handle_stuck_unit() -> void:
+	if fsm:
+		var random_nudge = Vector2(randf_range(-1,1), randf_range(-1,1)) * 10.0
+		global_position += random_nudge
+		fsm._recalculate_path()
+		_stuck_timer = 0.0
 
 func on_state_changed(state: UnitAIConstants.State) -> void:
 	var to_color: Color = STATE_COLORS.get(state, Color.WHITE)
@@ -233,35 +343,26 @@ func on_state_changed(state: UnitAIConstants.State) -> void:
 func flash_error_color() -> void:
 	var back_color: Color = STATE_COLORS.get(fsm.current_state, Color.WHITE)
 	var t := create_tween()
-	t.tween_property(sprite, "modulate", ERROR_COLOR, 0.08).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	t.tween_property(sprite, "modulate", back_color, 0.18).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	t.tween_property(sprite, "modulate", ERROR_COLOR, 0.08).set_trans(Tween.TRANS_SINE)
+	t.tween_property(sprite, "modulate", back_color, 0.18).set_trans(Tween.TRANS_SINE)
 
 func _tween_color(to_color: Color, duration: float = 0.2) -> void:
-	if _color_tween and _color_tween.is_running():
-		_color_tween.kill()
+	if _color_tween and _color_tween.is_running(): _color_tween.kill()
 	_color_tween = create_tween()
-	_color_tween.tween_property(sprite, "modulate", to_color, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_color_tween.tween_property(sprite, "modulate", to_color, duration).set_trans(Tween.TRANS_SINE)
 
-# --- FIX: Deferred Death Handling ---
 func take_damage(amount: int, attacker: Node2D = null) -> void:
-	# Prevent multiple damage sources triggering death in the same frame
 	if _is_dying: return
-
 	current_health = max(0, current_health - amount)
-	
 	if fsm and is_instance_valid(attacker):
 		fsm.command_defensive_attack(attacker)
-	
 	if current_health == 0:
 		_is_dying = true
-		# Critical: Must use call_deferred to avoid modifying scene tree during physics callback
 		call_deferred("die")
-# ------------------------------------
 
 func die() -> void:
 	if is_in_group("player_units"):
 		EventBus.player_unit_died.emit(self)
-		
 	destroyed.emit()
 	queue_free()
 
@@ -272,80 +373,58 @@ func command_attack(target: Node2D) -> void:
 	if fsm: fsm.command_attack(target)
 
 var is_selected: bool = false
-
 func set_selected(selected: bool) -> void:
 	is_selected = selected
 	queue_redraw()
 
 func _draw() -> void:
 	if is_selected:
-		var radius = 25.0
-		draw_circle(Vector2.ZERO, radius, Color(1, 1, 0, 0.8), false, 3.0)
+		draw_circle(Vector2.ZERO, 25.0, Color(1, 1, 0, 0.8), false, 3.0)
 
 func _create_unit_hitbox() -> void:
 	var hitbox_area = Area2D.new()
 	hitbox_area.name = "Hitbox"
 	
-	var layer_value = 0
-	if self.collision_layer & LAYER_PLAYER_UNIT: layer_value = LAYER_PLAYER_UNIT
-	elif self.collision_layer & LAYER_ENEMY_UNIT: layer_value = LAYER_ENEMY_UNIT
-	else: layer_value = LAYER_PLAYER_UNIT
-		
+	var layer_value = LAYER_PLAYER_UNIT
+	if self.collision_layer & LAYER_ENEMY_UNIT: layer_value = LAYER_ENEMY_UNIT
+	
 	hitbox_area.collision_layer = layer_value
-	hitbox_area.collision_mask = 0
 	hitbox_area.monitorable = true 
 	hitbox_area.monitoring = false
 	
 	var hitbox_shape = CollisionShape2D.new()
-	var shape_to_use
-	
 	if collision_shape and collision_shape.shape:
-		shape_to_use = collision_shape.shape.duplicate()
+		hitbox_shape.shape = collision_shape.shape.duplicate()
 	else:
-		shape_to_use = CircleShape2D.new()
-		shape_to_use.radius = 15.0
+		hitbox_shape.shape = CircleShape2D.new()
+		hitbox_shape.shape.radius = 15.0
 	
-	hitbox_shape.shape = shape_to_use
 	hitbox_area.add_child(hitbox_shape)
 	add_child(hitbox_area)
-	
+
 func command_retreat(target_pos: Vector2) -> void:
-	if fsm:
-		fsm.command_retreat(target_pos)
+	if fsm: fsm.command_retreat(target_pos)
 
 func command_start_working(target_building: BaseBuilding, target_node: ResourceNode) -> void:
 	if fsm and fsm.has_method("command_start_cycle"):
 		fsm.command_start_cycle(target_building, target_node)
-	else:
-		push_warning("Unit %s tried to start working, but FSM missing 'command_start_cycle'." % name)
 
 func add_loot(resource_type: String, amount: int) -> int:
 	if not data: return 0
-	
-	# Duck typing check for UnitData properties
 	var cap = data.max_loot_capacity if "max_loot_capacity" in data else 0
 	var space_left = cap - current_loot_weight
-	
 	if space_left <= 0: return 0
-		
 	var actual_amount = min(amount, space_left)
-	
-	if not inventory.has(resource_type):
-		inventory[resource_type] = 0
-		
+	if not inventory.has(resource_type): inventory[resource_type] = 0
 	inventory[resource_type] += actual_amount
 	current_loot_weight += actual_amount
-	
 	inventory_updated.emit(current_loot_weight, cap)
 	return actual_amount
 
-# [RESTORED PHASE 1] Logic: Calculate Speed
 func get_speed_multiplier() -> float:
 	if not data: return 1.0
 	var cap = data.max_loot_capacity if "max_loot_capacity" in data else 0
-	
 	if cap <= 0: return 1.0
-	
 	var penalty = data.encumbrance_speed_penalty if "encumbrance_speed_penalty" in data else 0.0
 	var ratio = float(current_loot_weight) / float(cap)
 	return 1.0 - (ratio * penalty)

@@ -370,22 +370,39 @@ func _clear_all_buildings() -> void:
 	awaiting_placement = null
 
 func _initialize_settlement() -> void:
-	home_base_data = _create_default_settlement()
+	# This creates a NEW instance every time, which we don't want for the seed
+	home_base_data = _create_default_settlement() 
+	
 	SettlementManager.register_active_scene_nodes(building_container)
-	SettlementManager.load_settlement(home_base_data)
-	if home_base_data.map_seed == 0:
-		home_base_data.map_seed = randi()
-	# 3. GENERATE MAP (Passing all 4 arguments)
+	
+	# This loads the save file into the Manager's current_settlement
+	SettlementManager.load_settlement(home_base_data) 
+	
+	# FIX: Re-point our local variable to the Manager's "Source of Truth"
+	home_base_data = SettlementManager.current_settlement 
+
+	# Now home_base_data.map_seed will be the saved seed from the .tres file
 	if has_node("TileMapLayer"):
 		TerrainGenerator.generate_base_terrain(
-			$TileMapLayer,                # Arg 1: The Node
-			SettlementManager.GRID_WIDTH, # Arg 2: Width (60)
-			SettlementManager.GRID_HEIGHT,# Arg 3: Height (40)
-			home_base_data.map_seed       # Arg 4: The Seed
+			$TileMapLayer,
+			SettlementManager.GRID_WIDTH,
+			SettlementManager.GRID_HEIGHT,
+			home_base_data.map_seed # Now correctly uses the persistent seed
 		)
 	_spawn_placed_buildings()
 	
+	# 2. WAIT FOR PHYSICS/VISUALS
+	# Essential: Let Godot process the TileMap updates for one frame.
 	await get_tree().process_frame 
+	
+	# 3. --- CRITICAL FIX: REFRESH GRID ---
+	# Now that the terrain exists and is processed, scan it!
+	Loggie.msg("Force Refreshing Grid (Home Settlement)...").domain("SETTLEMENT").info()
+	SettlementManager._refresh_grid_state()
+	# -------------------------------------
+	
+	# 4. SPAWN UNITS
+	# Now they will see the water and avoid it.
 	_sync_villagers()
 	_spawn_player_garrison()
 	

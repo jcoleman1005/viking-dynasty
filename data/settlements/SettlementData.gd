@@ -13,7 +13,7 @@ class_name SettlementData
 @export var pending_construction_buildings: Array = []
 @export var warbands: Array[WarbandData] = []
 @export var max_garrison_bonus: int = 0
-
+@export var map_seed: int = 0
 # --- Population ---
 @export var population_peasants: int = 10 # Free Peasants
 @export var population_thralls: int = 5 # Captive Workers
@@ -28,7 +28,7 @@ class_name SettlementData
 ## 0.0 (Rotting) to 1.0 (Pristine). Affects journey attrition.
 @export var fleet_readiness: float = 1.0 
 
-@export var map_seed: int = 0
+
 # --- Helper Functions ---
 func get_fleet_capacity() -> int:
 	var capacity = 2 # Base capacity (2 Warbands)

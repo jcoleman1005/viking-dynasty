@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3 uid="uid://c53k15q2w8c1a"]
+[gd_scene load_steps=22 format=3 uid="uid://c53k15q2w8c1a"]
 
 [ext_resource type="PackedScene" uid="uid://dqh0xu88khxct" path="res://ui/EndOfYear_Popup.tscn" id="2_5el12"]
 [ext_resource type="Script" uid="uid://dafjxa85ci2rx" path="res://scripts/buildings/SettlementBridge.gd" id="2_c48a7"]
@@ -32,13 +32,140 @@ population_peasants = 5
 population_thralls = 2
 metadata/_custom_type_script = "uid://hlb8s5g0yp6k"
 
+[sub_resource type="GDScript" id="GDScript_cpd76"]
+script/source = "# res://scripts/debug/DebugNavigationVisualizer.gd
+extends Node2D
+
+# --- Configuration ---
+@export var visualize_radius: int = 10 # How many tiles around the mouse to draw solids for
+
+# --- Internal ---
+var last_start: Vector2 = Vector2.ZERO
+var last_end: Vector2 = Vector2.ZERO
+var raw_path: PackedVector2Array = []
+var smoothed_path: PackedVector2Array = []
+var debug_solid_rects: Array[Rect2] = []
+
+func _ready() -> void:
+	z_index = 4096 # Draw on top of everything
+	Loggie.msg(\"Debug Visualizer Ready. Right-Click to test path.\").domain(\"DEBUG\").info()
+
+func _unhandled_input(event: InputEvent) -> void:
+	# Use Right Click to debug a path from Center of Screen -> Mouse
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
+		var mouse_pos = get_global_mouse_position()
+		
+		# Assume start point is center of screen (or find a unit if selected)
+		# For this test, we just use a point 200px to the left of the mouse to simulate travel
+		var start_pos = _find_debug_start_point(mouse_pos)
+		
+		_perform_path_test(start_pos, mouse_pos)
+		get_viewport().set_input_as_handled()
+
+func _find_debug_start_point(mouse_pos: Vector2) -> Vector2:
+	# Try to find a player unit to start from
+	var units = get_tree().get_nodes_in_group(\"player_units\")
+	if not units.is_empty():
+		# Return position of closest unit
+		var closest = units[0]
+		var min_d = closest.global_position.distance_to(mouse_pos)
+		for u in units:
+			var d = u.global_position.distance_to(mouse_pos)
+			if d < min_d:
+				min_d = d
+				closest = u
+		return closest.global_position
+	
+	# Fallback: Just test from screen center
+	var cam = get_viewport().get_camera_2d()
+	if cam: return cam.get_screen_center_position()
+	return Vector2(500, 500)
+
+func _perform_path_test(start: Vector2, end: Vector2) -> void:
+	last_start = start
+	last_end = end
+	
+	print(\"\\n=== PATHFINDING DEBUG LOG ===\")
+	print(\"Request: %s -> %s\" % [start, end])
+	
+	# 1. Access the Grid
+	var grid = NavigationManager.active_astar_grid
+	if not grid:
+		printerr(\"CRITICAL: No Active AStarGrid2D found in NavigationManager!\")
+		return
+	
+	# 2. Get Raw Path (Directly from Grid, bypassing Manager smoothing)
+	var cell_size = grid.cell_size
+	var start_idx = Vector2i(start / cell_size)
+	var end_idx = Vector2i(end / cell_size)
+	
+	# Clamp for raw check
+	var region = grid.region
+	end_idx.x = clampi(end_idx.x, region.position.x, region.end.x - 1)
+	end_idx.y = clampi(end_idx.y, region.position.y, region.end.y - 1)
+	
+	raw_path = grid.get_point_path(start_idx, end_idx)
+	print(\"Raw A* Path Points: %d\" % raw_path.size())
+	
+	# 3. Get Smoothed Path (Via Manager logic)
+	smoothed_path = NavigationManager.get_astar_path(start, end)
+	print(\"Smoothed Path Points: %d\" % smoothed_path.size())
+	
+	if not smoothed_path.is_empty():
+		print(\"Path Start: %s\" % smoothed_path[0])
+		print(\"Path End:   %s\" % smoothed_path[smoothed_path.size() - 1])
+		print(\"Delta from Target: %s\" % smoothed_path[smoothed_path.size() - 1].distance_to(end))
+	else:
+		printerr(\"PATH FAILED: NavigationManager returned empty path.\")
+	
+	# 4. Scan for nearby solids (Visualizing obstacles)
+	debug_solid_rects.clear()
+	var mouse_grid = Vector2i(end / cell_size)
+	
+	for x in range(mouse_grid.x - visualize_radius, mouse_grid.x + visualize_radius):
+		for y in range(mouse_grid.y - visualize_radius, mouse_grid.y + visualize_radius):
+			var cell = Vector2i(x, y)
+			if NavigationManager.is_point_solid(cell):
+				# Create rect for drawing
+				var world_pos = Vector2(x, y) * cell_size
+				debug_solid_rects.append(Rect2(world_pos, cell_size))
+				
+	queue_redraw()
+
+func _draw() -> void:
+	if raw_path.is_empty() and smoothed_path.is_empty(): return
+	
+	# 1. Draw Start/End
+	draw_circle(last_start, 5.0, Color.GREEN)
+	draw_circle(last_end, 5.0, Color.RED)
+	
+	# 2. Draw Solids (Red Squares)
+	for r in debug_solid_rects:
+		draw_rect(r, Color(1, 0, 0, 0.3), true) # Semi-transparent red fill
+		draw_rect(r, Color.RED, false, 1.0)     # Red border
+	
+	# 3. Draw Raw Path (Thin White Line)
+	if raw_path.size() > 1:
+		draw_polyline(raw_path, Color(1, 1, 1, 0.5), 2.0)
+		# Draw points
+		for p in raw_path:
+			draw_circle(p, 2.0, Color(1, 1, 1, 0.5))
+			
+	# 4. Draw Smoothed Path (Thick Blue Line)
+	if smoothed_path.size() > 1:
+		draw_polyline(smoothed_path, Color.CYAN, 4.0)
+		for p in smoothed_path:
+			draw_circle(p, 4.0, Color.BLUE)
+"
+
 [node name="SettlementBridge" type="Node"]
 script = ExtResource("2_c48a7")
 home_base_data = SubResource("Resource_vmd61")
 raider_scene = ExtResource("4_c0sri")
 end_of_year_popup_scene = ExtResource("2_5el12")
-show_debug_logs = false
-show_raid_logs = false
+show_ui_logs = true
+show_settlement_logs = true
+show_building_logs = true
 metadata/_edit_horizontal_guides_ = [2658.0, 93.0]
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]
@@ -133,6 +260,9 @@ region_rect = Rect2(202.20213, 73.07374, 43.015152, 43.971046)
 [node name="UnitSpawner" parent="." node_paths=PackedStringArray("unit_container", "rts_controller") instance=ExtResource("20_fmib8")]
 unit_container = NodePath("../UnitContainer")
 rts_controller = NodePath("../RTSController")
+
+[node name="DebugNav" type="Node2D" parent="."]
+script = SubResource("GDScript_cpd76")
 
 [editable path="MapResources/Resource_Wood"]
 [editable path="MapResources/Resource_Food"]

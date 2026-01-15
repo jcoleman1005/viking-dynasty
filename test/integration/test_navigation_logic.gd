@@ -1,73 +1,89 @@
 extends GutTest
 
-var _manager_ref
+var _grid: AStarGrid2D
+var _nav_manager = NavigationManager 
 
-func before_all():
-	# Ensure the Autoload is accessible or instantiate a local version for testing
-	if has_node("/root/SettlementManager"):
-		_manager_ref = get_node("/root/SettlementManager")
-	else:
-		_manager_ref = load("res://autoload/SettlementManager.gd").new()
-		add_child_autofree(_manager_ref)
-		_manager_ref._ready()
+func before_each():
+	# 1. Setup a clean 100x100 Grid
+	_grid = AStarGrid2D.new()
+	_grid.region = Rect2i(0, 0, 100, 100)
+	_grid.cell_size = Vector2(32, 32)
+	
+	# --- THE FIX: Center the points! ---
+	# Without this, points are at Top-Left (0,0).
+	# With this, points are at Center (16,16).
+	_grid.offset = _grid.cell_size / 2 
+	# -----------------------------------
+	
+	_grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ALWAYS
+	_grid.update()
+	
+	_nav_manager.register_grid(_grid, self)
 
-func test_isometric_math_sanity():
-	# Verify that (0,0) World is (0,0) Grid
-	var origin_grid = _manager_ref.world_to_grid(Vector2.ZERO)
-	assert_eq(origin_grid, Vector2i.ZERO, "World Zero should be Grid Zero")
+func after_each():
+	_nav_manager.unregister_grid()
+	_grid = null
 
-	# Test 1 Tile Right (Isometric)
-	# In Iso: +X Grid is usually (+Width/2, +Height/2) in World
-	var tile_width = _manager_ref.TILE_WIDTH
-	var tile_height = _manager_ref.TILE_HEIGHT
+func test_smoothing_removes_zigzag():
+	# Start at (0,0) center -> (16, 16)
+	var start_pos = Vector2(16, 16) 
+	# End at (10,10) center -> (336, 336)
+	var end_pos = Vector2(336, 336) 
 	
-	# Let's calculate where Grid (1, 0) should be in World pixels
-	# Based on your formula: x = (gx - gy) * hw, y = (gx + gy) * hh
-	# If gx=1, gy=0 -> x = hw, y = hh
-	var expected_world_right = Vector2(tile_width * 0.5, tile_height * 0.5)
+	var path = _nav_manager.get_astar_path(start_pos, end_pos)
 	
-	var calculated_grid = _manager_ref.world_to_grid(expected_world_right)
-	assert_eq(calculated_grid, Vector2i(1, 0), "World position should map to Grid (1,0)")
+	assert_gt(path.size(), 0, "Path should not be empty")
+	
+	# Verify String Pulling (Should be 2 points for a straight diagonal)
+	assert_lt(path.size(), 5, "Path should be smoothed! Zig-zag detected if size > 5. Actual: %s" % path.size())
+	
+	# Verify Start
+	assert_eq(path[0], start_pos, "Path must start at origin")
+	
+	# Verify End
+	# Now that the grid is offset, the last point should match our centered target
+	var last_point = path[path.size() - 1]
+	assert_almost_eq(last_point.distance_to(end_pos), 0.0, 1.0, "Path must end at target")
 
-func test_pathfinding_returns_path():
-	# 1. Setup a clean grid
-	_manager_ref._init_grid()
+func test_start_position_precision_fix():
+	# Start at (5,5) (Top-left of first tile)
+	var exact_unit_pos = Vector2(5, 5)
+	var target_pos = Vector2(100, 100)
 	
-	# 2. Define Start (0,0) and End (5,5)
-	var start = Vector2.ZERO
-	# Calculate world pos for 5,5
-	var end_grid = Vector2i(5, 5)
-	var end_world = _manager_ref.grid_to_world(end_grid)
+	var path = _nav_manager.get_astar_path(exact_unit_pos, target_pos)
 	
-	# 3. Request Path
-	var path = _manager_ref.get_astar_path(start, end_world)
+	assert_gt(path.size(), 0)
+	assert_eq(path[0], exact_unit_pos, "Path start point must match Unit Position, NOT Grid Center.")
+
+func test_obstacle_avoidance_with_smoothing():
+	var start_pos = Vector2(16, 16)   # 0,0
+	var end_pos = Vector2(80, 80)     # 2,2
 	
-	# 4. Assert
-	assert_gt(path.size(), 0, "Pathfinding returned empty array for valid clear path.")
-	assert_eq(path[0], start, "Path should start at origin.")
-	# Note: AStar path end might be slightly snapped to center of tile
+	# Block the middle diagonal (1,1)
+	_grid.set_point_solid(Vector2i(1, 1), true)
 	
-func test_solid_obstacles():
-	# 1. Block (1,0)
-	var block_pos = Vector2i(1, 0)
-	_manager_ref.set_astar_point_solid(block_pos, true)
+	var path = _nav_manager.get_astar_path(start_pos, end_pos)
 	
-	# 2. Try to path from (0,0) to (2,0)
-	var start = Vector2.ZERO
-	var end_grid = Vector2i(2, 0)
-	var end_world = _manager_ref.grid_to_world(end_grid)
+	assert_gt(path.size(), 0, "Should find a path around the wall")
 	
-	var path = _manager_ref.get_astar_path(start, end_world)
-	
-	# 3. Assert path goes around (should not contain the blocked tile)
-	var blocked_world = _manager_ref.grid_to_world(block_pos)
-	
-	# Convert path points back to grid to check
-	var path_goes_through_wall = false
+	var wall_center = Vector2(48, 48) # Center of 1,1
 	for point in path:
-		var grid_p = _manager_ref.world_to_grid(point)
-		if grid_p == block_pos:
-			path_goes_through_wall = true
-			break
-			
-	assert_false(path_goes_through_wall, "Pathfinder walked through a solid wall!")
+		var dist = point.distance_to(wall_center)
+		# Should keep distance (radius 16)
+		assert_gt(dist, 16.0, "Path point %s is inside the solid wall!" % point)
+
+	# If we smoothed perfectly through a wall, size would be 2. Since wall exists, it must be > 2.
+	assert_gt(path.size(), 2, "Path should have added a corner waypoint to avoid the wall.")
+
+func test_out_of_bounds_handling():
+	var start = Vector2(16, 16)
+	var waaaay_out = Vector2(99999, 99999)
+	
+	var path = _nav_manager.get_astar_path(start, waaaay_out)
+	
+	assert_gt(path.size(), 0, "Should clamp target and return valid path")
+	
+	var last_point = path[path.size() - 1]
+	# Max bounds is 100 * 32 = 3200 + offset 16 = 3216
+	# We allow a little tolerance
+	assert_lt(last_point.x, 3250.0, "Target should be clamped within bounds")

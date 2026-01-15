@@ -64,35 +64,64 @@ func _setup_unit_container() -> void:
 		unit_container.name = "UnitContainer"
 		add_child(unit_container)
 
-func _exit_tree() -> void:
-	SettlementManager.unregister_active_scene_nodes()
-	if EventBus.is_connected("settlement_loaded", _on_settlement_ready_for_mission):
-		EventBus.settlement_loaded.disconnect(_on_settlement_ready_for_mission)
-
 func initialize_mission() -> void:
 	Loggie.msg("RaidMission: Initializing...").domain(LogDomains.RAID).info()
 	
+	enemy_base_data = null
+	
+	# 1. PRIORITY 1: CAMPAIGN FLOW
+	# We check if RaidManager has a target.
+	if RaidManager.current_raid_target:
+		# [FIX] Unwrap the data! 
+		# RaidManager.current_raid_target is usually 'RaidTargetData' (The Wrapper).
+		# We need the 'SettlementData' inside it.
+		var target_wrapper = RaidManager.current_raid_target
+		if "settlement_data" in target_wrapper and target_wrapper.settlement_data:
+			enemy_base_data = target_wrapper.settlement_data
+			Loggie.msg("Loaded SettlementData from RaidManager. Seed: %d" % enemy_base_data.map_seed).domain(LogDomains.RAID).info()
+		elif target_wrapper is SettlementData:
+			# Handle case where Manager passed raw data
+			enemy_base_data = target_wrapper
+	
+	# 2. PRIORITY 2: DEBUG FLOW (Fresh Generation)
+	# If F6 (Scene Run), generate a new procedural base.
+	elif enemy_base_data == null and OS.is_debug_build():
+		Loggie.msg("Debug Mode: Generating fresh procedural base...").domain(LogDomains.RAID).info()
+		enemy_base_data = MapDataGenerator._generate_procedural_settlement("Monastery", 1.0)
+		# Ensure the generator gave us a seed!
+		if enemy_base_data.map_seed == 0:
+			enemy_base_data.map_seed = randi()
+	
+	# 3. SAFETY FALLBACK (Static File)
+	# If all else fails, load the .tres file
 	if not enemy_base_data:
 		if default_enemy_base_path != "":
+			Loggie.msg("Loading Default File: %s" % default_enemy_base_path).domain(LogDomains.RAID).warn()
 			enemy_base_data = load(default_enemy_base_path) as SettlementData
-		if not enemy_base_data:
-			Loggie.msg("Critical: No enemy_base_data assigned!").domain(LogDomains.RAID).error()
-			return
+	
+	if not enemy_base_data:
+		Loggie.msg("Critical: No enemy_base_data assigned!").domain(LogDomains.RAID).error()
+		return
 
 	if not _validate_nodes(): return
 	
-	# 1. Register Scene Nodes (Grid Authority)
+	# 4. Register & Setup
 	SettlementManager.register_active_scene_nodes(unit_container)
 	
-	# 2. Configure Map Loader
 	if not map_loader:
 		map_loader = RaidMapLoader.new()
 		add_child(map_loader)
 	
+	# [DIAGNOSTIC] Final check before generation
+	if enemy_base_data.map_seed == 0:
+		Loggie.msg("WARNING: Map Seed is 0. RaidMapLoader will randomize terrain!").domain(LogDomains.RAID).warn()
+		
 	map_loader.setup(unit_container, enemy_base_data) 
 	
-	# 3. Generate Map Visuals
+	# 3. Generate Map Visuals and refresh manager
 	objective_building = map_loader.load_base(enemy_base_data, false)
+	Loggie.msg("Force Refreshing Grid (Raid)...").domain(LogDomains.RAID).info()
+	SettlementManager._refresh_grid_state()
 	
 	# 4. Spawn Civilians
 	if enemy_base_data and enemy_base_data.population_peasants > 0:
@@ -330,3 +359,26 @@ func _on_civilian_surrender(civilian: Node2D) -> void:
 			
 	if best_leader:
 		best_leader.request_escort_for(civilian)
+
+func command_scramble(target_position: Vector2) -> void:
+	# FIX: Delegate selection clearing to the RTS controller directly
+	if rts_controller and rts_controller.has_method("clear_selection"):
+		rts_controller.clear_selection()
+	
+	# FIX: "controllable_units" was not defined. Using the global group.
+	var controllable_units = get_tree().get_nodes_in_group("player_units")
+	
+	Loggie.msg("Scramble command issued to %d units" % controllable_units.size()).domain(LogDomains.RAID).info()
+
+	for unit in controllable_units:
+		if not is_instance_valid(unit): continue
+		
+		# Panic logic: Pick a random spot near the target
+		var panic_offset = Vector2(randf_range(-80, 80), randf_range(-80, 80))
+		var unique_dest = target_position + panic_offset
+		
+		# Use FSM retreat if available, otherwise force move
+		if unit.get("fsm") and unit.fsm.has_method("command_retreat"):
+			unit.fsm.command_retreat(unique_dest)
+		elif unit.has_method("command_move_to"):
+			unit.command_move_to(unique_dest)

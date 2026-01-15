@@ -101,7 +101,10 @@ func _recalculate_path() -> void:
 	# Allow partial path if we have a solid target node (like a building)
 	var allow_partial = is_instance_valid(target_node)
 	
-	path = SettlementManager.get_astar_path(start_pos, target_position, allow_partial)
+	# --- FIX: Redirect to NavigationManager for Smoothing ---
+	# OLD: path = SettlementManager.get_astar_path(start_pos, target_position, allow_partial)
+	path = NavigationManager.get_astar_path(start_pos, target_position, allow_partial)
+	# -------------------------------------------------------
 	
 	if path.is_empty():
 		# FORCE move if very close (A* sometimes fails on short distances inside cell boundaries)
@@ -111,7 +114,6 @@ func _recalculate_path() -> void:
 			if unit.has_method("flash_error_color"):
 				unit.flash_error_color()
 			change_state(UnitAIConstants.State.IDLE)
-
 # --- RTS COMMANDS ---
 
 func command_defensive_attack(attacker: Node2D) -> void:

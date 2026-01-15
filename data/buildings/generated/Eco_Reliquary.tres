@@ -5,6 +5,7 @@
 
 [resource]
 script = ExtResource("2_h4xfr")
+resource_type = "gold"
 display_name = "Reliquary"
 description = "A holy shrine containing silver and relics. Yields HIGH GOLD."
 scene_to_spawn = ExtResource("1_7bmr7")
