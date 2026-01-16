@@ -46,40 +46,37 @@ func set_formation_type(new_type: FormationType) -> void:
 	formation_type = new_type
 	_update_formation_positions()
 
-# --- MODIFIED: Terrain Aware Movement ---
 func move_to_position(target_pos: Vector2, direction: Vector2 = Vector2.DOWN) -> void:
 	target_position = target_pos
 	is_moving = true
 	
-	# 1. Calculate ideal geometric positions (Rotation included)
 	var formation_positions = _calculate_formation_positions(target_pos, direction)
 	
-	# 2. Assign and Validate
+	# TRACKER: Keep track of grid cells claimed by this squad
+	var claimed_cells: Array[Vector2i] = []
+	
 	for i in range(min(units.size(), formation_positions.size())):
 		var unit = units[i]
 		if not is_instance_valid(unit): continue
 			
-		var final_dest = formation_positions[i]
+		var raw_dest = formation_positions[i]
+		var final_dest = raw_dest
 		
-		# --- NEW: TERRAIN VALIDATION ---
-		# Check if the calculated slot is inside a wall or deep water.
+		# --- PHASE 4 FIX: ANTI-BUNCHING ---
 		if SettlementManager:
-			var grid_pos = SettlementManager.world_to_grid(final_dest)
+			# Pass the 'claimed_cells' so this unit doesn't pick a spot 
+			# that a previous squadmate already took.
+			final_dest = SettlementManager.validate_formation_point(raw_dest, claimed_cells)
 			
-			# If the exact spot is blocked...
-			if SettlementManager.active_astar_grid.is_point_solid(grid_pos):
-				# ...search for the nearest valid land (Radius 3 tiles)
-				var safe_pos = SettlementManager.request_valid_spawn_point(final_dest, 3)
-				
-				if safe_pos != Vector2.INF:
-					final_dest = safe_pos
-					# Optional: Debug draw to show the adjustment
-					# EventBus.debug_draw_line.emit(formation_positions[i], final_dest, Color.ORANGE)
-		# -------------------------------
+			# Register this spot as taken
+			var grid_spot = SettlementManager.world_to_grid(final_dest)
+			claimed_cells.append(grid_spot)
+		# ----------------------------------
 		
 		_move_unit_to_position(unit, final_dest)
 	
 	Loggie.msg("Squad moving to %s in %s formation" % [target_pos, FormationType.keys()[formation_type]]).domain("RTS").info()
+
 
 # --- EXISTING SHAPE LOGIC (Preserved) ---
 

@@ -72,41 +72,56 @@ func _init_grid() -> void:
 	active_astar_grid = AStarGrid2D.new()
 	active_astar_grid.region = Rect2i(0, 0, GRID_WIDTH, GRID_HEIGHT)
 	active_astar_grid.cell_size = Vector2(TILE_WIDTH, TILE_HEIGHT)
-	
-	# Isometric Down is standard for Godot 4 2D Iso
+
+	# ENABLE DIAGONALS
 	active_astar_grid.cell_shape = AStarGrid2D.CELL_SHAPE_ISOMETRIC_DOWN
-	active_astar_grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_NEVER
-	
-	# Apply the Calibration (Default 0,0 until map is found)
+	active_astar_grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_AT_LEAST_ONE_WALKABLE 
+	active_astar_grid.default_compute_heuristic = AStarGrid2D.HEURISTIC_EUCLIDEAN
+	active_astar_grid.default_estimate_heuristic = AStarGrid2D.HEURISTIC_EUCLIDEAN
+
 	active_astar_grid.offset = grid_offset_calibration
-	
 	active_astar_grid.update()
-	
+
 	if NavigationManager:
 		NavigationManager.register_grid(active_astar_grid, self)
 
 func _refresh_grid_state() -> void:
 	if not active_astar_grid: _init_grid()
-	
-	# Reset Grid
+
 	var region = active_astar_grid.region
 	active_astar_grid.fill_solid_region(region, false)
-	
-	# 1. APPLY TERRAIN (Water/Cliffs)
-	if is_instance_valid(active_tilemap_layer):
-		_apply_terrain_solids()
-	else:
-		print("[DIAGNOSTIC] WARNING: Skipping Terrain Physics (No active_tilemap_layer)")
-	
-	# 2. APPLY BUILDINGS
+	# RESET WEIGHTS
+	active_astar_grid.fill_weight_scale_region(region, 1.0) 
+
+	# 1. APPLY TERRAIN & BUILDINGS (Keep existing calls)
+	if is_instance_valid(active_tilemap_layer): _apply_terrain_solids()
 	var data_source = active_map_data if active_map_data else current_settlement
 	if data_source:
-		for entry in data_source.placed_buildings:
-			_apply_building_to_grid(entry, true)
-		for entry in data_source.pending_construction_buildings:
-			_apply_building_to_grid(entry, true)
-	
+		for entry in data_source.placed_buildings: _apply_building_to_grid(entry, true)
+		for entry in data_source.pending_construction_buildings: _apply_building_to_grid(entry, true)
+
+	# 2. APPLY SAFETY PADDING (The "Anti-Clunk" Fix)
+	_apply_safety_padding()
+
 	EventBus.pathfinding_grid_updated.emit(Vector2i.ZERO)
+
+func _apply_safety_padding() -> void:
+	var region = active_astar_grid.region
+	for x in range(region.position.x, region.end.x):
+		for y in range(region.position.y, region.end.y):
+			var id = Vector2i(x, y)
+			if active_astar_grid.is_point_solid(id):
+				_weigh_neighbors(id, 10.0)
+
+func _weigh_neighbors(center: Vector2i, weight: float) -> void:
+	var neighbors = [Vector2i(0, 1), Vector2i(0, -1), Vector2i(1, 0), Vector2i(-1, 0)]
+	for n in neighbors:
+		var target = center + n
+		if active_astar_grid.region.has_point(target):
+			if not active_astar_grid.is_point_solid(target):
+				var current_w = active_astar_grid.get_point_weight_scale(target)
+				if current_w < weight:
+					active_astar_grid.set_point_weight_scale(target, weight)
 
 func _sync_grid_to_map() -> void:
 	if not is_instance_valid(active_tilemap_layer): return
@@ -741,3 +756,36 @@ func commit_seasonal_recruits() -> void:
 func _generate_oath_name() -> String:
 	var names = ["Red", "Bold", "Young", "Wild", "Sworn", "Lucky"]
 	return "The %s" % names.pick_random()
+# --- FORMATION SAFETY ---
+
+## Takes a desired World Position (e.g. formation offset).
+## Returns the SAME position if it's safe.
+## Returns the NEAREST SAFE TILE CENTER if the target is in a wall.
+## Now accepts an optional list of 'taken_grid_points' to avoid stacking units
+func validate_formation_point(target_pos: Vector2, taken_grid_points: Array[Vector2i] = []) -> Vector2:
+	var grid_pos = world_to_grid(target_pos)
+	
+	# 1. If ideal spot is walkable AND not taken by a squadmate
+	if is_tile_walkable(grid_pos) and not grid_pos in taken_grid_points:
+		return target_pos
+		
+	# 2. Search for nearest safe tile, ignoring ones in the taken list
+	# Increasing radius to 4 to give them breathing room
+	var safe_grid_pos = _get_closest_walkable_point_exclusive(grid_pos, 4, taken_grid_points)
+	
+	return get_tile_center(safe_grid_pos)
+
+# Helper for Exclusive Search
+func _get_closest_walkable_point_exclusive(origin: Vector2i, max_radius: int, exclusions: Array[Vector2i]) -> Vector2i:
+	if is_tile_walkable(origin) and not origin in exclusions: return origin
+	
+	for r in range(1, max_radius + 1):
+		for x in range(-r, r + 1):
+			for y in range(-r, r + 1):
+				if abs(x) != r and abs(y) != r: continue
+				
+				var candidate = origin + Vector2i(x, y)
+				if is_tile_walkable(candidate) and not candidate in exclusions:
+					return candidate
+	
+	return origin # Fail-safe

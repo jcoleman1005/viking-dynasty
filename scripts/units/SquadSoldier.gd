@@ -6,6 +6,7 @@ var leader: SquadLeader
 var formation_target: Vector2 = Vector2.ZERO
 var brawl_target: Node2D = null
 var is_rubber_banding: bool = false
+var stuck_detector: Node
 
 const MAX_DIST_FROM_LEADER = 300.0
 const CATCHUP_DIST = 80.0
@@ -29,10 +30,19 @@ func _ready() -> void:
 			for c in attack_ai.detection_area.get_children():
 				if c is CollisionShape2D and c.shape is CircleShape2D: c.shape.radius = 120.0
 
+	stuck_detector = get_node_or_null("StuckDetector")
+	
+	# If you injected it via code in the previous step, find it by that name:
+	if not stuck_detector:
+		stuck_detector = get_node_or_null("DEBUG_StuckReporter") # Or "StuckDetector" depending on your setup
+		
+	super._ready()
+	
 func _physics_process(delta: float) -> void:
 	# 1. FSM High Priority (Tasks like Collecting/Escorting take precedence)
+	# (We keep the super call here because these states rely on standard NavAgent logic)
 	if fsm.current_state in [UnitAIConstants.State.COLLECTING, UnitAIConstants.State.ESCORTING, UnitAIConstants.State.REGROUPING, UnitAIConstants.State.RETREATING]:
-		uses_external_steering = false # Let FSM drive
+		uses_external_steering = false 
 		super._physics_process(delta)
 		return
 
@@ -44,20 +54,27 @@ func _physics_process(delta: float) -> void:
 	# 3. Take Control
 	uses_external_steering = true
 	
-	# 4. Rubber Banding Logic (Existing)
+	# 4. Rubber Banding Logic
 	var speed = data.move_speed
 	var dist_leader = global_position.distance_to(leader.global_position)
 	
-	if not is_rubber_banding and dist_leader > MAX_DIST_FROM_LEADER:
-		is_rubber_banding = true
-		collision_mask = 1 # Ghost mode
-		modulate.a = 0.5
-		separation_enabled = false # Don't separate while sprinting
-	elif is_rubber_banding and dist_leader < CATCHUP_DIST:
-		is_rubber_banding = false
-		_setup_collision_logic()
-		modulate.a = 1.0
-		separation_enabled = true # Re-enable separation
+	var is_phasing = false
+	if stuck_detector and "is_phasing" in stuck_detector:
+		is_phasing = stuck_detector.is_phasing
+	
+	# Only update Rubber Band state if we are NOT currently phasing through a wall.
+	# If we are phasing, we want to keep the Mask at 0 (set by the detector).
+	if not is_phasing:
+		if not is_rubber_banding and dist_leader > MAX_DIST_FROM_LEADER:
+			is_rubber_banding = true
+			collision_mask = 1 
+			modulate.a = 0.5
+			separation_enabled = false 
+		elif is_rubber_banding and dist_leader < CATCHUP_DIST:
+			is_rubber_banding = false
+			_setup_collision_logic()
+			modulate.a = 1.0
+			separation_enabled = true
 		
 	if is_rubber_banding:
 		brawl_target = null
@@ -65,7 +82,7 @@ func _physics_process(delta: float) -> void:
 	
 	# 5. Determine Target
 	var final_dest = formation_target
-	var stop_dist = 5.0
+	var stop_dist = 15.0
 	
 	if is_instance_valid(brawl_target) and not is_rubber_banding:
 		final_dest = brawl_target.global_position
@@ -83,17 +100,25 @@ func _physics_process(delta: float) -> void:
 		var dist = global_position.distance_to(final_dest)
 		
 		if dist > stop_dist:
-			# Simple Arrival
-			velocity = (final_dest - global_position).normalized() * speed
+			# Calculate desired velocity
+			var desired_velocity = (final_dest - global_position).normalized() * speed
 			
-			# NOTE: We do NOT add separation here. 
-			# We set 'velocity', and 'BaseUnit' adds separation + avoidance in super._physics_process()
+			# Apply simple steering to smooth it out
+			velocity = velocity.lerp(desired_velocity, 10.0 * delta)
 		else:
 			# Damping when arrived
 			velocity = velocity.lerp(Vector2.ZERO, 10.0 * delta)
+			
+	# --- THE FIX ---
+	# We DO NOT call super._physics_process(delta) here anymore.
+	# The parent likely requires a NavPath to move, which we don't have.
+	# We manually apply separation and move.
 	
-	# 7. Hand over to BaseUnit for physics application
-	super._physics_process(delta)
+	if separation_enabled:
+		velocity += calculate_separation_push(delta)
+	
+	move_and_slide()
+	# ---------------
 
 # ... (Keep the rest of the file: _get_radius, assign_escort_task, etc.) ...
 func _get_radius(node: Node2D) -> float:

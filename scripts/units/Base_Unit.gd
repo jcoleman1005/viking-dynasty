@@ -192,7 +192,7 @@ func _physics_process(delta: float) -> void:
 	
 	if separation_enabled:
 		# Calculate separation (prevents stacking)
-		final_velocity += _calculate_separation_push(delta)
+		final_velocity += calculate_separation_push(delta)
 	
 	if avoidance_enabled and final_velocity.length_squared() > 10.0:
 		# Calculate whiskers (prevents corner stuck)
@@ -212,7 +212,7 @@ func _physics_process(delta: float) -> void:
 			
 	_last_pos = global_position
 
-func _calculate_separation_push(delta: float) -> Vector2:
+func calculate_separation_push(delta: float) -> Vector2:
 	var push_vector = Vector2.ZERO
 	if not separation_area: return Vector2.ZERO
 	
