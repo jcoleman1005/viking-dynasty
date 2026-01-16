@@ -507,17 +507,45 @@ func get_total_ship_capacity_squads() -> int:
 
 func get_idle_peasants() -> int:
 	if not current_settlement: return 0
+	
 	var employed = 0
-	for entry in current_settlement.placed_buildings: employed += entry.get("peasant_count", 0)
-	for entry in current_settlement.pending_construction_buildings: employed += entry.get("peasant_count", 0)
-	return current_settlement.population_peasants - employed
+	# Count employed in active buildings
+	for entry in current_settlement.placed_buildings:
+		employed += entry.get("peasant_count", 0)
+	# Count employed in construction sites
+	for entry in current_settlement.pending_construction_buildings:
+		employed += entry.get("peasant_count", 0)
+	
+	var idle = current_settlement.population_peasants - employed
+	
+	# --- FIX START: Negative Idle Check ---
+	if idle < 0:
+		Loggie.msg("Negative Idle Peasants detected (%d). Triggering layoffs." % idle).domain(LogDomains.SETTLEMENT).warn()
+		_validate_employment_levels()
+		return 0 # Return 0 safely; logic will correct data for next frame
+	# --- FIX END ---
+	
+	return idle
 
 func get_idle_thralls() -> int:
 	if not current_settlement: return 0
+	
 	var employed = 0
-	for entry in current_settlement.placed_buildings: employed += entry.get("thrall_count", 0)
-	for entry in current_settlement.pending_construction_buildings: employed += entry.get("thrall_count", 0)
-	return current_settlement.population_thralls - employed
+	for entry in current_settlement.placed_buildings:
+		employed += entry.get("thrall_count", 0)
+	for entry in current_settlement.pending_construction_buildings:
+		employed += entry.get("thrall_count", 0)
+		
+	var idle = current_settlement.population_thralls - employed
+	
+	# --- FIX START: Negative Idle Check ---
+	if idle < 0:
+		Loggie.msg("Negative Idle Thralls detected (%d). Triggering layoffs." % idle).domain(LogDomains.SETTLEMENT).warn()
+		_validate_employment_levels()
+		return 0
+	# --- FIX END ---
+	
+	return idle
 
 func assign_worker(building_index: int, type: String, amount: int) -> void:
 	if not current_settlement: return
@@ -555,6 +583,59 @@ func assign_construction_worker(index: int, type: String, amount: int) -> void:
 	save_settlement()
 	EventBus.settlement_loaded.emit(current_settlement)
 
+## Checks if employed workers exceed total population and forces layoffs if necessary.
+func _validate_employment_levels() -> void:
+	if not current_settlement: return
+	
+	# 1. Validate Peasants
+	var total_peasants = current_settlement.population_peasants
+	var employed_peasants = 0
+	for entry in current_settlement.placed_buildings:
+		employed_peasants += entry.get("peasant_count", 0)
+	
+	if employed_peasants > total_peasants:
+		var deficit = employed_peasants - total_peasants
+		_force_layoffs("peasant", deficit)
+		
+	# 2. Validate Thralls
+	var total_thralls = current_settlement.population_thralls
+	var employed_thralls = 0
+	for entry in current_settlement.placed_buildings:
+		employed_thralls += entry.get("thrall_count", 0)
+		
+	if employed_thralls > total_thralls:
+		var deficit = employed_thralls - total_thralls
+		_force_layoffs("thrall", deficit)
+
+## Removes workers from buildings (LIFO) until the deficit is cleared.
+func _force_layoffs(type: String, amount_to_remove: int) -> void:
+	var removed_count = 0
+	var key = "peasant_count" if type == "peasant" else "thrall_count"
+	
+	# Iterate BACKWARDS through buildings to remove workers from most recently built structures first (or just end of list)
+	# This avoids index shifting issues if we were removing buildings (though we are just modifying values here).
+	var buildings = current_settlement.placed_buildings
+	for i in range(buildings.size() - 1, -1, -1):
+		if removed_count >= amount_to_remove: 
+			break
+		
+		var entry = buildings[i]
+		var current_workers = entry.get(key, 0)
+		
+		if current_workers > 0:
+			# Calculate how many we can take from this specific building
+			var take = min(current_workers, amount_to_remove - removed_count)
+			
+			# Update the building data
+			entry[key] = current_workers - take
+			removed_count += take
+			
+	Loggie.msg("Force Layoff Complete. Removed %d %ss due to population deficit." % [removed_count, type]).domain(LogDomains.SETTLEMENT).info()
+	
+	# Force UI refresh
+	EventBus.settlement_loaded.emit(current_settlement)
+
+
 func process_construction_labor() -> void:
 	if not current_settlement: return
 	var completed_indices: Array[int] = []
@@ -582,15 +663,31 @@ func process_construction_labor() -> void:
 	_refresh_grid_state()
 
 func recruit_unit(unit_data: UnitData) -> void:
-	if not current_settlement or not unit_data: return
+	if not current_settlement or not unit_data:
+		return
+	
+	# --- FIX START: Capacity Validation ---
+	var current_squads = current_settlement.warbands.size()
+	var max_squads = get_total_ship_capacity_squads()
+	
+	if current_squads >= max_squads:
+		Loggie.msg("Recruitment blocked: Fleet at capacity (%d/%d)" % [current_squads, max_squads]).domain(LogDomains.SETTLEMENT).info()
+		EventBus.purchase_failed.emit("Fleet capacity reached! Build more Nausts.")
+		return
+	# --- FIX END ---
+
 	var new_warband = WarbandData.new(unit_data)
+	
+	# Apply Dynasty bonuses if applicable
 	if DynastyManager.has_purchased_upgrade("UPG_TRAINING_GROUNDS"):
 		new_warband.experience = 200
 		new_warband.add_history("Recruited as Hardened Veterans")
 	else:
 		new_warband.add_history("Recruited")
+		
 	current_settlement.warbands.append(new_warband)
 	save_settlement()
+	
 	EventBus.purchase_successful.emit(unit_data.display_name)
 	EventBus.settlement_loaded.emit(current_settlement)
 

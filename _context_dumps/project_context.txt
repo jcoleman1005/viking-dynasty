@@ -1,7 +1,7 @@
 GODOT PROJECT CONTEXT
-Generated: 2026-01-15T10:52:28
-Version: Godot 4.5.1-stable (official)
-Stats: 217 Scripts, 72 Scenes, 65 Resources
+Generated: 2026-01-16T13:16:38
+Version: Godot 4.5-beta (custom_build)
+Stats: 220 Scripts, 72 Scenes, 65 Resources
 
 === ARCHITECTURE ===
 
@@ -562,6 +562,7 @@ SCENE: res:///scenes/levels/SettlementBridge.tscn
 - RtsInputHandler []
 - UnitSpawner []
 - DebugNav [Node2D]
+- TempDebugNode [Node2D]
 
 SCENE: res:///scenes/missions/RaidMission.tscn
 - RaidMission [Node2D]
@@ -585,6 +586,7 @@ SCENE: res:///scenes/units/Base_Unit.tscn
 - AttackTimer [Timer]
 - SeparationArea [Area2D]
   - CollisionShape2D [CollisionShape2D]
+- StuckDetector [Node]
 
 SCENE: res:///scenes/units/Bondi.tscn
 - PlayerVikingRaider [CharacterBody2D]
@@ -24332,6 +24334,7 @@ enum MsgEnvironment {
 	RUNTIME, ## The message will be outputted only when the project is running.
 }
 
+
 // FILE: res:///addons/loggie/tools/loggie_system_specs.gd
 @tool
 
@@ -27219,6 +27222,11 @@ const TILE_WIDTH = 64
 const TILE_HEIGHT = 32
 const TILE_HALF_SIZE = Vector2(TILE_WIDTH * 0.5, TILE_HEIGHT * 0.5)
 
+# --- VISUAL CALIBRATION ---
+var grid_offset_calibration: Vector2 = Vector2.ZERO
+const BUILDING_OFFSET_X: float = -32  # (Negative = Move Left)
+const BUILDING_OFFSET_Y: float = 0.0
+
 const GRID_WIDTH = 60
 const GRID_HEIGHT = 60
 
@@ -27245,6 +27253,12 @@ func grid_to_world(grid_pos: Vector2i) -> Vector2:
 
 ## Returns the World Position of the CENTER of the grid cell.
 func get_tile_center(grid_pos: Vector2i) -> Vector2:
+	# PHASE 1 REFACTOR: Prefer TileMapLayer truth if available
+	if is_instance_valid(active_tilemap_layer):
+		var local_pos = active_tilemap_layer.map_to_local(grid_pos)
+		return active_tilemap_layer.to_global(local_pos)
+	
+	# Fallback to manual math
 	var top_corner = grid_to_world(grid_pos)
 	# In Isometric, center is TopCorner.y + HalfHeight
 	return top_corner + Vector2(0, TILE_HALF_SIZE.y)
@@ -27262,39 +27276,88 @@ func world_to_grid(pos: Vector2) -> Vector2i:
 func _init_grid() -> void:
 	active_astar_grid = AStarGrid2D.new()
 	active_astar_grid.region = Rect2i(0, 0, GRID_WIDTH, GRID_HEIGHT)
-	
 	active_astar_grid.cell_size = Vector2(TILE_WIDTH, TILE_HEIGHT)
-	
-	# [CRITICAL] This tells AStar to expect Isometric Neighbors
+
+	# ENABLE DIAGONALS
 	active_astar_grid.cell_shape = AStarGrid2D.CELL_SHAPE_ISOMETRIC_DOWN
-	active_astar_grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_NEVER
+	active_astar_grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_AT_LEAST_ONE_WALKABLE 
+	active_astar_grid.default_compute_heuristic = AStarGrid2D.HEURISTIC_EUCLIDEAN
+	active_astar_grid.default_estimate_heuristic = AStarGrid2D.HEURISTIC_EUCLIDEAN
+
+	active_astar_grid.offset = grid_offset_calibration
 	active_astar_grid.update()
-	
+
 	if NavigationManager:
 		NavigationManager.register_grid(active_astar_grid, self)
 
 func _refresh_grid_state() -> void:
 	if not active_astar_grid: _init_grid()
-	
-	# Reset Grid
+
 	var region = active_astar_grid.region
 	active_astar_grid.fill_solid_region(region, false)
-	
-	# 1. APPLY TERRAIN (Water/Cliffs)
-	if is_instance_valid(active_tilemap_layer):
-		_apply_terrain_solids()
-	else:
-		print("[DIAGNOSTIC] WARNING: Skipping Terrain Physics (No active_tilemap_layer)")
-	
-	# 2. APPLY BUILDINGS
+	# RESET WEIGHTS
+	active_astar_grid.fill_weight_scale_region(region, 1.0) 
+
+	# 1. APPLY TERRAIN & BUILDINGS (Keep existing calls)
+	if is_instance_valid(active_tilemap_layer): _apply_terrain_solids()
 	var data_source = active_map_data if active_map_data else current_settlement
 	if data_source:
-		for entry in data_source.placed_buildings:
-			_apply_building_to_grid(entry, true)
-		for entry in data_source.pending_construction_buildings:
-			_apply_building_to_grid(entry, true)
-	
+		for entry in data_source.placed_buildings: _apply_building_to_grid(entry, true)
+		for entry in data_source.pending_construction_buildings: _apply_building_to_grid(entry, true)
+
+	# 2. APPLY SAFETY PADDING (The "Anti-Clunk" Fix)
+	_apply_safety_padding()
+
 	EventBus.pathfinding_grid_updated.emit(Vector2i.ZERO)
+
+func _apply_safety_padding() -> void:
+	var region = active_astar_grid.region
+	for x in range(region.position.x, region.end.x):
+		for y in range(region.position.y, region.end.y):
+			var id = Vector2i(x, y)
+			if active_astar_grid.is_point_solid(id):
+				_weigh_neighbors(id, 10.0)
+
+func _weigh_neighbors(center: Vector2i, weight: float) -> void:
+	var neighbors = [Vector2i(0, 1), Vector2i(0, -1), Vector2i(1, 0), Vector2i(-1, 0)]
+	for n in neighbors:
+		var target = center + n
+		if active_astar_grid.region.has_point(target):
+			if not active_astar_grid.is_point_solid(target):
+				var current_w = active_astar_grid.get_point_weight_scale(target)
+				if current_w < weight:
+					active_astar_grid.set_point_weight_scale(target, weight)
+
+func _sync_grid_to_map() -> void:
+	if not is_instance_valid(active_tilemap_layer): return
+	
+	# --- FIX: LAZY INIT (Prevents Crash) ---
+	if active_astar_grid == null:
+		_init_grid()
+	# ---------------------------------------
+	
+	# 1. Measure the Visual Center of (0,0)
+	var visual_zero = active_tilemap_layer.to_global(active_tilemap_layer.map_to_local(Vector2i(0,0)))
+	
+	# 2. Measure the Math Center of (0,0)
+	active_astar_grid.offset = Vector2.ZERO
+	active_astar_grid.update()
+	var math_zero = active_astar_grid.get_point_position(Vector2i(0,0))
+	
+	# 3. Calculate the Delta
+	var diff = visual_zero - math_zero
+	
+	# 4. Apply to Calibration
+	grid_offset_calibration = diff
+	active_astar_grid.offset = grid_offset_calibration
+	active_astar_grid.update()
+	
+	Loggie.msg("Grid Calibrated. Offset applied: %s" % grid_offset_calibration).domain(LogDomains.SYSTEM).info()
+	print("--- GRID CALIBRATION REPORT ---")
+	print("Visual (0,0): ", visual_zero)
+	print("Math (0,0):   ", math_zero)
+	print("Correction:   ", diff)
+	print("-----------------------------")
 
 # --- NEW: Terrain Scanner ---
 func _apply_terrain_solids() -> void:
@@ -27341,11 +27404,8 @@ func request_valid_spawn_point(target_pos: Vector2, radius_check: int = 3) -> Ve
 	# 1. Check exact spot
 	if active_astar_grid.region.has_point(start_grid):
 		if not active_astar_grid.is_point_solid(start_grid):
-			# --- FIX: SNAP TO CENTER ---
-			# Don't return the raw 'target_pos' which might be on the dangerous edge.
-			# Return the geometric center of the safe tile.
-			return grid_to_world(start_grid)
-			# ---------------------------
+			# Use the new robust center calculation
+			return get_tile_center(start_grid)
 		
 	# 2. Spiral Search
 	for r in range(1, radius_check + 1):
@@ -27358,7 +27418,7 @@ func request_valid_spawn_point(target_pos: Vector2, radius_check: int = 3) -> Ve
 				if active_astar_grid.region.has_point(check):
 					if not active_astar_grid.is_point_solid(check):
 						# Return center of the found safe neighbor
-						return grid_to_world(check)
+						return get_tile_center(check)
 						
 	return Vector2.INF # Failed
 
@@ -27376,19 +27436,15 @@ func get_astar_path(start_pos: Vector2, end_pos: Vector2, allow_partial_path: bo
 	var end_grid = world_to_grid(end_pos)
 	
 	# 2. PROJECTION (The Standard Fix)
-	# If the unit is on an invalid tile (Solid or OOB), find the nearest valid neighbor.
 	if not is_tile_walkable(start_grid):
 		start_grid = _get_closest_walkable_point(start_grid, 2)
-		# If we still can't find a spot (e.g., trapped in a massive wall), fail gracefully
 		if not is_tile_walkable(start_grid):
 			Loggie.msg("Path failed: Unit trapped at %s" % start_grid).domain(LogDomains.NAVIGATION).warn()
 			return PackedVector2Array()
 
 	# 3. Target Validation
-	# If the player clicks a wall/building, path to the nearest valid point (standard RTS behavior)
 	if not is_tile_walkable(end_grid):
 		end_grid = _get_closest_walkable_point(end_grid, 3)
-		# If target is deep in void, return partial or empty based on flag
 		if not is_tile_walkable(end_grid):
 			return PackedVector2Array()
 
@@ -27396,14 +27452,11 @@ func get_astar_path(start_pos: Vector2, end_pos: Vector2, allow_partial_path: bo
 	var path = active_astar_grid.get_point_path(start_grid, end_grid, allow_partial_path)
 	
 	# 5. Path Smoothing (Visual Correction)
-	# Snap the start/end exactly to world coordinates for smooth movement
 	if path.size() > 0:
 		path[0] = start_pos
-		# Only snap end if we didn't have to project it too far
 		if end_grid == world_to_grid(end_pos):
 			path[path.size() - 1] = end_pos
 		else:
-			# If we projected the end (clicked a wall), use the center of the valid tile
 			path[path.size() - 1] = get_tile_center(end_grid)
 			
 	return path
@@ -27442,118 +27495,85 @@ func _is_grid_point_valid(grid_pos: Vector2i) -> bool:
 	return active_astar_grid.region.has_point(grid_pos)
 
 # --- BUILDING PLACEMENT ---
-
-func place_building(building_data: BuildingData, grid_position: Vector2i, is_new_construction: bool = false) -> BaseBuilding:
+func _spawn_building_node(building_data: BuildingData, grid_pos: Vector2i) -> BaseBuilding:
 	if not is_instance_valid(active_building_container): return null
-	
-	if not is_placement_valid(grid_position, building_data.grid_size, building_data): return null
-	
+
 	var new_building = building_data.scene_to_spawn.instantiate()
-	
-	# Assign Data
 	new_building.data = building_data
-	new_building.grid_coordinate = grid_position
+	new_building.grid_coordinate = grid_pos
 	
-	# --- FIX: ISOMETRIC CENTER CALCULATION ---
-	# 1. Determine the "Center Point" of the building in Grid Coordinates
-	#    (e.g., A 2x2 building at (0,0) has a center at (1.0, 1.0))
-	var center_grid_x = float(grid_position.x) + (float(building_data.grid_size.x) / 2.0)
-	var center_grid_y = float(grid_position.y) + (float(building_data.grid_size.y) / 2.0)
+	# Use the Robust Center Helper
+	var center_pos = get_tile_center(grid_pos)
 	
-	# 2. Convert that Grid Center to World Pixels using Isometric Formula
-	#    IsoX = (GridX - GridY) * TileHalfWidth
-	#    IsoY = (GridX + GridY) * TileHalfHeight
-	var final_x = (center_grid_x - center_grid_y) * TILE_HALF_SIZE.x
-	var final_y = (center_grid_x + center_grid_y) * TILE_HALF_SIZE.y
+	# Pivot Adjustment:
+	# If the building sprite pivot is "Feet" (Bottom-Center), it aligns perfectly with Tile Center.
+	# If your sprites still look off, apply a small tweak here.
+	# Based on previous tests, you might need +16 Y.
+	# var pivot_tweak = Vector2(0, 16) 
+	var pivot_tweak = Vector2.ZERO # Start clean for this test
 	
-	new_building.global_position = Vector2(final_x, final_y)
-	# ----------------------------------------
+	new_building.global_position = center_pos + pivot_tweak
 	
 	active_building_container.add_child(new_building)
+	return new_building
 	
-	# Add to Data
+func place_building(building_data: BuildingData, grid_position: Vector2i, is_new_construction: bool = false) -> BaseBuilding:
+	if not is_instance_valid(active_building_container): return null
+	if not is_placement_valid(grid_position, building_data.grid_size, building_data): return null
+
+	var new_building = _spawn_building_node(building_data, grid_position)
+	
 	var entry = {
 		"resource_path": building_data.resource_path,
 		"grid_position": grid_position,
-		"peasant_count": 0,
-		"thrall_count": 0,
-		"progress": 0
+		"peasant_count": 0, "thrall_count": 0, "progress": 0
 	}
 	
 	if active_map_data:
 		if is_new_construction and building_data.construction_effort_required > 0:
 			active_map_data.pending_construction_buildings.append(entry)
 			new_building.set_state(BaseBuilding.BuildingState.BLUEPRINT)
-			
-			if active_map_data == current_settlement:
-				save_settlement()
-				
-			Loggie.msg("New blueprint placed at %s." % grid_position).domain(LogDomains.SETTLEMENT).info()
+			if active_map_data == current_settlement: save_settlement()
 		else:
 			active_map_data.placed_buildings.append(entry)
 			new_building.set_state(BaseBuilding.BuildingState.ACTIVE)
+			_refresh_grid_state()
 			
-		_refresh_grid_state()
-	
-	debug_validate_building_pos(new_building, grid_position)
 	return new_building
 
-func debug_validate_building_pos(building: Node2D, target_grid_pos: Vector2i) -> void:
-	Loggie.msg("--- BUILDING PLACEMENT DIAGNOSTIC ---").domain(LogDomains.BUILD).info()
+func reconstruct_buildings_from_data() -> void:
+	if active_building_container:
+		for child in active_building_container.get_children():
+			if child is BaseBuilding: child.queue_free()
+			
+	if not current_settlement: return
 	
-	# 1. CHECK INPUT DATA
-	Loggie.msg("Target Grid: %s" % target_grid_pos).domain(LogDomains.BUILD).debug()
-	
-	# 2. CHECK MATH (Manual Recalculation)
-	# Re-run the isometric formula manually to see if the code logic matches our expectation
-	var cell_w = TILE_WIDTH
-	var cell_h = TILE_HEIGHT
-	var size = Vector2i(1,1)
-	if "data" in building and building.data:
-		size = building.data.grid_size
-	
-	# Calculate Center Grid Point
-	var center_gx = float(target_grid_pos.x) + (float(size.x) / 2.0)
-	var center_gy = float(target_grid_pos.y) + (float(size.y) / 2.0)
-	
-	# Isometric Projection
-	var expected_x = (center_gx - center_gy) * (cell_w * 0.5)
-	var expected_y = (center_gx + center_gy) * (cell_h * 0.5)
-	var expected_pos = Vector2(expected_x, expected_y)
-	
-	Loggie.msg("Theoretical World Pos: %s" % expected_pos).domain(LogDomains.BUILD).debug()
-	
-	# 3. CHECK PARENT TRANSFORMS (Crucial!)
-	# If the parent container is moved, the building will be offset globally
-	var parent = building.get_parent()
-	if parent:
-		Loggie.msg("Parent (%s) Global Pos: %s" % [parent.name, parent.global_position]).domain(LogDomains.BUILD).debug()
-		if parent.global_position != Vector2.ZERO:
-			Loggie.msg("WARNING: Parent container is not at (0,0). This shifts all buildings!").domain(LogDomains.BUILD).warn()
-	
-	# 4. CHECK ACTUAL RESULT
-	Loggie.msg("Actual Unit Global Pos: %s" % building.global_position).domain(LogDomains.BUILD).debug()
-	
-	# 5. CHECK DELTA
-	var diff = building.global_position.distance_to(expected_pos)
-	if diff > 1.0:
-		Loggie.msg("CRITICAL MISMATCH: Visuals are %s pixels away from Logic!" % diff).domain(LogDomains.BUILD).error()
-	else:
-		Loggie.msg("Math verified. Visuals align with Logic.").domain(LogDomains.BUILD).info()
-		
-	# 6. CHECK BOUNDS
-	if active_astar_grid:
-		if not active_astar_grid.region.has_point(target_grid_pos):
-			Loggie.msg("OUT OF BOUNDS: Grid %s is outside defined region %s" % [target_grid_pos, active_astar_grid.region]).domain(LogDomains.BUILD).error()
+	for entry in current_settlement.placed_buildings:
+		if ResourceLoader.exists(entry.resource_path):
+			var data = load(entry.resource_path)
+			var b = _spawn_building_node(data, entry.grid_position)
+			if b: b.set_state(BaseBuilding.BuildingState.ACTIVE)
+			
+	for entry in current_settlement.pending_construction_buildings:
+		if ResourceLoader.exists(entry.resource_path):
+			var data = load(entry.resource_path)
+			var b = _spawn_building_node(data, entry.grid_position)
+			if b: b.set_state(BaseBuilding.BuildingState.BLUEPRINT)
 
-	Loggie.msg("---------------------------------------").domain(LogDomains.BUILD).info()
+	_refresh_grid_state()
 
 func remove_building(building_instance: BaseBuilding) -> void:
 	if not active_map_data or not is_instance_valid(building_instance): return
 	
 	var cell_size = get_active_grid_cell_size()
+	# Refactor note: removal logic is safer using data lookup than position math reverse engineering
+	# But preserving original logic logic per request, just wrapping safely
 	var top_left = building_instance.global_position - (Vector2(building_instance.data.grid_size) * cell_size / 2.0)
 	var grid_pos = Vector2i(round(top_left.x / cell_size.x), round(top_left.y / cell_size.y))
+	
+	# Prefer instance data if available
+	if "grid_coordinate" in building_instance and building_instance.grid_coordinate != Vector2i(-999, -999):
+		grid_pos = building_instance.grid_coordinate
 	
 	var removed_placed = _remove_from_list(active_map_data.placed_buildings, grid_pos)
 	var removed_pending = _remove_from_list(active_map_data.pending_construction_buildings, grid_pos)
@@ -27596,23 +27616,27 @@ func register_active_scene_nodes(container: Node2D) -> void:
 	active_building_container = container
 	active_tilemap_layer = null
 	
-	# 1. Check Parent (Is the container a child of the Map?)
+	# Find Map
 	if container.get_parent() is TileMapLayer:
 		active_tilemap_layer = container.get_parent()
-		print("[DIAGNOSTIC] SUCCESS: Found TileMapLayer (Parent).")
-		return
+	else:
+		var parent = container.get_parent()
+		if parent:
+			for child in parent.get_children():
+				if child is TileMapLayer:
+					active_tilemap_layer = child
+					break
+	
+	if active_tilemap_layer:
+		print("[DIAGNOSTIC] Found TileMapLayer. Syncing Grid...")
+		_sync_grid_to_map() # <--- THE FIX RUNS HERE
+	else:
+		print("[DIAGNOSTIC] FAILURE: Could not find TileMapLayer.")
 
-	# 2. Check Siblings (Is the Map next to the container?)
-	var parent = container.get_parent()
-	if parent:
-		# Search by Type (Robust) instead of Name
-		for child in parent.get_children():
-			if child is TileMapLayer:
-				active_tilemap_layer = child
-				print("[DIAGNOSTIC] SUCCESS: Found TileMapLayer (Sibling): ", child.name)
-				return
-				
-	print("[DIAGNOSTIC] FAILURE: Could not find any TileMapLayer near container!")
+	# Trigger visual spawn if data exists
+	if current_settlement:
+		reconstruct_buildings_from_data()
+
 
 func unregister_active_scene_nodes() -> void:
 	active_building_container = null
@@ -27622,18 +27646,12 @@ func unregister_active_scene_nodes() -> void:
 
 func load_settlement(data: SettlementData) -> void:
 	if ResourceLoader.exists(USER_SAVE_PATH):
-		var saved_data = load(USER_SAVE_PATH)
-		if saved_data is SettlementData:
-			current_settlement = saved_data
-			Loggie.msg("Loaded user save from %s" % USER_SAVE_PATH).domain(LogDomains.SETTLEMENT).info()
-		else:
-			_load_fallback_data(data)
+		current_settlement = load(USER_SAVE_PATH)
 	else:
 		_load_fallback_data(data)
-	
 	active_map_data = current_settlement
+	if active_building_container: reconstruct_buildings_from_data()
 	EventBus.settlement_loaded.emit(current_settlement)
-	_refresh_grid_state()
 
 func _load_fallback_data(data: SettlementData) -> void:
 	if data:
@@ -27641,18 +27659,13 @@ func _load_fallback_data(data: SettlementData) -> void:
 		current_settlement = data.duplicate(true)
 		if current_settlement.warbands == null: current_settlement.warbands = []
 		
-		# 2. --- FIX: GENERATE PERMANENT SEED ---
-		# If the template has no seed (0), we generate one NOW.
-		# This gives this specific "Run" a unique identity.
+		# 2. GENERATE PERMANENT SEED
 		if current_settlement.map_seed == 0:
 			randomize()
 			current_settlement.map_seed = randi()
 			Loggie.msg("New Campaign Initialized. Generated Seed: %d" % current_settlement.map_seed).domain(LogDomains.SETTLEMENT).info()
 		
-		# 3. --- FIX: SAVE IMMEDIATELY ---
-		# We write this new state to disk instantly.
-		# This ensures that next time you load, the game finds this file 
-		# instead of creating a new random one.
+		# 3. SAVE IMMEDIATELY
 		save_settlement()
 		
 		Loggie.msg("Loaded default template and created new save file.").domain(LogDomains.SETTLEMENT).info()
@@ -27948,6 +27961,39 @@ func commit_seasonal_recruits() -> void:
 func _generate_oath_name() -> String:
 	var names = ["Red", "Bold", "Young", "Wild", "Sworn", "Lucky"]
 	return "The %s" % names.pick_random()
+# --- FORMATION SAFETY ---
+
+## Takes a desired World Position (e.g. formation offset).
+## Returns the SAME position if it's safe.
+## Returns the NEAREST SAFE TILE CENTER if the target is in a wall.
+## Now accepts an optional list of 'taken_grid_points' to avoid stacking units
+func validate_formation_point(target_pos: Vector2, taken_grid_points: Array[Vector2i] = []) -> Vector2:
+	var grid_pos = world_to_grid(target_pos)
+	
+	# 1. If ideal spot is walkable AND not taken by a squadmate
+	if is_tile_walkable(grid_pos) and not grid_pos in taken_grid_points:
+		return target_pos
+		
+	# 2. Search for nearest safe tile, ignoring ones in the taken list
+	# Increasing radius to 4 to give them breathing room
+	var safe_grid_pos = _get_closest_walkable_point_exclusive(grid_pos, 4, taken_grid_points)
+	
+	return get_tile_center(safe_grid_pos)
+
+# Helper for Exclusive Search
+func _get_closest_walkable_point_exclusive(origin: Vector2i, max_radius: int, exclusions: Array[Vector2i]) -> Vector2i:
+	if is_tile_walkable(origin) and not origin in exclusions: return origin
+	
+	for r in range(1, max_radius + 1):
+		for x in range(-r, r + 1):
+			for y in range(-r, r + 1):
+				if abs(x) != r and abs(y) != r: continue
+				
+				var candidate = origin + Vector2i(x, y)
+				if is_tile_walkable(candidate) and not candidate in exclusions:
+					return candidate
+	
+	return origin # Fail-safe
 
 
 // FILE: res:///autoload/WinterManager.gd
@@ -30078,6 +30124,71 @@ func _on_lifetime_timeout() -> void:
 	ProjectilePoolManager.return_projectile(self)
 
 
+// FILE: res:///scenes/levels/TempDebugNode.gd
+extends Node2D
+
+# Match your constants EXACTLY
+const TILE_WIDTH = 64
+const TILE_HEIGHT = 32
+const TILE_HALF = Vector2(32, 16)
+
+func _ready():
+	await get_tree().process_frame
+	print("\n=== GRID MATH VERIFICATION ===")
+	
+	# 1. FIND THE MAP
+	var map = _find_tilemap()
+	if not map:
+		print("❌ CRITICAL: No TileMapLayer found to verify against.")
+		return
+
+	# 2. CHECK SETTINGS
+	print("Map Tile Set: ", map.tile_set.tile_shape) 
+	print("EXPECTED: 1 (Isometric)")
+	
+	# 3. ROUND TRIP TEST (Grid -> World -> Grid)
+	# We test a tile far from origin to magnify small errors
+	var test_cell = Vector2i(10, 10) 
+	
+	# A. Ask the Map (The Visual Truth)
+	var map_center = map.to_global(map.map_to_local(test_cell))
+	
+	# B. Ask the Manual Math (The Logical Truth)
+	# (x - y) * w/2, (x + y) * h/2 + h/2
+	var manual_x = (test_cell.x - test_cell.y) * TILE_HALF.x
+	var manual_y = (test_cell.x + test_cell.y) * TILE_HALF.y + TILE_HALF.y
+	var manual_center = Vector2(manual_x, manual_y)
+	
+	# C. Compare
+	print("\n--- TEST CELL (10, 10) ---")
+	print("Map Says Center is:    ", map_center)
+	print("Math Says Center is:   ", manual_center)
+	
+	var diff = map_center.distance_to(manual_center)
+	if diff < 1.0:
+		print("✅ MATCH: Visuals and Logic define 'Center' identically.")
+	else:
+		print("❌ MISMATCH: Visuals and Logic disagree by %s pixels." % diff)
+		print("   This causes buildings to float and pathfinding to clip walls.")
+
+	# 4. CLICK TEST (Reverse Logic)
+	# Does the Map agree that the center belongs to (10,10)?
+	var derived_cell = map.local_to_map(map.to_local(manual_center))
+	if derived_cell == test_cell:
+		print("✅ REVERSE MATCH: World -> Grid is accurate.")
+	else:
+		print("❌ REVERSE FAIL: The math location registers as cell %s" % derived_cell)
+
+func _find_tilemap() -> TileMapLayer:
+	# Quick scan for the map
+	if get_parent() is TileMapLayer: return get_parent()
+	for child in get_tree().root.get_children():
+		if child is TileMapLayer: return child
+		for sub in child.get_children():
+			if sub is TileMapLayer: return sub
+	return null
+
+
 // FILE: res:///scenes/missions/RaidMapLoader.gd
 class_name RaidMapLoader
 extends Node
@@ -31073,6 +31184,199 @@ func _evacuate_unit(unit: BaseUnit) -> void:
 	
 	# 4. Cleanup after fade
 	tween.tween_callback(unit.queue_free)
+
+
+// FILE: res:///scenes/units/StuckDetector.gd
+extends Node
+
+# --- CONFIG ---
+@export var parent_unit: CharacterBody2D
+@export var check_interval: float = 0.5
+@export var stuck_limit: int = 2
+@export var unit_layer_index: int = 2 
+
+# --- STATE ---
+var last_dist_to_target: float = 99999.0
+var timer: float = 0.0
+var stuck_count: int = 0
+var is_phasing: bool = false
+var cached_mask: int = 0 
+
+func _ready() -> void:
+	if not parent_unit: parent_unit = get_parent()
+	await get_tree().process_frame
+	if _has_target():
+		last_dist_to_target = parent_unit.global_position.distance_to(parent_unit.formation_target)
+
+func _physics_process(delta: float) -> void:
+	if not _is_trying_to_move(): 
+		_reset_stuck_status()
+		return
+
+	timer += delta
+	if timer < check_interval: return
+	
+	# --- CHECK PROGRESS (Every 0.5s) ---
+	timer = 0.0
+	
+	# Calculate current distance to the goal
+	var current_dist = 0.0
+	if _has_target():
+		current_dist = parent_unit.global_position.distance_to(parent_unit.formation_target)
+	else:
+		_reset_stuck_status()
+		return
+		
+	# DID WE IMPROVE?
+	# We expect to move at least 10 pixels CLOSER to the target in 0.5s
+	var progress = last_dist_to_target - current_dist
+	last_dist_to_target = current_dist
+	
+	# If we improved by less than 10 pixels (even if we slid 50 pixels sideways), we are stuck.
+	if progress < 10.0:
+		stuck_count += 1
+		if stuck_count >= stuck_limit and not is_phasing:
+			_set_phasing(true)
+	else:
+		# We are making real progress -> CLEAR
+		stuck_count = 0
+		if is_phasing:
+			_set_phasing(false)
+
+func _set_phasing(active: bool) -> void:
+	is_phasing = active
+	if active:
+		cached_mask = parent_unit.collision_mask
+		parent_unit.collision_mask = 0  # Phase through everything
+		parent_unit.modulate.a = 0.5
+	else:
+		parent_unit.collision_mask = cached_mask
+		parent_unit.modulate.a = 1.0
+
+func _is_trying_to_move() -> bool:
+	if "velocity" in parent_unit and parent_unit.velocity.length_squared() > 100.0:
+		return true
+	return false
+
+func _has_target() -> bool:
+	return "formation_target" in parent_unit and parent_unit.formation_target != Vector2.ZERO
+
+func _reset_stuck_status() -> void:
+	stuck_count = 0
+	timer = 0.0
+	if is_phasing: _set_phasing(false)
+	# Reset distance tracker so we don't trigger immediately on next move
+	if _has_target():
+		last_dist_to_target = parent_unit.global_position.distance_to(parent_unit.formation_target)
+
+
+// FILE: res:///scenes/units/UnitDebugger.gd
+extends Node2D
+class_name UnitDebugger
+
+# --- CONFIG ---
+@export var font_size: int = 12
+@export var show_visuals: bool = true
+
+# --- REFS ---
+var parent: CharacterBody2D
+var stuck_detector: Node
+var label: Label
+
+func _ready() -> void:
+	# 1. Attach to Parent
+	parent = get_parent() as CharacterBody2D
+	if not parent:
+		set_process(false)
+		return
+
+	# 2. Find StuckDetector (Sibling)
+	stuck_detector = parent.get_node_or_null("StuckDetector")
+	
+	# 3. Setup UI Label
+	label = Label.new()
+	label.scale = Vector2(0.5, 0.5) # Make text crisp but small
+	label.position = Vector2(-20, -50)
+	label.modulate = Color.YELLOW
+	add_child(label)
+	
+	# Ensure we draw on top of the sprite
+	z_index = 100 
+
+func _process(_delta: float) -> void:
+	if not show_visuals: 
+		label.text = ""
+		return
+		
+	queue_redraw()
+	_update_label()
+
+func _update_label() -> void:
+	var mask_val = parent.collision_mask
+	var vel_len = parent.velocity.length()
+	
+	var status = "OK"
+	if stuck_detector:
+		if stuck_detector.is_phasing: status = "PHASING"
+		elif stuck_detector.stuck_count > 0: status = "STUCK (%d)" % stuck_detector.stuck_count
+	
+	var txt = "ID: %s\n" % parent.name
+	txt += "Vel: %.1f\n" % vel_len
+	txt += "Mask: %d (Layer 1=%s)\n" % [mask_val, "ON" if mask_val & 1 else "OFF"]
+	txt += "State: %s" % status
+	
+	# Show Collision Info
+	var slide_count = parent.get_slide_collision_count()
+	if slide_count > 0:
+		var collider = parent.get_slide_collision(0).get_collider()
+		txt += "\nHit: %s" % (collider.name if collider else "null")
+		
+	label.text = txt
+
+func _draw() -> void:
+	if not show_visuals: return
+	
+	# 1. Draw Velocity (Green Arrow)
+	if parent.velocity.length() > 10.0:
+		draw_line(Vector2.ZERO, parent.velocity.normalized() * 30.0, Color.GREEN, 2.0)
+	
+	# 2. Draw Target (Red Line)
+	if "formation_target" in parent and parent.formation_target != Vector2.ZERO:
+		var local_target = to_local(parent.formation_target)
+		# Only draw if reasonably close
+		if local_target.length() < 500:
+			draw_line(Vector2.ZERO, local_target, Color.RED, 1.0)
+			draw_circle(local_target, 3.0, Color.RED)
+
+# --- DEEP SCAN TRIGGER ---
+func _unhandled_input(event: InputEvent) -> void:
+	# Press 'P' while hovering mouse over unit to print detailed logs
+	if event is InputEventKey and event.pressed and event.keycode == KEY_P:
+		var mouse_pos = get_global_mouse_position()
+		if parent.global_position.distance_to(mouse_pos) < 30.0:
+			_print_deep_scan()
+
+func _print_deep_scan() -> void:
+	print("\n=== 🕵️ UNIT DIAGNOSTIC: %s ===" % parent.name)
+	print("Position:      ", parent.global_position)
+	print("Target (Form): ", parent.get("formation_target"))
+	print("Velocity:      %s (Speed: %.2f)" % [parent.velocity, parent.velocity.length()])
+	print("Collision Mask:%d (Binary: %s)" % [parent.collision_mask, String.num_int64(parent.collision_mask, 2)])
+	
+	if stuck_detector:
+		print("--- STUCK DETECTOR ---")
+		print("Is Phasing:    ", stuck_detector.is_phasing)
+		print("Stuck Count:   ", stuck_detector.stuck_count)
+		print("Last Check Pos:", stuck_detector.last_pos)
+		print("Dist Moved:    ", parent.global_position.distance_to(stuck_detector.last_pos))
+	
+	var count = parent.get_slide_collision_count()
+	print("--- PHYSICS ---")
+	print("Slide Collisions: ", count)
+	for i in range(count):
+		var col = parent.get_slide_collision(i)
+		print("  [%d] Hit: %s (Layer: %d)" % [i, col.get_collider().name, col.get_collider().collision_layer])
+	print("================================\n")
 
 
 // FILE: res:///scenes/world/ResourceNode.gd
@@ -32986,19 +33290,24 @@ func _clear_all_buildings() -> void:
 	awaiting_placement = null
 
 func _initialize_settlement() -> void:
-	home_base_data = _create_default_settlement()
-	SettlementManager.register_active_scene_nodes(building_container)
-	SettlementManager.load_settlement(home_base_data)
-	if home_base_data.map_seed == 0:
-		home_base_data.map_seed = randi()
+	# This creates a NEW instance every time, which we don't want for the seed
+	home_base_data = _create_default_settlement() 
 	
-	# 1. GENERATE MAP
+	SettlementManager.register_active_scene_nodes(building_container)
+	
+	# This loads the save file into the Manager's current_settlement
+	SettlementManager.load_settlement(home_base_data) 
+	
+	# FIX: Re-point our local variable to the Manager's "Source of Truth"
+	home_base_data = SettlementManager.current_settlement 
+
+	# Now home_base_data.map_seed will be the saved seed from the .tres file
 	if has_node("TileMapLayer"):
 		TerrainGenerator.generate_base_terrain(
-			$TileMapLayer,                # Arg 1: The Node
-			SettlementManager.GRID_WIDTH, # Arg 2: Width (60)
-			SettlementManager.GRID_HEIGHT,# Arg 3: Height (40)
-			home_base_data.map_seed       # Arg 4: The Seed
+			$TileMapLayer,
+			SettlementManager.GRID_WIDTH,
+			SettlementManager.GRID_HEIGHT,
+			home_base_data.map_seed # Now correctly uses the persistent seed
 		)
 	_spawn_placed_buildings()
 	
@@ -33373,40 +33682,37 @@ func set_formation_type(new_type: FormationType) -> void:
 	formation_type = new_type
 	_update_formation_positions()
 
-# --- MODIFIED: Terrain Aware Movement ---
 func move_to_position(target_pos: Vector2, direction: Vector2 = Vector2.DOWN) -> void:
 	target_position = target_pos
 	is_moving = true
 	
-	# 1. Calculate ideal geometric positions (Rotation included)
 	var formation_positions = _calculate_formation_positions(target_pos, direction)
 	
-	# 2. Assign and Validate
+	# TRACKER: Keep track of grid cells claimed by this squad
+	var claimed_cells: Array[Vector2i] = []
+	
 	for i in range(min(units.size(), formation_positions.size())):
 		var unit = units[i]
 		if not is_instance_valid(unit): continue
 			
-		var final_dest = formation_positions[i]
+		var raw_dest = formation_positions[i]
+		var final_dest = raw_dest
 		
-		# --- NEW: TERRAIN VALIDATION ---
-		# Check if the calculated slot is inside a wall or deep water.
+		# --- PHASE 4 FIX: ANTI-BUNCHING ---
 		if SettlementManager:
-			var grid_pos = SettlementManager.world_to_grid(final_dest)
+			# Pass the 'claimed_cells' so this unit doesn't pick a spot 
+			# that a previous squadmate already took.
+			final_dest = SettlementManager.validate_formation_point(raw_dest, claimed_cells)
 			
-			# If the exact spot is blocked...
-			if SettlementManager.active_astar_grid.is_point_solid(grid_pos):
-				# ...search for the nearest valid land (Radius 3 tiles)
-				var safe_pos = SettlementManager.request_valid_spawn_point(final_dest, 3)
-				
-				if safe_pos != Vector2.INF:
-					final_dest = safe_pos
-					# Optional: Debug draw to show the adjustment
-					# EventBus.debug_draw_line.emit(formation_positions[i], final_dest, Color.ORANGE)
-		# -------------------------------
+			# Register this spot as taken
+			var grid_spot = SettlementManager.world_to_grid(final_dest)
+			claimed_cells.append(grid_spot)
+		# ----------------------------------
 		
 		_move_unit_to_position(unit, final_dest)
 	
 	Loggie.msg("Squad moving to %s in %s formation" % [target_pos, FormationType.keys()[formation_type]]).domain("RTS").info()
+
 
 # --- EXISTING SHAPE LOGIC (Preserved) ---
 
@@ -35120,7 +35426,7 @@ func _physics_process(delta: float) -> void:
 	
 	if separation_enabled:
 		# Calculate separation (prevents stacking)
-		final_velocity += _calculate_separation_push(delta)
+		final_velocity += calculate_separation_push(delta)
 	
 	if avoidance_enabled and final_velocity.length_squared() > 10.0:
 		# Calculate whiskers (prevents corner stuck)
@@ -35140,7 +35446,7 @@ func _physics_process(delta: float) -> void:
 			
 	_last_pos = global_position
 
-func _calculate_separation_push(delta: float) -> Vector2:
+func calculate_separation_push(delta: float) -> Vector2:
 	var push_vector = Vector2.ZERO
 	if not separation_area: return Vector2.ZERO
 	
@@ -35796,6 +36102,7 @@ var leader: SquadLeader
 var formation_target: Vector2 = Vector2.ZERO
 var brawl_target: Node2D = null
 var is_rubber_banding: bool = false
+var stuck_detector: Node
 
 const MAX_DIST_FROM_LEADER = 300.0
 const CATCHUP_DIST = 80.0
@@ -35819,10 +36126,19 @@ func _ready() -> void:
 			for c in attack_ai.detection_area.get_children():
 				if c is CollisionShape2D and c.shape is CircleShape2D: c.shape.radius = 120.0
 
+	stuck_detector = get_node_or_null("StuckDetector")
+	
+	# If you injected it via code in the previous step, find it by that name:
+	if not stuck_detector:
+		stuck_detector = get_node_or_null("DEBUG_StuckReporter") # Or "StuckDetector" depending on your setup
+		
+	super._ready()
+	
 func _physics_process(delta: float) -> void:
 	# 1. FSM High Priority (Tasks like Collecting/Escorting take precedence)
+	# (We keep the super call here because these states rely on standard NavAgent logic)
 	if fsm.current_state in [UnitAIConstants.State.COLLECTING, UnitAIConstants.State.ESCORTING, UnitAIConstants.State.REGROUPING, UnitAIConstants.State.RETREATING]:
-		uses_external_steering = false # Let FSM drive
+		uses_external_steering = false 
 		super._physics_process(delta)
 		return
 
@@ -35834,20 +36150,27 @@ func _physics_process(delta: float) -> void:
 	# 3. Take Control
 	uses_external_steering = true
 	
-	# 4. Rubber Banding Logic (Existing)
+	# 4. Rubber Banding Logic
 	var speed = data.move_speed
 	var dist_leader = global_position.distance_to(leader.global_position)
 	
-	if not is_rubber_banding and dist_leader > MAX_DIST_FROM_LEADER:
-		is_rubber_banding = true
-		collision_mask = 1 # Ghost mode
-		modulate.a = 0.5
-		separation_enabled = false # Don't separate while sprinting
-	elif is_rubber_banding and dist_leader < CATCHUP_DIST:
-		is_rubber_banding = false
-		_setup_collision_logic()
-		modulate.a = 1.0
-		separation_enabled = true # Re-enable separation
+	var is_phasing = false
+	if stuck_detector and "is_phasing" in stuck_detector:
+		is_phasing = stuck_detector.is_phasing
+	
+	# Only update Rubber Band state if we are NOT currently phasing through a wall.
+	# If we are phasing, we want to keep the Mask at 0 (set by the detector).
+	if not is_phasing:
+		if not is_rubber_banding and dist_leader > MAX_DIST_FROM_LEADER:
+			is_rubber_banding = true
+			collision_mask = 1 
+			modulate.a = 0.5
+			separation_enabled = false 
+		elif is_rubber_banding and dist_leader < CATCHUP_DIST:
+			is_rubber_banding = false
+			_setup_collision_logic()
+			modulate.a = 1.0
+			separation_enabled = true
 		
 	if is_rubber_banding:
 		brawl_target = null
@@ -35855,7 +36178,7 @@ func _physics_process(delta: float) -> void:
 	
 	# 5. Determine Target
 	var final_dest = formation_target
-	var stop_dist = 5.0
+	var stop_dist = 15.0
 	
 	if is_instance_valid(brawl_target) and not is_rubber_banding:
 		final_dest = brawl_target.global_position
@@ -35873,17 +36196,25 @@ func _physics_process(delta: float) -> void:
 		var dist = global_position.distance_to(final_dest)
 		
 		if dist > stop_dist:
-			# Simple Arrival
-			velocity = (final_dest - global_position).normalized() * speed
+			# Calculate desired velocity
+			var desired_velocity = (final_dest - global_position).normalized() * speed
 			
-			# NOTE: We do NOT add separation here. 
-			# We set 'velocity', and 'BaseUnit' adds separation + avoidance in super._physics_process()
+			# Apply simple steering to smooth it out
+			velocity = velocity.lerp(desired_velocity, 10.0 * delta)
 		else:
 			# Damping when arrived
 			velocity = velocity.lerp(Vector2.ZERO, 10.0 * delta)
+			
+	# --- THE FIX ---
+	# We DO NOT call super._physics_process(delta) here anymore.
+	# The parent likely requires a NavPath to move, which we don't have.
+	# We manually apply separation and move.
 	
-	# 7. Hand over to BaseUnit for physics application
-	super._physics_process(delta)
+	if separation_enabled:
+		velocity += calculate_separation_push(delta)
+	
+	move_and_slide()
+	# ---------------
 
 # ... (Keep the rest of the file: _get_radius, assign_escort_task, etc.) ...
 func _get_radius(node: Node2D) -> float:
