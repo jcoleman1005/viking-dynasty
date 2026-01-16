@@ -18,9 +18,9 @@ const TILE_HEIGHT = 32
 const TILE_HALF_SIZE = Vector2(TILE_WIDTH * 0.5, TILE_HEIGHT * 0.5)
 
 # --- VISUAL CALIBRATION ---
-
+var grid_offset_calibration: Vector2 = Vector2.ZERO
 const BUILDING_OFFSET_X: float = -32  # (Negative = Move Left)
-const BUILDING_OFFSET_Y: float = -16
+const BUILDING_OFFSET_Y: float = 0.0
 
 const GRID_WIDTH = 60
 const GRID_HEIGHT = 60
@@ -71,12 +71,15 @@ func world_to_grid(pos: Vector2) -> Vector2i:
 func _init_grid() -> void:
 	active_astar_grid = AStarGrid2D.new()
 	active_astar_grid.region = Rect2i(0, 0, GRID_WIDTH, GRID_HEIGHT)
-	
 	active_astar_grid.cell_size = Vector2(TILE_WIDTH, TILE_HEIGHT)
 	
-	# [CRITICAL] This tells AStar to expect Isometric Neighbors
+	# Isometric Down is standard for Godot 4 2D Iso
 	active_astar_grid.cell_shape = AStarGrid2D.CELL_SHAPE_ISOMETRIC_DOWN
 	active_astar_grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_NEVER
+	
+	# Apply the Calibration (Default 0,0 until map is found)
+	active_astar_grid.offset = grid_offset_calibration
+	
 	active_astar_grid.update()
 	
 	if NavigationManager:
@@ -104,6 +107,37 @@ func _refresh_grid_state() -> void:
 			_apply_building_to_grid(entry, true)
 	
 	EventBus.pathfinding_grid_updated.emit(Vector2i.ZERO)
+
+func _sync_grid_to_map() -> void:
+	if not is_instance_valid(active_tilemap_layer): return
+	
+	# --- FIX: LAZY INIT (Prevents Crash) ---
+	if active_astar_grid == null:
+		_init_grid()
+	# ---------------------------------------
+	
+	# 1. Measure the Visual Center of (0,0)
+	var visual_zero = active_tilemap_layer.to_global(active_tilemap_layer.map_to_local(Vector2i(0,0)))
+	
+	# 2. Measure the Math Center of (0,0)
+	active_astar_grid.offset = Vector2.ZERO
+	active_astar_grid.update()
+	var math_zero = active_astar_grid.get_point_position(Vector2i(0,0))
+	
+	# 3. Calculate the Delta
+	var diff = visual_zero - math_zero
+	
+	# 4. Apply to Calibration
+	grid_offset_calibration = diff
+	active_astar_grid.offset = grid_offset_calibration
+	active_astar_grid.update()
+	
+	Loggie.msg("Grid Calibrated. Offset applied: %s" % grid_offset_calibration).domain(LogDomains.SYSTEM).info()
+	print("--- GRID CALIBRATION REPORT ---")
+	print("Visual (0,0): ", visual_zero)
+	print("Math (0,0):   ", math_zero)
+	print("Correction:   ", diff)
+	print("-----------------------------")
 
 # --- NEW: Terrain Scanner ---
 func _apply_terrain_solids() -> void:
@@ -242,50 +276,37 @@ func _is_grid_point_valid(grid_pos: Vector2i) -> bool:
 
 # --- BUILDING PLACEMENT ---
 func _spawn_building_node(building_data: BuildingData, grid_pos: Vector2i) -> BaseBuilding:
-	if not is_instance_valid(active_building_container):
-		return null
+	if not is_instance_valid(active_building_container): return null
 
 	var new_building = building_data.scene_to_spawn.instantiate()
 	new_building.data = building_data
 	new_building.grid_coordinate = grid_pos
 	
-	# --- POSITIONING LOGIC ---
-	if is_instance_valid(active_tilemap_layer):
-		# 1. Geometric Center
-		var p_start = active_tilemap_layer.map_to_local(grid_pos)
-		var end_cell = grid_pos + building_data.grid_size - Vector2i(1, 1)
-		var p_end = active_tilemap_layer.map_to_local(end_cell)
-		var local_center = (p_start + p_end) / 2.0
-		
-		# 2. Calibration
-		var correction = Vector2(BUILDING_OFFSET_X, BUILDING_OFFSET_Y)
-		new_building.global_position = active_tilemap_layer.to_global(local_center + correction)
-	else:
-		# Fallback
-		var center_gx = float(grid_pos.x) + (float(building_data.grid_size.x) / 2.0)
-		var center_gy = float(grid_pos.y) + (float(building_data.grid_size.y) / 2.0)
-		var final_x = (center_gx - center_gy) * TILE_HALF_SIZE.x
-		var final_y = (center_gx + center_gy) * TILE_HALF_SIZE.y
-		new_building.global_position = Vector2(final_x, final_y)
-		
+	# Use the Robust Center Helper
+	var center_pos = get_tile_center(grid_pos)
+	
+	# Pivot Adjustment:
+	# If the building sprite pivot is "Feet" (Bottom-Center), it aligns perfectly with Tile Center.
+	# If your sprites still look off, apply a small tweak here.
+	# Based on previous tests, you might need +16 Y.
+	# var pivot_tweak = Vector2(0, 16) 
+	var pivot_tweak = Vector2.ZERO # Start clean for this test
+	
+	new_building.global_position = center_pos + pivot_tweak
+	
 	active_building_container.add_child(new_building)
 	return new_building
 	
 func place_building(building_data: BuildingData, grid_position: Vector2i, is_new_construction: bool = false) -> BaseBuilding:
-	# 1. Validation
 	if not is_instance_valid(active_building_container): return null
 	if not is_placement_valid(grid_position, building_data.grid_size, building_data): return null
-	
-	# 2. Spawn Visuals (Using the Shared Helper)
+
 	var new_building = _spawn_building_node(building_data, grid_position)
 	
-	# 3. Update Data Logic
 	var entry = {
 		"resource_path": building_data.resource_path,
 		"grid_position": grid_position,
-		"peasant_count": 0,
-		"thrall_count": 0,
-		"progress": 0
+		"peasant_count": 0, "thrall_count": 0, "progress": 0
 	}
 	
 	if active_map_data:
@@ -296,37 +317,30 @@ func place_building(building_data: BuildingData, grid_position: Vector2i, is_new
 		else:
 			active_map_data.placed_buildings.append(entry)
 			new_building.set_state(BaseBuilding.BuildingState.ACTIVE)
-			_refresh_grid_state() # This draws the Red Tiles
+			_refresh_grid_state()
 			
 	return new_building
 
 func reconstruct_buildings_from_data() -> void:
-	# Clear existing to prevent duplicates
 	if active_building_container:
 		for child in active_building_container.get_children():
-			child.queue_free()
+			if child is BaseBuilding: child.queue_free()
 			
 	if not current_settlement: return
 	
-	# 1. Respawn Placed Buildings
 	for entry in current_settlement.placed_buildings:
 		if ResourceLoader.exists(entry.resource_path):
 			var data = load(entry.resource_path)
-			var building = _spawn_building_node(data, entry.grid_position)
-			building.set_state(BaseBuilding.BuildingState.ACTIVE)
-			# Restore workers if needed:
-			# building.restore_workers(entry.peasant_count, ...)
+			var b = _spawn_building_node(data, entry.grid_position)
+			if b: b.set_state(BaseBuilding.BuildingState.ACTIVE)
 			
-	# 2. Respawn Construction Sites
 	for entry in current_settlement.pending_construction_buildings:
 		if ResourceLoader.exists(entry.resource_path):
 			var data = load(entry.resource_path)
-			var building = _spawn_building_node(data, entry.grid_position)
-			building.set_state(BaseBuilding.BuildingState.BLUEPRINT)
+			var b = _spawn_building_node(data, entry.grid_position)
+			if b: b.set_state(BaseBuilding.BuildingState.BLUEPRINT)
 
-	# 3. Update Physics Grid
 	_refresh_grid_state()
-	Loggie.msg("Reconstructed settlement visuals.").domain(LogDomains.SETTLEMENT).info()
 
 func remove_building(building_instance: BaseBuilding) -> void:
 	if not active_map_data or not is_instance_valid(building_instance): return
@@ -382,30 +396,27 @@ func register_active_scene_nodes(container: Node2D) -> void:
 	active_building_container = container
 	active_tilemap_layer = null
 	
-	# 1. FIND THE MAP (Existing Logic)
-	# Check Parent
+	# Find Map
 	if container.get_parent() is TileMapLayer:
 		active_tilemap_layer = container.get_parent()
-		print("[DIAGNOSTIC] SUCCESS: Found TileMapLayer (Parent).")
-	# Check Siblings
 	else:
 		var parent = container.get_parent()
 		if parent:
 			for child in parent.get_children():
 				if child is TileMapLayer:
 					active_tilemap_layer = child
-					print("[DIAGNOSTIC] SUCCESS: Found TileMapLayer (Sibling): ", child.name)
 					break
 	
-	if not active_tilemap_layer:
-		print("[DIAGNOSTIC] FAILURE: Could not find any TileMapLayer near container!")
-		return
+	if active_tilemap_layer:
+		print("[DIAGNOSTIC] Found TileMapLayer. Syncing Grid...")
+		_sync_grid_to_map() # <--- THE FIX RUNS HERE
+	else:
+		print("[DIAGNOSTIC] FAILURE: Could not find TileMapLayer.")
 
-	# 2. --- NEW: TRIGGER RESPAWN ---
-	# If we already have settlement data loaded (e.g. from Main Menu), 
-	# but the scene just appeared, we must spawn the buildings NOW.
-	if current_settlement != null:
+	# Trigger visual spawn if data exists
+	if current_settlement:
 		reconstruct_buildings_from_data()
+
 
 func unregister_active_scene_nodes() -> void:
 	active_building_container = null
@@ -414,28 +425,13 @@ func unregister_active_scene_nodes() -> void:
 # --- PERSISTENCE ---
 
 func load_settlement(data: SettlementData) -> void:
-	# A. Load from Disk or Fallback
 	if ResourceLoader.exists(USER_SAVE_PATH):
-		var saved_data = load(USER_SAVE_PATH)
-		if saved_data is SettlementData:
-			current_settlement = saved_data
-			Loggie.msg("Loaded user save from %s" % USER_SAVE_PATH).domain(LogDomains.SETTLEMENT).info()
-		else:
-			_load_fallback_data(data)
+		current_settlement = load(USER_SAVE_PATH)
 	else:
 		_load_fallback_data(data)
-	
 	active_map_data = current_settlement
-	
-	# B. Trigger Visual Reconstruction
-	# Only runs if the scene is already registered. 
-	# (If not, register_active_scene_nodes will trigger it later).
-	if is_instance_valid(active_building_container):
-		reconstruct_buildings_from_data()
-	
-	# C. Notify System
+	if active_building_container: reconstruct_buildings_from_data()
 	EventBus.settlement_loaded.emit(current_settlement)
-	_refresh_grid_state()
 
 func _load_fallback_data(data: SettlementData) -> void:
 	if data:

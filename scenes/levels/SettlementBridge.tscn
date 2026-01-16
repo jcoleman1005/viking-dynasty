@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=3 uid="uid://c53k15q2w8c1a"]
+[gd_scene load_steps=23 format=3 uid="uid://c53k15q2w8c1a"]
 
 [ext_resource type="PackedScene" uid="uid://dqh0xu88khxct" path="res://ui/EndOfYear_Popup.tscn" id="2_5el12"]
 [ext_resource type="Script" uid="uid://dafjxa85ci2rx" path="res://scripts/buildings/SettlementBridge.gd" id="2_c48a7"]
@@ -18,6 +18,7 @@
 [ext_resource type="Texture2D" uid="uid://cjlq3soj1j4jj" path="res://assets/Kenney/medievalRTS_spritesheet.png" id="11_vlppw"]
 [ext_resource type="PackedScene" uid="uid://cyp3t7gbdg0wx" path="res://player/RTSController.tscn" id="18_fmib8"]
 [ext_resource type="PackedScene" uid="uid://bvsuoj3irdvcs" path="res://player/RTSInputHandler.tscn" id="19_c7ve4"]
+[ext_resource type="Script" uid="uid://ui2rgh2p4cqh" path="res://scenes/levels/TempDebugNode.gd" id="20_c7ve4"]
 [ext_resource type="PackedScene" uid="uid://io325box3m4m" path="res://scenes/world/UnitSpawner.tscn" id="20_fmib8"]
 
 [sub_resource type="Resource" id="Resource_vmd61"]
@@ -181,14 +182,12 @@ tile_set = ExtResource("6_cpd76")
 [node name="Storefront_UI" parent="UI" instance=ExtResource("3_vj45l")]
 
 [node name="Dynasty_UI" parent="UI" instance=ExtResource("7_k14p1")]
-anchors_preset = 8
 
 [node name="EndOfYear_Popup" parent="UI" instance=ExtResource("2_5el12")]
-anchors_preset = 8
 
 [node name="RestartButton" type="Button" parent="UI"]
 visible = false
-anchors_preset = 8
+anchors_preset = -1
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
@@ -202,6 +201,7 @@ grow_vertical = 2
 text = "Return to Settlement"
 
 [node name="PauseButton" type="Button" parent="UI"]
+anchors_preset = -1
 offset_left = 10.0
 offset_top = 10.0
 offset_right = 130.0
@@ -210,7 +210,7 @@ text = "PAUSE (ESC)"
 script = ExtResource("7_n23os")
 
 [node name="BuildingInspector" parent="UI" instance=ExtResource("11_fmib8")]
-anchors_preset = 7
+anchors_preset = -1
 anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
@@ -263,6 +263,9 @@ rts_controller = NodePath("../RTSController")
 
 [node name="DebugNav" type="Node2D" parent="."]
 script = SubResource("GDScript_cpd76")
+
+[node name="TempDebugNode" type="Node2D" parent="."]
+script = ExtResource("20_c7ve4")
 
 [editable path="MapResources/Resource_Wood"]
 [editable path="MapResources/Resource_Food"]
