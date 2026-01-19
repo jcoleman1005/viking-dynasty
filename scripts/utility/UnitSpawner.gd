@@ -84,8 +84,10 @@ func _spawn_unit_core(warband: WarbandData, target_pos: Vector2, is_player: bool
 	
 	# 1. Coordinate Safety Check
 	var final_pos = target_pos
-	if SettlementManager:
-		final_pos = SettlementManager.request_valid_spawn_point(target_pos, 4)
+	
+	# REFACTOR FIX: Use NavigationManager directly
+	if NavigationManager:
+		final_pos = NavigationManager.request_valid_spawn_point(target_pos, 4)
 		if final_pos == Vector2.INF:
 			Loggie.msg("Spawn blocked at %s for %s" % [target_pos, unit_data.display_name]).domain(LogDomains.NAVIGATION).warn()
 			return null
@@ -101,16 +103,13 @@ func _spawn_unit_core(warband: WarbandData, target_pos: Vector2, is_player: bool
 		unit.collision_layer = LAYER_PLAYER
 		unit.add_to_group("player_units")
 		
-		# --- FIX: ALWAYS APPLY SQUAD LEADER SCRIPT ---
-		# We don't check 'if not unit.get_script()'. We enforce the upgrade.
+		# Always apply Squad Leader Script
 		var leader_script = load("res://scripts/units/SquadLeader.gd")
 		if unit.get_script() != leader_script:
 			unit.set_script(leader_script)
-			# Note: set_script resets properties not marked @export or saved.
-			# Re-inject dependencies just in case the script swap wiped them.
+			# Re-inject dependencies
 			unit.warband_ref = warband
 			unit.data = unit_data
-		# ---------------------------------------------
 	else:
 		unit.collision_layer = LAYER_ENEMY
 		unit.add_to_group("enemy_units")
@@ -195,23 +194,21 @@ func _spawn_civilians(count: int, origin: Vector2, is_enemy: bool) -> void:
 		
 		var final_pos = tentative_pos
 		
-		# 3. --- SAFETY CHECK ---
-		if SettlementManager:
+		# 3. --- SAFETY CHECK (REFACTORED) ---
+		if NavigationManager:
 			# Debug: What is the random spot?
-			var grid_check = SettlementManager.world_to_grid(tentative_pos)
-			var is_water = SettlementManager.active_astar_grid.is_point_solid(grid_check)
+			var grid_check = NavigationManager._world_to_grid(tentative_pos)
+			var is_water = NavigationManager.is_point_solid(grid_check)
 			
 			if is_water:
 				# It landed in water. Request nearest land (Radius 5 tiles).
-				var safe_pos = SettlementManager.request_valid_spawn_point(tentative_pos, 5)
+				var safe_pos = NavigationManager.request_valid_spawn_point(tentative_pos, 5)
 				
 				if safe_pos != Vector2.INF:
 					final_pos = safe_pos
-					# print("  > Civ %d rescued from Water. Moved to Beach." % i)
 				else:
-					# Deep water / No land found. Fallback to Origin (The Building).
+					# Deep water / No land found. Fallback to Origin.
 					final_pos = origin 
-					# print("  > Civ %d rescued from Deep Ocean. Moved to Origin." % i)
 		# -----------------------
 		
 		civ.global_position = final_pos

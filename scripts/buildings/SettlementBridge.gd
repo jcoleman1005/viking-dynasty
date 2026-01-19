@@ -1,5 +1,8 @@
 # res://scripts/buildings/SettlementBridge.gd
-extends Node
+extends LevelBase
+
+const MAP_WIDTH = 60
+const MAP_HEIGHT = 60
 
 # --- Exported Resources ---
 @export var home_base_data: SettlementData
@@ -370,39 +373,41 @@ func _clear_all_buildings() -> void:
 	awaiting_placement = null
 
 func _initialize_settlement() -> void:
-	# This creates a NEW instance every time, which we don't want for the seed
+	# 1. SETUP DATA
 	home_base_data = _create_default_settlement() 
-	
 	SettlementManager.register_active_scene_nodes(building_container)
-	
-	# This loads the save file into the Manager's current_settlement
 	SettlementManager.load_settlement(home_base_data) 
-	
-	# FIX: Re-point our local variable to the Manager's "Source of Truth"
 	home_base_data = SettlementManager.current_settlement 
 
-	# Now home_base_data.map_seed will be the saved seed from the .tres file
+	# 2. GENERATE TERRAIN
+	# We must generate the visual tiles before we can scan them for navigation.
 	if has_node("TileMapLayer"):
 		TerrainGenerator.generate_base_terrain(
 			$TileMapLayer,
-			SettlementManager.GRID_WIDTH,
-			SettlementManager.GRID_HEIGHT,
-			home_base_data.map_seed # Now correctly uses the persistent seed
+			MAP_WIDTH, # Or use a constant from a global config
+			MAP_HEIGHT,
+			home_base_data.map_seed 
 		)
+
+	# This calls the function in LevelBase.gd
+	# It handles the wait time AND the NavigationManager setup for you.
+	await setup_level_navigation(
+		$TileMapLayer, 
+		MAP_WIDTH, 
+		MAP_HEIGHT
+	)
+	
+	NavigationManager.initialize_grid_from_tilemap(
+		$TileMapLayer,
+		Vector2i(MAP_WIDTH, MAP_HEIGHT),
+		Vector2i(64, 32) # Your Tile Dimensions
+	)
+	
+	# 5. SPAWN BUILDINGS
+	# This will automatically punch holes in the Navigation Grid we just made.
 	_spawn_placed_buildings()
-	
-	# 2. WAIT FOR PHYSICS/VISUALS
-	# Essential: Let Godot process the TileMap updates for one frame.
-	await get_tree().process_frame 
-	
-	# 3. --- CRITICAL FIX: REFRESH GRID ---
-	# Now that the terrain exists and is processed, scan it!
-	Loggie.msg("Force Refreshing Grid (Home Settlement)...").domain("SETTLEMENT").info()
-	SettlementManager._refresh_grid_state()
-	# -------------------------------------
-	
-	# 4. SPAWN UNITS
-	# Now they will see the water and avoid it.
+	# 6. SPAWN UNITS
+	# Now they can safely request spawn points because the grid is ready.
 	_sync_villagers()
 	_spawn_player_garrison()
 	

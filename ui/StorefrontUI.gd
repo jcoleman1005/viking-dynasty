@@ -1,9 +1,12 @@
-# res://ui/StorefrontUI.gd
+#res://scripts/ui/StorefrontUI.gd
+
 extends Control
 
 const LegacyUpgradeData = preload("res://data/legacy/LegacyUpgradeData.gd")
-# --- NEW: Preload the tooltip script ---
 const RICH_TOOLTIP_SCRIPT = preload("res://ui/components/RichTooltipButton.gd")
+
+# --- Reference to the Build Preview ---
+@export var building_preview: BuildingPreviewCursor
 
 # --- Window References ---
 @onready var build_window: Control = %BuildWindow
@@ -15,7 +18,7 @@ const RICH_TOOLTIP_SCRIPT = preload("res://ui/components/RichTooltipButton.gd")
 @onready var recruit_list: Container = %RecruitList
 @onready var legacy_list: Container = %LegacyList
 
-# --- Legacy Stats (Inside Legacy Window) ---
+# --- Legacy Stats ---
 @onready var renown_label: Label = %RenownLabel
 @onready var authority_label: Label = %AuthorityLabel
 
@@ -31,6 +34,9 @@ const RICH_TOOLTIP_SCRIPT = preload("res://ui/components/RichTooltipButton.gd")
 @export var available_buildings: Array[BuildingData] = []
 @export var available_units: Array[UnitData] = []
 @export var auto_load_units_from_directory: bool = true
+
+# --- State for Refunds ---
+var pending_cost: Dictionary = {} 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -52,7 +58,21 @@ func _ready() -> void:
 	if DynastyManager.current_jarl:
 		_update_jarl_stats_display(DynastyManager.get_current_jarl())
 	
+	if EventBus.has_signal("units_selected"):
+		EventBus.units_selected.connect(_on_units_selected)
+	
+	# Initial State: Hide Build Button
+	if has_node("BottomDeck/BtnBuild"):
+		$BottomDeck/BtnBuild.visible = false
+	
 	_refresh_all()
+	
+	# LISTEN TO PREVIEW CURSOR FOR REFUNDS
+	# (Assumes the Cursor exists in the scene or EventBus signals logic)
+	# Since BuildingPreviewCursor is a separate node, we hook into the EventBus 
+	# if you have a signal there, OR we trust the cancellation to be handled manually.
+	# Ideally, we should add `EventBus.placement_cancelled` signal.
+	# For now, we rely on the specific `building_ready_for_placement` flow.
 
 # --- BUILD TAB (UPDATED) ---
 func _populate_build_grid() -> void:
@@ -61,10 +81,8 @@ func _populate_build_grid() -> void:
 	for b_data in available_buildings:
 		var btn = Button.new()
 		
-		# --- FIX: Attach RichTooltip Logic ---
 		if RICH_TOOLTIP_SCRIPT:
 			btn.set_script(RICH_TOOLTIP_SCRIPT)
-		# -------------------------------------
 		
 		btn.custom_minimum_size = Vector2(110, 110) 
 		btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -78,9 +96,6 @@ func _populate_build_grid() -> void:
 		else:
 			btn.text = b_data.display_name 
 			
-		if b_data.icon: btn.text = b_data.display_name
-		
-		# --- FIX: Generate Detailed Tooltip ---
 		var details = ""
 		if b_data is EconomicBuildingData:
 			var eco = b_data as EconomicBuildingData
@@ -100,17 +115,73 @@ func _populate_build_grid() -> void:
 			details,
 			_format_cost(b_data.build_cost)
 		]
-		# --------------------------------------
 		
+		# --- FIX: CALL ECONOMY MANAGER DIRECTLY ---
 		btn.pressed.connect(func():
-			if SettlementManager.attempt_purchase(b_data.build_cost):
+			if EconomyManager.attempt_purchase(b_data.build_cost):
+				# Track cost for potential refund
+				pending_cost = b_data.build_cost.duplicate()
+				
+				# Start Placement
 				EventBus.building_ready_for_placement.emit(b_data)
 				_close_all_windows()
+				
+				# Connect to cancellation signal ONLY ONCE (via EventBus or direct node finding)
+				# For robustness, we will try to find the cursor if it exists, 
+				# OR we recommend adding `placement_cancelled` to EventBus.
+				# Assuming `BuildingPreviewCursor` is unique in scene:
+				var cursor = get_tree().get_first_node_in_group("building_preview_cursor")
+				if cursor and not cursor.placement_cancelled.is_connected(_on_placement_cancelled):
+					cursor.placement_cancelled.connect(_on_placement_cancelled, CONNECT_ONE_SHOT)
+					cursor.placement_completed.connect(_on_placement_completed, CONNECT_ONE_SHOT)
 		)
 		build_grid.add_child(btn)
 
-# ... (Rest of the file remains identical - _setup_dock_icons, _refresh_all, etc.) ...
-# To save space, I'm omitting the unchanged functions unless you need the full file dump.
+# --- NEW: Selection Handler ---
+func _on_units_selected(units: Array) -> void:
+	var build_btn = get_node_or_null("BottomDeck/BtnBuild")
+	if not build_btn: return
+	
+	if units.is_empty():
+		build_btn.visible = false
+		# Also close the build window if no one is selected
+		# if has_node("BuildWindow") and $BuildWindow.visible: _toggle_window($BuildWindow)
+		return
+
+	# Check if ANY selected unit is a builder ( Villager / Peasant )
+	var has_builder = false
+	for u in units:
+		# Check by Class, Group, or Data property
+		if u.is_in_group("player_units"): 
+			# Refine this check based on your UnitData structure
+			# e.g., if u.data.can_build:
+			has_builder = true
+			break
+	
+	build_btn.visible = has_builder
+
+# --- NEW: Button Callback (Connect your UI button here) ---
+func _on_building_button_pressed(data: BuildingData) -> void:
+	# This function should be called when clicking a specific building icon in the BuildWindow
+	if is_instance_valid(building_preview):
+		building_preview.activate(data)
+		
+		# Close the window if desired
+		# _toggle_window($BuildWindow)
+	else:
+		Loggie.msg("BuildingPreviewCursor not assigned in StorefrontUI!").domain(LogDomains.UI).error()
+
+func _on_placement_cancelled() -> void:
+	if not pending_cost.is_empty():
+		EconomyManager.add_resources(pending_cost)
+		EventBus.purchase_successful.emit("Refunded") # Just to refresh UI
+		pending_cost.clear()
+
+func _on_placement_completed() -> void:
+	# Money is already gone, just clear the pending track
+	pending_cost.clear()
+
+# --- DOCK & WINDOW LOGIC (UNCHANGED) ---
 
 func _setup_dock_icons() -> void:
 	_set_btn_icon(btn_build, "res://ui/assets/icon_build.png")
@@ -225,8 +296,10 @@ func _update_garrison_display() -> void:
 				btn.icon = u_data.icon
 				btn.expand_icon = true
 				btn.custom_minimum_size = Vector2(0, 48)
+				
+			# --- FIX: CALL ECONOMY MANAGER DIRECTLY ---
 			btn.pressed.connect(func():
-				if SettlementManager.attempt_purchase(u_data.spawn_cost):
+				if EconomyManager.attempt_purchase(u_data.spawn_cost):
 					SettlementManager.recruit_unit(u_data)
 					_refresh_all()
 			)
@@ -301,7 +374,7 @@ func _load_building_data() -> void:
 	# 1. Load Hand-Crafted Buildings
 	_scan_directory_for_buildings("res://data/buildings/")
 	
-	# 2. Load AI-Generated Buildings (The Naust is here!)
+	# 2. Load AI-Generated Buildings
 	_scan_directory_for_buildings("res://data/buildings/generated/")
 
 func _scan_directory_for_buildings(path: String) -> void:
@@ -319,38 +392,6 @@ func _scan_directory_for_buildings(path: String) -> void:
 				if data is BuildingData and data.is_player_buildable: 
 					available_buildings.append(data)
 			file = dir.get_next()
-
-func _scan_directory_recursive(path: String) -> void:
-	var dir = DirAccess.open(path)
-	if not dir:
-		printerr("StorefrontUI: Could not open directory ", path)
-		return
-
-	dir.list_dir_begin()
-	var file_name = dir.get_next()
-
-	while file_name != "":
-		# Skip navigation . and ..
-		if file_name == "." or file_name == "..":
-			file_name = dir.get_next()
-			continue
-
-		var full_path = path.path_join(file_name)
-
-		if dir.current_is_dir():
-			# RECURSION: If it's a folder (like "generated"), dive in!
-			_scan_directory_recursive(full_path)
-		else:
-			# If it's a resource file
-			if file_name.ends_with(".tres") or file_name.ends_with(".remap"):
-				# .remap checks are needed for exported projects, .tres for editor
-				var clean_path = full_path.replace(".remap", "")
-				
-				var data = load(clean_path)
-				if data is BuildingData and data.is_player_buildable:
-					available_buildings.append(data)
-		
-		file_name = dir.get_next()
 
 func _load_unit_data() -> void:
 	var dir = DirAccess.open("res://data/units/")

@@ -2,35 +2,38 @@
 extends EditorScript
 
 # =============================================================================
-# GODOT AI CONTEXT GENERATOR (V6.1 FIX)
+# GODOT AI CONTEXT GENERATOR (V3 - API MAP OPTIMIZED)
 # =============================================================================
-# Fixes: Replaced PackedStringArray with Array[String] to fix .join() errors.
+# Improvements:
+# 1. Parsing: Now captures 'static', '@onready', and modifier keywords correctly.
+# 2. Format: Outputs Markdown (.md) for superior Gemini navigation.
+# 3. Size: Aggressively trims whitespace to save context tokens.
 # =============================================================================
 
-# --- CONFIGURATION ---
 const OUTPUT_DIR = "res://_context_dumps"
-const OUTPUT_FILENAME = "project_context.txt"
+const OUTPUT_FILENAME = "gemini_api_map.md" # Changed to .md
 
-# Skip these folders completely
-const IGNORE_DIRS = ["res://addons", "res://.godot", "res://.git", "res://assets", "res://exports"]
+const IGNORE_DIRS = [
+	"res://addons", "res://.godot", "res://.git", 
+	"res://assets", "res://exports", "res://_context_dumps"
+]
 
-# Files to parse
 const INCLUDE_EXTENSIONS = ["gd", "tscn", "tres"]
 
-# Safety: Skip individual files larger than this (e.g. 1MB)
+# Max file size to parse (1MB)
 const MAX_FILE_SIZE_BYTES = 1024 * 1024 
 
-# FLUFF FILTER: Skip these resource types to prevent massive bloat
+# FLUFF FILTER: Skip these resource types
 const SKIP_RESOURCE_TYPES = [
 	"TileSet", "NavigationPolygon", "Mesh", "ArrayMesh", 
 	"CompressedTexture2D", "Image", "AudioStreamWAV", "AudioStreamMP3",
-	"FontFile", "StyleBoxFlat", "StyleBoxTexture", "Theme"
+	"FontFile", "StyleBoxFlat", "StyleBoxTexture", "Theme", "GradientTexture2D"
 ]
 
 var _preload_map = {} 
 
 func _run() -> void:
-	print("--- Starting AI Context Generation (V6.1) ---")
+	print("--- 🗺️ Starting Gemini API Map Generation (V3) ---")
 	var time_start = Time.get_ticks_msec()
 	
 	if not DirAccess.dir_exists_absolute(OUTPUT_DIR):
@@ -42,7 +45,12 @@ func _run() -> void:
 		printerr("❌ Error: Could not open output file.")
 		return
 
-	# 1. Gather Files
+	# 1. Header
+	file.store_line("# PROJECT API MAP")
+	file.store_line("> **CONTEXT INSTRUCTION:** This file contains the STRUCTURE of the project. Implementation details are hidden to save space. Use this to understand available classes, functions, and signals.")
+	file.store_line("> Generated: %s\n" % Time.get_datetime_string_from_system())
+
+	# 2. Gather & Sort Files
 	var all_files = _get_all_files("res://")
 	var gd_files: Array[String] = []
 	var tscn_files: Array[String] = []
@@ -58,111 +66,123 @@ func _run() -> void:
 	tscn_files.sort()
 	tres_files.sort()
 
-	# 2. Build Content (Using Array[String] for safety)
+	# 3. Build Content (Markdown Format)
 	var buffer: Array[String] = []
 	
-	_write_header(buffer, gd_files.size(), tscn_files.size(), tres_files.size())
+	# -- Architecture Overview --
+	buffer.append("## 🏛️ GLOBAL ARCHITECTURE")
 	_write_architecture(buffer)
 	
-	buffer.append("\n" + "=".repeat(60))
-	buffer.append("SCENE STRUCTURES")
-	buffer.append("=".repeat(60) + "\n")
+	# -- Scenes --
+	buffer.append("\n## 🎬 SCENE STRUCTURES")
 	for p in tscn_files:
 		buffer.append(_parse_scene(p))
-		buffer.append("")
 
-	buffer.append("\n" + "=".repeat(60))
-	buffer.append("GAME DATA (RESOURCES)")
-	buffer.append("=".repeat(60) + "\n")
-	for p in tres_files:
-		var res_text = _parse_resource(p)
-		if res_text != "": # Only append if not filtered
-			buffer.append(res_text)
-			buffer.append("")
-
-	buffer.append("\n" + "=".repeat(60))
-	buffer.append("SCRIPT LOGIC")
-	buffer.append("=".repeat(60) + "\n")
+	# -- Scripts (The API) --
+	buffer.append("\n## 📜 SCRIPT API (Logic Structures)")
 	for p in gd_files:
 		buffer.append(_parse_script(p))
-		buffer.append("")
 		
+	# -- Data --
+	buffer.append("\n## 💾 GAME DATA (Resources)")
+	for p in tres_files:
+		var res_text = _parse_resource(p)
+		if res_text != "": buffer.append(res_text)
+
+	# -- Dependencies --
 	if not _preload_map.is_empty():
-		buffer.append("\n" + "=".repeat(60))
-		buffer.append("DEPENDENCY MAP")
-		buffer.append("=".repeat(60) + "\n")
+		buffer.append("\n## 🔗 DEPENDENCY GRAPH")
 		_write_dependencies(buffer)
 
-	# 3. Save
+	# 4. Save
 	file.store_string("\n".join(buffer))
 	file.close()
 	
 	var elapsed = (Time.get_ticks_msec() - time_start) / 1000.0
-	print("✅ Complete! Saved to: %s" % out_path)
-	print("⏱️ Time: %.2fs | Files Parsed: %d" % [elapsed, all_files.size()])
+	print("✅ API Map Generated: %s" % out_path)
+	print("⏱️ Time: %.2fs | Files: %d" % [elapsed, all_files.size()])
 	
 	OS.shell_open(ProjectSettings.globalize_path(OUTPUT_DIR))
 
 # =============================================================================
-# LOGIC PARSERS
+# PARSERS
 # =============================================================================
 
-func _write_header(out: Array, n_gd: int, n_tscn: int, n_tres: int):
-	out.append("GODOT PROJECT CONTEXT")
-	out.append("Generated: %s" % Time.get_datetime_string_from_system())
-	out.append("Version: Godot %s" % Engine.get_version_info().string)
-	out.append("Stats: %d Scripts, %d Scenes, %d Resources\n" % [n_gd, n_tscn, n_tres])
-
 func _write_architecture(out: Array):
-	out.append("=== ARCHITECTURE ===\n")
-	out.append("-- Autoloads --")
+	out.append("### Autoloads (Singletons)")
 	var found = false
 	for prop in ProjectSettings.get_property_list():
 		if prop.name.begins_with("autoload/"):
 			var name = prop.name.trim_prefix("autoload/")
 			var path = ProjectSettings.get_setting(prop.name).replace("*", "")
-			out.append("%s: %s" % [name, path])
+			out.append("- **%s**: `%s`" % [name, path])
 			found = true
 	if not found: out.append("(None)")
-	out.append("")
 	
-	out.append("-- Physics Layers --")
+	out.append("\n### Physics Layers")
 	for i in range(1, 33):
 		var layer = ProjectSettings.get_setting("layer_names/2d_physics/layer_%d" % i)
-		if layer: out.append("Layer %d: %s" % [i, layer])
-	out.append("")
+		if layer: out.append("- Layer %d: %s" % [i, layer])
 
 func _parse_script(path: String) -> String:
-	# Reads script and extracts dependencies, keeping comments and full code.
 	var f = FileAccess.open(path, FileAccess.READ)
-	if not f: return "// ERROR reading " + path
-	if f.get_length() > MAX_FILE_SIZE_BYTES: return "// FILE: %s (Skipped - Too Large)" % path
+	if not f: return ""
+	if f.get_length() > MAX_FILE_SIZE_BYTES: return "### %s\n(Skipped - Too Large)" % path
 
-	var lines = []
+	var lines: Array[String] = []
 	var local_preloads = []
 	
 	while not f.eof_reached():
 		var line = f.get_line()
-		lines.append(line)
+		var s = line.strip_edges()
+		
+		# Capture Preloads
 		if "preload(" in line or "load(" in line:
 			var dep = _extract_preload(line)
 			if dep: local_preloads.append(dep)
+
+		# SENIOR FIX: Robust Keyword Detection
+		# We check if the line STARTS with these, OR if it's an onready/static var
+		var is_structure = false
+		
+		if s.begins_with("extends") or s.begins_with("class_name"):
+			is_structure = true
+		elif s.begins_with("signal") or s.begins_with("enum"):
+			is_structure = true
+		elif s.begins_with("const"):
+			is_structure = true
+		
+		# Variable Logic (Catch @onready and @export)
+		elif s.begins_with("var") or s.begins_with("@"):
+			# Only keep if it defines data, skip random annotations if they aren't variables
+			if "var " in s or "@export" in s or "signal " in s:
+				is_structure = true
+		
+		# Function Logic (Catch static func)
+		elif "func " in s: 
+			# We filter out indented lambdas if necessary, but usually top-level funcs are fine
+			# This captures "static func", "func _ready():", etc.
+			if not s.begins_with("#"): # Ignore commented out functions
+				is_structure = true
+
+		if is_structure:
+			lines.append(line)
+
 	f.close()
 	
 	if not local_preloads.is_empty():
 		_preload_map[path] = local_preloads
 
-	# Simple join - we WANT the full source.
-	return "// FILE: " + path + "\n" + "\n".join(lines)
+	# Markdown Code Block
+	return "\n### `%s`\n```gdscript\n%s\n```" % [path, "\n".join(lines)]
 
 func _parse_scene(path: String) -> String:
-	# Reconstructs scene tree from .tscn file text
 	var f = FileAccess.open(path, FileAccess.READ)
 	if not f: return ""
 	
-	var nodes = {} # path -> {name, type, script, parent, children}
+	var nodes = {} 
 	var connections = []
-	var ext_res = {} # id -> path
+	var ext_res = {} 
 	
 	while not f.eof_reached():
 		var line = f.get_line().strip_edges()
@@ -185,11 +205,16 @@ func _parse_scene(path: String) -> String:
 			nodes[full_path] = {"name": name, "type": type, "script": script_path, "parent": parent, "children": []}
 			
 		elif line.begins_with("[connection"):
-			connections.append(line)
+			# Parse connection for readability: "signal='timeout' from='Timer' to='.'"
+			var sig = _get_attr(line, "signal")
+			var from = _get_attr(line, "from")
+			var to = _get_attr(line, "to")
+			var method = _get_attr(line, "method")
+			connections.append("- `%s` -> `%s` :: %s()" % [from, to, method])
 
 	f.close()
 	
-	# Build parent-child links
+	# Build Tree
 	var roots = []
 	for p in nodes:
 		var n = nodes[p]
@@ -197,27 +222,27 @@ func _parse_scene(path: String) -> String:
 		elif nodes.has(n.parent): nodes[n.parent].children.append(p)
 	
 	var out: Array[String] = []
-	out.append("SCENE: " + path)
 	for r in roots: _print_tree(nodes, r, 0, out)
 	
+	var tree_str = "\n".join(out)
+	var signal_str = ""
 	if not connections.is_empty():
-		out.append("  SIGNALS:")
-		for c in connections: out.append("  " + c)
+		signal_str = "\n**Signals:**\n" + "\n".join(connections)
 		
-	return "\n".join(out)
+	return "\n### `%s`\n%s%s" % [path, tree_str, signal_str]
 
 func _print_tree(nodes: Dictionary, key: String, depth: int, out: Array):
 	var n = nodes[key]
 	var indent = "  ".repeat(depth)
-	var s_info = " (%s)" % n.script if n.script else ""
-	out.append("%s- %s [%s]%s" % [indent, n.name, n.type, s_info])
+	var s_info = " (`%s`)" % n.script if n.script else ""
+	out.append("%s- **%s** [%s]%s" % [indent, n.name, n.type, s_info])
 	for child in n.children: _print_tree(nodes, child, depth + 1, out)
 
 func _parse_resource(path: String) -> String:
 	var f = FileAccess.open(path, FileAccess.READ)
 	if not f: return ""
 	
-	# Pass 1: Check type to see if we should filter it
+	# Check for filter
 	var type_line = ""
 	var content = []
 	var is_filtered = false
@@ -226,37 +251,36 @@ func _parse_resource(path: String) -> String:
 		var line = f.get_line()
 		content.append(line)
 		if line.begins_with("[gd_resource"):
-			type_line = line
 			var type = _get_attr(line, "type")
 			if type in SKIP_RESOURCE_TYPES:
 				is_filtered = true
 				break
-				
 	f.close()
 	
-	if is_filtered: return "" # Skip entirely
+	if is_filtered: return ""
 	
-	# Pass 2: Clean up output (remove huge arrays if any slipped through)
-	var out: Array[String] = []
-	out.append("RESOURCE: " + path)
-	out.append(type_line)
+	# Compress output
+	var clean_lines: Array[String] = []
+	clean_lines.append(content[0]) # Header
 	
-	for line in content:
-		var s = line.strip_edges()
-		if s.begins_with("[") or s.begins_with("script=") or s.begins_with("resource_name="):
-			out.append(line)
-		elif s != "" and not s.begins_with("metadata/") and not s.begins_with("[gd_resource"):
-			# Truncate extremely long lines (data arrays)
-			if s.length() > 200: out.append(s.substr(0, 200) + "... (truncated)")
-			else: out.append(line)
+	for i in range(1, content.size()):
+		var s = content[i].strip_edges()
+		if s == "": continue
+		if s.begins_with("metadata/"): continue
+		
+		# Truncate arrays
+		if s.length() > 150: 
+			clean_lines.append(s.substr(0, 150) + "...")
+		else:
+			clean_lines.append(s)
 			
-	return "\n".join(out)
+	return "\n### `%s`\n```text\n%s\n```" % [path, "\n".join(clean_lines)]
 
 func _write_dependencies(out: Array):
 	for k in _preload_map:
-		out.append(k)
-		for d in _preload_map[k]: out.append("  -> " + d)
-		out.append("")
+		out.append("- `%s`" % k)
+		for d in _preload_map[k]: 
+			out.append("  - depends on: `%s`" % d)
 
 # =============================================================================
 # UTILS

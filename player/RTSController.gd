@@ -26,8 +26,13 @@ func _ready() -> void:
 	EventBus.control_group_command.connect(_on_control_group_command)
 	EventBus.formation_change_command.connect(_on_formation_change_command)
 	
-	# --- NEW: Listen for Field Promotions ---
 	EventBus.player_unit_spawned.connect(add_unit_to_group)
+
+# --- NEW: Helper to broadcast state ---
+func _emit_selection_update() -> void:
+	# Broadcast the new list so UI can update context buttons
+	EventBus.units_selected.emit(selected_units)
+# --------------------------------------
 
 func _on_interact_command(target: Node2D) -> void:
 	_validate_selection()
@@ -68,7 +73,6 @@ func _handle_movement_logic(target_pos: Vector2, direction: Vector2) -> void:
 	# 2. Move Soldiers (Strict Formation)
 	if not soldiers.is_empty():
 		if soldiers.size() == 1:
-			# Single soldier just moves directly
 			if soldiers[0].has_method("command_move_to"):
 				soldiers[0].command_move_to(target_pos)
 		else:
@@ -106,16 +110,17 @@ func add_unit_to_group(unit: Node2D) -> void:
 	
 	controllable_units.append(unit)
 	
-	# --- NEW: Auto-Select Promoted Units ---
-	# If a unit spawns (promotes) and thinks it is selected, honor that.
 	if unit.is_selected and not unit in selected_units:
 		selected_units.append(unit)
-	# ---------------------------------------
+		# Update UI if we auto-selected a new spawn
+		_emit_selection_update()
 	
 	if unit.has_signal("destroyed"):
 		unit.destroyed.connect(remove_unit.bind(unit), CONNECT_DEFERRED)
 
 func remove_unit(unit: BaseUnit) -> void:
+	var was_selected = unit in selected_units
+	
 	if unit in selected_units:
 		selected_units.erase(unit)
 		if is_instance_valid(unit): unit.set_selected(false)
@@ -125,12 +130,18 @@ func remove_unit(unit: BaseUnit) -> void:
 	for group_num in control_groups:
 		if control_groups[group_num].has(unit_id):
 			control_groups[group_num].erase(unit_id)
+			
+	if was_selected:
+		_emit_selection_update()
 
 func _on_select_command(select_rect: Rect2, is_box_select: bool) -> void:
 	_prune_dead_units()
-	_clear_selection()
+	_clear_selection() # Clears array
+	
 	var main_camera: Camera2D = get_viewport().get_camera_2d()
-	if not main_camera: return
+	if not main_camera: 
+		_emit_selection_update() # Emit empty if camera missing
+		return
 	
 	if is_box_select:
 		var camera_pos = main_camera.get_screen_center_position()
@@ -162,6 +173,7 @@ func _on_select_command(select_rect: Rect2, is_box_select: bool) -> void:
 			closest_leader.set_selected(true)
 			
 	print("DEBUG: Selection Updated. Count: ", selected_units.size())
+	_emit_selection_update() # BROADCAST THE RESULT
 
 func _is_squad_in_rect(unit: BaseUnit, rect: Rect2) -> bool:
 	if rect.has_point(unit.global_position):
@@ -189,6 +201,8 @@ func _on_attack_command(target_node: Node2D) -> void:
 
 func command_scramble(target_position: Vector2) -> void:
 	_clear_selection()
+	_emit_selection_update() # Emit empty after scramble
+	
 	for unit in controllable_units:
 		if not is_instance_valid(unit): continue
 		var panic_offset = Vector2(randf_range(-80, 80), randf_range(-80, 80))
@@ -229,6 +243,8 @@ func _select_control_group(num: int) -> void:
 		if is_instance_valid(unit) and unit in controllable_units:
 			selected_units.append(unit)
 			unit.set_selected(true)
+	
+	_emit_selection_update() # BROADCAST GROUP SELECTION
 
 func _prune_dead_units() -> void:
 	var alive_units: Array[BaseUnit] = []
@@ -247,5 +263,4 @@ func _on_pillage_command(target_node: Node2D) -> void:
 		if unit.fsm and unit.fsm.has_method("command_pillage"):
 			unit.fsm.command_pillage(target_node)
 		else:
-			# Fallback for units that can't pillage (move to guard)
 			unit.command_move_to(target_node.global_position)

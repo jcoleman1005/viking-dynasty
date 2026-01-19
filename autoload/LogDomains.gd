@@ -24,3 +24,4 @@ const UI = "UI"
 # Technical
 const SYSTEM = "SYSTEM"
 const BUILD = "BUILD"
+const GAMEPLAY = "GAMEPLAY"

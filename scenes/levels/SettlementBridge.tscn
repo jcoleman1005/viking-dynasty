@@ -159,7 +159,7 @@ func _draw() -> void:
 			draw_circle(p, 4.0, Color.BLUE)
 "
 
-[node name="SettlementBridge" type="Node"]
+[node name="SettlementBridge" type="Node2D"]
 script = ExtResource("2_c48a7")
 home_base_data = SubResource("Resource_vmd61")
 raider_scene = ExtResource("4_c0sri")

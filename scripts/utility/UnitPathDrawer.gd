@@ -31,10 +31,14 @@ func _refresh_unit_cache() -> void:
 func _draw() -> void:
 	# Opt #1: Iterate over cached array instead of SceneTree
 	for unit in _cached_units:
-		if is_instance_valid(unit) and unit.get("fsm") and unit.fsm.path.size() > 0:
-			var points = PackedVector2Array([unit.global_position] + unit.fsm.path)
-			
-			if points.size() > 1:
-				draw_polyline(points, Color.CYAN, 2.0)
-				# Draw destination dot
-				draw_circle(unit.fsm.target_position, 4.0, Color.BLUE)
+		if is_instance_valid(unit) and unit.get("fsm"):
+			# Check size directly on the PackedVector2Array
+			if unit.fsm.path.size() > 0:
+				# FIX: Initialize PackedArray with start point, then append the path array
+				var points = PackedVector2Array([unit.global_position])
+				points.append_array(unit.fsm.path)
+				
+				if points.size() > 1:
+					draw_polyline(points, Color.CYAN, 2.0)
+					# Draw destination dot
+					draw_circle(unit.fsm.target_position, 4.0, Color.BLUE)

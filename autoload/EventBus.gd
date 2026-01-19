@@ -22,6 +22,7 @@ signal treasury_updated(new_treasury: Dictionary)
 signal purchase_successful(item_name: String)
 signal purchase_failed(reason: String)
 signal raid_loot_secured(type: String, amount: int)
+
 # --- Navigation Signals ---
 signal scene_change_requested(scene_key: String)
 signal world_map_opened()
@@ -32,19 +33,20 @@ signal settlement_loaded(settlement_data: SettlementData)
 
 # --- Unit Management Signals ---
 signal player_unit_died(unit: Node2D)
-# --- NEW: Unit Spawn Signal ---
 signal player_unit_spawned(unit: Node2D)
-# ------------------------------
 signal worker_management_toggled()
 signal dynasty_view_requested()
 
 # --- RTS Command Signals ---
 signal select_command(select_rect: Rect2, is_box_select: bool)
+# NEW: Feedback signal telling UI what was actually caught in the net
+signal units_selected(units: Array) 
+# -------------------------------------------------------------
 signal move_command(target_position: Vector2)
 signal attack_command(target_node: Node2D)
 signal formation_move_command(target_position: Vector2, direction_vector: Vector2)
 signal interact_command(target: Node2D)
-signal pillage_command(target_node: Node2D)  # Steal Loot (Enemy)
+signal pillage_command(target_node: Node2D)
 
 # --- Keyboard Commands ---
 signal control_group_command(group_index: int, is_assigning: bool)

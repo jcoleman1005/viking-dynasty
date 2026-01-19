@@ -3,293 +3,159 @@ extends Node
 # --- Constants ---
 const USER_SAVE_PATH := "user://savegame.tres"
 const MAP_SAVE_PATH := "user://campaign_map.tres"
-
-# --- Data State ---
-var current_settlement: SettlementData 
-var active_map_data: SettlementData    
-
-# --- Grid Authority ---
-var active_astar_grid: AStarGrid2D = null
-var buildable_cells: Dictionary = {} 
-
-# --- ISOMETRIC CONSTANTS ---
 const TILE_WIDTH = 64
 const TILE_HEIGHT = 32
 const TILE_HALF_SIZE = Vector2(TILE_WIDTH * 0.5, TILE_HEIGHT * 0.5)
 
-# --- VISUAL CALIBRATION ---
-var grid_offset_calibration: Vector2 = Vector2.ZERO
-const BUILDING_OFFSET_X: float = -32  # (Negative = Move Left)
-const BUILDING_OFFSET_Y: float = 0.0
+# NEW: Terrain Validation Constants
+const MAX_SEARCH_RADIUS: int = 10 # How far to search for valid ground
+# CORRECTED: Uses Negative Logic based on NBLM Context ("is_unwalkable")
+const UNWALKABLE_LAYER_NAME: String = "is_unwalkable" 
+const GREAT_HALL_BUFFER: int = 4 # Tiles from water required for Great Hall
 
-const GRID_WIDTH = 60
-const GRID_HEIGHT = 60
-
-#Terrain Reference
-var active_tilemap_layer: TileMapLayer = null
+# --- Data State ---
+var current_settlement: SettlementData 
+var active_map_data: SettlementData      
 
 # --- Scene Refs ---
 var active_building_container: Node2D = null
-var pending_management_open: bool = false
+var active_tilemap_layer: TileMapLayer = null # Critical for Custom Data lookups
 var pending_seasonal_recruits: Array[UnitData] = []
+
+# --- Signals ---
+# (Assuming these exist based on previous context, inferred if not declared)
+# signal settlement_loaded(data) 
 
 func _ready() -> void:
 	EventBus.player_unit_died.connect(_on_player_unit_died)
-	_init_grid()
+	Loggie.msg("SettlementManager Initialized").domain(LogDomains.GAMEPLAY).info()
 
-# --- GRID AUTHORITY SYSTEM ---
+# --- TERRAIN & COORDINATE VALIDATION (NEW) ---
 
-## Returns the World Position of the TOP CORNER of the grid cell.
+## CHECKS TERRAIN DATA ONLY (Ignores Buildings/Units)
+## Returns TRUE if the tile is valid land (not water/void).
+func is_terrain_walkable(coords: Vector2i) -> bool:
+	# 1. Check if we have a map to read from
+	if not is_instance_valid(active_tilemap_layer):
+		# Fallback: If no map, assume valid to prevent softlocks
+		return true
+	
+	# 2. Check if the cell exists (is not empty/void)
+	var tile_data: TileData = active_tilemap_layer.get_cell_tile_data(coords)
+	if not tile_data:
+		return false # Void/Empty space is invalid
+
+	# 3. Check Unwalkability via Custom Data (NEGATIVE LOGIC)
+	# "is_unwalkable" = true means WATER/OBSTACLE.
+	# "is_unwalkable" = false (or null) means LAND.
+	var is_unwalkable: bool = tile_data.get_custom_data(UNWALKABLE_LAYER_NAME)
+	
+	# Return valid if NOT unwalkable
+	return not is_unwalkable
+
+## CHECKS TILE DATA + DYNAMIC SOLIDS
+## Returns TRUE if the tile is land AND empty of obstacles.
+func is_tile_valid_for_placement(coords: Vector2i) -> bool:
+	# 1. Check Static Terrain (Water/Cliffs)
+	if not is_terrain_walkable(coords):
+		return false
+	
+	# 2. Check Dynamic Solids (Buildings/Units via NavManager)
+	if NavigationManager.is_point_solid(coords):
+		return false
+		
+	return true
+
+## Finds the nearest valid tile to the target coordinates.
+## Useful if a unit tries to spawn on water; this moves them to the beach.
+func get_nearest_valid_spawn_point(target_coords: Vector2i) -> Vector2i:
+	# Optimistic check: if target is valid, return immediately
+	if is_tile_valid_for_placement(target_coords):
+		return target_coords
+		
+	Loggie.msg("Target invalid %s, searching for nearest land" % target_coords).domain(LogDomains.GAMEPLAY).debug()
+	
+	# BFS Flood Fill to find nearest valid tile
+	var visited: Dictionary[Vector2i, bool] = {} # Typed dictionary for 4.4
+	var queue: Array[Vector2i] = []
+	
+	queue.append(target_coords)
+	visited[target_coords] = true
+	
+	while queue.size() > 0:
+		var current: Vector2i = queue.pop_front()
+		
+		# Valid found?
+		if is_tile_valid_for_placement(current):
+			return current
+			
+		# Limit search depth roughly by checking distance
+		if Vector2(current - target_coords).length() > MAX_SEARCH_RADIUS:
+			continue
+			
+		# Add neighbors (4-way)
+		var neighbors = [
+			Vector2i(0, 1), Vector2i(0, -1), 
+			Vector2i(1, 0), Vector2i(-1, 0)
+		]
+		
+		for offset in neighbors:
+			var next_cell = current + offset
+			if not visited.has(next_cell):
+				visited[next_cell] = true
+				queue.append(next_cell)
+	
+	# Fallback if map is totally water or error
+	Loggie.msg("No valid spawn point found within radius").ctx({"radius": MAX_SEARCH_RADIUS}).domain(LogDomains.GAMEPLAY).warn()
+	return target_coords
+
+# --- COORDINATE & SPATIAL DELEGATION ---
+
 func grid_to_world(grid_pos: Vector2i) -> Vector2:
-	# Center of the tile
-	var iso_x = (grid_pos.x - grid_pos.y) * TILE_HALF_SIZE.x
-	var iso_y = (grid_pos.x + grid_pos.y) * TILE_HALF_SIZE.y
+	if NavigationManager.has_method("_grid_to_world"):
+		return NavigationManager._grid_to_world(grid_pos)
+	
+	var iso_x = (grid_pos.x - grid_pos.y) * 32.0 
+	var iso_y = (grid_pos.x + grid_pos.y) * 16.0 
 	return Vector2(iso_x, iso_y)
 
-## Returns the World Position of the CENTER of the grid cell.
 func get_tile_center(grid_pos: Vector2i) -> Vector2:
-	# PHASE 1 REFACTOR: Prefer TileMapLayer truth if available
-	if is_instance_valid(active_tilemap_layer):
-		var local_pos = active_tilemap_layer.map_to_local(grid_pos)
-		return active_tilemap_layer.to_global(local_pos)
+	if NavigationManager.has_method("_grid_to_world"):
+		var top_left = NavigationManager._grid_to_world(grid_pos)
+		return top_left + Vector2(0, 16.0) 
+		
+	return grid_to_world(grid_pos)
+
+## NEW: Calculates the VISUAL CENTER of a multi-tile footprint.
+## Fixes the "Heel vs Foot" issue where buildings were visually offset from their logic.
+func get_footprint_center(grid_pos: Vector2i, grid_size: Vector2i) -> Vector2:
+	# Convert grid coordinate + half size to world space
+	# This aligns with SettlementBridge logic: Center = Pos + Size/2
 	
-	# Fallback to manual math
-	var top_corner = grid_to_world(grid_pos)
-	# In Isometric, center is TopCorner.y + HalfHeight
-	return top_corner + Vector2(0, TILE_HALF_SIZE.y)
+	var center_x = float(grid_pos.x) + (float(grid_size.x) / 2.0)
+	var center_y = float(grid_pos.y) + (float(grid_size.y) / 2.0)
+	
+	# Manual Isometric Conversion (matches grid_to_world but for floats)
+	# Assuming Tile Width 64, Height 32 (Half 32, 16)
+	var iso_x = (center_x - center_y) * 32.0
+	var iso_y = (center_x + center_y) * 16.0
+	
+	return Vector2(iso_x, iso_y)
 
 func world_to_grid(pos: Vector2) -> Vector2i:
-	if not active_tilemap_layer:
-		# Fallback Math if no map
-		var adjusted = pos 
-		var x = (adjusted.x / TILE_HALF_SIZE.x + adjusted.y / TILE_HALF_SIZE.y) / 2.0
-		var y = (adjusted.y / TILE_HALF_SIZE.y - (adjusted.x / TILE_HALF_SIZE.x)) / 2.0
-		return Vector2i(floor(x), floor(y))
-		
-	return active_tilemap_layer.local_to_map(active_tilemap_layer.to_local(pos))
+	return NavigationManager._world_to_grid(pos)
 
-func _init_grid() -> void:
-	active_astar_grid = AStarGrid2D.new()
-	active_astar_grid.region = Rect2i(0, 0, GRID_WIDTH, GRID_HEIGHT)
-	active_astar_grid.cell_size = Vector2(TILE_WIDTH, TILE_HEIGHT)
-
-	# ENABLE DIAGONALS
-	active_astar_grid.cell_shape = AStarGrid2D.CELL_SHAPE_ISOMETRIC_DOWN
-	active_astar_grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_AT_LEAST_ONE_WALKABLE 
-	active_astar_grid.default_compute_heuristic = AStarGrid2D.HEURISTIC_EUCLIDEAN
-	active_astar_grid.default_estimate_heuristic = AStarGrid2D.HEURISTIC_EUCLIDEAN
-
-	active_astar_grid.offset = grid_offset_calibration
-	active_astar_grid.update()
-
-	if NavigationManager:
-		NavigationManager.register_grid(active_astar_grid, self)
-
-func _refresh_grid_state() -> void:
-	if not active_astar_grid: _init_grid()
-
-	var region = active_astar_grid.region
-	active_astar_grid.fill_solid_region(region, false)
-	# RESET WEIGHTS
-	active_astar_grid.fill_weight_scale_region(region, 1.0) 
-
-	# 1. APPLY TERRAIN & BUILDINGS (Keep existing calls)
-	if is_instance_valid(active_tilemap_layer): _apply_terrain_solids()
-	var data_source = active_map_data if active_map_data else current_settlement
-	if data_source:
-		for entry in data_source.placed_buildings: _apply_building_to_grid(entry, true)
-		for entry in data_source.pending_construction_buildings: _apply_building_to_grid(entry, true)
-
-	# 2. APPLY SAFETY PADDING (The "Anti-Clunk" Fix)
-	_apply_safety_padding()
-
-	EventBus.pathfinding_grid_updated.emit(Vector2i.ZERO)
-
-func _apply_safety_padding() -> void:
-	var region = active_astar_grid.region
-	for x in range(region.position.x, region.end.x):
-		for y in range(region.position.y, region.end.y):
-			var id = Vector2i(x, y)
-			if active_astar_grid.is_point_solid(id):
-				_weigh_neighbors(id, 10.0)
-
-func _weigh_neighbors(center: Vector2i, weight: float) -> void:
-	var neighbors = [Vector2i(0, 1), Vector2i(0, -1), Vector2i(1, 0), Vector2i(-1, 0)]
-	for n in neighbors:
-		var target = center + n
-		if active_astar_grid.region.has_point(target):
-			if not active_astar_grid.is_point_solid(target):
-				var current_w = active_astar_grid.get_point_weight_scale(target)
-				if current_w < weight:
-					active_astar_grid.set_point_weight_scale(target, weight)
-
-func _sync_grid_to_map() -> void:
-	if not is_instance_valid(active_tilemap_layer): return
-	
-	# --- FIX: LAZY INIT (Prevents Crash) ---
-	if active_astar_grid == null:
-		_init_grid()
-	# ---------------------------------------
-	
-	# 1. Measure the Visual Center of (0,0)
-	var visual_zero = active_tilemap_layer.to_global(active_tilemap_layer.map_to_local(Vector2i(0,0)))
-	
-	# 2. Measure the Math Center of (0,0)
-	active_astar_grid.offset = Vector2.ZERO
-	active_astar_grid.update()
-	var math_zero = active_astar_grid.get_point_position(Vector2i(0,0))
-	
-	# 3. Calculate the Delta
-	var diff = visual_zero - math_zero
-	
-	# 4. Apply to Calibration
-	grid_offset_calibration = diff
-	active_astar_grid.offset = grid_offset_calibration
-	active_astar_grid.update()
-	
-	Loggie.msg("Grid Calibrated. Offset applied: %s" % grid_offset_calibration).domain(LogDomains.SYSTEM).info()
-	print("--- GRID CALIBRATION REPORT ---")
-	print("Visual (0,0): ", visual_zero)
-	print("Math (0,0):   ", math_zero)
-	print("Correction:   ", diff)
-	print("-----------------------------")
-
-# --- NEW: Terrain Scanner ---
-func _apply_terrain_solids() -> void:
-	var region = active_astar_grid.region
-	var unwalkable_count = 0
-	
-	for x in range(region.position.x, region.end.x):
-		for y in range(region.position.y, region.end.y):
-			var grid_pos = Vector2i(x, y)
-			var tile_data = active_tilemap_layer.get_cell_tile_data(grid_pos)
-			
-			if tile_data:
-				var is_unwalkable = tile_data.get_custom_data("is_unwalkable")
-				if is_unwalkable:
-					active_astar_grid.set_point_solid(grid_pos, true)
-					unwalkable_count += 1
-					
-	print("[DIAGNOSTIC] Terrain Scan Complete. Marked %d tiles as SOLID." % unwalkable_count)
-
-func _apply_building_to_grid(entry: Dictionary, is_solid: bool) -> void:
-	if not ResourceLoader.exists(entry.resource_path): return
-	var data = load(entry.resource_path) as BuildingData
-	var pos = entry.grid_position
-	
-	for x in range(data.grid_size.x):
-		for y in range(data.grid_size.y):
-			var p = pos + Vector2i(x, y)
-			if active_astar_grid.region.has_point(p):
-				active_astar_grid.set_point_solid(p, is_solid)
-
-func _mark_rect_solid(top_left_pos: Vector2i, size: Vector2i, is_solid: bool) -> void:
-	for x in range(size.x):
-		for y in range(size.y):
-			var cell = top_left_pos + Vector2i(x, y)
-			# Safe Set
-			set_astar_point_solid(cell, is_solid)
-
-# --- PUBLIC GRID API ---
-
-## Main entry point for Spawners. Returns a safe World Position (CENTER of Tile).
-func request_valid_spawn_point(target_pos: Vector2, radius_check: int = 3) -> Vector2:
-	var start_grid = world_to_grid(target_pos)
-	
-	# 1. Check exact spot
-	if active_astar_grid.region.has_point(start_grid):
-		if not active_astar_grid.is_point_solid(start_grid):
-			# Use the new robust center calculation
-			return get_tile_center(start_grid)
-		
-	# 2. Spiral Search
-	for r in range(1, radius_check + 1):
-		for x in range(-r, r + 1):
-			for y in range(-r, r + 1):
-				# Optimization: Skip the inner rings we already checked
-				if abs(x) < r and abs(y) < r: continue
-				
-				var check = start_grid + Vector2i(x, y)
-				if active_astar_grid.region.has_point(check):
-					if not active_astar_grid.is_point_solid(check):
-						# Return center of the found safe neighbor
-						return get_tile_center(check)
-						
-	return Vector2.INF # Failed
-
+## UPDATED: Checks direct tile data + navigation
 func is_tile_buildable(grid_pos: Vector2i) -> bool:
-	return buildable_cells.has(grid_pos) and not active_astar_grid.is_point_solid(grid_pos)
+	return is_tile_valid_for_placement(grid_pos)
 
 func get_active_grid_cell_size() -> Vector2:
-	return Vector2(TILE_WIDTH, TILE_HEIGHT)
-
-func get_astar_path(start_pos: Vector2, end_pos: Vector2, allow_partial_path: bool = false) -> PackedVector2Array:
-	if not is_instance_valid(active_astar_grid): return PackedVector2Array()
-	
-	# 1. Convert World to Grid
-	var start_grid = world_to_grid(start_pos)
-	var end_grid = world_to_grid(end_pos)
-	
-	# 2. PROJECTION (The Standard Fix)
-	if not is_tile_walkable(start_grid):
-		start_grid = _get_closest_walkable_point(start_grid, 2)
-		if not is_tile_walkable(start_grid):
-			Loggie.msg("Path failed: Unit trapped at %s" % start_grid).domain(LogDomains.NAVIGATION).warn()
-			return PackedVector2Array()
-
-	# 3. Target Validation
-	if not is_tile_walkable(end_grid):
-		end_grid = _get_closest_walkable_point(end_grid, 3)
-		if not is_tile_walkable(end_grid):
-			return PackedVector2Array()
-
-	# 4. Calculate Path
-	var path = active_astar_grid.get_point_path(start_grid, end_grid, allow_partial_path)
-	
-	# 5. Path Smoothing (Visual Correction)
-	if path.size() > 0:
-		path[0] = start_pos
-		if end_grid == world_to_grid(end_pos):
-			path[path.size() - 1] = end_pos
-		else:
-			path[path.size() - 1] = get_tile_center(end_grid)
-			
-	return path
-
-# --- HELPER: Projection Logic ---
-
-func is_tile_walkable(grid_pos: Vector2i) -> bool:
-	# Bounds check + Solid check
-	if not is_instance_valid(active_astar_grid): return false
-	if not active_astar_grid.region.has_point(grid_pos): return false
-	return not active_astar_grid.is_point_solid(grid_pos)
-
-func _get_closest_walkable_point(origin: Vector2i, max_radius: int) -> Vector2i:
-	# 1. Check Origin first
-	if is_tile_walkable(origin): return origin
-	
-	# 2. Spiral Search for nearest valid neighbor
-	for r in range(1, max_radius + 1):
-		for x in range(-r, r + 1):
-			for y in range(-r, r + 1):
-				if abs(x) != r and abs(y) != r: continue # Only check outer ring
-				
-				var candidate = origin + Vector2i(x, y)
-				if is_tile_walkable(candidate):
-					return candidate
-	
-	# 3. Failed to find neighbor
-	return origin
-
-func set_astar_point_solid(grid_position: Vector2i, solid: bool) -> void:
-	if _is_grid_point_valid(grid_position):
-		active_astar_grid.set_point_solid(grid_position, solid)
-
-func _is_grid_point_valid(grid_pos: Vector2i) -> bool:
-	if not is_instance_valid(active_astar_grid): return false
-	return active_astar_grid.region.has_point(grid_pos)
+	if NavigationManager.active_astar_grid:
+		return NavigationManager.active_astar_grid.cell_size
+	return Vector2(64, 32) 
 
 # --- BUILDING PLACEMENT ---
+
 func _spawn_building_node(building_data: BuildingData, grid_pos: Vector2i) -> BaseBuilding:
 	if not is_instance_valid(active_building_container): return null
 
@@ -297,25 +163,22 @@ func _spawn_building_node(building_data: BuildingData, grid_pos: Vector2i) -> Ba
 	new_building.data = building_data
 	new_building.grid_coordinate = grid_pos
 	
-	# Use the Robust Center Helper
-	var center_pos = get_tile_center(grid_pos)
-	
-	# Pivot Adjustment:
-	# If the building sprite pivot is "Feet" (Bottom-Center), it aligns perfectly with Tile Center.
-	# If your sprites still look off, apply a small tweak here.
-	# Based on previous tests, you might need +16 Y.
-	# var pivot_tweak = Vector2(0, 16) 
-	var pivot_tweak = Vector2.ZERO # Start clean for this test
-	
-	new_building.global_position = center_pos + pivot_tweak
+	# CRITICAL FIX: Use Footprint Center instead of Tile Center
+	# This ensures the sprite is centered over the entire MxN grid area.
+	var center_pos = get_footprint_center(grid_pos, building_data.grid_size)
+	new_building.global_position = center_pos 
 	
 	active_building_container.add_child(new_building)
 	return new_building
 	
 func place_building(building_data: BuildingData, grid_position: Vector2i, is_new_construction: bool = false) -> BaseBuilding:
 	if not is_instance_valid(active_building_container): return null
-	if not is_placement_valid(grid_position, building_data.grid_size, building_data): return null
+	
+	# 1. Validation (Loops from Top-Left grid_position)
+	if not is_placement_valid(grid_position, building_data.grid_size, building_data): 
+		return null
 
+	# 2. Spawn Visuals (Correctly centered now)
 	var new_building = _spawn_building_node(building_data, grid_position)
 	
 	var entry = {
@@ -324,15 +187,17 @@ func place_building(building_data: BuildingData, grid_position: Vector2i, is_new
 		"peasant_count": 0, "thrall_count": 0, "progress": 0
 	}
 	
+	# 3. Update Data & Navigation Grid
 	if active_map_data:
 		if is_new_construction and building_data.construction_effort_required > 0:
 			active_map_data.pending_construction_buildings.append(entry)
 			new_building.set_state(BaseBuilding.BuildingState.BLUEPRINT)
 			if active_map_data == current_settlement: save_settlement()
+			_update_building_footprint_navigation(building_data, grid_position, true)
 		else:
 			active_map_data.placed_buildings.append(entry)
 			new_building.set_state(BaseBuilding.BuildingState.ACTIVE)
-			_refresh_grid_state()
+			_update_building_footprint_navigation(building_data, grid_position, true)
 			
 	return new_building
 
@@ -348,36 +213,42 @@ func reconstruct_buildings_from_data() -> void:
 			var data = load(entry.resource_path)
 			var b = _spawn_building_node(data, entry.grid_position)
 			if b: b.set_state(BaseBuilding.BuildingState.ACTIVE)
+			_update_building_footprint_navigation(data, entry.grid_position, true)
 			
 	for entry in current_settlement.pending_construction_buildings:
 		if ResourceLoader.exists(entry.resource_path):
 			var data = load(entry.resource_path)
 			var b = _spawn_building_node(data, entry.grid_position)
 			if b: b.set_state(BaseBuilding.BuildingState.BLUEPRINT)
-
-	_refresh_grid_state()
+			_update_building_footprint_navigation(data, entry.grid_position, true)
 
 func remove_building(building_instance: BaseBuilding) -> void:
 	if not active_map_data or not is_instance_valid(building_instance): return
 	
-	var cell_size = get_active_grid_cell_size()
-	# Refactor note: removal logic is safer using data lookup than position math reverse engineering
-	# But preserving original logic logic per request, just wrapping safely
-	var top_left = building_instance.global_position - (Vector2(building_instance.data.grid_size) * cell_size / 2.0)
-	var grid_pos = Vector2i(round(top_left.x / cell_size.x), round(top_left.y / cell_size.y))
-	
-	# Prefer instance data if available
+	var grid_pos = Vector2i.ZERO
 	if "grid_coordinate" in building_instance and building_instance.grid_coordinate != Vector2i(-999, -999):
 		grid_pos = building_instance.grid_coordinate
-	
+	else:
+		grid_pos = NavigationManager._world_to_grid(building_instance.global_position)
+
+	if building_instance.data:
+		_update_building_footprint_navigation(building_instance.data, grid_pos, false)
+
 	var removed_placed = _remove_from_list(active_map_data.placed_buildings, grid_pos)
 	var removed_pending = _remove_from_list(active_map_data.pending_construction_buildings, grid_pos)
 	
 	if removed_placed or removed_pending:
 		if active_map_data == current_settlement: save_settlement()
-		_refresh_grid_state()
 		
 	building_instance.queue_free()
+
+func _update_building_footprint_navigation(data: BuildingData, origin: Vector2i, is_solid: bool) -> void:
+	for x in range(data.grid_size.x):
+		for y in range(data.grid_size.y):
+			var cell = origin + Vector2i(x, y)
+			NavigationManager.set_point_solid(cell, is_solid)
+	
+	EventBus.pathfinding_grid_updated.emit(Vector2i.ZERO)
 
 func _remove_from_list(list: Array, grid_pos: Vector2i) -> bool:
 	for i in range(list.size()):
@@ -388,50 +259,95 @@ func _remove_from_list(list: Array, grid_pos: Vector2i) -> bool:
 			return true
 	return false
 
+# --- PLACEMENT VALIDATION & DIAGNOSTICS ---
+
 func is_placement_valid(grid_position: Vector2i, building_size: Vector2i, building_data: BuildingData = null) -> bool:
-	if not is_instance_valid(active_astar_grid): return false
-	if not GridUtils.is_area_clear(active_astar_grid, grid_position, building_size): return false
+	var error = get_placement_error(grid_position, building_size, building_data)
+	return error == ""
+
+## Returns an empty string if valid, or a reason string if invalid.
+func get_placement_error(grid_position: Vector2i, building_size: Vector2i, building_data: BuildingData = null) -> String:
+	# 1. Check Solids via STRICT Validation
+	for x in range(building_size.x):
+		for y in range(building_size.y):
+			var check = grid_position + Vector2i(x, y)
+			if not is_tile_valid_for_placement(check):
+				return "Blocked / Invalid Terrain"
+
+	# 2. Check Great Hall Buffer (Must be far from water)
+	if building_data and _is_great_hall(building_data):
+		if not _check_surrounding_terrain_buffer(grid_position, building_size, GREAT_HALL_BUFFER):
+			return "Too Close to Water"
+
+	# 3. Check District/Economic Logic
 	if building_data and building_data is EconomicBuildingData:
-		return _is_within_district_range(grid_position, building_size, building_data)
+		if not _is_within_district_range(grid_position, building_size, building_data):
+			var res_name = building_data.resource_type.capitalize()
+			return "Must be near %s" % res_name
+			
+	return ""
+
+func _is_great_hall(data: BuildingData) -> bool:
+	# Heuristic check for the Great Hall
+	if "Great Hall" in data.display_name: return true
+	if "GreatHall" in data.resource_path or "Great_Hall" in data.resource_path: return true
+	return false
+
+func _check_surrounding_terrain_buffer(origin: Vector2i, size: Vector2i, buffer: int) -> bool:
+	# Loop through the padded rectangle
+	var start_x = origin.x - buffer
+	var end_x = origin.x + size.x + buffer
+	var start_y = origin.y - buffer
+	var end_y = origin.y + size.y + buffer
+	
+	for x in range(start_x, end_x):
+		for y in range(start_y, end_y):
+			# We only care about TERRAIN validation here (is it water?)
+			# We do NOT care if there is a tree or another building in the buffer zone.
+			if not is_terrain_walkable(Vector2i(x, y)):
+				return false
 	return true
 
 func _is_within_district_range(grid_pos: Vector2i, size: Vector2i, data: EconomicBuildingData) -> bool:
-	var cell = get_active_grid_cell_size()
-	var center = (Vector2(grid_pos) * cell) + (Vector2(size) * cell / 2.0)
+	# FIX: Use Isometric Center calculation instead of Orthogonal
+	# Old/Bugged: var center = (Vector2(grid_pos) * cell) + (Vector2(size) * cell / 2.0)
+	var center = get_footprint_center(grid_pos, size)
+	
 	var nodes = get_tree().get_nodes_in_group("resource_nodes")
 	for node in nodes:
-		if node is ResourceNode and node.resource_type == data.resource_type:
-			if node.is_position_in_district(center) and not node.is_depleted(): return true
+		# Duck-type check for resource compatibility
+		if "resource_type" in node and node.resource_type == data.resource_type:
+			# Check depletion
+			if node.has_method("is_depleted") and node.is_depleted(): continue
+			
+			# Check range
+			if node.has_method("is_position_in_district"):
+				if node.is_position_in_district(center): return true
+			else:
+				# Fallback distance check if method missing
+				var dist = center.distance_to(node.global_position)
+				# Default radius 300 if not defined
+				var rad = node.get("district_radius") if "district_radius" in node else 300.0
+				if dist <= rad: return true
+				
 	return false
 
 # --- SCENE MANAGEMENT ---
 
 func register_active_scene_nodes(container: Node2D) -> void:
-	print("[DIAGNOSTIC] SettlementManager: Registering container: ", container.name)
+	Loggie.msg("SettlementManager: Registering container: %s" % container.name).domain(LogDomains.SETTLEMENT).info()
 	active_building_container = container
-	active_tilemap_layer = null
 	
-	# Find Map
+	# CRITICAL: Capture the TileMapLayer so is_tile_valid_for_placement can read Custom Data
 	if container.get_parent() is TileMapLayer:
 		active_tilemap_layer = container.get_parent()
-	else:
-		var parent = container.get_parent()
-		if parent:
-			for child in parent.get_children():
-				if child is TileMapLayer:
-					active_tilemap_layer = child
-					break
+		Loggie.msg("Active TileMapLayer captured for terrain validation.").domain(LogDomains.SETTLEMENT).info()
+	elif container.get_parent().has_node("TileMapLayer"):
+		# Fallback if structure is different
+		active_tilemap_layer = container.get_parent().get_node("TileMapLayer")
 	
-	if active_tilemap_layer:
-		print("[DIAGNOSTIC] Found TileMapLayer. Syncing Grid...")
-		_sync_grid_to_map() # <--- THE FIX RUNS HERE
-	else:
-		print("[DIAGNOSTIC] FAILURE: Could not find TileMapLayer.")
-
-	# Trigger visual spawn if data exists
 	if current_settlement:
 		reconstruct_buildings_from_data()
-
 
 func unregister_active_scene_nodes() -> void:
 	active_building_container = null
@@ -450,19 +366,15 @@ func load_settlement(data: SettlementData) -> void:
 
 func _load_fallback_data(data: SettlementData) -> void:
 	if data:
-		# 1. Create a fresh instance from the template
 		current_settlement = data.duplicate(true)
 		if current_settlement.warbands == null: current_settlement.warbands = []
 		
-		# 2. GENERATE PERMANENT SEED
 		if current_settlement.map_seed == 0:
 			randomize()
 			current_settlement.map_seed = randi()
 			Loggie.msg("New Campaign Initialized. Generated Seed: %d" % current_settlement.map_seed).domain(LogDomains.SETTLEMENT).info()
 		
-		# 3. SAVE IMMEDIATELY
 		save_settlement()
-		
 		Loggie.msg("Loaded default template and created new save file.").domain(LogDomains.SETTLEMENT).info()
 	else:
 		Loggie.msg("No data provided/found.").domain(LogDomains.SETTLEMENT).error()
@@ -484,18 +396,16 @@ func delete_save_file() -> void:
 func reset_manager_state() -> void:
 	current_settlement = null
 	active_map_data = null
-	active_astar_grid = null
 	active_building_container = null
 
 func has_current_settlement() -> bool:
 	return current_settlement != null
-# --- ECONOMY & WORKERS ---
-# (Keeping standard delegation functions unchanged)
 
-func calculate_payout() -> Dictionary: return EconomyManager.calculate_payout()
-func deposit_resources(loot: Dictionary) -> void: EconomyManager.deposit_resources(loot)
-func attempt_purchase(item_cost: Dictionary) -> bool: return EconomyManager.attempt_purchase(item_cost)
-func apply_raid_damages() -> Dictionary: return EconomyManager.apply_raid_damages()
+# --- ECONOMY & WORKERS ---
+
+# FIX: Add Backward Compatibility for SettlementBridge.gd (Prevents crash, prevents double-refund)
+func deposit_resources(_resources: Dictionary) -> void:
+	Loggie.msg("SettlementBridge tried to refund via deprecated 'deposit_resources'. Ignored to prevent double-refund (StorefrontUI handles this now).").domain(LogDomains.ECONOMY).warn()
 
 func get_total_ship_capacity_squads() -> int:
 	var total_capacity = 3
@@ -509,21 +419,17 @@ func get_idle_peasants() -> int:
 	if not current_settlement: return 0
 	
 	var employed = 0
-	# Count employed in active buildings
 	for entry in current_settlement.placed_buildings:
 		employed += entry.get("peasant_count", 0)
-	# Count employed in construction sites
 	for entry in current_settlement.pending_construction_buildings:
 		employed += entry.get("peasant_count", 0)
 	
 	var idle = current_settlement.population_peasants - employed
 	
-	# --- FIX START: Negative Idle Check ---
 	if idle < 0:
 		Loggie.msg("Negative Idle Peasants detected (%d). Triggering layoffs." % idle).domain(LogDomains.SETTLEMENT).warn()
 		_validate_employment_levels()
-		return 0 # Return 0 safely; logic will correct data for next frame
-	# --- FIX END ---
+		return 0 
 	
 	return idle
 
@@ -538,12 +444,10 @@ func get_idle_thralls() -> int:
 		
 	var idle = current_settlement.population_thralls - employed
 	
-	# --- FIX START: Negative Idle Check ---
 	if idle < 0:
 		Loggie.msg("Negative Idle Thralls detected (%d). Triggering layoffs." % idle).domain(LogDomains.SETTLEMENT).warn()
 		_validate_employment_levels()
 		return 0
-	# --- FIX END ---
 	
 	return idle
 
@@ -583,7 +487,6 @@ func assign_construction_worker(index: int, type: String, amount: int) -> void:
 	save_settlement()
 	EventBus.settlement_loaded.emit(current_settlement)
 
-## Checks if employed workers exceed total population and forces layoffs if necessary.
 func _validate_employment_levels() -> void:
 	if not current_settlement: return
 	
@@ -607,13 +510,10 @@ func _validate_employment_levels() -> void:
 		var deficit = employed_thralls - total_thralls
 		_force_layoffs("thrall", deficit)
 
-## Removes workers from buildings (LIFO) until the deficit is cleared.
 func _force_layoffs(type: String, amount_to_remove: int) -> void:
 	var removed_count = 0
 	var key = "peasant_count" if type == "peasant" else "thrall_count"
 	
-	# Iterate BACKWARDS through buildings to remove workers from most recently built structures first (or just end of list)
-	# This avoids index shifting issues if we were removing buildings (though we are just modifying values here).
 	var buildings = current_settlement.placed_buildings
 	for i in range(buildings.size() - 1, -1, -1):
 		if removed_count >= amount_to_remove: 
@@ -623,18 +523,12 @@ func _force_layoffs(type: String, amount_to_remove: int) -> void:
 		var current_workers = entry.get(key, 0)
 		
 		if current_workers > 0:
-			# Calculate how many we can take from this specific building
 			var take = min(current_workers, amount_to_remove - removed_count)
-			
-			# Update the building data
 			entry[key] = current_workers - take
 			removed_count += take
 			
 	Loggie.msg("Force Layoff Complete. Removed %d %ss due to population deficit." % [removed_count, type]).domain(LogDomains.SETTLEMENT).info()
-	
-	# Force UI refresh
 	EventBus.settlement_loaded.emit(current_settlement)
-
 
 func process_construction_labor() -> void:
 	if not current_settlement: return
@@ -660,13 +554,15 @@ func process_construction_labor() -> void:
 	completed_indices.reverse()
 	for i in completed_indices: current_settlement.pending_construction_buildings.remove_at(i)
 	save_settlement()
-	_refresh_grid_state()
+	
+	EventBus.pathfinding_grid_updated.emit(Vector2i.ZERO)
+
+# --- RECRUITMENT & WARBANDS ---
 
 func recruit_unit(unit_data: UnitData) -> void:
 	if not current_settlement or not unit_data:
 		return
 	
-	# --- FIX START: Capacity Validation ---
 	var current_squads = current_settlement.warbands.size()
 	var max_squads = get_total_ship_capacity_squads()
 	
@@ -674,11 +570,9 @@ func recruit_unit(unit_data: UnitData) -> void:
 		Loggie.msg("Recruitment blocked: Fleet at capacity (%d/%d)" % [current_squads, max_squads]).domain(LogDomains.SETTLEMENT).info()
 		EventBus.purchase_failed.emit("Fleet capacity reached! Build more Nausts.")
 		return
-	# --- FIX END ---
 
 	var new_warband = WarbandData.new(unit_data)
 	
-	# Apply Dynasty bonuses if applicable
 	if DynastyManager.has_purchased_upgrade("UPG_TRAINING_GROUNDS"):
 		new_warband.experience = 200
 		new_warband.add_history("Recruited as Hardened Veterans")
@@ -695,7 +589,8 @@ func upgrade_warband_gear(warband: WarbandData) -> bool:
 	if not current_settlement: return false
 	if warband.gear_tier >= WarbandData.MAX_GEAR_TIER: return false
 	var cost = warband.get_gear_cost()
-	if attempt_purchase({"gold": cost}):
+	
+	if EconomyManager.attempt_purchase({"gold": cost}):
 		warband.gear_tier += 1
 		warband.add_history("Upgraded to %s" % warband.get_gear_name())
 		save_settlement()
@@ -776,10 +671,10 @@ func _find_entry_for_building(building: BaseBuilding) -> Dictionary:
 				if Vector2i(entry["grid_position"].x, entry["grid_position"].y) == tagged_pos: return entry
 			for entry in current_settlement.pending_construction_buildings:
 				if Vector2i(entry["grid_position"].x, entry["grid_position"].y) == tagged_pos: return entry
-	var cell_size = get_active_grid_cell_size()
-	var half_size = (Vector2(building.data.grid_size) * cell_size) / 2.0
-	var top_left = building.global_position - half_size
-	var grid_pos = Vector2i(round(top_left.x / cell_size.x), round(top_left.y / cell_size.y))
+	
+	# Fallback if grid_coordinate not found
+	var grid_pos = NavigationManager._world_to_grid(building.global_position)
+	
 	for entry in current_settlement.placed_buildings:
 		if Vector2i(entry["grid_position"].x, entry["grid_position"].y) == grid_pos: 
 			building.grid_coordinate = grid_pos
@@ -817,10 +712,9 @@ func get_building_index(building_instance: Node2D) -> int:
 				var entry = target_list[i]
 				var pos = entry["grid_position"]
 				if Vector2i(pos.x, pos.y) == tagged_pos: return i
-	var cell_size = get_active_grid_cell_size()
-	var size = Vector2i(1, 1)
-	if "data" in building_instance and building_instance.data: size = building_instance.data.grid_size
-	var grid_pos = Vector2i((building_instance.global_position - (Vector2(size) * cell_size / 2.0)) / cell_size)
+				
+	# Fallback
+	var grid_pos = NavigationManager._world_to_grid(building_instance.global_position)
 	for i in range(target_list.size()):
 		var entry = target_list[i]
 		var pos = entry["grid_position"]
@@ -853,28 +747,23 @@ func commit_seasonal_recruits() -> void:
 func _generate_oath_name() -> String:
 	var names = ["Red", "Bold", "Young", "Wild", "Sworn", "Lucky"]
 	return "The %s" % names.pick_random()
+
 # --- FORMATION SAFETY ---
 
-## Takes a desired World Position (e.g. formation offset).
-## Returns the SAME position if it's safe.
-## Returns the NEAREST SAFE TILE CENTER if the target is in a wall.
-## Now accepts an optional list of 'taken_grid_points' to avoid stacking units
 func validate_formation_point(target_pos: Vector2, taken_grid_points: Array[Vector2i] = []) -> Vector2:
 	var grid_pos = world_to_grid(target_pos)
 	
-	# 1. If ideal spot is walkable AND not taken by a squadmate
-	if is_tile_walkable(grid_pos) and not grid_pos in taken_grid_points:
+	# Use new safe function first
+	if is_tile_valid_for_placement(grid_pos) and not grid_pos in taken_grid_points:
 		return target_pos
 		
-	# 2. Search for nearest safe tile, ignoring ones in the taken list
-	# Increasing radius to 4 to give them breathing room
+	# Search using NavManager logic via wrapper
 	var safe_grid_pos = _get_closest_walkable_point_exclusive(grid_pos, 4, taken_grid_points)
 	
 	return get_tile_center(safe_grid_pos)
 
-# Helper for Exclusive Search
 func _get_closest_walkable_point_exclusive(origin: Vector2i, max_radius: int, exclusions: Array[Vector2i]) -> Vector2i:
-	if is_tile_walkable(origin) and not origin in exclusions: return origin
+	if is_tile_valid_for_placement(origin) and not origin in exclusions: return origin
 	
 	for r in range(1, max_radius + 1):
 		for x in range(-r, r + 1):
@@ -882,7 +771,7 @@ func _get_closest_walkable_point_exclusive(origin: Vector2i, max_radius: int, ex
 				if abs(x) != r and abs(y) != r: continue
 				
 				var candidate = origin + Vector2i(x, y)
-				if is_tile_walkable(candidate) and not candidate in exclusions:
+				if is_tile_valid_for_placement(candidate) and not candidate in exclusions:
 					return candidate
 	
-	return origin # Fail-safe
+	return origin

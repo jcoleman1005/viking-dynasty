@@ -1,4 +1,4 @@
-# res://scripts/ai/UnitFSM.gd
+extends Node
 class_name UnitFSM
 
 # Unit References
@@ -8,7 +8,8 @@ var attack_ai: AttackAI
 # State Data
 var current_state: UnitAIConstants.State = UnitAIConstants.State.IDLE
 var stance: UnitAIConstants.Stance = UnitAIConstants.Stance.DEFENSIVE
-var path: Array = []
+# CHANGED: Strict typing for performance and compatibility with NavigationManager
+var path: PackedVector2Array = []
 var stuck_timer: float = 0.0
 
 var los_range: float = 450.0
@@ -68,6 +69,7 @@ func _enter_state(state: UnitAIConstants.State) -> void:
 				attack_ai.stop_attacking()
 				attack_ai.set_process(false) # Brain off
 				attack_ai.set_physics_process(false)
+
 func _exit_state(state: UnitAIConstants.State) -> void:
 	match state:
 		UnitAIConstants.State.MOVING, UnitAIConstants.State.INTERACTING:
@@ -102,18 +104,18 @@ func _recalculate_path() -> void:
 	var allow_partial = is_instance_valid(target_node)
 	
 	# --- FIX: Redirect to NavigationManager for Smoothing ---
-	# OLD: path = SettlementManager.get_astar_path(start_pos, target_position, allow_partial)
 	path = NavigationManager.get_astar_path(start_pos, target_position, allow_partial)
 	# -------------------------------------------------------
 	
 	if path.is_empty():
 		# FORCE move if very close (A* sometimes fails on short distances inside cell boundaries)
 		if start_pos.distance_to(target_position) < 150.0:
-			path = [target_position] 
+			path = PackedVector2Array([target_position]) 
 		else:
 			if unit.has_method("flash_error_color"):
 				unit.flash_error_color()
 			change_state(UnitAIConstants.State.IDLE)
+
 # --- RTS COMMANDS ---
 
 func command_defensive_attack(attacker: Node2D) -> void:
@@ -131,6 +133,17 @@ func command_attack_obstruction(target: Node2D) -> void:
 	current_target = target
 	change_state(UnitAIConstants.State.ATTACKING)
 
+# NEW: Explicit Collect Command (Harvesting)
+func command_collect(target: Node2D) -> void:
+	if not is_instance_valid(target): return
+	objective_target = target
+	current_target = null
+	target_position = target.global_position
+	
+	if attack_ai: attack_ai.stop_attacking()
+	
+	change_state(UnitAIConstants.State.COLLECTING)
+
 func command_move_to_formation_pos(target_pos: Vector2) -> void:
 	target_position = target_pos
 	move_command_position = target_pos
@@ -147,10 +160,23 @@ func command_move_to(target_pos: Vector2) -> void:
 	current_target = null
 	objective_target = null
 	if attack_ai: attack_ai.stop_attacking()
-	change_state(UnitAIConstants.State.MOVING)
+	
+	# CRITICAL FIX: Interruption Logic
+	if current_state == UnitAIConstants.State.MOVING:
+		# If already moving, FORCE a path update immediately.
+		_recalculate_path()
+	else:
+		change_state(UnitAIConstants.State.MOVING)
 
 func command_attack(target: Node2D) -> void:
 	if not is_instance_valid(target): return
+	
+	# SMART OVERRIDE: If target is a Resource, Harvest instead of Attack
+	# Uses the group name defined in ResourceNode.gd
+	if target.is_in_group("resource_nodes"):
+		command_collect(target)
+		return
+	
 	objective_target = target
 	current_target = target
 	target_position = target.global_position
@@ -202,22 +228,38 @@ func update(delta: float) -> void:
 			_escort_state(delta)
 		UnitAIConstants.State.REGROUPING:
 			_regroup_state(delta)
+
 # --- STATE LOGIC ---
 
 func _collect_state(delta: float) -> void:
-	if is_instance_valid(objective_target):
-		# [FIX] Ensure we actually move!
+	if not is_instance_valid(objective_target):
+		change_state(UnitAIConstants.State.IDLE)
+		return
+
+	# 1. Define Work Range (e.g., 50 pixels from the resource center)
+	var work_range = 50.0 
+	var dist = unit.global_position.distance_to(objective_target.global_position)
+
+	if dist > work_range:
+		# PHASE A: APPROACH
+		# Use simple movement to get close
 		_simple_move_to(objective_target.global_position, delta)
+	else:
+		# PHASE B: WORK
+		# Stop moving!
+		unit.velocity = Vector2.ZERO
 		
-		# Debug Distance
-		var dist = unit.global_position.distance_to(objective_target.global_position)
-		# print("Debug Collect: Dist to Target: ", dist) 
+		# --- TODO: FUTURE ECONOMY LOGIC ---
+		# 1. Capacity Check:
+		#    Example: if unit.current_resources >= unit.max_capacity_without_building: return
 		
+		# 2. Turn-Based / Tick Logic:
+		#    If the game is turn-based, you might only want to run this logic 
+		#    when a specific "Turn Tick" signal is received, rather than every delta frame.
+		
+		# Delegate actual gathering to the Unit's script
 		if unit.has_method("process_collecting_logic"):
 			unit.process_collecting_logic(delta)
-	else:
-		print("UnitFSM: Collect State Failed - No Target!")
-		change_state(UnitAIConstants.State.IDLE)
 
 func _escort_state(delta: float) -> void:
 	if is_instance_valid(objective_target):
@@ -251,7 +293,7 @@ func _formation_move_state(_delta: float) -> void:
 	unit.velocity = velocity
 	
 	if unit.global_position.distance_to(next_waypoint) < 8.0:
-		path.pop_front()
+		path.remove_at(0) # FIXED: Compatible with PackedVector2Array
 		if path.is_empty():
 			change_state(UnitAIConstants.State.IDLE)
 
@@ -265,14 +307,25 @@ func _move_state(delta: float) -> void:
 	var distance_to_waypoint = unit.global_position.distance_to(next_waypoint)
 
 	# [NEW] Apply Encumbrance Logic Here
-	# We fetch the multiplier (e.g., 0.5) from the Unit and apply it to the base stat
 	var speed_mult = unit.get_speed_multiplier()
+	# TODO: Ensure get_speed_multiplier() connects to Inventory Weight (Unit.inventory_weight)
 	var final_speed = unit.data.move_speed * speed_mult
 
 	# Apply velocity
 	unit.velocity = direction * final_speed
 	
-	# Standard Waypoint Logic (Preserved from standard RTS logic)
+	# [NEW] Stuck Safety Check
+	# If we are supposed to be moving but velocity is tiny for too long
+	if unit.velocity.length_squared() < 100.0:
+		stuck_timer += delta
+		if stuck_timer > 1.0:
+			# Try re-pathing
+			stuck_timer = 0.0
+			_recalculate_path()
+	else:
+		stuck_timer = 0.0
+	
+	# Standard Waypoint Logic
 	if distance_to_waypoint < 10.0: # Threshold to reach point
 		path.remove_at(0)
 		if path.is_empty():
@@ -304,7 +357,7 @@ func _interact_state(delta: float) -> void:
 			unit.move_and_slide()
 			
 			if unit.global_position.distance_to(next) < 8.0:
-				path.pop_front()
+				path.remove_at(0) # FIXED: Compatible with PackedVector2Array
 		else:
 			# Direct approach for last mile
 			var dir = (objective_target.global_position - unit.global_position).normalized()
@@ -316,8 +369,6 @@ func _interact_state(delta: float) -> void:
 		
 		# Only Pillage if it's an Enemy Building
 		if objective_target is BaseBuilding:
-			# Removed the strict "collision_layer != 1" check if it's confusing, 
-			# or ensure the Loader sets Layer 8 (which we did in Step 1).
 			_process_pillage_tick(delta)
 
 func _process_pillage_tick(delta: float) -> void:
@@ -335,8 +386,6 @@ func _process_pillage_tick(delta: float) -> void:
 		if unit.current_loot_weight >= unit.data.max_loot_capacity:
 			# Visual Feedback for "Full"
 			EventBus.floating_text_requested.emit("FULL!", unit.global_position, Color.YELLOW)
-			# Optional: Auto-stop or keep burning? 
-			# For now, we stop stealing but stay in state (player must move them)
 			return
 
 		# 2. Steal
@@ -345,6 +394,7 @@ func _process_pillage_tick(delta: float) -> void:
 		
 		if stolen_amount > 0:
 			# 3. Pocket the loot
+			# TODO: [Refactor] Consider unifying this with Resource Gathering logic (EconomyManager)
 			unit.add_loot("gold", stolen_amount)
 			
 			# Juice
@@ -364,7 +414,7 @@ func _retreat_state(delta: float) -> void:
 		unit.move_and_slide()
 		
 		if unit.global_position.distance_to(next_waypoint) < 8.0:
-			path.pop_front()
+			path.remove_at(0) # FIXED: Compatible with PackedVector2Array
 		return
 
 	# The Last Mile for Retreat
@@ -436,9 +486,7 @@ func _on_ai_attack_started(target: Node2D) -> void:
 
 func _on_ai_attack_stopped() -> void:
 	if current_state == UnitAIConstants.State.ATTACKING:
-		# --- FIX: Anti-Flicker Guard ---
-		# If the AI stopped, but we are still in range and the target is alive,
-		# ignore the signal. This prevents the infinite loop.
+		# --- Anti-Flicker Guard ---
 		if is_instance_valid(current_target):
 			var limit = unit.data.attack_range
 			if current_target is BaseBuilding or (current_target.name == "Hitbox" and current_target.get_parent() is BaseBuilding):
@@ -450,7 +498,6 @@ func _on_ai_attack_stopped() -> void:
 			# If we are still comfortably in range, assume AI is just cycling/reloading
 			if dist <= limit + 5.0:
 				return
-		# -------------------------------
 		
 		_resume_objective()
 
@@ -493,7 +540,7 @@ func command_pillage(target: Node2D) -> void:
 	if attack_ai: attack_ai.stop_attacking()
 	
 	# We reuse INTERACTING state for now. 
-	# In Batch B, we will add specific logic inside _interact_state to drain resources.
+	# TODO: Consolidate with command_interact_move if pillaging becomes standard interaction.
 	change_state(UnitAIConstants.State.INTERACTING)
 
 func _simple_move_to(target: Vector2, _delta: float) -> void:
