@@ -182,12 +182,14 @@ tile_set = ExtResource("6_cpd76")
 [node name="Storefront_UI" parent="UI" instance=ExtResource("3_vj45l")]
 
 [node name="Dynasty_UI" parent="UI" instance=ExtResource("7_k14p1")]
+anchors_preset = 8
 
 [node name="EndOfYear_Popup" parent="UI" instance=ExtResource("2_5el12")]
+anchors_preset = 8
 
 [node name="RestartButton" type="Button" parent="UI"]
 visible = false
-anchors_preset = -1
+anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
@@ -201,7 +203,6 @@ grow_vertical = 2
 text = "Return to Settlement"
 
 [node name="PauseButton" type="Button" parent="UI"]
-anchors_preset = -1
 offset_left = 10.0
 offset_top = 10.0
 offset_right = 130.0
@@ -210,7 +211,7 @@ text = "PAUSE (ESC)"
 script = ExtResource("7_n23os")
 
 [node name="BuildingInspector" parent="UI" instance=ExtResource("11_fmib8")]
-anchors_preset = -1
+anchors_preset = 7
 anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
