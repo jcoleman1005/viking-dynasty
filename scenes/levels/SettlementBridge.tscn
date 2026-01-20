@@ -18,7 +18,7 @@
 [ext_resource type="Texture2D" uid="uid://cjlq3soj1j4jj" path="res://assets/Kenney/medievalRTS_spritesheet.png" id="11_vlppw"]
 [ext_resource type="PackedScene" uid="uid://cyp3t7gbdg0wx" path="res://player/RTSController.tscn" id="18_fmib8"]
 [ext_resource type="PackedScene" uid="uid://bvsuoj3irdvcs" path="res://player/RTSInputHandler.tscn" id="19_c7ve4"]
-[ext_resource type="Script" uid="uid://ui2rgh2p4cqh" path="res://scenes/levels/TempDebugNode.gd" id="20_c7ve4"]
+[ext_resource type="Script" uid="uid://s763y3q3w2nc" path="res://scripts/debug/SeasonalEconomyDebugger..gd" id="20_c7ve4"]
 [ext_resource type="PackedScene" uid="uid://io325box3m4m" path="res://scenes/world/UnitSpawner.tscn" id="20_fmib8"]
 
 [sub_resource type="Resource" id="Resource_vmd61"]

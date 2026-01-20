@@ -39,9 +39,7 @@ signal dynasty_view_requested()
 
 # --- RTS Command Signals ---
 signal select_command(select_rect: Rect2, is_box_select: bool)
-# NEW: Feedback signal telling UI what was actually caught in the net
 signal units_selected(units: Array) 
-# -------------------------------------------------------------
 signal move_command(target_position: Vector2)
 signal attack_command(target_node: Node2D)
 signal formation_move_command(target_position: Vector2, direction_vector: Vector2)
@@ -59,7 +57,9 @@ signal succession_choices_made(renown_choice: String, gold_choice: String)
 # --- Camera Control ---
 signal camera_input_lock_requested(is_locked: bool)
 
-# --- Game Loop Signals ---
-signal end_year_requested()
+# --- Game Loop & Time Signals ---
+signal end_year_requested() # Legacy (Keep for now to avoid crashes)
+signal advance_season_requested() # NEW: The primary time driver
+signal season_changed(season_name: String) # NEW: Feedback for UI/World
 
 signal floating_text_requested(text: String, world_position: Vector2, color: Color)

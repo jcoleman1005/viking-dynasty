@@ -309,24 +309,19 @@ func _check_surrounding_terrain_buffer(origin: Vector2i, size: Vector2i, buffer:
 	return true
 
 func _is_within_district_range(grid_pos: Vector2i, size: Vector2i, data: EconomicBuildingData) -> bool:
+	var cell = get_active_grid_cell_size()
 	# FIX: Use Isometric Center calculation instead of Orthogonal
-	# Old/Bugged: var center = (Vector2(grid_pos) * cell) + (Vector2(size) * cell / 2.0)
 	var center = get_footprint_center(grid_pos, size)
 	
 	var nodes = get_tree().get_nodes_in_group("resource_nodes")
 	for node in nodes:
-		# Duck-type check for resource compatibility
 		if "resource_type" in node and node.resource_type == data.resource_type:
-			# Check depletion
 			if node.has_method("is_depleted") and node.is_depleted(): continue
 			
-			# Check range
 			if node.has_method("is_position_in_district"):
 				if node.is_position_in_district(center): return true
 			else:
-				# Fallback distance check if method missing
 				var dist = center.distance_to(node.global_position)
-				# Default radius 300 if not defined
 				var rad = node.get("district_radius") if "district_radius" in node else 300.0
 				if dist <= rad: return true
 				
@@ -406,6 +401,11 @@ func has_current_settlement() -> bool:
 # FIX: Add Backward Compatibility for SettlementBridge.gd (Prevents crash, prevents double-refund)
 func deposit_resources(_resources: Dictionary) -> void:
 	Loggie.msg("SettlementBridge tried to refund via deprecated 'deposit_resources'. Ignored to prevent double-refund (StorefrontUI handles this now).").domain(LogDomains.ECONOMY).warn()
+
+# FIX: Proxy for WinterManager and other legacy systems.
+# Forwards the purchase request to the new EconomyManager.
+func attempt_purchase(cost: Dictionary) -> bool:
+	return EconomyManager.attempt_purchase(cost)
 
 func get_total_ship_capacity_squads() -> int:
 	var total_capacity = 3
