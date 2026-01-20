@@ -67,8 +67,11 @@ func setup(target: RaidTargetData) -> void:
 	
 	val_cost.modulate = Color.SALMON if not DynastyManager.can_spend_authority(auth_cost) else Color.WHITE
 
-	# 2. Get Fleet Capacity & Population
-	max_capacity = SettlementManager.current_settlement.get_fleet_capacity()
+	# --- FIX START: Use SettlementManager as Source of Truth ---
+	# Old: max_capacity = SettlementManager.current_settlement.get_fleet_capacity()
+	max_capacity = SettlementManager.get_total_ship_capacity_squads()
+	# --- FIX END ---
+	
 	available_idle_peasants = SettlementManager.get_idle_peasants()
 	
 	# 3. Setup Bondi Slider

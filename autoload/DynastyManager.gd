@@ -1,4 +1,4 @@
-# res://autoload/DynastyManager.gd
+#DynastyManager.gd
 extends Node
 
 signal jarl_stats_updated(jarl_data: JarlData)
@@ -10,6 +10,9 @@ var loaded_legacy_upgrades: Array[LegacyUpgradeData] = []
 
 var active_year_modifiers: Dictionary = {}
 
+# --- SEASON STATE ---
+enum Season { SPRING, SUMMER, AUTUMN, WINTER }
+var current_season: Season = Season.SPRING
 
 # --- CONSTANTS ---
 const USER_DYNASTY_PATH = "user://savegame_dynasty.tres"
@@ -18,12 +21,98 @@ const DEFAULT_JARL_PATH = "res://data/characters/PlayerJarl.tres"
 func _ready() -> void:
 	_load_game_data()
 	EventBus.succession_choices_made.connect(_on_succession_choices_made)
+	EventBus.advance_season_requested.connect(advance_season)
+
+# --- SEASON LOGIC ---
+
+func advance_season() -> void:
+	match current_season:
+		Season.SPRING:
+			_transition_to_season(Season.SUMMER)
+		Season.SUMMER:
+			_transition_to_season(Season.AUTUMN)
+		Season.AUTUMN:
+			_transition_to_season(Season.WINTER)
+			start_winter_cycle() 
+		Season.WINTER:
+			end_winter_cycle_complete()
+
+func _transition_to_season(new_season: Season) -> void:
+	current_season = new_season
+	var names = ["Spring", "Summer", "Autumn", "Winter"]
+	var s_name = names[current_season]
+	
+	Loggie.msg("Season Advanced to: %s" % s_name).domain(LogDomains.DYNASTY).info()
+	EventBus.season_changed.emit(s_name)
+	
+	# --- ORCHESTRATION: The Game Loop ---
+	
+	# 1. Labor (Construction)
+	# Called explicitly here because EconomyManager is now decoupled
+	if SettlementManager.has_method("process_construction_labor"):
+		SettlementManager.process_construction_labor()
+	
+	# 2. Economy & Payout
+	var payout_report = EconomyManager.calculate_seasonal_payout(s_name)
+	
+	# 3. Winter Specifics (Hunger)
+	if s_name == "Winter":
+		if SettlementManager.has_method("process_warband_hunger"):
+			var warnings = SettlementManager.process_warband_hunger()
+			if not warnings.is_empty():
+				if not payout_report.has("_messages"): payout_report["_messages"] = []
+				payout_report["_messages"].append_array(warnings)
+	
+	# 4. Save State (Orchestrator Responsibility)
+	if SettlementManager.has_method("save_settlement"):
+		SettlementManager.save_settlement()
+	
+	# 5. Display Feedback
+	_display_seasonal_feedback(s_name, payout_report)
+
+func _display_seasonal_feedback(season_name: String, payout: Dictionary) -> void:
+	var center_screen = Vector2(960, 500)
+	var color = Color.WHITE
+	
+	if season_name == "Autumn": color = Color.ORANGE
+	elif season_name == "Winter": color = Color.CYAN
+	
+	EventBus.floating_text_requested.emit("%s Arrives" % season_name, center_screen, color)
+	
+	var offset_y = 40
+	for res in payout:
+		# Skip non-resource keys
+		if res == "_messages" or res == "population_growth": continue 
+		
+		var amount = payout[res]
+		if typeof(amount) == TYPE_INT and amount > 0:
+			var text = "+%d %s" % [amount, res.capitalize()]
+			var pos = center_screen + Vector2(0, offset_y)
+			
+			var res_color = Color.WHITE
+			if res == "gold": res_color = Color.GOLD
+			elif res == "food": res_color = Color.GREEN_YELLOW
+			elif res == "wood": res_color = Color.BURLYWOOD
+			
+			EventBus.floating_text_requested.emit(text, pos, res_color)
+			offset_y += 30
+			
+	if payout.has("_messages"):
+		for msg in payout["_messages"]:
+			var clean_msg = msg.replace("[color=green]", "").replace("[/color]", "")
+			var pos = center_screen + Vector2(0, offset_y)
+			EventBus.floating_text_requested.emit(clean_msg, pos, Color.LIGHT_BLUE)
+			offset_y += 30
+
+func get_current_season_name() -> String:
+	var names = ["Spring", "Summer", "Autumn", "Winter"]
+	return names[current_season]
+
+# --- EXISTING LOGIC ---
 
 func _load_game_data() -> void:
-	# 1. Legacy Upgrades
 	_load_legacy_upgrades_from_disk()
 	
-	# 2. Jarl Data
 	if ResourceLoader.exists(USER_DYNASTY_PATH):
 		current_jarl = load(USER_DYNASTY_PATH)
 		Loggie.msg("DynastyManager: Loaded Jarl from User Save.").domain(LogDomains.DYNASTY).info()
@@ -36,31 +125,28 @@ func _load_game_data() -> void:
 		current_jarl.display_name = "Fallback Jarl"
 		
 	jarl_stats_updated.emit(current_jarl)
+	
+	current_season = Season.SPRING
+	EventBus.season_changed.emit("Spring")
 
 func start_new_campaign() -> void:
 	Loggie.msg("DynastyManager: Starting NEW CAMPAIGN...").domain(LogDomains.DYNASTY).warn()
 	
-	# 1. Generate Fresh Data
 	current_jarl = DynastyGenerator.generate_random_dynasty()
 	current_jarl.resource_path = USER_DYNASTY_PATH 
 	
-	# 2. Reset Runtime State
 	RaidManager.reset_raid_state()
 	active_year_modifiers.clear()
-	
-	# 3. Reset Legacy Progress
 	_load_legacy_upgrades_from_disk() 
-	
-	# 4. Save immediately
 	_save_jarl_data()
+	
+	current_season = Season.SPRING
 	
 	jarl_stats_updated.emit(current_jarl)
 
 func _load_legacy_upgrades_from_disk() -> void:
 	loaded_legacy_upgrades.clear()
-	
-	if not DirAccess.dir_exists_absolute("res://data/legacy/"):
-		return
+	if not DirAccess.dir_exists_absolute("res://data/legacy/"): return
 
 	var dir = DirAccess.open("res://data/legacy/")
 	if dir:
@@ -78,8 +164,7 @@ func _load_legacy_upgrades_from_disk() -> void:
 			file_name = dir.get_next()
 
 func get_current_jarl() -> JarlData:
-	if not current_jarl:
-		_load_game_data()
+	if not current_jarl: _load_game_data()
 	return current_jarl
 
 # --- AUTHORITY & LEGACY LOGIC ---
@@ -197,51 +282,41 @@ func kill_heir_by_name(h_name: String, reason: String) -> void:
 # --- WINTER CYCLE ORCHESTRATION ---
 
 func start_winter_cycle() -> void:
-	"""
-	The entry point for the End Year process.
-	Calculates Hall Actions based on stats, then starts Winter.
-	"""
 	if not current_jarl: return
 	
-	# 1. Calculate Action Points for the Court
 	current_jarl.calculate_hall_actions()
 	Loggie.msg("Winter Cycle Started. Hall Actions: %d" % current_jarl.current_hall_actions).domain(LogDomains.DYNASTY).info()
 	
-	# 2. Reset Raid State
 	RaidManager.reset_raid_state()
-	
-	# 3. Hand off to WinterManager
 	WinterManager.start_winter_phase()
 
 func end_winter_cycle_complete() -> void:
-	"""
-	Called by WinterManager when the winter UI phase is finished.
-	Completes the year transition (Spring).
-	"""
 	if not current_jarl: return
 	
 	Loggie.msg("Winter Ended. Advancing to Spring...").domain(LogDomains.DYNASTY).info()
 	
-	# 1. Process Aging (Jarl + Heirs)
 	current_jarl.age_jarl(1)
 	_process_heir_simulation()
 	
-	# 2. Check Death
 	if _check_for_jarl_death(): return 
 	
-	# 3. Reset Actions (For the new year)
 	current_jarl.reset_authority()
 	active_year_modifiers.clear()
 	
-	# 4. Calculate Economy
-	var payout = EconomyManager.calculate_payout() 
-	SettlementManager.deposit_resources(payout)
+	# Calculate Economy
+	var payout_report = EconomyManager.calculate_seasonal_payout("Winter")
 	
-	# 5. Spawn Seasonal Recruits (Now via SettlementManager)
+	# Winter specific feedback
+	_display_seasonal_feedback("Winter", payout_report)
+	
 	SettlementManager.commit_seasonal_recruits()
+	if SettlementManager.has_method("save_settlement"):
+		SettlementManager.save_settlement()
 	
-	# 6. Save & Transition
 	_save_jarl_data()
+	
+	_transition_to_season(Season.SPRING)
+	
 	jarl_stats_updated.emit(current_jarl)
 	
 	Loggie.msg("Year ended. Jarl is now %d." % current_jarl.age).domain("DYNASTY").info()
@@ -388,8 +463,6 @@ func perform_hall_action(cost: int = 1) -> bool:
 func apply_year_modifier(key: String) -> void:
 	if key.is_empty(): return
 	active_year_modifiers[key] = true
-
-
 
 func _generate_oath_name() -> String:
 	var names = ["Red", "Bold", "Young", "Wild", "Sworn", "Lucky"]

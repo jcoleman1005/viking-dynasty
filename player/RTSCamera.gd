@@ -18,7 +18,7 @@ class_name RTSCamera
 @export_group("Zoom")
 @export var min_zoom: float = 0.5  # Far away
 @export var max_zoom: float = 2.0  # Close up
-@export var zoom_speed: float = 0.1
+@export var zoom_speed: float = 0.25 # Clean snapping for pixel art
 @export var zoom_smoothing: float = 10.0
 
 # --- Bounds Settings ---

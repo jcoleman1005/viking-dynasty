@@ -1,9 +1,12 @@
-# res://ui/StorefrontUI.gd
 extends Control
 
 const LegacyUpgradeData = preload("res://data/legacy/LegacyUpgradeData.gd")
-# --- NEW: Preload the tooltip script ---
 const RICH_TOOLTIP_SCRIPT = preload("res://ui/components/RichTooltipButton.gd")
+
+# --- UI LOGIC CONSTANTS (Winter Forecast) ---
+const WINTER_FOOD_PER_PEASANT: int = 1
+const WINTER_FOOD_PER_WARBAND: int = 5
+const WINTER_WOOD_BASE_COST: int = 20
 
 # --- Window References ---
 @onready var build_window: Control = %BuildWindow
@@ -15,7 +18,7 @@ const RICH_TOOLTIP_SCRIPT = preload("res://ui/components/RichTooltipButton.gd")
 @onready var recruit_list: Container = %RecruitList
 @onready var legacy_list: Container = %LegacyList
 
-# --- Legacy Stats (Inside Legacy Window) ---
+# --- Legacy Stats ---
 @onready var renown_label: Label = %RenownLabel
 @onready var authority_label: Label = %AuthorityLabel
 
@@ -28,9 +31,16 @@ const RICH_TOOLTIP_SCRIPT = preload("res://ui/components/RichTooltipButton.gd")
 @onready var btn_end_year: Button = %Btn_EndYear
 
 # --- Data ---
+## List of buildings available for construction.
 @export var available_buildings: Array[BuildingData] = []
+## List of units available for recruitment.
 @export var available_units: Array[UnitData] = []
+## If true, units are loaded from the file system automatically.
 @export var auto_load_units_from_directory: bool = true
+
+# --- State for Refunds ---
+# Relaxed type to generic Dictionary to accept data from Resources
+var pending_cost: Dictionary = {} 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -38,6 +48,11 @@ func _ready() -> void:
 	EventBus.purchase_successful.connect(_on_purchase_successful)
 	EventBus.purchase_failed.connect(_on_purchase_failed)
 	EventBus.settlement_loaded.connect(_on_settlement_loaded)
+	
+	# Listen for Selection Changes to toggle Build Button
+	EventBus.units_selected.connect(_on_units_selected)
+	# Listen for Season Changes
+	EventBus.season_changed.connect(_on_season_changed)
 	
 	DynastyManager.jarl_stats_updated.connect(_update_jarl_stats_display)
 	DynastyManager.year_ended.connect(_on_year_ended)
@@ -52,19 +67,152 @@ func _ready() -> void:
 	if DynastyManager.current_jarl:
 		_update_jarl_stats_display(DynastyManager.get_current_jarl())
 	
+	# Default State: Hide Build Button until Villager is selected
+	if btn_build: btn_build.hide()
+	
+	# Initialize the Season Button Text
+	_on_season_changed(DynastyManager.get_current_season_name())
+	
 	_refresh_all()
 
-# --- BUILD TAB (UPDATED) ---
+# --- CONTEXT SENSITIVE UI LOGIC ---
+
+func _on_units_selected(selected_units: Array) -> void:
+	var has_builder = false
+	for unit in selected_units:
+		if is_instance_valid(unit) and unit.is_in_group("civilians"):
+			has_builder = true
+			break
+	
+	if has_builder:
+		if btn_build and not btn_build.visible:
+			btn_build.show()
+	else:
+		if btn_build and btn_build.visible:
+			btn_build.hide()
+			if build_window.visible:
+				build_window.hide()
+				EventBus.camera_input_lock_requested.emit(false)
+
+# --- WINTER FORECAST LOGIC ---
+
+func _update_end_year_tooltip(season_name: String) -> void:
+	if not btn_end_year: return
+	
+	# 1. Determine "Next" Season for projection
+	var next_season_name = "Spring"
+	if season_name == "Spring": next_season_name = "Summer"
+	elif season_name == "Summer": next_season_name = "Autumn"
+	elif season_name == "Autumn": next_season_name = "Winter"
+	
+	var action_text = "Advance to %s" % next_season_name
+	var tooltip = "[b]%s[/b]" % action_text
+	
+	if SettlementManager.current_settlement:
+		var s = SettlementManager.current_settlement
+		
+		# --- A. INCOME PROJECTION ---
+		tooltip += "\n\n[b]Projected Gains (%s):[/b]" % next_season_name
+		
+		# Strict typing: Get projection from EconomyManager
+		var yearly: Dictionary[String, int] = EconomyManager.get_projected_income()
+		var has_gains = false
+		var has_potential_but_no_workers = false
+		
+		# Calculate Potential (to detect missing workers)
+		if yearly.is_empty() and not s.placed_buildings.is_empty():
+			has_potential_but_no_workers = true
+
+		for res in yearly:
+			var amount = 0
+			# Special Food Rule (Only Autumn)
+			if res == "food":
+				if next_season_name == "Autumn":
+					amount = yearly[res]
+				else:
+					amount = 0
+			else:
+				# Quarterly for others
+				amount = int(yearly[res] / 4.0)
+			
+			if amount > 0:
+				has_gains = true
+				
+				# --- CAP CHECK ---
+				var is_full = EconomyManager.is_storage_full(res)
+				var display_text = ""
+				
+				if is_full:
+					# Show red warning if capped
+					display_text = "[color=red]+%d (Capped!)[/color]" % amount
+				else:
+					# Normal Green
+					var color = "green"
+					if res == "gold": color = "yellow"
+					display_text = "[color=%s]+%d[/color]" % [color, amount]
+				
+				tooltip += "\n%s: %s" % [res.capitalize(), display_text]
+			else:
+				# Show 0s if it's not food growing season, to avoid confusion
+				if res != "food":
+					tooltip += "\n%s: +0 (Assign Workers!)" % res.capitalize()
+		
+		if not has_gains:
+			if has_potential_but_no_workers:
+				tooltip += "\n[color=red]No Income (Assign Workers to Buildings)[/color]"
+			else:
+				tooltip += "\n[color=gray]None (Build production buildings)[/color]"
+		
+		# --- B. WINTER CONSUMPTION WARNING ---
+		if next_season_name == "Winter":
+			# Get forecast from Single Source of Truth
+			var forecast = EconomyManager.get_winter_forecast()
+			var food_demand = forecast["food"]
+			var wood_demand = forecast["wood"]
+			
+			tooltip += "\n\n[b]Winter Consumption:[/b]"
+			
+			var current_food = s.treasury.get("food", 0)
+			var food_col = "orange"
+			if current_food < food_demand: food_col = "red"
+			tooltip += "\nFood: [color=%s]-%d[/color]" % [food_col, food_demand]
+			
+			var current_wood = s.treasury.get("wood", 0)
+			var wood_col = "orange"
+			if current_wood < wood_demand: wood_col = "red"
+			tooltip += "\nWood: [color=%s]-%d[/color]" % [wood_col, wood_demand]
+			
+			if current_food < food_demand:
+				tooltip += "\n\n[color=red][b]WARNING: Starvation Risk![/b][/color]"
+	
+	btn_end_year.tooltip_text = tooltip
+
+func _on_season_changed(season_name: String) -> void:
+	if not btn_end_year: return
+	
+	# Update Button Text
+	if season_name == "Autumn":
+		btn_end_year.text = "Winter"
+		btn_end_year.modulate = Color(0.8, 0.8, 1.0) 
+	elif season_name == "Winter":
+		btn_end_year.text = "Spring"
+		btn_end_year.modulate = Color.WHITE
+	else:
+		btn_end_year.text = "Next"
+		btn_end_year.modulate = Color.WHITE
+		
+	_update_end_year_tooltip(season_name)
+
+# --- BUILD TAB ---
+
 func _populate_build_grid() -> void:
 	for child in build_grid.get_children(): child.queue_free()
 	
 	for b_data in available_buildings:
 		var btn = Button.new()
 		
-		# --- FIX: Attach RichTooltip Logic ---
 		if RICH_TOOLTIP_SCRIPT:
 			btn.set_script(RICH_TOOLTIP_SCRIPT)
-		# -------------------------------------
 		
 		btn.custom_minimum_size = Vector2(110, 110) 
 		btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -78,9 +226,6 @@ func _populate_build_grid() -> void:
 		else:
 			btn.text = b_data.display_name 
 			
-		if b_data.icon: btn.text = b_data.display_name
-		
-		# --- FIX: Generate Detailed Tooltip ---
 		var details = ""
 		if b_data is EconomicBuildingData:
 			var eco = b_data as EconomicBuildingData
@@ -98,19 +243,33 @@ func _populate_build_grid() -> void:
 			b_data.display_name, 
 			b_data.description,
 			details,
+			# FIX: Pass Dictionary directly, now accepted
 			_format_cost(b_data.build_cost)
 		]
-		# --------------------------------------
 		
 		btn.pressed.connect(func():
-			if SettlementManager.attempt_purchase(b_data.build_cost):
+			if EconomyManager.attempt_purchase(b_data.build_cost):
+				pending_cost = b_data.build_cost.duplicate()
 				EventBus.building_ready_for_placement.emit(b_data)
 				_close_all_windows()
+				
+				var cursor = get_tree().get_first_node_in_group("building_preview_cursor")
+				if cursor and not cursor.placement_cancelled.is_connected(_on_placement_cancelled):
+					cursor.placement_cancelled.connect(_on_placement_cancelled, CONNECT_ONE_SHOT)
+					cursor.placement_completed.connect(_on_placement_completed, CONNECT_ONE_SHOT)
 		)
 		build_grid.add_child(btn)
 
-# ... (Rest of the file remains identical - _setup_dock_icons, _refresh_all, etc.) ...
-# To save space, I'm omitting the unchanged functions unless you need the full file dump.
+func _on_placement_cancelled() -> void:
+	if not pending_cost.is_empty():
+		EconomyManager.add_resources(pending_cost)
+		EventBus.purchase_successful.emit("Refunded")
+		pending_cost.clear()
+
+func _on_placement_completed() -> void:
+	pending_cost.clear()
+
+# --- DOCK & WINDOW LOGIC ---
 
 func _setup_dock_icons() -> void:
 	_set_btn_icon(btn_build, "res://ui/assets/icon_build.png")
@@ -135,7 +294,12 @@ func _setup_window_logic() -> void:
 	
 	btn_family.pressed.connect(func(): EventBus.dynasty_view_requested.emit())
 	btn_map.pressed.connect(func(): EventBus.scene_change_requested.emit(GameScenes.WORLD_MAP))
-	btn_end_year.pressed.connect(func(): EventBus.end_year_requested.emit())
+	
+	# Emit new Season signal instead of direct End Year
+	if btn_end_year.is_connected("pressed", func(): EventBus.end_year_requested.emit()):
+		btn_end_year.disconnect("pressed", func(): EventBus.end_year_requested.emit())
+		
+	btn_end_year.pressed.connect(func(): EventBus.advance_season_requested.emit())
 	
 	var windows = [build_window, recruit_window, legacy_window]
 	for win in windows:
@@ -162,6 +326,8 @@ func _refresh_all() -> void:
 	_populate_build_grid()
 	_update_garrison_display()
 	_populate_legacy_buttons()
+	# Update the Forecast using current season context
+	_update_end_year_tooltip(DynastyManager.get_current_season_name())
 	
 func _on_purchase_successful(_item: String) -> void:
 	_refresh_all()
@@ -225,8 +391,9 @@ func _update_garrison_display() -> void:
 				btn.icon = u_data.icon
 				btn.expand_icon = true
 				btn.custom_minimum_size = Vector2(0, 48)
+				
 			btn.pressed.connect(func():
-				if SettlementManager.attempt_purchase(u_data.spawn_cost):
+				if EconomyManager.attempt_purchase(u_data.spawn_cost):
 					SettlementManager.recruit_unit(u_data)
 					_refresh_all()
 			)
@@ -297,11 +464,7 @@ func _populate_legacy_buttons() -> void:
 
 func _load_building_data() -> void:
 	available_buildings.clear()
-	
-	# 1. Load Hand-Crafted Buildings
 	_scan_directory_for_buildings("res://data/buildings/")
-	
-	# 2. Load AI-Generated Buildings (The Naust is here!)
 	_scan_directory_for_buildings("res://data/buildings/generated/")
 
 func _scan_directory_for_buildings(path: String) -> void:
@@ -315,42 +478,9 @@ func _scan_directory_for_buildings(path: String) -> void:
 			if file.ends_with(".tres"):
 				var full_path = path + file
 				var data = load(full_path)
-				# Validate it is a building and player is allowed to build it
 				if data is BuildingData and data.is_player_buildable: 
 					available_buildings.append(data)
 			file = dir.get_next()
-
-func _scan_directory_recursive(path: String) -> void:
-	var dir = DirAccess.open(path)
-	if not dir:
-		printerr("StorefrontUI: Could not open directory ", path)
-		return
-
-	dir.list_dir_begin()
-	var file_name = dir.get_next()
-
-	while file_name != "":
-		# Skip navigation . and ..
-		if file_name == "." or file_name == "..":
-			file_name = dir.get_next()
-			continue
-
-		var full_path = path.path_join(file_name)
-
-		if dir.current_is_dir():
-			# RECURSION: If it's a folder (like "generated"), dive in!
-			_scan_directory_recursive(full_path)
-		else:
-			# If it's a resource file
-			if file_name.ends_with(".tres") or file_name.ends_with(".remap"):
-				# .remap checks are needed for exported projects, .tres for editor
-				var clean_path = full_path.replace(".remap", "")
-				
-				var data = load(clean_path)
-				if data is BuildingData and data.is_player_buildable:
-					available_buildings.append(data)
-		
-		file_name = dir.get_next()
 
 func _load_unit_data() -> void:
 	var dir = DirAccess.open("res://data/units/")
@@ -363,10 +493,12 @@ func _load_unit_data() -> void:
 				if data and "Player" in data.resource_path: available_units.append(data)
 			file = dir.get_next()
 
+# Relaxed typing to accept untyped Dictionaries from Resources
 func _format_cost(cost: Dictionary) -> String:
-	var s = []
+	var s: PackedStringArray = []
 	for k in cost:
 		var display_name = GameResources.get_display_name(k)
+		# Use default formatting to handle potentially non-int types gracefully, though likely ints
 		s.append("%d %s" % [cost[k], display_name])
 	return ", ".join(s)
 

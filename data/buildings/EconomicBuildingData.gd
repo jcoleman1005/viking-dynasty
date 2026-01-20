@@ -17,3 +17,6 @@ extends BuildingData
 # --- Capacity definition ---
 ## Maximum number of Peasants/Citizens this building can employ.
 @export var peasant_capacity: int = 5
+
+## NEW: How much this building adds to the global resource cap.
+@export var storage_capacity_bonus: int = 0

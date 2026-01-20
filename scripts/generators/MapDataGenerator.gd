@@ -1,8 +1,7 @@
-# res://scripts/generators/MapDataGenerator.gd
 class_name MapDataGenerator
 extends RefCounted
 
-# --- Historical Names List (Fallback) ---
+# --- Historical Names List ---
 const REGION_NAMES = [
 	"Geatland", "Viken", "Swealand", "Halogaland", 
 	"Denmark", "Kvenland", "Estland", "Courland", 
@@ -15,18 +14,18 @@ const LAYOUT_MONASTERY = "res://data/settlements/monastery_base.tres"
 const LAYOUT_VILLAGE = "res://data/settlements/economic_base.tres"
 const LAYOUT_FORTRESS = "res://data/settlements/fortress_layout.tres"
 
-# --- Generation Logic ---
+# --- Building Resources ---
 const B_FARM = "res://data/buildings/generated/Eco_Farm.tres"
 const B_MARKET = "res://data/buildings/generated/Eco_Market.tres"
 const B_RELIC = "res://data/buildings/generated/Eco_Reliquary.tres"
 const B_HALL = "res://data/buildings/GreatHall.tres"
 const B_WALL = "res://data/buildings/Bldg_Wall.tres"
 
-# --- MODIFIED: Added fixed_name parameter ---
+# --- Generation Logic ---
+
 static func generate_region_data(tier: int, fixed_name: String = "") -> WorldRegionData:
 	var data = WorldRegionData.new()
 	
-	# 1. Name Logic
 	if fixed_name != "":
 		data.display_name = fixed_name
 	else:
@@ -34,7 +33,7 @@ static func generate_region_data(tier: int, fixed_name: String = "") -> WorldReg
 		
 	data.region_type_tag = "Province"
 	
-	# 2. Difficulty Logic
+	# Difficulty Logic
 	var base_diff = 1.0 + (float(tier - 1) * 0.8)
 	var variance = randf_range(0.0, 0.5)
 	var final_difficulty = base_diff + variance
@@ -56,10 +55,8 @@ static func generate_region_data(tier: int, fixed_name: String = "") -> WorldReg
 	return data
 
 static func _generate_name() -> String:
-	# Removed Prefix logic. Just pick a valid historical name.
 	return REGION_NAMES.pick_random()
 
-# ... (Keep _generate_target_for_tier, _pick_type_by_tier, _generate_procedural_settlement, etc. exactly as they were) ...
 static func _generate_target_for_tier(region_name: String, tier: int, difficulty: float) -> RaidTargetData:
 	var target = RaidTargetData.new()
 	var type = _pick_type_by_tier(tier)
@@ -77,58 +74,123 @@ static func _pick_type_by_tier(tier: int) -> String:
 		2: return "Village" if roll < 0.5 else "Trading Post"
 		_: return "Fortress"
 
+# =========================================================
+# === PROCEDURAL SETTLEMENT GENERATION (GRID AWARE) ===
+# =========================================================
+
 static func _generate_procedural_settlement(type: String, difficulty: float) -> SettlementData:
 	var s = SettlementData.new()
+	s.map_seed = randi() 
 	s.placed_buildings.clear()
 	s.warbands.clear()
 	
-	# 1. Base Treasury (The "Storehouse" Loot)
+	# 1. Generate a consistent Seed for this map
+	# This ensures TerrainGenerator creates the same land every time we load this specific RaidTarget
+	
+	
+	# 2. Setup Economy (Loot)
 	match type:
-		"Farmstead":
-			s.treasury = {"food": 500, "wood": 100, "gold": 20}
-		"Monastery":
-			s.treasury = {"gold": 400, "food": 50, "wood": 0}
-		"Trading Post":
-			s.treasury = {"gold": 250, "wood": 250, "food": 100}
-		_:
-			s.treasury = {"gold": 100, "wood": 100, "food": 100}
+		"Farmstead": s.treasury = {"food": 500, "wood": 100, "gold": 20}
+		"Monastery": s.treasury = {"gold": 400, "food": 50, "wood": 0}
+		"Trading Post": s.treasury = {"gold": 250, "wood": 250, "food": 100}
+		_: s.treasury = {"gold": 100, "wood": 100, "food": 100}
 			
-	# 2. Place Buildings (The "Destruction" Loot)
-	# Always start with a Hall in the center (approx 30, 20 on a 60x40 grid)
-	s.placed_buildings.append({ "resource_path": B_HALL, "grid_position": Vector2i(30, 20) })
+	# 3. Smart Placement System
+	# We use a Dictionary to track occupied tiles: { Vector2i: true }
+	var occupied_grid = {}
 	
+	# Determine Layout Center (Safe Zone for Terrain)
+	# Assuming 60x60 grid, center is 30,30. We shift slightly up (20) for Isometric view balance.
+	var map_center = Vector2i(30, 20)
+	
+	# --- STEP A: Place Great Hall (Always Center) ---
+	var hall_path = B_HALL
+	if type == "Monastery": hall_path = B_RELIC # Monasteries have Reliquaries as their "Hall"
+	
+	_try_place_building(s, occupied_grid, hall_path, map_center)
+	
+	# --- STEP B: Place Support Buildings ---
 	var building_count = int(3 * difficulty)
-	var primary_bldg = B_FARM
+	var primary_path = B_FARM
+	if type == "Monastery": primary_path = B_RELIC
+	elif type == "Trading Post" or type == "Village": primary_path = B_MARKET
 	
-	if type == "Monastery": primary_bldg = B_RELIC
-	elif type == "Trading Post" or type == "Village": primary_bldg = B_MARKET
-	
-	# Scatter buildings around the hall
 	for i in range(building_count):
-		var offset_x = randi_range(-6, 6)
-		var offset_y = randi_range(-6, 6)
-		# Ensure we don't overwrite the hall (simple check)
-		if abs(offset_x) < 3 and abs(offset_y) < 3: continue
+		# Pick a random building type based on the theme
+		var path = primary_path
+		if randf() < 0.3: path = B_FARM # Mixed economy
 		
-		s.placed_buildings.append({
-			"resource_path": primary_bldg,
-			"grid_position": Vector2i(30 + offset_x, 20 + offset_y)
-		})
-		
-	# 3. Scale Garrison
+		# Find a valid spot spiraling out from center
+		# We try 10 times to find a spot for this specific building
+		for attempt in range(10):
+			var radius = randi_range(4, 12) # Keep within 4-12 tiles of center (Safe Land)
+			var angle = randf() * TAU
+			var offset = Vector2(cos(angle), sin(angle)) * radius
+			var target_pos = map_center + Vector2i(round(offset.x), round(offset.y))
+			
+			if _try_place_building(s, occupied_grid, path, target_pos):
+				break # Success, move to next building
+	
+	# --- STEP C: Garrison ---
 	_scale_garrison(s, difficulty)
 	
 	return s
 
+## Attempts to place a building at the target grid position.
+## Returns true if successful (space was empty), false if blocked.
+static func _try_place_building(settlement: SettlementData, occupied: Dictionary, res_path: String, pos: Vector2i) -> bool:
+	# 1. Load Data to check Size
+	if not ResourceLoader.exists(res_path): 
+		return false
+		
+	var b_data = load(res_path) as BuildingData
+	if not b_data: return false
+	
+	var width = b_data.grid_size.x
+	var height = b_data.grid_size.y
+	
+	# 2. Check Overlap
+	# We buffer by 1 extra tile to leave walking space between buildings
+	var buffer = 1 
+	
+	for x in range(-buffer, width + buffer):
+		for y in range(-buffer, height + buffer):
+			var check_pos = pos + Vector2i(x, y)
+			
+			# Check Bounds (Safety against map edge)
+			if check_pos.x < 2 or check_pos.x > 58 or check_pos.y < 2 or check_pos.y > 58:
+				return false
+				
+			# Check Occupancy
+			# Note: We strictly forbid overlap on the building footprint (0 to width),
+			# but the buffer is just a "preference". For this simple generator, 
+			# we treat the buffer as hard occupancy to prevent clutter.
+			if occupied.has(check_pos):
+				return false
+	
+	# 3. Place Logic
+	# If we got here, the space is clear.
+	settlement.placed_buildings.append({
+		"resource_path": res_path,
+		"grid_position": pos
+	})
+	
+	# 4. Mark Occupied
+	for x in range(width):
+		for y in range(height):
+			var mark_pos = pos + Vector2i(x, y)
+			occupied[mark_pos] = true
+			
+	return true
+
+# =========================================================
+# === HELPERS ===
+# =========================================================
+
 static func _clone_settlement_data(original: SettlementData) -> SettlementData:
 	var clone = SettlementData.new()
-	
-	# Deep copy safe properties
 	clone.treasury = original.treasury.duplicate()
-	
-	# --- FIX: Use clear() + append for strict arrays ---
-	# Do not assign [] directly, as Godot 4 treats that as a generic Array
-	# which conflicts with Array[Dictionary]
+	clone.map_seed = original.map_seed # Preserve seed!
 	
 	clone.placed_buildings.clear()
 	for b in original.placed_buildings:
@@ -137,11 +199,8 @@ static func _clone_settlement_data(original: SettlementData) -> SettlementData:
 	clone.pending_construction_buildings.clear()
 	for p in original.pending_construction_buildings:
 		clone.pending_construction_buildings.append(p.duplicate())
-	# ---------------------------------------------------
 		
-	# Warbands start empty for new clones (to be scaled later)
 	clone.warbands.clear() 
-	
 	clone.population_peasants = original.population_peasants
 	clone.population_thralls = original.population_thralls
 	
@@ -151,35 +210,30 @@ static func _scale_garrison(settlement: SettlementData, multiplier: float) -> vo
 	if not settlement: return
 	
 	if settlement.warbands.is_empty():
-		# 1. Define a Priority List of units to spawn
 		var possible_paths = [
-			"res://data/units/EnemyVikingRaider_Data.tres", # Dedicated Enemy (Best)
-			"res://data/units/Unit_Bondi.tres",             # Common Fallback
-			"res://data/units/Unit_Drengr.tres"             # Elite Fallback
+			"res://data/units/EnemyVikingRaider_Data.tres",
+			"res://data/units/Unit_Bondi.tres",
+			"res://data/units/Unit_Drengr.tres"
 		]
 		
 		var unit_data: UnitData = null
-		
-		# 2. Find the first valid file
 		for path in possible_paths:
 			if ResourceLoader.exists(path):
 				unit_data = load(path)
 				break
 		
-		# 3. Spawn or Error
 		if unit_data:
 			var count = int(3 * multiplier)
 			count = max(1, count) 
 			
 			for i in range(count):
-				# Create the data container
 				var wb = WarbandData.new(unit_data)
 				wb.custom_name = "Defenders %d" % (i + 1)
 				settlement.warbands.append(wb)
 				
-			print("MapGenerator: Assigned %d squads of %s to settlement." % [count, unit_data.display_name])
+			print("MapGenerator: Assigned %d squads of %s." % [count, unit_data.display_name])
 		else:
-			printerr("CRITICAL: MapDataGenerator could not find ANY unit files to spawn defenders!")
+			printerr("CRITICAL: MapDataGenerator could not find ANY unit files!")
 			return
 
 	var original_count = settlement.warbands.size()

@@ -12,6 +12,7 @@ var debug_formation_points: Array[Vector2] = []
 
 func _ready() -> void:
 	super._ready()
+	avoidance_priority = 10
 	add_to_group("squad_leaders")
 	add_to_group("player_units")
 	
@@ -73,8 +74,20 @@ func attach_thrall(thrall: ThrallUnit) -> void:
 
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
-	if velocity.length_squared() > 10.0:
+	
+	# --- FIX: STABILIZED ROTATION ---
+	# Only rotate if we are actively trying to move (via FSM)
+	# AND moving fast enough to have a clear direction.
+	var is_voluntarily_moving = false
+	if fsm:
+		is_voluntarily_moving = fsm.current_state == UnitAIConstants.State.MOVING or \
+								fsm.current_state == UnitAIConstants.State.FORMATION_MOVING
+	
+	# Increase threshold to 50.0 (approx 7 pixels/sec) to ignore micro-jitters
+	if is_voluntarily_moving and velocity.length_squared() > 50.0:
 		last_facing_direction = velocity.normalized()
+	# --------------------------------
+	
 	_update_formation_targets()
 	queue_redraw()
 

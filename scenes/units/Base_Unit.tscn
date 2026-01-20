@@ -1,8 +1,9 @@
-[gd_scene load_steps=5 format=3 uid="uid://bky4c6y8fkk8g"]
+[gd_scene load_steps=6 format=3 uid="uid://bky4c6y8fkk8g"]
 
 [ext_resource type="Script" uid="uid://djhncrlnql4ae" path="res://scripts/units/Base_Unit.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://pwi4bv5ch827" path="res://textures/placeholders/unit_placeholder.png" id="2_lfiq5"]
 [ext_resource type="Shape2D" uid="uid://bda7xb0judu2h" path="res://resources/separation_circle_shape.tres" id="3_b08re"]
+[ext_resource type="Script" uid="uid://di5v5jxy7ocug" path="res://scenes/units/StuckDetector.gd" id="4_ssn5w"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_n6s0a"]
 size = Vector2(72, 72)
@@ -26,3 +27,6 @@ monitorable = false
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="SeparationArea"]
 shape = ExtResource("3_b08re")
+
+[node name="StuckDetector" type="Node" parent="."]
+script = ExtResource("4_ssn5w")

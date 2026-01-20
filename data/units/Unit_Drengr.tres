@@ -1,14 +1,15 @@
-[gd_resource type="Resource" script_class="UnitData" load_steps=4 format=3 uid="uid://cg3bi0swsm6k4"]
+[gd_resource type="Resource" script_class="UnitData" load_steps=5 format=3 uid="uid://cg3bi0swsm6k4"]
 
 [ext_resource type="Texture2D" uid="uid://buwxqfjw7whon" path="res://textures/units/viking_raider_sprite.png" id="1_15vom"]
 [ext_resource type="PackedScene" uid="uid://de3nko6b1rqyg" path="res://scenes/components/AttackAI.tscn" id="1_ty6b3"]
+[ext_resource type="Texture2D" uid="uid://v1mpf4cy67hf" path="res://ui/assets/wax_seal.png" id="2_fuc7h"]
 [ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="2_ty6b3"]
 
 [resource]
 script = ExtResource("2_ty6b3")
 display_name = "Drengr"
 scene_path = "res://scenes/units/Drengr.tscn"
-icon = ExtResource("1_15vom")
+icon = ExtResource("2_fuc7h")
 spawn_cost = {
 "food": 0
 }

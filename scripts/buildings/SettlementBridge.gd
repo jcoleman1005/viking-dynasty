@@ -1,5 +1,8 @@
 # res://scripts/buildings/SettlementBridge.gd
-extends Node
+extends LevelBase
+
+const MAP_WIDTH = 60
+const MAP_HEIGHT = 60
 
 # --- Exported Resources ---
 @export var home_base_data: SettlementData
@@ -101,6 +104,7 @@ func _ready() -> void:
 		EventBus.move_command.connect(rts_controller._on_move_command)
 		EventBus.attack_command.connect(rts_controller._on_attack_command)
 		EventBus.interact_command.connect(rts_controller._on_interact_command)
+	
 		
 func _exit_tree() -> void:
 	SettlementManager.unregister_active_scene_nodes()
@@ -369,12 +373,41 @@ func _clear_all_buildings() -> void:
 	awaiting_placement = null
 
 func _initialize_settlement() -> void:
-	home_base_data = _create_default_settlement()
+	# 1. SETUP DATA
+	home_base_data = _create_default_settlement() 
 	SettlementManager.register_active_scene_nodes(building_container)
-	SettlementManager.load_settlement(home_base_data)
-	_spawn_placed_buildings()
+	SettlementManager.load_settlement(home_base_data) 
+	home_base_data = SettlementManager.current_settlement 
+
+	# 2. GENERATE TERRAIN
+	# We must generate the visual tiles before we can scan them for navigation.
+	if has_node("TileMapLayer"):
+		TerrainGenerator.generate_base_terrain(
+			$TileMapLayer,
+			MAP_WIDTH, # Or use a constant from a global config
+			MAP_HEIGHT,
+			home_base_data.map_seed 
+		)
+
+	# This calls the function in LevelBase.gd
+	# It handles the wait time AND the NavigationManager setup for you.
+	await setup_level_navigation(
+		$TileMapLayer, 
+		MAP_WIDTH, 
+		MAP_HEIGHT
+	)
 	
-	await get_tree().process_frame 
+	NavigationManager.initialize_grid_from_tilemap(
+		$TileMapLayer,
+		Vector2i(MAP_WIDTH, MAP_HEIGHT),
+		Vector2i(64, 32) # Your Tile Dimensions
+	)
+	
+	# 5. SPAWN BUILDINGS
+	# This will automatically punch holes in the Navigation Grid we just made.
+	_spawn_placed_buildings()
+	# 6. SPAWN UNITS
+	# Now they can safely request spawn points because the grid is ready.
 	_sync_villagers()
 	_spawn_player_garrison()
 	
@@ -403,6 +436,7 @@ func _spawn_placed_buildings() -> void:
 	
 	if unit_spawner: unit_spawner.clear_units()
 	
+
 func _spawn_single_building(entry: Dictionary, is_new: bool) -> BaseBuilding:
 	var res_path = entry["resource_path"]
 	var grid_pos = Vector2i(entry["grid_position"].x, entry["grid_position"].y)
@@ -412,11 +446,20 @@ func _spawn_single_building(entry: Dictionary, is_new: bool) -> BaseBuilding:
 
 	var new_building = building_data.scene_to_spawn.instantiate()
 	new_building.data = building_data
-	new_building.grid_coordinate = grid_pos 
+	new_building.grid_coordinate = grid_pos
 	
-	var cell = SettlementManager.get_active_grid_cell_size()
-	var center_offset = (Vector2(building_data.grid_size) * cell) / 2.0
-	new_building.global_position = (Vector2(grid_pos) * cell) + center_offset
+	# --- FIX: ISOMETRIC POSITIONING ---
+	# 1. Calculate the logical center of the building on the grid
+	var center_grid_x = float(grid_pos.x) + (float(building_data.grid_size.x) / 2.0)
+	var center_grid_y = float(grid_pos.y) + (float(building_data.grid_size.y) / 2.0)
+	
+	# 2. Convert Grid Center -> World Pixels (Isometric Formula)
+	#    Formula matches SettlementManager.place_building logic
+	var final_x = (center_grid_x - center_grid_y) * SettlementManager.TILE_HALF_SIZE.x
+	var final_y = (center_grid_x + center_grid_y) * SettlementManager.TILE_HALF_SIZE.y
+	
+	new_building.global_position = Vector2(final_x, final_y)
+	# ----------------------------------
 	
 	building_container.add_child(new_building)
 	
@@ -426,7 +469,7 @@ func _spawn_single_building(entry: Dictionary, is_new: bool) -> BaseBuilding:
 		new_building.set_state(BaseBuilding.BuildingState.ACTIVE)
 		
 	return new_building
-	
+
 func _create_default_settlement() -> SettlementData:
 	var settlement = SettlementData.new()
 	settlement.treasury = { "gold": start_gold, "wood": start_wood, "food": start_food, "stone": start_stone }
@@ -457,7 +500,9 @@ func _on_building_placement_cancelled(_building_data: BuildingData) -> void: pas
 
 func _on_building_placement_completed() -> void:
 	if awaiting_placement and SettlementManager.current_settlement:
-		var grid_pos = Vector2i(building_cursor.global_position / SettlementManager.CELL_SIZE_PX)
+		# --- FIX: Use Manager API for Coordinate Conversion ---
+		# This handles the Isometric Math automatically
+		var grid_pos = SettlementManager.world_to_grid(building_cursor.global_position)
 		SettlementManager.place_building(awaiting_placement, grid_pos, true)
 	awaiting_placement = null
 
