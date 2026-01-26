@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="SeasonalCardResource" load_steps=2 format=3 uid="uid://du2gsa2xinlrm"]
+
+[ext_resource type="Script" uid="uid://cni5gdnpbb1v2" path="res://data/resources/SeasonalCardResource.gd" id="1_r2a8h"]
+
+[resource]
+script = ExtResource("1_r2a8h")
+metadata/_custom_type_script = "uid://cni5gdnpbb1v2"

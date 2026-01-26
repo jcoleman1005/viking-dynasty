@@ -8,7 +8,7 @@ var current_jarl: JarlData
 var minimum_inherited_legitimacy: int = 0
 var loaded_legacy_upgrades: Array[LegacyUpgradeData] = []
 
-var active_year_modifiers: Dictionary = {}
+var active_year_modifiers: Dictionary[String, Variant] = {}
 
 # --- SEASON STATE ---
 enum Season { SPRING, SUMMER, AUTUMN, WINTER }
@@ -36,6 +36,7 @@ func advance_season() -> void:
 			start_winter_cycle() 
 		Season.WINTER:
 			end_winter_cycle_complete()
+	
 
 func _transition_to_season(new_season: Season) -> void:
 	current_season = new_season
@@ -461,8 +462,15 @@ func perform_hall_action(cost: int = 1) -> bool:
 	return true
 
 func apply_year_modifier(key: String) -> void:
-	if key.is_empty(): return
+	if key == "":
+		return
+		
 	active_year_modifiers[key] = true
+	
+	Loggie.msg("Year Modifier Applied").domain(LogDomains.GAMEPLAY).data("key", key).info()
+	
+	# Optional: Emit update if UI needs to show icons elsewhere
+	#EventBus.modifiers_updated.emit(active_year_modifiers)
 
 func _generate_oath_name() -> String:
 	var names = ["Red", "Bold", "Young", "Wild", "Sworn", "Lucky"]

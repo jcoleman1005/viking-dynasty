@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=3 uid="uid://c53k15q2w8c1a"]
+[gd_scene load_steps=24 format=3 uid="uid://c53k15q2w8c1a"]
 
 [ext_resource type="PackedScene" uid="uid://dqh0xu88khxct" path="res://ui/EndOfYear_Popup.tscn" id="2_5el12"]
 [ext_resource type="Script" uid="uid://dafjxa85ci2rx" path="res://scripts/buildings/SettlementBridge.gd" id="2_c48a7"]
@@ -14,8 +14,10 @@
 [ext_resource type="PackedScene" uid="uid://1ly65bng2mep" path="res://ui/SelectionBox.tscn" id="8_cpd76"]
 [ext_resource type="Script" uid="uid://bxbqkyp1d6750" path="res://player/RTSCamera.gd" id="8_ggwng"]
 [ext_resource type="PackedScene" uid="uid://bmrx7k05of21t" path="res://scenes/world/Resource_Wood.tscn" id="9_vmd61"]
+[ext_resource type="PackedScene" uid="uid://whql45nph2u8" path="res://data/resources/SpringCouncilUi.tscn" id="10_fmib8"]
 [ext_resource type="PackedScene" uid="uid://dhobag8h7m8ip" path="res://ui/components/BuildingInspector.tscn" id="11_fmib8"]
 [ext_resource type="Texture2D" uid="uid://cjlq3soj1j4jj" path="res://assets/Kenney/medievalRTS_spritesheet.png" id="11_vlppw"]
+[ext_resource type="PackedScene" uid="uid://yhp66mygk5ve" path="res://ui/seasonal/SummerRaidUi.tscn" id="13_c7ve4"]
 [ext_resource type="PackedScene" uid="uid://cyp3t7gbdg0wx" path="res://player/RTSController.tscn" id="18_fmib8"]
 [ext_resource type="PackedScene" uid="uid://bvsuoj3irdvcs" path="res://player/RTSInputHandler.tscn" id="19_c7ve4"]
 [ext_resource type="PackedScene" uid="uid://io325box3m4m" path="res://scenes/world/UnitSpawner.tscn" id="20_fmib8"]
@@ -220,6 +222,10 @@ offset_top = -120.0
 offset_right = 120.5
 grow_horizontal = 2
 grow_vertical = 0
+
+[node name="SpringCouncil_UI" parent="UI" instance=ExtResource("10_fmib8")]
+
+[node name="SummerRaid_UI" parent="UI" instance=ExtResource("13_c7ve4")]
 
 [node name="BuildingCursor" type="Node2D" parent="."]
 script = ExtResource("6_cursor")

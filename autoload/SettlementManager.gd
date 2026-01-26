@@ -29,7 +29,7 @@ var pending_seasonal_recruits: Array[UnitData] = []
 func _ready() -> void:
 	EventBus.player_unit_died.connect(_on_player_unit_died)
 	Loggie.msg("SettlementManager Initialized").domain(LogDomains.GAMEPLAY).info()
-
+	
 # --- TERRAIN & COORDINATE VALIDATION (NEW) ---
 
 ## CHECKS TERRAIN DATA ONLY (Ignores Buildings/Units)
@@ -358,7 +358,7 @@ func load_settlement(data: SettlementData) -> void:
 	active_map_data = current_settlement
 	if active_building_container: reconstruct_buildings_from_data()
 	EventBus.settlement_loaded.emit(current_settlement)
-
+	
 func _load_fallback_data(data: SettlementData) -> void:
 	if data:
 		current_settlement = data.duplicate(true)

@@ -188,7 +188,8 @@ func is_domain_enabled(domain_name : String) -> bool:
 	if domains.has(domain_name) and domains[domain_name].enabled == true:
 		return true
 	
-	return false
+	return true
+
 
 ## Returns an available channel with the given ID (if one exists), otherwise null.
 func get_channel(channel_id : String) -> LoggieMsgChannel:

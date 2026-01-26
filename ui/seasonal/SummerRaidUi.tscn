@@ -1,0 +1,112 @@
+[gd_scene load_steps=3 format=3 uid="uid://yhp66mygk5ve"]
+
+[ext_resource type="Script" uid="uid://cms0bgtoscos8" path="res://ui/seasonal/SummerRaid_UI.gd" id="1_w5s6b"]
+[ext_resource type="Resource" uid="uid://dpe2acwvvxthl" path="res://data/units/Unit_Bondi.tres" id="2_jkcto"]
+
+[node name="SummerRaid_UI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+script = ExtResource("1_w5s6b")
+raider_template = ExtResource("2_jkcto")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MainContainer" type="HBoxContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 188.0
+grow_horizontal = 2
+
+[node name="LeftPanel" type="PanelContainer" parent="Panel/MainContainer"]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/MainContainer/LeftPanel"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/MainContainer/LeftPanel/VBoxContainer"]
+layout_mode = 2
+text = "Summer Raid Preparation"
+
+[node name="HSeparator2" type="HSeparator" parent="Panel/MainContainer/LeftPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="TotalPopLabel" type="Label" parent="Panel/MainContainer/LeftPanel/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Total Villagers: 0"
+
+[node name="HSeparator" type="HSeparator" parent="Panel/MainContainer/LeftPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="FarmCountLabel" type="Label" parent="Panel/MainContainer/LeftPanel/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Farming: 0"
+
+[node name="AllocationSlider" type="HSlider" parent="Panel/MainContainer/LeftPanel/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="RaidCountLabel" type="Label" parent="Panel/MainContainer/LeftPanel/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Raiding: 0"
+
+[node name="RightPanel" type="PanelContainer" parent="Panel/MainContainer"]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/MainContainer/RightPanel"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/MainContainer/RightPanel/VBoxContainer"]
+layout_mode = 2
+text = "Raid Forecast"
+
+[node name="HSeparator3" type="HSeparator" parent="Panel/MainContainer/RightPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="TargetLabel" type="Label" parent="Panel/MainContainer/RightPanel/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Target: [Region Name]"
+
+[node name="LootLabel" type="Label" parent="Panel/MainContainer/RightPanel/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Estimated Plunder: 0 Gold"
+
+[node name="RiskLabel" type="Label" parent="Panel/MainContainer/RightPanel/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Threat Level: None
+"
+
+[node name="BottomBar" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -30.0
+offset_top = -50.0
+offset_right = 30.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="LaunchButton" type="Button" parent="BottomBar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Launch Raid"
