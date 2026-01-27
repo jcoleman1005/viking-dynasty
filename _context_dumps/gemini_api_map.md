@@ -1,6 +1,6 @@
 # PROJECT API MAP
 > **CONTEXT INSTRUCTION:** This file contains the STRUCTURE of the project. Implementation details are hidden to save space. Use this to understand available classes, functions, and signals.
-> Generated: 2026-01-26T08:30:42
+> Generated: 2026-01-27T11:55:04
 
 ## 🏛️ GLOBAL ARCHITECTURE
 ### Autoloads (Singletons)
@@ -482,6 +482,15 @@
 ### `res:///autoload/WinterManager.tscn`
 - **WinterManager** [Node]
 
+### `res:///data/resources/SpringCouncilUI.tscn`
+- **SpringCouncil_UI** [Control]
+- **Background** [ColorRect]
+- **Title** [Label]
+- **CardContainer** [HBoxContainer]
+- **ConfirmPanel** [Control]
+  - **ConfirmLabel** [Label]
+  - **CommitButton** [Button]
+
 ### `res:///player/RTSController.tscn`
 - **RTSController** [Node]
 
@@ -544,6 +553,8 @@
   - **RestartButton** [Button]
   - **PauseButton** [Button]
   - **BuildingInspector** []
+  - **SpringCouncil_UI** []
+  - **SummerRaid_UI** []
 - **BuildingCursor** [Node2D]
 - **BuildingContainer** [Node2D]
 - **GridVisualizer** []
@@ -838,12 +849,14 @@
 - **BottomDeck** [PanelContainer]
   - **HBoxContainer** [HBoxContainer]
     - **Btn_Build** [Button]
+    - **Btn_Allocation** [Button]
     - **Btn_Recruit** [Button]
     - **Btn_LegacyUpgrades** [Button]
     - **Btn_Family** [Button]
     - **VSeparator** [VSeparator]
     - **Btn_Map** [Button]
     - **Btn_EndYear** [Button]
+    - **DateLabel** [Label]
 
 ### `res:///ui/Succession_Crisis_UI.tscn`
 - **Succession_Crisis_UI** [CanvasLayer]
@@ -1019,6 +1032,76 @@
       - **Btn_Minus** [Button]
       - **CountLabel** [Label]
       - **Btn_Plus** [Button]
+
+### `res:///ui/seasonal/SeasonalCardUi.tscn`
+- **SeasonalCard_UI** [Control]
+- **PanelContainer** [PanelContainer]
+  - **VBoxContainer** [VBoxContainer]
+    - **TitleLabel** [Label]
+    - **DescriptionLabel** [Label]
+    - **IconRect** [TextureRect]
+    - **CostContainer** [HBoxContainer]
+      - **APCostLabel** [Label]
+      - **GoldCostLabel** [Label]
+    - **SelectButton** [Button]
+
+### `res:///ui/seasonal/SummerAllocation_Ui.tscn`
+- **SummerAllocation_UI** [Control]
+- **Panel** [Panel]
+  - **MarginContainer** [MarginContainer]
+    - **VBoxContainer** [VBoxContainer]
+      - **Header** [HBoxContainer]
+        - **Title** [Label]
+        - **PopulationLabel** [Label]
+        - **UnassignedLabel** [Label]
+      - **CardContainer** [HBoxContainer]
+        - **ConstructionCard** [PanelContainer]
+          - **Margin** [MarginContainer]
+            - **VBox** [VBoxContainer]
+              - **Title** [Label]
+              - **HSeparator** [HSeparator]
+              - **HBox** [HBoxContainer]
+                - **ValConstruction** [Label]
+                - **Label** [Label]
+              - **ConstructionSlider** [HSlider]
+              - **Spacer** [Control]
+              - **LabelProj** [Label]
+              - **Proj_Construction** [Label]
+        - **FarmingCard** [PanelContainer]
+          - **Margin** [MarginContainer]
+            - **VBox** [VBoxContainer]
+              - **Title** [Label]
+              - **HSeparator** [HSeparator]
+              - **HBox** [HBoxContainer]
+                - **ValFarming** [Label]
+                - **Label** [Label]
+              - **FarmingSlider** [HSlider]
+              - **Spacer** [Control]
+              - **LabelProj** [Label]
+              - **Proj_Food** [Label]
+        - **RaidingCard** [PanelContainer]
+          - **Margin** [MarginContainer]
+            - **VBox** [VBoxContainer]
+              - **Title** [Label]
+              - **HSeparator** [HSeparator]
+              - **HBox** [HBoxContainer]
+                - **ValRaiding** [Label]
+                - **Label** [Label]
+              - **RaidingSlider** [HSlider]
+              - **Spacer** [Control]
+              - **LabelProj** [Label]
+              - **Proj_Raid** [Label]
+              - **CommitRaidBtn** [Button]
+      - **WinterForecastPanel** [PanelContainer]
+        - **Margin** [MarginContainer]
+          - **HBox** [HBoxContainer]
+            - **Lbl_Stockpile** [Label]
+            - **VSeparator** [VSeparator]
+            - **Lbl_WinterDemand** [Label]
+            - **VSeparator2** [VSeparator]
+            - **Lbl_WinterNet** [Label]
+      - **Footer** [HBoxContainer]
+        - **ConfirmBtn** [Button]
 
 ## 📜 SCRIPT API (Logic Structures)
 
@@ -5457,7 +5540,8 @@ signal year_ended
 var current_jarl: JarlData
 var minimum_inherited_legitimacy: int = 0
 var loaded_legacy_upgrades: Array[LegacyUpgradeData] = []
-var active_year_modifiers: Dictionary = {}
+var active_year_modifiers: Dictionary[String, Variant] = {}
+var current_year: int = 867 
 enum Season { SPRING, SUMMER, AUTUMN, WINTER }
 var current_season: Season = Season.SPRING
 const USER_DYNASTY_PATH = "user://savegame_dynasty.tres"
@@ -5667,6 +5751,7 @@ signal building_selected(building: BaseBuilding)
 signal building_deselected()
 signal request_worker_assignment(target_building: BaseBuilding)
 signal request_worker_removal(target_building: BaseBuilding)
+signal floating_text_requested(text: String, world_position: Vector2, color: Color)
 signal pathfinding_grid_updated(grid_position: Vector2i)
 signal treasury_updated(new_treasury: Dictionary)
 signal purchase_successful(item_name: String)
@@ -5695,7 +5780,13 @@ signal camera_input_lock_requested(is_locked: bool)
 signal end_year_requested() # Legacy (Keep for now to avoid crashes)
 signal advance_season_requested() # NEW: The primary time driver
 signal season_changed(season_name: String) # NEW: Feedback for UI/World
-signal floating_text_requested(text: String, world_position: Vector2, color: Color)
+signal seasonal_card_hovered(card: SeasonalCardResource)
+signal seasonal_card_selected(card: SeasonalCardResource)
+signal ui_request_phase_commit(phase_name: String, data: Dictionary)
+signal ui_open_seasonal_screen(screen_type: String) # "spring", "summer", "autumn", "winter"
+signal raid_launched(target_region: Resource, force_size: int)
+signal autumn_resolved()
+signal winter_ended()
 ```
 
 ### `res:///autoload/EventManager.gd`
@@ -6430,6 +6521,27 @@ extends Resource
 @export var outcome: String = "neutral" 
 @export var victory_grade: String = "Standard"
 @export var renown_earned: int = 0
+```
+
+### `res:///data/resources/SeasonalCardResource.gd`
+```gdscript
+class_name SeasonalCardResource
+extends Resource
+enum SeasonType { SPRING, WINTER }
+@export_group("Classification")
+@export var season: SeasonType = SeasonType.SPRING
+@export_group("Display")
+@export var title: String = "Card Title"
+@export_multiline var description: String = "Effect description..."
+@export var icon: Texture2D
+@export_group("Costs (Winter)")
+@export var cost_ap: int = 0
+@export var cost_gold: int = 0
+@export var cost_food: int = 0
+@export_group("Effects (Spring/Strategic)")
+@export var modifier_key: String = ""
+@export var grant_gold: int = 0
+@export var grant_renown: int = 0
 ```
 
 ### `res:///data/settlements/SettlementData.gd`
@@ -9514,6 +9626,8 @@ const WINTER_WOOD_BASE_COST: int = 20
 @onready var btn_family: Button = %Btn_Family
 @onready var btn_map: Button = %Btn_Map
 @onready var btn_end_year: Button = %Btn_EndYear
+@onready var btn_allocation: Button = %Btn_Allocation
+@onready var date_label: Label = %DateLabel
 @export var available_buildings: Array[BuildingData] = []
 @export var available_units: Array[UnitData] = []
 @export var auto_load_units_from_directory: bool = true
@@ -9541,6 +9655,8 @@ func _update_end_year_tooltip(season_name: String) -> void:
 			var current_wood = s.treasury.get("wood", 0)
 			var wood_col = "orange"
 func _on_season_changed(season_name: String) -> void:
+func _update_date_display(season_name: String) -> void:
+		var year = DynastyManager.current_year
 func _populate_build_grid() -> void:
 		var btn = Button.new()
 		var details = ""
@@ -9783,6 +9899,191 @@ func _ready() -> void:
 func setup(idx: int, p_count: int, p_cap: int, t_count: int, t_cap: int, _pending: bool = false) -> void:
 func _on_mod(type: String, amount: int) -> void:
 func _update_labels(p_val: int, t_val: int) -> void:
+```
+
+### `res:///ui/seasonal/SeasonalCard_UI.gd`
+```gdscript
+class_name SeasonalCard_UI
+extends Control
+signal card_clicked(card_data: SeasonalCardResource)
+@onready var title_label: Label = %TitleLabel
+@onready var description_label: Label = %DescriptionLabel
+@onready var icon_rect: TextureRect = %IconRect
+@onready var cost_container: HBoxContainer = %CostContainer
+@onready var ap_cost_label: Label = %APCostLabel # Inside CostContainer
+@onready var gold_cost_label: Label = %GoldCostLabel
+@onready var select_button: Button = %SelectButton
+var _card_data: SeasonalCardResource
+func _ready() -> void:
+func setup(card: SeasonalCardResource, can_afford: bool = true) -> void:
+func _on_button_pressed() -> void:
+```
+
+### `res:///ui/seasonal/SpringCouncil_UI.gd`
+```gdscript
+class_name SpringCouncil_UI
+extends Control
+@export_group("Deck Configuration")
+@export var available_advisor_cards: Array[SeasonalCardResource] = []
+@export var hand_size: int = 3
+@export_group("References")
+@export var card_prefab: PackedScene 
+@export var card_container: HBoxContainer
+var _selected_card: SeasonalCardResource
+var _has_activated: bool = false
+func _ready() -> void:
+func _on_season_changed(season_name: String) -> void:
+func _activate_spring_ui() -> void:
+func _on_diagnostic_timeout() -> void:
+func _deal_cards() -> void:
+	var spring_deck: Array[SeasonalCardResource] = []
+		var card = available_advisor_cards[i]
+	var cards_to_spawn = min(hand_size, spring_deck.size())
+		var card_instance = card_prefab.instantiate() as SeasonalCard_UI
+func _on_card_selected(card: SeasonalCardResource) -> void:
+func _commit_choice() -> void:
+```
+
+### `res:///ui/seasonal/SummerAllocation_UI.gd`
+```gdscript
+extends Control
+@export_group("Configuration")
+@export var raider_template: UnitData ## The UnitData resource used for drafted peasants (e.g., Bondi).
+@export var estimated_farm_yield: int = 100 ## Estimated yield per farmer if dynamic calculation fails.
+const SEASONS_PER_YEAR: int = 4
+const SEASON_NAMES: Array[String] = ["Spring", "Summer", "Autumn", "Winter"]
+const WINTER_FOOD_PER_PEASANT: int = 1 # Used for live projection adjustments
+@onready var label_population: Label = %PopulationLabel
+@onready var label_unassigned: Label = %UnassignedLabel
+@onready var slider_construction: HSlider = %ConstructionSlider
+@onready var slider_farming: HSlider = %FarmingSlider
+@onready var slider_raiding: HSlider = %RaidingSlider
+@onready var val_construction: Label = %ValConstruction
+@onready var val_farming: Label = %ValFarming
+@onready var val_raiding: Label = %ValRaiding
+@onready var proj_construction: Label = %Proj_Construction
+@onready var proj_food: Label = %Proj_Food
+@onready var proj_raid: Label = %Proj_Raid
+@onready var lbl_current_stockpile: Label = %Lbl_Stockpile
+@onready var lbl_winter_demand: Label = %Lbl_WinterDemand
+@onready var lbl_winter_net: Label = %Lbl_WinterNet
+@onready var btn_commit_raid: Button = %CommitRaidBtn
+@onready var btn_confirm: Button = %ConfirmBtn
+var total_peasants: int = 0
+var total_construction_slots: int = 0
+var total_farming_slots: int = 0
+var allocations: Dictionary = {
+var _updating_sliders: bool = false
+func _ready() -> void:
+func _connect_signals() -> void:
+func _on_season_changed(season_name: String) -> void:
+func toggle_interface(interface_name: String = "") -> void:
+func _initialize_data() -> void:
+	var pending = SettlementManager.current_settlement.pending_construction_buildings
+			var b_data = load(entry["resource_path"]) as BuildingData
+				var cap = b_data.base_labor_capacity if "base_labor_capacity" in b_data else 3
+	var placed = SettlementManager.current_settlement.placed_buildings
+			var b_data = load(entry["resource_path"])
+		var initial_farm = min(int(total_farming_slots * 0.8), total_peasants)
+		var remaining = total_peasants - initial_farm
+		var initial_const = min(total_construction_slots, remaining)
+func _sync_sliders_to_data() -> void:
+func _on_allocation_changed(_value: float) -> void:
+func _recalculate_slider_limits() -> void:
+	var used = allocations.construction + allocations.farming + allocations.raiding
+	var free_pop = total_peasants - used
+	var potential_const = allocations.construction + free_pop
+	var final_max_const = min(potential_const, total_construction_slots)
+	var potential_farm = allocations.farming + free_pop
+	var final_max_farm = min(potential_farm, total_farming_slots)
+	var potential_raid = allocations.raiding + free_pop
+func _update_ui() -> void:
+	var used = allocations.construction + allocations.farming + allocations.raiding
+	var unassigned = total_peasants - used
+func _update_projections() -> void:
+	var pending = SettlementManager.current_settlement.pending_construction_buildings
+		var report = ""
+		var assignments = _get_builder_distribution(allocations.construction)
+			var entry = pending[i]
+			var b_data = load(entry["resource_path"]) as BuildingData
+			var assigned_workers = assignments[i]
+			var b_name = b_data.display_name if b_data else "Building"
+				var total_effort = 100 
+				var remaining_effort = max(0, total_effort - entry.get("progress", 0))
+				var seasonal_progress = assigned_workers * EconomyManager.BUILDER_EFFICIENCY
+					var turns_needed = ceil(float(remaining_effort) / float(seasonal_progress))
+					var date_str = _calculate_completion_date(int(turns_needed))
+		var yields = _calculate_projected_yields(allocations.farming)
+		var food_amt = yields.get("food", 0)
+		var other_text = ""
+	var men = allocations.raiding
+	var bands = ceil(men / 10.0)
+func _update_winter_forecast() -> void:
+	var forecast = EconomyManager.get_winter_forecast()
+	var base_food_demand = forecast.get("food", 0)
+	var wood_demand = forecast.get("wood", 0)
+	var raiders = allocations.raiding
+	var adjusted_food_demand = max(0, base_food_demand - (raiders * WINTER_FOOD_PER_PEASANT))
+	var treasury = SettlementManager.current_settlement.treasury
+	var current_food = treasury.get("food", 0)
+	var current_wood = treasury.get("wood", 0)
+	var estimated_yields = _calculate_projected_yields(allocations.farming)
+	var projected_food_yield = estimated_yields.get("food", 0)
+	var projected_wood_yield = estimated_yields.get("wood", 0)
+	var total_food_available = current_food + projected_food_yield
+	var total_wood_available = current_wood + projected_wood_yield
+	var food_net = total_food_available - adjusted_food_demand
+	var wood_net = total_wood_available - wood_demand
+	var status_text = ""
+	var color = Color.GREEN
+func _calculate_completion_date(turns_needed: int) -> String:
+	var current_year = 867
+	var current_season_idx = DynastyManager.current_season # Enum (0-3)
+	var absolute_current_turn = (current_year * SEASONS_PER_YEAR) + current_season_idx
+	var absolute_completion_turn = absolute_current_turn + turns_needed
+	var future_year = floor(absolute_completion_turn / float(SEASONS_PER_YEAR))
+	var future_season_idx = absolute_completion_turn % SEASONS_PER_YEAR
+	var season_name = "Unknown"
+func _on_confirm_pressed() -> void:
+func _get_builder_distribution(total_pool: int) -> Array:
+	var results = []
+	var remaining = total_pool
+	var pending = SettlementManager.current_settlement.pending_construction_buildings
+		var b_data = load(entry["resource_path"]) as BuildingData
+		var capacity = 3
+		var to_assign = min(remaining, capacity)
+func _apply_builder_distribution(total_pool: int) -> void:
+	var assignments = _get_builder_distribution(total_pool)
+	var pending = SettlementManager.current_settlement.pending_construction_buildings
+func _calculate_projected_yields(total_farmers: int) -> Dictionary:
+	var yields = {}
+	var remaining = total_farmers
+	var placed = SettlementManager.current_settlement.placed_buildings
+	var food_buildings = []
+	var other_buildings = []
+			var b_data = load(entry["resource_path"])
+				var item = {"data": b_data, "cap": b_data.peasant_capacity}
+		var assign = min(remaining, item.cap)
+		var out = assign * item.data.base_passive_output
+		var type = item.data.resource_type
+		var assign = min(remaining, item.cap)
+		var out = assign * item.data.base_passive_output
+		var type = item.data.resource_type
+func _distribute_farmers(total_farmers: int) -> void:
+	var remaining = total_farmers
+	var placed = SettlementManager.current_settlement.placed_buildings
+	var food_buildings = []
+	var other_buildings = []
+		var b_data = load(entry["resource_path"])
+		var to_assign = min(remaining, item.cap)
+		var to_assign = min(remaining, item.cap)
+func _on_commit_raid_pressed() -> void:
+	var raid_count = allocations.raiding
+func _convert_villagers_to_raiders(count: int) -> void:
+	var new_warbands: Array[WarbandData] = []
+	var remaining = count
+		var batch_size = min(remaining, 10)
+		var bondi_band = WarbandData.new(raider_template)
 ```
 
 ## 💾 GAME DATA (Resources)
@@ -10331,6 +10632,26 @@ renown_cost = 150
 authority_cost = 1
 effect_key = "UPG_LONGSHIPS"
 prerequisite_key = ""
+```
+
+### `res:///data/resources/Card_Focus_Raid.tres`
+```text
+[gd_resource type="Resource" script_class="SeasonalCardResource" load_steps=2 format=3 uid="uid://du2gsa2xinlrm"]
+[ext_resource type="Script" uid="uid://cni5gdnpbb1v2" path="res://data/resources/SeasonalCardResource.gd" id="1_r2a8h"]
+[resource]
+script = ExtResource("1_r2a8h")
+title = "Viking Focus"
+description = "Boost Authority for multiple raids. Increases amount of time needed to complete buildings"
+```
+
+### `res:///data/resources/Card_Spring_Expansion.tres`
+```text
+[gd_resource type="Resource" script_class="SeasonalCardResource" load_steps=2 format=3 uid="uid://dt38bx8jkvrno"]
+[ext_resource type="Script" uid="uid://cni5gdnpbb1v2" path="res://data/resources/SeasonalCardResource.gd" id="1_sbleo"]
+[resource]
+script = ExtResource("1_sbleo")
+title = "Construction Focus"
+description = "Boosts building construction time. Decreases authority for raids."
 ```
 
 ### `res:///data/settlements/economic_base.tres`
@@ -11716,3 +12037,10 @@ size = Vector2(10, 2)
   - depends on: `res://data/legacy/LegacyUpgradeData.gd`
   - depends on: `res://ui/components/RichTooltipButton.gd`
   - depends on: `res://data/units/`
+- `res:///ui/seasonal/SummerAllocation_UI.gd`
+  - depends on: `resource_path`
+  - depends on: `resource_path`
+  - depends on: `resource_path`
+  - depends on: `resource_path`
+  - depends on: `resource_path`
+  - depends on: `resource_path`

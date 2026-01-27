@@ -4,4 +4,6 @@
 
 [resource]
 script = ExtResource("1_r2a8h")
+title = "Viking Focus"
+description = "Boost Authority for multiple raids. Increases amount of time needed to complete buildings"
 metadata/_custom_type_script = "uid://cni5gdnpbb1v2"

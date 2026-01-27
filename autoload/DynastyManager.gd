@@ -9,7 +9,7 @@ var minimum_inherited_legitimacy: int = 0
 var loaded_legacy_upgrades: Array[LegacyUpgradeData] = []
 
 var active_year_modifiers: Dictionary[String, Variant] = {}
-
+var current_year: int = 867 
 # --- SEASON STATE ---
 enum Season { SPRING, SUMMER, AUTUMN, WINTER }
 var current_season: Season = Season.SPRING
@@ -108,6 +108,7 @@ func _display_seasonal_feedback(season_name: String, payout: Dictionary) -> void
 func get_current_season_name() -> String:
 	var names = ["Spring", "Summer", "Autumn", "Winter"]
 	return names[current_season]
+
 
 # --- EXISTING LOGIC ---
 
@@ -297,6 +298,7 @@ func end_winter_cycle_complete() -> void:
 	Loggie.msg("Winter Ended. Advancing to Spring...").domain(LogDomains.DYNASTY).info()
 	
 	current_jarl.age_jarl(1)
+	current_year += 1 
 	_process_heir_simulation()
 	
 	if _check_for_jarl_death(): return 
@@ -323,6 +325,9 @@ func end_winter_cycle_complete() -> void:
 	Loggie.msg("Year ended. Jarl is now %d." % current_jarl.age).domain("DYNASTY").info()
 	year_ended.emit()
 	EventBus.scene_change_requested.emit("settlement")
+
+func get_current_year(): 
+	return current_year
 
 # --- JARL SIMULATION & DEATH ---
 

@@ -14,7 +14,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_e18hn")
-available_advisor_cards = Array[ExtResource("2_tcs5p")]([ExtResource("3_oe6n3"), ExtResource("4_oe6n3")])
+available_advisor_cards = Array[ExtResource("2_tcs5p")]([ExtResource("3_oe6n3"), ExtResource("4_oe6n3"), ExtResource("3_oe6n3")])
 card_prefab = ExtResource("4_28ufv")
 card_container = NodePath("CardContainer")
 
@@ -41,15 +41,12 @@ text = "Spring Council"
 [node name="CardContainer" type="HBoxContainer" parent="."]
 custom_minimum_size = Vector2(200, 300)
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
+anchors_preset = 14
 anchor_top = 0.5
-anchor_right = 0.5
+anchor_right = 1.0
 anchor_bottom = 0.5
-offset_left = -20.0
-offset_top = -20.0
-offset_right = 20.0
-offset_bottom = 20.0
+offset_top = -150.0
+offset_bottom = 150.0
 grow_horizontal = 2
 grow_vertical = 2
 
