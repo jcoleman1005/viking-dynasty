@@ -136,6 +136,11 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "Build"
 
+[node name="Btn_Allocation" type="Button" parent="BottomDeck/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Allocation"
+
 [node name="Btn_Recruit" type="Button" parent="BottomDeck/HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -163,3 +168,8 @@ text = "World Map"
 unique_name_in_owner = true
 layout_mode = 2
 text = "End Year"
+
+[node name="DateLabel" type="Label" parent="BottomDeck/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Spring, 867 AD"

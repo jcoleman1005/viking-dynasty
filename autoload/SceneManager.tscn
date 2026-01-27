@@ -4,7 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://c53k15q2w8c1a" path="res://scenes/levels/SettlementBridge.tscn" id="2_8867w"]
 [ext_resource type="PackedScene" uid="uid://ba41qxyi1a30u" path="res://scenes/world_map/MacroMap.tscn" id="3_6h36k"]
 [ext_resource type="PackedScene" uid="uid://d3ifdm0rvd5kl" path="res://scenes/missions/RaidMission.tscn" id="4_qjcdh"]
-[ext_resource type="PackedScene" uid="uid://djea2y8mt5xoj" path="res://ui/WinterCourt_UI.tscn" id="5_8867w"]
+[ext_resource type="PackedScene" path="res://ui/seasonal/WinterCourt_UI.tscn" id="5_8867w"]
 
 [node name="SceneManager" type="Node"]
 script = ExtResource("1_q2yxj")

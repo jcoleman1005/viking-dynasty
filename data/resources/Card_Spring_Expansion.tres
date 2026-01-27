@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="SeasonalCardResource" load_steps=2 format=3 uid="uid://dt38bx8jkvrno"]
+
+[ext_resource type="Script" uid="uid://cni5gdnpbb1v2" path="res://data/resources/SeasonalCardResource.gd" id="1_sbleo"]
+
+[resource]
+script = ExtResource("1_sbleo")
+title = "Construction Focus"
+description = "Boosts building construction time. Decreases authority for raids."
+metadata/_custom_type_script = "uid://cni5gdnpbb1v2"

@@ -105,7 +105,6 @@ func _ready() -> void:
 		EventBus.attack_command.connect(rts_controller._on_attack_command)
 		EventBus.interact_command.connect(rts_controller._on_interact_command)
 	
-		
 func _exit_tree() -> void:
 	SettlementManager.unregister_active_scene_nodes()
 

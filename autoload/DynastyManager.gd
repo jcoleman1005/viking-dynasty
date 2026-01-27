@@ -8,8 +8,8 @@ var current_jarl: JarlData
 var minimum_inherited_legitimacy: int = 0
 var loaded_legacy_upgrades: Array[LegacyUpgradeData] = []
 
-var active_year_modifiers: Dictionary = {}
-
+var active_year_modifiers: Dictionary[String, Variant] = {}
+var current_year: int = 867 
 # --- SEASON STATE ---
 enum Season { SPRING, SUMMER, AUTUMN, WINTER }
 var current_season: Season = Season.SPRING
@@ -36,6 +36,7 @@ func advance_season() -> void:
 			start_winter_cycle() 
 		Season.WINTER:
 			end_winter_cycle_complete()
+	
 
 func _transition_to_season(new_season: Season) -> void:
 	current_season = new_season
@@ -107,6 +108,7 @@ func _display_seasonal_feedback(season_name: String, payout: Dictionary) -> void
 func get_current_season_name() -> String:
 	var names = ["Spring", "Summer", "Autumn", "Winter"]
 	return names[current_season]
+
 
 # --- EXISTING LOGIC ---
 
@@ -296,6 +298,7 @@ func end_winter_cycle_complete() -> void:
 	Loggie.msg("Winter Ended. Advancing to Spring...").domain(LogDomains.DYNASTY).info()
 	
 	current_jarl.age_jarl(1)
+	current_year += 1 
 	_process_heir_simulation()
 	
 	if _check_for_jarl_death(): return 
@@ -322,6 +325,9 @@ func end_winter_cycle_complete() -> void:
 	Loggie.msg("Year ended. Jarl is now %d." % current_jarl.age).domain("DYNASTY").info()
 	year_ended.emit()
 	EventBus.scene_change_requested.emit("settlement")
+
+func get_current_year(): 
+	return current_year
 
 # --- JARL SIMULATION & DEATH ---
 
@@ -461,8 +467,15 @@ func perform_hall_action(cost: int = 1) -> bool:
 	return true
 
 func apply_year_modifier(key: String) -> void:
-	if key.is_empty(): return
+	if key == "":
+		return
+		
 	active_year_modifiers[key] = true
+	
+	Loggie.msg("Year Modifier Applied").domain(LogDomains.GAMEPLAY).data("key", key).info()
+	
+	# Optional: Emit update if UI needs to show icons elsewhere
+	#EventBus.modifiers_updated.emit(active_year_modifiers)
 
 func _generate_oath_name() -> String:
 	var names = ["Red", "Bold", "Young", "Wild", "Sworn", "Lucky"]

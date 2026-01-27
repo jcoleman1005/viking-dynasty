@@ -1,0 +1,99 @@
+[gd_scene load_steps=6 format=3 uid="uid://dnndecgdkcffm"]
+
+[ext_resource type="Script" uid="uid://gvajp31vuy31" path="res://ui/seasonal/WinterCourtUI.gd" id="1_cn012"]
+[ext_resource type="Script" uid="uid://cni5gdnpbb1v2" path="res://data/resources/SeasonalCardResource.gd" id="2_agvwj"]
+[ext_resource type="PackedScene" uid="uid://d0px2w8n5r1lv" path="res://ui/seasonal/SeasonalCardUi.tscn" id="2_xo3mn"]
+[ext_resource type="Resource" uid="uid://dg10eqygin8xg" path="res://data/resources/Winter Cards/Card_Winter_Feast.tres" id="3_q5t2d"]
+[ext_resource type="Resource" uid="uid://dcppndmvmf63e" path="res://data/resources/Winter Cards/Card_Winter_Recruit.tres" id="4_4y4fd"]
+
+[node name="WinterCourt_UI" type="Control" node_paths=PackedStringArray("card_container")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_cn012")
+available_court_cards = Array[ExtResource("2_agvwj")]([ExtResource("3_q5t2d"), ExtResource("4_4y4fd")])
+card_prefab = ExtResource("2_xo3mn")
+card_container = NodePath("CardContainer")
+
+[node name="Background" type="Panel" parent="."]
+self_modulate = Color(0.16, 0.22, 0.3, 0.95)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TopHUD" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -250.0
+offset_top = 40.0
+offset_right = 250.0
+offset_bottom = 90.0
+grow_horizontal = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="TopHUD"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_right = 20
+
+[node name="HBox" type="HBoxContainer" parent="TopHUD/MarginContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="TitleLabel" type="Label" parent="TopHUD/MarginContainer/HBox"]
+layout_mode = 2
+text = "❄️ WINTER COURT ❄️"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="TopHUD/MarginContainer/HBox"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="APLabel" type="Label" parent="TopHUD/MarginContainer/HBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.8, 1, 1)
+text = "Hall Actions: 3 / 5"
+
+[node name="CardContainer" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 40
+alignment = 1
+
+[node name="BottomPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -260.0
+offset_top = -100.0
+offset_right = -40.0
+offset_bottom = -40.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="EndYearButton" type="Button" parent="BottomPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "The Ice Melts (End Year)"

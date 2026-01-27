@@ -29,6 +29,8 @@ const WINTER_WOOD_BASE_COST: int = 20
 @onready var btn_family: Button = %Btn_Family
 @onready var btn_map: Button = %Btn_Map
 @onready var btn_end_year: Button = %Btn_EndYear
+@onready var btn_allocation: Button = %Btn_Allocation
+@onready var date_label: Label = %DateLabel
 
 # --- Data ---
 ## List of buildings available for construction.
@@ -70,9 +72,13 @@ func _ready() -> void:
 	# Default State: Hide Build Button until Villager is selected
 	if btn_build: btn_build.hide()
 	
+	# Allocation Button Logic
+	if btn_allocation:
+		btn_allocation.pressed.connect(func(): get_tree().call_group("seasonal_ui", "toggle_interface", "allocation"))
+	
 	# Initialize the Season Button Text
 	_on_season_changed(DynastyManager.get_current_season_name())
-	
+	_update_date_display(DynastyManager.get_current_season_name())
 	_refresh_all()
 
 # --- CONTEXT SENSITIVE UI LOGIC ---
@@ -188,22 +194,35 @@ func _update_end_year_tooltip(season_name: String) -> void:
 	btn_end_year.tooltip_text = tooltip
 
 func _on_season_changed(season_name: String) -> void:
+	# Update Allocation Button Visibility
+	if btn_allocation:
+		btn_allocation.visible = (season_name == "Summer")
+
 	if not btn_end_year: return
 	
 	# Update Button Text
+	if season_name == "Summer": 
+		btn_end_year.text = "Autumn"
+		btn_end_year.modulate = Color.WHITE
 	if season_name == "Autumn":
 		btn_end_year.text = "Winter"
-		btn_end_year.modulate = Color(0.8, 0.8, 1.0) 
+		btn_end_year.modulate = Color(0.8, 0.8, 1.0)
 	elif season_name == "Winter":
 		btn_end_year.text = "Spring"
 		btn_end_year.modulate = Color.WHITE
 	else:
-		btn_end_year.text = "Next"
+		btn_end_year.text = "Next Season"
 		btn_end_year.modulate = Color.WHITE
 		
 	_update_end_year_tooltip(season_name)
-
+	_update_date_display(season_name)
+	_update_end_year_tooltip(season_name)
 # --- BUILD TAB ---
+
+func _update_date_display(season_name: String) -> void:
+	if date_label:
+		var year = DynastyManager.current_year
+		date_label.text = "%s, %d AD" % [season_name, year]
 
 func _populate_build_grid() -> void:
 	for child in build_grid.get_children(): child.queue_free()
@@ -278,6 +297,7 @@ func _setup_dock_icons() -> void:
 	_set_btn_icon(btn_family, "res://ui/assets/icon_family.png")
 	_set_btn_icon(btn_map, "res://ui/assets/icon_map.png")
 	_set_btn_icon(btn_end_year, "res://ui/assets/icon_time.png")
+	# Allocation button relies on text for now, or generic icon if available
 
 func _set_btn_icon(btn: Button, path: String) -> void:
 	if btn and ResourceLoader.exists(path):
