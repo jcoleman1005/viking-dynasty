@@ -12,6 +12,8 @@ extends Resource
 @export var renown_cost: int = 25
 ## If true, "Force" removes a random unit instead of costing Renown (Banishment).
 @export var bans_unit: bool = false
+## How many Action Points (Hall Actions) this costs the Jarl.
+@export var action_point_cost: int = 1
 
 @export_group("Consequences")
 ## The key for the modifier applied next year if ignored (e.g., "angry_bondi").

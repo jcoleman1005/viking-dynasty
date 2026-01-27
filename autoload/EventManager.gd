@@ -6,6 +6,8 @@ extends Node
 
 var event_ui: EventUI
 var available_events: Array[EventData] = []
+# CHANGE: Added specific storage for disputes as they are a distinct Resource type from EventData
+var available_disputes: Array[DisputeEventData] = []
 var fired_unique_events: Array[String] = []
 
 const TRAIT_RIVAL = preload("res://data/traits/Trait_Rival.tres")
@@ -31,6 +33,7 @@ func initialize_event_system() -> void:
 
 func _load_events_from_disk() -> void:
 	available_events.clear()
+	available_disputes.clear() # CHANGE: Clear dispute list on reload
 	var dir = DirAccess.open("res://data/events/")
 	if dir:
 		dir.list_dir_begin()
@@ -38,13 +41,17 @@ func _load_events_from_disk() -> void:
 		while file_name != "":
 			if file_name.ends_with(".tres"):
 				var path = "res://data/events/" + file_name
-				var event_data = load(path) as EventData 
-				if event_data:
-					available_events.append(event_data)
+				# CHANGE: Load as generic Resource first to check type, solving the casting error
+				var resource = load(path)
+				if resource is EventData:
+					available_events.append(resource)
+				elif resource is DisputeEventData:
+					available_disputes.append(resource)
 				else:
-					Loggie.msg("Failed to load event resource from %s." % path).domain("EVENT").warn()
+					Loggie.msg("Loaded resource is neither EventData nor DisputeEventData: %s" % path).domain("EVENT").warn()
 			file_name = dir.get_next()
-	Loggie.msg("Loaded %d events from disk." % available_events.size()).domain("EVENT").info()
+	# CHANGE: Updated log to reflect both types
+	Loggie.msg("Loaded %d events and %d disputes from disk." % [available_events.size(), available_disputes.size()]).domain("EVENT").info()
 
 func _on_year_ended() -> void:
 	Loggie.msg("Checking event triggers for end of year...").domain("EVENT").info()
@@ -86,6 +93,13 @@ func _trigger_event(event_data: EventData) -> void:
 	# For this refactor, we just ensure this file exists and works.
 	Loggie.msg("Event Triggered: %s" % event_data.event_id).domain("EVENT").info()
 	# Example: EventBus.event_triggered.emit(event_data)
+
+## Returns a list of disputes available for the current winter.
+func get_available_disputes() -> Array[DisputeEventData]:
+	# CHANGE: Return the distinct array populated during load
+	if available_disputes.is_empty():
+		return [draw_dispute_card()]
+	return available_disputes
 
 func draw_dispute_card() -> DisputeEventData:
 	var card = DisputeEventData.new()

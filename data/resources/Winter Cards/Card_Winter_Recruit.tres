@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="SeasonalCardResource" load_steps=2 format=3 uid="uid://dcppndmvmf63e"]
+
+[ext_resource type="Script" uid="uid://cni5gdnpbb1v2" path="res://data/resources/SeasonalCardResource.gd" id="1_vhnwa"]
+
+[resource]
+script = ExtResource("1_vhnwa")
+season = 1
+title = "Invite Vikings"
+description = "You spread the word that you plan to go viking in the summer. 
+- 100 renown
++ 3 AP
+- Chance of a warband joining your this summer
+- Must collect at least 150 byt the end of Autumn"
+cost_ap = 2
+metadata/_custom_type_script = "uid://cni5gdnpbb1v2"
