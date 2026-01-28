@@ -7,7 +7,7 @@ signal building_state_changed(building: BaseBuilding, new_state: int)
 signal build_request_made(building_data: BuildingData, grid_position: Vector2i)
 signal building_ready_for_placement(building_data: BuildingData)
 signal building_placement_cancelled(building_data: BuildingData)
-
+signal building_construction_completed(building_entry: Dictionary)
 # --- Inspector Signals ---
 signal building_selected(building: BaseBuilding)
 signal building_deselected()
@@ -23,7 +23,7 @@ signal treasury_updated(new_treasury: Dictionary)
 signal purchase_successful(item_name: String)
 signal purchase_failed(reason: String)
 signal raid_loot_secured(type: String, amount: int)
-
+signal population_changed()
 # --- Navigation Signals ---
 signal scene_change_requested(scene_key: String)
 signal world_map_opened()
@@ -85,3 +85,4 @@ signal raid_launched(target_region: Resource, force_size: int)
 signal autumn_resolved()
 ## Emitted when Winter ends and the year rolls over.
 signal winter_ended()
+signal raid_committed(count: int)

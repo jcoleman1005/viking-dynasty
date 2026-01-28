@@ -7,6 +7,8 @@ const BASE_GATHERING_CAPACITY: int = 2
 
 # --- POPULATION CONSTANTS ---
 const FOOD_PER_PERSON_PER_YEAR: int = 10
+const WINTER_FOOD_BASE: int = 1 # NEW: Unifies WinterManager's legacy math
+const WINTER_WARBAND_FOOD: int = 5 # NEW: Unifies WinterManager's legacy math
 const BASE_GROWTH_RATE: float = 0.02 
 const STARVATION_PENALTY: float = -0.15 
 const UNREST_PER_LANDLESS_PEASANT: int = 2
@@ -105,21 +107,80 @@ func get_projected_income() -> Dictionary[String, int]:
 
 ## NEW: Centralized Winter Forecast Logic
 ## Returns anticipated demand for Food and Wood based on population.
-func get_winter_forecast() -> Dictionary[String, int]:
+## UPDATED: Uses authoritative Winter constants to prevent UI drift
+func get_winter_forecast() -> Dictionary:
 	var settlement = SettlementManager.current_settlement
-	if not settlement: return {"food": 0, "wood": 0}
+	if not settlement: return {GameResources.FOOD: 0, GameResources.WOOD: 0}
 	
+	# Calculate based on Normal severity (1.0)
+	return calculate_winter_consumption_costs(1.0)
+
+## NEW: Authoritative math for winter demand
+func calculate_winter_consumption_costs(severity_mult: float) -> Dictionary:
+	var settlement = SettlementManager.current_settlement
+	if not settlement: return {GameResources.FOOD: 0, GameResources.WOOD: 0}
+
 	var pop = settlement.population_peasants
-	# Aligning with _calculate_demographics logic (FOOD_PER_PERSON_PER_YEAR)
-	var food_demand = pop * FOOD_PER_PERSON_PER_YEAR
-	var wood_demand = WINTER_WOOD_DEMAND
+	var warbands = settlement.warbands.size()
+	
+	var base_food = (pop * WINTER_FOOD_BASE) + (warbands * WINTER_WARBAND_FOOD)
+	var base_wood = WINTER_WOOD_DEMAND
 	
 	return {
-		"food": food_demand,
-		"wood": wood_demand
+		GameResources.FOOD: int(base_food * severity_mult),
+		GameResources.WOOD: int(base_wood * severity_mult)
 	}
 
 # --- TURN LOGIC (SEASONAL) ---
+
+func apply_winter_consumption(costs: Dictionary) -> void:
+	var settlement = SettlementManager.current_settlement
+	if not settlement: return
+
+	var f_cost = costs.get(GameResources.FOOD, 0)
+	var w_cost = costs.get(GameResources.WOOD, 0)
+	
+	# Mutate Treasury
+	var current_food = settlement.treasury.get(GameResources.FOOD, 0)
+	var current_wood = settlement.treasury.get(GameResources.WOOD, 0)
+	
+	settlement.treasury[GameResources.FOOD] = max(0, current_food - f_cost)
+	settlement.treasury[GameResources.WOOD] = max(0, current_wood - w_cost)
+	
+	Loggie.msg("EconomyManager: Applied Winter Consumption: %s" % costs).domain(LogDomains.ECONOMY).info()
+	EventBus.treasury_updated.emit(settlement.treasury)
+
+## NEW: Centralized Crisis Resolution (Sacrifices)
+func resolve_winter_crisis_sacrifice(sacrifice_type: String, deficit_data: Dictionary) -> void:
+	var settlement = SettlementManager.current_settlement
+	if not settlement: return
+	
+	match sacrifice_type:
+		"starve_peasants":
+			# Use constant string for deficit key for safety
+			var deaths = max(1, int(deficit_data.get("food_deficit", 0) / 5))
+			settlement.population_peasants = max(0, settlement.population_peasants - deaths)
+			Loggie.msg("EconomyManager: Sacrificed %d Peasants" % deaths).domain(LogDomains.ECONOMY).warn()
+			
+		"disband_warband":
+			if not settlement.warbands.is_empty(): 
+				settlement.warbands.pop_back()
+				Loggie.msg("EconomyManager: Disbanded Warband").domain(LogDomains.ECONOMY).warn()
+				
+		"burn_ships":
+			settlement.fleet_readiness = 0.0
+			Loggie.msg("EconomyManager: Burned Ships").domain(LogDomains.ECONOMY).warn()
+	
+	EventBus.treasury_updated.emit(settlement.treasury)
+
+## NEW: Professional Recruitment (Population Neutral)
+func recruit_professional_unit(unit_cost: Dictionary, unit_data: Variant) -> bool:
+	if attempt_purchase(unit_cost):
+		var settlement = SettlementManager.current_settlement
+		settlement.warbands.append(unit_data)
+		Loggie.msg("EconomyManager: Recruited Professional Unit").domain(LogDomains.ECONOMY).info()
+		return true
+	return false
 
 func calculate_seasonal_payout(season_name: String) -> Dictionary:
 	var settlement = SettlementManager.current_settlement
@@ -315,3 +376,266 @@ func apply_raid_damages() -> Dictionary:
 
 func add_resources(resources: Dictionary) -> void:
 	deposit_resources(resources)
+	
+# --- ALLOCATION & PROJECTION API (NEW) ---
+
+## NEW: Authoritative Peasant Drafting (Conservation of Mass)
+## NEW: Authoritative Peasant Drafting (Conservation of Mass)
+## Converts Peasants -> Warbands. Handles state mutation and RaidManager integration.
+func draft_peasants_to_raiders(count: int, template: UnitData) -> void:
+	var settlement = SettlementManager.current_settlement
+	if not settlement: return
+	if count <= 0: return
+
+	# 1. Deduct Peasants (State Mutation)
+	var available = settlement.population_peasants
+	var actual_draft = min(available, count)
+	
+	if actual_draft < count:
+		Loggie.msg("EconomyManager: Draft request reduced (Req: %d, Avail: %d)" % [count, available]).domain(LogDomains.ECONOMY).warn()
+	
+	settlement.population_peasants -= actual_draft
+	
+	# 2. Create Warbands
+	var new_warbands: Array[WarbandData] = []
+	var remaining = actual_draft
+	
+	while remaining > 0:
+		var batch_size = min(remaining, 10) # 10 men per band default
+		
+		# Calls _init(template), which sets name, max manpower, and loyalty automatically
+		var bondi_band = WarbandData.new(template)
+		
+		# Overwrite only what differs from default (Peasant bands are rarely full strength initially)
+		bondi_band.is_bondi = true
+		bondi_band.current_manpower = batch_size 
+		# Note: We keep the auto-generated name from _init unless you specifically want "The Bondi"
+		bondi_band.custom_name = "The Bondi" 
+		
+		new_warbands.append(bondi_band)
+		remaining -= batch_size
+		
+	if RaidManager:
+		RaidManager.outbound_raid_force.append_array(new_warbands)
+		
+	Loggie.msg("EconomyManager: Drafted %d Peasants into %d Warbands" % [actual_draft, new_warbands.size()]).domain(LogDomains.ECONOMY).info()
+	EventBus.population_changed.emit()
+
+## NEW: Authoritative Yield Projection
+## Returns estimated output based on a theoretical distribution of labor
+func calculate_hypothetical_yields(farmer_count: int) -> Dictionary:
+	var settlement = SettlementManager.current_settlement
+	if not settlement: return {}
+	
+	var yields = {}
+	var remaining_farmers = farmer_count
+	var placed = settlement.placed_buildings
+	
+	# Sort buildings to prioritize Food (Logic moved from UI)
+	var food_buildings = []
+	var other_buildings = []
+	
+	for entry in placed:
+		if "resource_path" in entry:
+			var b_data = load(entry["resource_path"])
+			if b_data is EconomicBuildingData:
+				var item = {"data": b_data, "cap": b_data.peasant_capacity}
+				if b_data.resource_type == GameResources.FOOD:
+					food_buildings.append(item)
+				else:
+					other_buildings.append(item)
+	
+	# Calculate Output
+	var total_assigned = 0
+	
+	# 1. Fill Food First
+	for item in food_buildings:
+		if remaining_farmers <= 0: break
+		var assign = min(remaining_farmers, item.cap)
+		var out = assign * item.data.base_passive_output
+		
+		var type = item.data.resource_type
+		yields[type] = yields.get(type, 0) + out
+		remaining_farmers -= assign
+		total_assigned += assign
+		
+	# 2. Fill Others
+	for item in other_buildings:
+		if remaining_farmers <= 0: break
+		var assign = min(remaining_farmers, item.cap)
+		var out = assign * item.data.base_passive_output
+		var type = item.data.resource_type
+		yields[type] = yields.get(type, 0) + out
+		remaining_farmers -= assign
+		total_assigned += assign
+		
+	return yields
+	
+	
+# ... [Previous Phase 2 Code] ...
+
+# --- RAID OUTCOME API (NEW) ---
+
+## NEW: Centralized Raid Return Logic
+## Handles Wergild, XP, Disbanding, Jarl Stats, and Treasury updates.
+## Returns a 'Receipt' dictionary for the UI to display.
+func process_raid_return(result: RaidResultData) -> Dictionary:
+	var settlement = SettlementManager.current_settlement
+	if not settlement: return {}
+
+	var outcome = result.outcome
+	var grade = result.victory_grade
+	
+	# 1. Calculate Wergild (Death Taxes)
+	var raw_gold = result.loot.get(GameResources.GOLD, 0)
+	var total_wergild = 0
+	var dead_count = 0
+	
+	for u_data in result.casualties:
+		if u_data:
+			total_wergild += u_data.wergild_cost
+			dead_count += 1
+			
+	var net_gold = max(0, raw_gold - total_wergild)
+	
+	# 2. Handle Disbanding (Bondi return to fields) & XP
+	var xp_gain = _calculate_raid_xp(outcome, grade)
+	var warbands_to_remove: Array[WarbandData] = []
+	
+	for warband in settlement.warbands:
+		# Disbanding Logic
+		if warband.is_bondi or warband.is_seasonal:
+			if warband.is_bondi and warband.current_manpower > 0:
+				settlement.population_peasants += warband.current_manpower
+			
+			warbands_to_remove.append(warband)
+			
+		# XP Logic (Only for survivors)
+		if not warband.is_wounded and xp_gain > 0:
+			warband.experience += xp_gain
+			
+	# Apply Removals
+	for wb in warbands_to_remove:
+		settlement.warbands.erase(wb)
+		
+	Loggie.msg("EconomyManager: Disbanded %d seasonal warbands." % warbands_to_remove.size()).domain(LogDomains.ECONOMY).info()
+	EventBus.population_changed.emit() # Notify UI that peasants returned
+	
+	# 3. Calculate Final Loot & Bonuses
+	var final_report = result.loot.duplicate()
+	
+	# Victory Bonus Logic
+	if outcome == "victory":
+		var difficulty = 1 # Default
+		if RaidManager: difficulty = RaidManager.current_raid_difficulty
+		
+		var bonus = 200 + (difficulty * 50)
+		if grade == "Decisive": bonus += 100
+		
+		net_gold += bonus
+		
+		# Thrall Logic (Preserving logic: "population" key used in loot summary)
+		if not final_report.has("population") and not final_report.has(GameResources.POP_THRALL):
+			 # Logic from snippet: randi_range(2, 4) * difficulty
+			var thralls = randi_range(2, 4) * difficulty
+			final_report["population"] = thralls # Using string literal to match UI expectation
+			 
+		_update_jarl_stats(grade)
+		
+	final_report[GameResources.GOLD] = net_gold
+	if result.renown_earned != 0:
+		final_report["renown"] = result.renown_earned
+		
+	# 4. Apply to Treasury (State Mutation)
+	deposit_resources(final_report)
+	
+	# 5. Return Receipt for UI
+	return {
+		"outcome": outcome,
+		"grade": grade,
+		"net_gold": net_gold,
+		"wergild_paid": total_wergild,
+		"dead_count": dead_count,
+		"loot_summary": final_report
+	}
+
+func _calculate_raid_xp(outcome: String, grade: String) -> int:
+	var xp = 0
+	if outcome == "victory": 
+		xp = 50
+		if grade == "Decisive": xp = 75
+		elif grade == "Pyrrhic": xp = 25
+	elif outcome == "retreat": 
+		xp = 20
+		
+	if DynastyManager.active_year_modifiers.has("BLOT_ODIN"):
+		xp = int(xp * 1.5)
+		
+	return xp
+
+func _update_jarl_stats(grade: String) -> void:
+	var jarl = DynastyManager.get_current_jarl()
+	if jarl:
+		jarl.offensive_wins += 1
+		jarl.battles_won += 1
+		jarl.successful_raids += 1
+		if jarl.has_trait("Warlord") and grade == "Decisive":
+			jarl.current_authority += 1
+		DynastyManager.jarl_stats_updated.emit(jarl)
+		
+# --- CONSTRUCTION API (NEW) ---
+
+## NEW: Authoritative Construction Progress
+## Iterates all pending buildings, applies worker progress, and returns a list of 
+## building entries that have completed construction this turn.
+func advance_construction_progress() -> Array[Dictionary]:
+	var settlement = SettlementManager.current_settlement
+	if not settlement: return []
+	
+	var completed_buildings: Array[Dictionary] = []
+	var indices_to_remove: Array[int] = []
+	
+	# Iterate backwards to safely track removals if needed, 
+	# though we usually remove after the loop.
+	for i in range(settlement.pending_construction_buildings.size()):
+		var entry = settlement.pending_construction_buildings[i]
+		
+		# 1. Get Workers
+		var workers = entry.get("peasant_count", 0)
+		if workers <= 0: continue
+		
+		# 2. Load Data for Requirements
+		var b_path = entry.get("resource_path", "")
+		if b_path == "": continue
+		
+		var b_data = load(b_path) as BuildingData
+		if not b_data: continue
+		
+		var effort_required = 100 # Default fallback
+		if "construction_effort_required" in b_data:
+			effort_required = b_data.construction_effort_required
+			
+		# 3. Apply Progress (Math Source of Truth)
+		var progress_gain = workers * BUILDER_EFFICIENCY
+		var current_progress = entry.get("progress", 0)
+		var new_progress = current_progress + progress_gain
+		
+		entry["progress"] = new_progress
+		
+		# 4. Check Completion
+		if new_progress >= effort_required:
+			completed_buildings.append(entry)
+			indices_to_remove.append(i)
+	
+	# Clean up pending list (State Mutation)
+	# Sort descending to remove from end first to preserve indices
+	indices_to_remove.sort()
+	indices_to_remove.reverse()
+	
+	for i in indices_to_remove:
+		settlement.pending_construction_buildings.remove_at(i)
+		
+	if not completed_buildings.is_empty():
+		Loggie.msg("EconomyManager: %d buildings completed construction." % completed_buildings.size()).domain(LogDomains.ECONOMY).info()
+		
+	return completed_buildings
