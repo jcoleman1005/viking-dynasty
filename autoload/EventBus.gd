@@ -64,7 +64,7 @@ signal advance_season_requested() # NEW: The primary time driver
 signal season_changed(season_name: String) # NEW: Feedback for UI/World
 
 # --- NEW: Seasonal UI System Signals ---
-
+signal hall_action_updated
 ## Emitted when the UI selects a card but hasn't committed (for tooltips/previews).
 signal seasonal_card_hovered(card: SeasonalCardResource)
 

@@ -334,6 +334,17 @@ func get_population_census() -> Dictionary:
 		"warbands": warband_count
 	}
 
+## Checks if the settlement can afford the cost without deducting resources.
+func can_afford(cost: Dictionary) -> bool:
+	var settlement = SettlementManager.current_settlement
+	if not settlement: return false
+	
+	for res in cost:
+		var key = res.to_lower()
+		if not settlement.treasury.has(key) or settlement.treasury[key] < cost[res]:
+			return false
+	return true
+
 func deposit_resources(loot: Dictionary) -> void:
 	var settlement = SettlementManager.current_settlement
 	if not settlement: return

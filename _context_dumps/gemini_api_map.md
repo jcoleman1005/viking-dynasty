@@ -1,6 +1,6 @@
 # PROJECT API MAP
 > **CONTEXT INSTRUCTION:** This file contains the STRUCTURE of the project. Implementation details are hidden to save space. Use this to understand available classes, functions, and signals.
-> Generated: 2026-01-28T14:33:33
+> Generated: 2026-01-29T10:20:15
 
 ## 🏛️ GLOBAL ARCHITECTURE
 ### Autoloads (Singletons)
@@ -5675,6 +5675,7 @@ func calculate_seasonal_payout(season_name: String) -> Dictionary:
 		var seasonal_amount = 0
 				var msg_list: Array = total_payout["_messages"]
 		var jarl = DynastyManager.get_current_jarl()
+	var log_report = total_payout.duplicate()
 func _apply_payout_to_treasury(settlement: SettlementData, payout: Dictionary) -> void:
 		var key = res.to_lower()
 		var amount = payout[res]
@@ -5699,6 +5700,13 @@ func _calculate_demographics(settlement: SettlementData, payout_report: Dictiona
 func _calculate_total_land_capacity(settlement: SettlementData) -> int:
 	var total_cap = BASE_LAND_CAPACITY
 		var data = load(entry["resource_path"]) as BuildingData
+func get_population_census() -> Dictionary:
+	var settlement = SettlementManager.current_settlement
+	var assigned_peasants = 0
+	var assigned_thralls = 0
+	var total_peasants = settlement.population_peasants
+	var total_thralls = settlement.population_thralls
+	var warband_count = settlement.warbands.size()
 func deposit_resources(loot: Dictionary) -> void:
 	var settlement = SettlementManager.current_settlement
 		var amount = loot[res]
@@ -5745,6 +5753,36 @@ func calculate_hypothetical_yields(farmer_count: int) -> Dictionary:
 		var assign = min(remaining_farmers, item.cap)
 		var out = assign * item.data.base_passive_output
 		var type = item.data.resource_type
+func process_raid_return(result: RaidResultData) -> Dictionary:
+	var settlement = SettlementManager.current_settlement
+	var outcome = result.outcome
+	var grade = result.victory_grade
+	var raw_gold = result.loot.get(GameResources.GOLD, 0)
+	var total_wergild = 0
+	var dead_count = 0
+	var net_gold = max(0, raw_gold - total_wergild)
+	var xp_gain = _calculate_raid_xp(outcome, grade)
+	var warbands_to_remove: Array[WarbandData] = []
+	var final_report = result.loot.duplicate()
+		var difficulty = 1 # Default
+		var bonus = 200 + (difficulty * 50)
+			var thralls = randi_range(2, 4) * difficulty
+func _calculate_raid_xp(outcome: String, grade: String) -> int:
+	var xp = 0
+func _update_jarl_stats(grade: String) -> void:
+	var jarl = DynastyManager.get_current_jarl()
+func advance_construction_progress() -> Array[Dictionary]:
+	var settlement = SettlementManager.current_settlement
+	var completed_buildings: Array[Dictionary] = []
+	var indices_to_remove: Array[int] = []
+		var entry = settlement.pending_construction_buildings[i]
+		var workers = entry.get("peasant_count", 0)
+		var b_path = entry.get("resource_path", "")
+		var b_data = load(b_path) as BuildingData
+		var effort_required = 100 # Default fallback
+		var progress_gain = workers * BUILDER_EFFICIENCY
+		var current_progress = entry.get("progress", 0)
+		var new_progress = current_progress + progress_gain
 ```
 
 ### `res:///autoload/EventBus.gd`
@@ -5755,6 +5793,7 @@ signal building_state_changed(building: BaseBuilding, new_state: int)
 signal build_request_made(building_data: BuildingData, grid_position: Vector2i)
 signal building_ready_for_placement(building_data: BuildingData)
 signal building_placement_cancelled(building_data: BuildingData)
+signal building_construction_completed(building_entry: Dictionary)
 signal building_selected(building: BaseBuilding)
 signal building_deselected()
 signal request_worker_assignment(target_building: BaseBuilding)
@@ -5765,6 +5804,7 @@ signal treasury_updated(new_treasury: Dictionary)
 signal purchase_successful(item_name: String)
 signal purchase_failed(reason: String)
 signal raid_loot_secured(type: String, amount: int)
+signal population_changed()
 signal scene_change_requested(scene_key: String)
 signal world_map_opened()
 signal raid_mission_started(target_type: String)
@@ -5795,6 +5835,7 @@ signal ui_open_seasonal_screen(screen_type: String) # "spring", "summer", "autum
 signal raid_launched(target_region: Resource, force_size: int)
 signal autumn_resolved()
 signal winter_ended()
+signal raid_committed(count: int)
 ```
 
 ### `res:///autoload/EventManager.gd`
@@ -6130,12 +6171,8 @@ func _force_layoffs(type: String, amount_to_remove: int) -> void:
 		var current_workers = entry.get(key, 0)
 			var take = min(current_workers, amount_to_remove - removed_count)
 func process_construction_labor() -> void:
-	var completed_indices: Array[int] = []
-		var entry = current_settlement.pending_construction_buildings[i]
-		var b_data = load(entry["resource_path"]) as BuildingData
-		var peasants = entry.get("peasant_count", 0)
-		var thralls = entry.get("thrall_count", 0)
-		var labor_points = (peasants + thralls) * EconomyManager.BUILDER_EFFICIENCY
+	var finished_buildings = EconomyManager.advance_construction_progress()
+func _finalize_construction(entry: Dictionary) -> void:
 func recruit_unit(unit_data: UnitData) -> void:
 	var current_squads = current_settlement.warbands.size()
 	var max_squads = get_total_ship_capacity_squads()
@@ -6905,28 +6942,22 @@ func _on_lifetime_timeout() -> void:
 ### `res:///scenes/levels/TempDebugNode.gd`
 ```gdscript
 extends Node
-const TEMP_FARM_PATH = "user://temp_test_farm.tres"
-const TEMP_MINE_PATH = "user://temp_test_mine.tres"
-const TEMP_UNIT_PATH = "user://temp_test_unit.tres"
+@export var hud_node: TreasuryHUD
+var _previous_treasury: Dictionary = {}
 func _ready() -> void:
-	var mock_settlement = SettlementData.new()
-func test_yield_projection(data: SettlementData) -> void:
-	var low_labor_yields = EconomyManager.calculate_hypothetical_yields(4)
-	var food = low_labor_yields.get(GameResources.FOOD, 0)
-	var wood = low_labor_yields.get(GameResources.WOOD, 0)
-	var high_labor_yields = EconomyManager.calculate_hypothetical_yields(8)
-func test_drafting_logic(data: SettlementData) -> void:
-	var start_pop = data.population_peasants # 50
-	var unit_template = load(TEMP_UNIT_PATH) as UnitData
-	var start_raid_count = 0
-		var end_raid_count = RaidManager.outbound_raid_force.size()
-		var added_bands = end_raid_count - start_raid_count
-		var last_band = RaidManager.outbound_raid_force.back() as WarbandData
-func _create_mock_resources() -> void:
-	var farm = EconomicBuildingData.new()
-	var mine = EconomicBuildingData.new()
-	var unit = UnitData.new()
-func _delete_mock_resources() -> void:
+func _on_treasury_updated(_new_treasury: Dictionary) -> void:
+func _on_season_changed(new_season: String) -> void:
+	var current = SettlementManager.current_settlement.treasury
+	var delta_report = ""
+		var old_val = _previous_treasury.get(res, 0)
+		var new_val = current.get(res, 0)
+		var diff = new_val - old_val
+func _verify_ui_integrity() -> void:
+	var data = SettlementManager.current_settlement.treasury
+	var discrepancies = 0
+	var check_res = func(res_key: String, label: Label) -> void:
+		var ui_val = int(label.text.replace(",", ""))
+		var data_val = data.get(res_key, 0)
 ```
 
 ### `res:///scenes/missions/RaidMapLoader.gd`
@@ -9846,7 +9877,7 @@ func _on_season_changed(new_season_name: String) -> void:
 func toggle_interface(interface_name: String = "") -> void:
 func _show_ledger() -> void:
 func _initialize_data() -> void:
-	var forecast: Dictionary[String, int] = EconomyManager.get_winter_forecast()
+	var forecast: Dictionary = EconomyManager.get_winter_forecast()
 	var settlement = SettlementManager.current_settlement
 	var raw_name: String = settlement.resource_path.get_file().get_basename()
 	var display_name: String = raw_name.replace("_", " ").capitalize()
@@ -11971,7 +12002,6 @@ size = Vector2(10, 2)
 - `res:///autoload/ProjectilePoolManager.gd`
   - depends on: `res://scenes/effects/Projectile.tscn`
 - `res:///autoload/SettlementManager.gd`
-  - depends on: `resource_path`
   - depends on: `resource_path`
   - depends on: `resource_path`
   - depends on: `resource_path`

@@ -32,7 +32,7 @@ func start_winter_phase() -> void:
 	_calculate_winter_needs()
 	
 	winter_started.emit()
-	EventBus.scene_change_requested.emit("winter_court")
+	
 
 func end_winter_phase() -> void:
 	winter_crisis_active = false
@@ -144,6 +144,36 @@ func resolve_crisis_with_gold() -> bool:
 		_apply_winter_consumption()
 		return true
 	return false
+
+func play_seasonal_card(card: SeasonalCardResource) -> bool:
+	# 1. Validate AP
+	var jarl = DynastyManager.get_current_jarl()
+	if not jarl or jarl.current_hall_actions < card.cost_ap:
+		return false
+
+	# 2. Validate Resources
+	var cost_dict = {}
+	if card.cost_gold > 0: cost_dict["gold"] = card.cost_gold
+	if card.cost_food > 0: cost_dict["food"] = card.cost_food
+	
+	# Check affordability and Deduct
+	if not EconomyManager.attempt_purchase(cost_dict):
+		return false
+
+	# 3. Deduct AP (DynastyManager owns this state)
+	DynastyManager.perform_hall_action(card.cost_ap)
+
+	# 4. Apply Rewards
+	if card.grant_gold > 0:
+		EconomyManager.deposit_resources({"gold": card.grant_gold})
+	if card.grant_renown > 0:
+		DynastyManager.award_renown(card.grant_renown)
+		
+	# [FIX] Apply Modifier (Missing in previous snippet)
+	if card.modifier_key != "":
+		DynastyManager.apply_year_modifier(card.modifier_key)
+		
+	return true
 
 func resolve_crisis_with_sacrifice(sacrifice_type: String) -> bool:
 	# Sacrifice costs 1 Action (paid to DynastyManager)
