@@ -219,7 +219,14 @@ func calculate_seasonal_payout(season_name: String) -> Dictionary:
 		_calculate_demographics(settlement, total_payout, jarl)
 		# Note: Hunger logic handled by Orchestrator
 	
-	Loggie.msg("Seasonal Payout Calculated: %s" % total_payout).domain(LogDomains.ECONOMY).info()
+	var log_report = total_payout.duplicate()
+	log_report.erase("_messages") # Remove UI clutter from console log
+	
+	if log_report.is_empty():
+		Loggie.msg("Seasonal Payout: None").domain(LogDomains.ECONOMY).info()
+	else:
+		Loggie.msg("Seasonal Payout: %s" % log_report).domain(LogDomains.ECONOMY).info()
+	# -------------------.ECONOMY).info()
 	EventBus.treasury_updated.emit(settlement.treasury)
 	return total_payout
 
@@ -291,6 +298,41 @@ func _calculate_total_land_capacity(settlement: SettlementData) -> int:
 	return total_cap
 
 # --- DELEGATED FUNCTIONS ---
+## Returns a snapshot of the current population state (Total vs Idle)
+func get_population_census() -> Dictionary:
+	var settlement = SettlementManager.current_settlement
+	if not settlement: 
+		return {
+			"peasants": {"total": 0, "idle": 0},
+			"thralls": {"total": 0, "idle": 0},
+			"warbands": 0
+		}
+	
+	# 1. Calculate Assigned Workers by iterating buildings
+	var assigned_peasants = 0
+	var assigned_thralls = 0
+	
+	for b_entry in settlement.placed_buildings:
+		assigned_peasants += b_entry.get("peasant_count", 0)
+		assigned_thralls += b_entry.get("thrall_count", 0)
+		
+	# 2. Calculate Totals
+	var total_peasants = settlement.population_peasants
+	var total_thralls = settlement.population_thralls
+	var warband_count = settlement.warbands.size()
+	
+	# 3. Return Snapshot
+	return {
+		"peasants": {
+			"total": total_peasants,
+			"idle": max(0, total_peasants - assigned_peasants)
+		},
+		"thralls": {
+			"total": total_thralls,
+			"idle": max(0, total_thralls - assigned_thralls)
+		},
+		"warbands": warband_count
+	}
 
 func deposit_resources(loot: Dictionary) -> void:
 	var settlement = SettlementManager.current_settlement
