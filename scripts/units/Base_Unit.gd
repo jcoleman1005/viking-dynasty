@@ -73,8 +73,9 @@ func _ready() -> void:
 	var hp_mult = 1.0
 	var dmg_mult = 1.0
 	
-	if is_in_group("player_units") and DynastyManager.active_year_modifiers.has("BLOT_THOR"):
-		dmg_mult *= 1.10 
+	if is_in_group("player_units"):
+	# Add the percentage (e.g., 0.10) to the base multiplier (1.0)
+		dmg_mult += DynastyManager.active_year_modifiers.get("mod_unit_damage", 0.0)
 	
 	if warband_ref:
 		var level_mult = warband_ref.get_stat_multiplier()

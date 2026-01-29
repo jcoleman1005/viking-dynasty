@@ -3,23 +3,45 @@ extends Resource
 
 enum SeasonType { SPRING, WINTER }
 
-@export_group("Classification")
-## Ensures this card only appears in the correct UI.
-@export var season: SeasonType = SeasonType.SPRING
+## The name displayed on the card
+@export var display_name: String = "Card Name"
 
-@export_group("Display")
-@export var title: String = "Card Title"
-@export_multiline var description: String = "Effect description..."
+## The description text (supports BBCode)
+@export_multiline var description: String = "Card Description"
+
+## Icon for the card
 @export var icon: Texture2D
 
-@export_group("Costs (Winter)")
-@export var cost_ap: int = 0
+@export var season: SeasonType
+
+@export_group("Costs")
+## Action Points required to play this card
+@export var cost_ap: int = 1
+## Gold cost (if any)
 @export var cost_gold: int = 0
+## Food cost (if any)
 @export var cost_food: int = 0
 
-@export_group("Effects (Spring/Strategic)")
-## The string tag stored in DynastyManager.active_year_modifiers.
-## Example: "raid_provisions_bonus" or "farm_yield_boost"
-@export var modifier_key: String = ""
+@export_group("Immediate Rewards")
+## Gold granted immediately
 @export var grant_gold: int = 0
+## Renown granted immediately
 @export var grant_renown: int = 0
+##Authority granted
+@export var grant_authority: int = 0
+
+@export_group("Seasonal Modifiers")
+## Dictionary for arbitrary modifiers not covered by explicit variables.
+## Format: { "custom_key": float_value }
+@export var modifiers: Dictionary = {} 
+## Percentage bonus to unit combat damage (e.g., 0.10 = +10%)
+@export_range(-1.0, 5.0, 0.05) var mod_unit_damage: float = 0.0
+
+## Percentage bonus to Raid XP gain (e.g., 0.20 = +20%)
+@export_range(-1.0, 5.0, 0.05) var mod_raid_xp: float = 0.0
+
+## Flat increase to birth probability (e.g., 0.05 = +5% chance)
+@export_range(-1.0, 1.0, 0.01) var mod_birth_chance: float = 0.0
+
+## Multiplier for harvest yield next season (e.g. 0.10 = +10%)
+@export_range(-1.0, 5.0, 0.05) var mod_harvest_yield: float = 0.0

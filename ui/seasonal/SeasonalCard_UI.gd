@@ -28,7 +28,7 @@ func _ready() -> void:
 func setup(card: SeasonalCardResource, can_afford: bool = true) -> void:
 	_card_data = card
 	
-	title_label.text = card.title
+	title_label.text = card.display_name
 	description_label.text = card.description
 	icon_rect.texture = card.icon
 	

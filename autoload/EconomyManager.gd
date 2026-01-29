@@ -621,8 +621,8 @@ func _calculate_raid_xp(outcome: String, grade: String) -> int:
 	elif outcome == "retreat": 
 		xp = 20
 		
-	if DynastyManager.active_year_modifiers.has("BLOT_ODIN"):
-		xp = int(xp * 1.5)
+	var xp_bonus = DynastyManager.active_year_stats.get("mod_raid_xp", 0.0)
+	xp = int(xp * (1.0 + xp_bonus))
 		
 	return xp
 

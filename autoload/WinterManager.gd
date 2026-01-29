@@ -168,10 +168,17 @@ func play_seasonal_card(card: SeasonalCardResource) -> bool:
 		EconomyManager.deposit_resources({"gold": card.grant_gold})
 	if card.grant_renown > 0:
 		DynastyManager.award_renown(card.grant_renown)
-		
+	if card.grant_authority > 0:
+		if jarl:
+			# Add Authority directly to the Jarl data
+			jarl.current_authority += card.grant_authority
+			
+			Loggie.msg("Granted %d Authority via card" % card.grant_authority).domain(LogDomains.DYNASTY).info()
+			# CRITICAL: Emit signal so UI (DynastyUI/TopBar) updates immediately
+			DynastyManager.jarl_stats_updated.emit(jarl)
 	# [FIX] Apply Modifier (Missing in previous snippet)
-	if card.modifier_key != "":
-		DynastyManager.apply_year_modifier(card.modifier_key)
+	# 4. Apply Modifiers (The new aggregation logic you implemented)
+	DynastyManager.aggregate_card_effects(card)
 		
 	return true
 
