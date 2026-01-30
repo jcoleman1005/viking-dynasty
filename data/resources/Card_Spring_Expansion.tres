@@ -4,6 +4,5 @@
 
 [resource]
 script = ExtResource("1_sbleo")
-title = "Construction Focus"
 description = "Boosts building construction time. Decreases authority for raids."
 metadata/_custom_type_script = "uid://cni5gdnpbb1v2"

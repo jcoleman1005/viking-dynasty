@@ -1,0 +1,282 @@
+[gd_scene load_steps=3 format=3 uid="uid://cv530nr365fv4"]
+
+[ext_resource type="Script" uid="uid://dneudlbki6d61" path="res://ui/seasonal/SummerWorkspace_UI.gd" id="1_controller"]
+[ext_resource type="PackedScene" uid="uid://c8q4w2x5y301" path="res://ui/seasonal/SummerAllocation_Ui.tscn" id="2_v2kwp"]
+
+[node name="SummerWorkspace_UI" type="Control" node_paths=PackedStringArray("label_silver", "label_food", "label_wood", "label_pop_total", "label_pop_idle", "texture_winter_warning", "btn_hide_ui", "lbl_summary_farmers", "lbl_summary_builders", "lbl_summary_raiders", "btn_manage_allocation", "job_row_container", "container_raid_command", "btn_collapse_toggle", "label_authority", "label_bondi_count", "container_warbands", "btn_world_map", "btn_proceed", "btn_tab_construction", "btn_tab_completed", "grid_active_projects", "grid_completed_buildings")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_controller")
+label_silver = NodePath("LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/ResourceGroup/SilverWidget/Label_Value")
+label_food = NodePath("LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/ResourceGroup/FoodWidget/Label_Value")
+label_wood = NodePath("LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/ResourceGroup/WoodWidget/Label_Value")
+label_pop_total = NodePath("LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/PopWidget/Label_Total")
+label_pop_idle = NodePath("LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/PopWidget/Label_Idle")
+texture_winter_warning = NodePath("LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/WinterWarning")
+btn_hide_ui = NodePath("LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/CloseButton")
+lbl_summary_farmers = NodePath("LayoutRoot/MainWorkspace/LaborColumn/JobRow_Container/Label_Farmers")
+lbl_summary_builders = NodePath("LayoutRoot/MainWorkspace/LaborColumn/JobRow_Container/Label_Builders")
+lbl_summary_raiders = NodePath("LayoutRoot/MainWorkspace/LaborColumn/JobRow_Container/Label_Raiders")
+btn_manage_allocation = NodePath("LayoutRoot/MainWorkspace/LaborColumn/JobRow_Container/Btn_ManageAllocation")
+job_row_container = NodePath("LayoutRoot/MainWorkspace/LaborColumn/JobRow_Container")
+allocation_view_scene = ExtResource("2_v2kwp")
+container_raid_command = NodePath("LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container")
+btn_collapse_toggle = NodePath("LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/CollapseToggle")
+label_authority = NodePath("LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container/MarginContainer/VBoxContainer/CommandHeader/Label_Authority")
+label_bondi_count = NodePath("LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container/MarginContainer/VBoxContainer/TroopBreakdown/BondiCount/Label_Value")
+container_warbands = NodePath("LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container/MarginContainer/VBoxContainer/TroopBreakdown/WarbandList")
+btn_world_map = NodePath("LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container/MarginContainer/VBoxContainer/WorldMapButton")
+btn_proceed = NodePath("LayoutRoot/Footer_Commitment/MarginContainer/ProceedButton")
+btn_tab_construction = NodePath("LayoutRoot/MainWorkspace/VisualizationColumn/ProjectTabs/Btn_ShowConstruction")
+btn_tab_completed = NodePath("LayoutRoot/MainWorkspace/VisualizationColumn/ProjectTabs/Btn_ShowCompleted")
+grid_active_projects = NodePath("LayoutRoot/MainWorkspace/VisualizationColumn/ActiveProjects_Grid")
+grid_completed_buildings = NodePath("LayoutRoot/MainWorkspace/VisualizationColumn/CompletedBuildings_Grid")
+
+[node name="BackgroundLayer" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 6
+
+[node name="LayoutRoot" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="HUD_TopBar" type="PanelContainer" parent="LayoutRoot"]
+layout_mode = 2
+size_flags_vertical = 0
+
+[node name="MarginContainer" type="MarginContainer" parent="LayoutRoot/HUD_TopBar"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 10
+
+[node name="HBoxContainer" type="HBoxContainer" parent="LayoutRoot/HUD_TopBar/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 40
+
+[node name="ResourceGroup" type="HBoxContainer" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="SilverWidget" type="HBoxContainer" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/ResourceGroup"]
+layout_mode = 2
+
+[node name="Icon" type="TextureRect" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/ResourceGroup/SilverWidget"]
+layout_mode = 2
+expand_mode = 2
+
+[node name="Label_Value" type="Label" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/ResourceGroup/SilverWidget"]
+layout_mode = 2
+text = "0"
+
+[node name="FoodWidget" type="HBoxContainer" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/ResourceGroup"]
+layout_mode = 2
+
+[node name="Icon" type="TextureRect" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/ResourceGroup/FoodWidget"]
+layout_mode = 2
+expand_mode = 2
+
+[node name="Label_Value" type="Label" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/ResourceGroup/FoodWidget"]
+layout_mode = 2
+text = "0 / +0"
+
+[node name="WoodWidget" type="HBoxContainer" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/ResourceGroup"]
+layout_mode = 2
+
+[node name="Icon" type="TextureRect" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/ResourceGroup/WoodWidget"]
+layout_mode = 2
+expand_mode = 2
+
+[node name="Label_Value" type="Label" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/ResourceGroup/WoodWidget"]
+layout_mode = 2
+text = "0"
+
+[node name="PopWidget" type="HBoxContainer" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 10
+
+[node name="Icon" type="TextureRect" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/PopWidget"]
+layout_mode = 2
+expand_mode = 2
+
+[node name="Label_Total" type="Label" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/PopWidget"]
+layout_mode = 2
+text = "Pop: 10"
+
+[node name="Label_Idle" type="Label" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/PopWidget"]
+layout_mode = 2
+text = "(3 Idle)"
+
+[node name="WinterWarning" type="TextureRect" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CloseButton" type="Button" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="MainWorkspace" type="HBoxContainer" parent="LayoutRoot"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 20
+
+[node name="LaborColumn" type="VBoxContainer" parent="LayoutRoot/MainWorkspace"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.4
+
+[node name="Header" type="Label" parent="LayoutRoot/MainWorkspace/LaborColumn"]
+layout_mode = 2
+text = "Summer Assignments"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="LayoutRoot/MainWorkspace/LaborColumn"]
+layout_mode = 2
+
+[node name="JobRow_Container" type="VBoxContainer" parent="LayoutRoot/MainWorkspace/LaborColumn"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 15
+
+[node name="Label_Farmers" type="Label" parent="LayoutRoot/MainWorkspace/LaborColumn/JobRow_Container"]
+layout_mode = 2
+text = "Farming: 0"
+
+[node name="Label_Builders" type="Label" parent="LayoutRoot/MainWorkspace/LaborColumn/JobRow_Container"]
+layout_mode = 2
+text = "Construction: 0"
+
+[node name="Label_Raiders" type="Label" parent="LayoutRoot/MainWorkspace/LaborColumn/JobRow_Container"]
+layout_mode = 2
+text = "Raiding: 0"
+
+[node name="Btn_ManageAllocation" type="Button" parent="LayoutRoot/MainWorkspace/LaborColumn/JobRow_Container"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+text = "ALLOCATION"
+
+[node name="VisualizationColumn" type="VBoxContainer" parent="LayoutRoot/MainWorkspace"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.6
+
+[node name="ProjectTabs" type="HBoxContainer" parent="LayoutRoot/MainWorkspace/VisualizationColumn"]
+layout_mode = 2
+
+[node name="Btn_ShowConstruction" type="Button" parent="LayoutRoot/MainWorkspace/VisualizationColumn/ProjectTabs"]
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Under Construction"
+
+[node name="Btn_ShowCompleted" type="Button" parent="LayoutRoot/MainWorkspace/VisualizationColumn/ProjectTabs"]
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Completed"
+
+[node name="ActiveProjects_Grid" type="GridContainer" parent="LayoutRoot/MainWorkspace/VisualizationColumn"]
+layout_mode = 2
+size_flags_vertical = 3
+columns = 3
+
+[node name="CompletedBuildings_Grid" type="GridContainer" parent="LayoutRoot/MainWorkspace/VisualizationColumn"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+columns = 3
+
+[node name="RaidCommand_Section" type="VBoxContainer" parent="LayoutRoot/MainWorkspace/VisualizationColumn"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.5
+alignment = 2
+
+[node name="CollapseToggle" type="Button" parent="LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section"]
+layout_mode = 2
+text = "▼ War Council"
+
+[node name="RaidCommand_Container" type="PanelContainer" parent="LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container/MarginContainer"]
+layout_mode = 2
+
+[node name="CommandHeader" type="HBoxContainer" parent="LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label_Title" type="Label" parent="LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container/MarginContainer/VBoxContainer/CommandHeader"]
+layout_mode = 2
+text = "War Council"
+
+[node name="Label_Authority" type="Label" parent="LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container/MarginContainer/VBoxContainer/CommandHeader"]
+layout_mode = 2
+size_flags_horizontal = 10
+text = "Authority: 0"
+
+[node name="HSeparator" type="HSeparator" parent="LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="TroopBreakdown" type="VBoxContainer" parent="LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="BondiCount" type="HBoxContainer" parent="LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container/MarginContainer/VBoxContainer/TroopBreakdown"]
+layout_mode = 2
+
+[node name="Label_Title" type="Label" parent="LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container/MarginContainer/VBoxContainer/TroopBreakdown/BondiCount"]
+layout_mode = 2
+text = "Bondi (Villagers):"
+
+[node name="Label_Value" type="Label" parent="LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container/MarginContainer/VBoxContainer/TroopBreakdown/BondiCount"]
+layout_mode = 2
+size_flags_horizontal = 10
+text = "0"
+
+[node name="WarbandList" type="VBoxContainer" parent="LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container/MarginContainer/VBoxContainer/TroopBreakdown"]
+layout_mode = 2
+
+[node name="WorldMapButton" type="Button" parent="LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+text = "OPEN WORLD MAP"
+
+[node name="Footer_Commitment" type="PanelContainer" parent="LayoutRoot"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="LayoutRoot/Footer_Commitment"]
+layout_mode = 2
+theme_override_constants/margin_left = 50
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 50
+theme_override_constants/margin_bottom = 15
+
+[node name="ProceedButton" type="Button" parent="LayoutRoot/Footer_Commitment/MarginContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+text = "The Sun Sets. All Paths are Chosen."

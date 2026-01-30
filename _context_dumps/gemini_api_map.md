@@ -1,6 +1,6 @@
 # PROJECT API MAP
 > **CONTEXT INSTRUCTION:** This file contains the STRUCTURE of the project. Implementation details are hidden to save space. Use this to understand available classes, functions, and signals.
-> Generated: 2026-01-29T10:20:15
+> Generated: 2026-01-29T14:22:57
 
 ## 🏛️ GLOBAL ARCHITECTURE
 ### Autoloads (Singletons)
@@ -722,10 +722,6 @@
 - **SmokeTest** [Node2D]
 - **CanvasLayer** [CanvasLayer]
 
-### `res:///test/test_year_cycle_scene.tscn`
-- **Main** [Node]
-- **TestRunner** [Node]
-
 ### `res:///ui/BuildingPreviewCursor.tscn`
 - **BuildingPreviewCursor** [Node2D]
 
@@ -1058,17 +1054,30 @@
         - **ConfirmBtn** [Button]
 
 ### `res:///ui/seasonal/WinterCourt_UI.tscn`
-- **WinterCourt_UI** [Control]
+- **WinterCourtUI** [Control]
 - **Background** [Panel]
-- **TopHUD** [PanelContainer]
-  - **MarginContainer** [MarginContainer]
-    - **HBox** [HBoxContainer]
-      - **TitleLabel** [Label]
-      - **VSeparator** [VSeparator]
-      - **APLabel** [Label]
-- **CardContainer** [HBoxContainer]
-- **BottomPanel** [PanelContainer]
-  - **EndYearButton** [Button]
+- **MainLayout** [VBoxContainer]
+  - **Stratum1_Burden** [PanelContainer]
+    - **Margin** [MarginContainer]
+      - **HBox** [HBoxContainer]
+        - **SeverityLabel** [Label]
+        - **VSeparator** [VSeparator]
+        - **DeficitContainer** [VBoxContainer]
+  - **Stratum2_Hall** [PanelContainer]
+    - **VBox** [VBoxContainer]
+      - **ActionPointsLabel** [Label]
+      - **CardScroll** [ScrollContainer]
+        - **Centerer** [CenterContainer]
+          - **CardsContainer** [HBoxContainer]
+  - **Stratum3_Bloodline** [PanelContainer]
+    - **Margin** [MarginContainer]
+      - **HBox** [HBoxContainer]
+        - **JarlNameLabel** [Label]
+        - **JarlStatusLabel** [Label]
+        - **VSeparator** [VSeparator]
+        - **HeirStatusLabel** [Label]
+  - **BottomBar** [MarginContainer]
+    - **EndWinterButton** [Button]
 
 ## 📜 SCRIPT API (Logic Structures)
 
@@ -5507,7 +5516,7 @@ signal year_ended
 var current_jarl: JarlData
 var minimum_inherited_legitimacy: int = 0
 var loaded_legacy_upgrades: Array[LegacyUpgradeData] = []
-var active_year_modifiers: Dictionary[String, Variant] = {}
+var active_year_modifiers: Dictionary[String, float] = {
 var current_year: int = 867 
 enum Season { SPRING, SUMMER, AUTUMN, WINTER }
 var current_season: Season = Season.SPRING
@@ -5532,6 +5541,9 @@ func _display_seasonal_feedback(season_name: String, payout: Dictionary) -> void
 			var pos = center_screen + Vector2(0, offset_y)
 func get_current_season_name() -> String:
 	var names = ["Spring", "Summer", "Autumn", "Winter"]
+func aggregate_card_effects(card: SeasonalCardResource) -> void:
+			var value = card.modifiers[key]
+func reset_year_stats() -> void:
 func _load_game_data() -> void:
 func start_new_campaign() -> void:
 func _load_legacy_upgrades_from_disk() -> void:
@@ -5707,6 +5719,9 @@ func get_population_census() -> Dictionary:
 	var total_peasants = settlement.population_peasants
 	var total_thralls = settlement.population_thralls
 	var warband_count = settlement.warbands.size()
+func can_afford(cost: Dictionary) -> bool:
+	var settlement = SettlementManager.current_settlement
+		var key = res.to_lower()
 func deposit_resources(loot: Dictionary) -> void:
 	var settlement = SettlementManager.current_settlement
 		var amount = loot[res]
@@ -5769,6 +5784,7 @@ func process_raid_return(result: RaidResultData) -> Dictionary:
 			var thralls = randi_range(2, 4) * difficulty
 func _calculate_raid_xp(outcome: String, grade: String) -> int:
 	var xp = 0
+	var xp_bonus = DynastyManager.active_year_stats.get("mod_raid_xp", 0.0)
 func _update_jarl_stats(grade: String) -> void:
 	var jarl = DynastyManager.get_current_jarl()
 func advance_construction_progress() -> Array[Dictionary]:
@@ -5828,6 +5844,7 @@ signal camera_input_lock_requested(is_locked: bool)
 signal end_year_requested() # Legacy (Keep for now to avoid crashes)
 signal advance_season_requested() # NEW: The primary time driver
 signal season_changed(season_name: String) # NEW: Feedback for UI/World
+signal hall_action_updated
 signal seasonal_card_hovered(card: SeasonalCardResource)
 signal seasonal_card_selected(card: SeasonalCardResource)
 signal ui_request_phase_commit(phase_name: String, data: Dictionary)
@@ -6262,6 +6279,9 @@ func _apply_environmental_decay() -> void:
 		var current = SettlementManager.current_settlement.fleet_readiness
 func resolve_crisis_with_gold() -> bool:
 	var total_gold_cost = (winter_consumption_report["food_deficit"] * 5) + (winter_consumption_report["wood_deficit"] * 5)
+func play_seasonal_card(card: SeasonalCardResource) -> bool:
+	var jarl = DynastyManager.get_current_jarl()
+	var cost_dict = {}
 func resolve_crisis_with_sacrifice(sacrifice_type: String) -> bool:
 	var settlement = SettlementManager.current_settlement
 			var deaths = max(1, int(winter_consumption_report["food_deficit"] / 5))
@@ -6575,20 +6595,24 @@ extends Resource
 class_name SeasonalCardResource
 extends Resource
 enum SeasonType { SPRING, WINTER }
-@export_group("Classification")
-@export var season: SeasonType = SeasonType.SPRING
-@export_group("Display")
-@export var title: String = "Card Title"
-@export_multiline var description: String = "Effect description..."
+@export var display_name: String = "Card Name"
+@export_multiline var description: String = "Card Description"
 @export var icon: Texture2D
-@export_group("Costs (Winter)")
-@export var cost_ap: int = 0
+@export var season: SeasonType
+@export_group("Costs")
+@export var cost_ap: int = 1
 @export var cost_gold: int = 0
 @export var cost_food: int = 0
-@export_group("Effects (Spring/Strategic)")
-@export var modifier_key: String = ""
+@export_group("Immediate Rewards")
 @export var grant_gold: int = 0
 @export var grant_renown: int = 0
+@export var grant_authority: int = 0
+@export_group("Seasonal Modifiers")
+@export var modifiers: Dictionary = {} 
+@export_range(-1.0, 5.0, 0.05) var mod_unit_damage: float = 0.0
+@export_range(-1.0, 5.0, 0.05) var mod_raid_xp: float = 0.0
+@export_range(-1.0, 1.0, 0.01) var mod_birth_chance: float = 0.0
+@export_range(-1.0, 5.0, 0.05) var mod_harvest_yield: float = 0.0
 ```
 
 ### `res:///data/settlements/SettlementData.gd`
@@ -8786,26 +8810,6 @@ func test_ui_locking_during_crisis():
 	var btn_end = ui.find_child("Btn_EndWinter", true, false)
 ```
 
-### `res:///test/test_year_cycle.gd`
-```gdscript
-extends Node
-func _ready():
-func test_starvation():
-	var settlement = SettlementData.new()
-	var jarl = JarlData.new()
-	var payout = EconomyManager.calculate_payout()
-func test_overpopulation():
-	var settlement = SettlementData.new()
-	var jarl = JarlData.new()
-	var payout = EconomyManager.calculate_payout()
-func test_draft_and_raid_solution():
-	var settlement = SettlementData.new()
-	var jarl = JarlData.new()
-	var bondi_data
-	var raid_loot = {
-	var payout = EconomyManager.calculate_payout()
-```
-
 ### `res:///test/unit/test_RaidManager.gd`
 ```gdscript
 extends GutTest
@@ -8825,7 +8829,7 @@ func test_defensive_loss_renoun():
 	var result = raid_manager.process_defensive_loss()
 ```
 
-### `res:///test/unit/test_WinterManager.gd.gd`
+### `res:///test/unit/test_WinterManager.gd`
 ```gdscript
 extends GutTest
 var winter_manager
@@ -8841,6 +8845,26 @@ func test_resolve_crisis_with_gold():
 	var success = winter_manager.resolve_crisis_with_gold()
 func test_resolve_sacrifice_burn_ships():
 	var success = winter_manager.resolve_crisis_with_sacrifice("burn_ships")
+```
+
+### `res:///test/unit/test_dynasty_modifiers.gd`
+```gdscript
+extends GutTest
+func before_each():
+func after_each():
+func test_initial_state():
+	var stats = DynastyManager.active_year_modifiers
+func test_single_card_aggregation():
+	var card = SeasonalCardResource.new()
+	var stats = DynastyManager.active_year_modifiers
+func test_modifier_stacking():
+	var card_a = SeasonalCardResource.new()
+	var card_b = SeasonalCardResource.new()
+	var stats = DynastyManager.active_year_modifiers
+func test_negative_modifiers():
+	var card = SeasonalCardResource.new()
+func test_reset_functionality():
+	var card = SeasonalCardResource.new()
 ```
 
 ### `res:///test/unit/test_economy_seasonal.gd`
@@ -9928,7 +9952,6 @@ func _activate_spring_ui() -> void:
 func _on_diagnostic_timeout() -> void:
 func _deal_cards() -> void:
 	var spring_deck: Array[SeasonalCardResource] = []
-		var card = available_advisor_cards[i]
 	var cards_to_spawn = min(hand_size, spring_deck.size())
 		var card_instance = card_prefab.instantiate() as SeasonalCard_UI
 func _on_card_selected(card: SeasonalCardResource) -> void:
@@ -10060,31 +10083,48 @@ func _on_commit_raid_pressed() -> void:
 
 ### `res:///ui/seasonal/WinterCourtUI.gd`
 ```gdscript
-class_name WinterCourt_UI
 extends Control
-@export_group("Deck Configuration")
+class_name WinterCourtUI
+@export_group("Great Hall Stratum")
 @export var available_court_cards: Array[SeasonalCardResource] = []
-@export var hand_size: int = 3
-@export_group("References")
-@export var card_prefab: PackedScene # res://ui/seasonal/SeasonalCard_UI.tscn
-@export var card_container: HBoxContainer
-@onready var ap_label: Label = %APLabel
-@onready var end_year_button: Button = %EndYearButton
-var _current_ap: int = 0
+@export var card_prefab: PackedScene
+@onready var severity_label: Label = %SeverityLabel
+@onready var deficit_container: VBoxContainer = %DeficitContainer
+@onready var action_points_label: Label = %ActionPointsLabel
+@onready var cards_container: HBoxContainer = %CardsContainer
+@onready var end_winter_button: Button = %EndWinterButton
+@onready var jarl_name_label: Label = %JarlNameLabel
+@onready var jarl_status_label: Label = %JarlStatusLabel
+@onready var heir_status_label: Label = %HeirStatusLabel
+var current_ap: int = 0
+var max_ap: int = 0
 func _ready() -> void:
-func _on_season_changed(season_name: String) -> void:
-func _init_winter_court() -> void:
-func _update_hud() -> void:
+func _on_season_changed(new_season: String) -> void:
+func _on_ap_updated(new_amount: int) -> void:
+func setup_winter_view() -> void:
+	var jarl: JarlData = DynastyManager.get_current_jarl()
+func _refresh_stratum_burden() -> void:
+	var report: Dictionary = WinterManager.winter_consumption_report
+	var severity_enum: int = report.get("severity_enum", 1) 
+	var severity_name: String = report.get("severity_name", "NORMAL")
+	var food_deficit: int = report.get("food_deficit", 0)
+	var wood_deficit: int = report.get("wood_deficit", 0)
+func _add_burden_entry(title: String, value: String, color: Color) -> void:
+	var entry = Label.new()
+func _refresh_stratum_hall() -> void:
+		var card_instance = card_prefab.instantiate()
+		var can_afford = _can_afford(card_data)
 func _can_afford(card: SeasonalCardResource) -> bool:
-func _deal_cards() -> void:
-	var winter_deck: Array[SeasonalCardResource] = []
-	var cards_to_spawn = min(hand_size, winter_deck.size())
-		var card_instance = card_prefab.instantiate() as SeasonalCard_UI
-		var card_data = winter_deck[i]
+	var costs = {}
+func _update_hall_ui() -> void:
 func _on_card_clicked(card: SeasonalCardResource) -> void:
-	var success = DynastyManager.perform_hall_action(card.cost_ap)
-func _on_jarl_stats_updated(jarl_data) -> void:
-func _on_end_year_pressed() -> void:
+	var success: bool = WinterManager.play_seasonal_card(card)
+func _refresh_stratum_bloodline() -> void:
+	var jarl: JarlData = DynastyManager.get_current_jarl()
+	var status_text: String = "Vigorous"
+	var status_color: Color = Color.GREEN
+	var heir_count: int = jarl.get_available_heir_count()
+func _on_end_winter_pressed() -> void:
 ```
 
 ## 💾 GAME DATA (Resources)
@@ -12041,8 +12081,6 @@ size = Vector2(10, 2)
   - depends on: `res://autoload/SettlementManager.gd`
 - `res:///test/integration/test_winter_systems.gd`
   - depends on: `res://ui/WinterCourt_UI.tscn`
-- `res:///test/test_year_cycle.gd`
-  - depends on: `res://data/units/Bondi.tres`
 - `res:///test/unit/test_spawn_logic.gd`
   - depends on: `res://autoload/SettlementManager.gd`
 - `res:///tools/AIContentImporter.gd`

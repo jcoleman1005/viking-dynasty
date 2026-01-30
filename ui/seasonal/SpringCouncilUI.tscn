@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://whql45nph2u8"]
+[gd_scene load_steps=8 format=3 uid="uid://whql45nph2u8"]
 
 [ext_resource type="Script" uid="uid://yqhbcg3i6ek6" path="res://ui/seasonal/SpringCouncil_UI.gd" id="1_kajfs"]
 [ext_resource type="Script" uid="uid://cni5gdnpbb1v2" path="res://data/resources/SeasonalCardResource.gd" id="2_y8qc6"]
@@ -6,6 +6,7 @@
 [ext_resource type="Resource" uid="uid://du2gsa2xinlrm" path="res://data/resources/Card_Focus_Raid.tres" id="4_eqjln"]
 [ext_resource type="PackedScene" uid="uid://d0px2w8n5r1lv" path="res://ui/seasonal/SeasonalCardUi.tscn" id="5_0j8s8"]
 [ext_resource type="Texture2D" uid="uid://dy8bikbul4bne" path="res://ui/assets/scroll_bg.png" id="6_a6awv"]
+[ext_resource type="Script" uid="uid://4dc3bdnc40ht" path="res://ui/seasonal/SpringUiDiagnostics.gd" id="7_y8qc6"]
 
 [node name="SpringCouncil_UI" type="Control" node_paths=PackedStringArray("card_container")]
 layout_mode = 3
@@ -15,7 +16,8 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_kajfs")
-available_advisor_cards = Array[ExtResource("2_y8qc6")]([ExtResource("3_mjw2u"), ExtResource("4_eqjln"), ExtResource("3_mjw2u")])
+available_advisor_cards = Array[ExtResource("2_y8qc6")]([ExtResource("3_mjw2u"), ExtResource("4_eqjln")])
+hand_size = 2
 card_prefab = ExtResource("5_0j8s8")
 card_container = NodePath("CardContainer")
 
@@ -70,3 +72,7 @@ offset_bottom = 27.0
 layout_mode = 0
 offset_right = 20.0
 offset_bottom = 10.0
+
+[node name="SpringUIDiagnostics" type="Node" parent="." node_paths=PackedStringArray("target_ui")]
+script = ExtResource("7_y8qc6")
+target_ui = NodePath("..")
