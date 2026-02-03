@@ -1,0 +1,210 @@
+[gd_scene load_steps=9 format=3 uid="uid://gyu45fs0qg5m"]
+
+[ext_resource type="Theme" uid="uid://63duv3n1vwhg" path="res://ui/themes/VikingDynastyTheme.tres" id="2_theme"]
+[ext_resource type="Script" uid="uid://ci7e0n2tw0k21" path="res://ui/TopBarUiComponent.gd" id="2_tmg04"]
+[ext_resource type="Texture2D" uid="uid://d08kc6hrja6ev" path="res://ui/assets/res_gold.png" id="3_gold"]
+[ext_resource type="Texture2D" uid="uid://m6tx1fv7imra" path="res://ui/assets/res_wood.png" id="4_wood"]
+[ext_resource type="Texture2D" uid="uid://ck3gpx751ywcw" path="res://ui/assets/res_food.png" id="5_food"]
+[ext_resource type="Texture2D" uid="uid://denkxl6ex742y" path="res://ui/assets/res_stone.png" id="6_stone"]
+[ext_resource type="Texture2D" uid="uid://cukqh3t2wkmua" path="res://ui/assets/res_peasant.png" id="7_peasant"]
+[ext_resource type="Texture2D" uid="uid://day6g5ykwqgyb" path="res://ui/assets/res_thrall.png" id="8_thrall"]
+
+[node name="TopBar" type="PanelContainer"]
+modulate = Color(1, 1, 1, 0.95)
+custom_minimum_size = Vector2(0, 60)
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 105.0
+grow_horizontal = 2
+mouse_filter = 2
+theme = ExtResource("2_theme")
+script = ExtResource("2_tmg04")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 5
+
+[node name="MainLayout" type="HBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_constants/separation = 25
+
+[node name="IdentitySection" type="HBoxContainer" parent="MarginContainer/MainLayout"]
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_constants/separation = 15
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/MainLayout/IdentitySection"]
+layout_mode = 2
+alignment = 1
+
+[node name="InfoRow" type="HBoxContainer" parent="MarginContainer/MainLayout/IdentitySection/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_constants/separation = 10
+
+[node name="JarlLabel" type="Label" parent="MarginContainer/MainLayout/IdentitySection/VBoxContainer/InfoRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_font_sizes/font_size = 18
+text = "Jarl Bjorn"
+
+[node name="StatsRow" type="HBoxContainer" parent="MarginContainer/MainLayout/IdentitySection/VBoxContainer/InfoRow"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/separation = 15
+
+[node name="RenownLabel" type="Label" parent="MarginContainer/MainLayout/IdentitySection/VBoxContainer/InfoRow/StatsRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_font_sizes/font_size = 12
+text = "Renown: 0"
+
+[node name="DynastyButton" type="Button" parent="MarginContainer/MainLayout/IdentitySection/VBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Dynasty"
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/MainLayout"]
+layout_mode = 2
+
+[node name="ResourceSection" type="HBoxContainer" parent="MarginContainer/MainLayout"]
+layout_mode = 2
+size_flags_horizontal = 10
+size_flags_vertical = 0
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="GoldGroup" type="HBoxContainer" parent="MarginContainer/MainLayout/ResourceSection"]
+layout_mode = 2
+
+[node name="Icon" type="TextureRect" parent="MarginContainer/MainLayout/ResourceSection/GoldGroup"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+size_flags_vertical = 0
+texture = ExtResource("3_gold")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="GoldLabel" type="Label" parent="MarginContainer/MainLayout/ResourceSection/GoldGroup"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0"
+
+[node name="WoodGroup" type="HBoxContainer" parent="MarginContainer/MainLayout/ResourceSection"]
+layout_mode = 2
+
+[node name="Icon" type="TextureRect" parent="MarginContainer/MainLayout/ResourceSection/WoodGroup"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+texture = ExtResource("4_wood")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="WoodLabel" type="Label" parent="MarginContainer/MainLayout/ResourceSection/WoodGroup"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0"
+
+[node name="FoodGroup" type="HBoxContainer" parent="MarginContainer/MainLayout/ResourceSection"]
+layout_mode = 2
+
+[node name="Icon" type="TextureRect" parent="MarginContainer/MainLayout/ResourceSection/FoodGroup"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+texture = ExtResource("5_food")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="FoodLabel" type="Label" parent="MarginContainer/MainLayout/ResourceSection/FoodGroup"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0"
+
+[node name="StoneGroup" type="HBoxContainer" parent="MarginContainer/MainLayout/ResourceSection"]
+layout_mode = 2
+
+[node name="Icon" type="TextureRect" parent="MarginContainer/MainLayout/ResourceSection/StoneGroup"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+texture = ExtResource("6_stone")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="StoneLabel" type="Label" parent="MarginContainer/MainLayout/ResourceSection/StoneGroup"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0"
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/MainLayout"]
+layout_mode = 2
+
+[node name="PopSection" type="HBoxContainer" parent="MarginContainer/MainLayout"]
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="PeasantGroup" type="HBoxContainer" parent="MarginContainer/MainLayout/PopSection"]
+layout_mode = 2
+size_flags_vertical = 0
+tooltip_text = "Idle Villagers / Total Population"
+
+[node name="Icon" type="TextureRect" parent="MarginContainer/MainLayout/PopSection/PeasantGroup"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+texture = ExtResource("7_peasant")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PeasantLabel" type="Label" parent="MarginContainer/MainLayout/PopSection/PeasantGroup"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0/0"
+
+[node name="ThrallGroup" type="HBoxContainer" parent="MarginContainer/MainLayout/PopSection"]
+layout_mode = 2
+size_flags_vertical = 0
+tooltip_text = "Idle Thralls / Total Thralls"
+
+[node name="Icon" type="TextureRect" parent="MarginContainer/MainLayout/PopSection/ThrallGroup"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+texture = ExtResource("8_thrall")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ThrallLabel" type="Label" parent="MarginContainer/MainLayout/PopSection/ThrallGroup"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0/0"
+
+[node name="VSeparator3" type="VSeparator" parent="MarginContainer/MainLayout/PopSection"]
+layout_mode = 2
+
+[node name="WarbandGroup" type="HBoxContainer" parent="MarginContainer/MainLayout/PopSection"]
+layout_mode = 2
+size_flags_vertical = 0
+tooltip_text = "Active Warbands"
+
+[node name="AuthorityLabel" type="Label" parent="MarginContainer/MainLayout/PopSection/WarbandGroup"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Auth: 0"
+
+[node name="Label" type="Label" parent="MarginContainer/MainLayout/PopSection/WarbandGroup"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Warbands:"
+
+[node name="UnitCountLabel" type="Label" parent="MarginContainer/MainLayout/PopSection/WarbandGroup"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "0"

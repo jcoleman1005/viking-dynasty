@@ -1,6 +1,6 @@
 # PROJECT API MAP
 > **CONTEXT INSTRUCTION:** This file contains the STRUCTURE of the project. Implementation details are hidden to save space. Use this to understand available classes, functions, and signals.
-> Generated: 2026-01-29T14:22:57
+> Generated: 2026-02-03T14:06:15
 
 ## 🏛️ GLOBAL ARCHITECTURE
 ### Autoloads (Singletons)
@@ -32,16 +32,16 @@
 - **PromptLibrary** [Window]
 - **MarginContainer** [MarginContainer]
   - **HSplitContainer** [HSplitContainer]
-    - **VBoxContainer** [VBoxContainer]
-      - **SearchBar** [LineEdit]
-      - **PromptTree** [Tree]
-    - **VBoxContainer2** [VBoxContainer]
-      - **TitleLabel** [Label]
-      - **DescriptionLabel** [Label]
-      - **HBoxContainer** [HBoxContainer]
-        - **CopyButton** [Button]
-        - **CopyFeedbackLabel** [Label]
-      - **PromptText** [TextEdit]
+	- **VBoxContainer** [VBoxContainer]
+	  - **SearchBar** [LineEdit]
+	  - **PromptTree** [Tree]
+	- **VBoxContainer2** [VBoxContainer]
+	  - **TitleLabel** [Label]
+	  - **DescriptionLabel** [Label]
+	  - **HBoxContainer** [HBoxContainer]
+		- **CopyButton** [Button]
+		- **CopyFeedbackLabel** [Label]
+	  - **PromptText** [TextEdit]
 
 ### `res:///addons/gut/GutScene.tscn`
 - **GutScene** [Node2D]
@@ -71,57 +71,57 @@
 - **GutBottomPanel** [Control]
 - **layout** [VBoxContainer]
   - **ControlBar** [HBoxContainer]
-    - **RunAll** [Button]
-    - **Sep3** [ColorRect]
-    - **RunAtCursor** []
-    - **CenterContainer2** [CenterContainer]
-    - **MakeFloating** [Button]
+	- **RunAll** [Button]
+	- **Sep3** [ColorRect]
+	- **RunAtCursor** []
+	- **CenterContainer2** [CenterContainer]
+	- **MakeFloating** [Button]
   - **ControlBar2** [HBoxContainer]
-    - **Sep2** [ColorRect]
-    - **StatusIndicator** [Control]
-    - **Passing** [HBoxContainer]
-      - **Sep** [ColorRect]
-      - **label** [Label]
-      - **passing_value** [Label]
-    - **Failing** [HBoxContainer]
-      - **Sep** [ColorRect]
-      - **label** [Label]
-      - **failing_value** [Label]
-    - **Pending** [HBoxContainer]
-      - **Sep** [ColorRect]
-      - **label** [Label]
-      - **pending_value** [Label]
-    - **Orphans** [HBoxContainer]
-      - **Sep** [ColorRect]
-      - **label** [Label]
-      - **orphans_value** [Label]
-    - **Errors** [HBoxContainer]
-      - **Sep** [ColorRect]
-      - **label** [Label]
-      - **errors_value** [Label]
-    - **Warnings** [HBoxContainer]
-      - **Sep** [ColorRect]
-      - **label** [Label]
-      - **warnings_value** [Label]
-    - **CenterContainer** [CenterContainer]
-    - **ExtraButtons** [HBoxContainer]
-      - **Sep1** [ColorRect]
-      - **RunMode** [Button]
-      - **Sep2** [ColorRect]
-      - **RunResultsBtn** [Button]
-      - **OutputBtn** [Button]
-      - **Settings** [Button]
-      - **Sep3** [ColorRect]
-      - **Shortcuts** [Button]
-      - **About** [Button]
+	- **Sep2** [ColorRect]
+	- **StatusIndicator** [Control]
+	- **Passing** [HBoxContainer]
+	  - **Sep** [ColorRect]
+	  - **label** [Label]
+	  - **passing_value** [Label]
+	- **Failing** [HBoxContainer]
+	  - **Sep** [ColorRect]
+	  - **label** [Label]
+	  - **failing_value** [Label]
+	- **Pending** [HBoxContainer]
+	  - **Sep** [ColorRect]
+	  - **label** [Label]
+	  - **pending_value** [Label]
+	- **Orphans** [HBoxContainer]
+	  - **Sep** [ColorRect]
+	  - **label** [Label]
+	  - **orphans_value** [Label]
+	- **Errors** [HBoxContainer]
+	  - **Sep** [ColorRect]
+	  - **label** [Label]
+	  - **errors_value** [Label]
+	- **Warnings** [HBoxContainer]
+	  - **Sep** [ColorRect]
+	  - **label** [Label]
+	  - **warnings_value** [Label]
+	- **CenterContainer** [CenterContainer]
+	- **ExtraButtons** [HBoxContainer]
+	  - **Sep1** [ColorRect]
+	  - **RunMode** [Button]
+	  - **Sep2** [ColorRect]
+	  - **RunResultsBtn** [Button]
+	  - **OutputBtn** [Button]
+	  - **Settings** [Button]
+	  - **Sep3** [ColorRect]
+	  - **Shortcuts** [Button]
+	  - **About** [Button]
   - **RSplit** [HSplitContainer]
-    - **CResults** [VBoxContainer]
-      - **HSplitResults** [HSplitContainer]
-        - **RunResults** []
-        - **OutputText** []
-      - **VSplitResults** [VSplitContainer]
-    - **sc** [ScrollContainer]
-      - **Settings** [VBoxContainer]
+	- **CResults** [VBoxContainer]
+	  - **HSplitResults** [HSplitContainer]
+		- **RunResults** []
+		- **OutputText** []
+	  - **VSplitResults** [VSplitContainer]
+	- **sc** [ScrollContainer]
+	  - **Settings** [VBoxContainer]
 - **ShortcutDialog** []
 - **ShellOutOptions** []
 **Signals:**
@@ -143,12 +143,12 @@
 - **Bg** [ColorRect]
 - **VBox** [VBoxContainer]
   - **Tabs** [TabContainer]
-    - **Tests** [Tree]
-    - **SettingsScroll** [ScrollContainer]
-      - **Settings** [VBoxContainer]
+	- **Tests** [Tree]
+	- **SettingsScroll** [ScrollContainer]
+	  - **Settings** [VBoxContainer]
   - **Buttons** [HBoxContainer]
-    - **RunTests** [Button]
-    - **RunSelected** [Button]
+	- **RunTests** [Button]
+	- **RunSelected** [Button]
 **Signals:**
 - `VBox/Tabs/Tests` -> `.` :: _on_tests_item_activated()
 - `VBox/Buttons/RunTests` -> `.` :: _on_run_tests_pressed()
@@ -159,11 +159,11 @@
 - **ColorRect** [ColorRect]
 - **Layout** [VBoxContainer]
   - **WinControls** [HBoxContainer]
-    - **MenuBar** [MenuBar]
-    - **CenterContainer** [CenterContainer]
-    - **OnTop** [CheckButton]
-    - **HorizLayout** [Button]
-    - **VertLayout** [Button]
+	- **MenuBar** [MenuBar]
+	- **CenterContainer** [CenterContainer]
+	- **OnTop** [CheckButton]
+	- **HorizLayout** [Button]
+	- **VertLayout** [Button]
 **Signals:**
 - `.` -> `.` :: _on_close_requested()
 - `.` -> `.` :: _on_size_changed()
@@ -191,77 +191,77 @@
 - **Min** [Panel]
 - **MainBox** [VBoxContainer]
   - **TitleBar** [Panel]
-    - **TitleBox** [HBoxContainer]
-      - **Spacer1** [CenterContainer]
-      - **Title** [Label]
-      - **Spacer2** [CenterContainer]
-      - **TimeLabel** [Label]
+	- **TitleBox** [HBoxContainer]
+	  - **Spacer1** [CenterContainer]
+	  - **Title** [Label]
+	  - **Spacer2** [CenterContainer]
+	  - **TimeLabel** [Label]
   - **Body** [HBoxContainer]
-    - **LeftMargin** [CenterContainer]
-    - **BodyRows** [VBoxContainer]
-      - **ProgressBars** [HBoxContainer]
-        - **HBoxContainer** [HBoxContainer]
-          - **Label** [Label]
-          - **ProgressTest** [ProgressBar]
-        - **HBoxContainer2** [HBoxContainer]
-          - **Label** [Label]
-          - **ProgressScript** [ProgressBar]
-      - **PathDisplay** [VBoxContainer]
-        - **Path** [Label]
-        - **HBoxContainer** [HBoxContainer]
-          - **S3** [CenterContainer]
-          - **File** [Label]
-      - **Footer** [HBoxContainer]
-        - **HandleLeft** []
-        - **SwitchModes** [Button]
-        - **CenterContainer** [CenterContainer]
-        - **Continue** [Button]
-        - **HandleRight** []
-    - **RightMargin** [CenterContainer]
+	- **LeftMargin** [CenterContainer]
+	- **BodyRows** [VBoxContainer]
+	  - **ProgressBars** [HBoxContainer]
+		- **HBoxContainer** [HBoxContainer]
+		  - **Label** [Label]
+		  - **ProgressTest** [ProgressBar]
+		- **HBoxContainer2** [HBoxContainer]
+		  - **Label** [Label]
+		  - **ProgressScript** [ProgressBar]
+	  - **PathDisplay** [VBoxContainer]
+		- **Path** [Label]
+		- **HBoxContainer** [HBoxContainer]
+		  - **S3** [CenterContainer]
+		  - **File** [Label]
+	  - **Footer** [HBoxContainer]
+		- **HandleLeft** []
+		- **SwitchModes** [Button]
+		- **CenterContainer** [CenterContainer]
+		- **Continue** [Button]
+		- **HandleRight** []
+	- **RightMargin** [CenterContainer]
   - **CenterContainer** [CenterContainer]
 
 ### `res:///addons/gut/gui/NormalGui.tscn`
 - **Large** [Panel]
 - **MainBox** [VBoxContainer]
   - **TitleBar** [Panel]
-    - **TitleBox** [HBoxContainer]
-      - **Spacer1** [CenterContainer]
-      - **Title** [Label]
-      - **Spacer2** [CenterContainer]
-      - **TimeLabel** [Label]
+	- **TitleBox** [HBoxContainer]
+	  - **Spacer1** [CenterContainer]
+	  - **Title** [Label]
+	  - **Spacer2** [CenterContainer]
+	  - **TimeLabel** [Label]
   - **HBoxContainer** [HBoxContainer]
-    - **VBoxContainer** [VBoxContainer]
-      - **OutputBG** [ColorRect]
-        - **HBoxContainer** [HBoxContainer]
-          - **S2** [CenterContainer]
-          - **TestOutput** [RichTextLabel]
-          - **S1** [CenterContainer]
-      - **ControlBox** [HBoxContainer]
-        - **S1** [CenterContainer]
-        - **ProgressBars** [VBoxContainer]
-          - **TestBox** [HBoxContainer]
-            - **Label** [Label]
-            - **ProgressTest** [ProgressBar]
-          - **ScriptBox** [HBoxContainer]
-            - **Label** [Label]
-            - **ProgressScript** [ProgressBar]
-        - **PathDisplay** [VBoxContainer]
-          - **Path** [Label]
-          - **HBoxContainer** [HBoxContainer]
-            - **S3** [CenterContainer]
-            - **File** [Label]
-        - **Buttons** [VBoxContainer]
-          - **Continue** [Button]
-          - **WordWrap** [CheckButton]
-        - **S3** [CenterContainer]
+	- **VBoxContainer** [VBoxContainer]
+	  - **OutputBG** [ColorRect]
+		- **HBoxContainer** [HBoxContainer]
+		  - **S2** [CenterContainer]
+		  - **TestOutput** [RichTextLabel]
+		  - **S1** [CenterContainer]
+	  - **ControlBox** [HBoxContainer]
+		- **S1** [CenterContainer]
+		- **ProgressBars** [VBoxContainer]
+		  - **TestBox** [HBoxContainer]
+			- **Label** [Label]
+			- **ProgressTest** [ProgressBar]
+		  - **ScriptBox** [HBoxContainer]
+			- **Label** [Label]
+			- **ProgressScript** [ProgressBar]
+		- **PathDisplay** [VBoxContainer]
+		  - **Path** [Label]
+		  - **HBoxContainer** [HBoxContainer]
+			- **S3** [CenterContainer]
+			- **File** [Label]
+		- **Buttons** [VBoxContainer]
+		  - **Continue** [Button]
+		  - **WordWrap** [CheckButton]
+		- **S3** [CenterContainer]
   - **BottomPad** [CenterContainer]
   - **Footer** [HBoxContainer]
-    - **SidePad1** [CenterContainer]
-    - **ResizeHandle3** []
-    - **SwitchModes** [Button]
-    - **CenterContainer** [CenterContainer]
-    - **ResizeHandle2** []
-    - **SidePad2** [CenterContainer]
+	- **SidePad1** [CenterContainer]
+	- **ResizeHandle3** []
+	- **SwitchModes** [Button]
+	- **CenterContainer** [CenterContainer]
+	- **ResizeHandle2** []
+	- **SidePad2** [CenterContainer]
   - **BottomPad2** [CenterContainer]
 
 ### `res:///addons/gut/gui/OutputText.tscn`
@@ -320,11 +320,11 @@
 - **DoShellOut** [Control]
 - **BgControl** [Panel]
   - **VBox** [VBoxContainer]
-    - **Spacer** [CenterContainer]
-    - **Title** [Label]
-    - **Spacer2** [CenterContainer]
-    - **Kill** [Button]
-    - **Spacer3** [CenterContainer]
+	- **Spacer** [CenterContainer]
+	- **Title** [Label]
+	- **Spacer2** [CenterContainer]
+	- **Kill** [Button]
+	- **Spacer3** [CenterContainer]
 **Signals:**
 - `BgControl` -> `.` :: _on_color_rect_gui_input()
 - `BgControl/VBox/Kill` -> `.` :: _on_kill_pressed()
@@ -333,21 +333,21 @@
 - **RunResults** [Control]
 - **VBox** [VBoxContainer]
   - **Toolbar** [HBoxContainer]
-    - **Expand** [Button]
-    - **Collapse** [Button]
-    - **Sep** [ColorRect]
-    - **LblAll** [Label]
-    - **ExpandAll** [Button]
-    - **CollapseAll** [Button]
-    - **Sep2** [ColorRect]
-    - **HidePassing** [CheckBox]
-    - **Sep3** [ColorRect]
-    - **LblSync** [Label]
-    - **ShowScript** [Button]
-    - **ScrollOutput** [Button]
+	- **Expand** [Button]
+	- **Collapse** [Button]
+	- **Sep** [ColorRect]
+	- **LblAll** [Label]
+	- **ExpandAll** [Button]
+	- **CollapseAll** [Button]
+	- **Sep2** [ColorRect]
+	- **HidePassing** [CheckBox]
+	- **Sep3** [ColorRect]
+	- **LblSync** [Label]
+	- **ShowScript** [Button]
+	- **ScrollOutput** [Button]
   - **Output** [Panel]
-    - **Scroll** [ScrollContainer]
-      - **Tree** []
+	- **Scroll** [ScrollContainer]
+	  - **Tree** []
 - **FontSampler** [Label]
 **Signals:**
 - `VBox/Toolbar/Expand` -> `.` :: _on_Expand_pressed()
@@ -384,47 +384,47 @@
 - **ShortcutDialog** [ConfirmationDialog]
 - **Scroll** [ScrollContainer]
   - **Layout** [VBoxContainer]
-    - **ShortcutDescription** [RichTextLabel]
-    - **TopPad** [CenterContainer]
-    - **CPanelButton** [HBoxContainer]
-      - **Label** [Label]
-      - **ShortcutButton** []
-    - **ShortcutDescription2** [RichTextLabel]
-    - **CRunAll** [HBoxContainer]
-      - **Label** [Label]
-      - **ShortcutButton** []
-    - **ShortcutDescription3** [RichTextLabel]
-    - **CRunCurrentScript** [HBoxContainer]
-      - **Label** [Label]
-      - **ShortcutButton** []
-    - **ShortcutDescription4** [RichTextLabel]
-    - **CRunCurrentInner** [HBoxContainer]
-      - **Label** [Label]
-      - **ShortcutButton** []
-    - **ShortcutDescription5** [RichTextLabel]
-    - **CRunCurrentTest** [HBoxContainer]
-      - **Label** [Label]
-      - **ShortcutButton** []
-    - **ShortcutDescription6** [RichTextLabel]
-    - **CRunAtCursor** [HBoxContainer]
-      - **Label** [Label]
-      - **ShortcutButton** []
-    - **ShortcutDescription7** [RichTextLabel]
-    - **CRerun** [HBoxContainer]
-      - **Label** [Label]
-      - **ShortcutButton** []
-    - **ShortcutDescription8** [RichTextLabel]
-    - **CToggleWindowed** [HBoxContainer]
-      - **Label** [Label]
-      - **ShortcutButton** []
-    - **ShortcutDescription9** [RichTextLabel]
+	- **ShortcutDescription** [RichTextLabel]
+	- **TopPad** [CenterContainer]
+	- **CPanelButton** [HBoxContainer]
+	  - **Label** [Label]
+	  - **ShortcutButton** []
+	- **ShortcutDescription2** [RichTextLabel]
+	- **CRunAll** [HBoxContainer]
+	  - **Label** [Label]
+	  - **ShortcutButton** []
+	- **ShortcutDescription3** [RichTextLabel]
+	- **CRunCurrentScript** [HBoxContainer]
+	  - **Label** [Label]
+	  - **ShortcutButton** []
+	- **ShortcutDescription4** [RichTextLabel]
+	- **CRunCurrentInner** [HBoxContainer]
+	  - **Label** [Label]
+	  - **ShortcutButton** []
+	- **ShortcutDescription5** [RichTextLabel]
+	- **CRunCurrentTest** [HBoxContainer]
+	  - **Label** [Label]
+	  - **ShortcutButton** []
+	- **ShortcutDescription6** [RichTextLabel]
+	- **CRunAtCursor** [HBoxContainer]
+	  - **Label** [Label]
+	  - **ShortcutButton** []
+	- **ShortcutDescription7** [RichTextLabel]
+	- **CRerun** [HBoxContainer]
+	  - **Label** [Label]
+	  - **ShortcutButton** []
+	- **ShortcutDescription8** [RichTextLabel]
+	- **CToggleWindowed** [HBoxContainer]
+	  - **Label** [Label]
+	  - **ShortcutButton** []
+	- **ShortcutDescription9** [RichTextLabel]
 
 ### `res:///addons/gut/gui/about.tscn`
 - **About** [AcceptDialog]
 - **HBox** [HBoxContainer]
   - **MakeRoomForLogo** [CenterContainer]
   - **Scroll** [ScrollContainer]
-    - **RichTextLabel** [RichTextLabel]
+	- **RichTextLabel** [RichTextLabel]
 - **Logo** []
 **Signals:**
 - `.` -> `.` :: _on_mouse_entered()
@@ -447,12 +447,12 @@
   - **LabelLatestVersion** [Label]
   - **LabelCurrentVersion** [Label]
   - **VBoxContainer** [VBoxContainer]
-    - **Label** [Label]
-    - **HBoxContainer** [HBoxContainer]
-      - **NoticeButtons** [HBoxContainer]
-        - **ReleaseNotesBtn** [Button]
-        - **UpdateNowBtn** [Button]
-        - **RemindLaterBtn** [Button]
+	- **Label** [Label]
+	- **HBoxContainer** [HBoxContainer]
+	  - **NoticeButtons** [HBoxContainer]
+		- **ReleaseNotesBtn** [Button]
+		- **UpdateNowBtn** [Button]
+		- **RemindLaterBtn** [Button]
   - **DontShowAgainCheckbox** [CheckBox]
 - **UpdateMonitor** [Control]
   - **BackgroundUnder** [TextureRect]
@@ -463,11 +463,11 @@
   - **LabelNewVersion** [Label]
   - **LoggieIcon** [TextureRect]
   - **VBoxContainer** [VBoxContainer]
-    - **OptionButtons** [HBoxContainer]
-      - **OptionRetryUpdateBtn** [Button]
-      - **OptionRestartGodotBtn** [Button]
-      - **OptionExitBtn** [Button]
-    - **LabelUpdateStatus** [Label]
+	- **OptionButtons** [HBoxContainer]
+	  - **OptionRetryUpdateBtn** [Button]
+	  - **OptionRestartGodotBtn** [Button]
+	  - **OptionExitBtn** [Button]
+	- **LabelUpdateStatus** [Label]
 - **AnimationPlayer** [AnimationPlayer]
 
 ### `res:///autoload/EventManager.tscn`
@@ -492,7 +492,7 @@
 - **LevelDesignTemplate** [Node2D]
 - **LevelDesignerTools** [Node2D]
   - **GridVisualizer** [Node2D]
-    - **ReferenceRect** [ReferenceRect]
+	- **ReferenceRect** [ReferenceRect]
   - **Instructions (Won\'t be in final scene)** [Label]
   - **_Palette** [Node2D]
     - **Civilian** [Node2D]
@@ -541,10 +541,10 @@
   - **Storefront_UI** []
   - **Dynasty_UI** []
   - **EndOfYear_Popup** []
-  - **RestartButton** [Button]
   - **PauseButton** [Button]
   - **BuildingInspector** []
   - **SpringCouncil_UI** []
+  - **SummerWorkspace_UI** []
   - **SummerRaid_UI** []
   - **AutumnLedgerUI** []
   - **WinterCourt_UI** []
@@ -994,11 +994,12 @@
 - **ConfirmPanel** [Control]
   - **ConfirmLabel** [Label]
   - **CommitButton** [Button]
+- **SpringUIDiagnostics** [Node]
 
 ### `res:///ui/seasonal/SummerAllocation_Ui.tscn`
-- **SummerAllocation_UI** [Control]
-- **Panel** [Panel]
-  - **MarginContainer** [MarginContainer]
+- **SummerAllocation_UI** [PanelContainer]
+- **MarginContainer** [MarginContainer]
+  - **ScrollContainer** [ScrollContainer]
     - **VBoxContainer** [VBoxContainer]
       - **Header** [HBoxContainer]
         - **Title** [Label]
@@ -1052,6 +1053,75 @@
             - **Lbl_WinterNet** [Label]
       - **Footer** [HBoxContainer]
         - **ConfirmBtn** [Button]
+
+### `res:///ui/seasonal/SummerJobSlider.tscn`
+- **JobRow_UI** [PanelContainer]
+- **MarginContainer** [MarginContainer]
+  - **HBoxContainer** [HBoxContainer]
+    - **Icon** [TextureRect]
+    - **Label_Role** [Label]
+    - **VSeparator** [VSeparator]
+    - **CountContainer** [HBoxContainer]
+      - **Btn_Minus** [Button]
+      - **Label_Count** [Label]
+      - **Btn_Plus** [Button]
+
+### `res:///ui/seasonal/SummerWorkspaceUI.tscn`
+- **SummerWorkspace_UI** [Control]
+- **BackgroundLayer** [TextureRect]
+- **LayoutRoot** [VBoxContainer]
+  - **HUD_TopBar** [PanelContainer]
+    - **MarginContainer** [MarginContainer]
+      - **HBoxContainer** [HBoxContainer]
+        - **ResourceGroup** [HBoxContainer]
+          - **SilverWidget** [HBoxContainer]
+            - **Icon** [TextureRect]
+            - **Label_Value** [Label]
+          - **FoodWidget** [HBoxContainer]
+            - **Icon** [TextureRect]
+            - **Label_Value** [Label]
+          - **WoodWidget** [HBoxContainer]
+            - **Icon** [TextureRect]
+            - **Label_Value** [Label]
+        - **PopWidget** [HBoxContainer]
+          - **Icon** [TextureRect]
+          - **Label_Total** [Label]
+          - **Label_Idle** [Label]
+        - **WinterWarning** [TextureRect]
+        - **CloseButton** [Button]
+  - **MainWorkspace** [HBoxContainer]
+    - **LaborColumn** [VBoxContainer]
+      - **Header** [Label]
+      - **HSeparator** [HSeparator]
+      - **JobRow_Container** [VBoxContainer]
+        - **Label_Farmers** [Label]
+        - **Label_Builders** [Label]
+        - **Label_Raiders** [Label]
+        - **Btn_ManageAllocation** [Button]
+    - **VisualizationColumn** [VBoxContainer]
+      - **ProjectTabs** [HBoxContainer]
+        - **Btn_ShowConstruction** [Button]
+        - **Btn_ShowCompleted** [Button]
+      - **ActiveProjects_Grid** [GridContainer]
+      - **CompletedBuildings_Grid** [GridContainer]
+      - **RaidCommand_Section** [VBoxContainer]
+        - **CollapseToggle** [Button]
+        - **RaidCommand_Container** [PanelContainer]
+          - **MarginContainer** [MarginContainer]
+            - **VBoxContainer** [VBoxContainer]
+              - **CommandHeader** [HBoxContainer]
+                - **Label_Title** [Label]
+                - **Label_Authority** [Label]
+              - **HSeparator** [HSeparator]
+              - **TroopBreakdown** [VBoxContainer]
+                - **BondiCount** [HBoxContainer]
+                  - **Label_Title** [Label]
+                  - **Label_Value** [Label]
+                - **WarbandList** [VBoxContainer]
+              - **WorldMapButton** [Button]
+  - **Footer_Commitment** [PanelContainer]
+    - **MarginContainer** [MarginContainer]
+      - **ProceedButton** [Button]
 
 ### `res:///ui/seasonal/WinterCourt_UI.tscn`
 - **WinterCourtUI** [Control]
@@ -9958,6 +10028,35 @@ func _on_card_selected(card: SeasonalCardResource) -> void:
 func _commit_choice() -> void:
 ```
 
+### `res:///ui/seasonal/SpringUiDiagnostics.gd`
+```gdscript
+extends Node
+class_name SpringUIDiagnostic
+@export var target_ui: SpringCouncil_UI
+@export var audit_interval: float = 1.0
+var _timer: float = 0.0
+func _ready() -> void:
+func _process(delta: float) -> void:
+func _validate_configuration() -> void:
+func _check_initial_state() -> void:
+func _hook_container() -> void:
+func _on_card_spawned(node: Node) -> void:
+func _hook_global_signals() -> void:
+func _run_periodic_audit() -> void:
+	var child_count = target_ui.card_container.get_child_count()
+func _debug_deck_failure() -> void:
+		var test_inst = target_ui.card_prefab.instantiate()
+	var expected_enum = SeasonalCardResource.SeasonType.SPRING
+	var valid_cards = 0
+		var card = target_ui.available_advisor_cards[i]
+		var is_external = card.resource_path != "" and not "::" in card.resource_path
+		var card_season = card.season
+func _log_info(msg: String) -> void:
+func _log_warn(msg: String) -> void:
+func _log_error(msg: String) -> void:
+func _log_input(msg: String) -> void:
+```
+
 ### `res:///ui/seasonal/SummerAllocation_UI.gd`
 ```gdscript
 extends Control
@@ -10079,6 +10178,148 @@ func _distribute_farmers(total_farmers: int) -> void:
 		var to_assign = min(remaining, item.cap)
 func _on_commit_raid_pressed() -> void:
 	var raid_count = allocations.raiding
+```
+
+### `res:///ui/seasonal/SummerDiagnostics.gd`
+```gdscript
+extends Node
+class_name SummerUIDiagnostic
+@export var target_ui: SummerWorkspace_UI
+@export var audit_interval: float = 1.0
+var _timer: float = 0.0
+func _ready() -> void:
+func _process(delta: float) -> void:
+func _validate_node_assignments() -> void:
+	var nodes_to_check = {
+		var node = nodes_to_check[name]
+func _check_visibility_and_process() -> void:
+func _hook_inputs() -> void:
+	var rows = {
+		var row = rows[key]
+func _on_collapse_clicked_diagnostic() -> void:
+	var container = target_ui.container_raid_command
+	var logic_state = target_ui.is_raid_panel_open
+func _log_state(prefix: String, node: Control) -> void:
+func _run_periodic_audit() -> void:
+		var real_idle = SettlementManager.get_idle_peasants()
+		var planned = target_ui.planned_raiders
+		var visual_idle = real_idle - planned
+func _log_warn(msg: String) -> void:
+func _log_error(msg: String) -> void:
+func _log_input(msg: String) -> void:
+```
+
+### `res:///ui/seasonal/SummerJobSlider.gd`
+```gdscript
+extends PanelContainer
+class_name JobRow_UI
+signal change_requested(amount: int) # +1 or -1
+@export_group("Configuration")
+@export var role_title: String = "Worker":
+@export var icon: Texture2D
+@export_group("Internal Nodes")
+@export var label_role: Label
+@export var label_count: Label
+@export var btn_minus: Button
+@export var btn_plus: Button
+@export var icon_rect: TextureRect
+var current_count: int = 0
+var max_count: int = -1 
+func _ready() -> void:
+func setup(title_override: String, _icon: Texture2D = null) -> void:
+func _connect_signals() -> void:
+func update_display(count: int, _max: int = -1) -> void:
+func _update_button_states() -> void:
+func set_plus_enabled(enabled: bool) -> void:
+```
+
+### `res:///ui/seasonal/SummerWorkspace_UI.gd`
+```gdscript
+extends Control
+class_name SummerWorkspace_UI
+const SEASONS_PER_YEAR: int = 4
+const SEASON_NAMES: Array[String] = ["Spring", "Summer", "Autumn", "Winter"]
+@export_group("HUD Components")
+@export var label_silver: Label
+@export var label_food: Label
+@export var label_wood: Label
+@export var label_pop_total: Label
+@export var label_pop_idle: Label
+@export var texture_winter_warning: TextureRect
+@export var btn_hide_ui: Button 
+@export_group("Labor Summary")
+@export var lbl_summary_farmers: Label
+@export var lbl_summary_builders: Label
+@export var lbl_summary_raiders: Label
+@export var btn_manage_allocation: Button
+@export var job_row_container: VBoxContainer ## container where the allocation panel will be injected
+@export var allocation_view_scene: PackedScene ## Assign 'SummerAllocation_UI.tscn' here
+@export_group("War Council")
+@export var container_raid_command: Control 
+@export var btn_collapse_toggle: Button
+@export var label_authority: Label
+@export var label_bondi_count: Label
+@export var container_warbands: VBoxContainer
+@export var btn_world_map: Button
+@export var btn_proceed: Button
+@export_group("Project Management")
+@export var btn_tab_construction: Button
+@export var btn_tab_completed: Button
+@export var grid_active_projects: GridContainer
+@export var grid_completed_buildings: GridContainer
+@onready var background_layer: TextureRect = $BackgroundLayer
+@onready var layout_root: VBoxContainer = $LayoutRoot
+var btn_restore_ui: Button 
+var allocation_instance: Control
+var is_raid_panel_open: bool = true
+var _has_activated: bool = false
+func _ready() -> void:
+func _create_restore_button() -> void:
+func _connect_buttons() -> void:
+func _activate_summer_ui() -> void:
+func _setup_mouse_filters() -> void:
+func _setup_signals() -> void:
+func _on_hide_ui_pressed() -> void:
+func _on_restore_ui_pressed() -> void:
+func _initial_refresh() -> void:
+func _refresh_labor_summary() -> void:
+	var placed = SettlementManager.current_settlement.placed_buildings
+	var pending = SettlementManager.current_settlement.pending_construction_buildings
+	var current_farmers = 0
+	var current_builders = 0
+	var current_raiders = 0 
+func _update_population_display() -> void:
+	var total = SettlementManager.current_settlement.population_peasants
+	var idle = SettlementManager.get_idle_peasants()
+	var no_labor = idle <= 0
+func _on_manage_allocation_pressed() -> void:
+func _on_allocation_committed() -> void:
+func _update_resources(treasury: Dictionary) -> void:
+func _update_authority_display() -> void:
+	var auth = DynastyManager.current_jarl.current_authority
+func _update_forecast_warning() -> void:
+	var forecast = EconomyManager.get_winter_forecast()
+	var base_food_demand = forecast.get("food", 0)
+	var current_food = SettlementManager.current_settlement.treasury.get("food", 0)
+func _refresh_building_grids() -> void:
+		var lbl = Label.new()
+		var b_name = "Building"
+			var b_data = load(b["resource_path"])
+	var pending = SettlementManager.current_settlement.get("pending_construction_buildings")
+			var b = pending[i]
+			var lbl = Label.new()
+			var b_name = "Site"
+				var b_data = load(b["resource_path"])
+			var assigned = b.get("peasant_count", 0)
+			var status_str = "(Paused)" if assigned == 0 else "(Active: %d)" % assigned
+func _on_proceed_pressed() -> void:
+func _on_settlement_loaded(_data) -> void:
+func _on_treasury_updated(new_treasury: Dictionary) -> void:
+func _on_population_changed() -> void:
+func _on_season_changed(new_season: String) -> void:
+func _toggle_raid_panel() -> void:
+	var tween = create_tween()
+func _set_project_view(show_construction: bool) -> void:
 ```
 
 ### `res:///ui/seasonal/WinterCourtUI.gd`
@@ -10691,7 +10932,6 @@ description = "Boost Authority for multiple raids. Increases amount of time need
 [ext_resource type="Script" uid="uid://cni5gdnpbb1v2" path="res://data/resources/SeasonalCardResource.gd" id="1_sbleo"]
 [resource]
 script = ExtResource("1_sbleo")
-title = "Construction Focus"
 description = "Boosts building construction time. Decreases authority for raids."
 ```
 
@@ -12111,5 +12351,8 @@ size = Vector2(10, 2)
   - depends on: `resource_path`
   - depends on: `resource_path`
   - depends on: `resource_path`
+  - depends on: `resource_path`
+  - depends on: `resource_path`
+- `res:///ui/seasonal/SummerWorkspace_UI.gd`
   - depends on: `resource_path`
   - depends on: `resource_path`

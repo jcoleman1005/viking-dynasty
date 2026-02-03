@@ -774,3 +774,48 @@ func _get_closest_walkable_point_exclusive(origin: Vector2i, max_radius: int, ex
 					return candidate
 	
 	return origin
+
+
+## NEW: High-level abstraction for batch assignment
+func batch_update_labor(assignments: Dictionary) -> void:
+	if not current_settlement: return
+	
+	# 1. Handle Builders (Same as before)
+	if assignments.has("construction"):
+		var builder_pool = assignments["construction"]
+		for entry in current_settlement.pending_construction_buildings:
+			var data = load(entry["resource_path"]) as BuildingData
+			var cap = data.base_labor_capacity
+			var to_assign = min(builder_pool, cap)
+			entry["peasant_count"] = to_assign
+			builder_pool -= to_assign
+
+	# 2. Handle Specific Resource Workers (Split Logic)
+	# We iterate placed buildings ONCE for efficiency
+	var food_pool = assignments.get("food", 0)
+	var wood_pool = assignments.get("wood", 0)
+	
+	for entry in current_settlement.placed_buildings:
+		var data = load(entry["resource_path"]) as EconomicBuildingData
+		if not data: continue
+		
+		# Reset current workers
+		entry["peasant_count"] = 0
+		
+		if data.resource_type == "food" and food_pool > 0:
+			var cap = data.peasant_capacity
+			var to_assign = min(food_pool, cap)
+			entry["peasant_count"] = to_assign
+			food_pool -= to_assign
+			
+		elif data.resource_type == "wood" and wood_pool > 0:
+			var cap = data.peasant_capacity
+			var to_assign = min(wood_pool, cap)
+			entry["peasant_count"] = to_assign
+			wood_pool -= to_assign
+
+	# 3. Save & Emit
+	# Update the assignments dictionary for persistence
+	current_settlement.worker_assignments = assignments
+	save_settlement()
+	EventBus.settlement_loaded.emit(current_settlement)

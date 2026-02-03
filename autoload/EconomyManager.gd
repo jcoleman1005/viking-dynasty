@@ -476,56 +476,36 @@ func draft_peasants_to_raiders(count: int, template: UnitData) -> void:
 
 ## NEW: Authoritative Yield Projection
 ## Returns estimated output based on a theoretical distribution of labor
-func calculate_hypothetical_yields(farmer_count: int) -> Dictionary:
+# Updated signature: accepts Dictionary { "food": int, "wood": int }
+func calculate_hypothetical_yields(worker_counts: Dictionary) -> Dictionary:
 	var settlement = SettlementManager.current_settlement
 	if not settlement: return {}
 	
-	var yields = {}
-	var remaining_farmers = farmer_count
-	var placed = settlement.placed_buildings
+	var yields = {"food": 0, "wood": 0}
 	
-	# Sort buildings to prioritize Food (Logic moved from UI)
-	var food_buildings = []
-	var other_buildings = []
+	# Pools
+	var food_workers = worker_counts.get("food", 0)
+	var wood_workers = worker_counts.get("wood", 0)
 	
-	for entry in placed:
+	for entry in settlement.placed_buildings:
 		if "resource_path" in entry:
 			var b_data = load(entry["resource_path"])
 			if b_data is EconomicBuildingData:
-				var item = {"data": b_data, "cap": b_data.peasant_capacity}
-				if b_data.resource_type == GameResources.FOOD:
-					food_buildings.append(item)
-				else:
-					other_buildings.append(item)
-	
-	# Calculate Output
-	var total_assigned = 0
-	
-	# 1. Fill Food First
-	for item in food_buildings:
-		if remaining_farmers <= 0: break
-		var assign = min(remaining_farmers, item.cap)
-		var out = assign * item.data.base_passive_output
-		
-		var type = item.data.resource_type
-		yields[type] = yields.get(type, 0) + out
-		remaining_farmers -= assign
-		total_assigned += assign
-		
-	# 2. Fill Others
-	for item in other_buildings:
-		if remaining_farmers <= 0: break
-		var assign = min(remaining_farmers, item.cap)
-		var out = assign * item.data.base_passive_output
-		var type = item.data.resource_type
-		yields[type] = yields.get(type, 0) + out
-		remaining_farmers -= assign
-		total_assigned += assign
-		
+				var cap = b_data.peasant_capacity
+				var type = b_data.resource_type # "food" or "wood"
+				
+				# Check based on type
+				if type == "food" and food_workers > 0:
+					var assigned = min(food_workers, cap)
+					yields["food"] += assigned * b_data.base_passive_output
+					food_workers -= assigned
+					
+				elif type == "wood" and wood_workers > 0:
+					var assigned = min(wood_workers, cap)
+					yields["wood"] += assigned * b_data.base_passive_output
+					wood_workers -= assigned
+					
 	return yields
-	
-	
-# ... [Previous Phase 2 Code] ...
 
 # --- RAID OUTCOME API (NEW) ---
 

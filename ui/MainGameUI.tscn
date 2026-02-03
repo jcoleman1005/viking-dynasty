@@ -1,0 +1,138 @@
+[gd_scene load_steps=2 format=3 uid="uid://b6x8q4y2z5n1"]
+
+[ext_resource type="Script" path="res://ui/MainGameUI.gd" id="1_main"]
+
+[node name="MainGameUI" type="Control" node_paths=PackedStringArray("jarl_label", "treasury_hud", "authority_label", "renown_label", "bottom_bar_root", "seasonal_actions_panel", "btn_construct", "btn_raids", "btn_farming", "season_advance_btn", "dynasty_button")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_main")
+jarl_label = NodePath("MainLayout/TopBarArea/MarginContainer/HBoxContainer/JarlSection/JarlLabel")
+treasury_hud = NodePath("MainLayout/TopBarArea/MarginContainer/HBoxContainer/ResourceSection/TreasuryPlaceholder")
+authority_label = NodePath("MainLayout/TopBarArea/MarginContainer/HBoxContainer/JarlSection/AuthorityLabel")
+renown_label = NodePath("MainLayout/TopBarArea/MarginContainer/HBoxContainer/JarlSection/RenownLabel")
+bottom_bar_root = NodePath("MainLayout/BottomBarArea")
+seasonal_actions_panel = NodePath("MainLayout/BottomBarArea/SeasonalActionsPanel")
+btn_construct = NodePath("MainLayout/BottomBarArea/TabsContainer/BtnConstruct")
+btn_raids = NodePath("MainLayout/BottomBarArea/TabsContainer/BtnRaids")
+btn_farming = NodePath("MainLayout/BottomBarArea/TabsContainer/BtnFarming")
+season_advance_btn = NodePath("EndYearOverlay/SeasonAdvanceBtn")
+dynasty_button = NodePath("MainLayout/TopBarArea/MarginContainer/HBoxContainer/JarlSection/DynastyButton")
+
+[node name="MainLayout" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="TopBarArea" type="PanelContainer" parent="MainLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 0
+
+[node name="MarginContainer" type="MarginContainer" parent="MainLayout/TopBarArea"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 5
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MainLayout/TopBarArea/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="JarlSection" type="VBoxContainer" parent="MainLayout/TopBarArea/MarginContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="JarlLabel" type="Label" parent="MainLayout/TopBarArea/MarginContainer/HBoxContainer/JarlSection"]
+layout_mode = 2
+text = "Jarl Name"
+
+[node name="DynastyButton" type="Button" parent="MainLayout/TopBarArea/MarginContainer/HBoxContainer/JarlSection"]
+layout_mode = 2
+text = "Dynasty"
+
+[node name="AuthorityLabel" type="Label" parent="MainLayout/TopBarArea/MarginContainer/HBoxContainer/JarlSection"]
+layout_mode = 2
+text = "Auth: 0"
+
+[node name="RenownLabel" type="Label" parent="MainLayout/TopBarArea/MarginContainer/HBoxContainer/JarlSection"]
+layout_mode = 2
+text = "Renown: 0"
+
+[node name="VSeparator" type="VSeparator" parent="MainLayout/TopBarArea/MarginContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="ResourceSection" type="HBoxContainer" parent="MainLayout/TopBarArea/MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="TreasuryPlaceholder" type="Control" parent="MainLayout/TopBarArea/MarginContainer/HBoxContainer/ResourceSection"]
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "TreasuryHUD will be instanced here"
+
+[node name="CenterView" type="Control" parent="MainLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="BottomBarArea" type="VBoxContainer" parent="MainLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 8
+alignment = 2
+
+[node name="TabsContainer" type="HBoxContainer" parent="MainLayout/BottomBarArea"]
+layout_mode = 2
+alignment = 1
+
+[node name="BtnConstruct" type="Button" parent="MainLayout/BottomBarArea/TabsContainer"]
+layout_mode = 2
+text = "Construction"
+
+[node name="BtnRaids" type="Button" parent="MainLayout/BottomBarArea/TabsContainer"]
+layout_mode = 2
+text = "Raids"
+
+[node name="BtnFarming" type="Button" parent="MainLayout/BottomBarArea/TabsContainer"]
+layout_mode = 2
+text = "Farming"
+
+[node name="SeasonalActionsPanel" type="PanelContainer" parent="MainLayout/BottomBarArea"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Label" type="Label" parent="MainLayout/BottomBarArea/SeasonalActionsPanel"]
+layout_mode = 2
+text = "Select a tab to view actions"
+horizontal_alignment = 1
+
+[node name="EndYearOverlay" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -150.0
+offset_top = -60.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="SeasonAdvanceBtn" type="Button" parent="EndYearOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "End Season"

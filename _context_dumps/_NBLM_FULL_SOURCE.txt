@@ -2,7 +2,7 @@ PROJECT SOURCE CODE LIBRARY
 ===========================
 CONTAINS: Full Implementation Logic, Scene Trees, and Resource Data.
 INSTRUCTION: This is the raw source code. Use this to answer specific implementation questions.
-GENERATED: 2026-01-29T08:39:51
+GENERATED: 2026-02-03T14:12:21
 ===========================
 
 
@@ -26466,7 +26466,12 @@ var current_jarl: JarlData
 var minimum_inherited_legitimacy: int = 0
 var loaded_legacy_upgrades: Array[LegacyUpgradeData] = []
 
-var active_year_modifiers: Dictionary[String, Variant] = {}
+var active_year_modifiers: Dictionary[String, float] = {
+	"damage_mult": 0.0,
+	"xp_mult": 0.0,
+	"birth_chance": 0.0,
+	"harvest_mult": 0.0
+}
 var current_year: int = 867 
 # --- SEASON STATE ---
 enum Season { SPRING, SUMMER, AUTUMN, WINTER }
@@ -26567,7 +26572,43 @@ func get_current_season_name() -> String:
 	var names = ["Spring", "Summer", "Autumn", "Winter"]
 	return names[current_season]
 
+func aggregate_card_effects(card: SeasonalCardResource) -> void:
+	if not card: return
+	
+	# 1. Map Explicit Inspector Variables (The "Main" Stats)
+	# We map these manually to keep the nice sliders in the Inspector working.
+	if "mod_unit_damage" in card:
+		active_year_modifiers["mod_unit_damage"] = active_year_modifiers.get("mod_unit_damage", 0.0) + card.mod_unit_damage
+	if "mod_raid_xp" in card:
+		active_year_modifiers["mod_raid_xp"] = active_year_modifiers.get("mod_raid_xp", 0.0) + card.mod_raid_xp
+	if "mod_birth_chance" in card:
+		active_year_modifiers["mod_birth_chance"] = active_year_modifiers.get("mod_birth_chance", 0.0) + card.mod_birth_chance
+	if "mod_harvest_yield" in card:
+		active_year_modifiers["mod_harvest_yield"] = active_year_modifiers.get("mod_harvest_yield", 0.0) + card.mod_harvest_yield
+		
+	# 2. Map Dynamic Dictionary (The "Custom" Stats)
+	# This enables you to add ANY modifier in the Inspector via a 'modifiers' dictionary on the card
+	# without editing this script.
+	if "modifiers" in card and card.modifiers is Dictionary:
+		for key in card.modifiers:
+			var value = card.modifiers[key]
+			if value is float or value is int:
+				active_year_modifiers[key] = active_year_modifiers.get(key, 0.0) + value
+	
+	Loggie.msg("DynastyManager: Aggregated effects from '%s'. New Stats: %s" % [card.display_name, active_year_modifiers]).domain(LogDomains.DYNASTY).debug()
 
+## Resets all seasonal modifiers. Called at the end of the Winter Cycle (start of Spring).
+func reset_year_stats() -> void:
+	# We clear and re-initialize to ensure we don't keep stale dynamic keys forever
+	active_year_modifiers.clear()
+	
+	# Re-init defaults (Optional, but good for autocomplete consistency if using typed dicts elsewhere)
+	active_year_modifiers["mod_unit_damage"] = 0.0
+	active_year_modifiers["mod_raid_xp"] = 0.0
+	active_year_modifiers["mod_birth_chance"] = 0.0
+	active_year_modifiers["mod_harvest_yield"] = 0.0
+	
+	Loggie.msg("DynastyManager: Year stats reset for new cycle.").domain(LogDomains.DYNASTY).info()
 # --- EXISTING LOGIC ---
 
 func _load_game_data() -> void:
@@ -27279,6 +27320,17 @@ func get_population_census() -> Dictionary:
 		"warbands": warband_count
 	}
 
+## Checks if the settlement can afford the cost without deducting resources.
+func can_afford(cost: Dictionary) -> bool:
+	var settlement = SettlementManager.current_settlement
+	if not settlement: return false
+	
+	for res in cost:
+		var key = res.to_lower()
+		if not settlement.treasury.has(key) or settlement.treasury[key] < cost[res]:
+			return false
+	return true
+
 func deposit_resources(loot: Dictionary) -> void:
 	var settlement = SettlementManager.current_settlement
 	if not settlement: return
@@ -27555,8 +27607,8 @@ func _calculate_raid_xp(outcome: String, grade: String) -> int:
 	elif outcome == "retreat": 
 		xp = 20
 		
-	if DynastyManager.active_year_modifiers.has("BLOT_ODIN"):
-		xp = int(xp * 1.5)
+	var xp_bonus = DynastyManager.active_year_stats.get("mod_raid_xp", 0.0)
+	xp = int(xp * (1.0 + xp_bonus))
 		
 	return xp
 
@@ -27697,7 +27749,7 @@ signal advance_season_requested() # NEW: The primary time driver
 signal season_changed(season_name: String) # NEW: Feedback for UI/World
 
 # --- NEW: Seasonal UI System Signals ---
-
+signal hall_action_updated
 ## Emitted when the UI selects a card but hasn't committed (for tooltips/previews).
 signal seasonal_card_hovered(card: SeasonalCardResource)
 
@@ -28560,7 +28612,7 @@ FILE: res:///autoload/SceneManager.tscn
 [ext_resource type="PackedScene" uid="uid://c53k15q2w8c1a" path="res://scenes/levels/SettlementBridge.tscn" id="2_8867w"]
 [ext_resource type="PackedScene" uid="uid://ba41qxyi1a30u" path="res://scenes/world_map/MacroMap.tscn" id="3_6h36k"]
 [ext_resource type="PackedScene" uid="uid://d3ifdm0rvd5kl" path="res://scenes/missions/RaidMission.tscn" id="4_qjcdh"]
-[ext_resource type="PackedScene" path="res://ui/seasonal/WinterCourt_UI.tscn" id="5_8867w"]
+[ext_resource type="PackedScene" uid="uid://dnndecgdkcffm" path="res://ui/seasonal/WinterCourt_UI.tscn" id="5_8867w"]
 
 [node name="SceneManager" type="Node"]
 script = ExtResource("1_q2yxj")
@@ -29388,7 +29440,7 @@ func start_winter_phase() -> void:
 	_calculate_winter_needs()
 	
 	winter_started.emit()
-	EventBus.scene_change_requested.emit("winter_court")
+	
 
 func end_winter_phase() -> void:
 	winter_crisis_active = false
@@ -29500,6 +29552,43 @@ func resolve_crisis_with_gold() -> bool:
 		_apply_winter_consumption()
 		return true
 	return false
+
+func play_seasonal_card(card: SeasonalCardResource) -> bool:
+	# 1. Validate AP
+	var jarl = DynastyManager.get_current_jarl()
+	if not jarl or jarl.current_hall_actions < card.cost_ap:
+		return false
+
+	# 2. Validate Resources
+	var cost_dict = {}
+	if card.cost_gold > 0: cost_dict["gold"] = card.cost_gold
+	if card.cost_food > 0: cost_dict["food"] = card.cost_food
+	
+	# Check affordability and Deduct
+	if not EconomyManager.attempt_purchase(cost_dict):
+		return false
+
+	# 3. Deduct AP (DynastyManager owns this state)
+	DynastyManager.perform_hall_action(card.cost_ap)
+
+	# 4. Apply Rewards
+	if card.grant_gold > 0:
+		EconomyManager.deposit_resources({"gold": card.grant_gold})
+	if card.grant_renown > 0:
+		DynastyManager.award_renown(card.grant_renown)
+	if card.grant_authority > 0:
+		if jarl:
+			# Add Authority directly to the Jarl data
+			jarl.current_authority += card.grant_authority
+			
+			Loggie.msg("Granted %d Authority via card" % card.grant_authority).domain(LogDomains.DYNASTY).info()
+			# CRITICAL: Emit signal so UI (DynastyUI/TopBar) updates immediately
+			DynastyManager.jarl_stats_updated.emit(jarl)
+	# [FIX] Apply Modifier (Missing in previous snippet)
+	# 4. Apply Modifiers (The new aggregation logic you implemented)
+	DynastyManager.aggregate_card_effects(card)
+		
+	return true
 
 func resolve_crisis_with_sacrifice(sacrifice_type: String) -> bool:
 	# Sacrifice costs 1 Action (paid to DynastyManager)
@@ -31045,7 +31134,6 @@ FILE: res:///data/resources/Card_Spring_Expansion.tres
 
 [resource]
 script = ExtResource("1_sbleo")
-title = "Construction Focus"
 description = "Boosts building construction time. Decreases authority for raids."
 metadata/_custom_type_script = "uid://cni5gdnpbb1v2"
 
@@ -31058,26 +31146,48 @@ extends Resource
 
 enum SeasonType { SPRING, WINTER }
 
-@export_group("Classification")
-## Ensures this card only appears in the correct UI.
-@export var season: SeasonType = SeasonType.SPRING
+## The name displayed on the card
+@export var display_name: String = "Card Name"
 
-@export_group("Display")
-@export var title: String = "Card Title"
-@export_multiline var description: String = "Effect description..."
+## The description text (supports BBCode)
+@export_multiline var description: String = "Card Description"
+
+## Icon for the card
 @export var icon: Texture2D
 
-@export_group("Costs (Winter)")
-@export var cost_ap: int = 0
+@export var season: SeasonType
+
+@export_group("Costs")
+## Action Points required to play this card
+@export var cost_ap: int = 1
+## Gold cost (if any)
 @export var cost_gold: int = 0
+## Food cost (if any)
 @export var cost_food: int = 0
 
-@export_group("Effects (Spring/Strategic)")
-## The string tag stored in DynastyManager.active_year_modifiers.
-## Example: "raid_provisions_bonus" or "farm_yield_boost"
-@export var modifier_key: String = ""
+@export_group("Immediate Rewards")
+## Gold granted immediately
 @export var grant_gold: int = 0
+## Renown granted immediately
 @export var grant_renown: int = 0
+##Authority granted
+@export var grant_authority: int = 0
+
+@export_group("Seasonal Modifiers")
+## Dictionary for arbitrary modifiers not covered by explicit variables.
+## Format: { "custom_key": float_value }
+@export var modifiers: Dictionary = {} 
+## Percentage bonus to unit combat damage (e.g., 0.10 = +10%)
+@export_range(-1.0, 5.0, 0.05) var mod_unit_damage: float = 0.0
+
+## Percentage bonus to Raid XP gain (e.g., 0.20 = +20%)
+@export_range(-1.0, 5.0, 0.05) var mod_raid_xp: float = 0.0
+
+## Flat increase to birth probability (e.g., 0.05 = +5% chance)
+@export_range(-1.0, 1.0, 0.01) var mod_birth_chance: float = 0.0
+
+## Multiplier for harvest yield next season (e.g. 0.10 = +10%)
+@export_range(-1.0, 5.0, 0.05) var mod_harvest_yield: float = 0.0
 
 
 --------------------------------------------------
@@ -34680,7 +34790,7 @@ sources/1 = SubResource("TileSetAtlasSource_c7ve4")
 --------------------------------------------------
 FILE: res:///scenes/levels/SettlementBridge.tscn
 --------------------------------------------------
-[gd_scene load_steps=27 format=3 uid="uid://c53k15q2w8c1a"]
+[gd_scene load_steps=31 format=3 uid="uid://c53k15q2w8c1a"]
 
 [ext_resource type="PackedScene" uid="uid://dqh0xu88khxct" path="res://ui/EndOfYear_Popup.tscn" id="2_5el12"]
 [ext_resource type="Script" uid="uid://dafjxa85ci2rx" path="res://scripts/buildings/SettlementBridge.gd" id="2_c48a7"]
@@ -34699,10 +34809,14 @@ FILE: res:///scenes/levels/SettlementBridge.tscn
 [ext_resource type="PackedScene" uid="uid://whql45nph2u8" path="res://ui/seasonal/SpringCouncilUI.tscn" id="10_fmib8"]
 [ext_resource type="PackedScene" uid="uid://dhobag8h7m8ip" path="res://ui/components/BuildingInspector.tscn" id="11_fmib8"]
 [ext_resource type="Texture2D" uid="uid://cjlq3soj1j4jj" path="res://assets/Kenney/medievalRTS_spritesheet.png" id="11_vlppw"]
+[ext_resource type="Script" uid="uid://cni5gdnpbb1v2" path="res://data/resources/SeasonalCardResource.gd" id="12_iv0y3"]
 [ext_resource type="PackedScene" uid="uid://c8q4w2x5y301" path="res://ui/seasonal/SummerAllocation_Ui.tscn" id="13_c7ve4"]
+[ext_resource type="PackedScene" uid="uid://bfly4if3qtymg" path="res://ui/seasonal/SummerWorkspaceUI.tscn" id="13_dx1s8"]
 [ext_resource type="PackedScene" uid="uid://c6b0qegdltxvw" path="res://ui/seasonal/AutumnLedger_UI.tscn" id="14_4m3mo"]
 [ext_resource type="PackedScene" uid="uid://dnndecgdkcffm" path="res://ui/seasonal/WinterCourt_UI.tscn" id="14_51pa8"]
+[ext_resource type="Resource" uid="uid://du2gsa2xinlrm" path="res://data/resources/Card_Focus_Raid.tres" id="14_t0qlt"]
 [ext_resource type="Theme" uid="uid://63duv3n1vwhg" path="res://ui/themes/VikingDynastyTheme.tres" id="15_iv0y3"]
+[ext_resource type="Resource" uid="uid://dt38bx8jkvrno" path="res://data/resources/Card_Spring_Expansion.tres" id="15_nou2g"]
 [ext_resource type="PackedScene" uid="uid://cyp3t7gbdg0wx" path="res://player/RTSController.tscn" id="18_fmib8"]
 [ext_resource type="PackedScene" uid="uid://bvsuoj3irdvcs" path="res://player/RTSInputHandler.tscn" id="19_c7ve4"]
 [ext_resource type="PackedScene" uid="uid://io325box3m4m" path="res://scenes/world/UnitSpawner.tscn" id="20_fmib8"]
@@ -34873,22 +34987,8 @@ anchors_preset = 8
 [node name="EndOfYear_Popup" parent="UI" instance=ExtResource("2_5el12")]
 anchors_preset = 8
 
-[node name="RestartButton" type="Button" parent="UI"]
-visible = false
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -84.0
-offset_top = -15.5
-offset_right = 84.0
-offset_bottom = 15.5
-grow_horizontal = 2
-grow_vertical = 2
-text = "Return to Settlement"
-
 [node name="PauseButton" type="Button" parent="UI"]
+visible = false
 offset_left = 10.0
 offset_top = 10.0
 offset_right = 130.0
@@ -34909,6 +35009,9 @@ grow_horizontal = 2
 grow_vertical = 0
 
 [node name="SpringCouncil_UI" parent="UI" instance=ExtResource("10_fmib8")]
+available_advisor_cards = Array[ExtResource("12_iv0y3")]([ExtResource("14_t0qlt"), ExtResource("15_nou2g")])
+
+[node name="SummerWorkspace_UI" parent="UI" instance=ExtResource("13_dx1s8")]
 
 [node name="SummerRaid_UI" parent="UI" instance=ExtResource("13_c7ve4")]
 mouse_filter = 1
@@ -40676,8 +40779,9 @@ func _ready() -> void:
 	var hp_mult = 1.0
 	var dmg_mult = 1.0
 	
-	if is_in_group("player_units") and DynastyManager.active_year_modifiers.has("BLOT_THOR"):
-		dmg_mult *= 1.10 
+	if is_in_group("player_units"):
+	# Add the percentage (e.g., 0.10) to the base multiplier (1.0)
+		dmg_mult += DynastyManager.active_year_modifiers.get("mod_unit_damage", 0.0)
 	
 	if warband_ref:
 		var level_mult = warband_ref.get_stat_multiplier()
@@ -43604,187 +43708,6 @@ func test_ui_locking_during_crisis():
 
 
 --------------------------------------------------
-FILE: res:///test/test_year_cycle.gd
---------------------------------------------------
-extends Node
-
-# Year Cycle Test Script
-# Add this to a scene and run to test year cycle mechanics
-
-func _ready():
-	print("=== YEAR CYCLE TESTS ===")
-	
-	# Wait a frame for autoloads to initialize
-	await get_tree().process_frame
-	
-	# Test 1: Starvation Test
-	print("\n🔥 TEST 1: STARVATION")
-	test_starvation()
-	
-	# Test 2: Overpopulation Test
-	print("\n👥 TEST 2: OVERPOPULATION") 
-	test_overpopulation()
-	
-	# Test 3: Solution Test
-	print("\n⚔️ TEST 3: DRAFT & RAID SOLUTION")
-	test_draft_and_raid_solution()
-	
-	print("\n=== ALL TESTS COMPLETE ===")
-
-func test_starvation():
-	print("Setting up: Food = 0, Population = 20")
-	
-	# Create settlement with no food
-	var settlement = SettlementData.new()
-	settlement.population_peasants = 20
-	settlement.population_thralls = 5
-	settlement.treasury = {
-		"gold": 100,
-		"wood": 50,
-		"food": 0  # ZERO FOOD - This should cause starvation
-	}
-	settlement.placed_buildings = []
-	settlement.unrest = 0
-	
-	# Set up autoloads
-	SettlementManager.current_settlement = settlement
-	
-	# Create mock jarl
-	var jarl = JarlData.new()
-	jarl.age = 35
-	DynastyManager.current_jarl = jarl
-	
-	print("Before: Population = %d, Food = %d" % [settlement.population_peasants, settlement.treasury.get("food", 0)])
-	
-	# Run year cycle logic
-	var payout = EconomyManager.calculate_payout()
-	DynastyManager.end_year()
-	
-	print("After: Population = %d, Food = %d" % [settlement.population_peasants, settlement.treasury.get("food", 0)])
-	print("Payout messages: %s" % payout.get("_messages", []))
-	print("Population growth: %s" % payout.get("population_growth", "N/A"))
-	
-	if settlement.population_peasants < 20:
-		print("✅ STARVATION TEST PASSED - Population decreased from 20 to %d!" % settlement.population_peasants)
-	else:
-		print("❌ STARVATION TEST FAILED - Population unchanged at %d" % settlement.population_peasants)
-
-func test_overpopulation():
-	print("Setting up: Population = 50, Limited buildings (no land capacity)")
-	
-	var settlement = SettlementData.new()
-	settlement.population_peasants = 50  # HIGH POPULATION
-	settlement.population_thralls = 5
-	settlement.treasury = {
-		"gold": 200,
-		"wood": 100,
-		"food": 500  # Plenty of food
-	}
-	settlement.placed_buildings = []  # NO BUILDINGS = only base 5 land capacity
-	settlement.unrest = 0
-	
-	SettlementManager.current_settlement = settlement
-	
-	var jarl = JarlData.new()
-	jarl.age = 35
-	DynastyManager.current_jarl = jarl
-	
-	print("Before: Population = %d, Unrest = %d" % [settlement.population_peasants, settlement.unrest])
-	
-	var payout = EconomyManager.calculate_payout()
-	DynastyManager.end_year()
-	
-	print("After: Population = %d, Unrest = %d" % [settlement.population_peasants, settlement.unrest])
-	print("Payout messages: %s" % payout.get("_messages", []))
-	print("Population growth: %s" % payout.get("population_growth", "N/A"))
-	
-	# 50 peasants with only 5 base land capacity = 45 landless = 90 unrest
-	if settlement.unrest > 0:
-		print("✅ OVERPOPULATION TEST PASSED - Unrest increased to %d!" % settlement.unrest)
-	else:
-		print("❌ OVERPOPULATION TEST FAILED - No unrest generated")
-
-func test_draft_and_raid_solution():
-	print("Setting up: Draft Bondi to reduce population and ease land pressure")
-	
-	var settlement = SettlementData.new()
-	settlement.population_peasants = 50
-	settlement.population_thralls = 5
-	settlement.treasury = {
-		"gold": 500,
-		"wood": 200, 
-		"food": 600
-	}
-	settlement.placed_buildings = []  # Only base 5 land capacity
-	settlement.unrest = 40  # Starting with some unrest
-	settlement.warbands = []
-	
-	SettlementManager.current_settlement = settlement
-	
-	var jarl = JarlData.new()
-	jarl.age = 35
-	DynastyManager.current_jarl = jarl
-	
-	# Try to load actual Bondi unit data if it exists
-	var bondi_data
-	if ResourceLoader.exists("res://data/units/Bondi.tres"):
-		bondi_data = load("res://data/units/Bondi.tres")
-		print("Loaded actual Bondi unit data")
-	else:
-		# Create mock unit data
-		bondi_data = UnitData.new()
-		bondi_data.display_name = "Bondi"
-		bondi_data.manpower = 20
-		print("Created mock Bondi unit data")
-	
-	print("Before drafting: Population = %d, Warbands = %d, Unrest = %d" % [settlement.population_peasants, settlement.warbands.size(), settlement.unrest])
-	
-	# Draft units to reduce population (each recruit costs 10 population according to SettlementManager)
-	SettlementManager.recruit_unit(bondi_data)  # -10 pop
-	SettlementManager.recruit_unit(bondi_data)  # -10 pop  
-	
-	print("After drafting: Population = %d, Warbands = %d" % [settlement.population_peasants, settlement.warbands.size()])
-	
-	# Simulate successful raid return with loot
-	var raid_loot = {
-		"gold": 150,
-		"food": 100,
-		"population": 10  # Captured thralls
-	}
-	
-	print("Simulating raid return with loot: %s" % raid_loot)
-	SettlementManager.deposit_resources(raid_loot)
-	
-	# End year to see unrest calculation with reduced population
-	var payout = EconomyManager.calculate_payout()
-	DynastyManager.end_year()
-	
-	print("After year end: Population = %d, Unrest = %d, Thralls = %d" % [settlement.population_peasants, settlement.unrest, settlement.population_thralls])
-	print("Payout messages: %s" % payout.get("_messages", []))
-	print("Population growth: %s" % payout.get("population_growth", "N/A"))
-	
-	# With 30 population and 5 land capacity, we should have 25 landless = 50 unrest
-	# But this is less than the starting 40, so unrest should be manageable
-	if settlement.unrest < 80:  # Should be much lower than without drafting
-		print("✅ DRAFT & RAID TEST PASSED - Unrest managed at %d (vs would be ~90 without drafting)!" % settlement.unrest)
-	else:
-		print("❌ DRAFT & RAID TEST FAILED - Unrest still high at %d" % settlement.unrest)
-
-
---------------------------------------------------
-FILE: res:///test/test_year_cycle_scene.tscn
---------------------------------------------------
-[gd_scene load_steps=2 format=3 uid="uid://wdvc5mj564p5"]
-
-[ext_resource type="Script" uid="uid://vxa1kv6hra84" path="res://test/test_year_cycle.gd" id="1_g123a"]
-
-[node name="Main" type="Node"]
-
-[node name="TestRunner" type="Node" parent="."]
-script = ExtResource("1_g123a")
-
-
---------------------------------------------------
 FILE: res:///test/unit/test_RaidManager.gd
 --------------------------------------------------
 extends GutTest
@@ -43858,7 +43781,7 @@ func test_defensive_loss_renoun():
 
 
 --------------------------------------------------
-FILE: res:///test/unit/test_WinterManager.gd.gd
+FILE: res:///test/unit/test_WinterManager.gd
 --------------------------------------------------
 extends GutTest
 
@@ -43944,6 +43867,93 @@ func test_resolve_sacrifice_burn_ships():
 	assert_true(success)
 	assert_eq(mock_settlement.fleet_readiness, 0.0)
 	assert_eq(mock_jarl.current_hall_actions, 4, "Should spend 1 action")
+
+
+--------------------------------------------------
+FILE: res:///test/unit/test_dynasty_modifiers.gd
+--------------------------------------------------
+extends GutTest
+
+## test_dynasty_modifiers.gd
+## Verifies the Data-Driven Seasonal Modifier logic in DynastyManager.
+## Ensures cards correctly aggregate stats and reset properly.
+
+func before_each():
+	# Ensure a clean slate before every test
+	DynastyManager.reset_year_stats()
+
+func after_each():
+	# Cleanup after tests
+	DynastyManager.reset_year_stats()
+
+func test_initial_state():
+	# Verify all stats start at 0.0
+	var stats = DynastyManager.active_year_modifiers
+	assert_eq(stats["mod_unit_damage"], 0.0, "Damage mod should init at 0")
+	assert_eq(stats["mod_raid_xp"], 0.0, "Raid XP mod should init at 0")
+
+func test_single_card_aggregation():
+	# Setup
+	var card = SeasonalCardResource.new()
+	card.display_name = "Test Feast"
+	card.mod_unit_damage = 0.15 # +15% Damage
+	card.mod_raid_xp = 0.0
+	
+	# Execute
+	DynastyManager.aggregate_card_effects(card)
+	
+	# Assert
+	var stats = DynastyManager.active_year_modifiers
+	assert_almost_eq(stats["mod_unit_damage"], 0.15, 0.001, "Damage mod should update to 0.15")
+	assert_eq(stats["mod_raid_xp"], 0.0, "Unchanged stat should remain 0")
+
+func test_modifier_stacking():
+	# Setup Card A (+10% Damage)
+	var card_a = SeasonalCardResource.new()
+	card_a.display_name = "Training"
+	card_a.mod_unit_damage = 0.10
+	
+	# Setup Card B (+5% Damage, +20% Harvest)
+	var card_b = SeasonalCardResource.new()
+	card_b.display_name = "Blessing"
+	card_b.mod_unit_damage = 0.05
+	card_b.mod_harvest_yield = 0.20
+	
+	# Execute
+	DynastyManager.aggregate_card_effects(card_a)
+	DynastyManager.aggregate_card_effects(card_b)
+	
+	# Assert
+	var stats = DynastyManager.active_year_modifiers
+	# 0.10 + 0.05 should equal 0.15
+	assert_almost_eq(stats["mod_unit_damage"], 0.15, 0.001, "Damage modifiers should stack")
+	assert_almost_eq(stats["mod_harvest_yield"], 0.20, 0.001, "Harvest modifier should be applied")
+
+func test_negative_modifiers():
+	# Setup Penalty Card (-10% XP)
+	var card = SeasonalCardResource.new()
+	card.mod_raid_xp = -0.10
+	
+	# Execute
+	DynastyManager.aggregate_card_effects(card)
+	
+	# Assert
+	assert_almost_eq(DynastyManager.active_year_modifiers["mod_raid_xp"], -0.10, 0.001, "Should handle negative modifiers")
+
+func test_reset_functionality():
+	# Setup
+	var card = SeasonalCardResource.new()
+	card.mod_birth_chance = 0.5
+	DynastyManager.aggregate_card_effects(card)
+	
+	# Pre-check
+	assert_gt(DynastyManager.active_year_modifiers["mod_birth_chance"], 0.0, "Stat should be set before reset")
+	
+	# Execute Reset
+	DynastyManager.reset_year_stats()
+	
+	# Assert
+	assert_eq(DynastyManager.active_year_modifiers["mod_birth_chance"], 0.0, "Stat should be 0.0 after reset")
 
 
 --------------------------------------------------
@@ -49988,7 +49998,7 @@ func _ready() -> void:
 func setup(card: SeasonalCardResource, can_afford: bool = true) -> void:
 	_card_data = card
 	
-	title_label.text = card.title
+	title_label.text = card.display_name
 	description_label.text = card.description
 	icon_rect.texture = card.icon
 	
@@ -50013,7 +50023,7 @@ func _on_button_pressed() -> void:
 --------------------------------------------------
 FILE: res:///ui/seasonal/SpringCouncilUI.tscn
 --------------------------------------------------
-[gd_scene load_steps=7 format=3 uid="uid://whql45nph2u8"]
+[gd_scene load_steps=8 format=3 uid="uid://whql45nph2u8"]
 
 [ext_resource type="Script" uid="uid://yqhbcg3i6ek6" path="res://ui/seasonal/SpringCouncil_UI.gd" id="1_kajfs"]
 [ext_resource type="Script" uid="uid://cni5gdnpbb1v2" path="res://data/resources/SeasonalCardResource.gd" id="2_y8qc6"]
@@ -50021,6 +50031,7 @@ FILE: res:///ui/seasonal/SpringCouncilUI.tscn
 [ext_resource type="Resource" uid="uid://du2gsa2xinlrm" path="res://data/resources/Card_Focus_Raid.tres" id="4_eqjln"]
 [ext_resource type="PackedScene" uid="uid://d0px2w8n5r1lv" path="res://ui/seasonal/SeasonalCardUi.tscn" id="5_0j8s8"]
 [ext_resource type="Texture2D" uid="uid://dy8bikbul4bne" path="res://ui/assets/scroll_bg.png" id="6_a6awv"]
+[ext_resource type="Script" uid="uid://4dc3bdnc40ht" path="res://ui/seasonal/SpringUiDiagnostics.gd" id="7_y8qc6"]
 
 [node name="SpringCouncil_UI" type="Control" node_paths=PackedStringArray("card_container")]
 layout_mode = 3
@@ -50030,7 +50041,8 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_kajfs")
-available_advisor_cards = Array[ExtResource("2_y8qc6")]([ExtResource("3_mjw2u"), ExtResource("4_eqjln"), ExtResource("3_mjw2u")])
+available_advisor_cards = Array[ExtResource("2_y8qc6")]([ExtResource("3_mjw2u"), ExtResource("4_eqjln")])
+hand_size = 2
 card_prefab = ExtResource("5_0j8s8")
 card_container = NodePath("CardContainer")
 
@@ -50086,6 +50098,10 @@ layout_mode = 0
 offset_right = 20.0
 offset_bottom = 10.0
 
+[node name="SpringUIDiagnostics" type="Node" parent="." node_paths=PackedStringArray("target_ui")]
+script = ExtResource("7_y8qc6")
+target_ui = NodePath("..")
+
 
 --------------------------------------------------
 FILE: res:///ui/seasonal/SpringCouncil_UI.gd
@@ -50094,7 +50110,7 @@ class_name SpringCouncil_UI
 extends Control
 
 ## The Spring Seasonal Screen.
-## DIAGNOSTIC VERSION: Includes detailed logging to trace visibility failures.
+## REFACTORED VERSION: Uses Data-Driven Aggregator instead of String Keys.
 
 # --- Configuration ---
 @export_group("Deck Configuration")
@@ -50110,88 +50126,52 @@ var _selected_card: SeasonalCardResource
 var _has_activated: bool = false
 
 func _ready() -> void:
-	# 1. DIAGNOSTIC: Initial State Check
-	Loggie.msg("SpringCouncil_UI Instantiated | Visible: %s | In Tree: %s" % [visible, is_inside_tree()]).domain(LogDomains.UI).info()
-	if get_parent():
-		Loggie.msg("SpringCouncil Parent: %s" % get_parent().name).domain(LogDomains.UI).info()
-	else:
-		Loggie.msg("SpringCouncil has NO PARENT").domain(LogDomains.UI).error()
+	# Initial State Check
+	Loggie.msg("SpringCouncil_UI Instantiated").domain(LogDomains.UI).info()
 	
-	# 2. Connect Signals
+	# Connect Signals
 	if not EventBus.season_changed.is_connected(_on_season_changed):
 		EventBus.season_changed.connect(_on_season_changed)
-		Loggie.msg("SpringCouncil_UI connected to EventBus.season_changed").domain(LogDomains.UI).info()
-	else:
-		Loggie.msg("SpringCouncil_UI already connected to EventBus").domain(LogDomains.UI).warn()
 
-	# 3. DIAGNOSTIC: Check current state immediately (Race Condition Protection)
-	# If the season is ALREADY Spring when this spawns, we might have missed the signal.
+	# Check current state immediately
 	if DynastyManager.current_season == DynastyManager.Season.SPRING:
-		Loggie.msg("Spawned during Spring - Attempting immediate activation").domain(LogDomains.UI).info()
 		_activate_spring_ui()
 	
-	# 4. DIAGNOSTIC: 5-Second Timeout Warning
-	# If the UI sits here for 5 seconds without activating, log an error.
 	get_tree().create_timer(5.0).timeout.connect(_on_diagnostic_timeout)
 
 func _on_season_changed(season_name: String) -> void:
-	Loggie.msg("SpringCouncil_UI received season_changed: %s" % season_name).domain(LogDomains.UI).info()
-	
-	# Case-insensitive check just to be safe
 	if season_name.to_lower() == "spring":
 		_activate_spring_ui()
 	else:
-		# Hide if it's not Spring (cleanup)
 		if visible:
-			Loggie.msg("Hiding SpringCouncil_UI (Season is %s)" % season_name).domain(LogDomains.UI).info()
 			visible = false
 
 func _activate_spring_ui() -> void:
-	Loggie.msg("Activating SpringCouncil_UI Logic").domain(LogDomains.UI).info()
-	
 	visible = true
 	_deal_cards()
 	_has_activated = true
-	
-	# Log final visibility state
-	Loggie.msg("SpringCouncil_UI Activation Complete | Final Visible: %s" % visible).domain(LogDomains.UI).info()
 
 func _on_diagnostic_timeout() -> void:
 	if not _has_activated and DynastyManager.current_season == DynastyManager.Season.SPRING:
-		Loggie.msg("DIAGNOSTIC FAILURE: SpringCouncil_UI exists but failed to activate after 5s").domain(LogDomains.UI).error()
-		Loggie.msg("Current Season: %s | Is Visible: %s" % [DynastyManager.current_season, visible]).domain(LogDomains.UI).error()
+		Loggie.msg("FAILURE: SpringCouncil_UI failed to activate").domain(LogDomains.UI).error()
 
-# --- Existing Logic (Unchanged but wrapped in logs) ---
 func _deal_cards() -> void:
-	# 1. Cleanup existing visuals
+	# 1. Cleanup
 	for child in card_container.get_children():
 		child.queue_free()
 
-	# 2. Filter Deck (Now with Safety Checks)
+	# 2. Filter Deck
 	var spring_deck: Array[SeasonalCardResource] = []
-	
-	for i in range(available_advisor_cards.size()):
-		var card = available_advisor_cards[i]
-		
-		# --- SAFETY CHECK: Skip empty Inspector slots ---
-		if card == null:
-			Loggie.msg("Found NULL card at index %d in SpringCouncil_UI. Check Inspector!" % i).domain(LogDomains.GAMEPLAY).warn()
-			continue 
-		
-		# Now safe to access properties
-		if card.season == SeasonalCardResource.SeasonType.SPRING:
+	for card in available_advisor_cards:
+		if card and card.season == SeasonalCardResource.SeasonType.SPRING:
 			spring_deck.append(card)
 	
-	# 3. Check if we have playable cards
 	if spring_deck.is_empty():
-		Loggie.msg("No valid Spring cards found! (Checked %d slots)" % available_advisor_cards.size()).domain(LogDomains.GAMEPLAY).error()
 		return
 
-	# 4. Deal
+	# 3. Deal
 	spring_deck.shuffle()
 	var cards_to_spawn = min(hand_size, spring_deck.size())
-	
-	Loggie.msg("Dealing %d Cards" % cards_to_spawn).domain(LogDomains.UI).info()
 	
 	for i in range(cards_to_spawn):
 		var card_instance = card_prefab.instantiate() as SeasonalCard_UI
@@ -50204,20 +50184,199 @@ func _on_card_selected(card: SeasonalCardResource) -> void:
 	_commit_choice()
 
 func _commit_choice() -> void:
-	if not _selected_card: return
+	if not _selected_card: 
+		return
 	
-	if _selected_card.modifier_key != "":
-		DynastyManager.apply_year_modifier(_selected_card.modifier_key)
+	# 1. Aggregate Seasonal Stats
+	# This adds all mod_* values from the card to the DynastyManager's active_year_stats
+	DynastyManager.aggregate_card_effects(_selected_card)
 		
+	# 2. Immediate Rewards
 	if _selected_card.grant_gold > 0:
 		EconomyManager.deposit_resources({"gold": _selected_card.grant_gold})
 	
-	Loggie.msg("Spring Strategy Committed: %s" % _selected_card.modifier_key).domain(LogDomains.GAMEPLAY).info()
-
-	EventBus.advance_season_requested.emit()
+	if _selected_card.grant_renown > 0:
+		DynastyManager.award_renown(_selected_card.grant_renown)
 	
+	Loggie.msg("Spring Strategy Committed: %s" % _selected_card.display_name).domain(LogDomains.GAMEPLAY).info()
+
+	# 3. Cleanup & Transition
+	EventBus.advance_season_requested.emit()
 	visible = false
 	queue_free()
+
+
+--------------------------------------------------
+FILE: res:///ui/seasonal/SpringUiDiagnostics.gd
+--------------------------------------------------
+extends Node
+class_name SpringUIDiagnostic
+
+## A passive observer for the SpringCouncil_UI.
+## specialized to handle dynamic card spawning and seasonal logic validation.
+
+@export var target_ui: SpringCouncil_UI
+@export var audit_interval: float = 1.0
+
+var _timer: float = 0.0
+
+func _ready() -> void:
+	# Wait for parent setup
+	await get_tree().process_frame
+	
+	if not target_ui:
+		printerr("[DIAGNOSTIC CRITICAL] No Target UI assigned to SpringUIDiagnostic!")
+		return
+
+	Loggie.msg("--- STARTING SPRING UI DIAGNOSTICS ---").domain(LogDomains.UI).info()
+	
+	_validate_configuration()
+	_hook_global_signals()
+	_hook_container()
+	_check_initial_state()
+
+func _process(delta: float) -> void:
+	_timer += delta
+	if _timer >= audit_interval:
+		_timer = 0.0
+		_run_periodic_audit()
+
+# --- 1. Startup Validation ---
+
+func _validate_configuration() -> void:
+	# Check References
+	if not target_ui.card_container:
+		_log_error("card_container is NOT assigned.")
+	elif not target_ui.card_container.is_inside_tree():
+		_log_error("card_container is assigned but not in Scene Tree.")
+		
+	if not target_ui.card_prefab:
+		_log_error("card_prefab is missing.")
+		
+	# Check Data
+	if target_ui.available_advisor_cards.is_empty():
+		_log_warn("Deck Configuration is empty! No cards available to deal.")
+
+func _check_initial_state() -> void:
+	if not target_ui.visible and DynastyManager.current_season == DynastyManager.Season.SPRING:
+		_log_warn("Logic Mismatch: Season IS Spring, but UI is Hidden.")
+
+# --- 2. Dynamic Hooking (The Card Spy) ---
+
+func _hook_container() -> void:
+	if target_ui.card_container:
+		# Watch for cards being added dynamically
+		target_ui.card_container.child_entered_tree.connect(_on_card_spawned)
+
+func _on_card_spawned(node: Node) -> void:
+	# Verify it's a card and hook its input signal
+	if node is SeasonalCard_UI:
+		_log_info("Card Spawned: %s" % node.name)
+		
+		# Hook the signal to spy on clicks
+		if node.has_signal("card_clicked"):
+			node.card_clicked.connect(func(card): _log_input("Card Selected: %s (Gold: %d, Renown: %d)" % [
+				card.display_name if "display_name" in card else "Unknown",
+				card.grant_gold if "grant_gold" in card else 0,
+				card.grant_renown if "grant_renown" in card else 0
+			]))
+		else:
+			_log_error("Spawned object %s is missing 'card_clicked' signal!" % node.name)
+	else:
+		_log_warn("Non-Card object added to Container: %s" % node.name)
+
+# --- 3. Global Flow Spying ---
+
+func _hook_global_signals() -> void:
+	# Monitor Season Changes
+	EventBus.season_changed.connect(func(s): _log_info("Season Changed Signal Received: %s" % s))
+	
+	# Monitor the Output Signal
+	EventBus.advance_season_requested.connect(func(): _log_info(">> OUTPUT: Advance Season Requested (Commit Successful)"))
+
+# --- 4. Periodic Audit ---
+
+func _run_periodic_audit() -> void:
+	if not target_ui.visible: return
+
+	# Validate Season Consistency
+	if DynastyManager.current_season != DynastyManager.Season.SPRING:
+		_log_error("CRITICAL: Spring UI is Visible, but Season is %s" % str(DynastyManager.current_season))
+
+	# Validate Container State
+	var child_count = target_ui.card_container.get_child_count()
+	if child_count == 0 and target_ui._has_activated:
+		# If we activated but have no cards, something failed in _deal_cards
+		_log_error("UI Active but Card Container is Empty.")
+		_debug_deck_failure() # TRIGGER DEEP DEBUG
+
+func _debug_deck_failure() -> void:
+	print_rich("[color=orange]--- [SPRING DEBUG] DECK ANALYSIS ---[/color]")
+	
+	# 1. Check Hand Size
+	if target_ui.hand_size <= 0:
+		print_rich("[color=red]FAIL: 'hand_size' is %d. No cards will ever spawn.[/color]" % target_ui.hand_size)
+		return
+
+	# 2. Check Prefab Instantiation
+	if target_ui.card_prefab:
+		var test_inst = target_ui.card_prefab.instantiate()
+		if not test_inst:
+			print_rich("[color=red]FAIL: 'card_prefab' failed to instantiate (Returned Null). Check the Scene file.[/color]")
+		elif not (test_inst is SeasonalCard_UI):
+			print_rich("[color=red]FAIL: 'card_prefab' root node is type '%s', expected 'SeasonalCard_UI'.[/color]" % test_inst.get_class())
+		else:
+			print_rich("[color=green]PASS: Prefab instantiates correctly.[/color]")
+		test_inst.queue_free()
+	
+	# 3. Check Enum Matching & Stale Data
+	var expected_enum = SeasonalCardResource.SeasonType.SPRING
+	print_rich("[color=cyan]INFO: Target Season Enum is: %d (SPRING)[/color]" % expected_enum)
+	print("Array Size: %d" % target_ui.available_advisor_cards.size())
+	
+	var valid_cards = 0
+	for i in range(target_ui.available_advisor_cards.size()):
+		var card = target_ui.available_advisor_cards[i]
+		
+		# Check for Null
+		if not card:
+			print_rich("[color=red]Slot %d: NULL RESOURCE[/color]" % i)
+			continue
+			
+		# Check for Stale/Built-in Resources
+		var is_external = card.resource_path != "" and not "::" in card.resource_path
+		if not is_external:
+			print_rich("[color=yellow]Slot %d WARN: Resource is internal/built-in. Inspector changes to file won't update this![/color]" % i)
+			
+		var card_season = card.season
+		if card_season == expected_enum:
+			valid_cards += 1
+			print("Slot %d: MATCH (Int %d) - %s" % [i, card_season, card.resource_path.get_file()])
+		else:
+			# PRINT THE MISMATCHED VALUE
+			print_rich("[color=pink]Slot %d: MISMATCH (Card has Int %d, Expected %d) - %s[/color]" % [i, card_season, expected_enum, card.resource_path.get_file()])
+
+	if valid_cards == 0:
+		print_rich("[color=red]FAIL: 0 cards matched. See Mismatches above.[/color]")
+		print_rich("[color=yellow]TIP: If you see 'MISMATCH', the card property is wrong. If you see 'Resource is internal', clear the array in the Inspector and drag the files in again.[/color]")
+	else:
+		print_rich("[color=yellow]WARN: %d cards matched. If Prefab is OK, check for immediate queue_free() in 'setup()'.[/color]" % valid_cards)
+
+# --- Helpers ---
+
+func _log_info(msg: String) -> void:
+	print_rich("[color=cyan][SPRING DIAG] %s[/color]" % msg)
+
+func _log_warn(msg: String) -> void:
+	print_rich("[color=yellow][SPRING WARN] %s[/color]" % msg)
+	Loggie.msg(msg).domain(LogDomains.UI).warn()
+
+func _log_error(msg: String) -> void:
+	print_rich("[color=red][SPRING FAIL] %s[/color]" % msg)
+	Loggie.msg(msg).domain(LogDomains.UI).error()
+
+func _log_input(msg: String) -> void:
+	print_rich("[color=green][SPRING INPUT] %s[/color]" % msg)
 
 
 --------------------------------------------------
@@ -50654,122 +50813,123 @@ FILE: res:///ui/seasonal/SummerAllocation_Ui.tscn
 [ext_resource type="Script" uid="uid://cms0bgtoscos8" path="res://ui/seasonal/SummerAllocation_UI.gd" id="1_logic"]
 [ext_resource type="Resource" uid="uid://dpe2acwvvxthl" path="res://data/units/Unit_Bondi.tres" id="2_6xyy4"]
 
-[node name="SummerAllocation_UI" type="Control"]
-layout_mode = 3
+[node name="SummerAllocation_UI" type="PanelContainer"]
+custom_minimum_size = Vector2(0, 450)
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 2
 script = ExtResource("1_logic")
 raider_template = ExtResource("2_6xyy4")
 
-[node name="Panel" type="Panel" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="MarginContainer" type="MarginContainer" parent="Panel"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
 theme_override_constants/margin_left = 30
 theme_override_constants/margin_top = 30
 theme_override_constants/margin_right = 30
 theme_override_constants/margin_bottom = 30
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Panel/MarginContainer"]
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer"]
 layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 theme_override_constants/separation = 25
 
-[node name="Header" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer"]
+[node name="Header" type="HBoxContainer" parent="MarginContainer/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 alignment = 1
 
-[node name="Title" type="Label" parent="Panel/MarginContainer/VBoxContainer/Header"]
+[node name="Title" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/Header"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_type_variation = &"HeaderLarge"
 text = "Summer Labor Allocation"
 
-[node name="PopulationLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/Header"]
+[node name="PopulationLabel" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/Header"]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "Available Villagers: 0"
 
-[node name="UnassignedLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/Header"]
+[node name="UnassignedLabel" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/Header"]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
-text = " |  Unassigned: 0"
+text = " |  Unassigned: 0"
 
-[node name="CardContainer" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer"]
+[node name="CardContainer" type="HBoxContainer" parent="MarginContainer/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 30
+theme_override_constants/separation = 15
 alignment = 1
 
-[node name="ConstructionCard" type="PanelContainer" parent="Panel/MarginContainer/VBoxContainer/CardContainer"]
-custom_minimum_size = Vector2(300, 0)
+[node name="ConstructionCard" type="PanelContainer" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer"]
 layout_mode = 2
-size_flags_horizontal = 4
+size_flags_horizontal = 3
 
-[node name="Margin" type="MarginContainer" parent="Panel/MarginContainer/VBoxContainer/CardContainer/ConstructionCard"]
+[node name="Margin" type="MarginContainer" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/ConstructionCard"]
 layout_mode = 2
 theme_override_constants/margin_left = 15
 theme_override_constants/margin_top = 15
 theme_override_constants/margin_right = 15
 theme_override_constants/margin_bottom = 15
 
-[node name="VBox" type="VBoxContainer" parent="Panel/MarginContainer/VBoxContainer/CardContainer/ConstructionCard/Margin"]
+[node name="VBox" type="VBoxContainer" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/ConstructionCard/Margin"]
 layout_mode = 2
 theme_override_constants/separation = 15
 
-[node name="Title" type="Label" parent="Panel/MarginContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox"]
+[node name="Title" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox"]
 layout_mode = 2
 theme_type_variation = &"HeaderMedium"
 text = "Construction"
 horizontal_alignment = 1
 
-[node name="HSeparator" type="HSeparator" parent="Panel/MarginContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox"]
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox"]
 layout_mode = 2
 
-[node name="HBox" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox"]
+[node name="HBox" type="HBoxContainer" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox"]
 layout_mode = 2
 alignment = 1
 
-[node name="ValConstruction" type="Label" parent="Panel/MarginContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox/HBox"]
+[node name="ValConstruction" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox/HBox"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "0"
+horizontal_alignment = 1
 
-[node name="Label" type="Label" parent="Panel/MarginContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox/HBox"]
+[node name="Label" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox/HBox"]
 layout_mode = 2
 text = "Builders"
 
-[node name="ConstructionSlider" type="HSlider" parent="Panel/MarginContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox"]
+[node name="ConstructionSlider" type="HSlider" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
 
-[node name="Spacer" type="Control" parent="Panel/MarginContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox"]
+[node name="Spacer" type="Control" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="LabelProj" type="Label" parent="Panel/MarginContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox"]
+[node name="LabelProj" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
 text = "Projected Progress:"
 horizontal_alignment = 1
 
-[node name="Proj_Construction" type="Label" parent="Panel/MarginContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox"]
+[node name="Proj_Construction" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
@@ -50777,175 +50937,183 @@ text = "+0 / day"
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="FarmingCard" type="PanelContainer" parent="Panel/MarginContainer/VBoxContainer/CardContainer"]
-custom_minimum_size = Vector2(300, 0)
+[node name="FarmingCard" type="PanelContainer" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer"]
 layout_mode = 2
-size_flags_horizontal = 4
+size_flags_horizontal = 3
 
-[node name="Margin" type="MarginContainer" parent="Panel/MarginContainer/VBoxContainer/CardContainer/FarmingCard"]
+[node name="Margin" type="MarginContainer" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/FarmingCard"]
 layout_mode = 2
 theme_override_constants/margin_left = 15
 theme_override_constants/margin_top = 15
 theme_override_constants/margin_right = 15
 theme_override_constants/margin_bottom = 15
 
-[node name="VBox" type="VBoxContainer" parent="Panel/MarginContainer/VBoxContainer/CardContainer/FarmingCard/Margin"]
+[node name="VBox" type="VBoxContainer" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/FarmingCard/Margin"]
 layout_mode = 2
 theme_override_constants/separation = 15
 
-[node name="Title" type="Label" parent="Panel/MarginContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox"]
+[node name="Title" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox"]
 layout_mode = 2
 theme_type_variation = &"HeaderMedium"
 text = "Farming"
 horizontal_alignment = 1
 
-[node name="HSeparator" type="HSeparator" parent="Panel/MarginContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox"]
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox"]
 layout_mode = 2
 
-[node name="HBox" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox"]
+[node name="HBox" type="HBoxContainer" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox"]
 layout_mode = 2
 alignment = 1
 
-[node name="ValFarming" type="Label" parent="Panel/MarginContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox/HBox"]
+[node name="ValFarming" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox/HBox"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "0"
+horizontal_alignment = 1
 
-[node name="Label" type="Label" parent="Panel/MarginContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox/HBox"]
+[node name="Label" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox/HBox"]
 layout_mode = 2
 text = "Farmers"
 
-[node name="FarmingSlider" type="HSlider" parent="Panel/MarginContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox"]
+[node name="FarmingSlider" type="HSlider" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
 
-[node name="Spacer" type="Control" parent="Panel/MarginContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox"]
+[node name="Spacer" type="Control" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="LabelProj" type="Label" parent="Panel/MarginContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox"]
+[node name="LabelProj" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
 text = "Est. Yield:"
 horizontal_alignment = 1
 
-[node name="Proj_Food" type="Label" parent="Panel/MarginContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox"]
+[node name="Proj_Food" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "0 Food"
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="RaidingCard" type="PanelContainer" parent="Panel/MarginContainer/VBoxContainer/CardContainer"]
-custom_minimum_size = Vector2(300, 0)
+[node name="RaidingCard" type="PanelContainer" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer"]
+visible = false
 layout_mode = 2
-size_flags_horizontal = 4
+size_flags_horizontal = 3
 
-[node name="Margin" type="MarginContainer" parent="Panel/MarginContainer/VBoxContainer/CardContainer/RaidingCard"]
+[node name="Margin" type="MarginContainer" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/RaidingCard"]
 layout_mode = 2
 theme_override_constants/margin_left = 15
 theme_override_constants/margin_top = 15
 theme_override_constants/margin_right = 15
 theme_override_constants/margin_bottom = 15
 
-[node name="VBox" type="VBoxContainer" parent="Panel/MarginContainer/VBoxContainer/CardContainer/RaidingCard/Margin"]
+[node name="VBox" type="VBoxContainer" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/RaidingCard/Margin"]
 layout_mode = 2
 theme_override_constants/separation = 15
 
-[node name="Title" type="Label" parent="Panel/MarginContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
+[node name="Title" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
 layout_mode = 2
 theme_type_variation = &"HeaderMedium"
 text = "Raiding"
 horizontal_alignment = 1
 
-[node name="HSeparator" type="HSeparator" parent="Panel/MarginContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
 layout_mode = 2
 
-[node name="HBox" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
+[node name="HBox" type="HBoxContainer" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
 layout_mode = 2
 alignment = 1
 
-[node name="ValRaiding" type="Label" parent="Panel/MarginContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox/HBox"]
+[node name="ValRaiding" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox/HBox"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "0"
+horizontal_alignment = 1
 
-[node name="Label" type="Label" parent="Panel/MarginContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox/HBox"]
+[node name="Label" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox/HBox"]
 layout_mode = 2
 text = "Raiders"
 
-[node name="RaidingSlider" type="HSlider" parent="Panel/MarginContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
+[node name="RaidingSlider" type="HSlider" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
 
-[node name="Spacer" type="Control" parent="Panel/MarginContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
+[node name="Spacer" type="Control" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="LabelProj" type="Label" parent="Panel/MarginContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
+[node name="LabelProj" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
 text = "Warband Size:"
 horizontal_alignment = 1
 
-[node name="Proj_Raid" type="Label" parent="Panel/MarginContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
+[node name="Proj_Raid" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "0 Men"
 horizontal_alignment = 1
 
-[node name="CommitRaidBtn" type="Button" parent="Panel/MarginContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
+[node name="CommitRaidBtn" type="Button" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 disabled = true
 text = "Commit Warband"
 
-[node name="WinterForecastPanel" type="PanelContainer" parent="Panel/MarginContainer/VBoxContainer"]
+[node name="WinterForecastPanel" type="PanelContainer" parent="MarginContainer/ScrollContainer/VBoxContainer"]
+visible = false
 layout_mode = 2
 theme_type_variation = &"PanelContainerDark"
 
-[node name="Margin" type="MarginContainer" parent="Panel/MarginContainer/VBoxContainer/WinterForecastPanel"]
+[node name="Margin" type="MarginContainer" parent="MarginContainer/ScrollContainer/VBoxContainer/WinterForecastPanel"]
 layout_mode = 2
 theme_override_constants/margin_left = 15
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 15
 theme_override_constants/margin_bottom = 10
 
-[node name="HBox" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer/WinterForecastPanel/Margin"]
+[node name="HBox" type="HBoxContainer" parent="MarginContainer/ScrollContainer/VBoxContainer/WinterForecastPanel/Margin"]
 layout_mode = 2
 theme_override_constants/separation = 40
 alignment = 1
 
-[node name="Lbl_Stockpile" type="Label" parent="Panel/MarginContainer/VBoxContainer/WinterForecastPanel/Margin/HBox"]
+[node name="Lbl_Stockpile" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/WinterForecastPanel/Margin/HBox"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Stockpile: 0 Food, 0 Wood"
 
-[node name="VSeparator" type="VSeparator" parent="Panel/MarginContainer/VBoxContainer/WinterForecastPanel/Margin/HBox"]
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/ScrollContainer/VBoxContainer/WinterForecastPanel/Margin/HBox"]
 layout_mode = 2
 
-[node name="Lbl_WinterDemand" type="Label" parent="Panel/MarginContainer/VBoxContainer/WinterForecastPanel/Margin/HBox"]
+[node name="Lbl_WinterDemand" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/WinterForecastPanel/Margin/HBox"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Proj. Winter Demand: 0 Food"
 
-[node name="VSeparator2" type="VSeparator" parent="Panel/MarginContainer/VBoxContainer/WinterForecastPanel/Margin/HBox"]
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/ScrollContainer/VBoxContainer/WinterForecastPanel/Margin/HBox"]
 layout_mode = 2
 
-[node name="Lbl_WinterNet" type="Label" parent="Panel/MarginContainer/VBoxContainer/WinterForecastPanel/Margin/HBox"]
+[node name="Lbl_WinterNet" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/WinterForecastPanel/Margin/HBox"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 1, 0, 1)
 text = "Winter Secure"
 
-[node name="Footer" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer"]
+[node name="Footer" type="HBoxContainer" parent="MarginContainer/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 alignment = 1
 
-[node name="ConfirmBtn" type="Button" parent="Panel/MarginContainer/VBoxContainer/Footer"]
+[node name="ConfirmBtn" type="Button" parent="MarginContainer/ScrollContainer/VBoxContainer/Footer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(250, 50)
 layout_mode = 2
@@ -50954,153 +51122,1215 @@ text = "Confirm Allocations"
 
 
 --------------------------------------------------
-FILE: res:///ui/seasonal/WinterCourtUI.gd
+FILE: res:///ui/seasonal/SummerDiagnostics.gd
 --------------------------------------------------
-class_name WinterCourt_UI
-extends Control
+extends Node
+class_name SummerUIDiagnostic
 
-## The Winter Court.
-## Players spend Hall Actions (AP) on cards to gain Legacy/Renown.
+## A comprehensive diagnostic tool for the SummerWorkspace_UI.
+## Validates connections, node assignments, and input handling.
 
-# --- Configuration ---
-@export_group("Deck Configuration")
-## Assign cards with Season = WINTER here
-@export var available_court_cards: Array[SeasonalCardResource] = []
-@export var hand_size: int = 3
+@export var target_ui: SummerWorkspace_UI
+@export var audit_interval: float = 1.0
 
-@export_group("References")
-@export var card_prefab: PackedScene # res://ui/seasonal/SeasonalCard_UI.tscn
-@export var card_container: HBoxContainer
-@onready var ap_label: Label = %APLabel
-@onready var end_year_button: Button = %EndYearButton
-
-# --- State ---
-var _current_ap: int = 0
+var _timer: float = 0.0
 
 func _ready() -> void:
-	# Lifecycle: Only visible in Winter
-	EventBus.season_changed.connect(_on_season_changed)
+	# Wait one frame to ensure parent UI _ready has completed
+	await get_tree().process_frame 
 	
-	# Initial Check
-	if DynastyManager.current_season == DynastyManager.Season.WINTER:
-		visible = true
-		_init_winter_court()
+	if not target_ui:
+		printerr("[DIAGNOSTIC CRITICAL] No Target UI assigned to SummerUIDiagnostic!")
+		return
+
+	Loggie.msg("--- STARTING DEEP DIAGNOSTICS FOR SUMMER UI ---").domain(LogDomains.UI).info()
+	
+	_validate_node_assignments()
+	_hook_inputs()
+	_check_visibility_and_process()
+	
+	# Initial State Dump for Collapse Panel
+	if target_ui.container_raid_command:
+		_log_state("Initial Collapse State", target_ui.container_raid_command)
+
+func _process(delta: float) -> void:
+	_timer += delta
+	if _timer >= audit_interval:
+		_timer = 0.0
+		_run_periodic_audit()
+
+# --- 1. Startup Validation ---
+
+func _validate_node_assignments() -> void:
+	var nodes_to_check = {
+		"btn_collapse_toggle": target_ui.btn_collapse_toggle,
+		"btn_world_map": target_ui.btn_world_map,
+		"btn_proceed": target_ui.btn_proceed,
+		"job_row_farmers": target_ui.job_row_farmers,
+		"job_row_builders": target_ui.job_row_builders,
+		"job_row_raiders": target_ui.job_row_raiders,
+		"container_raid_command": target_ui.container_raid_command
+	}
+	
+	for name in nodes_to_check:
+		var node = nodes_to_check[name]
+		if node == null:
+			_log_error("Node reference missing: target_ui.%s is NULL" % name)
+		else:
+			if not node.is_inside_tree():
+				_log_error("Node %s is assigned but NOT in scene tree!" % name)
+
+func _check_visibility_and_process() -> void:
+	if not target_ui.visible:
+		_log_warn("Target UI is currently HIDDEN (visible=false). Inputs will fail.")
+	
+	if target_ui.process_mode == Node.PROCESS_MODE_DISABLED:
+		_log_warn("Target UI is DISABLED (process_mode=Disabled).")
+
+	if target_ui.mouse_filter == Control.MOUSE_FILTER_IGNORE:
+		_log_warn("Target UI root is ignoring mouse events (MOUSE_FILTER_IGNORE).")
+
+# --- 2. Input Spying & Collapse Diagnostics ---
+
+func _hook_inputs() -> void:
+	# 1. Main Buttons
+	if target_ui.btn_collapse_toggle:
+		target_ui.btn_collapse_toggle.pressed.connect(_on_collapse_clicked_diagnostic)
 	else:
-		visible = false
+		_log_error("Cannot hook Collapse Toggle (Node Missing)")
+
+	if target_ui.btn_world_map:
+		target_ui.btn_world_map.pressed.connect(func(): _log_input("World Map Clicked"))
 		
-	end_year_button.pressed.connect(_on_end_year_pressed)
-	
-	# Listen for AP changes
-	if DynastyManager.has_signal("jarl_stats_updated"):
-		DynastyManager.jarl_stats_updated.connect(_on_jarl_stats_updated)
+	if target_ui.btn_proceed:
+		target_ui.btn_proceed.pressed.connect(func(): _log_input("Proceed Clicked"))
 
-func _on_season_changed(season_name: String) -> void:
-	if season_name.to_lower() == "winter":
-		visible = true
-		_init_winter_court()
+	# 2. Job Rows
+	var rows = {
+		"Farmers": target_ui.job_row_farmers,
+		"Builders": target_ui.job_row_builders, 
+		"Raiders": target_ui.job_row_raiders
+	}
+	
+	for key in rows:
+		var row = rows[key]
+		if row:
+			row.change_requested.connect(func(amount): _log_input("%s Change Requested: %d" % [key, amount]))
+			if row.btn_plus: row.btn_plus.pressed.connect(func(): _log_input("%s RAW PLUS Clicked" % key))
+			if row.btn_minus: row.btn_minus.pressed.connect(func(): _log_input("%s RAW MINUS Clicked" % key))
+
+func _on_collapse_clicked_diagnostic() -> void:
+	_log_input("Collapse Toggle Clicked - Starting Transition Audit")
+	var container = target_ui.container_raid_command
+	var logic_state = target_ui.is_raid_panel_open
+	
+	print_rich("[color=orange]=== COLLAPSE TRANSITION START ===[/color]")
+	print("Logic State (is_raid_panel_open): ", logic_state)
+	_log_state("BEFORE Tween", container)
+	
+	# Wait for animation duration (0.2s) + buffer
+	await get_tree().create_timer(0.3).timeout
+	
+	print_rich("[color=orange]=== COLLAPSE TRANSITION END ===[/color]")
+	print("Logic State (is_raid_panel_open): ", target_ui.is_raid_panel_open)
+	_log_state("AFTER Tween", container)
+	
+	# Logic Check
+	if target_ui.is_raid_panel_open == false and container.visible == true:
+		_log_error("COLLAPSE FAILURE: Logic says CLOSED, but Container is VISIBLE.")
+	elif target_ui.is_raid_panel_open == true and container.modulate.a < 0.1:
+		_log_error("COLLAPSE FAILURE: Logic says OPEN, but Container is INVISIBLE (Alpha ~0).")
 	else:
-		visible = false
+		print_rich("[color=green]>> State Sync Logic OK[/color]")
 
-func _init_winter_court() -> void:
-	# 1. Fetch AP
-	if DynastyManager.current_jarl:
-		_current_ap = DynastyManager.current_jarl.current_hall_actions
+func _log_state(prefix: String, node: Control) -> void:
+	if not node: return
+	print("%s >> Visible: %s | Modulate Alpha: %.2f | Size: %s" % [
+		prefix, 
+		str(node.visible), 
+		node.modulate.a, 
+		str(node.size)
+	])
+
+# --- 3. Periodic Audit ---
+
+func _run_periodic_audit() -> void:
+	if not target_ui.visible: return
+
+	# Check Data Logic
+	if SettlementManager.current_settlement:
+		var real_idle = SettlementManager.get_idle_peasants()
+		var planned = target_ui.planned_raiders
+		var visual_idle = real_idle - planned
+		
+		if visual_idle > 0:
+			if target_ui.job_row_farmers and target_ui.job_row_farmers.btn_plus.disabled:
+				_log_warn("Logic Error: Idle peasants exist (%d), but Farmer Plus button is DISABLED." % visual_idle)
+
+# --- Helpers ---
+
+func _log_warn(msg: String) -> void:
+	print_rich("[color=yellow][DIAGNOSTIC WARN] %s[/color]" % msg)
+	Loggie.msg(msg).domain(LogDomains.UI).warn()
+
+func _log_error(msg: String) -> void:
+	print_rich("[color=red][DIAGNOSTIC FAIL] %s[/color]" % msg)
+	Loggie.msg(msg).domain(LogDomains.UI).error()
+
+func _log_input(msg: String) -> void:
+	print_rich("[color=cyan][DIAGNOSTIC INPUT] %s[/color]" % msg)
+
+
+--------------------------------------------------
+FILE: res:///ui/seasonal/SummerJobSlider.gd
+--------------------------------------------------
+extends PanelContainer
+class_name JobRow_UI
+
+## A generic row for assigning labor.
+## Configured via the Inspector (Solution 1).
+
+signal change_requested(amount: int) # +1 or -1
+
+# --- Inspector Configuration ---
+@export_group("Configuration")
+@export var role_title: String = "Worker":
+	set(value):
+		role_title = value
+		if label_role: label_role.text = value
+@export var icon: Texture2D
+
+@export_group("Internal Nodes")
+@export var label_role: Label
+@export var label_count: Label
+@export var btn_minus: Button
+@export var btn_plus: Button
+@export var icon_rect: TextureRect
+
+# State
+var current_count: int = 0
+var max_count: int = -1 
+
+func _ready() -> void:
+	# Solution 1: Apply the exported title immediately on load
+	if label_role:
+		label_role.text = role_title
+	if icon_rect and icon: 
+		icon_rect.texture = icon
+	
+	_connect_signals()
+
+# Optional setup for dynamic overrides (still available if needed)
+func setup(title_override: String, _icon: Texture2D = null) -> void:
+	role_title = title_override
+	if _icon: icon = _icon
+	
+	if label_role: label_role.text = role_title
+	if icon_rect and icon: icon_rect.texture = icon
+
+func _connect_signals() -> void:
+	if btn_plus:
+		btn_plus.pressed.connect(func(): change_requested.emit(1))
+	if btn_minus:
+		btn_minus.pressed.connect(func(): change_requested.emit(-1))
+
+func update_display(count: int, _max: int = -1) -> void:
+	current_count = count
+	max_count = _max
+	
+	if label_count:
+		label_count.text = str(current_count)
+	
+	_update_button_states()
+
+func _update_button_states() -> void:
+	if btn_minus:
+		btn_minus.disabled = (current_count <= 0)
+	
+	if btn_plus and max_count != -1:
+		btn_plus.disabled = (current_count >= max_count)
+
+func set_plus_enabled(enabled: bool) -> void:
+	if btn_plus:
+		if max_count != -1 and current_count >= max_count:
+			btn_plus.disabled = true
+		else:
+			btn_plus.disabled = !enabled
+
+
+--------------------------------------------------
+FILE: res:///ui/seasonal/SummerJobSlider.tscn
+--------------------------------------------------
+[gd_scene load_steps=2 format=3 uid="uid://bhsqb83x1g3v0"]
+
+[ext_resource type="Script" uid="uid://cl30v0wegwxd4" path="res://ui/seasonal/SummerJobSlider.gd" id="1_script"]
+
+[node name="JobRow_UI" type="PanelContainer" node_paths=PackedStringArray("label_role", "label_count", "btn_minus", "btn_plus", "icon_rect")]
+offset_right = 400.0
+offset_bottom = 50.0
+script = ExtResource("1_script")
+label_role = NodePath("MarginContainer/HBoxContainer/Label_Role")
+label_count = NodePath("MarginContainer/HBoxContainer/CountContainer/Label_Count")
+btn_minus = NodePath("MarginContainer/HBoxContainer/CountContainer/Btn_Minus")
+btn_plus = NodePath("MarginContainer/HBoxContainer/CountContainer/Btn_Plus")
+icon_rect = NodePath("MarginContainer/HBoxContainer/Icon")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 5
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="Icon" type="TextureRect" parent="MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Label_Role" type="Label" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Role Name"
+vertical_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="CountContainer" type="HBoxContainer" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Btn_Minus" type="Button" parent="MarginContainer/HBoxContainer/CountContainer"]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+text = "-"
+
+[node name="Label_Count" type="Label" parent="MarginContainer/HBoxContainer/CountContainer"]
+custom_minimum_size = Vector2(40, 0)
+layout_mode = 2
+text = "0"
+horizontal_alignment = 1
+
+[node name="Btn_Plus" type="Button" parent="MarginContainer/HBoxContainer/CountContainer"]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+text = "+"
+
+
+--------------------------------------------------
+FILE: res:///ui/seasonal/SummerWorkspaceUI.tscn
+--------------------------------------------------
+[gd_scene load_steps=3 format=3 uid="uid://cv530nr365fv4"]
+
+[ext_resource type="Script" uid="uid://dneudlbki6d61" path="res://ui/seasonal/SummerWorkspace_UI.gd" id="1_controller"]
+[ext_resource type="PackedScene" uid="uid://c8q4w2x5y301" path="res://ui/seasonal/SummerAllocation_Ui.tscn" id="2_v2kwp"]
+
+[node name="SummerWorkspace_UI" type="Control" node_paths=PackedStringArray("label_silver", "label_food", "label_wood", "label_pop_total", "label_pop_idle", "texture_winter_warning", "btn_hide_ui", "lbl_summary_farmers", "lbl_summary_builders", "lbl_summary_raiders", "btn_manage_allocation", "job_row_container", "container_raid_command", "btn_collapse_toggle", "label_authority", "label_bondi_count", "container_warbands", "btn_world_map", "btn_proceed", "btn_tab_construction", "btn_tab_completed", "grid_active_projects", "grid_completed_buildings")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_controller")
+label_silver = NodePath("LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/ResourceGroup/SilverWidget/Label_Value")
+label_food = NodePath("LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/ResourceGroup/FoodWidget/Label_Value")
+label_wood = NodePath("LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/ResourceGroup/WoodWidget/Label_Value")
+label_pop_total = NodePath("LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/PopWidget/Label_Total")
+label_pop_idle = NodePath("LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/PopWidget/Label_Idle")
+texture_winter_warning = NodePath("LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/WinterWarning")
+btn_hide_ui = NodePath("LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/CloseButton")
+lbl_summary_farmers = NodePath("LayoutRoot/MainWorkspace/LaborColumn/JobRow_Container/Label_Farmers")
+lbl_summary_builders = NodePath("LayoutRoot/MainWorkspace/LaborColumn/JobRow_Container/Label_Builders")
+lbl_summary_raiders = NodePath("LayoutRoot/MainWorkspace/LaborColumn/JobRow_Container/Label_Raiders")
+btn_manage_allocation = NodePath("LayoutRoot/MainWorkspace/LaborColumn/JobRow_Container/Btn_ManageAllocation")
+job_row_container = NodePath("LayoutRoot/MainWorkspace/LaborColumn/JobRow_Container")
+allocation_view_scene = ExtResource("2_v2kwp")
+container_raid_command = NodePath("LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container")
+btn_collapse_toggle = NodePath("LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/CollapseToggle")
+label_authority = NodePath("LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container/MarginContainer/VBoxContainer/CommandHeader/Label_Authority")
+label_bondi_count = NodePath("LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container/MarginContainer/VBoxContainer/TroopBreakdown/BondiCount/Label_Value")
+container_warbands = NodePath("LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container/MarginContainer/VBoxContainer/TroopBreakdown/WarbandList")
+btn_world_map = NodePath("LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container/MarginContainer/VBoxContainer/WorldMapButton")
+btn_proceed = NodePath("LayoutRoot/Footer_Commitment/MarginContainer/ProceedButton")
+btn_tab_construction = NodePath("LayoutRoot/MainWorkspace/VisualizationColumn/ProjectTabs/Btn_ShowConstruction")
+btn_tab_completed = NodePath("LayoutRoot/MainWorkspace/VisualizationColumn/ProjectTabs/Btn_ShowCompleted")
+grid_active_projects = NodePath("LayoutRoot/MainWorkspace/VisualizationColumn/ActiveProjects_Grid")
+grid_completed_buildings = NodePath("LayoutRoot/MainWorkspace/VisualizationColumn/CompletedBuildings_Grid")
+
+[node name="BackgroundLayer" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 6
+
+[node name="LayoutRoot" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="HUD_TopBar" type="PanelContainer" parent="LayoutRoot"]
+layout_mode = 2
+size_flags_vertical = 0
+
+[node name="MarginContainer" type="MarginContainer" parent="LayoutRoot/HUD_TopBar"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 10
+
+[node name="HBoxContainer" type="HBoxContainer" parent="LayoutRoot/HUD_TopBar/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 40
+
+[node name="ResourceGroup" type="HBoxContainer" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="SilverWidget" type="HBoxContainer" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/ResourceGroup"]
+layout_mode = 2
+
+[node name="Icon" type="TextureRect" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/ResourceGroup/SilverWidget"]
+layout_mode = 2
+expand_mode = 2
+
+[node name="Label_Value" type="Label" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/ResourceGroup/SilverWidget"]
+layout_mode = 2
+text = "0"
+
+[node name="FoodWidget" type="HBoxContainer" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/ResourceGroup"]
+layout_mode = 2
+
+[node name="Icon" type="TextureRect" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/ResourceGroup/FoodWidget"]
+layout_mode = 2
+expand_mode = 2
+
+[node name="Label_Value" type="Label" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/ResourceGroup/FoodWidget"]
+layout_mode = 2
+text = "0 / +0"
+
+[node name="WoodWidget" type="HBoxContainer" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/ResourceGroup"]
+layout_mode = 2
+
+[node name="Icon" type="TextureRect" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/ResourceGroup/WoodWidget"]
+layout_mode = 2
+expand_mode = 2
+
+[node name="Label_Value" type="Label" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/ResourceGroup/WoodWidget"]
+layout_mode = 2
+text = "0"
+
+[node name="PopWidget" type="HBoxContainer" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 10
+
+[node name="Icon" type="TextureRect" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/PopWidget"]
+layout_mode = 2
+expand_mode = 2
+
+[node name="Label_Total" type="Label" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/PopWidget"]
+layout_mode = 2
+text = "Pop: 10"
+
+[node name="Label_Idle" type="Label" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer/PopWidget"]
+layout_mode = 2
+text = "(3 Idle)"
+
+[node name="WinterWarning" type="TextureRect" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CloseButton" type="Button" parent="LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="MainWorkspace" type="HBoxContainer" parent="LayoutRoot"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 20
+
+[node name="LaborColumn" type="VBoxContainer" parent="LayoutRoot/MainWorkspace"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.4
+
+[node name="Header" type="Label" parent="LayoutRoot/MainWorkspace/LaborColumn"]
+layout_mode = 2
+text = "Summer Assignments"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="LayoutRoot/MainWorkspace/LaborColumn"]
+layout_mode = 2
+
+[node name="JobRow_Container" type="VBoxContainer" parent="LayoutRoot/MainWorkspace/LaborColumn"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 15
+
+[node name="Label_Farmers" type="Label" parent="LayoutRoot/MainWorkspace/LaborColumn/JobRow_Container"]
+layout_mode = 2
+text = "Farming: 0"
+
+[node name="Label_Builders" type="Label" parent="LayoutRoot/MainWorkspace/LaborColumn/JobRow_Container"]
+layout_mode = 2
+text = "Construction: 0"
+
+[node name="Label_Raiders" type="Label" parent="LayoutRoot/MainWorkspace/LaborColumn/JobRow_Container"]
+layout_mode = 2
+text = "Raiding: 0"
+
+[node name="Btn_ManageAllocation" type="Button" parent="LayoutRoot/MainWorkspace/LaborColumn/JobRow_Container"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+text = "ALLOCATION"
+
+[node name="VisualizationColumn" type="VBoxContainer" parent="LayoutRoot/MainWorkspace"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.6
+
+[node name="ProjectTabs" type="HBoxContainer" parent="LayoutRoot/MainWorkspace/VisualizationColumn"]
+layout_mode = 2
+
+[node name="Btn_ShowConstruction" type="Button" parent="LayoutRoot/MainWorkspace/VisualizationColumn/ProjectTabs"]
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Under Construction"
+
+[node name="Btn_ShowCompleted" type="Button" parent="LayoutRoot/MainWorkspace/VisualizationColumn/ProjectTabs"]
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Completed"
+
+[node name="ActiveProjects_Grid" type="GridContainer" parent="LayoutRoot/MainWorkspace/VisualizationColumn"]
+layout_mode = 2
+size_flags_vertical = 3
+columns = 3
+
+[node name="CompletedBuildings_Grid" type="GridContainer" parent="LayoutRoot/MainWorkspace/VisualizationColumn"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+columns = 3
+
+[node name="RaidCommand_Section" type="VBoxContainer" parent="LayoutRoot/MainWorkspace/VisualizationColumn"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.5
+alignment = 2
+
+[node name="CollapseToggle" type="Button" parent="LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section"]
+layout_mode = 2
+text = "▼ War Council"
+
+[node name="RaidCommand_Container" type="PanelContainer" parent="LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container/MarginContainer"]
+layout_mode = 2
+
+[node name="CommandHeader" type="HBoxContainer" parent="LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label_Title" type="Label" parent="LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container/MarginContainer/VBoxContainer/CommandHeader"]
+layout_mode = 2
+text = "War Council"
+
+[node name="Label_Authority" type="Label" parent="LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container/MarginContainer/VBoxContainer/CommandHeader"]
+layout_mode = 2
+size_flags_horizontal = 10
+text = "Authority: 0"
+
+[node name="HSeparator" type="HSeparator" parent="LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="TroopBreakdown" type="VBoxContainer" parent="LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="BondiCount" type="HBoxContainer" parent="LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container/MarginContainer/VBoxContainer/TroopBreakdown"]
+layout_mode = 2
+
+[node name="Label_Title" type="Label" parent="LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container/MarginContainer/VBoxContainer/TroopBreakdown/BondiCount"]
+layout_mode = 2
+text = "Bondi (Villagers):"
+
+[node name="Label_Value" type="Label" parent="LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container/MarginContainer/VBoxContainer/TroopBreakdown/BondiCount"]
+layout_mode = 2
+size_flags_horizontal = 10
+text = "0"
+
+[node name="WarbandList" type="VBoxContainer" parent="LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container/MarginContainer/VBoxContainer/TroopBreakdown"]
+layout_mode = 2
+
+[node name="WorldMapButton" type="Button" parent="LayoutRoot/MainWorkspace/VisualizationColumn/RaidCommand_Section/RaidCommand_Container/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+text = "OPEN WORLD MAP"
+
+[node name="Footer_Commitment" type="PanelContainer" parent="LayoutRoot"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="LayoutRoot/Footer_Commitment"]
+layout_mode = 2
+theme_override_constants/margin_left = 50
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 50
+theme_override_constants/margin_bottom = 15
+
+[node name="ProceedButton" type="Button" parent="LayoutRoot/Footer_Commitment/MarginContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+text = "The Sun Sets. All Paths are Chosen."
+
+
+--------------------------------------------------
+FILE: res:///ui/seasonal/SummerWorkspace_UI.gd
+--------------------------------------------------
+extends Control
+class_name SummerWorkspace_UI
+
+## The Unified Dashboard for Summer Operations.
+## Acts as a read-only summary and launcher for the embedded Allocation UI.
+
+# --- Configuration ---
+const SEASONS_PER_YEAR: int = 4
+const SEASON_NAMES: Array[String] = ["Spring", "Summer", "Autumn", "Winter"]
+
+# --- UI References ---
+@export_group("HUD Components")
+@export var label_silver: Label
+@export var label_food: Label
+@export var label_wood: Label
+@export var label_pop_total: Label
+@export var label_pop_idle: Label
+@export var texture_winter_warning: TextureRect
+@export var btn_hide_ui: Button 
+
+@export_group("Labor Summary")
+@export var lbl_summary_farmers: Label
+@export var lbl_summary_builders: Label
+@export var lbl_summary_raiders: Label
+@export var btn_manage_allocation: Button
+@export var job_row_container: VBoxContainer ## container where the allocation panel will be injected
+@export var allocation_view_scene: PackedScene ## Assign 'SummerAllocation_UI.tscn' here
+
+@export_group("War Council")
+@export var container_raid_command: Control 
+@export var btn_collapse_toggle: Button
+@export var label_authority: Label
+@export var label_bondi_count: Label
+@export var container_warbands: VBoxContainer
+@export var btn_world_map: Button
+@export var btn_proceed: Button
+
+@export_group("Project Management")
+@export var btn_tab_construction: Button
+@export var btn_tab_completed: Button
+@export var grid_active_projects: GridContainer
+@export var grid_completed_buildings: GridContainer
+
+# --- Internal References ---
+@onready var background_layer: TextureRect = $BackgroundLayer
+@onready var layout_root: VBoxContainer = $LayoutRoot
+
+# Runtime generated nodes
+var btn_restore_ui: Button 
+var allocation_instance: Control
+
+# --- State ---
+var is_raid_panel_open: bool = true
+var _has_activated: bool = false
+
+func _ready() -> void:
+	visible = false
+	
+	_setup_mouse_filters()
+	_setup_signals()
+	_connect_buttons()
+	_create_restore_button()
+	
+	if DynastyManager.current_season == DynastyManager.Season.SUMMER:
+		_activate_summer_ui()
+	
+	_set_project_view(true)
+
+func _create_restore_button() -> void:
+	btn_restore_ui = Button.new()
+	btn_restore_ui.text = "Open Summer Council"
+	btn_restore_ui.visible = false
+	btn_restore_ui.top_level = true
+	btn_restore_ui.anchor_left = 1.0
+	btn_restore_ui.anchor_top = 1.0
+	btn_restore_ui.anchor_right = 1.0
+	btn_restore_ui.anchor_bottom = 1.0
+	btn_restore_ui.offset_left = -220
+	btn_restore_ui.offset_top = -60
+	btn_restore_ui.offset_right = -20
+	btn_restore_ui.offset_bottom = -20
+	btn_restore_ui.pressed.connect(_on_restore_ui_pressed)
+	add_child(btn_restore_ui)
+
+func _connect_buttons() -> void:
+	if btn_collapse_toggle: btn_collapse_toggle.pressed.connect(_toggle_raid_panel)
+	if btn_world_map: btn_world_map.pressed.connect(func(): EventBus.scene_change_requested.emit(GameScenes.WORLD_MAP)) 
+	if btn_proceed: btn_proceed.pressed.connect(_on_proceed_pressed)
+	if btn_tab_construction: btn_tab_construction.pressed.connect(func(): _set_project_view(true))
+	if btn_tab_completed: btn_tab_completed.pressed.connect(func(): _set_project_view(false))
+	if btn_hide_ui: btn_hide_ui.pressed.connect(_on_hide_ui_pressed)
+	if btn_manage_allocation: btn_manage_allocation.pressed.connect(_on_manage_allocation_pressed)
+
+func _activate_summer_ui() -> void:
+	visible = true
+	_initial_refresh() 
+	_has_activated = true
+	Loggie.msg("Summer UI Activated").domain(LogDomains.UI).info()
+
+func _setup_mouse_filters() -> void:
+	self.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if layout_root:
+		layout_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		for child in layout_root.get_children():
+			if child is Control: child.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if background_layer:
+		background_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+func _setup_signals() -> void:
+	EventBus.settlement_loaded.connect(_on_settlement_loaded)
+	EventBus.treasury_updated.connect(_on_treasury_updated)
+	EventBus.population_changed.connect(_on_population_changed)
+	EventBus.season_changed.connect(_on_season_changed)
+
+# --- Visibility Toggles ---
+
+func _on_hide_ui_pressed() -> void:
+	if layout_root: layout_root.visible = false
+	if background_layer: background_layer.visible = false
+	if btn_restore_ui: btn_restore_ui.visible = true
+
+func _on_restore_ui_pressed() -> void:
+	if layout_root: layout_root.visible = true
+	if background_layer: background_layer.visible = true
+	if btn_restore_ui: btn_restore_ui.visible = false
+
+# --- Data & Logic Initialization ---
+
+func _initial_refresh() -> void:
+	if not EconomyManager or not SettlementManager or not DynastyManager: return
+	if not SettlementManager.current_settlement: return
+
+	_update_resources(EconomyManager.get_projected_income()) 
+	_update_authority_display()
+	_update_forecast_warning()
+	
+	_refresh_labor_summary()
+	_update_population_display()
+	_refresh_building_grids()
+
+func _refresh_labor_summary() -> void:
+	if not SettlementManager.current_settlement: return
+	
+	var placed = SettlementManager.current_settlement.placed_buildings
+	var pending = SettlementManager.current_settlement.pending_construction_buildings
+	
+	var current_farmers = 0
+	for b in placed: current_farmers += b.get("assigned_workers", 0)
+	
+	var current_builders = 0
+	for b in pending: current_builders += b.get("peasant_count", 0)
+	
+	# Raiders are tracked by EconomyManager/RaidManager usually, assuming 0 for now if not tracked in a var
+	# If you have a variable for this, replace 0 below.
+	var current_raiders = 0 
+	
+	if lbl_summary_farmers: lbl_summary_farmers.text = "Farming: %d" % current_farmers
+	if lbl_summary_builders: lbl_summary_builders.text = "Construction: %d" % current_builders
+	if lbl_summary_raiders: lbl_summary_raiders.text = "Raiders: %d" % current_raiders
+	
+	if label_bondi_count: label_bondi_count.text = str(current_raiders)
+
+func _update_population_display() -> void:
+	if not SettlementManager.current_settlement: return
+	
+	var total = SettlementManager.current_settlement.population_peasants
+	var idle = SettlementManager.get_idle_peasants()
+	
+	if label_pop_total: label_pop_total.text = "Pop: %d" % total
+	if label_pop_idle: label_pop_idle.text = "(%d Idle)" % idle
+	
+	var no_labor = idle <= 0
+	label_pop_idle.modulate = Color.RED if no_labor else Color.WHITE
+
+# --- External Allocation UI (Embedded) ---
+
+func _on_manage_allocation_pressed() -> void:
+	if not allocation_view_scene:
+		Loggie.msg("Allocation Scene not assigned in SummerWorkspace_UI!").domain(LogDomains.UI).error()
+		return
+	
+	# If panel exists, just toggle it
+	if allocation_instance:
+		allocation_instance.visible = not allocation_instance.visible
+		return
+
+	# Otherwise, instantiate it embedded in the column
+	if not job_row_container:
+		Loggie.msg("JobRowContainer not assigned! Cannot embed Allocation UI.").domain(LogDomains.UI).error()
+		return
+		
+	allocation_instance = allocation_view_scene.instantiate()
+	allocation_instance.name = "AllocationPanel"
+	
+	# Add to the VBox (JobRow_Container) so it sits below the button
+	job_row_container.add_child(allocation_instance)
+	
+	# Configure layout to fit nicely in the column
+	allocation_instance.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	allocation_instance.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	
+	# Connect refresh signal
+	if allocation_instance.has_signal("allocation_committed"):
+		allocation_instance.allocation_committed.connect(_on_allocation_committed)
+
+func _on_allocation_committed() -> void:
+	Loggie.msg("Allocation Committed - Refreshing Dashboard").domain(LogDomains.UI).info()
+	_initial_refresh()
+	# Optional: Hide panel on commit?
+	# if allocation_instance: allocation_instance.visible = false
+
+# --- Projections & Forecasts ---
+
+func _update_resources(treasury: Dictionary) -> void:
+	if label_silver: label_silver.text = str(treasury.get("gold", 0))
+	if label_food: label_food.text = str(treasury.get("food", 0))
+	if label_wood: label_wood.text = str(treasury.get("wood", 0))
+
+func _update_authority_display() -> void:
+	if not DynastyManager.current_jarl: return
+	var auth = DynastyManager.current_jarl.current_authority
+	if label_authority: label_authority.text = "Authority: %d" % auth
+
+func _update_forecast_warning() -> void:
+	if not SettlementManager.current_settlement: return
+	
+	var forecast = EconomyManager.get_winter_forecast()
+	var base_food_demand = forecast.get("food", 0)
+	var current_food = SettlementManager.current_settlement.treasury.get("food", 0)
+	
+	if current_food < base_food_demand:
+		texture_winter_warning.modulate = Color.RED
+		texture_winter_warning.tooltip_text = "Deficit Predicted! Demand: %d" % base_food_demand
 	else:
-		_current_ap = 0
-		Loggie.msg("CRITICAL: No Jarl found for Winter Court").domain(LogDomains.GAMEPLAY).error()
-	
-	_update_hud()
-	_deal_cards()
-	
-	# FIX: Replaced .data() with string formatting
-	Loggie.msg("Winter Court Opened | AP: %d" % _current_ap).domain(LogDomains.UI).info()
+		texture_winter_warning.modulate = Color.GREEN
+		texture_winter_warning.tooltip_text = "Winter Secure."
 
-func _update_hud() -> void:
-	ap_label.text = "Hall Actions: %d" % _current_ap
+func _refresh_building_grids() -> void:
+	if not grid_active_projects or not grid_completed_buildings: return
 	
-	# Update card interactability based on new AP
-	for card_ui in card_container.get_children():
-		if card_ui is SeasonalCard_UI:
-			# Re-run setup to refresh disabled state
-			card_ui.setup(card_ui._card_data, _can_afford(card_ui._card_data))
+	for child in grid_active_projects.get_children(): child.queue_free()
+	for child in grid_completed_buildings.get_children(): child.queue_free()
+	
+	# Completed
+	for b in SettlementManager.current_settlement.placed_buildings:
+		var lbl = Label.new()
+		var b_name = "Building"
+		if "resource_path" in b:
+			var b_data = load(b["resource_path"])
+			if b_data:
+				b_name = b_data.display_name if "display_name" in b_data else b_data.resource_name
+		
+		lbl.text = str(b_name).capitalize() + " (Complete)"
+		grid_completed_buildings.add_child(lbl)
+		
+	# Construction
+	var pending = SettlementManager.current_settlement.get("pending_construction_buildings")
+	if pending and pending is Array:
+		for i in range(pending.size()):
+			var b = pending[i]
+			var lbl = Label.new()
+			var b_name = "Site"
+			if "resource_path" in b:
+				var b_data = load(b["resource_path"])
+				if b_data:
+					b_name = b_data.display_name if "display_name" in b_data else b_data.resource_name
+			
+			var assigned = b.get("peasant_count", 0)
+			var status_str = "(Paused)" if assigned == 0 else "(Active: %d)" % assigned
+			if assigned == 0: lbl.modulate = Color.GRAY
+			
+			lbl.text = "%s %s" % [str(b_name).capitalize(), status_str]
+			grid_active_projects.add_child(lbl)
+
+# --- Commit / Phase Logic ---
+
+func _on_proceed_pressed() -> void:
+	SettlementManager._validate_employment_levels()
+	Loggie.msg("Summer Ended. Proceeding to Autumn.").domain(LogDomains.GAMEPLAY).info()
+	queue_free()
+
+# --- Standard Handlers ---
+
+func _on_settlement_loaded(_data) -> void:
+	if visible: _initial_refresh()
+
+func _on_treasury_updated(new_treasury: Dictionary) -> void:
+	if visible: _update_resources(new_treasury); _update_forecast_warning()
+
+func _on_population_changed() -> void:
+	if visible: _initial_refresh()
+
+func _on_season_changed(new_season: String) -> void:
+	if new_season == "Summer": _activate_summer_ui()
+	else: visible = false
+
+func _toggle_raid_panel() -> void:
+	is_raid_panel_open = !is_raid_panel_open
+	var tween = create_tween()
+	tween.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT).set_parallel(true)
+	if is_raid_panel_open:
+		container_raid_command.show()
+		tween.tween_property(container_raid_command, "modulate:a", 1.0, 0.15)
+		btn_collapse_toggle.text = "▼ War Council"
+	else:
+		tween.tween_property(container_raid_command, "modulate:a", 0.0, 0.1)
+		tween.chain().tween_callback(container_raid_command.hide)
+		btn_collapse_toggle.text = "▲ War Council"
+
+func _set_project_view(show_construction: bool) -> void:
+	if grid_active_projects: grid_active_projects.visible = show_construction
+	if grid_completed_buildings: grid_completed_buildings.visible = !show_construction
+	if btn_tab_construction: btn_tab_construction.set_pressed_no_signal(show_construction)
+	if btn_tab_completed: btn_tab_completed.set_pressed_no_signal(!show_construction)
+
+
+--------------------------------------------------
+FILE: res:///ui/seasonal/WinterCourtUI.gd
+--------------------------------------------------
+extends Control
+class_name WinterCourtUI
+
+## WinterCourtUI - The Seasonal Workspace
+##
+## Organizes the Winter phase into three persistent strata:
+## 1. Burden (Deficits & Severity) - Read Only
+## 2. Great Hall (Actions & Cards) - Interactive
+## 3. Bloodline (Dynasty Context) - Read Only
+
+# ------------------------------------------------------------------------------
+# Dependencies
+# ------------------------------------------------------------------------------
+# Expected Singletons: WinterManager, DynastyManager, EventBus, Loggie, EconomyManager
+
+# ------------------------------------------------------------------------------
+# Configuration
+# ------------------------------------------------------------------------------
+@export_group("Great Hall Stratum")
+## The list of Seasonal Cards available this winter (Assigned by Game Design or Manager)
+@export var available_court_cards: Array[SeasonalCardResource] = []
+## The UI Prefab for a single card (SeasonalCardUi.tscn)
+@export var card_prefab: PackedScene
+
+# ------------------------------------------------------------------------------
+# Node References (Unique Names)
+# ------------------------------------------------------------------------------
+# Stratum I: Burden
+@onready var severity_label: Label = %SeverityLabel
+@onready var deficit_container: VBoxContainer = %DeficitContainer
+
+# Stratum II: Great Hall
+@onready var action_points_label: Label = %ActionPointsLabel
+@onready var cards_container: HBoxContainer = %CardsContainer
+@onready var end_winter_button: Button = %EndWinterButton
+
+# Stratum III: Bloodline
+@onready var jarl_name_label: Label = %JarlNameLabel
+@onready var jarl_status_label: Label = %JarlStatusLabel
+@onready var heir_status_label: Label = %HeirStatusLabel
+
+# ------------------------------------------------------------------------------
+# State
+# ------------------------------------------------------------------------------
+var current_ap: int = 0
+var max_ap: int = 0
+
+# ------------------------------------------------------------------------------
+# Lifecycle
+# ------------------------------------------------------------------------------
+func _ready() -> void:
+	# Default to hidden as this is a Phase-specific UI
+	visible = false
+	
+	# Connect internal signals
+	end_winter_button.pressed.connect(_on_end_winter_pressed)
+	
+	# Connect global signals
+	EventBus.hall_action_updated.connect(_on_ap_updated)
+	
+	# Listen for season changes to toggle visibility
+	# We check for the signal's existence for safety, assuming standard EventBus
+	if EventBus.has_signal("season_changed"):
+		EventBus.season_changed.connect(_on_season_changed)
+	elif EventBus.has_signal("winter_started"): 
+		# Fallback if specific signal is used instead of generic season change
+		EventBus.winter_started.connect(func(): _on_season_changed("Winter"))
+
+func _on_season_changed(new_season: String) -> void:
+	if new_season == "Winter":
+		show()
+		setup_winter_view()
+	else:
+		hide()
+
+func _on_ap_updated(new_amount: int) -> void:
+	current_ap = new_amount
+	# Update label
+	_update_hall_ui()
+	# Update card interactivity (affordability may have changed)
+	_refresh_stratum_hall()
+
+# ------------------------------------------------------------------------------
+# Public API
+# ------------------------------------------------------------------------------
+## Main entry point called when the Winter Phase begins
+func setup_winter_view() -> void:
+	Loggie.msg("Initializing Winter Court UI Strata").domain(LogDomains.UI).info()
+	
+	# 1. Fetch Jarl Context & Sync AP
+	var jarl: JarlData = DynastyManager.get_current_jarl()
+	
+	if jarl:
+		# TRUST THE MANAGER: We do not recalculate actions here. 
+		current_ap = jarl.current_hall_actions
+		max_ap = jarl.max_hall_actions
+	else:
+		current_ap = 0
+		max_ap = 0
+	
+	# 2. Refresh Strata
+	_refresh_stratum_burden()
+	_refresh_stratum_bloodline()
+	_refresh_stratum_hall()
+	
+	# 3. Update Visuals
+	_update_hall_ui()
+
+# ------------------------------------------------------------------------------
+# STRATUM I: The Burden of Winter (Read-Only)
+# ------------------------------------------------------------------------------
+func _refresh_stratum_burden() -> void:
+	var report: Dictionary = WinterManager.winter_consumption_report
+	
+	# 1. Severity Display
+	# Use Enum for robust checking (Fallback to NORMAL = 1 if missing)
+	var severity_enum: int = report.get("severity_enum", 1) 
+	var severity_name: String = report.get("severity_name", "NORMAL")
+	
+	severity_label.text = "Winter Severity: %s" % severity_name
+	
+	# Color code severity using Manager constants if available, or implied logic
+	# Assuming WinterManager has the Enum: NORMAL=1, HARSH=2, MILD=0 (Example)
+	# Safest approach is to check the integer values we expect or the name
+	if severity_name == "HARSH": # Or WinterManager.WinterSeverity.HARSH
+		severity_label.modulate = Color.RED
+	elif severity_name == "MILD":
+		severity_label.modulate = Color.GREEN
+	else:
+		severity_label.modulate = Color.WHITE
+
+	# 2. Deficit Visualization
+	# Clear previous
+	for child in deficit_container.get_children():
+		child.queue_free()
+	
+	var food_deficit: int = report.get("food_deficit", 0)
+	var wood_deficit: int = report.get("wood_deficit", 0)
+	
+	# TRUST THE MANAGER: We do not calculate is_crisis_active locally.
+	# We only visualize the deficits provided by the report.
+	
+	if food_deficit > 0:
+		_add_burden_entry("Starvation Risk", "-%d Food" % food_deficit, Color.RED)
+		
+	if wood_deficit > 0:
+		_add_burden_entry("Freezing Risk", "-%d Wood" % wood_deficit, Color.ORANGE)
+		
+	if food_deficit <= 0 and wood_deficit <= 0:
+		_add_burden_entry("Supplies Sufficient", "Stockpiles Holding", Color.GREEN)
+
+func _add_burden_entry(title: String, value: String, color: Color) -> void:
+	var entry = Label.new()
+	entry.text = "%s: %s" % [title, value]
+	entry.modulate = color
+	deficit_container.add_child(entry)
+
+# ------------------------------------------------------------------------------
+# STRATUM II: The Great Hall (Interactive)
+# ------------------------------------------------------------------------------
+func _refresh_stratum_hall() -> void:
+	# Clean up existing cards
+	for child in cards_container.get_children():
+		child.queue_free()
+	
+	# SAFETY CHECK: Prevent runtime errors if prefab is missing
+	if not card_prefab:
+		Loggie.msg("WinterCourtUI: No card_prefab assigned!").domain(LogDomains.UI).warn()
+		return
+
+	# Instantiate Cards from the Exported Array
+	for card_data in available_court_cards:
+		var card_instance = card_prefab.instantiate()
+		cards_container.add_child(card_instance)
+		
+		# Check complete affordability (AP + Resources)
+		var can_afford = _can_afford(card_data)
+		
+		# Attempt to pass data to the card UI with affordability context
+		if card_instance.has_method("setup"):
+			# Assuming setup signature is setup(resource, is_clickable/can_afford)
+			card_instance.setup(card_data, can_afford)
+		elif "resource" in card_instance:
+			card_instance.resource = card_data
+			if "is_disabled" in card_instance:
+				card_instance.is_disabled = not can_afford
+		else:
+			Loggie.msg("WinterCourtUI: Card prefab missing 'setup()' or 'resource' property").domain(LogDomains.UI).error()
+			
+		# Connect interaction signal
+		if card_instance.has_signal("card_clicked"):
+			card_instance.card_clicked.connect(_on_card_clicked)
 
 func _can_afford(card: SeasonalCardResource) -> bool:
-	return _current_ap >= card.cost_ap
-
-func _deal_cards() -> void:
-	for child in card_container.get_children():
-		child.queue_free()
-
-	# Filter for Winter cards
-	var winter_deck: Array[SeasonalCardResource] = []
-	for card in available_court_cards:
-		if card and card.season == SeasonalCardResource.SeasonType.WINTER:
-			winter_deck.append(card)
-	
-	if winter_deck.is_empty():
-		Loggie.msg("No Winter cards found in deck!").domain(LogDomains.GAMEPLAY).warn()
-		return
-
-	winter_deck.shuffle()
-	var cards_to_spawn = min(hand_size, winter_deck.size())
-	
-	for i in range(cards_to_spawn):
-		var card_instance = card_prefab.instantiate() as SeasonalCard_UI
-		card_container.add_child(card_instance)
+	# 1. Check AP
+	if current_ap < card.cost_ap:
+		return false
 		
-		# Setup with Affordability Check
-		var card_data = winter_deck[i]
-		card_instance.setup(card_data, _can_afford(card_data))
-		card_instance.card_clicked.connect(_on_card_clicked)
+	# 2. Check Resources via EconomyManager
+	var costs = {}
+	if card.cost_gold > 0: costs["gold"] = card.cost_gold
+	if card.cost_food > 0: costs["food"] = card.cost_food
+	# Note: SeasonalCardResource currently doesn't have cost_wood defined in provided snippets, 
+	# but if it did: if card.cost_wood > 0: costs["wood"] = card.cost_wood
+	
+	if not costs.is_empty():
+		# Ensure EconomyManager has this method (See Adjustment 2)
+		if EconomyManager.has_method("can_afford"):
+			return EconomyManager.can_afford(costs)
+		return false # Fail safe if manager is outdated
+	
+	return true
+
+func _update_hall_ui() -> void:
+	action_points_label.text = "Dynastic Attention: %d / %d" % [current_ap, max_ap]
+	
+	# Update Button State based on Manager Truth
+	if WinterManager.winter_crisis_active:
+		end_winter_button.text = "Face the Crisis..."
+		end_winter_button.modulate = Color(1.0, 0.5, 0.5) # Reddish tint
+	else:
+		end_winter_button.text = "The Ice Melts..."
+		end_winter_button.modulate = Color.WHITE
 
 func _on_card_clicked(card: SeasonalCardResource) -> void:
-	if not _can_afford(card):
-		Loggie.msg("Cannot afford card: %s" % card.title).domain(LogDomains.UI).warn()
-		return
-		
-	Loggie.msg("Winter Action: %s" % card.title).domain(LogDomains.GAMEPLAY).info()
-	
-	# 1. Deduct AP (Via Manager)
-	var success = DynastyManager.perform_hall_action(card.cost_ap)
+	# DELEGATION: Ask Manager to perform action.
+	# The Manager handles AP deduction, Resource granting, and Renown awards.
+	var success: bool = WinterManager.play_seasonal_card(card)
 	
 	if success:
-		# 2. Apply Effects
-		if card.grant_gold > 0:
-			EconomyManager.deposit_resources({"gold": card.grant_gold})
-		if card.grant_renown > 0:
-			DynastyManager.award_renown(card.grant_renown)
-			
-		# 3. Refresh Local State
-		_current_ap -= card.cost_ap
-		_update_hud()
-		
-		# 4. Remove card (One-time use per winter)
-		for child in card_container.get_children():
-			if child._card_data == card:
-				child.queue_free()
-				break
+		Loggie.msg("Played Winter Card: %s" % card.display_name).domain(LogDomains.GAMEPLAY).info()
+		# UI refresh happens automatically via global signals 
+		# (EventBus.hall_action_updated -> _on_ap_updated)
 	else:
-		Loggie.msg("DynastyManager rejected AP spend").domain(LogDomains.GAMEPLAY).error()
+		Loggie.msg("Failed to play card (Cost or State invalid)").domain(LogDomains.UI).warn()
 
-func _on_jarl_stats_updated(jarl_data) -> void:
-	# React to external changes
-	_current_ap = jarl_data.current_hall_actions
-	_update_hud()
+# ------------------------------------------------------------------------------
+# STRATUM III: The Bloodline Thread (Read-Only)
+# ------------------------------------------------------------------------------
+func _refresh_stratum_bloodline() -> void:
+	var jarl: JarlData = DynastyManager.get_current_jarl()
+	
+	if not jarl:
+		jarl_name_label.text = "Interregnum (No Jarl)"
+		jarl_status_label.text = "The throne is empty."
+		heir_status_label.text = ""
+		return
+		
+	# 1. Jarl Details
+	jarl_name_label.text = "%s (Age %d)" % [jarl.display_name, jarl.age]
+	
+	# 2. Status Construction (Priority Order)
+	var status_text: String = "Vigorous"
+	var status_color: Color = Color.GREEN
+	
+	if jarl.is_in_exile:
+		status_text = "In Exile"
+		status_color = Color.GRAY
+	elif jarl.is_wounded:
+		status_text = "Wounded"
+		status_color = Color.ORANGE
+	elif jarl.age > 60:
+		status_text = "Frail"
+		status_color = Color.YELLOW
+		
+	jarl_status_label.text = status_text
+	jarl_status_label.modulate = status_color
+	
+	# 3. Heir Context
+	var heir_count: int = jarl.get_available_heir_count()
+	if heir_count == 0:
+		heir_status_label.text = "Succession: DANGEROUS (No Heirs)"
+		heir_status_label.modulate = Color.RED
+	elif heir_count == 1:
+		heir_status_label.text = "Succession: Fragile (1 Heir)"
+		heir_status_label.modulate = Color.YELLOW
+	else:
+		heir_status_label.text = "Succession: Secure (%d Heirs)" % heir_count
+		heir_status_label.modulate = Color.GREEN
 
-func _on_end_year_pressed() -> void:
-	Loggie.msg("The Ice Melts - Year Ending").domain(LogDomains.GAMEPLAY).info()
-	
-	# Transition Flow
-	EventBus.winter_ended.emit()
-	EventBus.advance_season_requested.emit()
-	
-	visible = false
+# ------------------------------------------------------------------------------
+# Interaction
+# ------------------------------------------------------------------------------
+func _on_end_winter_pressed() -> void:
+	if WinterManager.winter_crisis_active:
+		Loggie.msg("Winter ended with unresolved crisis").domain(LogDomains.GAMEPLAY).warn()
+		# This would trigger the specific crisis resolution modal
+		EventBus.winter_crisis_triggered.emit()
+	else:
+		Loggie.msg("Winter passed peacefully").domain(LogDomains.GAMEPLAY).info()
+		
+		# Request the WinterManager to close the phase. 
+		# WinterManager.end_winter_phase() calls DynastyManager.end_winter_cycle_complete() internally.
+		WinterManager.end_winter_phase()
 
 
 --------------------------------------------------
 FILE: res:///ui/seasonal/WinterCourt_UI.tscn
 --------------------------------------------------
-[gd_scene load_steps=6 format=3 uid="uid://dnndecgdkcffm"]
+[gd_scene load_steps=7 format=3 uid="uid://dnndecgdkcffm"]
 
 [ext_resource type="Script" uid="uid://gvajp31vuy31" path="res://ui/seasonal/WinterCourtUI.gd" id="1_cn012"]
 [ext_resource type="Script" uid="uid://cni5gdnpbb1v2" path="res://data/resources/SeasonalCardResource.gd" id="2_agvwj"]
@@ -51108,7 +52338,12 @@ FILE: res:///ui/seasonal/WinterCourt_UI.tscn
 [ext_resource type="Resource" uid="uid://dg10eqygin8xg" path="res://data/resources/Winter Cards/Card_Winter_Feast.tres" id="3_q5t2d"]
 [ext_resource type="Resource" uid="uid://dcppndmvmf63e" path="res://data/resources/Winter Cards/Card_Winter_Recruit.tres" id="4_4y4fd"]
 
-[node name="WinterCourt_UI" type="Control" node_paths=PackedStringArray("card_container")]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_burden"]
+bg_color = Color(0.12, 0.15, 0.2, 0.9)
+border_width_bottom = 2
+border_color = Color(0.3, 0.4, 0.5, 1)
+
+[node name="WinterCourtUI" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -51118,10 +52353,9 @@ grow_vertical = 2
 script = ExtResource("1_cn012")
 available_court_cards = Array[ExtResource("2_agvwj")]([ExtResource("3_q5t2d"), ExtResource("4_4y4fd")])
 card_prefab = ExtResource("2_xo3mn")
-card_container = NodePath("CardContainer")
 
 [node name="Background" type="Panel" parent="."]
-self_modulate = Color(0.16, 0.22, 0.3, 0.95)
+self_modulate = Color(0.16, 0.22, 0.3, 0.98)
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -51129,76 +52363,124 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="TopHUD" type="PanelContainer" parent="."]
+[node name="MainLayout" type="VBoxContainer" parent="."]
 layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -250.0
-offset_top = 40.0
-offset_right = 250.0
-offset_bottom = 90.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 10
 
-[node name="MarginContainer" type="MarginContainer" parent="TopHUD"]
+[node name="Stratum1_Burden" type="PanelContainer" parent="MainLayout"]
 layout_mode = 2
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_right = 20
+theme_override_styles/panel = SubResource("StyleBoxFlat_burden")
 
-[node name="HBox" type="HBoxContainer" parent="TopHUD/MarginContainer"]
+[node name="Margin" type="MarginContainer" parent="MainLayout/Stratum1_Burden"]
+layout_mode = 2
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 10
+
+[node name="HBox" type="HBoxContainer" parent="MainLayout/Stratum1_Burden/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 40
+
+[node name="SeverityLabel" type="Label" parent="MainLayout/Stratum1_Burden/Margin/HBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9739297, 0.96263725, 0.95415837, 1)
+theme_override_font_sizes/font_size = 20
+text = "Winter Severity: Normal"
+
+[node name="VSeparator" type="VSeparator" parent="MainLayout/Stratum1_Burden/Margin/HBox"]
+layout_mode = 2
+
+[node name="DeficitContainer" type="VBoxContainer" parent="MainLayout/Stratum1_Burden/Margin/HBox"]
+unique_name_in_owner = true
 layout_mode = 2
 alignment = 1
 
-[node name="TitleLabel" type="Label" parent="TopHUD/MarginContainer/HBox"]
+[node name="Stratum2_Hall" type="PanelContainer" parent="MainLayout"]
 layout_mode = 2
-text = "❄️ WINTER COURT ❄️"
+size_flags_vertical = 3
+
+[node name="VBox" type="VBoxContainer" parent="MainLayout/Stratum2_Hall"]
+layout_mode = 2
+theme_override_constants/separation = 15
+alignment = 1
+
+[node name="ActionPointsLabel" type="Label" parent="MainLayout/Stratum2_Hall/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.7, 0.5, 1)
+theme_override_font_sizes/font_size = 28
+text = "Dynastic Attention: 2 / 2"
 horizontal_alignment = 1
 
-[node name="VSeparator" type="VSeparator" parent="TopHUD/MarginContainer/HBox"]
+[node name="CardScroll" type="ScrollContainer" parent="MainLayout/Stratum2_Hall/VBox"]
 layout_mode = 2
-theme_override_constants/separation = 20
+size_flags_vertical = 3
+vertical_scroll_mode = 3
 
-[node name="APLabel" type="Label" parent="TopHUD/MarginContainer/HBox"]
+[node name="Centerer" type="CenterContainer" parent="MainLayout/Stratum2_Hall/VBox/CardScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="CardsContainer" type="HBoxContainer" parent="MainLayout/Stratum2_Hall/VBox/CardScroll/Centerer"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.6, 0.8, 1, 1)
-text = "Hall Actions: 3 / 5"
+theme_override_constants/separation = 25
+alignment = 1
 
-[node name="CardContainer" type="HBoxContainer" parent="."]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -20.0
-offset_top = -20.0
-offset_right = 20.0
-offset_bottom = 20.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="Stratum3_Bloodline" type="PanelContainer" parent="MainLayout"]
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="MainLayout/Stratum3_Bloodline"]
+layout_mode = 2
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 10
+
+[node name="HBox" type="HBoxContainer" parent="MainLayout/Stratum3_Bloodline/Margin"]
+layout_mode = 2
 theme_override_constants/separation = 40
 alignment = 1
 
-[node name="BottomPanel" type="PanelContainer" parent="."]
-layout_mode = 1
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -260.0
-offset_top = -100.0
-offset_right = -40.0
-offset_bottom = -40.0
-grow_horizontal = 0
-grow_vertical = 0
-
-[node name="EndYearButton" type="Button" parent="BottomPanel"]
+[node name="JarlNameLabel" type="Label" parent="MainLayout/Stratum3_Bloodline/Margin/HBox"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "The Ice Melts (End Year)"
+text = "Jarl Bjorn (Age 54)"
+
+[node name="JarlStatusLabel" type="Label" parent="MainLayout/Stratum3_Bloodline/Margin/HBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Vigorous"
+
+[node name="VSeparator" type="VSeparator" parent="MainLayout/Stratum3_Bloodline/Margin/HBox"]
+layout_mode = 2
+
+[node name="HeirStatusLabel" type="Label" parent="MainLayout/Stratum3_Bloodline/Margin/HBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Succession Secure"
+
+[node name="BottomBar" type="MarginContainer" parent="MainLayout"]
+layout_mode = 2
+theme_override_constants/margin_left = 50
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 50
+theme_override_constants/margin_bottom = 20
+
+[node name="EndWinterButton" type="Button" parent="MainLayout/BottomBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "The Ice Melts..."
 
 
 --------------------------------------------------

@@ -19,7 +19,7 @@
 [ext_resource type="Texture2D" uid="uid://cjlq3soj1j4jj" path="res://assets/Kenney/medievalRTS_spritesheet.png" id="11_vlppw"]
 [ext_resource type="Script" uid="uid://cni5gdnpbb1v2" path="res://data/resources/SeasonalCardResource.gd" id="12_iv0y3"]
 [ext_resource type="PackedScene" uid="uid://c8q4w2x5y301" path="res://ui/seasonal/SummerAllocation_Ui.tscn" id="13_c7ve4"]
-[ext_resource type="PackedScene" uid="uid://bfly4if3qtymg" path="res://ui/seasonal/SummerWorkspaceUI.tscn" id="13_dx1s8"]
+[ext_resource type="PackedScene" uid="uid://cv530nr365fv4" path="res://ui/seasonal/SummerWorkspaceUI.tscn" id="13_dx1s8"]
 [ext_resource type="PackedScene" uid="uid://c6b0qegdltxvw" path="res://ui/seasonal/AutumnLedger_UI.tscn" id="14_4m3mo"]
 [ext_resource type="PackedScene" uid="uid://dnndecgdkcffm" path="res://ui/seasonal/WinterCourt_UI.tscn" id="14_51pa8"]
 [ext_resource type="Resource" uid="uid://du2gsa2xinlrm" path="res://data/resources/Card_Focus_Raid.tres" id="14_t0qlt"]
@@ -220,6 +220,7 @@ grow_vertical = 0
 available_advisor_cards = Array[ExtResource("12_iv0y3")]([ExtResource("14_t0qlt"), ExtResource("15_nou2g")])
 
 [node name="SummerWorkspace_UI" parent="UI" instance=ExtResource("13_dx1s8")]
+script = null
 
 [node name="SummerRaid_UI" parent="UI" instance=ExtResource("13_c7ve4")]
 mouse_filter = 1
