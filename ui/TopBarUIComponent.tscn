@@ -14,7 +14,7 @@ modulate = Color(1, 1, 1, 0.95)
 custom_minimum_size = Vector2(0, 60)
 anchors_preset = 10
 anchor_right = 1.0
-offset_bottom = 105.0
+offset_bottom = 123.0
 grow_horizontal = 2
 mouse_filter = 2
 theme = ExtResource("2_theme")
@@ -50,7 +50,7 @@ theme_override_constants/separation = 10
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 0
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 24
 text = "Jarl Bjorn"
 
 [node name="StatsRow" type="HBoxContainer" parent="MarginContainer/MainLayout/IdentitySection/VBoxContainer/InfoRow"]
@@ -62,14 +62,14 @@ theme_override_constants/separation = 15
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 0
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 16
 text = "Renown: 0"
 
 [node name="DynastyButton" type="Button" parent="MarginContainer/MainLayout/IdentitySection/VBoxContainer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(80, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 23
 text = "Dynasty"
 
 [node name="VSeparator" type="VSeparator" parent="MarginContainer/MainLayout"]
@@ -187,7 +187,7 @@ text = "0/0"
 [node name="VSeparator3" type="VSeparator" parent="MarginContainer/MainLayout/PopSection"]
 layout_mode = 2
 
-[node name="WarbandGroup" type="HBoxContainer" parent="MarginContainer/MainLayout/PopSection"]
+[node name="WarbandGroup" type="VBoxContainer" parent="MarginContainer/MainLayout/PopSection"]
 layout_mode = 2
 size_flags_vertical = 0
 tooltip_text = "Active Warbands"
@@ -195,16 +195,16 @@ tooltip_text = "Active Warbands"
 [node name="AuthorityLabel" type="Label" parent="MarginContainer/MainLayout/PopSection/WarbandGroup"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 16
 text = "Auth: 0"
 
 [node name="Label" type="Label" parent="MarginContainer/MainLayout/PopSection/WarbandGroup"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 15
 text = "Warbands:"
 
 [node name="UnitCountLabel" type="Label" parent="MarginContainer/MainLayout/PopSection/WarbandGroup"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 16
 text = "0"

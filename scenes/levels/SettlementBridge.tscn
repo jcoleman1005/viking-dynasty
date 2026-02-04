@@ -1,4 +1,4 @@
-[gd_scene load_steps=29 format=3 uid="uid://c53k15q2w8c1a"]
+[gd_scene load_steps=21 format=3 uid="uid://c53k15q2w8c1a"]
 
 [ext_resource type="PackedScene" uid="uid://dqh0xu88khxct" path="res://ui/EndOfYear_Popup.tscn" id="2_5el12"]
 [ext_resource type="Script" uid="uid://dafjxa85ci2rx" path="res://scripts/buildings/SettlementBridge.gd" id="2_c48a7"]
@@ -7,22 +7,14 @@
 [ext_resource type="PackedScene" uid="uid://btlcifwc6ckux" path="res://scenes/units/VikingRaider.tscn" id="4_c0sri"]
 [ext_resource type="TileSet" uid="uid://xoe70lhybj8l" path="res://scenes/levels/Isometric Tileset.tres" id="6_cpd76"]
 [ext_resource type="Script" uid="uid://c4bv8okjkvtt7" path="res://scripts/ui/BuildingPreviewCursor.gd" id="6_cursor"]
-[ext_resource type="PackedScene" uid="uid://c5qg2j1qa4g0b" path="res://ui/Dynasty_UI.tscn" id="7_k14p1"]
 [ext_resource type="Script" uid="uid://6speiwju5o1r" path="res://ui/PauseButton.gd" id="7_n23os"]
 [ext_resource type="PackedScene" uid="uid://ptujtdi5jtsk" path="res://scripts/utility/GridVisualizer.tscn" id="7_oq6tm"]
 [ext_resource type="PackedScene" uid="uid://1ly65bng2mep" path="res://ui/SelectionBox.tscn" id="8_cpd76"]
 [ext_resource type="Script" uid="uid://bxbqkyp1d6750" path="res://player/RTSCamera.gd" id="8_ggwng"]
 [ext_resource type="PackedScene" uid="uid://bmrx7k05of21t" path="res://scenes/world/Resource_Wood.tscn" id="9_vmd61"]
-[ext_resource type="PackedScene" uid="uid://whql45nph2u8" path="res://ui/seasonal/SpringCouncilUI.tscn" id="10_fmib8"]
+[ext_resource type="PackedScene" uid="uid://b6x8q4y205n1" path="res://ui/MainGameUI.tscn" id="11_cpd76"]
 [ext_resource type="PackedScene" uid="uid://dhobag8h7m8ip" path="res://ui/components/BuildingInspector.tscn" id="11_fmib8"]
 [ext_resource type="Texture2D" uid="uid://cjlq3soj1j4jj" path="res://assets/Kenney/medievalRTS_spritesheet.png" id="11_vlppw"]
-[ext_resource type="Script" uid="uid://cni5gdnpbb1v2" path="res://data/resources/SeasonalCardResource.gd" id="12_iv0y3"]
-[ext_resource type="PackedScene" uid="uid://c8q4w2x5y301" path="res://ui/seasonal/SummerAllocation_Ui.tscn" id="13_c7ve4"]
-[ext_resource type="PackedScene" uid="uid://c6b0qegdltxvw" path="res://ui/seasonal/AutumnLedger_UI.tscn" id="14_4m3mo"]
-[ext_resource type="PackedScene" uid="uid://dnndecgdkcffm" path="res://ui/seasonal/WinterCourt_UI.tscn" id="14_51pa8"]
-[ext_resource type="Resource" uid="uid://du2gsa2xinlrm" path="res://data/resources/Card_Focus_Raid.tres" id="14_t0qlt"]
-[ext_resource type="Theme" uid="uid://63duv3n1vwhg" path="res://ui/themes/VikingDynastyTheme.tres" id="15_iv0y3"]
-[ext_resource type="Resource" uid="uid://dt38bx8jkvrno" path="res://data/resources/Card_Spring_Expansion.tres" id="15_nou2g"]
 [ext_resource type="PackedScene" uid="uid://cyp3t7gbdg0wx" path="res://player/RTSController.tscn" id="18_fmib8"]
 [ext_resource type="PackedScene" uid="uid://bvsuoj3irdvcs" path="res://player/RTSInputHandler.tscn" id="19_c7ve4"]
 [ext_resource type="PackedScene" uid="uid://io325box3m4m" path="res://scenes/world/UnitSpawner.tscn" id="20_fmib8"]
@@ -185,10 +177,11 @@ tile_set = ExtResource("6_cpd76")
 
 [node name="SelectionBox" parent="UI" instance=ExtResource("8_cpd76")]
 
-[node name="Dynasty_UI" parent="UI" instance=ExtResource("7_k14p1")]
-anchors_preset = 8
+[node name="MainGameUI" parent="UI" instance=ExtResource("11_cpd76")]
+mouse_filter = 2
 
 [node name="EndOfYear_Popup" parent="UI" instance=ExtResource("2_5el12")]
+visible = false
 anchors_preset = 8
 
 [node name="PauseButton" type="Button" parent="UI"]
@@ -201,6 +194,7 @@ text = "PAUSE (ESC)"
 script = ExtResource("7_n23os")
 
 [node name="BuildingInspector" parent="UI" instance=ExtResource("11_fmib8")]
+visible = false
 anchors_preset = 7
 anchor_left = 0.5
 anchor_top = 1.0
@@ -211,17 +205,6 @@ offset_top = -120.0
 offset_right = 120.5
 grow_horizontal = 2
 grow_vertical = 0
-
-[node name="SpringCouncil_UI" parent="UI" instance=ExtResource("10_fmib8")]
-available_advisor_cards = Array[ExtResource("12_iv0y3")]([ExtResource("14_t0qlt"), ExtResource("15_nou2g")])
-
-[node name="SummerRaid_UI" parent="UI" instance=ExtResource("13_c7ve4")]
-mouse_filter = 1
-
-[node name="AutumnLedgerUI" parent="UI" instance=ExtResource("14_4m3mo")]
-
-[node name="WinterCourt_UI" parent="UI" instance=ExtResource("14_51pa8")]
-theme = ExtResource("15_iv0y3")
 
 [node name="BuildingCursor" type="Node2D" parent="."]
 script = ExtResource("6_cursor")

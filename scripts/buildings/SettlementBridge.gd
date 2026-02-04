@@ -49,7 +49,6 @@ var default_end_of_year_popup: PackedScene = preload("res://ui/EndOfYear_Popup.t
 # --- Scene Node References ---
 @onready var unit_container: Node2D = $UnitContainer
 @onready var ui_layer: CanvasLayer = $UI
-@onready var storefront_ui: Control = $UI/Storefront_UI
 @onready var building_cursor: Node2D = $BuildingCursor
 
 # --- Local Node References ---
@@ -84,7 +83,7 @@ func _ready() -> void:
 		unit_spawner.rts_controller = rts_controller
 	
 	# PRESERVED: Set default UI state BEFORE checking for raid results
-	if storefront_ui: storefront_ui.show()
+	
 	if end_of_year_popup: end_of_year_popup.hide()
 
 	# PRESERVED: Test Data Injection
@@ -344,7 +343,7 @@ func _on_payout_collected(payout: Dictionary) -> void:
 	# Reset Managers
 	RaidManager.pending_raid_result = null
 	
-	if storefront_ui: storefront_ui.show()
+	
 
 func _close_all_popups() -> void:
 	var dynasty_ui = ui_layer.get_node_or_null("Dynasty_UI")
@@ -654,7 +653,7 @@ func _toggle_dynasty_view() -> void:
 		if dynasty_ui.visible:
 			dynasty_ui.hide()
 		else:
-			if storefront_ui: storefront_ui.call("_close_all_windows") 
+			 
 			dynasty_ui.show()
 			Loggie.msg("Opening Dynasty View").domain("UI").info()
 	else:

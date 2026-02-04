@@ -1,8 +1,9 @@
-[gd_scene load_steps=11 format=3 uid="uid://b6x8q4y205n1"]
+[gd_scene load_steps=12 format=3 uid="uid://b6x8q4y205n1"]
 
 [ext_resource type="Script" uid="uid://c6dx4ttc1ufe3" path="res://ui/MainGameUi.gd" id="1_uuvct"]
 [ext_resource type="PackedScene" uid="uid://gyu45fs0qg5m" path="res://ui/TopBarUIComponent.tscn" id="2_3ebjf"]
 [ext_resource type="PackedScene" uid="uid://whql45nph2u8" path="res://ui/seasonal/SpringCouncilUI.tscn" id="2_8g7jf"]
+[ext_resource type="PackedScene" uid="uid://c5qg2j1qa4g0b" path="res://ui/Dynasty_UI.tscn" id="2_amvws"]
 [ext_resource type="PackedScene" uid="uid://c6b0qegdltxvw" path="res://ui/seasonal/AutumnLedger_UI.tscn" id="3_0u8js"]
 [ext_resource type="PackedScene" uid="uid://c8k2j1m5oax4" path="res://ui/BottomBar.tscn" id="3_3ebjf"]
 [ext_resource type="PackedScene" uid="uid://dnndecgdkcffm" path="res://ui/seasonal/WinterCourt_UI.tscn" id="4_egtxq"]
@@ -11,7 +12,7 @@
 [ext_resource type="PackedScene" uid="uid://dsa4vufqdwp0" path="res://ui/components/BuildMenu.tscn" id="9_amvws"]
 [ext_resource type="PackedScene" uid="uid://b808q4y205n3" path="res://ui/components/RaidMenu.tscn" id="9_h5nvc"]
 
-[node name="MainGameUI" type="Control" node_paths=PackedStringArray("top_bar", "bottom_bar", "season_advance_btn")]
+[node name="MainGameUI" type="Control" node_paths=PackedStringArray("top_bar", "bottom_bar", "season_advance_btn", "sidebar_panel", "sidebar_content")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -19,12 +20,15 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_uuvct")
-spring_panel_scene = ExtResource("2_8g7jf")
-autumn_panel_scene = ExtResource("3_0u8js")
-winter_panel_scene = ExtResource("4_egtxq")
 top_bar = NodePath("MainLayout/TopBar")
 bottom_bar = NodePath("MainLayout/BottomBar")
 season_advance_btn = NodePath("EndYearOverlay/SeasonAdvanceBtn")
+dynasty_ui_scene = ExtResource("2_amvws")
+spring_panel_scene = ExtResource("2_8g7jf")
+autumn_panel_scene = ExtResource("3_0u8js")
+winter_panel_scene = ExtResource("4_egtxq")
+sidebar_panel = NodePath("SidebarLayer/SidebarPanel")
+sidebar_content = NodePath("SidebarLayer/SidebarPanel/SidebarContent")
 
 [node name="MainLayout" type="VBoxContainer" parent="."]
 layout_mode = 1
@@ -64,6 +68,27 @@ layout_mode = 2
 [node name="BuildMenu" parent="MainLayout/BottomBar/SeasonalActionsPanel" index="3" instance=ExtResource("9_amvws")]
 visible = false
 layout_mode = 2
+
+[node name="SidebarLayer" type="CanvasLayer" parent="."]
+layer = 5
+
+[node name="SidebarPanel" type="PanelContainer" parent="SidebarLayer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(400, 0)
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_top = 101.0
+offset_right = 400.0
+offset_bottom = -135.0
+grow_vertical = 2
+
+[node name="SidebarContent" type="MarginContainer" parent="SidebarLayer/SidebarPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
 
 [node name="EndYearOverlay" type="Control" parent="."]
 unique_name_in_owner = true
