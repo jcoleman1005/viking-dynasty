@@ -46,6 +46,7 @@ content_margin_bottom = 20.0
 texture = ExtResource("2_0uau4")
 axis_stretch_horizontal = 1
 axis_stretch_vertical = 1
+modulate_color = Color(0.35531357, 0.35531357, 0.3553135, 0.76862746)
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_6c0re"]
 content_margin_left = 12.0
@@ -75,7 +76,7 @@ Button/styles/pressed = SubResource("StyleBoxTexture_vt14t")
 HeaderLabel/colors/font_color = Color(0.16862746, 0.13333334, 0.105882354, 1)
 HeaderLabel/font_sizes/font_size = 24
 HeaderLabel/fonts/font = ExtResource("1_ox2i8")
-Label/colors/font_color = Color(0.16862746, 0.13333334, 0.105882354, 1)
+Label/colors/font_color = Color(1, 1, 1, 1)
 PanelContainer/styles/panel = SubResource("StyleBoxTexture_6ali3")
 ResourceLabel/colors/font_color = Color(0.9607843, 0.9019608, 0.827451, 1)
 ResourceLabel/font_sizes/font_size = 24

@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://btovbm7r6nern"]
 
-[ext_resource type="Script" uid="uid://t708tcf43ayu" path="res://ui/StorefrontUI.gd" id="1_ht1qg"]
-[ext_resource type="PackedScene" uid="uid://gyu45fs0qg5m" path="res://ui/components/TreasuryHud.tscn" id="2_5jinl"]
+[ext_resource type="Script" uid="uid://t708tcf43ayu" path="res://ui/DEPRECATED_StorefrontUI.gd" id="1_ht1qg"]
+[ext_resource type="PackedScene" uid="uid://gyu45fs0qg5m" path="res://ui/TopBarUIComponent.tscn" id="2_5jinl"]
 
 [node name="Storefront_UI" type="Control"]
 layout_mode = 3
