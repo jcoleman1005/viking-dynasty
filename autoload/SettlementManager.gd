@@ -28,6 +28,7 @@ var pending_seasonal_recruits: Array[UnitData] = []
 
 func _ready() -> void:
 	EventBus.player_unit_died.connect(_on_player_unit_died)
+	EventBus.building_placement_cancelled.connect(_on_building_placement_cancelled)
 	Loggie.msg("SettlementManager Initialized").domain(LogDomains.GAMEPLAY).info()
 	
 # --- TERRAIN & COORDINATE VALIDATION (NEW) ---
@@ -200,6 +201,16 @@ func place_building(building_data: BuildingData, grid_position: Vector2i, is_new
 			_update_building_footprint_navigation(building_data, grid_position, true)
 			
 	return new_building
+
+func _on_building_placement_cancelled(building_data: Resource) -> void:
+	if not building_data: return
+	
+	# Stateless Refund: We trust the data passed back from the cursor
+	if "build_cost" in building_data:
+		EconomyManager.add_resources(building_data.build_cost)
+		Loggie.msg("Refunded resources via Manager").domain(LogDomains.ECONOMY).info()
+		EventBus.purchase_successful.emit("Refunded")
+
 
 func reconstruct_buildings_from_data() -> void:
 	if active_building_container:

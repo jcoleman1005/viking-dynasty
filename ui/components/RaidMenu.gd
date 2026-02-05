@@ -29,7 +29,7 @@ func setup(_args = null) -> void:
 			status_label.tooltip_text = "Draft Warbands in the Settlement before heading out."
 	else:
 		status_label.text = "Raid Manager Unavailable"
-		Loggie.msg("RaidManager singleton missing").domain(Loggie.LogDomains.UI).error()
+		Loggie.msg("RaidManager singleton missing").domain(LogDomains.UI).error()
 
 # ------------------------------------------------------------------------------
 # INTERNAL LOGIC
@@ -41,4 +41,4 @@ func _on_open_map_pressed() -> void:
 	if GameScenes:
 		EventBus.scene_change_requested.emit(GameScenes.WORLD_MAP)
 	else:
-		Loggie.msg("GameScenes singleton missing").domain(Loggie.LogDomains.UI).error()
+		Loggie.msg("GameScenes singleton missing").domain(LogDomains.UI).error()

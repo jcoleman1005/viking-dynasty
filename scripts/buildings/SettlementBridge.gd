@@ -120,9 +120,7 @@ func _connect_signals() -> void:
 	EventBus.request_worker_assignment.connect(_on_worker_requested)
 	EventBus.request_worker_removal.connect(_on_worker_removal_requested)
 	
-	if building_cursor:
-		building_cursor.placement_completed.connect(_on_building_placement_completed)
-		building_cursor.placement_cancelled.connect(_on_building_placement_cancelled_by_cursor)
+	
 
 func _setup_default_resources() -> void:
 	if not test_building_data: test_building_data = default_test_building

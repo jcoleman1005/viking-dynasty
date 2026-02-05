@@ -11,6 +11,7 @@ extends PanelContainer
 @onready var close_button: Button = $Margin/MainLayout/CloseButton
 @onready var context_menu: PopupMenu = $ContextMenu
 
+signal close_requested
 # Resources
 const HEIR_CARD_SCENE = preload("res://ui/components/HeirCard.tscn")
 const PLACEHOLDER_ICON = preload("res://textures/placeholders/unit_placeholder.png")
@@ -155,7 +156,10 @@ func _on_context_menu_item_pressed(id: int) -> void:
 			_open_warband_assignment_dialog()
 			
 func _on_close_button_pressed() -> void:
-	hide()
+	if EventBus:
+		EventBus.sidebar_close_requested.emit()
+	else:
+		hide() # Fallback
 
 func _input(event: InputEvent) -> void:
 	if visible and event is InputEventKey and event.pressed:

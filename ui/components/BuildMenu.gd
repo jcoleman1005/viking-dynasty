@@ -69,10 +69,10 @@ func _render_grid() -> void:
 func _on_building_clicked(b_data: Resource) -> void:
 	# NBLM Trap 2 Fix: Validate purchase here
 	if EconomyManager.attempt_purchase(b_data.build_cost):
-		Loggie.msg("Building Purchased").context(b_data.display_name).info()
+		Loggie.msg("Building Purchased" + (b_data.display_name) ).info()
 		EventBus.building_ready_for_placement.emit(b_data)
 	else:
-		Loggie.msg("Insufficient Funds").context(b_data.display_name).warn()
+		Loggie.msg("Insufficient Funds" + (b_data.display_name)).warn()
 		# Optional: Visual shake or audio cue
 
 func _format_cost(cost: Dictionary) -> String:

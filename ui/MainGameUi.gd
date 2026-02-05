@@ -62,6 +62,12 @@ func _ready() -> void:
 func _connect_signals() -> void:
 	if EventBus:
 		EventBus.season_changed.connect(_on_season_changed_signal)
+		
+		if not EventBus.has_signal("sidebar_close_requested"):
+			Loggie.msg("EventBus missing 'sidebar_close_requested' signal").domain(LogDomains.UI).error()
+		else:
+			EventBus.sidebar_close_requested.connect(_close_sidebar)
+		
 		if bottom_bar:
 			bottom_bar.scene_navigation_requested.connect(func(path):
 				EventBus.scene_change_requested.emit(path)
@@ -105,20 +111,35 @@ func _toggle_sidebar(scene: PackedScene, module_name: String) -> void:
 		_open_sidebar(scene, module_name)
 
 func _open_sidebar(scene: PackedScene, module_name: String) -> void:
-	# 1. Clean up existing
+	# 1. Clean up existing content
 	for child in sidebar_content.get_children():
 		child.queue_free()
 	
 	# 2. Instance new module
 	if scene:
+		Loggie.msg("Instantiating Module: " + module_name).info()
+		
 		var instance = scene.instantiate()
-		instance.name = module_name # Tag for identification
+		instance.name = module_name
 		sidebar_content.add_child(instance)
 		
-		# Optional: Pass context if the module has a setup method
+		# Layout Safety
+		if instance is Control:
+			instance.visible = true
+			instance.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			instance.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		
+		# Context Injection
 		if instance.has_method("setup"):
 			instance.setup()
-	
+			
+		# [REMOVED] We no longer manually connect 'close_requested' here.
+		# The EventBus handles it now.
+				
+	else:
+		Loggie.msg("Sidebar scene is null for: " + module_name).error()
+		return
+
 	# 3. Animate Open
 	if sidebar_tween: sidebar_tween.kill()
 	sidebar_tween = create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)

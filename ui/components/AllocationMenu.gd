@@ -115,6 +115,6 @@ func _on_commit_pressed() -> void:
 			"wood": woodcutters,
 			"construction": builders
 		})
-		Loggie.msg("Allocation Committed").context("F:%d W:%d B:%d" % [farmers, woodcutters, builders]).info()
+		Loggie.msg("Allocation Committed" + ("F:%d W:%d B:%d" % [farmers, woodcutters, builders])).info()
 	else:
-		Loggie.msg("SettlementManager missing 'batch_update_labor'").domain(Loggie.LogDomains.UI).error()
+		Loggie.msg("SettlementManager missing 'batch_update_labor'").domain(LogDomains.UI).error()

@@ -7,6 +7,7 @@ signal building_state_changed(building: BaseBuilding, new_state: int)
 signal build_request_made(building_data: BuildingData, grid_position: Vector2i)
 signal building_ready_for_placement(building_data: BuildingData)
 signal building_placement_cancelled(building_data: BuildingData)
+signal building_placed(building_data: BuildingData)
 signal building_construction_completed(building_entry: Dictionary)
 # --- Inspector Signals ---
 signal building_selected(building: BaseBuilding)
@@ -86,3 +87,4 @@ signal autumn_resolved()
 ## Emitted when Winter ends and the year rolls over.
 signal winter_ended()
 signal raid_committed(count: int)
+signal sidebar_close_requested

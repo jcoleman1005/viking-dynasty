@@ -47,7 +47,7 @@ func _connect_signals() -> void:
 		EventBus.treasury_updated.connect(_on_treasury_updated)
 		EventBus.settlement_loaded.connect(func(_data): refresh_all())
 	else:
-		Loggie.msg("EventBus missing in TopBar").domain(Loggie.LogDomains.UI).error()
+		Loggie.msg("EventBus missing in TopBar").domain(LogDomains.UI).error()
 
 	# 2. Dynasty/Time Signals
 	if DynastyManager:

@@ -4,7 +4,7 @@ extends VBoxContainer
 ## Component: BottomBar
 ## Manages Player Agency Tabs.
 ## Modular architecture: Instances child scenes for Build, Alloc, and Raid menus.
-## acts as a persistent State Manager for refunds and navigation.
+## Acts as a persistent State Manager for navigation and UI restoration.
 
 # ------------------------------------------------------------------------------
 # SIGNALS
@@ -37,7 +37,7 @@ signal scene_navigation_requested(scene_path: String)
 
 var cached_buildings: Array[Resource] = []
 var is_agency_active: bool = false
-var pending_cost: Dictionary = {}
+var last_active_category: String = "" # [NEW] Tracks the open tab to restore it later
 
 # ------------------------------------------------------------------------------
 # LIFECYCLE
@@ -57,7 +57,7 @@ func _connect_tabs() -> void:
 
 func _connect_signals() -> void:
 	if EventBus:
-		# Refund Logic: Listen for cancellations and success
+		# Refund Logic: Listen for global signals
 		if EventBus.has_signal("building_placement_cancelled"):
 			EventBus.building_placement_cancelled.connect(_on_placement_cancelled)
 		
@@ -68,7 +68,7 @@ func _connect_signals() -> void:
 		if EventBus.has_signal("building_ready_for_placement"):
 			EventBus.building_ready_for_placement.connect(_on_building_placement_initiated)
 	else:
-		Loggie.msg("EventBus missing in BottomBar").domain(Loggie.LogDomains.UI).error()
+		Loggie.msg("EventBus missing in BottomBar").domain(LogDomains.UI).error()
 
 # ------------------------------------------------------------------------------
 # PUBLIC INTERFACE (Controller Access)
@@ -77,7 +77,6 @@ func _connect_signals() -> void:
 ## Receives data from the Controller (MainGameUI)
 func setup(buildings: Array[Resource], _units: Array[Resource] = []) -> void:
 	cached_buildings = buildings
-	# Removed .context() to fix runtime error
 	Loggie.msg("BottomBar configured: Modular Mode").info()
 
 ## Enables or disables interaction based on the Season (Summer = Active)
@@ -95,6 +94,7 @@ func set_agency_state(active: bool) -> void:
 	
 	if not active:
 		_clear_content()
+		last_active_category = "" # Reset history when season ends
 
 # ------------------------------------------------------------------------------
 # CONTENT SWITCHING
@@ -106,6 +106,7 @@ func _on_tab_clicked(category: String) -> void:
 
 func _load_menu(category: String) -> void:
 	_clear_content()
+	last_active_category = category # [NEW] Remember what we opened
 	
 	# [STRICT TYPING IMPLEMENTATION]
 	match category:
@@ -150,26 +151,25 @@ func _log_missing_scene(menu_name: String) -> void:
 	seasonal_actions_panel.add_child(label)
 
 # ------------------------------------------------------------------------------
-# REFUND & TRANSACTION LOGIC
+# UI RESPONSE TO PLACEMENT
 # ------------------------------------------------------------------------------
 
 func _on_building_placement_initiated(building_data: Resource) -> void:
-	# Capture the cost so we can refund it if cancelled.
-	# The purchase was already made by BuildMenu at this point.
-	if "build_cost" in building_data and building_data.build_cost is Dictionary:
-		pending_cost = building_data.build_cost.duplicate()
+	# User Request: Close the UI bar to increase screen real estate for this action.
+	# We DO NOT clear 'last_active_category' here, so we can restore it later.
+	_clear_content()
 
-func _on_placement_cancelled() -> void:
-	if not pending_cost.is_empty():
-		if EconomyManager:
-			EconomyManager.add_resources(pending_cost)
-			Loggie.msg("Placement cancelled, refunded").domain(Loggie.LogDomains.ECONOMY).info()
-			
-			if EventBus.has_signal("purchase_successful"):
-				EventBus.purchase_successful.emit("Refunded")
-		
-		pending_cost.clear()
+func _on_placement_cancelled(_data = null) -> void:
+	# Note: SettlementManager handles the actual refund logic now.
+	# We just handle UI restoration.
+	
+	if last_active_category != "":
+		Loggie.msg("Restoring menu after cancel").info()
+		_load_menu(last_active_category)
 
 func _on_placement_completed(_data = null) -> void:
-	# Placement successful, resources consumed. Clear pending state.
-	pending_cost.clear()
+	# Placement success. Restore UI so player can build again if desired.
+	
+	if last_active_category != "":
+		Loggie.msg("Restoring menu after placement").info()
+		_load_menu(last_active_category)
