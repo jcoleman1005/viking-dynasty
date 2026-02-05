@@ -1,6 +1,6 @@
 # PROJECT API MAP
 > **CONTEXT INSTRUCTION:** This file contains the STRUCTURE of the project. Implementation details are hidden to save space. Use this to understand available classes, functions, and signals.
-> Generated: 2026-02-05T10:50:07
+> Generated: 2026-02-05T12:41:04
 
 ## 🏛️ GLOBAL ARCHITECTURE
 ### Autoloads (Singletons)
@@ -6168,9 +6168,13 @@ const UNWALKABLE_LAYER_NAME: String = "is_unwalkable"
 const GREAT_HALL_BUFFER: int = 4 # Tiles from water required for Great Hall
 var current_settlement: SettlementData 
 var active_map_data: SettlementData      
-var active_building_container: Node2D = null
-var active_tilemap_layer: TileMapLayer = null # Critical for Custom Data lookups
+var _active_building_container_ref: WeakRef = weakref(null)
+var _active_tilemap_layer_ref: WeakRef = weakref(null)
 var pending_seasonal_recruits: Array[UnitData] = []
+var active_building_container: Node2D:
+		var ref = _active_building_container_ref.get_ref()
+var active_tilemap_layer: Node:
+		var ref = _active_tilemap_layer_ref.get_ref()
 func _ready() -> void:
 func is_terrain_walkable(coords: Vector2i) -> bool:
 	var tile_data: TileData = active_tilemap_layer.get_cell_tile_data(coords)
@@ -6234,6 +6238,7 @@ func _is_within_district_range(grid_pos: Vector2i, size: Vector2i, data: Economi
 				var dist = center.distance_to(node.global_position)
 				var rad = node.get("district_radius") if "district_radius" in node else 300.0
 func register_active_scene_nodes(container: Node2D) -> void:
+	var found_layer = null
 func unregister_active_scene_nodes() -> void:
 func load_settlement(data: SettlementData) -> void:
 func _load_fallback_data(data: SettlementData) -> void:
@@ -7192,6 +7197,7 @@ func command_scramble(target_position: Vector2) -> void:
 	var controllable_units = get_tree().get_nodes_in_group("player_units")
 		var panic_offset = Vector2(randf_range(-80, 80), randf_range(-80, 80))
 		var unique_dest = target_position + panic_offset
+func _exit_tree() -> void:
 ```
 
 ### `res:///scenes/missions/RaidObjectiveManager.gd`
@@ -8341,9 +8347,13 @@ class_name SquadLeader
 extends BaseUnit
 var squad_soldiers: Array[SquadSoldier] = []
 var formation: SquadFormation
+var attached_thralls: Array[Node2D] = [] # Typed as Node2D for flexibility, legacy used ThrallUnit
 var last_facing_direction: Vector2 = Vector2.DOWN
-var attached_thralls: Array[ThrallUnit] = []
 var debug_formation_points: Array[Vector2] = []
+var _last_update_pos: Vector2 = Vector2.INF
+var _last_update_facing: Vector2 = Vector2.ZERO
+const UPDATE_DIST_THRESHOLD_SQ: float = 100.0 # ~10 pixels
+const UPDATE_ANGLE_THRESHOLD: float = 0.05    # ~2.8 degrees
 func _ready() -> void:
 func _initialize_squad() -> void:
 func _recruit_fresh_squad() -> void:
@@ -8351,32 +8361,28 @@ func _recruit_fresh_squad() -> void:
 	var base_scene = data.load_scene()
 		var soldier_instance = base_scene.instantiate()
 		var soldier_script = load("res://scripts/units/SquadSoldier.gd")
-func attach_thrall(thrall: ThrallUnit) -> void:
-		var angle = randf_range(PI/4, 3*PI/4) # Behind (90 to 270 degrees roughly)
-		var dist = randf_range(40.0, 80.0)
 func _physics_process(delta: float) -> void:
 	var is_voluntarily_moving = false
+func _should_update_formation() -> bool:
 func _update_formation_targets(snap_to_position: bool = false) -> void:
 	var slots = formation._calculate_formation_positions(global_position, last_facing_direction)
 		var soldier = squad_soldiers[i]
 			var target = slots[i+1]
-func _draw() -> void:
-			var point = to_local(debug_formation_points[i])
-func remove_soldier(soldier: SquadSoldier) -> void:
-func absorb_existing_soldiers(list: Array[SquadSoldier]) -> void:
+func force_formation_update() -> void:
 func _refresh_formation_registry() -> void:
-func set_selected(val: bool) -> void:
-func die() -> void:
-	var living_soldiers: Array[SquadSoldier] = []
-		var new_leader_host = living_soldiers.pop_front()
-		var new_leader = duplicate()
 func on_state_changed(new_state: int) -> void:
 func _order_squad_attack() -> void:
 	var target = fsm.current_target
 func _order_squad_regroup() -> void:
+func die() -> void:
+	var living_soldiers: Array[SquadSoldier] = []
+		var new_leader_host = living_soldiers.pop_front()
+		var base_scene = data.load_scene()
+		var new_leader = base_scene.instantiate()
+func absorb_existing_soldiers(list: Array[SquadSoldier]) -> void:
+func remove_soldier(soldier: SquadSoldier) -> void:
 func request_escort_for(civilian: Node2D) -> void:
 	var best_candidate: SquadSoldier = null
-	var min_dist = INF
 	var max_batch_dist = 300.0
 	var max_prisoners = 3
 			var total_load = soldier.escorted_prisoners.size() + soldier.pending_prisoners.size()
@@ -8385,13 +8391,20 @@ func request_escort_for(civilian: Node2D) -> void:
 		var closest_d = INF
 			var state = soldier.fsm.current_state
 				var dist = soldier.global_position.distance_to(civilian.global_position)
+func attach_thrall(thrall: Node2D) -> void:
+		var angle = randf_range(PI/4, 3*PI/4) # Behind (90 to 270 degrees roughly)
+		var dist = randf_range(40.0, 80.0)
+func _draw() -> void:
+			var p = to_local(debug_formation_points[i])
 ```
 
 ### `res:///scripts/units/SquadSoldier.gd`
 ```gdscript
 class_name SquadSoldier
 extends BaseUnit
-var leader: SquadLeader
+@export_group("Squad Settings")
+@export var stop_dist: float = 5.0
+var leader: Node2D = null
 var formation_target: Vector2 = Vector2.ZERO
 var brawl_target: Node2D = null
 var is_rubber_banding: bool = false
@@ -8404,15 +8417,16 @@ var escorted_prisoners: Array[Node2D] = []
 var retreat_zone_cache: Node2D = null
 func _ready() -> void:
 func _physics_process(delta: float) -> void:
-	var speed = data.move_speed
+	var current_speed = data.move_speed
 	var dist_leader = global_position.distance_to(leader.global_position)
 	var is_phasing = false
 	var final_dest = formation_target
-	var stop_dist = 15.0
+	var final_stop_dist = stop_dist
 		var range_limit = data.attack_range
 		var r_target = _get_radius(brawl_target)
 		var dist = global_position.distance_to(final_dest)
-			var desired_velocity = (final_dest - global_position).normalized() * speed
+func _restore_collision_logic() -> void:
+func set_squad_leader(new_leader: Node2D) -> void:
 func _get_radius(node: Node2D) -> float:
 		var b = node.get_parent()
 func assign_escort_task(prisoner: Node2D) -> void:
