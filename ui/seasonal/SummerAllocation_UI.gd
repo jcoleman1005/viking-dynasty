@@ -239,9 +239,9 @@ func _update_projections() -> void:
 	# 2. Food / Resource Projection
 	if total_farming_slots == 0:
 		proj_food.text = "No resource buildings"
-		proj_food.add_theme_color_override("font_color", Color.GRAY)
+		proj_food.add_theme_color_override("font_color", Color.RED)
 	else:
-		var yields = _calculate_projected_yields(allocations.farming)
+		var yields = EconomyManager.calculate_hypothetical_yields(allocations.farming)
 		var food_amt = yields.get("food", 0)
 		var other_text = ""
 		
@@ -274,12 +274,10 @@ func _update_winter_forecast() -> void:
 	var current_food = treasury.get("food", 0)
 	var current_wood = treasury.get("wood", 0)
 	
-	# 4. Get Projected Yields from Farming Slider
-	var estimated_yields = _calculate_projected_yields(allocations.farming)
-	var projected_food_yield = estimated_yields.get("food", 0)
-	# (Wood yield might come from Lumberjacks if implemented, but primarily food is critical for survival)
-	# If wood is produced via 'wood' resource type:
-	var projected_wood_yield = estimated_yields.get("wood", 0)
+	# 4. Get Projected Yields from Farming Slider (UPDATED)
+	var estimated_yields = EconomyManager.calculate_hypothetical_yields(allocations.farming)
+	var projected_food_yield = estimated_yields.get(GameResources.FOOD, 0)
+	var projected_wood_yield = estimated_yields.get(GameResources.WOOD, 0)
 	
 	# 5. Total Available Calculation
 	var total_food_available = current_food + projected_food_yield
@@ -296,10 +294,10 @@ func _update_winter_forecast() -> void:
 	var wood_net = total_wood_available - wood_demand
 	
 	var status_text = ""
-	var color = Color.GREEN
+	var color = Color.DARK_GREEN
 	
 	if food_net < 0 or wood_net < 0:
-		color = Color.SALMON
+		color = Color.RED
 		status_text = "WARNING: Deficit Predicted ("
 		if food_net < 0: status_text += "%d Food " % food_net
 		if wood_net < 0: status_text += "%d Wood" % wood_net
@@ -372,45 +370,6 @@ func _apply_builder_distribution(total_pool: int) -> void:
 			
 	SettlementManager.save_settlement()
 
-# Helper to calculate expected yields without applying changes
-func _calculate_projected_yields(total_farmers: int) -> Dictionary:
-	var yields = {}
-	if not SettlementManager.current_settlement: return yields
-	
-	var remaining = total_farmers
-	var placed = SettlementManager.current_settlement.placed_buildings
-	
-	var food_buildings = []
-	var other_buildings = []
-	
-	for entry in placed:
-		if "resource_path" in entry:
-			var b_data = load(entry["resource_path"])
-			if b_data is EconomicBuildingData:
-				var item = {"data": b_data, "cap": b_data.peasant_capacity}
-				if b_data.resource_type == "food":
-					food_buildings.append(item)
-				else:
-					other_buildings.append(item)
-	
-	# Simulate distribution
-	for item in food_buildings:
-		if remaining <= 0: break
-		var assign = min(remaining, item.cap)
-		var out = assign * item.data.base_passive_output
-		var type = item.data.resource_type
-		yields[type] = yields.get(type, 0) + out
-		remaining -= assign
-		
-	for item in other_buildings:
-		if remaining <= 0: break
-		var assign = min(remaining, item.cap)
-		var out = assign * item.data.base_passive_output
-		var type = item.data.resource_type
-		yields[type] = yields.get(type, 0) + out
-		remaining -= assign
-		
-	return yields
 
 func _distribute_farmers(total_farmers: int) -> void:
 	if not SettlementManager.current_settlement: return
@@ -449,7 +408,7 @@ func _on_commit_raid_pressed() -> void:
 	if not raider_template: return
 	
 	var raid_count = allocations.raiding
-	_convert_villagers_to_raiders(raid_count)
+	EconomyManager.draft_peasants_to_raiders(raid_count, raider_template)
 	
 	total_peasants -= raid_count
 	allocations.raiding = 0
@@ -460,23 +419,3 @@ func _on_commit_raid_pressed() -> void:
 	
 	Loggie.msg("Summer allocation committed | Raiders: %d" % raid_count).domain(LogDomains.GAMEPLAY).info()
 	EventBus.raid_committed.emit(raid_count)
-
-func _convert_villagers_to_raiders(count: int) -> void:
-	var new_warbands: Array[WarbandData] = []
-	
-	if SettlementManager.current_settlement:
-		SettlementManager.current_settlement.population_peasants -= count
-	
-	var remaining = count
-	while remaining > 0:
-		var batch_size = min(remaining, 10)
-		var bondi_band = WarbandData.new(raider_template)
-		bondi_band.is_bondi = true
-		bondi_band.current_manpower = batch_size
-		bondi_band.custom_name = "The Bondi"
-		new_warbands.append(bondi_band)
-		remaining -= batch_size
-	
-	RaidManager.outbound_raid_force.append_array(new_warbands)
-
-#TODO: Trace all data and ensure there is only one source of truth

@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3 uid="uid://dnndecgdkcffm"]
+[gd_scene load_steps=7 format=3 uid="uid://dnndecgdkcffm"]
 
 [ext_resource type="Script" uid="uid://gvajp31vuy31" path="res://ui/seasonal/WinterCourtUI.gd" id="1_cn012"]
 [ext_resource type="Script" uid="uid://cni5gdnpbb1v2" path="res://data/resources/SeasonalCardResource.gd" id="2_agvwj"]
@@ -6,7 +6,12 @@
 [ext_resource type="Resource" uid="uid://dg10eqygin8xg" path="res://data/resources/Winter Cards/Card_Winter_Feast.tres" id="3_q5t2d"]
 [ext_resource type="Resource" uid="uid://dcppndmvmf63e" path="res://data/resources/Winter Cards/Card_Winter_Recruit.tres" id="4_4y4fd"]
 
-[node name="WinterCourt_UI" type="Control" node_paths=PackedStringArray("card_container")]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_burden"]
+bg_color = Color(0.12, 0.15, 0.2, 0.9)
+border_width_bottom = 2
+border_color = Color(0.3, 0.4, 0.5, 1)
+
+[node name="WinterCourtUI" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -16,10 +21,9 @@ grow_vertical = 2
 script = ExtResource("1_cn012")
 available_court_cards = Array[ExtResource("2_agvwj")]([ExtResource("3_q5t2d"), ExtResource("4_4y4fd")])
 card_prefab = ExtResource("2_xo3mn")
-card_container = NodePath("CardContainer")
 
 [node name="Background" type="Panel" parent="."]
-self_modulate = Color(0.16, 0.22, 0.3, 0.95)
+self_modulate = Color(0.16, 0.22, 0.3, 0.98)
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -27,73 +31,121 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="TopHUD" type="PanelContainer" parent="."]
+[node name="MainLayout" type="VBoxContainer" parent="."]
 layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -250.0
-offset_top = 40.0
-offset_right = 250.0
-offset_bottom = 90.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 10
 
-[node name="MarginContainer" type="MarginContainer" parent="TopHUD"]
+[node name="Stratum1_Burden" type="PanelContainer" parent="MainLayout"]
 layout_mode = 2
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_right = 20
+theme_override_styles/panel = SubResource("StyleBoxFlat_burden")
 
-[node name="HBox" type="HBoxContainer" parent="TopHUD/MarginContainer"]
+[node name="Margin" type="MarginContainer" parent="MainLayout/Stratum1_Burden"]
+layout_mode = 2
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 10
+
+[node name="HBox" type="HBoxContainer" parent="MainLayout/Stratum1_Burden/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 40
+
+[node name="SeverityLabel" type="Label" parent="MainLayout/Stratum1_Burden/Margin/HBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9739297, 0.96263725, 0.95415837, 1)
+theme_override_font_sizes/font_size = 20
+text = "Winter Severity: Normal"
+
+[node name="VSeparator" type="VSeparator" parent="MainLayout/Stratum1_Burden/Margin/HBox"]
+layout_mode = 2
+
+[node name="DeficitContainer" type="VBoxContainer" parent="MainLayout/Stratum1_Burden/Margin/HBox"]
+unique_name_in_owner = true
 layout_mode = 2
 alignment = 1
 
-[node name="TitleLabel" type="Label" parent="TopHUD/MarginContainer/HBox"]
+[node name="Stratum2_Hall" type="PanelContainer" parent="MainLayout"]
 layout_mode = 2
-text = "❄️ WINTER COURT ❄️"
+size_flags_vertical = 3
+
+[node name="VBox" type="VBoxContainer" parent="MainLayout/Stratum2_Hall"]
+layout_mode = 2
+theme_override_constants/separation = 15
+alignment = 1
+
+[node name="ActionPointsLabel" type="Label" parent="MainLayout/Stratum2_Hall/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.7, 0.5, 1)
+theme_override_font_sizes/font_size = 28
+text = "Dynastic Attention: 2 / 2"
 horizontal_alignment = 1
 
-[node name="VSeparator" type="VSeparator" parent="TopHUD/MarginContainer/HBox"]
+[node name="CardScroll" type="ScrollContainer" parent="MainLayout/Stratum2_Hall/VBox"]
 layout_mode = 2
-theme_override_constants/separation = 20
+size_flags_vertical = 3
+vertical_scroll_mode = 3
 
-[node name="APLabel" type="Label" parent="TopHUD/MarginContainer/HBox"]
+[node name="Centerer" type="CenterContainer" parent="MainLayout/Stratum2_Hall/VBox/CardScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="CardsContainer" type="HBoxContainer" parent="MainLayout/Stratum2_Hall/VBox/CardScroll/Centerer"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.6, 0.8, 1, 1)
-text = "Hall Actions: 3 / 5"
+theme_override_constants/separation = 25
+alignment = 1
 
-[node name="CardContainer" type="HBoxContainer" parent="."]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -20.0
-offset_top = -20.0
-offset_right = 20.0
-offset_bottom = 20.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="Stratum3_Bloodline" type="PanelContainer" parent="MainLayout"]
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="MainLayout/Stratum3_Bloodline"]
+layout_mode = 2
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 10
+
+[node name="HBox" type="HBoxContainer" parent="MainLayout/Stratum3_Bloodline/Margin"]
+layout_mode = 2
 theme_override_constants/separation = 40
 alignment = 1
 
-[node name="BottomPanel" type="PanelContainer" parent="."]
-layout_mode = 1
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -260.0
-offset_top = -100.0
-offset_right = -40.0
-offset_bottom = -40.0
-grow_horizontal = 0
-grow_vertical = 0
-
-[node name="EndYearButton" type="Button" parent="BottomPanel"]
+[node name="JarlNameLabel" type="Label" parent="MainLayout/Stratum3_Bloodline/Margin/HBox"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "The Ice Melts (End Year)"
+text = "Jarl Bjorn (Age 54)"
+
+[node name="JarlStatusLabel" type="Label" parent="MainLayout/Stratum3_Bloodline/Margin/HBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Vigorous"
+
+[node name="VSeparator" type="VSeparator" parent="MainLayout/Stratum3_Bloodline/Margin/HBox"]
+layout_mode = 2
+
+[node name="HeirStatusLabel" type="Label" parent="MainLayout/Stratum3_Bloodline/Margin/HBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Succession Secure"
+
+[node name="BottomBar" type="MarginContainer" parent="MainLayout"]
+layout_mode = 2
+theme_override_constants/margin_left = 50
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 50
+theme_override_constants/margin_bottom = 20
+
+[node name="EndWinterButton" type="Button" parent="MainLayout/BottomBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "The Ice Melts..."

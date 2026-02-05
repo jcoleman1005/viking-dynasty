@@ -1,62 +1,89 @@
-extends Node2D
+extends Node
 
-# Match your constants EXACTLY
-const TILE_WIDTH = 64
-const TILE_HEIGHT = 32
-const TILE_HALF = Vector2(32, 16)
+## Assign your TreasuryHUD node here in the Inspector!
+@export var hud_node: TreasuryHUD
 
-func _ready():
-	await get_tree().process_frame
-	print("\n=== GRID MATH VERIFICATION ===")
+# Internal tracking
+var _previous_treasury: Dictionary = {}
+
+func _ready() -> void:
+	print("--- TREASURY WATCHDOG STARTED ---")
 	
-	# 1. FIND THE MAP
-	var map = _find_tilemap()
-	if not map:
-		print("❌ CRITICAL: No TileMapLayer found to verify against.")
+	if not hud_node:
+		Loggie.msg("DebugTracker: HUD Node not assigned! Cannot verify UI text.").domain(LogDomains.SYSTEM).error()
 		return
 
-	# 2. CHECK SETTINGS
-	print("Map Tile Set: ", map.tile_set.tile_shape) 
-	print("EXPECTED: 1 (Isometric)")
+	# Listen to key events
+	EventBus.season_changed.connect(_on_season_changed)
+	EventBus.treasury_updated.connect(_on_treasury_updated)
 	
-	# 3. ROUND TRIP TEST (Grid -> World -> Grid)
-	# We test a tile far from origin to magnify small errors
-	var test_cell = Vector2i(10, 10) 
-	
-	# A. Ask the Map (The Visual Truth)
-	var map_center = map.to_global(map.map_to_local(test_cell))
-	
-	# B. Ask the Manual Math (The Logical Truth)
-	# (x - y) * w/2, (x + y) * h/2 + h/2
-	var manual_x = (test_cell.x - test_cell.y) * TILE_HALF.x
-	var manual_y = (test_cell.x + test_cell.y) * TILE_HALF.y + TILE_HALF.y
-	var manual_center = Vector2(manual_x, manual_y)
-	
-	# C. Compare
-	print("\n--- TEST CELL (10, 10) ---")
-	print("Map Says Center is:    ", map_center)
-	print("Math Says Center is:   ", manual_center)
-	
-	var diff = map_center.distance_to(manual_center)
-	if diff < 1.0:
-		print("✅ MATCH: Visuals and Logic define 'Center' identically.")
-	else:
-		print("❌ MISMATCH: Visuals and Logic disagree by %s pixels." % diff)
-		print("   This causes buildings to float and pathfinding to clip walls.")
+	# Snapshot initial state
+	if SettlementManager.current_settlement:
+		_previous_treasury = SettlementManager.current_settlement.treasury.duplicate()
 
-	# 4. CLICK TEST (Reverse Logic)
-	# Does the Map agree that the center belongs to (10,10)?
-	var derived_cell = map.local_to_map(map.to_local(manual_center))
-	if derived_cell == test_cell:
-		print("✅ REVERSE MATCH: World -> Grid is accurate.")
-	else:
-		print("❌ REVERSE FAIL: The math location registers as cell %s" % derived_cell)
+func _on_treasury_updated(_new_treasury: Dictionary) -> void:
+	# Wait one frame to let the UI update itself first
+	await get_tree().process_frame
+	_verify_ui_integrity()
 
-func _find_tilemap() -> TileMapLayer:
-	# Quick scan for the map
-	if get_parent() is TileMapLayer: return get_parent()
-	for child in get_tree().root.get_children():
-		if child is TileMapLayer: return child
-		for sub in child.get_children():
-			if sub is TileMapLayer: return sub
-	return null
+func _on_season_changed(new_season: String) -> void:
+	print("\n=== SEASON CHANGE DETECTED: %s ===" % new_season)
+	
+	if not SettlementManager.current_settlement: return
+	
+	var current = SettlementManager.current_settlement.treasury
+	
+	# 1. Calculate Delta (What actually changed?)
+	var delta_report = ""
+	for res in GameResources.ALL_CURRENCIES:
+		var old_val = _previous_treasury.get(res, 0)
+		var new_val = current.get(res, 0)
+		var diff = new_val - old_val
+		
+		if diff != 0:
+			delta_report += "%s: %+d  " % [res.capitalize(), diff]
+			
+	if delta_report == "":
+		print(">> Zero Economic Activity this season.")
+	else:
+		print(">> ACTUAL CHANGE: ", delta_report)
+	
+	# 2. Compare against Expected Forecast (Optional, creates deep insight)
+	# You can uncomment this if you suspect the Forecast is lying
+	# var forecast = EconomyManager.get_projected_income()
+	# print(">> FORECAST WAS: ", forecast)
+
+	# 3. Snapshot for next season
+	_previous_treasury = current.duplicate()
+	
+	# 4. Final UI Check
+	await get_tree().process_frame
+	_verify_ui_integrity()
+
+func _verify_ui_integrity() -> void:
+	if not hud_node or not SettlementManager.current_settlement: return
+	
+	var data = SettlementManager.current_settlement.treasury
+	var discrepancies = 0
+	
+	# Helper to clean label text (remove commas, currency symbols if you add them later)
+	var check_res = func(res_key: String, label: Label) -> void:
+		if not label: return
+		var ui_val = int(label.text.replace(",", ""))
+		var data_val = data.get(res_key, 0)
+		
+		if ui_val != data_val:
+			printerr("!! MISMATCH %s !! Data: %d vs UI: %d" % [res_key.to_upper(), data_val, ui_val])
+			discrepancies += 1
+		else:
+			# Uncomment for verbose confirmation
+			# print("OK: %s (%d)" % [res_key, data_val])
+			pass
+
+	check_res.call(GameResources.GOLD, hud_node.gold_label)
+	check_res.call(GameResources.WOOD, hud_node.wood_label)
+	check_res.call(GameResources.FOOD, hud_node.food_label)
+	check_res.call(GameResources.STONE, hud_node.stone_label)
+	
+	if discrepancies == 0:
+		print(">> UI Integrity Check: PASSED (Synced)")

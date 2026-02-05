@@ -1,4 +1,3 @@
-#res://scripts/ui/BuildingPreviewCursor.gd
 extends Node2D
 class_name BuildingPreviewCursor
 
@@ -24,9 +23,6 @@ var nearest_node: Node2D = null
 var tether_color_valid: Color = Color(0.2, 1.0, 0.2, 0.8) 
 var tether_color_invalid: Color = Color(1.0, 0.2, 0.2, 0.8)
 
-signal placement_completed
-signal placement_cancelled
-
 func _ready() -> void:
 	z_index = 100 
 	
@@ -45,7 +41,9 @@ func _ready() -> void:
 	error_label.visible = false
 	add_child(error_label)
 	
-	EventBus.building_ready_for_placement.connect(set_building_preview)
+	# Listen for placement requests
+	if EventBus.has_signal("building_ready_for_placement"):
+		EventBus.building_ready_for_placement.connect(set_building_preview)
 	
 	visible = false
 	set_process(false)
@@ -60,25 +58,20 @@ func set_building_preview(building_data: BuildingData) -> void:
 	# --- 1. Determine Visuals ---
 	var tex_to_use: Texture2D = null
 	
-	# FIX: Prioritize the In-Game Sprite (building_texture) over the UI Icon
 	if "building_texture" in building_data and building_data.building_texture:
 		tex_to_use = building_data.building_texture
-	# Priority 2: Extract from Scene (AI/Generated Content)
 	elif building_data.scene_to_spawn:
 		tex_to_use = _extract_texture_from_scene(building_data.scene_to_spawn)
-	# Priority 3: Fallback to Icon (better than nothing, but might be a square)
 	elif building_data.icon:
 		tex_to_use = building_data.icon
 	
 	if tex_to_use:
-		# A. Create Sprite
 		var sprite = Sprite2D.new()
 		sprite.texture = tex_to_use
 		sprite.centered = true
 		sprite.offset = Vector2(0, -tex_to_use.get_height() / 2.0)
 		preview_visuals = sprite
 	else:
-		# B. Create Procedural Placeholder
 		Loggie.msg("No texture for %s, generating procedural placeholder." % building_data.display_name).domain(LogDomains.UI).debug()
 		preview_visuals = _create_procedural_placeholder(building_data)
 
@@ -160,6 +153,28 @@ func _input(event: InputEvent) -> void:
 	if not is_active: return
 	
 	if event is InputEventMouseButton and event.is_pressed():
+		# GUI GUARD: Prevent placement if mouse is hovering an active UI element
+		var hovered_control = get_viewport().gui_get_hovered_control()
+		
+		# If we are hovering a valid control that DOES NOT ignore mouse inputs, we check it.
+		if hovered_control and hovered_control.mouse_filter != Control.MOUSE_FILTER_IGNORE:
+			
+			# [FIX] Exception logic: If the blocker is the SelectionBox, ignore it and allow placement.
+			# This prevents the full-screen selection overlay from breaking the game.
+			var blocker_name = hovered_control.name.to_lower()
+			if "selection" in blocker_name or "grid" in blocker_name or "overlay" in blocker_name:
+				# It's likely an overlay; allow placement.
+				pass
+			else:
+				# It's a Button or Window; Block placement.
+				# Loggie.msg("Placement blocked by UI").context(hovered_control.name).debug()
+				
+				# Allow cancelling via Right Click even over UI
+				if event.button_index == MOUSE_BUTTON_RIGHT:
+					cancel_preview()
+					get_viewport().set_input_as_handled()
+				return 
+
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			_try_place_building()
 			get_viewport().set_input_as_handled() 
@@ -175,12 +190,14 @@ func _try_place_building() -> void:
 		SettlementManager.place_building(current_building_data, current_grid_pos, true)
 		EventBus.purchase_successful.emit("Construction Started")
 	
-	placement_completed.emit()
+	EventBus.building_placed.emit(current_building_data)
 	
 	if not Input.is_key_pressed(KEY_SHIFT):
 		cancel_preview()
 
 func cancel_preview() -> void:
+	var refunded_data = current_building_data
+
 	is_active = false
 	visible = false
 	set_process(false)
@@ -189,7 +206,7 @@ func cancel_preview() -> void:
 	current_building_data = null
 	_cleanup_preview()
 	
-	placement_cancelled.emit()
+	EventBus.building_placement_cancelled.emit(refunded_data)
 	Loggie.msg("Placement Cancelled").domain(LogDomains.UI).debug()
 
 func _cleanup_preview() -> void:
@@ -242,12 +259,9 @@ func _create_grid_outline(grid_size: Vector2i) -> void:
 	var tile_size = Vector2(64, 32)
 	if SettlementManager and SettlementManager.has_method("get_active_grid_cell_size"):
 		tile_size = SettlementManager.get_active_grid_cell_size()
-		
-	# Isometric Basis Vectors (Standard Iso Down)
-	# Moving 1 in Grid X moves (32, 16) in pixels
-	# Moving 1 in Grid Y moves (-32, 16) in pixels
-	var half_w = tile_size.x * 0.5 # 32
-	var half_h = tile_size.y * 0.5 # 16
+	
+	var half_w = tile_size.x * 0.5
+	var half_h = tile_size.y * 0.5
 	
 	var basis_x = Vector2(half_w, half_h)
 	var basis_y = Vector2(-half_w, half_h)
@@ -255,20 +269,14 @@ func _create_grid_outline(grid_size: Vector2i) -> void:
 	var w = float(grid_size.x)
 	var h = float(grid_size.y)
 	
-	# Calculate Corners relative to Center (0,0 local)
-	# Center of grid (w, h) is at (w/2, h/2)
-	# So Top-Left (0,0) is at (-w/2, -h/2)
-	
 	var top_left_grid = Vector2(-w * 0.5, -h * 0.5)
 	
-	# Convert grid corners to pixel offsets
 	var p_top_left = (basis_x * top_left_grid.x) + (basis_y * top_left_grid.y)
 	var p_top_right = (basis_x * (top_left_grid.x + w)) + (basis_y * top_left_grid.y)
 	var p_bot_right = (basis_x * (top_left_grid.x + w)) + (basis_y * (top_left_grid.y + h))
 	var p_bot_left = (basis_x * top_left_grid.x) + (basis_y * (top_left_grid.y + h))
 	
 	var rect = Line2D.new()
-	# Draw loop: TL -> TR -> BR -> BL -> TL
 	rect.points = PackedVector2Array([
 		p_top_left,
 		p_top_right,

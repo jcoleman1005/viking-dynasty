@@ -28,6 +28,7 @@ var pending_seasonal_recruits: Array[UnitData] = []
 
 func _ready() -> void:
 	EventBus.player_unit_died.connect(_on_player_unit_died)
+	EventBus.building_placement_cancelled.connect(_on_building_placement_cancelled)
 	Loggie.msg("SettlementManager Initialized").domain(LogDomains.GAMEPLAY).info()
 	
 # --- TERRAIN & COORDINATE VALIDATION (NEW) ---
@@ -200,6 +201,16 @@ func place_building(building_data: BuildingData, grid_position: Vector2i, is_new
 			_update_building_footprint_navigation(building_data, grid_position, true)
 			
 	return new_building
+
+func _on_building_placement_cancelled(building_data: Resource) -> void:
+	if not building_data: return
+	
+	# Stateless Refund: We trust the data passed back from the cursor
+	if "build_cost" in building_data:
+		EconomyManager.add_resources(building_data.build_cost)
+		Loggie.msg("Refunded resources via Manager").domain(LogDomains.ECONOMY).info()
+		EventBus.purchase_successful.emit("Refunded")
+
 
 func reconstruct_buildings_from_data() -> void:
 	if active_building_container:
@@ -532,31 +543,30 @@ func _force_layoffs(type: String, amount_to_remove: int) -> void:
 
 func process_construction_labor() -> void:
 	if not current_settlement: return
-	var completed_indices: Array[int] = []
-	for i in range(current_settlement.pending_construction_buildings.size()):
-		var entry = current_settlement.pending_construction_buildings[i]
-		var b_data = load(entry["resource_path"]) as BuildingData
-		if not b_data: continue
-		var peasants = entry.get("peasant_count", 0)
-		var thralls = entry.get("thrall_count", 0)
-		if peasants == 0 and thralls == 0: continue 
-		var labor_points = (peasants + thralls) * EconomyManager.BUILDER_EFFICIENCY
-		entry["progress"] = entry.get("progress", 0) + labor_points
-		if entry["progress"] >= b_data.construction_effort_required:
-			completed_indices.append(i)
-			current_settlement.placed_buildings.append({
-				"resource_path": entry["resource_path"],
-				"grid_position": entry["grid_position"],
-				"peasant_count": peasants,
-				"thrall_count": thralls
-			})
-	completed_indices.sort()
-	completed_indices.reverse()
-	for i in completed_indices: current_settlement.pending_construction_buildings.remove_at(i)
+	
+	# 1. Delegate Math to EconomyManager
+	var finished_buildings = EconomyManager.advance_construction_progress()
+	
+	# 2. Handle Completion (Scene/Gameplay Logic)
+	for entry in finished_buildings:
+		_finalize_construction(entry)
+		
+	# Save state if any progress happened
 	save_settlement()
 	
-	EventBus.pathfinding_grid_updated.emit(Vector2i.ZERO)
-
+func _finalize_construction(entry: Dictionary) -> void:
+	# Add to authoritative "Placed" list
+	# (Ensure we reset transient data like progress/workers)
+	entry.erase("progress")
+	entry.erase("peasant_count")
+	
+	current_settlement.placed_buildings.append(entry)
+	
+	Loggie.msg("Construction Finalized: %s" % entry.get("resource_path")).domain(LogDomains.SETTLEMENT).info()
+	
+	# Trigger Scene Updates (e.g., spawn the actual node)
+	# This signal is likely listened to by your BuildingManager or SceneController
+	EventBus.building_construction_completed.emit(entry)
 # --- RECRUITMENT & WARBANDS ---
 
 func recruit_unit(unit_data: UnitData) -> void:
@@ -775,3 +785,48 @@ func _get_closest_walkable_point_exclusive(origin: Vector2i, max_radius: int, ex
 					return candidate
 	
 	return origin
+
+
+## NEW: High-level abstraction for batch assignment
+func batch_update_labor(assignments: Dictionary) -> void:
+	if not current_settlement: return
+	
+	# 1. Handle Builders (Same as before)
+	if assignments.has("construction"):
+		var builder_pool = assignments["construction"]
+		for entry in current_settlement.pending_construction_buildings:
+			var data = load(entry["resource_path"]) as BuildingData
+			var cap = data.base_labor_capacity
+			var to_assign = min(builder_pool, cap)
+			entry["peasant_count"] = to_assign
+			builder_pool -= to_assign
+
+	# 2. Handle Specific Resource Workers (Split Logic)
+	# We iterate placed buildings ONCE for efficiency
+	var food_pool = assignments.get("food", 0)
+	var wood_pool = assignments.get("wood", 0)
+	
+	for entry in current_settlement.placed_buildings:
+		var data = load(entry["resource_path"]) as EconomicBuildingData
+		if not data: continue
+		
+		# Reset current workers
+		entry["peasant_count"] = 0
+		
+		if data.resource_type == "food" and food_pool > 0:
+			var cap = data.peasant_capacity
+			var to_assign = min(food_pool, cap)
+			entry["peasant_count"] = to_assign
+			food_pool -= to_assign
+			
+		elif data.resource_type == "wood" and wood_pool > 0:
+			var cap = data.peasant_capacity
+			var to_assign = min(wood_pool, cap)
+			entry["peasant_count"] = to_assign
+			wood_pool -= to_assign
+
+	# 3. Save & Emit
+	# Update the assignments dictionary for persistence
+	current_settlement.worker_assignments = assignments
+	save_settlement()
+	EventBus.settlement_loaded.emit(current_settlement)

@@ -8,7 +8,12 @@ var current_jarl: JarlData
 var minimum_inherited_legitimacy: int = 0
 var loaded_legacy_upgrades: Array[LegacyUpgradeData] = []
 
-var active_year_modifiers: Dictionary[String, Variant] = {}
+var active_year_modifiers: Dictionary[String, float] = {
+	"damage_mult": 0.0,
+	"xp_mult": 0.0,
+	"birth_chance": 0.0,
+	"harvest_mult": 0.0
+}
 var current_year: int = 867 
 # --- SEASON STATE ---
 enum Season { SPRING, SUMMER, AUTUMN, WINTER }
@@ -109,7 +114,43 @@ func get_current_season_name() -> String:
 	var names = ["Spring", "Summer", "Autumn", "Winter"]
 	return names[current_season]
 
+func aggregate_card_effects(card: SeasonalCardResource) -> void:
+	if not card: return
+	
+	# 1. Map Explicit Inspector Variables (The "Main" Stats)
+	# We map these manually to keep the nice sliders in the Inspector working.
+	if "mod_unit_damage" in card:
+		active_year_modifiers["mod_unit_damage"] = active_year_modifiers.get("mod_unit_damage", 0.0) + card.mod_unit_damage
+	if "mod_raid_xp" in card:
+		active_year_modifiers["mod_raid_xp"] = active_year_modifiers.get("mod_raid_xp", 0.0) + card.mod_raid_xp
+	if "mod_birth_chance" in card:
+		active_year_modifiers["mod_birth_chance"] = active_year_modifiers.get("mod_birth_chance", 0.0) + card.mod_birth_chance
+	if "mod_harvest_yield" in card:
+		active_year_modifiers["mod_harvest_yield"] = active_year_modifiers.get("mod_harvest_yield", 0.0) + card.mod_harvest_yield
+		
+	# 2. Map Dynamic Dictionary (The "Custom" Stats)
+	# This enables you to add ANY modifier in the Inspector via a 'modifiers' dictionary on the card
+	# without editing this script.
+	if "modifiers" in card and card.modifiers is Dictionary:
+		for key in card.modifiers:
+			var value = card.modifiers[key]
+			if value is float or value is int:
+				active_year_modifiers[key] = active_year_modifiers.get(key, 0.0) + value
+	
+	Loggie.msg("DynastyManager: Aggregated effects from '%s'. New Stats: %s" % [card.display_name, active_year_modifiers]).domain(LogDomains.DYNASTY).debug()
 
+## Resets all seasonal modifiers. Called at the end of the Winter Cycle (start of Spring).
+func reset_year_stats() -> void:
+	# We clear and re-initialize to ensure we don't keep stale dynamic keys forever
+	active_year_modifiers.clear()
+	
+	# Re-init defaults (Optional, but good for autocomplete consistency if using typed dicts elsewhere)
+	active_year_modifiers["mod_unit_damage"] = 0.0
+	active_year_modifiers["mod_raid_xp"] = 0.0
+	active_year_modifiers["mod_birth_chance"] = 0.0
+	active_year_modifiers["mod_harvest_yield"] = 0.0
+	
+	Loggie.msg("DynastyManager: Year stats reset for new cycle.").domain(LogDomains.DYNASTY).info()
 # --- EXISTING LOGIC ---
 
 func _load_game_data() -> void:

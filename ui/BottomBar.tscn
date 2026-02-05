@@ -1,0 +1,44 @@
+[gd_scene load_steps=2 format=3 uid="uid://c8k2j1m5oax4"]
+
+[ext_resource type="Script" uid="uid://c74es7ambpebs" path="res://ui/BottomBar.gd" id="1_bottombar"]
+
+[node name="BottomBar" type="VBoxContainer"]
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 1260.0
+offset_bottom = 131.0
+alignment = 2
+script = ExtResource("1_bottombar")
+
+[node name="TabsContainer" type="HBoxContainer" parent="."]
+layout_mode = 2
+alignment = 1
+
+[node name="BtnConstruct" type="Button" parent="TabsContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+text = "Construction"
+
+[node name="BtnRaids" type="Button" parent="TabsContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+text = "Raids"
+
+[node name="BtnFarming" type="Button" parent="TabsContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+text = "Farming"
+
+[node name="SeasonalActionsPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+
+[node name="PlaceholderLabel" type="Label" parent="SeasonalActionsPanel"]
+layout_mode = 2
+text = "Select a tab to view actions"
+horizontal_alignment = 1
+vertical_alignment = 1

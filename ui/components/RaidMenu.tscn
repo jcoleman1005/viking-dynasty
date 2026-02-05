@@ -1,0 +1,32 @@
+[gd_scene load_steps=2 format=3 uid="uid://b808q4y205n3"]
+
+[ext_resource type="Script" uid="uid://bd0sy14f21nue" path="res://ui/components/RaidMenu.gd" id="1_raid"]
+
+[node name="RaidMenu" type="MarginContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_vertical = 8
+script = ExtResource("1_raid")
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 8
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CenterContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="StatusLabel" type="Label" parent="CenterContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Raid Force Status..."
+
+[node name="MapBtn" type="Button" parent="CenterContainer/HBoxContainer"]
+custom_minimum_size = Vector2(150, 40)
+layout_mode = 2
+text = "Open World Map"
+
+[connection signal="pressed" from="CenterContainer/HBoxContainer/MapBtn" to="." method="_on_open_map_pressed"]

@@ -10,13 +10,26 @@ var is_dragging := false
 var start_pos := Vector2.ZERO
 var is_command_dragging := false
 var command_start_pos := Vector2.ZERO
+var is_placement_active: bool = false
 # ---------------------------
 
 func _ready() -> void:
 	# Allow unused mouse events (like Zoom) to pass to the Camera
 	# but DON'T consume mouse events here; let other UI handle them
+	EventBus.building_ready_for_placement.connect(func(_d): is_placement_active = true)
+	EventBus.building_placed.connect(func(_d): is_placement_active = false)
+	EventBus.building_placement_cancelled.connect(func(_d): is_placement_active = false)
 	mouse_filter = Control.MOUSE_FILTER_PASS
 
+func _unhandled_input(event: InputEvent) -> void:
+	# Always allow Pause checking here
+	if event.is_action_pressed("ui_cancel"):
+		PauseManager.toggle_pause()
+		return
+
+	# Guard Clause: Stop selection logic only if placing
+	if is_placement_active:
+		return
 
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:

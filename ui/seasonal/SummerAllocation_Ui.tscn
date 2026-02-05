@@ -3,122 +3,123 @@
 [ext_resource type="Script" uid="uid://cms0bgtoscos8" path="res://ui/seasonal/SummerAllocation_UI.gd" id="1_logic"]
 [ext_resource type="Resource" uid="uid://dpe2acwvvxthl" path="res://data/units/Unit_Bondi.tres" id="2_6xyy4"]
 
-[node name="SummerAllocation_UI" type="Control"]
-layout_mode = 3
+[node name="SummerAllocation_UI" type="PanelContainer"]
+custom_minimum_size = Vector2(0, 450)
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 2
 script = ExtResource("1_logic")
 raider_template = ExtResource("2_6xyy4")
 
-[node name="Panel" type="Panel" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="MarginContainer" type="MarginContainer" parent="Panel"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
 theme_override_constants/margin_left = 30
 theme_override_constants/margin_top = 30
 theme_override_constants/margin_right = 30
 theme_override_constants/margin_bottom = 30
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Panel/MarginContainer"]
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer"]
 layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 theme_override_constants/separation = 25
 
-[node name="Header" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer"]
+[node name="Header" type="HBoxContainer" parent="MarginContainer/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 alignment = 1
 
-[node name="Title" type="Label" parent="Panel/MarginContainer/VBoxContainer/Header"]
+[node name="Title" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/Header"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_type_variation = &"HeaderLarge"
 text = "Summer Labor Allocation"
 
-[node name="PopulationLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/Header"]
+[node name="PopulationLabel" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/Header"]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "Available Villagers: 0"
 
-[node name="UnassignedLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/Header"]
+[node name="UnassignedLabel" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/Header"]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
-text = " |  Unassigned: 0"
+text = " |  Unassigned: 0"
 
-[node name="CardContainer" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer"]
+[node name="CardContainer" type="HBoxContainer" parent="MarginContainer/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 30
+theme_override_constants/separation = 15
 alignment = 1
 
-[node name="ConstructionCard" type="PanelContainer" parent="Panel/MarginContainer/VBoxContainer/CardContainer"]
-custom_minimum_size = Vector2(300, 0)
+[node name="ConstructionCard" type="PanelContainer" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer"]
 layout_mode = 2
-size_flags_horizontal = 4
+size_flags_horizontal = 3
 
-[node name="Margin" type="MarginContainer" parent="Panel/MarginContainer/VBoxContainer/CardContainer/ConstructionCard"]
+[node name="Margin" type="MarginContainer" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/ConstructionCard"]
 layout_mode = 2
 theme_override_constants/margin_left = 15
 theme_override_constants/margin_top = 15
 theme_override_constants/margin_right = 15
 theme_override_constants/margin_bottom = 15
 
-[node name="VBox" type="VBoxContainer" parent="Panel/MarginContainer/VBoxContainer/CardContainer/ConstructionCard/Margin"]
+[node name="VBox" type="VBoxContainer" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/ConstructionCard/Margin"]
 layout_mode = 2
 theme_override_constants/separation = 15
 
-[node name="Title" type="Label" parent="Panel/MarginContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox"]
+[node name="Title" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox"]
 layout_mode = 2
 theme_type_variation = &"HeaderMedium"
 text = "Construction"
 horizontal_alignment = 1
 
-[node name="HSeparator" type="HSeparator" parent="Panel/MarginContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox"]
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox"]
 layout_mode = 2
 
-[node name="HBox" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox"]
+[node name="HBox" type="HBoxContainer" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox"]
 layout_mode = 2
 alignment = 1
 
-[node name="ValConstruction" type="Label" parent="Panel/MarginContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox/HBox"]
+[node name="ValConstruction" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox/HBox"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "0"
+horizontal_alignment = 1
 
-[node name="Label" type="Label" parent="Panel/MarginContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox/HBox"]
+[node name="Label" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox/HBox"]
 layout_mode = 2
 text = "Builders"
 
-[node name="ConstructionSlider" type="HSlider" parent="Panel/MarginContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox"]
+[node name="ConstructionSlider" type="HSlider" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
 
-[node name="Spacer" type="Control" parent="Panel/MarginContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox"]
+[node name="Spacer" type="Control" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="LabelProj" type="Label" parent="Panel/MarginContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox"]
+[node name="LabelProj" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
 text = "Projected Progress:"
 horizontal_alignment = 1
 
-[node name="Proj_Construction" type="Label" parent="Panel/MarginContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox"]
+[node name="Proj_Construction" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/ConstructionCard/Margin/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
@@ -126,175 +127,183 @@ text = "+0 / day"
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="FarmingCard" type="PanelContainer" parent="Panel/MarginContainer/VBoxContainer/CardContainer"]
-custom_minimum_size = Vector2(300, 0)
+[node name="FarmingCard" type="PanelContainer" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer"]
 layout_mode = 2
-size_flags_horizontal = 4
+size_flags_horizontal = 3
 
-[node name="Margin" type="MarginContainer" parent="Panel/MarginContainer/VBoxContainer/CardContainer/FarmingCard"]
+[node name="Margin" type="MarginContainer" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/FarmingCard"]
 layout_mode = 2
 theme_override_constants/margin_left = 15
 theme_override_constants/margin_top = 15
 theme_override_constants/margin_right = 15
 theme_override_constants/margin_bottom = 15
 
-[node name="VBox" type="VBoxContainer" parent="Panel/MarginContainer/VBoxContainer/CardContainer/FarmingCard/Margin"]
+[node name="VBox" type="VBoxContainer" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/FarmingCard/Margin"]
 layout_mode = 2
 theme_override_constants/separation = 15
 
-[node name="Title" type="Label" parent="Panel/MarginContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox"]
+[node name="Title" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox"]
 layout_mode = 2
 theme_type_variation = &"HeaderMedium"
 text = "Farming"
 horizontal_alignment = 1
 
-[node name="HSeparator" type="HSeparator" parent="Panel/MarginContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox"]
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox"]
 layout_mode = 2
 
-[node name="HBox" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox"]
+[node name="HBox" type="HBoxContainer" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox"]
 layout_mode = 2
 alignment = 1
 
-[node name="ValFarming" type="Label" parent="Panel/MarginContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox/HBox"]
+[node name="ValFarming" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox/HBox"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "0"
+horizontal_alignment = 1
 
-[node name="Label" type="Label" parent="Panel/MarginContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox/HBox"]
+[node name="Label" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox/HBox"]
 layout_mode = 2
 text = "Farmers"
 
-[node name="FarmingSlider" type="HSlider" parent="Panel/MarginContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox"]
+[node name="FarmingSlider" type="HSlider" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
 
-[node name="Spacer" type="Control" parent="Panel/MarginContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox"]
+[node name="Spacer" type="Control" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="LabelProj" type="Label" parent="Panel/MarginContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox"]
+[node name="LabelProj" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
 text = "Est. Yield:"
 horizontal_alignment = 1
 
-[node name="Proj_Food" type="Label" parent="Panel/MarginContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox"]
+[node name="Proj_Food" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/FarmingCard/Margin/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "0 Food"
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="RaidingCard" type="PanelContainer" parent="Panel/MarginContainer/VBoxContainer/CardContainer"]
-custom_minimum_size = Vector2(300, 0)
+[node name="RaidingCard" type="PanelContainer" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer"]
+visible = false
 layout_mode = 2
-size_flags_horizontal = 4
+size_flags_horizontal = 3
 
-[node name="Margin" type="MarginContainer" parent="Panel/MarginContainer/VBoxContainer/CardContainer/RaidingCard"]
+[node name="Margin" type="MarginContainer" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/RaidingCard"]
 layout_mode = 2
 theme_override_constants/margin_left = 15
 theme_override_constants/margin_top = 15
 theme_override_constants/margin_right = 15
 theme_override_constants/margin_bottom = 15
 
-[node name="VBox" type="VBoxContainer" parent="Panel/MarginContainer/VBoxContainer/CardContainer/RaidingCard/Margin"]
+[node name="VBox" type="VBoxContainer" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/RaidingCard/Margin"]
 layout_mode = 2
 theme_override_constants/separation = 15
 
-[node name="Title" type="Label" parent="Panel/MarginContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
+[node name="Title" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
 layout_mode = 2
 theme_type_variation = &"HeaderMedium"
 text = "Raiding"
 horizontal_alignment = 1
 
-[node name="HSeparator" type="HSeparator" parent="Panel/MarginContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
 layout_mode = 2
 
-[node name="HBox" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
+[node name="HBox" type="HBoxContainer" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
 layout_mode = 2
 alignment = 1
 
-[node name="ValRaiding" type="Label" parent="Panel/MarginContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox/HBox"]
+[node name="ValRaiding" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox/HBox"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "0"
+horizontal_alignment = 1
 
-[node name="Label" type="Label" parent="Panel/MarginContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox/HBox"]
+[node name="Label" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox/HBox"]
 layout_mode = 2
 text = "Raiders"
 
-[node name="RaidingSlider" type="HSlider" parent="Panel/MarginContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
+[node name="RaidingSlider" type="HSlider" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
 
-[node name="Spacer" type="Control" parent="Panel/MarginContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
+[node name="Spacer" type="Control" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="LabelProj" type="Label" parent="Panel/MarginContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
+[node name="LabelProj" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
 text = "Warband Size:"
 horizontal_alignment = 1
 
-[node name="Proj_Raid" type="Label" parent="Panel/MarginContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
+[node name="Proj_Raid" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "0 Men"
 horizontal_alignment = 1
 
-[node name="CommitRaidBtn" type="Button" parent="Panel/MarginContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
+[node name="CommitRaidBtn" type="Button" parent="MarginContainer/ScrollContainer/VBoxContainer/CardContainer/RaidingCard/Margin/VBox"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 disabled = true
 text = "Commit Warband"
 
-[node name="WinterForecastPanel" type="PanelContainer" parent="Panel/MarginContainer/VBoxContainer"]
+[node name="WinterForecastPanel" type="PanelContainer" parent="MarginContainer/ScrollContainer/VBoxContainer"]
+visible = false
 layout_mode = 2
 theme_type_variation = &"PanelContainerDark"
 
-[node name="Margin" type="MarginContainer" parent="Panel/MarginContainer/VBoxContainer/WinterForecastPanel"]
+[node name="Margin" type="MarginContainer" parent="MarginContainer/ScrollContainer/VBoxContainer/WinterForecastPanel"]
 layout_mode = 2
 theme_override_constants/margin_left = 15
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 15
 theme_override_constants/margin_bottom = 10
 
-[node name="HBox" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer/WinterForecastPanel/Margin"]
+[node name="HBox" type="HBoxContainer" parent="MarginContainer/ScrollContainer/VBoxContainer/WinterForecastPanel/Margin"]
 layout_mode = 2
 theme_override_constants/separation = 40
 alignment = 1
 
-[node name="Lbl_Stockpile" type="Label" parent="Panel/MarginContainer/VBoxContainer/WinterForecastPanel/Margin/HBox"]
+[node name="Lbl_Stockpile" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/WinterForecastPanel/Margin/HBox"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Stockpile: 0 Food, 0 Wood"
 
-[node name="VSeparator" type="VSeparator" parent="Panel/MarginContainer/VBoxContainer/WinterForecastPanel/Margin/HBox"]
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/ScrollContainer/VBoxContainer/WinterForecastPanel/Margin/HBox"]
 layout_mode = 2
 
-[node name="Lbl_WinterDemand" type="Label" parent="Panel/MarginContainer/VBoxContainer/WinterForecastPanel/Margin/HBox"]
+[node name="Lbl_WinterDemand" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/WinterForecastPanel/Margin/HBox"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Proj. Winter Demand: 0 Food"
 
-[node name="VSeparator2" type="VSeparator" parent="Panel/MarginContainer/VBoxContainer/WinterForecastPanel/Margin/HBox"]
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/ScrollContainer/VBoxContainer/WinterForecastPanel/Margin/HBox"]
 layout_mode = 2
 
-[node name="Lbl_WinterNet" type="Label" parent="Panel/MarginContainer/VBoxContainer/WinterForecastPanel/Margin/HBox"]
+[node name="Lbl_WinterNet" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer/WinterForecastPanel/Margin/HBox"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 1, 0, 1)
 text = "Winter Secure"
 
-[node name="Footer" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer"]
+[node name="Footer" type="HBoxContainer" parent="MarginContainer/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 alignment = 1
 
-[node name="ConfirmBtn" type="Button" parent="Panel/MarginContainer/VBoxContainer/Footer"]
+[node name="ConfirmBtn" type="Button" parent="MarginContainer/ScrollContainer/VBoxContainer/Footer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(250, 50)
 layout_mode = 2

@@ -32,7 +32,7 @@ func start_winter_phase() -> void:
 	_calculate_winter_needs()
 	
 	winter_started.emit()
-	EventBus.scene_change_requested.emit("winter_court")
+	
 
 func end_winter_phase() -> void:
 	winter_crisis_active = false
@@ -74,19 +74,31 @@ func _calculate_winter_needs() -> void:
 	var settlement = SettlementManager.current_settlement
 	if not settlement: return
 	
-	var demand_report = calculate_winter_demand(settlement)
+	_roll_severity()
 	
-	var food_cost = demand_report["food_demand"]
-	var wood_cost = demand_report["wood_demand"]
-	var food_stock = settlement.treasury.get("food", 0)
-	var wood_stock = settlement.treasury.get("wood", 0)
+	var mult: float = 1.0
+	match current_severity:
+		WinterSeverity.HARSH: mult = harsh_multiplier
+		WinterSeverity.MILD: mult = mild_multiplier
+		_: mult = 1.0
+	
+	# Ask EconomyManager (Returns dict with GameResources keys)
+	var costs = EconomyManager.calculate_winter_consumption_costs(mult)
+	var food_cost = costs.get(GameResources.FOOD, 0)
+	var wood_cost = costs.get(GameResources.WOOD, 0)
+	
+	var food_stock = settlement.treasury.get(GameResources.FOOD, 0)
+	var wood_stock = settlement.treasury.get(GameResources.WOOD, 0)
 	
 	var food_deficit = max(0, food_cost - food_stock)
 	var wood_deficit = max(0, wood_cost - wood_stock)
 	
 	winter_consumption_report = {
-		"severity": demand_report["severity_name"],
-		"multiplier": demand_report["multiplier"],
+		"severity_name": WinterSeverity.keys()[current_severity],
+		"multiplier": mult,
+		# We keep report keys distinct for UI, or we could use GameResources keys here too 
+		# depending on how your UI reads this report. 
+		# For safety inside this file, I am using explicit keys for the report structure.
 		"food_cost": food_cost,
 		"wood_cost": wood_cost,
 		"food_deficit": food_deficit,
@@ -95,29 +107,23 @@ func _calculate_winter_needs() -> void:
 	
 	if food_deficit > 0 or wood_deficit > 0:
 		winter_crisis_active = true
-		Loggie.msg("Winter Crisis Active! Deficit: F%d W%d" % [food_deficit, wood_deficit]).domain(LogDomains.SYSTEM).warn()
+		Loggie.msg("Winter Crisis Active! Deficit: %s" % winter_consumption_report).domain(LogDomains.SYSTEM).warn()
 	else:
 		winter_crisis_active = false
 		_apply_winter_consumption()
 
 func _apply_winter_consumption() -> void:
-	var settlement = SettlementManager.current_settlement
-	if not settlement: return
-	
-	var f_cost = winter_consumption_report.get("food_cost", 0)
-	var w_cost = winter_consumption_report.get("wood_cost", 0)
-	
-	settlement.treasury["food"] = max(0, settlement.treasury.get("food", 0) - f_cost)
-	settlement.treasury["wood"] = max(0, settlement.treasury.get("wood", 0) - w_cost)
-	
-	# Log for UI
-	winter_upkeep_report = {
-		"food_consumed": f_cost,
-		"wood_consumed": w_cost
+	# Convert local report back to GameResources dict for the API
+	var costs = {
+		GameResources.FOOD: winter_consumption_report.get("food_cost", 0),
+		GameResources.WOOD: winter_consumption_report.get("wood_cost", 0)
 	}
+	EconomyManager.apply_winter_consumption(costs)
 	
-	EventBus.treasury_updated.emit(settlement.treasury)
-	Loggie.msg("Winter consumption applied.").domain(LogDomains.SYSTEM).info()
+	winter_upkeep_report = {
+		"food_consumed": costs[GameResources.FOOD],
+		"wood_consumed": costs[GameResources.WOOD]
+		}
 
 func _apply_environmental_decay() -> void:
 	var decay = 0.2
@@ -130,13 +136,51 @@ func _apply_environmental_decay() -> void:
 # --- CRISIS RESOLUTION ---
 
 func resolve_crisis_with_gold() -> bool:
+	# Calculate Gold Cost
 	var total_gold_cost = (winter_consumption_report["food_deficit"] * 5) + (winter_consumption_report["wood_deficit"] * 5)
 	
-	if SettlementManager.attempt_purchase({"gold": total_gold_cost}):
+	if EconomyManager.attempt_purchase({GameResources.GOLD: total_gold_cost}):
 		winter_crisis_active = false
 		_apply_winter_consumption()
 		return true
 	return false
+
+func play_seasonal_card(card: SeasonalCardResource) -> bool:
+	# 1. Validate AP
+	var jarl = DynastyManager.get_current_jarl()
+	if not jarl or jarl.current_hall_actions < card.cost_ap:
+		return false
+
+	# 2. Validate Resources
+	var cost_dict = {}
+	if card.cost_gold > 0: cost_dict["gold"] = card.cost_gold
+	if card.cost_food > 0: cost_dict["food"] = card.cost_food
+	
+	# Check affordability and Deduct
+	if not EconomyManager.attempt_purchase(cost_dict):
+		return false
+
+	# 3. Deduct AP (DynastyManager owns this state)
+	DynastyManager.perform_hall_action(card.cost_ap)
+
+	# 4. Apply Rewards
+	if card.grant_gold > 0:
+		EconomyManager.deposit_resources({"gold": card.grant_gold})
+	if card.grant_renown > 0:
+		DynastyManager.award_renown(card.grant_renown)
+	if card.grant_authority > 0:
+		if jarl:
+			# Add Authority directly to the Jarl data
+			jarl.current_authority += card.grant_authority
+			
+			Loggie.msg("Granted %d Authority via card" % card.grant_authority).domain(LogDomains.DYNASTY).info()
+			# CRITICAL: Emit signal so UI (DynastyUI/TopBar) updates immediately
+			DynastyManager.jarl_stats_updated.emit(jarl)
+	# [FIX] Apply Modifier (Missing in previous snippet)
+	# 4. Apply Modifiers (The new aggregation logic you implemented)
+	DynastyManager.aggregate_card_effects(card)
+		
+	return true
 
 func resolve_crisis_with_sacrifice(sacrifice_type: String) -> bool:
 	# Sacrifice costs 1 Action (paid to DynastyManager)

@@ -28,7 +28,7 @@ func _ready() -> void:
 func setup(card: SeasonalCardResource, can_afford: bool = true) -> void:
 	_card_data = card
 	
-	title_label.text = card.title
+	title_label.text = card.display_name
 	description_label.text = card.description
 	icon_rect.texture = card.icon
 	
@@ -36,7 +36,7 @@ func setup(card: SeasonalCardResource, can_afford: bool = true) -> void:
 	if card.cost_ap > 0 or card.cost_gold > 0:
 		cost_container.show()
 		ap_cost_label.text = "AP: %d" % card.cost_ap
-		gold_cost_label.text = "Gold: %d"# Add gold label handling here if needed
+		gold_cost_label.text = "Gold: %d" % card.cost_gold# Add gold label handling here if needed
 	else:
 		cost_container.hide()
 	

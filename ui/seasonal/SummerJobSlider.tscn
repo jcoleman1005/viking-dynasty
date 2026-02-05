@@ -1,0 +1,59 @@
+[gd_scene load_steps=2 format=3 uid="uid://bhsqb83x1g3v0"]
+
+[ext_resource type="Script" uid="uid://cl30v0wegwxd4" path="res://ui/seasonal/SummerJobSlider.gd" id="1_script"]
+
+[node name="JobRow_UI" type="PanelContainer" node_paths=PackedStringArray("label_role", "label_count", "btn_minus", "btn_plus", "icon_rect")]
+offset_right = 400.0
+offset_bottom = 50.0
+script = ExtResource("1_script")
+label_role = NodePath("MarginContainer/HBoxContainer/Label_Role")
+label_count = NodePath("MarginContainer/HBoxContainer/CountContainer/Label_Count")
+btn_minus = NodePath("MarginContainer/HBoxContainer/CountContainer/Btn_Minus")
+btn_plus = NodePath("MarginContainer/HBoxContainer/CountContainer/Btn_Plus")
+icon_rect = NodePath("MarginContainer/HBoxContainer/Icon")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 5
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="Icon" type="TextureRect" parent="MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Label_Role" type="Label" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Role Name"
+vertical_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="CountContainer" type="HBoxContainer" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Btn_Minus" type="Button" parent="MarginContainer/HBoxContainer/CountContainer"]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+text = "-"
+
+[node name="Label_Count" type="Label" parent="MarginContainer/HBoxContainer/CountContainer"]
+custom_minimum_size = Vector2(40, 0)
+layout_mode = 2
+text = "0"
+horizontal_alignment = 1
+
+[node name="Btn_Plus" type="Button" parent="MarginContainer/HBoxContainer/CountContainer"]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+text = "+"

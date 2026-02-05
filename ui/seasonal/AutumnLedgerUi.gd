@@ -60,7 +60,7 @@ func _show_ledger() -> void:
 
 ## Aggregates data from Managers and updates UI elements.
 func _initialize_data() -> void:
-	var forecast: Dictionary[String, int] = EconomyManager.get_winter_forecast()
+	var forecast: Dictionary = EconomyManager.get_winter_forecast()
 	var settlement = SettlementManager.current_settlement
 	
 	if not settlement:
