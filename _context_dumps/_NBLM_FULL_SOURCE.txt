@@ -2,7 +2,7 @@ PROJECT SOURCE CODE LIBRARY
 ===========================
 CONTAINS: Full Implementation Logic, Scene Trees, and Resource Data.
 INSTRUCTION: This is the raw source code. Use this to answer specific implementation questions.
-GENERATED: 2026-02-04T16:34:29
+GENERATED: 2026-02-05T10:39:27
 ===========================
 
 
@@ -27672,6 +27672,7 @@ signal building_state_changed(building: BaseBuilding, new_state: int)
 signal build_request_made(building_data: BuildingData, grid_position: Vector2i)
 signal building_ready_for_placement(building_data: BuildingData)
 signal building_placement_cancelled(building_data: BuildingData)
+signal building_placed(building_data: BuildingData)
 signal building_construction_completed(building_entry: Dictionary)
 # --- Inspector Signals ---
 signal building_selected(building: BaseBuilding)
@@ -27751,6 +27752,7 @@ signal autumn_resolved()
 ## Emitted when Winter ends and the year rolls over.
 signal winter_ended()
 signal raid_committed(count: int)
+signal sidebar_close_requested
 
 
 --------------------------------------------------
@@ -28635,6 +28637,7 @@ var pending_seasonal_recruits: Array[UnitData] = []
 
 func _ready() -> void:
 	EventBus.player_unit_died.connect(_on_player_unit_died)
+	EventBus.building_placement_cancelled.connect(_on_building_placement_cancelled)
 	Loggie.msg("SettlementManager Initialized").domain(LogDomains.GAMEPLAY).info()
 	
 # --- TERRAIN & COORDINATE VALIDATION (NEW) ---
@@ -28807,6 +28810,16 @@ func place_building(building_data: BuildingData, grid_position: Vector2i, is_new
 			_update_building_footprint_navigation(building_data, grid_position, true)
 			
 	return new_building
+
+func _on_building_placement_cancelled(building_data: Resource) -> void:
+	if not building_data: return
+	
+	# Stateless Refund: We trust the data passed back from the cursor
+	if "build_cost" in building_data:
+		EconomyManager.add_resources(building_data.build_cost)
+		Loggie.msg("Refunded resources via Manager").domain(LogDomains.ECONOMY).info()
+		EventBus.purchase_successful.emit("Refunded")
+
 
 func reconstruct_buildings_from_data() -> void:
 	if active_building_container:
@@ -31145,7 +31158,6 @@ FILE: res:///data/resources/Card_Focus_Raid.tres
 
 [resource]
 script = ExtResource("1_r2a8h")
-title = "Viking Focus"
 description = "Boost Authority for multiple raids. Increases amount of time needed to complete buildings"
 metadata/_custom_type_script = "uid://cni5gdnpbb1v2"
 
@@ -38780,9 +38792,7 @@ func _connect_signals() -> void:
 	EventBus.request_worker_assignment.connect(_on_worker_requested)
 	EventBus.request_worker_removal.connect(_on_worker_removal_requested)
 	
-	if building_cursor:
-		building_cursor.placement_completed.connect(_on_building_placement_completed)
-		building_cursor.placement_cancelled.connect(_on_building_placement_cancelled_by_cursor)
+	
 
 func _setup_default_resources() -> void:
 	if not test_building_data: test_building_data = default_test_building
@@ -40135,7 +40145,6 @@ static func _add_coastline_around(terrain_map: Dictionary, water_pos: Vector2i) 
 --------------------------------------------------
 FILE: res:///scripts/ui/BuildingPreviewCursor.gd
 --------------------------------------------------
-#res://scripts/ui/BuildingPreviewCursor.gd
 extends Node2D
 class_name BuildingPreviewCursor
 
@@ -40161,9 +40170,6 @@ var nearest_node: Node2D = null
 var tether_color_valid: Color = Color(0.2, 1.0, 0.2, 0.8) 
 var tether_color_invalid: Color = Color(1.0, 0.2, 0.2, 0.8)
 
-signal placement_completed
-signal placement_cancelled
-
 func _ready() -> void:
 	z_index = 100 
 	
@@ -40182,7 +40188,9 @@ func _ready() -> void:
 	error_label.visible = false
 	add_child(error_label)
 	
-	EventBus.building_ready_for_placement.connect(set_building_preview)
+	# Listen for placement requests
+	if EventBus.has_signal("building_ready_for_placement"):
+		EventBus.building_ready_for_placement.connect(set_building_preview)
 	
 	visible = false
 	set_process(false)
@@ -40197,25 +40205,20 @@ func set_building_preview(building_data: BuildingData) -> void:
 	# --- 1. Determine Visuals ---
 	var tex_to_use: Texture2D = null
 	
-	# FIX: Prioritize the In-Game Sprite (building_texture) over the UI Icon
 	if "building_texture" in building_data and building_data.building_texture:
 		tex_to_use = building_data.building_texture
-	# Priority 2: Extract from Scene (AI/Generated Content)
 	elif building_data.scene_to_spawn:
 		tex_to_use = _extract_texture_from_scene(building_data.scene_to_spawn)
-	# Priority 3: Fallback to Icon (better than nothing, but might be a square)
 	elif building_data.icon:
 		tex_to_use = building_data.icon
 	
 	if tex_to_use:
-		# A. Create Sprite
 		var sprite = Sprite2D.new()
 		sprite.texture = tex_to_use
 		sprite.centered = true
 		sprite.offset = Vector2(0, -tex_to_use.get_height() / 2.0)
 		preview_visuals = sprite
 	else:
-		# B. Create Procedural Placeholder
 		Loggie.msg("No texture for %s, generating procedural placeholder." % building_data.display_name).domain(LogDomains.UI).debug()
 		preview_visuals = _create_procedural_placeholder(building_data)
 
@@ -40297,6 +40300,28 @@ func _input(event: InputEvent) -> void:
 	if not is_active: return
 	
 	if event is InputEventMouseButton and event.is_pressed():
+		# GUI GUARD: Prevent placement if mouse is hovering an active UI element
+		var hovered_control = get_viewport().gui_get_hovered_control()
+		
+		# If we are hovering a valid control that DOES NOT ignore mouse inputs, we check it.
+		if hovered_control and hovered_control.mouse_filter != Control.MOUSE_FILTER_IGNORE:
+			
+			# [FIX] Exception logic: If the blocker is the SelectionBox, ignore it and allow placement.
+			# This prevents the full-screen selection overlay from breaking the game.
+			var blocker_name = hovered_control.name.to_lower()
+			if "selection" in blocker_name or "grid" in blocker_name or "overlay" in blocker_name:
+				# It's likely an overlay; allow placement.
+				pass
+			else:
+				# It's a Button or Window; Block placement.
+				# Loggie.msg("Placement blocked by UI").context(hovered_control.name).debug()
+				
+				# Allow cancelling via Right Click even over UI
+				if event.button_index == MOUSE_BUTTON_RIGHT:
+					cancel_preview()
+					get_viewport().set_input_as_handled()
+				return 
+
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			_try_place_building()
 			get_viewport().set_input_as_handled() 
@@ -40312,12 +40337,14 @@ func _try_place_building() -> void:
 		SettlementManager.place_building(current_building_data, current_grid_pos, true)
 		EventBus.purchase_successful.emit("Construction Started")
 	
-	placement_completed.emit()
+	EventBus.building_placed.emit(current_building_data)
 	
 	if not Input.is_key_pressed(KEY_SHIFT):
 		cancel_preview()
 
 func cancel_preview() -> void:
+	var refunded_data = current_building_data
+
 	is_active = false
 	visible = false
 	set_process(false)
@@ -40326,7 +40353,7 @@ func cancel_preview() -> void:
 	current_building_data = null
 	_cleanup_preview()
 	
-	placement_cancelled.emit()
+	EventBus.building_placement_cancelled.emit(refunded_data)
 	Loggie.msg("Placement Cancelled").domain(LogDomains.UI).debug()
 
 func _cleanup_preview() -> void:
@@ -40379,12 +40406,9 @@ func _create_grid_outline(grid_size: Vector2i) -> void:
 	var tile_size = Vector2(64, 32)
 	if SettlementManager and SettlementManager.has_method("get_active_grid_cell_size"):
 		tile_size = SettlementManager.get_active_grid_cell_size()
-		
-	# Isometric Basis Vectors (Standard Iso Down)
-	# Moving 1 in Grid X moves (32, 16) in pixels
-	# Moving 1 in Grid Y moves (-32, 16) in pixels
-	var half_w = tile_size.x * 0.5 # 32
-	var half_h = tile_size.y * 0.5 # 16
+	
+	var half_w = tile_size.x * 0.5
+	var half_h = tile_size.y * 0.5
 	
 	var basis_x = Vector2(half_w, half_h)
 	var basis_y = Vector2(-half_w, half_h)
@@ -40392,20 +40416,14 @@ func _create_grid_outline(grid_size: Vector2i) -> void:
 	var w = float(grid_size.x)
 	var h = float(grid_size.y)
 	
-	# Calculate Corners relative to Center (0,0 local)
-	# Center of grid (w, h) is at (w/2, h/2)
-	# So Top-Left (0,0) is at (-w/2, -h/2)
-	
 	var top_left_grid = Vector2(-w * 0.5, -h * 0.5)
 	
-	# Convert grid corners to pixel offsets
 	var p_top_left = (basis_x * top_left_grid.x) + (basis_y * top_left_grid.y)
 	var p_top_right = (basis_x * (top_left_grid.x + w)) + (basis_y * top_left_grid.y)
 	var p_bot_right = (basis_x * (top_left_grid.x + w)) + (basis_y * (top_left_grid.y + h))
 	var p_bot_left = (basis_x * top_left_grid.x) + (basis_y * (top_left_grid.y + h))
 	
 	var rect = Line2D.new()
-	# Draw loop: TL -> TR -> BR -> BL -> TL
 	rect.points = PackedVector2Array([
 		p_top_left,
 		p_top_right,
@@ -46194,7 +46212,7 @@ extends VBoxContainer
 ## Component: BottomBar
 ## Manages Player Agency Tabs.
 ## Modular architecture: Instances child scenes for Build, Alloc, and Raid menus.
-## acts as a persistent State Manager for refunds and navigation.
+## Acts as a persistent State Manager for navigation and UI restoration.
 
 # ------------------------------------------------------------------------------
 # SIGNALS
@@ -46227,7 +46245,7 @@ signal scene_navigation_requested(scene_path: String)
 
 var cached_buildings: Array[Resource] = []
 var is_agency_active: bool = false
-var pending_cost: Dictionary = {}
+var last_active_category: String = "" # [NEW] Tracks the open tab to restore it later
 
 # ------------------------------------------------------------------------------
 # LIFECYCLE
@@ -46247,7 +46265,7 @@ func _connect_tabs() -> void:
 
 func _connect_signals() -> void:
 	if EventBus:
-		# Refund Logic: Listen for cancellations and success
+		# Refund Logic: Listen for global signals
 		if EventBus.has_signal("building_placement_cancelled"):
 			EventBus.building_placement_cancelled.connect(_on_placement_cancelled)
 		
@@ -46258,7 +46276,7 @@ func _connect_signals() -> void:
 		if EventBus.has_signal("building_ready_for_placement"):
 			EventBus.building_ready_for_placement.connect(_on_building_placement_initiated)
 	else:
-		Loggie.msg("EventBus missing in BottomBar").domain(Loggie.LogDomains.UI).error()
+		Loggie.msg("EventBus missing in BottomBar").domain(LogDomains.UI).error()
 
 # ------------------------------------------------------------------------------
 # PUBLIC INTERFACE (Controller Access)
@@ -46267,7 +46285,6 @@ func _connect_signals() -> void:
 ## Receives data from the Controller (MainGameUI)
 func setup(buildings: Array[Resource], _units: Array[Resource] = []) -> void:
 	cached_buildings = buildings
-	# Removed .context() to fix runtime error
 	Loggie.msg("BottomBar configured: Modular Mode").info()
 
 ## Enables or disables interaction based on the Season (Summer = Active)
@@ -46285,6 +46302,7 @@ func set_agency_state(active: bool) -> void:
 	
 	if not active:
 		_clear_content()
+		last_active_category = "" # Reset history when season ends
 
 # ------------------------------------------------------------------------------
 # CONTENT SWITCHING
@@ -46296,6 +46314,7 @@ func _on_tab_clicked(category: String) -> void:
 
 func _load_menu(category: String) -> void:
 	_clear_content()
+	last_active_category = category # [NEW] Remember what we opened
 	
 	# [STRICT TYPING IMPLEMENTATION]
 	match category:
@@ -46340,29 +46359,28 @@ func _log_missing_scene(menu_name: String) -> void:
 	seasonal_actions_panel.add_child(label)
 
 # ------------------------------------------------------------------------------
-# REFUND & TRANSACTION LOGIC
+# UI RESPONSE TO PLACEMENT
 # ------------------------------------------------------------------------------
 
 func _on_building_placement_initiated(building_data: Resource) -> void:
-	# Capture the cost so we can refund it if cancelled.
-	# The purchase was already made by BuildMenu at this point.
-	if "build_cost" in building_data and building_data.build_cost is Dictionary:
-		pending_cost = building_data.build_cost.duplicate()
+	# User Request: Close the UI bar to increase screen real estate for this action.
+	# We DO NOT clear 'last_active_category' here, so we can restore it later.
+	_clear_content()
 
-func _on_placement_cancelled() -> void:
-	if not pending_cost.is_empty():
-		if EconomyManager:
-			EconomyManager.add_resources(pending_cost)
-			Loggie.msg("Placement cancelled, refunded").domain(Loggie.LogDomains.ECONOMY).info()
-			
-			if EventBus.has_signal("purchase_successful"):
-				EventBus.purchase_successful.emit("Refunded")
-		
-		pending_cost.clear()
+func _on_placement_cancelled(_data = null) -> void:
+	# Note: SettlementManager handles the actual refund logic now.
+	# We just handle UI restoration.
+	
+	if last_active_category != "":
+		Loggie.msg("Restoring menu after cancel").info()
+		_load_menu(last_active_category)
 
 func _on_placement_completed(_data = null) -> void:
-	# Placement successful, resources consumed. Clear pending state.
-	pending_cost.clear()
+	# Placement success. Restore UI so player can build again if desired.
+	
+	if last_active_category != "":
+		Loggie.msg("Restoring menu after placement").info()
+		_load_menu(last_active_category)
 
 
 --------------------------------------------------
@@ -47175,6 +47193,7 @@ extends PanelContainer
 @onready var close_button: Button = $Margin/MainLayout/CloseButton
 @onready var context_menu: PopupMenu = $ContextMenu
 
+signal close_requested
 # Resources
 const HEIR_CARD_SCENE = preload("res://ui/components/HeirCard.tscn")
 const PLACEHOLDER_ICON = preload("res://textures/placeholders/unit_placeholder.png")
@@ -47319,7 +47338,10 @@ func _on_context_menu_item_pressed(id: int) -> void:
 			_open_warband_assignment_dialog()
 			
 func _on_close_button_pressed() -> void:
-	hide()
+	if EventBus:
+		EventBus.sidebar_close_requested.emit()
+	else:
+		hide() # Fallback
 
 func _input(event: InputEvent) -> void:
 	if visible and event is InputEventKey and event.pressed:
@@ -47351,7 +47373,7 @@ FILE: res:///ui/Dynasty_UI.tscn
 [ext_resource type="Script" uid="uid://dpijiwr0pfpn7" path="res://ui/DynastyUI.gd" id="1_abcde"]
 
 [node name="Dynasty_UI" type="PanelContainer"]
-custom_minimum_size = Vector2(800, 600)
+custom_minimum_size = Vector2(340, 400)
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -47363,7 +47385,8 @@ offset_right = 200.0
 offset_bottom = 150.0
 grow_horizontal = 2
 grow_vertical = 2
-size_flags_horizontal = 0
+size_flags_horizontal = 3
+size_flags_vertical = 3
 script = ExtResource("1_abcde")
 
 [node name="Margin" type="MarginContainer" parent="."]
@@ -47840,6 +47863,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 script = ExtResource("1_uuvct")
 top_bar = NodePath("MainLayout/TopBar")
 bottom_bar = NodePath("MainLayout/BottomBar")
@@ -48004,6 +48028,12 @@ func _ready() -> void:
 func _connect_signals() -> void:
 	if EventBus:
 		EventBus.season_changed.connect(_on_season_changed_signal)
+		
+		if not EventBus.has_signal("sidebar_close_requested"):
+			Loggie.msg("EventBus missing 'sidebar_close_requested' signal").domain(LogDomains.UI).error()
+		else:
+			EventBus.sidebar_close_requested.connect(_close_sidebar)
+		
 		if bottom_bar:
 			bottom_bar.scene_navigation_requested.connect(func(path):
 				EventBus.scene_change_requested.emit(path)
@@ -48047,20 +48077,35 @@ func _toggle_sidebar(scene: PackedScene, module_name: String) -> void:
 		_open_sidebar(scene, module_name)
 
 func _open_sidebar(scene: PackedScene, module_name: String) -> void:
-	# 1. Clean up existing
+	# 1. Clean up existing content
 	for child in sidebar_content.get_children():
 		child.queue_free()
 	
 	# 2. Instance new module
 	if scene:
+		Loggie.msg("Instantiating Module: " + module_name).info()
+		
 		var instance = scene.instantiate()
-		instance.name = module_name # Tag for identification
+		instance.name = module_name
 		sidebar_content.add_child(instance)
 		
-		# Optional: Pass context if the module has a setup method
+		# Layout Safety
+		if instance is Control:
+			instance.visible = true
+			instance.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			instance.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		
+		# Context Injection
 		if instance.has_method("setup"):
 			instance.setup()
-	
+			
+		# [REMOVED] We no longer manually connect 'close_requested' here.
+		# The EventBus handles it now.
+				
+	else:
+		Loggie.msg("Sidebar scene is null for: " + module_name).error()
+		return
+
 	# 3. Animate Open
 	if sidebar_tween: sidebar_tween.kill()
 	sidebar_tween = create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
@@ -48721,13 +48766,26 @@ var is_dragging := false
 var start_pos := Vector2.ZERO
 var is_command_dragging := false
 var command_start_pos := Vector2.ZERO
+var is_placement_active: bool = false
 # ---------------------------
 
 func _ready() -> void:
 	# Allow unused mouse events (like Zoom) to pass to the Camera
 	# but DON'T consume mouse events here; let other UI handle them
+	EventBus.building_ready_for_placement.connect(func(_d): is_placement_active = true)
+	EventBus.building_placed.connect(func(_d): is_placement_active = false)
+	EventBus.building_placement_cancelled.connect(func(_d): is_placement_active = false)
 	mouse_filter = Control.MOUSE_FILTER_PASS
 
+func _unhandled_input(event: InputEvent) -> void:
+	# Always allow Pause checking here
+	if event.is_action_pressed("ui_cancel"):
+		PauseManager.toggle_pause()
+		return
+
+	# Guard Clause: Stop selection logic only if placing
+	if is_placement_active:
+		return
 
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
@@ -49386,7 +49444,7 @@ func _connect_signals() -> void:
 		EventBus.treasury_updated.connect(_on_treasury_updated)
 		EventBus.settlement_loaded.connect(func(_data): refresh_all())
 	else:
-		Loggie.msg("EventBus missing in TopBar").domain(Loggie.LogDomains.UI).error()
+		Loggie.msg("EventBus missing in TopBar").domain(LogDomains.UI).error()
 
 	# 2. Dynasty/Time Signals
 	if DynastyManager:
@@ -49961,9 +50019,9 @@ func _on_commit_pressed() -> void:
 			"wood": woodcutters,
 			"construction": builders
 		})
-		Loggie.msg("Allocation Committed").context("F:%d W:%d B:%d" % [farmers, woodcutters, builders]).info()
+		Loggie.msg("Allocation Committed" + ("F:%d W:%d B:%d" % [farmers, woodcutters, builders])).info()
 	else:
-		Loggie.msg("SettlementManager missing 'batch_update_labor'").domain(Loggie.LogDomains.UI).error()
+		Loggie.msg("SettlementManager missing 'batch_update_labor'").domain(LogDomains.UI).error()
 
 
 --------------------------------------------------
@@ -50106,10 +50164,10 @@ func _render_grid() -> void:
 func _on_building_clicked(b_data: Resource) -> void:
 	# NBLM Trap 2 Fix: Validate purchase here
 	if EconomyManager.attempt_purchase(b_data.build_cost):
-		Loggie.msg("Building Purchased").context(b_data.display_name).info()
+		Loggie.msg("Building Purchased" + (b_data.display_name) ).info()
 		EventBus.building_ready_for_placement.emit(b_data)
 	else:
-		Loggie.msg("Insufficient Funds").context(b_data.display_name).warn()
+		Loggie.msg("Insufficient Funds" + (b_data.display_name)).warn()
 		# Optional: Visual shake or audio cue
 
 func _format_cost(cost: Dictionary) -> String:
@@ -50675,7 +50733,7 @@ func setup(_args = null) -> void:
 			status_label.tooltip_text = "Draft Warbands in the Settlement before heading out."
 	else:
 		status_label.text = "Raid Manager Unavailable"
-		Loggie.msg("RaidManager singleton missing").domain(Loggie.LogDomains.UI).error()
+		Loggie.msg("RaidManager singleton missing").domain(LogDomains.UI).error()
 
 # ------------------------------------------------------------------------------
 # INTERNAL LOGIC
@@ -50687,7 +50745,7 @@ func _on_open_map_pressed() -> void:
 	if GameScenes:
 		EventBus.scene_change_requested.emit(GameScenes.WORLD_MAP)
 	else:
-		Loggie.msg("GameScenes singleton missing").domain(Loggie.LogDomains.UI).error()
+		Loggie.msg("GameScenes singleton missing").domain(LogDomains.UI).error()
 
 
 --------------------------------------------------
@@ -51326,7 +51384,7 @@ func setup(card: SeasonalCardResource, can_afford: bool = true) -> void:
 	if card.cost_ap > 0 or card.cost_gold > 0:
 		cost_container.show()
 		ap_cost_label.text = "AP: %d" % card.cost_ap
-		gold_cost_label.text = "Gold: %d"# Add gold label handling here if needed
+		gold_cost_label.text = "Gold: %d" % card.cost_gold# Add gold label handling here if needed
 	else:
 		cost_container.hide()
 	
@@ -53884,7 +53942,7 @@ Button/styles/pressed = SubResource("StyleBoxTexture_vt14t")
 HeaderLabel/colors/font_color = Color(0.16862746, 0.13333334, 0.105882354, 1)
 HeaderLabel/font_sizes/font_size = 24
 HeaderLabel/fonts/font = ExtResource("1_ox2i8")
-Label/colors/font_color = Color(1, 1, 1, 1)
+Label/colors/font_color = Color(0.98369485, 0.97662383, 0.9713195, 1)
 PanelContainer/styles/panel = SubResource("StyleBoxTexture_6ali3")
 ResourceLabel/colors/font_color = Color(0.9607843, 0.9019608, 0.827451, 1)
 ResourceLabel/font_sizes/font_size = 24

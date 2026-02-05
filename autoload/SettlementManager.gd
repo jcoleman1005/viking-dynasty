@@ -18,9 +18,27 @@ var current_settlement: SettlementData
 var active_map_data: SettlementData      
 
 # --- Scene Refs ---
-var active_building_container: Node2D = null
-var active_tilemap_layer: TileMapLayer = null # Critical for Custom Data lookups
+var _active_building_container_ref: WeakRef = weakref(null)
+var _active_tilemap_layer_ref: WeakRef = weakref(null)
 var pending_seasonal_recruits: Array[UnitData] = []
+
+# Public Accessors (API Compatibility)
+# These computed properties replace the old variables.
+# Code that types "SettlementManager.active_building_container" works exactly the same,
+# but now it performs a safety check every time it is accessed.
+var active_building_container: Node2D:
+	get:
+		var ref = _active_building_container_ref.get_ref()
+		if ref:
+			return ref
+		return null # Safely returns null if scene is freed
+
+var active_tilemap_layer: Node:
+	get:
+		var ref = _active_tilemap_layer_ref.get_ref()
+		if ref:
+			return ref
+		return null
 
 # --- Signals ---
 # (Assuming these exist based on previous context, inferred if not declared)
@@ -342,23 +360,31 @@ func _is_within_district_range(grid_pos: Vector2i, size: Vector2i, data: Economi
 
 func register_active_scene_nodes(container: Node2D) -> void:
 	Loggie.msg("SettlementManager: Registering container: %s" % container.name).domain(LogDomains.SETTLEMENT).info()
-	active_building_container = container
 	
-	# CRITICAL: Capture the TileMapLayer so is_tile_valid_for_placement can read Custom Data
+	# Store as WeakRef
+	_active_building_container_ref = weakref(container)
+
+	# CRITICAL: Capture the TileMapLayer safely
+	var found_layer = null
 	if container.get_parent() is TileMapLayer:
-		active_tilemap_layer = container.get_parent()
-		Loggie.msg("Active TileMapLayer captured for terrain validation.").domain(LogDomains.SETTLEMENT).info()
+		found_layer = container.get_parent()
 	elif container.get_parent().has_node("TileMapLayer"):
-		# Fallback if structure is different
-		active_tilemap_layer = container.get_parent().get_node("TileMapLayer")
+		found_layer = container.get_parent().get_node("TileMapLayer")
 	
+	if found_layer:
+		_active_tilemap_layer_ref = weakref(found_layer)
+		Loggie.msg("Active TileMapLayer captured for terrain validation.").domain(LogDomains.SETTLEMENT).info()
+	else:
+		Loggie.msg("No TileMapLayer found for SettlementManager.").domain(LogDomains.SETTLEMENT).warn()
+
+	# If we have data loaded (e.g. from save), rebuild the visuals immediately
 	if current_settlement:
 		reconstruct_buildings_from_data()
 
 func unregister_active_scene_nodes() -> void:
-	active_building_container = null
-	active_tilemap_layer = null
-
+	Loggie.msg("SettlementManager: Unregistering scene nodes").domain(LogDomains.SETTLEMENT).info()
+	_active_building_container_ref = weakref(null)
+	_active_tilemap_layer_ref = weakref(null)
 # --- PERSISTENCE ---
 
 func load_settlement(data: SettlementData) -> void:
