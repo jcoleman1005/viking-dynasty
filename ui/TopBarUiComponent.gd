@@ -1,4 +1,3 @@
-#res://ui/TopBarUiComponent.gd
 class_name TopBar
 extends PanelContainer
 
@@ -13,7 +12,7 @@ extends PanelContainer
 signal dynasty_view_requested
 
 # ------------------------------------------------------------------------------
-# UI REFERENCES (Unique Names for Scene Portability)
+# UI REFERENCES
 # ------------------------------------------------------------------------------
 
 # Identity Section
@@ -27,8 +26,16 @@ signal dynasty_view_requested
 @onready var wood_label: Label = %WoodLabel
 @onready var food_label: Label = %FoodLabel
 @onready var stone_label: Label = %StoneLabel
-@onready var pop_label: Label = %PeasantLabel
-@onready var thrall_label: Label = %ThrallLabel
+
+# Population Section (New Text-Based HUD)
+# Note: Paths derived from new .tscn structure. 
+# Recommend setting 'Access as Unique Name' in Scene dock for robustness if structure changes.
+@onready var villager_label: Label = $"MarginContainer/MainLayout/PopulationHUD/Labels and Icons/VillagerLabel"
+@onready var thrall_label: Label = $"MarginContainer/MainLayout/PopulationHUD/Labels and Icons/ThrallLabel"
+@onready var soldier_label: Label = $"MarginContainer/MainLayout/PopulationHUD/Labels and Icons/SoldierLabel"
+@onready var total_pop_label: Label = $"MarginContainer/MainLayout/PopulationHUD/HBoxContainer/TotalPopLabel"
+
+# Legacy Army Count (Keep reference if needed for tooltip or debug, otherwise ignore)
 @onready var unit_count_label: Label = %UnitCountLabel
 
 # ------------------------------------------------------------------------------
@@ -43,18 +50,20 @@ func _ready() -> void:
 	call_deferred("refresh_all")
 
 func _connect_signals() -> void:
-	# 1. Resource Signals (Legacy TreasuryHUD Pattern)
 	if EventBus:
+		# 1. Resource Signals
 		EventBus.treasury_updated.connect(_on_treasury_updated)
 		EventBus.settlement_loaded.connect(func(_data): refresh_all())
+		
+		# 2. Population Signals (NEW)
+		if EventBus.has_signal("population_changed"):
+			EventBus.population_changed.connect(_update_population_display)
 	else:
 		Loggie.msg("EventBus missing in TopBar").domain(LogDomains.UI).error()
 
-	# 2. Dynasty/Time Signals
+	# 3. Dynasty/Time Signals
 	if DynastyManager:
 		DynastyManager.year_ended.connect(refresh_all)
-		# Listen for jarl updates if a specific signal exists, otherwise rely on MainGameUI to trigger identity refreshes
-		# or the year_ended signal which often correlates with changes.
 
 func _connect_local_input() -> void:
 	if dynasty_button:
@@ -69,6 +78,7 @@ func refresh_all() -> void:
 	
 	_refresh_identity()
 	_refresh_treasury_from_manager()
+	_update_population_display()
 
 func refresh_identity(jarl_data: Resource = null) -> void:
 	if jarl_data:
@@ -78,8 +88,8 @@ func refresh_identity(jarl_data: Resource = null) -> void:
 
 func refresh_treasury(treasury_data: Dictionary) -> void:
 	_update_resource_labels(treasury_data)
-	# We also update population stats when treasury updates, as they are often linked
-	_update_population_stats()
+	# Treasury updates often correlate with purchase/drafting, so refresh pop too
+	_update_population_display()
 
 # ------------------------------------------------------------------------------
 # INTERNAL LOGIC
@@ -94,40 +104,55 @@ func _refresh_identity() -> void:
 func _refresh_treasury_from_manager() -> void:
 	if SettlementManager and SettlementManager.current_settlement:
 		_update_resource_labels(SettlementManager.current_settlement.treasury)
-		_update_population_stats()
 
 # --- Display Updaters ---
 
 func _update_identity_labels(jarl: Resource) -> void:
-	# Guard clauses for optional nodes
 	if jarl_label: jarl_label.text = jarl.display_name
 	if authority_label: authority_label.text = "Auth: %d" % jarl.current_authority
 	if renown_label: renown_label.text = "Renown: %d" % jarl.renown
 
 func _update_resource_labels(treasury: Dictionary) -> void:
-	# Uses GameResources constants for safety, defaults to 0
 	if gold_label: gold_label.text = "%d" % treasury.get(GameResources.GOLD, 0)
 	if wood_label: wood_label.text = "%d" % treasury.get(GameResources.WOOD, 0)
 	if food_label: food_label.text = "%d" % treasury.get(GameResources.FOOD, 0)
 	if stone_label: stone_label.text = "%d" % treasury.get(GameResources.STONE, 0)
 
-func _update_population_stats() -> void:
-	# Legacy Calculation Logic from TreasuryHUD
-	if not SettlementManager or not SettlementManager.current_settlement: return
+## NEW: Aggregates census data and updates the segmented labels
+func _update_population_display() -> void:
+	if not EconomyManager: return
+	
+	# Pull complete census (includes calculated soldier manpower)
+	var census = EconomyManager.get_population_census()
+	
+	# Extract Values
+	var peasants = census.get("peasants", {}).get("total", 0)
+	var thralls = census.get("thralls", {}).get("total", 0)
+	var soldiers = census.get("soldiers", {}).get("total", 0)
+	
+	# Calculate Total (or use EconomyManager.get_total_population_count())
+	var total = peasants + thralls + soldiers
+	
+	# Update Labels with Empty Space Handling (Dim if 0)
+	_update_count_label(villager_label, peasants)
+	_update_count_label(thrall_label, thralls)
+	_update_count_label(soldier_label, soldiers)
+	
+	# Update Total
+	if total_pop_label:
+		total_pop_label.text = "Total Population: %d" % total
 
-	# Army Count
-	if unit_count_label:
-		unit_count_label.text = "%d" % SettlementManager.current_settlement.warbands.size()
+## Helper to format and dim labels based on value
+func _update_count_label(lbl: Label, count: int) -> void:
+	if not lbl: return
 	
-	# Population Math
-	var idle_p = SettlementManager.get_idle_peasants()
-	var total_p = SettlementManager.current_settlement.population_peasants
-	var idle_t = SettlementManager.get_idle_thralls()
-	var total_t = SettlementManager.current_settlement.population_thralls
+	lbl.text = str(count)
 	
-	# Update Labels
-	if pop_label: pop_label.text = "%d/%d" % [idle_p, total_p]
-	if thrall_label: thrall_label.text = "%d/%d" % [idle_t, total_t]
+	# Visual Feedback: Dim the text if 0, Brighten if active
+	if count > 0:
+		lbl.modulate = Color(1, 1, 1, 1) # White
+	else:
+		lbl.modulate = Color(1, 1, 1, 0.5) # Gray/Dim
 
 # --- Signal Handlers ---
 

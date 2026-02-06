@@ -43,6 +43,7 @@ const BUILDING_PATHS = [
 
 var is_sidebar_open: bool = false
 var sidebar_tween: Tween
+var idle_worker_warning: ConfirmationDialog # NEW: Runtime generated dialog
 
 # ------------------------------------------------------------------------------
 # LIFECYCLE
@@ -56,8 +57,23 @@ func _ready() -> void:
 	
 	_connect_signals()
 	_setup_initial_state()
+	_setup_warning_dialog() # NEW
 	
 	Loggie.msg("MainGameUI initialized").domain(LogDomains.UI).info()
+
+func _setup_warning_dialog() -> void:
+	# Programmatically create the dialog so we don't depend on scene edits
+	idle_worker_warning = ConfirmationDialog.new()
+	idle_worker_warning.title = "Unassigned Workers"
+	idle_worker_warning.initial_position = Window.WINDOW_INITIAL_POSITION_CENTER_MAIN_WINDOW_SCREEN
+	idle_worker_warning.size = Vector2(400, 150)
+	
+	# Connect the "OK" button to the actual advancement
+	idle_worker_warning.confirmed.connect(func(): 
+		if DynastyManager: DynastyManager.advance_season()
+	)
+	
+	add_child(idle_worker_warning)
 
 func _connect_signals() -> void:
 	if EventBus:
@@ -181,11 +197,9 @@ func _scan_for_buildings() -> Array[Resource]:
 # EVENT HANDLERS (Season)
 # ------------------------------------------------------------------------------
 
-# FIX: Receive Context Payload
 func _on_season_changed_signal(_season_name: String, context: Dictionary) -> void:
 	_update_season_state(context)
 
-# FIX: Pass Context Payload
 func _update_season_state(context: Dictionary = {}) -> void:
 	if not DynastyManager: return
 	var current_season = DynastyManager.current_season
@@ -203,10 +217,30 @@ func _update_season_state(context: Dictionary = {}) -> void:
 	_update_center_view(current_season, context)
 	Loggie.msg("UI Season State Updated: " + str(current_season)).info()
 
+# MODIFIED: Intercepts the click to check for idle workers in Summer
 func _on_advance_season_clicked() -> void:
-	if DynastyManager: DynastyManager.advance_season()
+	if not DynastyManager: return
 
-# FIX: Inject Context into the Newborn UI
+	# 1. Harvest Safety Check (Only in Summer)
+	if DynastyManager.current_season == DynastyManager.Season.SUMMER:
+		var census = EconomyManager.get_population_census()
+		
+		var idle_peasants = census["peasants"]["idle"]
+		var idle_thralls = census["thralls"]["idle"]
+		var total_idle = idle_peasants + idle_thralls
+		
+		if total_idle > 0:
+			var msg = "You have %d idle workers (%d Peasants, %d Thralls).\n\n" % [total_idle, idle_peasants, idle_thralls]
+			msg += "Workers not assigned to buildings will produce NOTHING during the Autumn Harvest.\n\n"
+			msg += "Are you sure you want to end the Summer?"
+			
+			idle_worker_warning.dialog_text = msg
+			idle_worker_warning.popup_centered()
+			return # STOP execution here; wait for dialog confirmation
+
+	# 2. Proceed normally for other seasons or if no idles
+	DynastyManager.advance_season()
+
 func _update_center_view(season_enum: int, context: Dictionary) -> void:
 	if not center_view: return
 	for child in center_view.get_children(): child.queue_free()
