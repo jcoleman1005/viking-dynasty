@@ -1,3 +1,4 @@
+#res://autoload/SettlementManager.gd
 extends Node
 
 # --- Constants ---

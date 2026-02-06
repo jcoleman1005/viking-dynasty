@@ -1,3 +1,4 @@
+#res://tools/SettlementLayoutEditor.gd
 # SettlementLayoutEditor.gd
 # Tool to help create custom settlement layouts
 @tool

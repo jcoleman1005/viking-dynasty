@@ -1,3 +1,4 @@
+#res://test/integration/test_new_game_flow.gd
 # res://test/integration/test_new_game_flow.gd
 extends GutTest
 

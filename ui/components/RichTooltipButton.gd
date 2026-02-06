@@ -1,3 +1,4 @@
+#res://ui/components/RichTooltipButton.gd
 # res://ui/components/RichTooltipButton.gd
 class_name RichTooltipButton
 extends Button

@@ -1,3 +1,4 @@
+#res://scripts/buildings/SettlementBridge.gd
 # res://scripts/buildings/SettlementBridge.gd
 extends LevelBase
 

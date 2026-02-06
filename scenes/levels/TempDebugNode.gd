@@ -1,89 +1,62 @@
+class_name AutumnDebugger
 extends Node
 
-## Assign your TreasuryHUD node here in the Inspector!
-@export var hud_node: TreasuryHUD
-
-# Internal tracking
-var _previous_treasury: Dictionary = {}
+## Debugging Tool for the Autumn Ledger.
+## Checks if data exists to populate the Autumn UI.
 
 func _ready() -> void:
-	print("--- TREASURY WATCHDOG STARTED ---")
-	
-	if not hud_node:
-		Loggie.msg("DebugTracker: HUD Node not assigned! Cannot verify UI text.").domain(LogDomains.SYSTEM).error()
+	await get_tree().process_frame
+	run_diagnostics()
+
+func run_diagnostics() -> void:
+	print("\n=== 🕵️ AUTUMN DIAGNOSTICS REPORT ===")
+
+	# 1. Check if Settlement Exists
+	var settlement = SettlementManager.current_settlement
+	if not settlement:
+		print("❌ CRITICAL: No Settlement Loaded via SettlementManager.")
 		return
-
-	# Listen to key events
-	EventBus.season_changed.connect(_on_season_changed)
-	EventBus.treasury_updated.connect(_on_treasury_updated)
-	
-	# Snapshot initial state
-	if SettlementManager.current_settlement:
-		_previous_treasury = SettlementManager.current_settlement.treasury.duplicate()
-
-func _on_treasury_updated(_new_treasury: Dictionary) -> void:
-	# Wait one frame to let the UI update itself first
-	await get_tree().process_frame
-	_verify_ui_integrity()
-
-func _on_season_changed(new_season: String) -> void:
-	print("\n=== SEASON CHANGE DETECTED: %s ===" % new_season)
-	
-	if not SettlementManager.current_settlement: return
-	
-	var current = SettlementManager.current_settlement.treasury
-	
-	# 1. Calculate Delta (What actually changed?)
-	var delta_report = ""
-	for res in GameResources.ALL_CURRENCIES:
-		var old_val = _previous_treasury.get(res, 0)
-		var new_val = current.get(res, 0)
-		var diff = new_val - old_val
-		
-		if diff != 0:
-			delta_report += "%s: %+d  " % [res.capitalize(), diff]
-			
-	if delta_report == "":
-		print(">> Zero Economic Activity this season.")
 	else:
-		print(">> ACTUAL CHANGE: ", delta_report)
-	
-	# 2. Compare against Expected Forecast (Optional, creates deep insight)
-	# You can uncomment this if you suspect the Forecast is lying
-	# var forecast = EconomyManager.get_projected_income()
-	# print(">> FORECAST WAS: ", forecast)
+		print("✅ Settlement Loaded: ", settlement.resource_path)
+		print("   Treasury: ", settlement.treasury)
 
-	# 3. Snapshot for next season
-	_previous_treasury = current.duplicate()
-	
-	# 4. Final UI Check
-	await get_tree().process_frame
-	_verify_ui_integrity()
+	# 2. Check Forecast (Demand)
+	if EconomyManager.has_method("get_winter_forecast"):
+		var forecast = EconomyManager.get_winter_forecast()
+		print("✅ Winter Forecast (Demand): ", forecast)
+		if forecast.is_empty():
+			print("⚠️ WARNING: Forecast is empty. Labels will read 0.")
+	else:
+		print("❌ EconomyManager missing 'get_winter_forecast()'")
 
-func _verify_ui_integrity() -> void:
-	if not hud_node or not SettlementManager.current_settlement: return
+	# 3. Simulate Report Generation
+	# This mimics exactly what the UI does.
+	print("\n--- 📜 Test Report Generation ---")
+	var mock_context = _build_mock_context()
+	var report = AutumnReport.new()
+	report.init_from_context(mock_context)
 	
-	var data = SettlementManager.current_settlement.treasury
-	var discrepancies = 0
+	print("   Harvest Yield: ", report.harvest_yield)
+	print("   Winter Demand: ", report.winter_demand)
+	print("   Net Outcome: ", report.net_outcome)
 	
-	# Helper to clean label text (remove commas, currency symbols if you add them later)
-	var check_res = func(res_key: String, label: Label) -> void:
-		if not label: return
-		var ui_val = int(label.text.replace(",", ""))
-		var data_val = data.get(res_key, 0)
+	if report.harvest_yield == 0 and report.winter_demand == 0:
+		print("⚠️ ALARM: Both Yield and Demand are 0. The UI has nothing to show.")
+	
+	print("========================================\n")
+
+func _build_mock_context() -> Dictionary:
+	var ctx = {}
+	if SettlementManager.current_settlement:
+		ctx["treasury"] = SettlementManager.current_settlement.treasury.duplicate()
+	else:
+		ctx["treasury"] = {}
+	
+	if EconomyManager.has_method("get_winter_forecast"):
+		ctx["forecast"] = EconomyManager.get_winter_forecast()
+	else:
+		ctx["forecast"] = {}
 		
-		if ui_val != data_val:
-			printerr("!! MISMATCH %s !! Data: %d vs UI: %d" % [res_key.to_upper(), data_val, ui_val])
-			discrepancies += 1
-		else:
-			# Uncomment for verbose confirmation
-			# print("OK: %s (%d)" % [res_key, data_val])
-			pass
-
-	check_res.call(GameResources.GOLD, hud_node.gold_label)
-	check_res.call(GameResources.WOOD, hud_node.wood_label)
-	check_res.call(GameResources.FOOD, hud_node.food_label)
-	check_res.call(GameResources.STONE, hud_node.stone_label)
-	
-	if discrepancies == 0:
-		print(">> UI Integrity Check: PASSED (Synced)")
+	# Assume a fake harvest just to see if logic works
+	ctx["payout"] = {GameResources.FOOD: 100} 
+	return ctx

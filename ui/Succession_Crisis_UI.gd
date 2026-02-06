@@ -1,3 +1,4 @@
+#res://ui/Succession_Crisis_UI.gd
 # res://ui/Succession_Crisis_UI.gd
 extends CanvasLayer
 

@@ -1,3 +1,4 @@
+#res://ui/components/BuildingInspector.gd
 # res://ui/components/BuildingInspector.gd
 extends PanelContainer
 

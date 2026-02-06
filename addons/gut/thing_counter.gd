@@ -1,3 +1,4 @@
+#res://addons/gut/thing_counter.gd
 var things = {}
 
 func get_unique_count():

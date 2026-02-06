@@ -1,3 +1,4 @@
+#res://data/buildings/BuildingData.gd
 # res://data/buildings/BuildingData.gd
 class_name BuildingData
 extends Resource

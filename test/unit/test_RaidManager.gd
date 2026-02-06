@@ -1,3 +1,4 @@
+#res://test/unit/test_RaidManager.gd
 extends GutTest
 
 var raid_manager

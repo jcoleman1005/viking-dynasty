@@ -1,3 +1,4 @@
+#res://addons/gut/double_tools.gd
 var thepath = ''
 var subpath = ''
 var from_singleton = null

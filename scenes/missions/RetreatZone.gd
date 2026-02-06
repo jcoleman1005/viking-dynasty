@@ -1,3 +1,4 @@
+#res://scenes/missions/RetreatZone.gd
 # res://scenes/missions/RetreatZone.gd
 class_name RetreatZone
 extends Area2D

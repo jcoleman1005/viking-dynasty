@@ -1,3 +1,4 @@
+#res://addons/gut/version_conversion.gd
 class ConfigurationUpdater:
 	var EditorGlobals = load("res://addons/gut/gui/editor_globals.gd")
 

@@ -1,3 +1,4 @@
+#res://addons/loggie/tools/loggie_system_specs.gd
 @tool
 
 ## LoggieSystemSpecs is a helper class that defines various functions on how to access data about the local machine and its specs

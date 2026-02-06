@@ -1,3 +1,4 @@
+#res://data/buildings/EconomicBuildingData.gd
 # res://data/buildings/EconomicBuildingData.gd
 class_name EconomicBuildingData
 extends BuildingData

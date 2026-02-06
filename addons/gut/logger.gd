@@ -1,3 +1,4 @@
+#res://addons/gut/logger.gd
 var types = {
 	debug = 'debug',
 	deprecated = 'deprecated',

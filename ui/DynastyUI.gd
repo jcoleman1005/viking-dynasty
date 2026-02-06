@@ -1,3 +1,4 @@
+#res://ui/DynastyUI.gd
 # res://ui/DynastyUI.gd
 class_name DynastyUI
 extends PanelContainer

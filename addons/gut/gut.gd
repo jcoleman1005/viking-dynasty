@@ -1,3 +1,4 @@
+#res://addons/gut/gut.gd
 extends 'res://addons/gut/gut_to_move.gd'
 class_name GutMain
 ## The GUT brains.

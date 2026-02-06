@@ -1,3 +1,4 @@
+#res://addons/gut/gui/GutRunner.gd
 # ##############################################################################
 # This class joins together GUT, GUT Gui, GutConfig and is THE way to kick off a
 # run of a test suite.

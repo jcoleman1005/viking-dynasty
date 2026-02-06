@@ -1,3 +1,4 @@
+#res://test/unit/test_squad_math.gd
 # res://test/unit/test_squad_math.gd
 extends GutTestBase
 

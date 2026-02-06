@@ -1,17 +1,12 @@
 extends Control
-class_name WinterCourtUI
+
 
 ## WinterCourtUI - The Seasonal Workspace
 ##
 ## Organizes the Winter phase into three persistent strata:
-## 1. Burden (Deficits & Severity) - Read Only
+## 1. Burden (Deficits & Severity) - Live Calculation
 ## 2. Great Hall (Actions & Cards) - Interactive
 ## 3. Bloodline (Dynasty Context) - Read Only
-
-# ------------------------------------------------------------------------------
-# Dependencies
-# ------------------------------------------------------------------------------
-# Expected Singletons: WinterManager, DynastyManager, EventBus, Loggie, EconomyManager
 
 # ------------------------------------------------------------------------------
 # Configuration
@@ -49,7 +44,6 @@ var max_ap: int = 0
 # Lifecycle
 # ------------------------------------------------------------------------------
 func _ready() -> void:
-	# Default to hidden as this is a Phase-specific UI
 	visible = false
 	
 	# Connect internal signals
@@ -58,15 +52,16 @@ func _ready() -> void:
 	# Connect global signals
 	EventBus.hall_action_updated.connect(_on_ap_updated)
 	
+	# NEW: Listen for treasury updates to refresh the "Burden" stratum live
+	EventBus.treasury_updated.connect(_on_treasury_updated)
+	
 	# Listen for season changes to toggle visibility
-	# We check for the signal's existence for safety, assuming standard EventBus
 	if EventBus.has_signal("season_changed"):
 		EventBus.season_changed.connect(_on_season_changed)
 	elif EventBus.has_signal("winter_started"): 
-		# Fallback if specific signal is used instead of generic season change
-		EventBus.winter_started.connect(func(): _on_season_changed("Winter"))
+		EventBus.winter_started.connect(func(): _on_season_changed("Winter", {}))
 
-func _on_season_changed(new_season: String) -> void:
+func _on_season_changed(new_season: String, _context: Dictionary) -> void:
 	if new_season == "Winter":
 		show()
 		setup_winter_view()
@@ -75,10 +70,15 @@ func _on_season_changed(new_season: String) -> void:
 
 func _on_ap_updated(new_amount: int) -> void:
 	current_ap = new_amount
-	# Update label
 	_update_hall_ui()
-	# Update card interactivity (affordability may have changed)
 	_refresh_stratum_hall()
+
+# NEW: Refresh burden when resources change (e.g. Card Played -> Gain Food)
+func _on_treasury_updated(_new_treasury: Dictionary) -> void:
+	if visible:
+		_refresh_stratum_burden()
+		# Also refresh cards as affordability might have changed
+		_refresh_stratum_hall()
 
 # ------------------------------------------------------------------------------
 # Public API
@@ -89,56 +89,55 @@ func setup_winter_view() -> void:
 	
 	# 1. Fetch Jarl Context & Sync AP
 	var jarl: JarlData = DynastyManager.get_current_jarl()
-	
 	if jarl:
-		# TRUST THE MANAGER: We do not recalculate actions here. 
 		current_ap = jarl.current_hall_actions
 		max_ap = jarl.max_hall_actions
 	else:
 		current_ap = 0
 		max_ap = 0
 	
-	# 2. Refresh Strata
+	# 2. Refresh All Strata
 	_refresh_stratum_burden()
 	_refresh_stratum_bloodline()
 	_refresh_stratum_hall()
-	
-	# 3. Update Visuals
 	_update_hall_ui()
 
 # ------------------------------------------------------------------------------
-# STRATUM I: The Burden of Winter (Read-Only)
+# STRATUM I: The Burden of Winter (Live Calculation)
 # ------------------------------------------------------------------------------
 func _refresh_stratum_burden() -> void:
-	var report: Dictionary = WinterManager.winter_consumption_report
-	
-	# 1. Severity Display
-	# Use Enum for robust checking (Fallback to NORMAL = 1 if missing)
-	var severity_enum: int = report.get("severity_enum", 1) 
-	var severity_name: String = report.get("severity_name", "NORMAL")
-	
+	# 1. Severity (Still read from Manager as it is constant for the season)
+	# Fallback logic to prevent crashes if 'winter_consumption_report' is missing/empty
+	var severity_name = "NORMAL"
+	if WinterManager.has_method("get_severity_name"):
+		severity_name = WinterManager.get_severity_name()
+	elif "winter_consumption_report" in WinterManager and not WinterManager.winter_consumption_report.is_empty():
+		severity_name = WinterManager.winter_consumption_report.get("severity_name", "NORMAL")
+		
 	severity_label.text = "Winter Severity: %s" % severity_name
 	
-	# Color code severity using Manager constants if available, or implied logic
-	# Assuming WinterManager has the Enum: NORMAL=1, HARSH=2, MILD=0 (Example)
-	# Safest approach is to check the integer values we expect or the name
-	if severity_name == "HARSH": # Or WinterManager.WinterSeverity.HARSH
-		severity_label.modulate = Color.RED
-	elif severity_name == "MILD":
-		severity_label.modulate = Color.GREEN
-	else:
-		severity_label.modulate = Color.WHITE
+	if severity_name == "HARSH": severity_label.modulate = Color.RED
+	elif severity_name == "MILD": severity_label.modulate = Color.GREEN
+	else: severity_label.modulate = Color.WHITE
 
-	# 2. Deficit Visualization
-	# Clear previous
+	# 2. Deficit Visualization (FIX: Calculate LIVE based on Treasury vs Forecast)
 	for child in deficit_container.get_children():
 		child.queue_free()
 	
-	var food_deficit: int = report.get("food_deficit", 0)
-	var wood_deficit: int = report.get("wood_deficit", 0)
+	var treasury = SettlementManager.current_settlement.treasury
+	var forecast = EconomyManager.get_winter_forecast()
 	
-	# TRUST THE MANAGER: We do not calculate is_crisis_active locally.
-	# We only visualize the deficits provided by the report.
+	# Get Demand (Forecast)
+	var food_demand = forecast.get(GameResources.FOOD, 0)
+	var wood_demand = forecast.get(GameResources.WOOD, 0)
+	
+	# Get Supply (Treasury)
+	var food_stock = treasury.get(GameResources.FOOD, 0)
+	var wood_stock = treasury.get(GameResources.WOOD, 0)
+	
+	# Calculate Deficits (Demand - Supply)
+	var food_deficit = max(0, food_demand - food_stock)
+	var wood_deficit = max(0, wood_demand - wood_stock)
 	
 	if food_deficit > 0:
 		_add_burden_entry("Starvation Risk", "-%d Food" % food_deficit, Color.RED)
@@ -159,80 +158,60 @@ func _add_burden_entry(title: String, value: String, color: Color) -> void:
 # STRATUM II: The Great Hall (Interactive)
 # ------------------------------------------------------------------------------
 func _refresh_stratum_hall() -> void:
-	# Clean up existing cards
 	for child in cards_container.get_children():
 		child.queue_free()
 	
-	# SAFETY CHECK: Prevent runtime errors if prefab is missing
-	if not card_prefab:
-		Loggie.msg("WinterCourtUI: No card_prefab assigned!").domain(LogDomains.UI).warn()
-		return
+	if not card_prefab: return
 
-	# Instantiate Cards from the Exported Array
 	for card_data in available_court_cards:
 		var card_instance = card_prefab.instantiate()
 		cards_container.add_child(card_instance)
 		
-		# Check complete affordability (AP + Resources)
 		var can_afford = _can_afford(card_data)
 		
-		# Attempt to pass data to the card UI with affordability context
+		# Robust Setup Call
 		if card_instance.has_method("setup"):
-			# Assuming setup signature is setup(resource, is_clickable/can_afford)
 			card_instance.setup(card_data, can_afford)
 		elif "resource" in card_instance:
 			card_instance.resource = card_data
 			if "is_disabled" in card_instance:
 				card_instance.is_disabled = not can_afford
-		else:
-			Loggie.msg("WinterCourtUI: Card prefab missing 'setup()' or 'resource' property").domain(LogDomains.UI).error()
 			
-		# Connect interaction signal
 		if card_instance.has_signal("card_clicked"):
 			card_instance.card_clicked.connect(_on_card_clicked)
 
 func _can_afford(card: SeasonalCardResource) -> bool:
-	# 1. Check AP
 	if current_ap < card.cost_ap:
 		return false
 		
-	# 2. Check Resources via EconomyManager
 	var costs = {}
-	if card.cost_gold > 0: costs["gold"] = card.cost_gold
-	if card.cost_food > 0: costs["food"] = card.cost_food
-	# Note: SeasonalCardResource currently doesn't have cost_wood defined in provided snippets, 
-	# but if it did: if card.cost_wood > 0: costs["wood"] = card.cost_wood
+	if card.cost_gold > 0: costs[GameResources.GOLD] = card.cost_gold
+	if card.cost_food > 0: costs[GameResources.FOOD] = card.cost_food
 	
 	if not costs.is_empty():
-		# Ensure EconomyManager has this method (See Adjustment 2)
 		if EconomyManager.has_method("can_afford"):
 			return EconomyManager.can_afford(costs)
-		return false # Fail safe if manager is outdated
+		return false
 	
 	return true
 
 func _update_hall_ui() -> void:
 	action_points_label.text = "Dynastic Attention: %d / %d" % [current_ap, max_ap]
 	
-	# Update Button State based on Manager Truth
 	if WinterManager.winter_crisis_active:
 		end_winter_button.text = "Face the Crisis..."
-		end_winter_button.modulate = Color(1.0, 0.5, 0.5) # Reddish tint
+		end_winter_button.modulate = Color(1.0, 0.5, 0.5) 
 	else:
 		end_winter_button.text = "The Ice Melts..."
 		end_winter_button.modulate = Color.WHITE
 
 func _on_card_clicked(card: SeasonalCardResource) -> void:
-	# DELEGATION: Ask Manager to perform action.
-	# The Manager handles AP deduction, Resource granting, and Renown awards.
 	var success: bool = WinterManager.play_seasonal_card(card)
 	
 	if success:
 		Loggie.msg("Played Winter Card: %s" % card.display_name).domain(LogDomains.GAMEPLAY).info()
-		# UI refresh happens automatically via global signals 
-		# (EventBus.hall_action_updated -> _on_ap_updated)
 	else:
-		Loggie.msg("Failed to play card (Cost or State invalid)").domain(LogDomains.UI).warn()
+		Loggie.msg("Failed to play card").domain(LogDomains.UI).warn()
 
 # ------------------------------------------------------------------------------
 # STRATUM III: The Bloodline Thread (Read-Only)
@@ -246,10 +225,8 @@ func _refresh_stratum_bloodline() -> void:
 		heir_status_label.text = ""
 		return
 		
-	# 1. Jarl Details
 	jarl_name_label.text = "%s (Age %d)" % [jarl.display_name, jarl.age]
 	
-	# 2. Status Construction (Priority Order)
 	var status_text: String = "Vigorous"
 	var status_color: Color = Color.GREEN
 	
@@ -266,7 +243,6 @@ func _refresh_stratum_bloodline() -> void:
 	jarl_status_label.text = status_text
 	jarl_status_label.modulate = status_color
 	
-	# 3. Heir Context
 	var heir_count: int = jarl.get_available_heir_count()
 	if heir_count == 0:
 		heir_status_label.text = "Succession: DANGEROUS (No Heirs)"
@@ -284,11 +260,8 @@ func _refresh_stratum_bloodline() -> void:
 func _on_end_winter_pressed() -> void:
 	if WinterManager.winter_crisis_active:
 		Loggie.msg("Winter ended with unresolved crisis").domain(LogDomains.GAMEPLAY).warn()
-		# This would trigger the specific crisis resolution modal
+		# FIX: This signal now exists in EventBus
 		EventBus.winter_crisis_triggered.emit()
 	else:
 		Loggie.msg("Winter passed peacefully").domain(LogDomains.GAMEPLAY).info()
-		
-		# Request the WinterManager to close the phase. 
-		# WinterManager.end_winter_phase() calls DynastyManager.end_winter_cycle_complete() internally.
 		WinterManager.end_winter_phase()

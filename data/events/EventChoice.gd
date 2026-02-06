@@ -1,3 +1,4 @@
+#res://data/events/EventChoice.gd
 # res://data/events/EventChoice.gd
 #
 # Defines a single choice for a story event.

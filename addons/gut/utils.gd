@@ -1,3 +1,4 @@
+#res://addons/gut/utils.gd
 @tool
 class_name GutUtils
 extends Object

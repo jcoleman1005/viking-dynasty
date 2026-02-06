@@ -1,3 +1,4 @@
+#res://scripts/ai/DefenderAI.gd
 # res://scripts/ai/DefenderAI.gd
 class_name DefenderAI
 extends AttackAI

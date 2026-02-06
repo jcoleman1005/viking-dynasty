@@ -1,3 +1,4 @@
+#res://addons/gut/awaiter.gd
 extends Node
 
 class AwaitLogger:

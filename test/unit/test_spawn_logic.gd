@@ -1,3 +1,4 @@
+#res://test/unit/test_spawn_logic.gd
 extends GutTest
 
 var _manager_ref

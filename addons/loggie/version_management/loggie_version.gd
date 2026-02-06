@@ -1,3 +1,4 @@
+#res://addons/loggie/version_management/loggie_version.gd
 ## A utility class that helps with storing data about a Loggie Version and converting and comparing version strings.
 class_name LoggieVersion extends Resource
 

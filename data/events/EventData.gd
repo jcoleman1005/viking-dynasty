@@ -1,3 +1,4 @@
+#res://data/events/EventData.gd
 # res://data/events/EventData.gd
 #
 # Defines a single, self-contained story event.

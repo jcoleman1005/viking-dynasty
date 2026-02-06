@@ -1,3 +1,4 @@
+#res://test/integration/test_escort_cycle.gd
 extends GutTestBase
 
 var leader: SquadLeader

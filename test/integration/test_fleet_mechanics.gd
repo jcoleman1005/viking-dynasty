@@ -1,3 +1,4 @@
+#res://test/integration/test_fleet_mechanics.gd
 # res://test/integration/test_fleet_mechanics.gd
 extends GutTestBase
 

@@ -1,3 +1,4 @@
+#res://addons/gut/gui/GutEditorWindow.gd
 @tool
 extends Window
 

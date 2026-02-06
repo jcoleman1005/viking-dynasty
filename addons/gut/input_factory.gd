@@ -1,3 +1,4 @@
+#res://addons/gut/input_factory.gd
 class_name GutInputFactory
 ## Static class full of helper methods to make InputEvent instances.
 ##

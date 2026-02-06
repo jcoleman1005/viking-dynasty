@@ -1,3 +1,4 @@
+#res://data/settlements/SettlementData.gd
 # res://data/settlements/SettlementData.gd
 extends Resource
 class_name SettlementData

@@ -1,3 +1,4 @@
+#res://addons/loggie/tools/loggie_enums.gd
 @tool
 class_name LoggieEnums extends Node
 

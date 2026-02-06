@@ -1,3 +1,4 @@
+#res://data/world_map/WorldRegionData.gd
 # res://data/world_map/WorldRegionData.gd
 class_name WorldRegionData
 extends Resource

@@ -1,3 +1,4 @@
+#res://addons/gut/cli/gut_cli.gd
 extends Node
 
 var Optparse = load('res://addons/gut/cli/optparse.gd')

@@ -1,3 +1,4 @@
+#res://addons/gut/gut_tracked_error.gd
 class_name GutTrackedError
 ## This contains all the information provided by Godot about an error.
 ## This is also used to represent a GUT error.  See [Logger] for

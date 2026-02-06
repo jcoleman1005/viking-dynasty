@@ -1,3 +1,4 @@
+#res://scripts/formations/SquadFormation.gd
 # res://scripts/formations/SquadFormation.gd
 # Squad Formation Manager - Company of Heroes style formations
 # Handles formation positioning and movement for multiple units

@@ -1,3 +1,4 @@
+#res://addons/loggie/version_management/update_prompt_window.gd
 @tool
 ## The Loggie Update Prompt is a control node that is meant to be created and added as a child of some other node, most commonly a [Window].
 ## It connects to a [LoggieUpdate] via its [method connect_to_update] method, then displays data about that update depending on what kind of

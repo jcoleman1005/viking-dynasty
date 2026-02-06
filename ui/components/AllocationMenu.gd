@@ -1,3 +1,4 @@
+#res://ui/components/AllocationMenu.gd
 class_name AllocationMenu
 extends MarginContainer
 

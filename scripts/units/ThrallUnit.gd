@@ -1,3 +1,4 @@
+#res://scripts/units/ThrallUnit.gd
 class_name ThrallUnit
 extends BaseUnit
 

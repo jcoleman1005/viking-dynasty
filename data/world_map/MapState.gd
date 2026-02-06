@@ -1,3 +1,4 @@
+#res://data/world_map/MapState.gd
 # res://data/world_map/MapState.gd
 class_name MapState
 extends Resource

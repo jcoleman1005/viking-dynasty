@@ -1,3 +1,4 @@
+#res://addons/gut/script_parser.gd
 # These methods didn't have flags that would exclude them from being used
 # in a double and they appear to break things if they are included.
 const BLACKLIST = [

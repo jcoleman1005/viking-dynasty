@@ -1,3 +1,4 @@
+#res://addons/gut/stub_params.gd
 var _is_return_override = false
 var _is_defaults_override = false
 var _is_call_override = false

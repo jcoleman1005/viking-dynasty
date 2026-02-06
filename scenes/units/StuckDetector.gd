@@ -1,3 +1,4 @@
+#res://scenes/units/StuckDetector.gd
 extends Node
 
 # --- CONFIG ---

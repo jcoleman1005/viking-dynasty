@@ -1,3 +1,4 @@
+#res://ui/components/BuildingInfoHUD.gd
 # res://ui/components/BuildingInfoHUD.gd
 extends Control
 class_name BuildingInfoHUD

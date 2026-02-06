@@ -1,3 +1,4 @@
+#res://data/units/WarbandData.gd
 # res://data/units/WarbandData.gd
 class_name WarbandData
 extends Resource

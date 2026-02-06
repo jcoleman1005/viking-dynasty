@@ -1,4 +1,3 @@
-#DynastyManager.gd
 extends Node
 
 signal jarl_stats_updated(jarl_data: JarlData)
@@ -41,27 +40,31 @@ func advance_season() -> void:
 			start_winter_cycle() 
 		Season.WINTER:
 			end_winter_cycle_complete()
-	
 
+## The Core Orchestrator for changing seasons.
+## Now handles the "Data Handshake" for the UI by bundling context.
 func _transition_to_season(new_season: Season) -> void:
 	current_season = new_season
 	var names = ["Spring", "Summer", "Autumn", "Winter"]
 	var s_name = names[current_season]
 	
-	Loggie.msg("Season Advanced to: %s" % s_name).domain(LogDomains.DYNASTY).info()
-	EventBus.season_changed.emit(s_name)
+	# FIX: Removed .data() call, using string formatting instead
+	Loggie.msg("Season Advancing to: %s..." % s_name).domain(LogDomains.DYNASTY).info()
 	
 	# --- ORCHESTRATION: The Game Loop ---
 	
 	# 1. Labor (Construction)
-	# Called explicitly here because EconomyManager is now decoupled
+	# Processed first so buildings complete before resources are calculated/consumed.
 	if SettlementManager.has_method("process_construction_labor"):
 		SettlementManager.process_construction_labor()
 	
-	# 2. Economy & Payout
+	# 2. Economy & Payout (THE SOURCE OF TRUTH)
+	# We calculate and APPLY the payout first. This ensures SettlementManager's treasury
+	# reflects the new state (e.g., Harvest added) before we snapshot it.
 	var payout_report = EconomyManager.calculate_seasonal_payout(s_name)
 	
-	# 3. Winter Specifics (Hunger)
+	# 3. Winter Specifics (Hunger Check)
+	# We process this now so any starvation warnings are included in the context.
 	if s_name == "Winter":
 		if SettlementManager.has_method("process_warband_hunger"):
 			var warnings = SettlementManager.process_warband_hunger()
@@ -69,11 +72,34 @@ func _transition_to_season(new_season: Season) -> void:
 				if not payout_report.has("_messages"): payout_report["_messages"] = []
 				payout_report["_messages"].append_array(warnings)
 	
-	# 4. Save State (Orchestrator Responsibility)
+	# 4. Save State
 	if SettlementManager.has_method("save_settlement"):
 		SettlementManager.save_settlement()
+		
+	# 5. ASSEMBLE CONTEXT PAYLOAD (The Fix)
+	# This dictionary provides the "Immutable Context" for UI reports.
+	var context_data: Dictionary = {}
 	
-	# 5. Display Feedback
+	# A. Payout Data (What just happened)
+	context_data["payout"] = payout_report
+	
+	# B. Treasury Snapshot (Current State)
+	if SettlementManager.current_settlement and "treasury" in SettlementManager.current_settlement:
+		context_data["treasury"] = SettlementManager.current_settlement.treasury.duplicate()
+	else:
+		context_data["treasury"] = {}
+		
+	# C. Forecast Data (Projected Future)
+	# Crucial for the Autumn Report to show "Winter Demand".
+	if EconomyManager.has_method("get_winter_forecast"):
+		context_data["forecast"] = EconomyManager.get_winter_forecast()
+	
+	# 6. EMIT SIGNAL (Now carries the payload)
+	# The AutumnLedgerUI listens to this. It will grab 'payout' and 'forecast' 
+	# to build the AutumnReport resource.
+	EventBus.season_changed.emit(s_name, context_data)
+	
+	# 7. Legacy Feedback (Floating Text)
 	_display_seasonal_feedback(s_name, payout_report)
 
 func _display_seasonal_feedback(season_name: String, payout: Dictionary) -> void:
@@ -117,8 +143,6 @@ func get_current_season_name() -> String:
 func aggregate_card_effects(card: SeasonalCardResource) -> void:
 	if not card: return
 	
-	# 1. Map Explicit Inspector Variables (The "Main" Stats)
-	# We map these manually to keep the nice sliders in the Inspector working.
 	if "mod_unit_damage" in card:
 		active_year_modifiers["mod_unit_damage"] = active_year_modifiers.get("mod_unit_damage", 0.0) + card.mod_unit_damage
 	if "mod_raid_xp" in card:
@@ -128,29 +152,25 @@ func aggregate_card_effects(card: SeasonalCardResource) -> void:
 	if "mod_harvest_yield" in card:
 		active_year_modifiers["mod_harvest_yield"] = active_year_modifiers.get("mod_harvest_yield", 0.0) + card.mod_harvest_yield
 		
-	# 2. Map Dynamic Dictionary (The "Custom" Stats)
-	# This enables you to add ANY modifier in the Inspector via a 'modifiers' dictionary on the card
-	# without editing this script.
 	if "modifiers" in card and card.modifiers is Dictionary:
 		for key in card.modifiers:
 			var value = card.modifiers[key]
 			if value is float or value is int:
 				active_year_modifiers[key] = active_year_modifiers.get(key, 0.0) + value
 	
-	Loggie.msg("DynastyManager: Aggregated effects from '%s'. New Stats: %s" % [card.display_name, active_year_modifiers]).domain(LogDomains.DYNASTY).debug()
+	# FIX: Removed .data() call, using string formatting instead
+	Loggie.msg("DynastyManager: Aggregated effects from '%s'." % card.display_name).domain(LogDomains.DYNASTY).debug()
 
 ## Resets all seasonal modifiers. Called at the end of the Winter Cycle (start of Spring).
 func reset_year_stats() -> void:
-	# We clear and re-initialize to ensure we don't keep stale dynamic keys forever
 	active_year_modifiers.clear()
-	
-	# Re-init defaults (Optional, but good for autocomplete consistency if using typed dicts elsewhere)
 	active_year_modifiers["mod_unit_damage"] = 0.0
 	active_year_modifiers["mod_raid_xp"] = 0.0
 	active_year_modifiers["mod_birth_chance"] = 0.0
 	active_year_modifiers["mod_harvest_yield"] = 0.0
 	
 	Loggie.msg("DynastyManager: Year stats reset for new cycle.").domain(LogDomains.DYNASTY).info()
+
 # --- EXISTING LOGIC ---
 
 func _load_game_data() -> void:
@@ -170,7 +190,8 @@ func _load_game_data() -> void:
 	jarl_stats_updated.emit(current_jarl)
 	
 	current_season = Season.SPRING
-	EventBus.season_changed.emit("Spring")
+	# Initial emit on load. Context is empty as no payout occurred.
+	EventBus.season_changed.emit("Spring", {})
 
 func start_new_campaign() -> void:
 	Loggie.msg("DynastyManager: Starting NEW CAMPAIGN...").domain(LogDomains.DYNASTY).warn()
@@ -184,7 +205,6 @@ func start_new_campaign() -> void:
 	_save_jarl_data()
 	
 	current_season = Season.SPRING
-	
 	jarl_stats_updated.emit(current_jarl)
 
 func _load_legacy_upgrades_from_disk() -> void:
@@ -347,7 +367,7 @@ func end_winter_cycle_complete() -> void:
 	current_jarl.reset_authority()
 	active_year_modifiers.clear()
 	
-	# Calculate Economy
+	# Calculate Economy (Winter End Payout)
 	var payout_report = EconomyManager.calculate_seasonal_payout("Winter")
 	
 	# Winter specific feedback
@@ -359,6 +379,8 @@ func end_winter_cycle_complete() -> void:
 	
 	_save_jarl_data()
 	
+	# Transition to SPRING. 
+	# Note: This will trigger _transition_to_season("Spring"), calculating Spring payout (if any).
 	_transition_to_season(Season.SPRING)
 	
 	jarl_stats_updated.emit(current_jarl)
@@ -512,11 +534,7 @@ func apply_year_modifier(key: String) -> void:
 		return
 		
 	active_year_modifiers[key] = true
-	
-	Loggie.msg("Year Modifier Applied").domain(LogDomains.GAMEPLAY).data("key", key).info()
-	
-	# Optional: Emit update if UI needs to show icons elsewhere
-	#EventBus.modifiers_updated.emit(active_year_modifiers)
+	Loggie.msg("Year Modifier Applied: %s" % key).domain(LogDomains.GAMEPLAY).info()
 
 func _generate_oath_name() -> String:
 	var names = ["Red", "Bold", "Young", "Wild", "Sworn", "Lucky"]

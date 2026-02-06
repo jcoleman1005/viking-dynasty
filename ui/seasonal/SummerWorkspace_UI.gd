@@ -1,3 +1,4 @@
+#res://ui/seasonal/SummerWorkspace_UI.gd
 extends Control
 class_name SummerWorkspace_UI
 
@@ -290,7 +291,7 @@ func _on_treasury_updated(new_treasury: Dictionary) -> void:
 func _on_population_changed() -> void:
 	if visible: _initial_refresh()
 
-func _on_season_changed(new_season: String) -> void:
+func _on_season_changed(new_season: String, _context: Dictionary) -> void:
 	if new_season == "Summer": _activate_summer_ui()
 	else: visible = false
 

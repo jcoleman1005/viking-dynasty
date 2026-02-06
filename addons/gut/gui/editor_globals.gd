@@ -1,3 +1,4 @@
+#res://addons/gut/gui/editor_globals.gd
 @tool
 
 static var GutUserPreferences = load("res://addons/gut/gui/gut_user_preferences.gd")

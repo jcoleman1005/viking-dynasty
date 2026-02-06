@@ -1,3 +1,4 @@
+#res://addons/gut/comparator.gd
 var _strutils = GutUtils.Strutils.new()
 var _max_length = 100
 var _should_compare_int_to_float = true

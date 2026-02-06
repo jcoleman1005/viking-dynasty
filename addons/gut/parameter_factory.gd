@@ -1,3 +1,4 @@
+#res://addons/gut/parameter_factory.gd
 ## Creates parameter structures for parameterized tests.
 ##
 ## This is a static class accessible in a [GutTest] script through

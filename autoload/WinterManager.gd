@@ -1,3 +1,4 @@
+#res://autoload/WinterManager.gd
 # res://autoload/WinterManager.gd
 extends Node
 

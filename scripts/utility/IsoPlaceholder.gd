@@ -1,3 +1,4 @@
+#res://scripts/utility/IsoPlaceholder.gd
 @tool
 class_name IsoPlaceholder
 extends Node2D

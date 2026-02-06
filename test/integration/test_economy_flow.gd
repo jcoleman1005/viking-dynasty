@@ -1,3 +1,4 @@
+#res://test/integration/test_economy_flow.gd
 # res://test/integration/test_economy_flow.gd
 extends GutTestBase
 

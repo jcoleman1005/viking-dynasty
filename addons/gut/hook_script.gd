@@ -1,3 +1,4 @@
+#res://addons/gut/hook_script.gd
 class_name GutHookScript
 ## This script is the base for custom scripts to be used in pre and post
 ## run hooks.

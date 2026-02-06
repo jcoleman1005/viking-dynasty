@@ -1,3 +1,4 @@
+#res://addons/gut/gui/RunExternally.gd
 @tool
 extends Control
 

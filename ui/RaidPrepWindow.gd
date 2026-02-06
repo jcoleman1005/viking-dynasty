@@ -1,3 +1,4 @@
+#res://ui/RaidPrepWindow.gd
 # res://ui/RaidPrepWindow.gd
 class_name RaidPrepWindow
 extends PanelContainer

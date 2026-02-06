@@ -1,3 +1,4 @@
+#res://scripts/units/Base_Unit.gd
 # res://scripts/units/Base_Unit.gd
 class_name BaseUnit
 extends CharacterBody2D

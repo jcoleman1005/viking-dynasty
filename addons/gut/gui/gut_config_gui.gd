@@ -1,3 +1,4 @@
+#res://addons/gut/gui/gut_config_gui.gd
 var PanelControls = load("res://addons/gut/gui/panel_controls.gd")
 var GutConfig = load('res://addons/gut/gut_config.gd')
 

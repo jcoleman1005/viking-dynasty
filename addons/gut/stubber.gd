@@ -1,3 +1,4 @@
+#res://addons/gut/stubber.gd
 
 static var _class_db_name_hash = {} :
 	get():

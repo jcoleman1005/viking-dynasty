@@ -1,3 +1,4 @@
+#res://tools/EnemyBaseEditor.gd
 @tool
 extends EditorScript
 

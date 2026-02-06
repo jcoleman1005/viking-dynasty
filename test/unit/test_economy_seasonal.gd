@@ -1,3 +1,4 @@
+#res://test/unit/test_economy_seasonal.gd
 extends GutTest
 
 const TEMP_BUILDING_PATH = "user://temp_test_eco_building.tres"

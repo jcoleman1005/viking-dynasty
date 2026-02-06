@@ -1,3 +1,4 @@
+#res://ui/seasonal/SummerAllocation_UI.gd
 extends Control
 
 ## SummerAllocation_UI

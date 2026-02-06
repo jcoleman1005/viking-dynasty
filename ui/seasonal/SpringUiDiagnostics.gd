@@ -1,3 +1,4 @@
+#res://ui/seasonal/SpringUiDiagnostics.gd
 extends Node
 class_name SpringUIDiagnostic
 
@@ -78,7 +79,7 @@ func _on_card_spawned(node: Node) -> void:
 
 func _hook_global_signals() -> void:
 	# Monitor Season Changes
-	EventBus.season_changed.connect(func(s): _log_info("Season Changed Signal Received: %s" % s))
+	EventBus.season_changed.connect(func(s, _d): _log_info("Season Changed Signal Received: %s" % s))
 	
 	# Monitor the Output Signal
 	EventBus.advance_season_requested.connect(func(): _log_info(">> OUTPUT: Advance Season Requested (Commit Successful)"))

@@ -1,3 +1,4 @@
+#res://scripts/ui/BuildingPreviewCursor.gd
 extends Node2D
 class_name BuildingPreviewCursor
 

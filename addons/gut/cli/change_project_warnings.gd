@@ -1,3 +1,4 @@
+#res://addons/gut/cli/change_project_warnings.gd
 extends SceneTree
 
 var Optparse = load('res://addons/gut/cli/optparse.gd')

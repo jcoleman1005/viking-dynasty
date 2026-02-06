@@ -1,3 +1,4 @@
+#res://ui/seasonal/SpringCouncil_UI.gd
 class_name SpringCouncil_UI
 extends Control
 
@@ -31,7 +32,7 @@ func _ready() -> void:
 	
 	get_tree().create_timer(5.0).timeout.connect(_on_diagnostic_timeout)
 
-func _on_season_changed(season_name: String) -> void:
+func _on_season_changed(season_name: String, context) -> void:
 	if season_name.to_lower() == "spring":
 		_activate_spring_ui()
 	else:

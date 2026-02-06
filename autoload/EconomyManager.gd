@@ -1,3 +1,4 @@
+#res://autoload/EconomyManager.gd
 extends Node
 
 # --- EFFICIENCY CONSTANTS ---

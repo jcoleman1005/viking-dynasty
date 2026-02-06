@@ -1,3 +1,4 @@
+#res://scripts/ai/UnitFSM.gd
 extends Node
 class_name UnitFSM
 

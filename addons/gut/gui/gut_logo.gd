@@ -1,3 +1,4 @@
+#res://addons/gut/gui/gut_logo.gd
 @tool
 extends Node2D
 

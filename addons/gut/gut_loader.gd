@@ -1,3 +1,4 @@
+#res://addons/gut/gut_loader.gd
 # ------------------------------------------------------------------------------
 # This script should be loaded as soon as possible when running tests.  This
 # will disable warnings and then load all scripts that are registered with the

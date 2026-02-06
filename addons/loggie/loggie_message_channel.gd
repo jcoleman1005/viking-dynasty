@@ -1,3 +1,4 @@
+#res://addons/loggie/loggie_message_channel.gd
 @tool
 
 ## A class that describes a channel that can be used to output Loggie Messages.

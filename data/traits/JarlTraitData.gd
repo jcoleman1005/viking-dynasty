@@ -1,3 +1,4 @@
+#res://data/traits/JarlTraitData.gd
 # res://data/traits/JarlTraitData.gd
 #
 # This resource defines the statistical and diplomatic impact of a single trait.

@@ -1,3 +1,4 @@
+#res://ui/seasonal/SummerDiagnostics.gd
 extends Node
 class_name SummerUIDiagnostic
 

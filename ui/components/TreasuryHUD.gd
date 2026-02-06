@@ -1,3 +1,4 @@
+#res://ui/components/TreasuryHUD.gd
 class_name TreasuryHUD
 extends PanelContainer
 

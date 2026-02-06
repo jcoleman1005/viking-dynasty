@@ -1,3 +1,4 @@
+#res://scenes/components/AttackAI.gd
 # res://scenes/components/AttackAI.gd
 class_name AttackAI
 extends Node2D

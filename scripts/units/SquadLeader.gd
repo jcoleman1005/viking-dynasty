@@ -1,3 +1,4 @@
+#res://scripts/units/SquadLeader.gd
 class_name SquadLeader
 extends BaseUnit
 

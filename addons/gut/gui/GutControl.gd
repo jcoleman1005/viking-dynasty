@@ -1,3 +1,4 @@
+#res://addons/gut/gui/GutControl.gd
 @tool
 extends Control
 

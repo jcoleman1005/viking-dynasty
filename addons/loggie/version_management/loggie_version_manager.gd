@@ -1,3 +1,4 @@
+#res://addons/loggie/version_management/loggie_version_manager.gd
 @tool
 ## A class that can be used to inquire about, generate, and operate on [LoggieVersion]s. 
 ## It is also responsible for notifying about an available update, and starting it, if configured to do so.

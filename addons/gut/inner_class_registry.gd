@@ -1,3 +1,4 @@
+#res://addons/gut/inner_class_registry.gd
 var _registry = {}
 
 

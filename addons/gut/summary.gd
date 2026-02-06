@@ -1,3 +1,4 @@
+#res://addons/gut/summary.gd
 # ------------------------------------------------------------------------------
 # Prints things, mostly.  Knows too much about gut.gd, but it's only supposed to
 # work with gut.gd, so I'm fine with that.

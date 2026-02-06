@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://c6b0qegdltxvw"]
+[gd_scene load_steps=4 format=3 uid="uid://c6b0qegdltxvw"]
 
 [ext_resource type="Script" uid="uid://ckmn1a1rkmohv" path="res://ui/seasonal/AutumnLedgerUi.gd" id="1_xs5d6"]
 [ext_resource type="Texture2D" uid="uid://dy8bikbul4bne" path="res://ui/assets/scroll_bg.png" id="2_iyrqy"]
+[ext_resource type="Script" uid="uid://dj8tqequ1qfd3" path="res://ui/seasonal/Debugger.gd" id="3_7rwrs"]
 
 [node name="AutumnLedgerUI" type="Control"]
 layout_mode = 3
@@ -13,6 +14,7 @@ grow_vertical = 2
 script = ExtResource("1_xs5d6")
 
 [node name="ParchmentBackground" type="TextureRect" parent="."]
+modulate = Color(0.306923, 0.306923, 0.306923, 0.717647)
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -56,6 +58,7 @@ horizontal_alignment = 1
 layout_mode = 2
 
 [node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 350)
 layout_mode = 2
 size_flags_vertical = 3
 
@@ -76,12 +79,14 @@ stretch_mode = 5
 [node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/FoodRow"]
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
+theme_override_font_sizes/font_size = 32
 text = "Food Stores"
 
 [node name="FoodStock" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/FoodRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 32
 text = "0 / 0"
 horizontal_alignment = 1
 
@@ -89,10 +94,12 @@ horizontal_alignment = 1
 unique_name_in_owner = true
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
+theme_override_font_sizes/font_size = 32
 text = "[ STATUS ]"
 horizontal_alignment = 2
 
 [node name="WoodRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer"]
+z_index = 1
 layout_mode = 2
 
 [node name="Icon" type="TextureRect" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/WoodRow"]
@@ -104,12 +111,14 @@ stretch_mode = 5
 [node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/WoodRow"]
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
+theme_override_font_sizes/font_size = 32
 text = "Wood/Fuel"
 
 [node name="WoodStock" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/WoodRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 32
 text = "0 / 0"
 horizontal_alignment = 1
 
@@ -117,6 +126,7 @@ horizontal_alignment = 1
 unique_name_in_owner = true
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
+theme_override_font_sizes/font_size = 32
 text = "[ STATUS ]"
 horizontal_alignment = 2
 
@@ -138,3 +148,7 @@ custom_minimum_size = Vector2(300, 60)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Sign and Seal Ledger"
+
+[node name="Debugger" type="Control" parent="."]
+anchors_preset = 0
+script = ExtResource("3_7rwrs")

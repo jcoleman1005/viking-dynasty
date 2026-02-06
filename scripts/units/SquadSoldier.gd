@@ -1,3 +1,4 @@
+#res://scripts/units/SquadSoldier.gd
 ## SquadSoldier handles specialized formation movement while delegating 
 ## core physics and avoidance to BaseUnit.
 class_name SquadSoldier

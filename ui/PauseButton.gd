@@ -1,3 +1,4 @@
+#res://ui/PauseButton.gd
 # res://ui/PauseButton.gd
 extends Button
 

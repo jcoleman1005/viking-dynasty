@@ -1,3 +1,4 @@
+#res://scenes/missions/RaidObjectiveManager.gd
 # res://scenes/missions/RaidObjectiveManager.gd
 extends Node
 class_name RaidObjectiveManager

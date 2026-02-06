@@ -1,3 +1,4 @@
+#res://addons/gut/gut_vscode_debugger.gd
 # ------------------------------------------------------------------------------
 # Entry point for using the debugger through VSCode.  The gut-extension for
 # VSCode launches this instead of gut_cmdln.gd when running tests through the

@@ -1,3 +1,4 @@
+#res://autoload/RaidManager.gd
 extends Node
 
 # Signal emitted when a raid calculation completes or state changes

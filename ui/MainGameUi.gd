@@ -83,7 +83,8 @@ func _connect_signals() -> void:
 		top_bar.dynasty_view_requested.connect(_on_dynasty_view_requested)
 
 func _setup_initial_state() -> void:
-	_update_season_state()
+	# Initial setup usually lacks context data (game load), pass empty dict
+	_update_season_state({})
 	if top_bar and top_bar.has_method("refresh_all"):
 		top_bar.refresh_all()
 	
@@ -133,9 +134,6 @@ func _open_sidebar(scene: PackedScene, module_name: String) -> void:
 		if instance.has_method("setup"):
 			instance.setup()
 			
-		# [REMOVED] We no longer manually connect 'close_requested' here.
-		# The EventBus handles it now.
-				
 	else:
 		Loggie.msg("Sidebar scene is null for: " + module_name).error()
 		return
@@ -156,7 +154,6 @@ func _close_sidebar() -> void:
 	sidebar_tween = create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
 	sidebar_tween.tween_property(sidebar_panel, "position:x", target_x, 0.3)
 	
-	# Clean up logic could happen after tween, but keeping it simple for now
 	is_sidebar_open = false
 
 # ------------------------------------------------------------------------------
@@ -184,10 +181,12 @@ func _scan_for_buildings() -> Array[Resource]:
 # EVENT HANDLERS (Season)
 # ------------------------------------------------------------------------------
 
-func _on_season_changed_signal(_season_name: String) -> void:
-	_update_season_state()
+# FIX: Receive Context Payload
+func _on_season_changed_signal(_season_name: String, context: Dictionary) -> void:
+	_update_season_state(context)
 
-func _update_season_state() -> void:
+# FIX: Pass Context Payload
+func _update_season_state(context: Dictionary = {}) -> void:
 	if not DynastyManager: return
 	var current_season = DynastyManager.current_season
 	var is_summer = (current_season == DynastyManager.Season.SUMMER)
@@ -201,23 +200,38 @@ func _update_season_state() -> void:
 			DynastyManager.Season.AUTUMN: season_advance_btn.text = "End Harvest"
 			DynastyManager.Season.WINTER: season_advance_btn.text = "End Year"
 
-	_update_center_view(current_season)
+	_update_center_view(current_season, context)
 	Loggie.msg("UI Season State Updated: " + str(current_season)).info()
 
 func _on_advance_season_clicked() -> void:
 	if DynastyManager: DynastyManager.advance_season()
 
-func _update_center_view(season_enum: int) -> void:
+# FIX: Inject Context into the Newborn UI
+func _update_center_view(season_enum: int, context: Dictionary) -> void:
 	if not center_view: return
 	for child in center_view.get_children(): child.queue_free()
 	
 	var scene_to_load: PackedScene
+	var season_string_name = ""
+	
 	match season_enum:
-		DynastyManager.Season.SPRING: scene_to_load = spring_panel_scene
-		DynastyManager.Season.AUTUMN: scene_to_load = autumn_panel_scene
-		DynastyManager.Season.WINTER: scene_to_load = winter_panel_scene
+		DynastyManager.Season.SPRING: 
+			scene_to_load = spring_panel_scene
+			season_string_name = "Spring"
+		DynastyManager.Season.AUTUMN: 
+			scene_to_load = autumn_panel_scene
+			season_string_name = "Autumn"
+		DynastyManager.Season.WINTER: 
+			scene_to_load = winter_panel_scene
+			season_string_name = "Winter"
 			
 	if scene_to_load:
 		var instance = scene_to_load.instantiate()
 		center_view.add_child(instance)
 		if instance is Control: instance.set_anchors_preset(Control.PRESET_FULL_RECT)
+		
+		# MANUAL HANDSHAKE:
+		# Since the instance was just created, it missed the signal emission.
+		# We manually force-feed it the context so it can initialize.
+		if instance.has_method("_on_season_changed"):
+			instance._on_season_changed(season_string_name, context)

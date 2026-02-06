@@ -1,3 +1,4 @@
+#res://tools/ContextGenerator_NotebookLM.gd
 @tool
 extends EditorScript
 

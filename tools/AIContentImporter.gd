@@ -1,3 +1,4 @@
+#res://tools/AIContentImporter.gd
 # res://tools/AIContentImporter.gd
 @tool
 extends EditorScript

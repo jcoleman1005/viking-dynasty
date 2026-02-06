@@ -1,3 +1,4 @@
+#res://ui/BottomBar.gd
 class_name BottomBar
 extends VBoxContainer
 

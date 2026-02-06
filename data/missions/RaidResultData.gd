@@ -1,3 +1,4 @@
+#res://data/missions/RaidResultData.gd
 ### FILE: res://data/missions/RaidResultData.gd ###
 class_name RaidResultData
 extends Resource

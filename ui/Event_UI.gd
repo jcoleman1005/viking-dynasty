@@ -1,3 +1,4 @@
+#res://ui/Event_UI.gd
 # res://ui/Event_UI.gd
 #
 # Controller script for the modal event window (Event_UI.tscn).

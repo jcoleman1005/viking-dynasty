@@ -1,3 +1,4 @@
+#res://ui/seasonal/SeasonalCard_UI.gd
 class_name SeasonalCard_UI
 extends Control
 

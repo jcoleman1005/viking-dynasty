@@ -1,3 +1,4 @@
+#res://data/resources/SeasonalCardResource.gd
 class_name SeasonalCardResource
 extends Resource
 

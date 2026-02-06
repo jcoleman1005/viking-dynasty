@@ -1,3 +1,4 @@
+#res://ui/TopBarUiComponent.gd
 class_name TopBar
 extends PanelContainer
 

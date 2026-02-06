@@ -1,3 +1,4 @@
+#res://addons/gut/gui/RunResults.gd
 @tool
 extends Control
 

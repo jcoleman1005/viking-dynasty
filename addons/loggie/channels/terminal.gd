@@ -1,3 +1,4 @@
+#res://addons/loggie/channels/terminal.gd
 class_name TerminalLoggieMsgChannel extends LoggieMsgChannel
 
 func _init() -> void:

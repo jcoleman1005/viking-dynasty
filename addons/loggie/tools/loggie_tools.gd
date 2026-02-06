@@ -1,3 +1,4 @@
+#res://addons/loggie/tools/loggie_tools.gd
 @tool
 class_name LoggieTools extends Node
 

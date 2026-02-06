@@ -1,3 +1,4 @@
+#res://scenes/world_map/Region.gd
 # res://scenes/world_map/Region.gd
 class_name Region
 extends Area2D

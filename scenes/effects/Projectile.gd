@@ -1,3 +1,4 @@
+#res://scenes/effects/Projectile.gd
 # res://scenes/effects/Projectile.gd
 class_name Projectile
 extends Area2D

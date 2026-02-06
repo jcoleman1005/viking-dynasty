@@ -1,3 +1,4 @@
+#res://test/unit/test_inventory_mechanics.gd
 extends GutTestBase
 
 var unit: BaseUnit

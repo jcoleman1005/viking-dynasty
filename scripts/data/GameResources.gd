@@ -1,3 +1,4 @@
+#res://scripts/data/GameResources.gd
 # res://scripts/data/GameResources.gd
 class_name GameResources
 extends RefCounted

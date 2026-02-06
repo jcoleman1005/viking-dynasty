@@ -1,3 +1,4 @@
+#res://scenes/missions/RaidMission.gd
 # res://scenes/missions/RaidMission.gd
 extends Node2D
 

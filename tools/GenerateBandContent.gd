@@ -1,3 +1,4 @@
+#res://tools/GenerateBandContent.gd
 # res://tools/GenerateBondiContent.gd
 @tool
 extends EditorScript

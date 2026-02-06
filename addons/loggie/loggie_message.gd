@@ -1,3 +1,4 @@
+#res://addons/loggie/loggie_message.gd
 @tool
 
 ## LoggieMsg represents a mutable object that holds an array of strings ([member content]) [i](referred to as 'content segments')[/i], and

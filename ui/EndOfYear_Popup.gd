@@ -1,3 +1,4 @@
+#res://ui/EndOfYear_Popup.gd
 # res://ui/EndOfYear_Popup.gd
 extends PanelContainer
 

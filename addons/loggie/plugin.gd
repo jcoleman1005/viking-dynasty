@@ -1,3 +1,4 @@
+#res://addons/loggie/plugin.gd
 @tool
 class_name LoggieEditorPlugin extends EditorPlugin
 

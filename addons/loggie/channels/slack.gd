@@ -1,3 +1,4 @@
+#res://addons/loggie/channels/slack.gd
 class_name SlackLoggieMsgChannel extends LoggieMsgChannel
 
 var debug_domain = "_d_loggie_slack"

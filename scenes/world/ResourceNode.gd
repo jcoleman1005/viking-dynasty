@@ -1,3 +1,4 @@
+#res://scenes/world/ResourceNode.gd
 @tool
 class_name ResourceNode
 extends Area2D

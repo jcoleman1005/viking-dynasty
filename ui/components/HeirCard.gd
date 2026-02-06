@@ -1,3 +1,4 @@
+#res://ui/components/HeirCard.gd
 extends PanelContainer
 class_name HeirCard
 

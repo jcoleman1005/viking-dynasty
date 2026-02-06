@@ -1,3 +1,4 @@
+#res://addons/gut/gut_fonts.gd
 # ------------------------------------------------------------------------------
 # There was an error that someone found in Godot 4.4.1, but ended up being a
 # different error in Godot 4.5.  The fix was to hold a reference to the font

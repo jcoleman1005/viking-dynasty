@@ -1,3 +1,4 @@
+#res://addons/gut/gut_config.gd
 # ##############################################################################
 #
 # This holds all the configuratoin values for GUT.  It can load and save values

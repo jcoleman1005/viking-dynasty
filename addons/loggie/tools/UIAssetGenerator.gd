@@ -1,3 +1,4 @@
+#res://addons/loggie/tools/UIAssetGenerator.gd
 @tool
 extends EditorScript
 

@@ -1,3 +1,4 @@
+#res://tools/ThemeBuilder.gd
 @tool
 extends EditorScript
 

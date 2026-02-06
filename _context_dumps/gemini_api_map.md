@@ -1,6 +1,6 @@
 # PROJECT API MAP
 > **CONTEXT INSTRUCTION:** This file contains the STRUCTURE of the project. Implementation details are hidden to save space. Use this to understand available classes, functions, and signals.
-> Generated: 2026-02-05T12:41:04
+> Generated: 2026-02-06T07:47:01
 
 ## 🏛️ GLOBAL ARCHITECTURE
 ### Autoloads (Singletons)
@@ -1002,6 +1002,7 @@
     - **Spacer** [Control]
     - **WinterOutlookLabel** [Label]
     - **SignButton** [Button]
+- **Debugger** [Node]
 
 ### `res:///ui/seasonal/SeasonalCardUi.tscn`
 - **SeasonalCard_UI** [PanelContainer]
@@ -5249,6 +5250,11 @@ func add_project_setting(setting_name: String, default_value : Variant, value_ty
 	var error: int = ProjectSettings.save()
 ```
 
+### `res:///addons/loggie/tools/ScriptHeaderTool.gd`
+```gdscript
+extends Node
+```
+
 ### `res:///addons/loggie/tools/UIAssetGenerator.gd`
 ```gdscript
 extends EditorScript
@@ -5628,6 +5634,7 @@ func _transition_to_season(new_season: Season) -> void:
 	var s_name = names[current_season]
 	var payout_report = EconomyManager.calculate_seasonal_payout(s_name)
 			var warnings = SettlementManager.process_warband_hunger()
+	var context_data: Dictionary = {}
 func _display_seasonal_feedback(season_name: String, payout: Dictionary) -> void:
 	var center_screen = Vector2(960, 500)
 	var color = Color.WHITE
@@ -5937,7 +5944,7 @@ signal succession_choices_made(renown_choice: String, gold_choice: String)
 signal camera_input_lock_requested(is_locked: bool)
 signal end_year_requested() # Legacy (Keep for now to avoid crashes)
 signal advance_season_requested() # NEW: The primary time driver
-signal season_changed(season_name: String) # NEW: Feedback for UI/World
+signal season_changed(season_name: String, context_data: Dictionary) 
 signal hall_action_updated
 signal seasonal_card_hovered(card: SeasonalCardResource)
 signal seasonal_card_selected(card: SeasonalCardResource)
@@ -5945,6 +5952,7 @@ signal ui_request_phase_commit(phase_name: String, data: Dictionary)
 signal ui_open_seasonal_screen(screen_type: String) # "spring", "summer", "autumn", "winter"
 signal raid_launched(target_region: Resource, force_size: int)
 signal autumn_resolved()
+signal winter_crisis_triggered() 
 signal winter_ended()
 signal raid_committed(count: int)
 signal sidebar_close_requested
@@ -6703,6 +6711,21 @@ extends Resource
 @export var renown_earned: int = 0
 ```
 
+### `res:///data/reports/AutumnReport.gd`
+```gdscript
+class_name AutumnReport
+extends Resource
+@export var harvest_yield: int = 0
+@export var winter_demand: int = 0
+@export var net_outcome: int = 0
+@export var treasury_snapshot: Dictionary = {}
+func init_from_context(context: Dictionary) -> void:
+	var payout_data: Dictionary = context.get("payout", {})
+	var forecast_data: Dictionary = context.get("forecast", {})
+	var raw_treasury: Dictionary = context.get("treasury", {})
+	var current_food_total: int = 0
+```
+
 ### `res:///data/resources/SeasonalCardResource.gd`
 ```gdscript
 class_name SeasonalCardResource
@@ -7078,23 +7101,16 @@ func _on_lifetime_timeout() -> void:
 
 ### `res:///scenes/levels/TempDebugNode.gd`
 ```gdscript
+class_name AutumnDebugger
 extends Node
-@export var hud_node: TreasuryHUD
-var _previous_treasury: Dictionary = {}
 func _ready() -> void:
-func _on_treasury_updated(_new_treasury: Dictionary) -> void:
-func _on_season_changed(new_season: String) -> void:
-	var current = SettlementManager.current_settlement.treasury
-	var delta_report = ""
-		var old_val = _previous_treasury.get(res, 0)
-		var new_val = current.get(res, 0)
-		var diff = new_val - old_val
-func _verify_ui_integrity() -> void:
-	var data = SettlementManager.current_settlement.treasury
-	var discrepancies = 0
-	var check_res = func(res_key: String, label: Label) -> void:
-		var ui_val = int(label.text.replace(",", ""))
-		var data_val = data.get(res_key, 0)
+func run_diagnostics() -> void:
+	var settlement = SettlementManager.current_settlement
+		var forecast = EconomyManager.get_winter_forecast()
+	var mock_context = _build_mock_context()
+	var report = AutumnReport.new()
+func _build_mock_context() -> Dictionary:
+	var ctx = {}
 ```
 
 ### `res:///scenes/missions/RaidMapLoader.gd`
@@ -9660,13 +9676,14 @@ func _scan_for_buildings() -> Array[Resource]:
 			var file_name = dir.get_next()
 					var full_path = folder_path + "/" + file_name
 					var res = load(full_path)
-func _on_season_changed_signal(_season_name: String) -> void:
-func _update_season_state() -> void:
+func _on_season_changed_signal(_season_name: String, context: Dictionary) -> void:
+func _update_season_state(context: Dictionary = {}) -> void:
 	var current_season = DynastyManager.current_season
 	var is_summer = (current_season == DynastyManager.Season.SUMMER)
 func _on_advance_season_clicked() -> void:
-func _update_center_view(season_enum: int) -> void:
+func _update_center_view(season_enum: int, context: Dictionary) -> void:
 	var scene_to_load: PackedScene
+	var season_string_name = ""
 		var instance = scene_to_load.instantiate()
 ```
 
@@ -10079,27 +10096,128 @@ extends Control
 @onready var wood_status_label: Label = %WoodStatus
 @onready var outlook_label: Label = %WinterOutlookLabel
 @onready var sign_button: Button = %SignButton
-const COLOR_OK = Color.DARK_GREEN
-const COLOR_FAIL = Color.FIREBRICK
+var current_report: AutumnReport
+var active_tween: Tween
+var is_animation_finished: bool = false
+var can_interact: bool = false 
+const COLOR_OK = Color("55ff55") # Neon Green
+const COLOR_FAIL = Color("ff5555") # Soft Red
+const COLOR_WARN = Color("ffaa00") # Gold/Orange
+const COLOR_TEXT_DEFAULT = Color("f0e6d2") # Antique White
 func _ready() -> void:
+func _apply_text_colors() -> void:
+	var labels = [settlement_name_label, food_stock_label, wood_stock_label]
 func _setup_connections() -> void:
-func _on_season_changed(new_season_name: String) -> void:
-func toggle_interface(interface_name: String = "") -> void:
-func _show_ledger() -> void:
-func _initialize_data() -> void:
-	var forecast: Dictionary = EconomyManager.get_winter_forecast()
+func _on_season_changed(new_season_name: String, context_data: Dictionary) -> void:
+func _start_ritual(context_data: Dictionary) -> void:
+func _populate_header() -> void:
 	var settlement = SettlementManager.current_settlement
-	var raw_name: String = settlement.resource_path.get_file().get_basename()
-	var display_name: String = raw_name.replace("_", " ").capitalize()
-	var current_year: int = DynastyManager.get_current_year()
-	var treasury: Dictionary = settlement.treasury
-	var food_req: int = forecast.get("food", 0)
-	var food_held: int = treasury.get("food", 0)
-	var wood_req: int = forecast.get("wood", 0)
-	var wood_held: int = treasury.get("wood", 0)
-	var is_ready: bool = (food_held >= food_req) and (wood_held >= wood_req)
-func _update_row(val_label: Label, status_label: Label, held: int, req: int) -> void:
+	var display_name = "Settlement"
+		var raw_name = settlement.resource_path.get_file().get_basename()
+	var year = DynastyManager.get_current_year()
+func _animate_sequence() -> void:
+	var food_held = int(current_report.treasury_snapshot.get(GameResources.FOOD, 0))
+	var wood_held = int(current_report.treasury_snapshot.get(GameResources.WOOD, 0))
+	var duration = 1.5
+func _update_resource_label(current_val: int, label: Label, demand: int) -> void:
+func _reveal_verdict() -> void:
+	var food_held = int(current_report.treasury_snapshot.get(GameResources.FOOD, 0))
+	var is_food_safe = food_held >= current_report.winter_demand
+	var fade_tween = create_tween().set_parallel(true)
+	var wood_held = int(current_report.treasury_snapshot.get(GameResources.WOOD, 0))
+	var is_wood_ok = wood_held > 20 
+	var outlook_text = "WINTER OUTLOOK: " + ("SECURE" if is_food_safe else "DANGEROUS")
 func _on_sign_pressed() -> void:
+func _skip_animation() -> void:
+	var food_held = int(current_report.treasury_snapshot.get(GameResources.FOOD, 0))
+	var wood_held = int(current_report.treasury_snapshot.get(GameResources.WOOD, 0))
+func _commit_and_close() -> void:
+func _build_live_context() -> Dictionary:
+	var ctx = {}
+```
+
+### `res:///ui/seasonal/AutumnUiDebugger.gd`
+```gdscript
+extends Control
+class_name WinterCourtUI
+@export_group("Great Hall Stratum")
+@export var available_court_cards: Array[SeasonalCardResource] = []
+@export var card_prefab: PackedScene
+@onready var severity_label: Label = %SeverityLabel
+@onready var deficit_container: VBoxContainer = %DeficitContainer
+@onready var action_points_label: Label = %ActionPointsLabel
+@onready var cards_container: HBoxContainer = %CardsContainer
+@onready var end_winter_button: Button = %EndWinterButton
+@onready var jarl_name_label: Label = %JarlNameLabel
+@onready var jarl_status_label: Label = %JarlStatusLabel
+@onready var heir_status_label: Label = %HeirStatusLabel
+var current_ap: int = 0
+var max_ap: int = 0
+func _ready() -> void:
+func _on_season_changed(new_season: String, _context: Dictionary) -> void:
+func _on_ap_updated(new_amount: int) -> void:
+func _on_treasury_updated(_new_treasury: Dictionary) -> void:
+func setup_winter_view() -> void:
+	var jarl: JarlData = DynastyManager.get_current_jarl()
+func _refresh_stratum_burden() -> void:
+	var severity_name = "NORMAL"
+	var treasury = SettlementManager.current_settlement.treasury
+	var forecast = EconomyManager.get_winter_forecast()
+	var food_demand = forecast.get(GameResources.FOOD, 0)
+	var wood_demand = forecast.get(GameResources.WOOD, 0)
+	var food_stock = treasury.get(GameResources.FOOD, 0)
+	var wood_stock = treasury.get(GameResources.WOOD, 0)
+	var food_deficit = max(0, food_demand - food_stock)
+	var wood_deficit = max(0, wood_demand - wood_stock)
+func _add_burden_entry(title: String, value: String, color: Color) -> void:
+	var entry = Label.new()
+func _refresh_stratum_hall() -> void:
+		var card_instance = card_prefab.instantiate()
+		var can_afford = _can_afford(card_data)
+func _can_afford(card: SeasonalCardResource) -> bool:
+	var costs = {}
+func _update_hall_ui() -> void:
+func _on_card_clicked(card: SeasonalCardResource) -> void:
+	var success: bool = WinterManager.play_seasonal_card(card)
+func _refresh_stratum_bloodline() -> void:
+	var jarl: JarlData = DynastyManager.get_current_jarl()
+	var status_text: String = "Vigorous"
+	var status_color: Color = Color.GREEN
+	var heir_count: int = jarl.get_available_heir_count()
+func _on_end_winter_pressed() -> void:
+```
+
+### `res:///ui/seasonal/Debugger.gd`
+```gdscript
+class_name AutumnDebugger
+extends Node
+var _target_ui: Control
+var _watched_state: Dictionary = {} 
+var _is_tracing: bool = false
+var _start_time: int = 0
+func _ready() -> void:
+func _process(_delta: float) -> void:
+func _attempt_hook_ui() -> void:
+		var labels_to_find = ["FoodStock", "FoodStatus", "WoodStock", "WoodStatus", "WinterOutlookLabel", "SettlementName"]
+			var node = _target_ui.find_child(name, true, false)
+func _register_watcher(node: Label) -> void:
+func _trace_ui_updates() -> void:
+	var time = Time.get_ticks_msec() - _start_time
+		var prev = _watched_state[label]
+		var curr_text = label.text
+		var curr_mod = label.modulate
+		var curr_vis = label.visible
+		var curr_self = label.self_modulate
+func run_diagnostics() -> void:
+	var settlement = SettlementManager.current_settlement
+		var forecast = EconomyManager.get_winter_forecast()
+	var mock_context = _build_mock_context()
+	var report = AutumnReport.new()
+func _build_mock_context() -> Dictionary:
+	var ctx = {}
+	var mock_payout_amount = 100
+		var raw_treasury = SettlementManager.current_settlement.treasury.duplicate()
+		var current_food = raw_treasury.get(GameResources.FOOD, 0)
 ```
 
 ### `res:///ui/seasonal/SeasonalCard_UI.gd`
@@ -10133,7 +10251,7 @@ extends Control
 var _selected_card: SeasonalCardResource
 var _has_activated: bool = false
 func _ready() -> void:
-func _on_season_changed(season_name: String) -> void:
+func _on_season_changed(season_name: String, context) -> void:
 func _activate_spring_ui() -> void:
 func _on_diagnostic_timeout() -> void:
 func _deal_cards() -> void:
@@ -10432,7 +10550,7 @@ func _on_proceed_pressed() -> void:
 func _on_settlement_loaded(_data) -> void:
 func _on_treasury_updated(new_treasury: Dictionary) -> void:
 func _on_population_changed() -> void:
-func _on_season_changed(new_season: String) -> void:
+func _on_season_changed(new_season: String, _context: Dictionary) -> void:
 func _toggle_raid_panel() -> void:
 	var tween = create_tween()
 func _set_project_view(show_construction: bool) -> void:
@@ -10441,7 +10559,6 @@ func _set_project_view(show_construction: bool) -> void:
 ### `res:///ui/seasonal/WinterCourtUI.gd`
 ```gdscript
 extends Control
-class_name WinterCourtUI
 @export_group("Great Hall Stratum")
 @export var available_court_cards: Array[SeasonalCardResource] = []
 @export var card_prefab: PackedScene
@@ -10456,16 +10573,21 @@ class_name WinterCourtUI
 var current_ap: int = 0
 var max_ap: int = 0
 func _ready() -> void:
-func _on_season_changed(new_season: String) -> void:
+func _on_season_changed(new_season: String, _context: Dictionary) -> void:
 func _on_ap_updated(new_amount: int) -> void:
+func _on_treasury_updated(_new_treasury: Dictionary) -> void:
 func setup_winter_view() -> void:
 	var jarl: JarlData = DynastyManager.get_current_jarl()
 func _refresh_stratum_burden() -> void:
-	var report: Dictionary = WinterManager.winter_consumption_report
-	var severity_enum: int = report.get("severity_enum", 1) 
-	var severity_name: String = report.get("severity_name", "NORMAL")
-	var food_deficit: int = report.get("food_deficit", 0)
-	var wood_deficit: int = report.get("wood_deficit", 0)
+	var severity_name = "NORMAL"
+	var treasury = SettlementManager.current_settlement.treasury
+	var forecast = EconomyManager.get_winter_forecast()
+	var food_demand = forecast.get(GameResources.FOOD, 0)
+	var wood_demand = forecast.get(GameResources.WOOD, 0)
+	var food_stock = treasury.get(GameResources.FOOD, 0)
+	var wood_stock = treasury.get(GameResources.WOOD, 0)
+	var food_deficit = max(0, food_demand - food_stock)
+	var wood_deficit = max(0, wood_demand - wood_stock)
 func _add_burden_entry(title: String, value: String, color: Color) -> void:
 	var entry = Label.new()
 func _refresh_stratum_hall() -> void:

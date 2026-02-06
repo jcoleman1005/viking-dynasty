@@ -1,3 +1,4 @@
+#res://addons/gut/gui/ShellOutOptions.gd
 @tool
 extends ConfirmationDialog
 
