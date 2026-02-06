@@ -1,4 +1,3 @@
-## AutumnLedgerUI.gd
 ## Handles the end-of-season accounting logic and display.
 class_name AutumnLedgerUI
 extends Control
@@ -19,7 +18,6 @@ var is_animation_finished: bool = false
 var can_interact: bool = false 
 
 # --- Visual Configuration (High Contrast) ---
-# FIX: Switched to brighter colors for Dark Mode readability
 const COLOR_OK = Color("55ff55") # Neon Green
 const COLOR_FAIL = Color("ff5555") # Soft Red
 const COLOR_WARN = Color("ffaa00") # Gold/Orange
@@ -44,12 +42,24 @@ func _setup_connections() -> void:
 
 func _on_season_changed(new_season_name: String, context_data: Dictionary) -> void:
 	if new_season_name == "Autumn":
+		# FIX: Wait one frame to ensure WinterManager has processed the signal 
+		# and rolled the new Severity/Weather before we display it.
+		await get_tree().process_frame
 		_start_ritual(context_data)
 
 func _start_ritual(context_data: Dictionary) -> void:
 	current_report = AutumnReport.new()
 	current_report.init_from_context(context_data)
 	
+	# FIX: Force-refresh the winter demand using the Authoritative Source.
+	# The 'context_data' might be stale (built before WinterManager rolled the dice).
+	var fresh_forecast = EconomyManager.get_winter_forecast()
+	var fresh_food_demand = fresh_forecast.get(GameResources.FOOD, 0)
+	
+	if fresh_food_demand != current_report.winter_demand:
+		Loggie.msg("AutumnLedger: Correcting Stale Forecast (%d -> %d)" % [current_report.winter_demand, fresh_food_demand]).domain(LogDomains.UI).info()
+		current_report.winter_demand = fresh_food_demand
+
 	visible = true
 	move_to_front()
 	is_animation_finished = false
@@ -136,6 +146,13 @@ func _reveal_verdict() -> void:
 	
 	# Winter Outlook
 	var outlook_text = "WINTER OUTLOOK: " + ("SECURE" if is_food_safe else "DANGEROUS")
+	
+	# NEW: Add context for Severity
+	if WinterManager.upcoming_severity == WinterManager.WinterSeverity.HARSH:
+		outlook_text += " (HARSH)"
+	elif WinterManager.upcoming_severity == WinterManager.WinterSeverity.MILD:
+		outlook_text += " (MILD)"
+		
 	outlook_label.text = outlook_text
 	outlook_label.modulate = COLOR_OK if is_food_safe else COLOR_FAIL
 	fade_tween.tween_property(outlook_label, "modulate:a", 1.0, 0.5)

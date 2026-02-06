@@ -1,8 +1,8 @@
-#res://autoload/WinterManager.gd
 # res://autoload/WinterManager.gd
 extends Node
 
-signal winter_started
+# --- Signals ---
+signal winter_started(severity: int)
 signal winter_ended
 
 # --- Severity Definitions ---
@@ -16,12 +16,31 @@ enum WinterSeverity { MILD, NORMAL, HARSH }
 @export_group("Multipliers")
 @export var harsh_multiplier: float = 1.5
 @export var mild_multiplier: float = 0.75
+@export var winter_duration_seconds: float = 60.0
 
 # --- Internal State ---
-var current_severity: WinterSeverity = WinterSeverity.NORMAL
+var current_severity: int = WinterSeverity.NORMAL
+## NEW: Stores the fate of the COMING winter so UI can predict it accurately.
+var upcoming_severity: int = WinterSeverity.NORMAL
+
 var winter_consumption_report: Dictionary = {}
 var winter_upkeep_report: Dictionary = {} 
 var winter_crisis_active: bool = false
+
+func _ready() -> void:
+	if EventBus:
+		EventBus.season_changed.connect(_on_season_changed)
+	else:
+		Loggie.msg("WinterManager: EventBus not found!").domain(LogDomains.SYSTEM).error()
+
+func _on_season_changed(new_season: String, _context: Dictionary) -> void:
+	# "The leaves are falling... we can tell it's going to be a cold one."
+	if new_season == "Autumn":
+		_roll_upcoming_severity()
+	
+	if new_season == "Winter":
+		# Trigger the full phase logic (Decay + Needs Calculation)
+		start_winter_phase()
 
 func start_winter_phase() -> void:
 	Loggie.msg("WinterManager: Starting Winter Phase...").domain(LogDomains.SYSTEM).info()
@@ -29,11 +48,10 @@ func start_winter_phase() -> void:
 	# 1. Decay Fleet Readiness (Environment Effect)
 	_apply_environmental_decay()
 	
-	# 2. Calculate Needs
+	# 2. Calculate Needs (Uses the severity pre-rolled in Autumn)
 	_calculate_winter_needs()
 	
-	winter_started.emit()
-	
+	winter_started.emit(current_severity)
 
 func end_winter_phase() -> void:
 	winter_crisis_active = false
@@ -46,16 +64,24 @@ func end_winter_phase() -> void:
 
 # --- CORE LOGIC ---
 
+## NEW: Determines the severity ahead of time (In Autumn)
+func _roll_upcoming_severity() -> void:
+	var roll = randf()
+	if roll < harsh_chance:
+		upcoming_severity = WinterSeverity.HARSH
+	elif roll > (1.0 - mild_chance):
+		upcoming_severity = WinterSeverity.MILD
+	else:
+		upcoming_severity = WinterSeverity.NORMAL
+	
+	Loggie.msg("Winter Oracle: Next Winter will be %s" % _get_severity_name(upcoming_severity)).domain(LogDomains.GAMEPLAY).info()
+
+## Helper for forecast tooltips - Uses DETERMINISTIC severity now
 func calculate_winter_demand(settlement: SettlementData) -> Dictionary:
 	if not settlement: return _get_empty_report()
 
-	_roll_severity()
-	
-	var mult: float = 1.0
-	match current_severity:
-		WinterSeverity.HARSH: mult = harsh_multiplier
-		WinterSeverity.MILD: mult = mild_multiplier
-		_: mult = 1.0
+	# PREDICTION FIX: Use upcoming_severity instead of rolling randomly
+	var mult = get_multiplier_for_severity(upcoming_severity)
 		
 	var base_food = (settlement.population_peasants * 1) + (settlement.warbands.size() * 5)
 	var base_wood = 20
@@ -64,48 +90,49 @@ func calculate_winter_demand(settlement: SettlementData) -> Dictionary:
 	var final_wood = int(base_wood * mult)
 	
 	return {
-		"severity_enum": current_severity,
-		"severity_name": WinterSeverity.keys()[current_severity],
+		"severity_enum": upcoming_severity,
+		"severity_name": _get_severity_name(upcoming_severity),
 		"multiplier": mult,
 		"food_demand": final_food,
 		"wood_demand": final_wood
 	}
 
+# REFACTORED: Uses the pre-determined 'upcoming_severity'
 func _calculate_winter_needs() -> void:
 	var settlement = SettlementManager.current_settlement
 	if not settlement: return
 	
-	_roll_severity()
+	# 1. COMMIT THE FATE
+	# We do NOT roll here. We accept the fate decided in Autumn.
+	current_severity = upcoming_severity
+	var mult = get_multiplier_for_severity(current_severity)
 	
-	var mult: float = 1.0
-	match current_severity:
-		WinterSeverity.HARSH: mult = harsh_multiplier
-		WinterSeverity.MILD: mult = mild_multiplier
-		_: mult = 1.0
-	
-	# Ask EconomyManager (Returns dict with GameResources keys)
+	# 2. ASK THE ECONOMIST (Using the Authoritative Multiplier)
 	var costs = EconomyManager.calculate_winter_consumption_costs(mult)
 	var food_cost = costs.get(GameResources.FOOD, 0)
 	var wood_cost = costs.get(GameResources.WOOD, 0)
 	
+	# 3. CALCULATE LOCAL DEFICITS
 	var food_stock = settlement.treasury.get(GameResources.FOOD, 0)
 	var wood_stock = settlement.treasury.get(GameResources.WOOD, 0)
 	
 	var food_deficit = max(0, food_cost - food_stock)
 	var wood_deficit = max(0, wood_cost - wood_stock)
 	
+	# 4. GENERATE REPORT
 	winter_consumption_report = {
-		"severity_name": WinterSeverity.keys()[current_severity],
+		"severity_name": _get_severity_name(current_severity),
 		"multiplier": mult,
-		# We keep report keys distinct for UI, or we could use GameResources keys here too 
-		# depending on how your UI reads this report. 
-		# For safety inside this file, I am using explicit keys for the report structure.
+		# We keep report keys distinct for UI
 		"food_cost": food_cost,
 		"wood_cost": wood_cost,
 		"food_deficit": food_deficit,
 		"wood_deficit": wood_deficit
 	}
 	
+	Loggie.msg("Winter Calculation Complete: %s" % str(winter_consumption_report)).domain(LogDomains.ECONOMY).info()
+	
+	# 5. TRIGGER CONSEQUENCES
 	if food_deficit > 0 or wood_deficit > 0:
 		winter_crisis_active = true
 		Loggie.msg("Winter Crisis Active! Deficit: %s" % winter_consumption_report).domain(LogDomains.SYSTEM).warn()
@@ -177,7 +204,7 @@ func play_seasonal_card(card: SeasonalCardResource) -> bool:
 			Loggie.msg("Granted %d Authority via card" % card.grant_authority).domain(LogDomains.DYNASTY).info()
 			# CRITICAL: Emit signal so UI (DynastyUI/TopBar) updates immediately
 			DynastyManager.jarl_stats_updated.emit(jarl)
-	# [FIX] Apply Modifier (Missing in previous snippet)
+
 	# 4. Apply Modifiers (The new aggregation logic you implemented)
 	DynastyManager.aggregate_card_effects(card)
 		
@@ -208,16 +235,16 @@ func resolve_crisis_with_sacrifice(sacrifice_type: String) -> bool:
 
 # --- HELPERS ---
 
-func _roll_severity() -> void:
-	var roll = randf()
-	if roll < harsh_chance:
-		current_severity = WinterSeverity.HARSH
-	elif roll > (1.0 - mild_chance):
-		current_severity = WinterSeverity.MILD
-	else:
-		current_severity = WinterSeverity.NORMAL
-		
-	Loggie.msg("WinterManager: Rolled %s (Val: %.2f)" % [WinterSeverity.keys()[current_severity], roll]).domain(LogDomains.SYSTEM).info()
+## Helper to get float multiplier from enum
+func get_multiplier_for_severity(severity_enum: int) -> float:
+	match severity_enum:
+		WinterSeverity.HARSH: return harsh_multiplier
+		WinterSeverity.MILD: return mild_multiplier
+		_: return 1.0
+
+## Helper for logging
+func _get_severity_name(severity_enum: int) -> String:
+	return WinterSeverity.keys()[severity_enum]
 
 func _get_empty_report() -> Dictionary:
 	return {

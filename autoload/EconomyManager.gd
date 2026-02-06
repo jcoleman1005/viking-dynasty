@@ -1,4 +1,4 @@
-#res://autoload/EconomyManager.gd
+# res://autoload/EconomyManager.gd
 extends Node
 
 # --- EFFICIENCY CONSTANTS ---
@@ -108,13 +108,17 @@ func get_projected_income() -> Dictionary[String, int]:
 
 ## NEW: Centralized Winter Forecast Logic
 ## Returns anticipated demand for Food and Wood based on population.
-## UPDATED: Uses authoritative Winter constants to prevent UI drift
+## UPDATED: Uses authoritative Winter constants and Upcoming Severity to prevent UI drift
 func get_winter_forecast() -> Dictionary:
 	var settlement = SettlementManager.current_settlement
 	if not settlement: return {GameResources.FOOD: 0, GameResources.WOOD: 0}
 	
-	# Calculate based on Normal severity (1.0)
-	return calculate_winter_consumption_costs(1.0)
+	# CRITICAL FIX: Don't assume 1.0. Ask the WinterManager what is coming.
+	# This ensures the Ledger UI matches the actual Winter deduction exactly.
+	var severity = WinterManager.upcoming_severity
+	var real_multiplier = WinterManager.get_multiplier_for_severity(severity)
+	
+	return calculate_winter_consumption_costs(real_multiplier)
 
 ## NEW: Authoritative math for winter demand
 func calculate_winter_consumption_costs(severity_mult: float) -> Dictionary:
@@ -227,7 +231,7 @@ func calculate_seasonal_payout(season_name: String) -> Dictionary:
 		Loggie.msg("Seasonal Payout: None").domain(LogDomains.ECONOMY).info()
 	else:
 		Loggie.msg("Seasonal Payout: %s" % log_report).domain(LogDomains.ECONOMY).info()
-	# -------------------.ECONOMY).info()
+	
 	EventBus.treasury_updated.emit(settlement.treasury)
 	return total_payout
 
@@ -433,7 +437,6 @@ func add_resources(resources: Dictionary) -> void:
 	
 # --- ALLOCATION & PROJECTION API (NEW) ---
 
-## NEW: Authoritative Peasant Drafting (Conservation of Mass)
 ## NEW: Authoritative Peasant Drafting (Conservation of Mass)
 ## Converts Peasants -> Warbands. Handles state mutation and RaidManager integration.
 func draft_peasants_to_raiders(count: int, template: UnitData) -> void:
