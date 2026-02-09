@@ -1,5 +1,3 @@
-#res://ui/RaidPrepWindow.gd
-# res://ui/RaidPrepWindow.gd
 class_name RaidPrepWindow
 extends PanelContainer
 
@@ -7,21 +5,21 @@ signal raid_launched(target: RaidTargetData, warbands: Array[WarbandData], provi
 signal closed
 
 # --- UI References ---
-@onready var target_name_label: Label = $MarginContainer/MainVBox/ContentHBox/LeftCol/TargetNameLabel
-@onready var description_label: RichTextLabel = $MarginContainer/MainVBox/ContentHBox/LeftCol/DescriptionLabel
-@onready var val_diff: Label = $MarginContainer/MainVBox/ContentHBox/LeftCol/StatsGrid/ValDiff
-@onready var val_cost: Label = $MarginContainer/MainVBox/ContentHBox/LeftCol/StatsGrid/ValCost
-@onready var capacity_label: Label = $MarginContainer/MainVBox/ContentHBox/RightCol/CapacityLabel
-@onready var warband_list: VBoxContainer = $MarginContainer/MainVBox/ContentHBox/RightCol/ScrollContainer/WarbandList
-@onready var provision_slider: HSlider = $MarginContainer/MainVBox/ProvisionsPanel/HBox/ProvisionSlider
-@onready var cost_label: Label = $MarginContainer/MainVBox/ProvisionsPanel/HBox/CostLabel
-@onready var effect_label: Label = $MarginContainer/MainVBox/ProvisionsPanel/HBox/EffectLabel
-@onready var launch_button: Button = $MarginContainer/MainVBox/ActionButtons/LaunchButton
-@onready var cancel_button: Button = $MarginContainer/MainVBox/ActionButtons/CancelButton
+@onready var target_name_label: Label = %TargetNameLabel
+@onready var description_label: RichTextLabel = %DescriptionLabel
+@onready var val_diff: Label = %ValDiff
+@onready var val_cost: Label = %ValCost
+@onready var capacity_label: Label = %CapacityLabel
+@onready var warband_list: VBoxContainer = %WarbandList
+@onready var provision_slider: HSlider = %ProvisionSlider
+@onready var cost_label: Label = %CostLabel
+@onready var effect_label: Label = %EffectLabel
+@onready var launch_button: Button = %LaunchButton
+@onready var cancel_button: Button = %CancelButton
 
 # --- BONDI REFS ---
-@onready var bondi_slider: HSlider = $MarginContainer/MainVBox/ContentHBox/RightCol/BondiPanel/BondiVBox/BondiSliderBox/BondiSlider
-@onready var bondi_count_label: Label = $MarginContainer/MainVBox/ContentHBox/RightCol/BondiPanel/BondiVBox/BondiSliderBox/BondiCountLabel
+@onready var bondi_slider: HSlider = %BondiSlider
+@onready var bondi_count_label: Label = %BondiCountLabel
 # ----------------------
 
 # --- State ---
@@ -33,7 +31,7 @@ var calculated_food_cost: int = 0
 var available_idle_peasants: int = 0
 
 const FOOD_COST_PER_HEAD_WELL_FED = 25
-const BONDI_UNIT_DATA_PATH = "res://data/units/Unit_Bondi.tres"
+@export var BONDI_UNIT_DATA_PATH: UnitData
 
 func _ready() -> void:
 	launch_button.pressed.connect(_on_launch_pressed)
@@ -68,11 +66,8 @@ func setup(target: RaidTargetData) -> void:
 	
 	val_cost.modulate = Color.SALMON if not DynastyManager.can_spend_authority(auth_cost) else Color.WHITE
 
-	# --- FIX START: Use SettlementManager as Source of Truth ---
-	# Old: max_capacity = SettlementManager.current_settlement.get_fleet_capacity()
+	# 2. Capacity & Population
 	max_capacity = SettlementManager.get_total_ship_capacity_squads()
-	# --- FIX END ---
-	
 	available_idle_peasants = SettlementManager.get_idle_peasants()
 	
 	# 3. Setup Bondi Slider
@@ -204,7 +199,7 @@ func _on_launch_pressed() -> void:
 	hide()
 
 func _create_and_append_bondi(count: int) -> void:
-	var unit_data = load(BONDI_UNIT_DATA_PATH)
+	var unit_data = BONDI_UNIT_DATA_PATH
 	if not unit_data:
 		Loggie.msg("RaidPrep: Missing Bondi Unit Data!").domain(LogDomains.UI).error()
 		return
@@ -261,16 +256,23 @@ func _on_provision_slider_changed(value: float) -> void:
 	_update_provision_cost()
 
 func _update_provision_ui() -> void:
-	match current_provision_level:
-		0:
-			effect_label.text = "High Attrition Risk!"
-			effect_label.modulate = Color.SALMON
-		1:
-			effect_label.text = "Standard Risk"
-			effect_label.modulate = Color.WHITE
-		2:
-			effect_label.text = "Risk Reduced (-15%)"
-			effect_label.modulate = Color.GREEN
+	if not current_target: return
+	
+	# NEW: Call RaidManager for live forecast (preview=true)
+	# Assumes current_target has 'distance' property (based on standard RaidTargetData)
+	var dist = current_target.distance if "distance" in current_target else 200.0
+	
+	var forecast = RaidManager.calculate_journey_attrition(dist, current_provision_level, true)
+	effect_label.text = forecast.description
+	
+	# Update color based on risk severity returned by logic
+	var risk_pct = forecast.get("risk_pct", 0)
+	if risk_pct >= 50:
+		effect_label.modulate = Color.SALMON
+	elif risk_pct >= 20:
+		effect_label.modulate = Color.YELLOW
+	else:
+		effect_label.modulate = Color.GREEN
 
 func _shake_capacity_label() -> void:
 	var tween = create_tween()

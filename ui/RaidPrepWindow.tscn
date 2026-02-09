@@ -1,9 +1,11 @@
-[gd_scene load_steps=2 format=3 uid="uid://ciue5kdakyr78"]
+[gd_scene load_steps=3 format=3 uid="uid://ciue5kdakyr78"]
 
 [ext_resource type="Script" uid="uid://dsb5s7kg7ce80" path="res://ui/RaidPrepWindow.gd" id="1_tdrb5"]
+[ext_resource type="Resource" uid="uid://dpe2acwvvxthl" path="res://data/units/Unit_Bondi.tres" id="2_2b3mn"]
 
 [node name="RaidPrepWindow" type="PanelContainer"]
 script = ExtResource("1_tdrb5")
+BONDI_UNIT_DATA_PATH = ExtResource("2_2b3mn")
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 layout_mode = 2
@@ -35,12 +37,14 @@ layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="TargetNameLabel" type="Label" parent="MarginContainer/MainVBox/ContentHBox/LeftCol"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0, 0, 1)
 theme_override_font_sizes/font_size = 20
 text = "Target Name"
 
 [node name="DescriptionLabel" type="RichTextLabel" parent="MarginContainer/MainVBox/ContentHBox/LeftCol"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 text = "Description goes here..."
@@ -56,6 +60,7 @@ layout_mode = 2
 text = "Difficulty:"
 
 [node name="ValDiff" type="Label" parent="MarginContainer/MainVBox/ContentHBox/LeftCol/StatsGrid"]
+unique_name_in_owner = true
 layout_mode = 2
 text = "1 Star"
 
@@ -65,6 +70,7 @@ layout_mode = 2
 text = "Auth Cost:"
 
 [node name="ValCost" type="Label" parent="MarginContainer/MainVBox/ContentHBox/LeftCol/StatsGrid"]
+unique_name_in_owner = true
 layout_mode = 2
 text = "1"
 
@@ -85,6 +91,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="CapacityLabel" type="Label" parent="MarginContainer/MainVBox/ContentHBox/RightCol"]
+unique_name_in_owner = true
 layout_mode = 2
 text = "Fleet Capacity: 0/4"
 horizontal_alignment = 2
@@ -94,6 +101,7 @@ layout_mode = 2
 size_flags_vertical = 3
 
 [node name="WarbandList" type="VBoxContainer" parent="MarginContainer/MainVBox/ContentHBox/RightCol/ScrollContainer"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 
@@ -112,12 +120,14 @@ text = "Recruit the Bondi (Farmers)"
 layout_mode = 2
 
 [node name="BondiSlider" type="HSlider" parent="MarginContainer/MainVBox/ContentHBox/RightCol/BondiPanel/BondiVBox/BondiSliderBox"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
 max_value = 10.0
 
 [node name="BondiCountLabel" type="Label" parent="MarginContainer/MainVBox/ContentHBox/RightCol/BondiPanel/BondiVBox/BondiSliderBox"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(60, 0)
 layout_mode = 2
 text = "0 / 10"
@@ -137,6 +147,7 @@ layout_mode = 2
 text = "Supplies:"
 
 [node name="ProvisionSlider" type="HSlider" parent="MarginContainer/MainVBox/ProvisionsPanel/HBox"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 size_flags_vertical = 4
@@ -146,10 +157,12 @@ tick_count = 3
 ticks_on_borders = true
 
 [node name="CostLabel" type="Label" parent="MarginContainer/MainVBox/ProvisionsPanel/HBox"]
+unique_name_in_owner = true
 layout_mode = 2
 text = "0 Food"
 
 [node name="EffectLabel" type="Label" parent="MarginContainer/MainVBox/ProvisionsPanel/HBox"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Normal Risk"
@@ -161,11 +174,13 @@ theme_override_constants/separation = 20
 alignment = 2
 
 [node name="CancelButton" type="Button" parent="MarginContainer/MainVBox/ActionButtons"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(100, 40)
 layout_mode = 2
 text = "Cancel"
 
 [node name="LaunchButton" type="Button" parent="MarginContainer/MainVBox/ActionButtons"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(120, 40)
 layout_mode = 2
 text = "Set Sail"

@@ -1,11 +1,10 @@
-[gd_scene load_steps=9 format=3 uid="uid://dqxvcgqjx2s8o"]
+[gd_scene load_steps=8 format=3 uid="uid://dqxvcgqjx2s8o"]
 
 [ext_resource type="Script" uid="uid://gvajp31vuy31" path="res://ui/seasonal/WinterCourtUI.gd" id="1_21ph0"]
 [ext_resource type="Script" uid="uid://cni5gdnpbb1v2" path="res://data/resources/SeasonalCardResource.gd" id="2_o4q1v"]
 [ext_resource type="Resource" uid="uid://dg10eqygin8xg" path="res://data/resources/Winter Cards/Card_Winter_Feast.tres" id="3_io7fp"]
 [ext_resource type="Resource" uid="uid://dcppndmvmf63e" path="res://data/resources/Winter Cards/Card_Winter_Recruit.tres" id="4_qbwkr"]
 [ext_resource type="PackedScene" uid="uid://d0px2w8n5r1lv" path="res://ui/seasonal/SeasonalCardUi.tscn" id="5_f6bl8"]
-[ext_resource type="Script" uid="uid://vb3ro4fdymn5" path="res://ui/seasonal/WinterCourtUiDiagnostics.gd" id="6_qub0o"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_Spine"]
 bg_color = Color(0.0823529, 0.0980392, 0.14902, 0.98)
@@ -137,5 +136,3 @@ theme_override_constants/separation = 30
 alignment = 1
 
 [node name="WinterCourtUIDiagnostics" type="Node" parent="."]
-script = ExtResource("6_qub0o")
-critical_node_properties = Array[String](["severity_label", "deficit_container", "action_points_label", "cards_container", "jarl_name_label"])

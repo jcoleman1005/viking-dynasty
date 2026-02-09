@@ -7,8 +7,8 @@ const BASE_GATHERING_CAPACITY: int = 2
 
 # --- POPULATION CONSTANTS ---
 const FOOD_PER_PERSON_PER_YEAR: int = 10
-const WINTER_FOOD_BASE: int = 1 # NEW: Unifies WinterManager's legacy math
-const WINTER_WARBAND_FOOD: int = 5 # NEW: Unifies WinterManager's legacy math
+const WINTER_FOOD_BASE: int = 1 # Unifies WinterManager's legacy math
+const WINTER_WARBAND_FOOD: int = 5 # Unifies WinterManager's legacy math
 const BASE_GROWTH_RATE: float = 0.02 
 const STARVATION_PENALTY: float = -0.15 
 const UNREST_PER_LANDLESS_PEASANT: int = 2
@@ -23,6 +23,9 @@ const SEASON_AUTUMN: String = "Autumn"
 const SEASON_WINTER: String = "Winter"
 const WINTER_WOOD_DEMAND: int = 20 # Base fireplace cost
 
+# --- HEALING CONSTANTS ---
+const HEAL_COST_GOLD: int = 50
+
 # --- STORAGE CONSTANTS ---
 const BASE_STORAGE_CAPACITY: int = 200 
 const BASE_GOLD_CAPACITY: int = 500
@@ -34,8 +37,7 @@ const RAID_BUILDING_DMG_MIN: int = 50
 const RAID_BUILDING_DMG_MAX: int = 150
 
 # --- INTERNAL STATE ---
-# ARCHITECTURE FIX: Track the fiscal year instead of raw frames.
-# This ensures we only pay winter costs once per year, regardless of call frequency.
+# Track the fiscal year instead of raw frames to prevent double-billing
 var _last_paid_winter_year: int = -1
 
 # --- PUBLIC QUERIES ---
@@ -110,7 +112,7 @@ func get_projected_income() -> Dictionary[String, int]:
 					
 	return projection
 
-## NEW: Centralized Winter Forecast Logic
+## Centralized Winter Forecast Logic
 func get_winter_forecast() -> Dictionary:
 	var settlement = SettlementManager.current_settlement
 	if not settlement: return {GameResources.FOOD: 0, GameResources.WOOD: 0}
@@ -120,15 +122,22 @@ func get_winter_forecast() -> Dictionary:
 	
 	return calculate_winter_consumption_costs(real_multiplier)
 
-## NEW: Authoritative math for winter demand
+## Authoritative math for winter demand
 func calculate_winter_consumption_costs(severity_mult: float) -> Dictionary:
 	var settlement = SettlementManager.current_settlement
 	if not settlement: return {GameResources.FOOD: 0, GameResources.WOOD: 0}
 
 	var pop = settlement.population_peasants
-	var warbands = settlement.warbands.size()
+	var warband_food = 0
 	
-	var base_food = (pop * WINTER_FOOD_BASE) + (warbands * WINTER_WARBAND_FOOD)
+	# Iterate warbands to account for wounded status (2x consumption)
+	for wb in settlement.warbands:
+		var cost = WINTER_WARBAND_FOOD
+		if wb.is_wounded:
+			cost *= 2
+		warband_food += cost
+	
+	var base_food = (pop * WINTER_FOOD_BASE) + warband_food
 	var base_wood = WINTER_WOOD_DEMAND
 	
 	return {
@@ -139,9 +148,7 @@ func calculate_winter_consumption_costs(severity_mult: float) -> Dictionary:
 # --- TURN LOGIC (SEASONAL) ---
 
 func apply_winter_consumption(costs: Dictionary) -> void:
-	# LOGIC FIX: State-Aware Idempotency.
-	# Instead of debouncing frames, we check if the current year has already been billed.
-	# This treats the source of the issue (logic unaware of state) rather than the symptom (double calling).
+	# State-Aware Idempotency: Check if the current year has already been billed.
 	var current_year = DynastyManager.get_current_year()
 	if current_year == _last_paid_winter_year:
 		Loggie.msg("EconomyManager: Winter consumption already applied for Year %d. Ignoring duplicate request." % current_year).domain(LogDomains.ECONOMY).warn()
@@ -166,7 +173,7 @@ func apply_winter_consumption(costs: Dictionary) -> void:
 	Loggie.msg("EconomyManager: Applied Winter Consumption (Year %d): %s" % [current_year, costs]).domain(LogDomains.ECONOMY).info()
 	EventBus.treasury_updated.emit(settlement.treasury)
 
-## NEW: Centralized Crisis Resolution (Sacrifices)
+## Centralized Crisis Resolution (Sacrifices)
 func resolve_winter_crisis_sacrifice(sacrifice_type: String, deficit_data: Dictionary) -> void:
 	var settlement = SettlementManager.current_settlement
 	if not settlement: return
@@ -187,6 +194,16 @@ func resolve_winter_crisis_sacrifice(sacrifice_type: String, deficit_data: Dicti
 			Loggie.msg("EconomyManager: Burned Ships").domain(LogDomains.ECONOMY).warn()
 	
 	EventBus.treasury_updated.emit(settlement.treasury)
+
+## NEW: Paid healing hook for UI
+func heal_warband(warband: WarbandData) -> bool:
+	if not warband.is_wounded: return false
+	
+	if attempt_purchase({GameResources.GOLD: HEAL_COST_GOLD}):
+		warband.is_wounded = false
+		Loggie.msg("Healed warband for %d Gold" % HEAL_COST_GOLD).domain(LogDomains.ECONOMY).info()
+		return true
+	return false
 
 func recruit_professional_unit(unit_cost: Dictionary, unit_data: Variant) -> bool:
 	if attempt_purchase(unit_cost):
@@ -267,8 +284,7 @@ func _calculate_demographics(settlement: SettlementData, payout_report: Dictiona
 	var current_food = settlement.treasury.get("food", 0)
 	var total_food_available = current_food 
 	
-	# BUG FIX: Double Taxation Removed.
-	# We rely on apply_winter_consumption to do the damage.
+	# Rely on apply_winter_consumption to deduct food.
 	# This function ONLY checks if we have enough surplus for bonuses/growth.
 	var food_required_for_growth = pop * WINTER_FOOD_BASE * 2 
 	
@@ -443,7 +459,7 @@ func apply_raid_damages() -> Dictionary:
 func add_resources(resources: Dictionary) -> void:
 	deposit_resources(resources)
 	
-# --- ALLOCATION & PROJECTION API (NEW) ---
+# --- ALLOCATION & PROJECTION API ---
 
 func draft_peasants_to_raiders(count: int, template: UnitData) -> void:
 	var settlement = SettlementManager.current_settlement
@@ -505,7 +521,7 @@ func calculate_hypothetical_yields(worker_counts: Dictionary) -> Dictionary:
 					
 	return yields
 
-# --- RAID OUTCOME API (NEW) ---
+# --- RAID OUTCOME API ---
 
 func process_raid_return(result: RaidResultData) -> Dictionary:
 	var settlement = SettlementManager.current_settlement
@@ -550,8 +566,10 @@ func process_raid_return(result: RaidResultData) -> Dictionary:
 		var difficulty = 1 
 		if RaidManager: difficulty = RaidManager.current_raid_difficulty
 		
-		var bonus = 200 + (difficulty * 50)
-		if grade == "Decisive": bonus += 100
+		# REBALANCE: Lowered base gold (200 -> 50) and scaling (50 -> 25)
+		# Goal: Prevent a single raid from funding an entire winter.
+		var bonus = 50 + (difficulty * 25)
+		if grade == "Decisive": bonus += 50 # Reduced from 100
 		
 		net_gold += bonus
 		
@@ -600,7 +618,7 @@ func _update_jarl_stats(grade: String) -> void:
 			jarl.current_authority += 1
 		DynastyManager.jarl_stats_updated.emit(jarl)
 		
-# --- CONSTRUCTION API (NEW) ---
+# --- CONSTRUCTION API ---
 
 func advance_construction_progress() -> Array[Dictionary]:
 	var settlement = SettlementManager.current_settlement

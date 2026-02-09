@@ -1,6 +1,6 @@
 # PROJECT API MAP
 > **CONTEXT INSTRUCTION:** This file contains the STRUCTURE of the project. Implementation details are hidden to save space. Use this to understand available classes, functions, and signals.
-> Generated: 2026-02-06T07:47:01
+> Generated: 2026-02-09T09:40:47
 
 ## 🏛️ GLOBAL ARCHITECTURE
 ### Autoloads (Singletons)
@@ -786,6 +786,7 @@
     - **SidebarContent** [MarginContainer]
 - **EndYearOverlay** [Control]
   - **SeasonAdvanceBtn** [Button]
+- **MainUIDebugger** [Node]
 
 ### `res:///ui/RaidPrepWindow.tscn`
 - **RaidPrepWindow** [PanelContainer]
@@ -878,18 +879,20 @@
         - **Icon** [TextureRect]
         - **StoneLabel** [Label]
     - **VSeparator2** [VSeparator]
-    - **PopSection** [HBoxContainer]
-      - **PeasantGroup** [HBoxContainer]
-        - **Icon** [TextureRect]
-        - **PeasantLabel** [Label]
-      - **ThrallGroup** [HBoxContainer]
-        - **Icon** [TextureRect]
+    - **PopulationHUD** [VBoxContainer]
+      - **Labels and Icons** [HBoxContainer]
+        - **VillagerIcon** [TextureRect]
+        - **VillagerLabel** [Label]
+        - **ThrallIcon** [TextureRect]
         - **ThrallLabel** [Label]
-      - **VSeparator3** [VSeparator]
-      - **WarbandGroup** [VBoxContainer]
-        - **AuthorityLabel** [Label]
-        - **Label** [Label]
-        - **UnitCountLabel** [Label]
+        - **SoldierIcon** [TextureRect]
+        - **SoldierLabel** [Label]
+      - **TotalPopLabel** [Label]
+      - **TotalIdlePopLabel** [Label]
+    - **VSeparator3** [VSeparator]
+    - **WarbandGroup** [VBoxContainer]
+      - **AuthorityLabel** [Label]
+      - **UnitCountLabel** [Label]
 
 ### `res:///ui/WorkAssignment_UI.tscn`
 - **WorkAssignment_UI** [CanvasLayer]
@@ -1002,7 +1005,7 @@
     - **Spacer** [Control]
     - **WinterOutlookLabel** [Label]
     - **SignButton** [Button]
-- **Debugger** [Node]
+- **Debugger** [Control]
 
 ### `res:///ui/seasonal/SeasonalCardUi.tscn`
 - **SeasonalCard_UI** [PanelContainer]
@@ -1011,9 +1014,7 @@
     - **TitleLabel** [Label]
     - **IconRect** [TextureRect]
     - **DescriptionLabel** [Label]
-    - **CostContainer** [HBoxContainer]
-      - **APCostLabel** [Label]
-      - **GoldCostLabel** [Label]
+    - **CostLabel** [Label]
     - **SelectButton** [Button]
 
 ### `res:///ui/seasonal/SpringCouncilUI.tscn`
@@ -1153,31 +1154,49 @@
     - **MarginContainer** [MarginContainer]
       - **ProceedButton** [Button]
 
+### `res:///ui/seasonal/WinterCourt_UI(Pilar Refactor.tscn`
+- **WinterCourtUI** [Control]
+- **Vignette** [ColorRect]
+- **MainSplit** [HBoxContainer]
+  - **LeftSpineBackground** [PanelContainer]
+    - **LeftSpine** [VBoxContainer]
+      - **TitlePanel** [PanelContainer]
+        - **Margin** [MarginContainer]
+          - **SeverityLabel** [Label]
+      - **ContextMargin** [MarginContainer]
+        - **ContextVBox** [VBoxContainer]
+          - **JarlNameLabel** [Label]
+          - **ActionPointsLabel** [Label]
+          - **HSeparator** [HSeparator]
+          - **ResourceTotem** [VBoxContainer]
+      - **Spacer** [Control]
+      - **DescriptionAnchor** [MarginContainer]
+        - **DescriptionLabel** [Label]
+  - **RitualStage** [CenterContainer]
+    - **CardsContainer** [HBoxContainer]
+- **WinterCourtUIDiagnostics** [Node]
+
 ### `res:///ui/seasonal/WinterCourt_UI.tscn`
 - **WinterCourtUI** [Control]
-- **Background** [Panel]
-- **MainLayout** [VBoxContainer]
-  - **Stratum1_Burden** [PanelContainer]
-    - **Margin** [MarginContainer]
-      - **HBox** [HBoxContainer]
-        - **SeverityLabel** [Label]
-        - **VSeparator** [VSeparator]
-        - **DeficitContainer** [VBoxContainer]
-  - **Stratum2_Hall** [PanelContainer]
-    - **VBox** [VBoxContainer]
-      - **ActionPointsLabel** [Label]
-      - **CardScroll** [ScrollContainer]
-        - **Centerer** [CenterContainer]
-          - **CardsContainer** [HBoxContainer]
-  - **Stratum3_Bloodline** [PanelContainer]
-    - **Margin** [MarginContainer]
-      - **HBox** [HBoxContainer]
-        - **JarlNameLabel** [Label]
-        - **JarlStatusLabel** [Label]
-        - **VSeparator** [VSeparator]
-        - **HeirStatusLabel** [Label]
-  - **BottomBar** [MarginContainer]
-    - **EndWinterButton** [Button]
+- **Vignette** [ColorRect]
+- **MainSplit** [HBoxContainer]
+  - **LeftSpineBackground** [PanelContainer]
+    - **LeftSpine** [VBoxContainer]
+      - **TitlePanel** [PanelContainer]
+        - **Margin** [MarginContainer]
+          - **SeverityLabel** [Label]
+      - **ContextMargin** [MarginContainer]
+        - **ContextVBox** [VBoxContainer]
+          - **JarlNameLabel** [Label]
+          - **ActionPointsLabel** [Label]
+          - **HSeparator** [HSeparator]
+          - **ResourceTotem** [VBoxContainer]
+      - **Spacer** [Control]
+      - **DescriptionAnchor** [MarginContainer]
+        - **DescriptionLabel** [Label]
+  - **RitualStage** [CenterContainer]
+    - **CardsContainer** [HBoxContainer]
+- **WinterCourtUIDiagnostics** [Node]
 
 ## 📜 SCRIPT API (Logic Structures)
 
@@ -5739,6 +5758,7 @@ const RAID_LOSS_RATIO_MIN: float = 0.2
 const RAID_LOSS_RATIO_MAX: float = 0.4
 const RAID_BUILDING_DMG_MIN: int = 50
 const RAID_BUILDING_DMG_MAX: int = 150
+var _last_paid_winter_year: int = -1
 func get_resource_cap(resource_type: String) -> int:
 	var settlement = SettlementManager.current_settlement
 	var key = resource_type.to_lower()
@@ -5768,6 +5788,8 @@ func get_projected_income() -> Dictionary[String, int]:
 					var key = res.to_lower()
 func get_winter_forecast() -> Dictionary:
 	var settlement = SettlementManager.current_settlement
+	var severity = WinterManager.upcoming_severity
+	var real_multiplier = WinterManager.get_multiplier_for_severity(severity)
 func calculate_winter_consumption_costs(severity_mult: float) -> Dictionary:
 	var settlement = SettlementManager.current_settlement
 	var pop = settlement.population_peasants
@@ -5775,6 +5797,7 @@ func calculate_winter_consumption_costs(severity_mult: float) -> Dictionary:
 	var base_food = (pop * WINTER_FOOD_BASE) + (warbands * WINTER_WARBAND_FOOD)
 	var base_wood = WINTER_WOOD_DEMAND
 func apply_winter_consumption(costs: Dictionary) -> void:
+	var current_year = DynastyManager.get_current_year()
 	var settlement = SettlementManager.current_settlement
 	var f_cost = costs.get(GameResources.FOOD, 0)
 	var w_cost = costs.get(GameResources.WOOD, 0)
@@ -5805,10 +5828,9 @@ func _calculate_demographics(settlement: SettlementData, payout_report: Dictiona
 	var pop = settlement.population_peasants
 	var current_food = settlement.treasury.get("food", 0)
 	var total_food_available = current_food 
-	var food_required = pop * FOOD_PER_PERSON_PER_YEAR
+	var food_required_for_growth = pop * WINTER_FOOD_BASE * 2 
 	var growth_rate = BASE_GROWTH_RATE
 	var event_msg = ""
-		var food_consumed = food_required
 	var net_change = int(pop * growth_rate)
 	var pop_change_str = ""
 	var msg_list: Array = payout_report["_messages"]
@@ -5856,7 +5878,7 @@ func draft_peasants_to_raiders(count: int, template: UnitData) -> void:
 	var actual_draft = min(available, count)
 	var new_warbands: Array[WarbandData] = []
 	var remaining = actual_draft
-		var batch_size = min(remaining, 10) # 10 men per band default
+		var batch_size = min(remaining, 10) 
 		var bondi_band = WarbandData.new(template)
 func calculate_hypothetical_yields(worker_counts: Dictionary) -> Dictionary:
 	var settlement = SettlementManager.current_settlement
@@ -5865,7 +5887,7 @@ func calculate_hypothetical_yields(worker_counts: Dictionary) -> Dictionary:
 	var wood_workers = worker_counts.get("wood", 0)
 			var b_data = load(entry["resource_path"])
 				var cap = b_data.peasant_capacity
-				var type = b_data.resource_type # "food" or "wood"
+				var type = b_data.resource_type 
 					var assigned = min(food_workers, cap)
 					var assigned = min(wood_workers, cap)
 func process_raid_return(result: RaidResultData) -> Dictionary:
@@ -5879,7 +5901,7 @@ func process_raid_return(result: RaidResultData) -> Dictionary:
 	var xp_gain = _calculate_raid_xp(outcome, grade)
 	var warbands_to_remove: Array[WarbandData] = []
 	var final_report = result.loot.duplicate()
-		var difficulty = 1 # Default
+		var difficulty = 1 
 		var bonus = 200 + (difficulty * 50)
 			var thralls = randi_range(2, 4) * difficulty
 func _calculate_raid_xp(outcome: String, grade: String) -> int:
@@ -5895,7 +5917,7 @@ func advance_construction_progress() -> Array[Dictionary]:
 		var workers = entry.get("peasant_count", 0)
 		var b_path = entry.get("resource_path", "")
 		var b_data = load(b_path) as BuildingData
-		var effort_required = 100 # Default fallback
+		var effort_required = 100 
 		var progress_gain = workers * BUILDER_EFFICIENCY
 		var current_progress = entry.get("progress", 0)
 		var new_progress = current_progress + progress_gain
@@ -6362,7 +6384,7 @@ func batch_update_labor(assignments: Dictionary) -> void:
 ### `res:///autoload/WinterManager.gd`
 ```gdscript
 extends Node
-signal winter_started
+signal winter_started(severity: int)
 signal winter_ended
 enum WinterSeverity { MILD, NORMAL, HARSH }
 @export_group("Probabilities")
@@ -6371,21 +6393,27 @@ enum WinterSeverity { MILD, NORMAL, HARSH }
 @export_group("Multipliers")
 @export var harsh_multiplier: float = 1.5
 @export var mild_multiplier: float = 0.75
-var current_severity: WinterSeverity = WinterSeverity.NORMAL
+@export var winter_duration_seconds: float = 60.0
+var current_severity: int = WinterSeverity.NORMAL
+var upcoming_severity: int = WinterSeverity.NORMAL
 var winter_consumption_report: Dictionary = {}
 var winter_upkeep_report: Dictionary = {} 
 var winter_crisis_active: bool = false
+func _ready() -> void:
+func _on_season_changed(new_season: String, _context: Dictionary) -> void:
 func start_winter_phase() -> void:
 func end_winter_phase() -> void:
+func _roll_upcoming_severity() -> void:
+	var roll = randf()
 func calculate_winter_demand(settlement: SettlementData) -> Dictionary:
-	var mult: float = 1.0
+	var mult = get_multiplier_for_severity(upcoming_severity)
 	var base_food = (settlement.population_peasants * 1) + (settlement.warbands.size() * 5)
 	var base_wood = 20
 	var final_food = int(base_food * mult)
 	var final_wood = int(base_wood * mult)
 func _calculate_winter_needs() -> void:
 	var settlement = SettlementManager.current_settlement
-	var mult: float = 1.0
+	var mult = get_multiplier_for_severity(current_severity)
 	var costs = EconomyManager.calculate_winter_consumption_costs(mult)
 	var food_cost = costs.get(GameResources.FOOD, 0)
 	var wood_cost = costs.get(GameResources.WOOD, 0)
@@ -6406,8 +6434,8 @@ func play_seasonal_card(card: SeasonalCardResource) -> bool:
 func resolve_crisis_with_sacrifice(sacrifice_type: String) -> bool:
 	var settlement = SettlementManager.current_settlement
 			var deaths = max(1, int(winter_consumption_report["food_deficit"] / 5))
-func _roll_severity() -> void:
-	var roll = randf()
+func get_multiplier_for_severity(severity_enum: int) -> float:
+func _get_severity_name(severity_enum: int) -> String:
 func _get_empty_report() -> Dictionary:
 ```
 
@@ -6762,7 +6790,7 @@ class_name SettlementData
 @export var max_garrison_bonus: int = 0
 @export var map_seed: int = 0
 @export var population_peasants: int = 10 # Free Peasants
-@export var population_thralls: int = 5 # Captive Workers
+@export var population_thralls: int = 0 # Captive Workers
 @export var worker_assignments: Dictionary = {}
 @export var has_stability_debuff: bool = false
 @export var unrest: int = 0 # 0-100 scale. 100 = Rebellion.
@@ -9658,8 +9686,10 @@ const BUILDING_PATHS = [
 @export var sidebar_content: Control
 var is_sidebar_open: bool = false
 var sidebar_tween: Tween
+var idle_worker_warning: ConfirmationDialog # NEW: Runtime generated dialog
 func _ready() -> void:
 	var available_buildings = _scan_for_buildings()
+func _setup_warning_dialog() -> void:
 func _connect_signals() -> void:
 func _setup_initial_state() -> void:
 func _on_dynasty_view_requested() -> void:
@@ -9681,10 +9711,27 @@ func _update_season_state(context: Dictionary = {}) -> void:
 	var current_season = DynastyManager.current_season
 	var is_summer = (current_season == DynastyManager.Season.SUMMER)
 func _on_advance_season_clicked() -> void:
+		var census = EconomyManager.get_population_census()
+		var idle_peasants = census["peasants"]["idle"]
+		var idle_thralls = census["thralls"]["idle"]
+		var total_idle = idle_peasants + idle_thralls
+			var msg = "You have %d idle workers (%d Peasants, %d Thralls).\n\n" % [total_idle, idle_peasants, idle_thralls]
 func _update_center_view(season_enum: int, context: Dictionary) -> void:
 	var scene_to_load: PackedScene
 	var season_string_name = ""
 		var instance = scene_to_load.instantiate()
+```
+
+### `res:///ui/MainUiDebugger.gd`
+```gdscript
+extends Node
+func _ready() -> void:
+func _perform_audit(trigger: String) -> void:
+	var settlement = SettlementManager.current_settlement
+	var raw_peasants = settlement.population_peasants
+	var raw_thralls = settlement.population_thralls
+	var soldier_count = 0
+	var total_biological_humans = raw_peasants + raw_thralls + soldier_count
 ```
 
 ### `res:///ui/PauseButton.gd`
@@ -9851,8 +9898,11 @@ signal dynasty_view_requested
 @onready var wood_label: Label = %WoodLabel
 @onready var food_label: Label = %FoodLabel
 @onready var stone_label: Label = %StoneLabel
-@onready var pop_label: Label = %PeasantLabel
+@onready var villager_label: Label = %VillagerLabel
 @onready var thrall_label: Label = %ThrallLabel
+@onready var soldier_label: Label = %SoldierLabel
+@onready var total_pop_label: Label = %TotalPopLabel
+@onready var total_idle_pop_label: Label = %TotalIdlePopLabel
 @onready var unit_count_label: Label = %UnitCountLabel
 func _ready() -> void:
 func _connect_signals() -> void:
@@ -9865,11 +9915,16 @@ func _refresh_identity() -> void:
 func _refresh_treasury_from_manager() -> void:
 func _update_identity_labels(jarl: Resource) -> void:
 func _update_resource_labels(treasury: Dictionary) -> void:
-func _update_population_stats() -> void:
-	var idle_p = SettlementManager.get_idle_peasants()
-	var total_p = SettlementManager.current_settlement.population_peasants
-	var idle_t = SettlementManager.get_idle_thralls()
-	var total_t = SettlementManager.current_settlement.population_thralls
+func _update_population_display() -> void:
+	var census = EconomyManager.get_population_census()
+	var peasants_total = census.get("peasants", {}).get("total", 0)
+	var thralls_total = census.get("thralls", {}).get("total", 0)
+	var soldiers_total = census.get("soldiers", {}).get("total", 0)
+	var peasants_idle = census.get("peasants", {}).get("idle", 0)
+	var thralls_idle = census.get("thralls", {}).get("idle", 0)
+	var total_pop = peasants_total + thralls_total + soldiers_total
+	var total_idle = peasants_idle + thralls_idle
+func _update_count_label(lbl: Label, count: int) -> void:
 func _on_treasury_updated(new_treasury: Dictionary) -> void:
 ```
 
@@ -10099,7 +10154,7 @@ extends Control
 var current_report: AutumnReport
 var active_tween: Tween
 var is_animation_finished: bool = false
-var can_interact: bool = false 
+const MAX_STORAGE_CAP_PLACEHOLDER: int = 999 # Placeholder for future storage system
 const COLOR_OK = Color("55ff55") # Neon Green
 const COLOR_FAIL = Color("ff5555") # Soft Red
 const COLOR_WARN = Color("ffaa00") # Gold/Orange
@@ -10108,8 +10163,11 @@ func _ready() -> void:
 func _apply_text_colors() -> void:
 	var labels = [settlement_name_label, food_stock_label, wood_stock_label]
 func _setup_connections() -> void:
-func _on_season_changed(new_season_name: String, context_data: Dictionary) -> void:
+func _on_season_changed(new_season_name: String, _context_data: Dictionary) -> void:
+func _on_advance_requested() -> void:
 func _start_ritual(context_data: Dictionary) -> void:
+	var fresh_forecast = EconomyManager.get_winter_forecast()
+	var fresh_food_demand = fresh_forecast.get(GameResources.FOOD, 0)
 func _populate_header() -> void:
 	var settlement = SettlementManager.current_settlement
 	var display_name = "Settlement"
@@ -10119,10 +10177,13 @@ func _animate_sequence() -> void:
 	var food_held = int(current_report.treasury_snapshot.get(GameResources.FOOD, 0))
 	var wood_held = int(current_report.treasury_snapshot.get(GameResources.WOOD, 0))
 	var duration = 1.5
-func _update_resource_label(current_val: int, label: Label, demand: int) -> void:
+func _update_resource_label(current_val: int, label: Label, demand: int, harvest: int) -> void:
+	var base_str = "%d / %d" % [current_val, MAX_STORAGE_CAP_PLACEHOLDER]
+	var math_str = ""
 func _reveal_verdict() -> void:
 	var food_held = int(current_report.treasury_snapshot.get(GameResources.FOOD, 0))
-	var is_food_safe = food_held >= current_report.winter_demand
+	var total_food_available = food_held + current_report.harvest_yield
+	var is_food_safe = total_food_available >= current_report.winter_demand
 	var fade_tween = create_tween().set_parallel(true)
 	var wood_held = int(current_report.treasury_snapshot.get(GameResources.WOOD, 0))
 	var is_wood_ok = wood_held > 20 
@@ -10131,9 +10192,10 @@ func _on_sign_pressed() -> void:
 func _skip_animation() -> void:
 	var food_held = int(current_report.treasury_snapshot.get(GameResources.FOOD, 0))
 	var wood_held = int(current_report.treasury_snapshot.get(GameResources.WOOD, 0))
-func _commit_and_close() -> void:
-func _build_live_context() -> Dictionary:
-	var ctx = {}
+func _hide_sign_button() -> void:
+	var btween = create_tween()
+func _close_ledger() -> void:
+	var fade_out = create_tween()
 ```
 
 ### `res:///ui/seasonal/AutumnUiDebugger.gd`
@@ -10189,35 +10251,20 @@ func _on_end_winter_pressed() -> void:
 
 ### `res:///ui/seasonal/Debugger.gd`
 ```gdscript
-class_name AutumnDebugger
 extends Node
-var _target_ui: Control
-var _watched_state: Dictionary = {} 
-var _is_tracing: bool = false
-var _start_time: int = 0
 func _ready() -> void:
-func _process(_delta: float) -> void:
-func _attempt_hook_ui() -> void:
-		var labels_to_find = ["FoodStock", "FoodStatus", "WoodStock", "WoodStatus", "WinterOutlookLabel", "SettlementName"]
-			var node = _target_ui.find_child(name, true, false)
-func _register_watcher(node: Label) -> void:
-func _trace_ui_updates() -> void:
-	var time = Time.get_ticks_msec() - _start_time
-		var prev = _watched_state[label]
-		var curr_text = label.text
-		var curr_mod = label.modulate
-		var curr_vis = label.visible
-		var curr_self = label.self_modulate
-func run_diagnostics() -> void:
+func _perform_harvest_audit() -> void:
+	var projection = EconomyManager.get_projected_income()
+	var yearly_food = projection.get("food", 0)
+	var theoretical_harvest = yearly_food 
 	var settlement = SettlementManager.current_settlement
-		var forecast = EconomyManager.get_winter_forecast()
-	var mock_context = _build_mock_context()
-	var report = AutumnReport.new()
-func _build_mock_context() -> Dictionary:
-	var ctx = {}
-	var mock_payout_amount = 100
-		var raw_treasury = SettlementManager.current_settlement.treasury.duplicate()
-		var current_food = raw_treasury.get(GameResources.FOOD, 0)
+	var found_farms = 0
+			var b_data = load(entry["resource_path"])
+				var p_count = entry.get("peasant_count", 0)
+				var passive = b_data.base_passive_output
+				var output = p_count * passive
+	var parent = get_parent() # AutumnLedgerUI
+	var report_yield = 0
 ```
 
 ### `res:///ui/seasonal/SeasonalCard_UI.gd`
@@ -10225,17 +10272,28 @@ func _build_mock_context() -> Dictionary:
 class_name SeasonalCard_UI
 extends Control
 signal card_clicked(card_data: SeasonalCardResource)
-@onready var title_label: Label = %TitleLabel
-@onready var description_label: Label = %DescriptionLabel
-@onready var icon_rect: TextureRect = %IconRect
-@onready var cost_container: HBoxContainer = %CostContainer
-@onready var ap_cost_label: Label = %APCostLabel # Inside CostContainer
-@onready var gold_cost_label: Label = %GoldCostLabel
+signal card_denied(card_data: SeasonalCardResource, reason: String)
+signal card_hovered(card_data: SeasonalCardResource)
+signal card_exited()
 @onready var select_button: Button = %SelectButton
+@onready var title_label: Label = %TitleLabel 
+@onready var description_label: Label = %DescriptionLabel
+@onready var cost_label: Label = %CostLabel 
 var _card_data: SeasonalCardResource
+var _can_afford: bool = true
+var _is_hovered: bool = false
 func _ready() -> void:
+func _update_pivot() -> void:
 func setup(card: SeasonalCardResource, can_afford: bool = true) -> void:
+	var cost_text = ""
 func _on_button_pressed() -> void:
+func _play_error_animation() -> void:
+	var tween = create_tween()
+	var base_x = position.x
+func _on_mouse_entered() -> void:
+	var tween = create_tween()
+func _on_mouse_exited() -> void:
+	var tween = create_tween()
 ```
 
 ### `res:///ui/seasonal/SpringCouncil_UI.gd`
@@ -10257,7 +10315,7 @@ func _on_diagnostic_timeout() -> void:
 func _deal_cards() -> void:
 	var spring_deck: Array[SeasonalCardResource] = []
 	var cards_to_spawn = min(hand_size, spring_deck.size())
-		var card_instance = card_prefab.instantiate() as SeasonalCard_UI
+		var card_instance = card_prefab.instantiate()
 func _on_card_selected(card: SeasonalCardResource) -> void:
 func _commit_choice() -> void:
 ```
@@ -10563,13 +10621,11 @@ extends Control
 @export var available_court_cards: Array[SeasonalCardResource] = []
 @export var card_prefab: PackedScene
 @onready var severity_label: Label = %SeverityLabel
-@onready var deficit_container: VBoxContainer = %DeficitContainer
+@onready var resource_totem: VBoxContainer = %ResourceTotem # Was DeficitContainer
 @onready var action_points_label: Label = %ActionPointsLabel
+@onready var description_label: Label = %DescriptionLabel # Now anchored in the Spine
+@onready var jarl_name_label: Label = %JarlNameLabel # Dynasty Context
 @onready var cards_container: HBoxContainer = %CardsContainer
-@onready var end_winter_button: Button = %EndWinterButton
-@onready var jarl_name_label: Label = %JarlNameLabel
-@onready var jarl_status_label: Label = %JarlStatusLabel
-@onready var heir_status_label: Label = %HeirStatusLabel
 var current_ap: int = 0
 var max_ap: int = 0
 func _ready() -> void:
@@ -10578,32 +10634,110 @@ func _on_ap_updated(new_amount: int) -> void:
 func _on_treasury_updated(_new_treasury: Dictionary) -> void:
 func setup_winter_view() -> void:
 	var jarl: JarlData = DynastyManager.get_current_jarl()
-func _refresh_stratum_burden() -> void:
+		var parent = description_label.get_parent()
+func _refresh_resource_totem() -> void:
 	var severity_name = "NORMAL"
 	var treasury = SettlementManager.current_settlement.treasury
 	var forecast = EconomyManager.get_winter_forecast()
-	var food_demand = forecast.get(GameResources.FOOD, 0)
-	var wood_demand = forecast.get(GameResources.WOOD, 0)
-	var food_stock = treasury.get(GameResources.FOOD, 0)
-	var wood_stock = treasury.get(GameResources.WOOD, 0)
-	var food_deficit = max(0, food_demand - food_stock)
-	var wood_deficit = max(0, wood_demand - wood_stock)
-func _add_burden_entry(title: String, value: String, color: Color) -> void:
-	var entry = Label.new()
-func _refresh_stratum_hall() -> void:
+	var food_deficit = max(0, forecast.get(GameResources.FOOD, 0) - treasury.get(GameResources.FOOD, 0))
+	var wood_deficit = max(0, forecast.get(GameResources.WOOD, 0) - treasury.get(GameResources.WOOD, 0))
+func _add_totem_entry(title: String, value: String, color: Color) -> void:
+	var box = HBoxContainer.new()
+	var lbl_title = Label.new()
+	var lbl_val = Label.new()
+func _update_spine_header() -> void:
+func _refresh_dynasty_context() -> void:
+	var jarl: JarlData = DynastyManager.get_current_jarl()
+func _refresh_ritual_stage() -> void:
 		var card_instance = card_prefab.instantiate()
 		var can_afford = _can_afford(card_data)
 func _can_afford(card: SeasonalCardResource) -> bool:
 	var costs = {}
-func _update_hall_ui() -> void:
 func _on_card_clicked(card: SeasonalCardResource) -> void:
 	var success: bool = WinterManager.play_seasonal_card(card)
-func _refresh_stratum_bloodline() -> void:
-	var jarl: JarlData = DynastyManager.get_current_jarl()
-	var status_text: String = "Vigorous"
-	var status_color: Color = Color.GREEN
-	var heir_count: int = jarl.get_available_heir_count()
-func _on_end_winter_pressed() -> void:
+func _on_card_denied(card: SeasonalCardResource, _reason: String) -> void:
+func _on_card_hovered(card: SeasonalCardResource) -> void:
+func _on_card_exited() -> void:
+func _flash_spine_warning(message: String) -> void:
+		var original_text = action_points_label.text
+```
+
+### `res:///ui/seasonal/WinterCourtUiDiagnostics.gd`
+```gdscript
+class_name WinterCourtDiagnostic
+extends Node
+@export_group("Controls")
+@export_tool_button("Run Full Diagnostics") var _run_check_action = _run_diagnostics
+@export var hotkey: Key = KEY_F6
+@export_group("Reference Checks")
+@export var critical_node_properties: Array[String] = [
+@export var required_bus_signals: Array[String] = [
+@export_group("Layout Symmetry Settings")
+@export var target_aspect_ratio: float = 0.66
+@export var preferred_gutter_px: int = 40
+@export var preferred_margin_px: int = 60
+var _last_known_food: int = -9999
+var _spy_active: bool = false
+func _ready() -> void:
+			var bus = get_node("/root/EventBus")
+					var sm = get_node("/root/SettlementManager")
+func _input(event: InputEvent) -> void:
+func _on_treasury_spy_event(new_treasury: Dictionary) -> void:
+	var new_food = new_treasury.get("food", 0)
+		var delta = new_food - _last_known_food
+		var direction = "GAINED" if delta > 0 else "LOST"
+func _run_diagnostics() -> void:
+	var parent = get_parent()
+	var passed_checks = 0
+	var total_checks = 0
+		var val = parent.get(prop_name)
+	var cards = parent.get("available_court_cards")
+		var null_cards = 0
+	var prefab = parent.get("card_prefab")
+	var event_bus = get_node_or_null("/root/EventBus")
+				var connections = event_bus.get_signal_connection_list(sig_name)
+				var is_connected = false
+	var blocker_found = false
+	var root = parent.get_parent()
+			var sibling = root.get_child(i)
+	var econ = get_node_or_null("/root/EconomyManager")
+	var settlement = get_node_or_null("/root/SettlementManager")
+		var forecast = econ.get_winter_forecast() if econ.has_method("get_winter_forecast") else {}
+	var container = parent.get("cards_container")
+		var metrics = get_trio_layout_metrics()
+		var cont_rect = container.get_global_rect()
+		var parent_rect = parent.get_global_rect()
+		var overflow_x = cont_rect.position.x < parent_rect.position.x - 10 or cont_rect.end.x > parent_rect.end.x + 10
+		var overflow_y = cont_rect.position.y < parent_rect.position.y - 10 or cont_rect.end.y > parent_rect.end.y + 10
+		var children = container.get_children()
+		var actual_card_found = false
+				var size = child.size
+		var treasury = settlement.current_settlement.treasury
+		var forecast = econ.get_winter_forecast()
+		var severity = "NORMAL"
+			var wm = get_node("/root/WinterManager")
+		var food_stock = treasury.get("food", 0)
+		var food_demand = forecast.get("food", 0)
+		var wood_stock = treasury.get("wood", 0)
+		var wood_demand = forecast.get("wood", 0)
+		var implied_start_food = food_stock + food_demand # Assuming deficit was met or consumption applied
+		var implied_start_wood = wood_stock + wood_demand
+			var food_cap = econ.get_storage_cap("food")
+func get_trio_layout_metrics() -> Dictionary:
+	var container = get_parent().get("cards_container")
+	var cont_rect = container.get_rect()
+	var cont_w = cont_rect.size.x
+	var cont_h = cont_rect.size.y
+	var max_h_safe = cont_h * 0.9
+	var w_based_on_h = max_h_safe * target_aspect_ratio
+	var available_w = cont_w - (preferred_margin_px * 2) - (preferred_gutter_px * 2)
+	var w_based_on_w = available_w / 3.0
+	var final_w = 0.0
+	var final_h = 0.0
+	var is_safe = final_h <= cont_h
+func _pass(msg: String) -> void: 
+func _fail(msg: String) -> void: 
+func _warn(msg: String) -> void: 
 ```
 
 ## 💾 GAME DATA (Resources)
@@ -11178,13 +11312,10 @@ description = "Boosts building construction time. Decreases authority for raids.
 [ext_resource type="Script" uid="uid://cni5gdnpbb1v2" path="res://data/resources/SeasonalCardResource.gd" id="1_ieg62"]
 [resource]
 script = ExtResource("1_ieg62")
-season = 1
-title = "Host a Grand Feast"
 description = "Display your prosperity and invite local lords to your hall.
-- 100 food
-+ 50 renown
+- 100 food; + 50 renown
 "
-cost_ap = 1
+season = 1
 cost_food = 100
 grant_renown = 50
 ```
@@ -11195,13 +11326,12 @@ grant_renown = 50
 [ext_resource type="Script" uid="uid://cni5gdnpbb1v2" path="res://data/resources/SeasonalCardResource.gd" id="1_vhnwa"]
 [resource]
 script = ExtResource("1_vhnwa")
-season = 1
-title = "Invite Vikings"
 description = "You spread the word that you plan to go viking in the summer.
 - 100 renown
 + 3 AP
 - Chance of a warband joining your this summer
-- Must collect at least 150 byt the end of Autumn"
+- Must collect at least 150 gold by Autumn"
+season = 1
 cost_ap = 2
 ```
 
@@ -12582,6 +12712,8 @@ size = Vector2(10, 2)
 - `res:///ui/DynastyUI.gd`
   - depends on: `res://ui/components/HeirCard.tscn`
   - depends on: `res://textures/placeholders/unit_placeholder.png`
+- `res:///ui/seasonal/Debugger.gd`
+  - depends on: `resource_path`
 - `res:///ui/seasonal/SummerAllocation_UI.gd`
   - depends on: `resource_path`
   - depends on: `resource_path`

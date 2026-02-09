@@ -55,6 +55,19 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "Projected: ---"
 
+[node name="HSeparator" type="HSeparator" parent="HBoxContainer/InfoPanel"]
+layout_mode = 2
+
+[node name="WinterDemandLabel" type="Label" parent="HBoxContainer/InfoPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Projected: ---"
+
+[node name="WinterStatusLabel" type="Label" parent="HBoxContainer/InfoPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Projected: ---"
+
 [node name="CommitBtn" type="Button" parent="HBoxContainer/InfoPanel"]
 unique_name_in_owner = true
 layout_mode = 2

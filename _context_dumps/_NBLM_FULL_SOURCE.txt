@@ -2,7 +2,7 @@ PROJECT SOURCE CODE LIBRARY
 ===========================
 CONTAINS: Full Implementation Logic, Scene Trees, and Resource Data.
 INSTRUCTION: This is the raw source code. Use this to answer specific implementation questions.
-GENERATED: 2026-02-06T12:54:11
+GENERATED: 2026-02-09T09:40:37
 ===========================
 
 
@@ -27107,7 +27107,6 @@ func _generate_oath_name() -> String:
 --------------------------------------------------
 FILE: res:///autoload/EconomyManager.gd
 --------------------------------------------------
-# res://autoload/EconomyManager.gd
 extends Node
 
 # --- EFFICIENCY CONSTANTS ---
@@ -27142,6 +27141,11 @@ const RAID_LOSS_RATIO_MIN: float = 0.2
 const RAID_LOSS_RATIO_MAX: float = 0.4
 const RAID_BUILDING_DMG_MIN: int = 50
 const RAID_BUILDING_DMG_MAX: int = 150
+
+# --- INTERNAL STATE ---
+# ARCHITECTURE FIX: Track the fiscal year instead of raw frames.
+# This ensures we only pay winter costs once per year, regardless of call frequency.
+var _last_paid_winter_year: int = -1
 
 # --- PUBLIC QUERIES ---
 
@@ -27216,14 +27220,10 @@ func get_projected_income() -> Dictionary[String, int]:
 	return projection
 
 ## NEW: Centralized Winter Forecast Logic
-## Returns anticipated demand for Food and Wood based on population.
-## UPDATED: Uses authoritative Winter constants and Upcoming Severity to prevent UI drift
 func get_winter_forecast() -> Dictionary:
 	var settlement = SettlementManager.current_settlement
 	if not settlement: return {GameResources.FOOD: 0, GameResources.WOOD: 0}
 	
-	# CRITICAL FIX: Don't assume 1.0. Ask the WinterManager what is coming.
-	# This ensures the Ledger UI matches the actual Winter deduction exactly.
 	var severity = WinterManager.upcoming_severity
 	var real_multiplier = WinterManager.get_multiplier_for_severity(severity)
 	
@@ -27248,8 +27248,19 @@ func calculate_winter_consumption_costs(severity_mult: float) -> Dictionary:
 # --- TURN LOGIC (SEASONAL) ---
 
 func apply_winter_consumption(costs: Dictionary) -> void:
+	# LOGIC FIX: State-Aware Idempotency.
+	# Instead of debouncing frames, we check if the current year has already been billed.
+	# This treats the source of the issue (logic unaware of state) rather than the symptom (double calling).
+	var current_year = DynastyManager.get_current_year()
+	if current_year == _last_paid_winter_year:
+		Loggie.msg("EconomyManager: Winter consumption already applied for Year %d. Ignoring duplicate request." % current_year).domain(LogDomains.ECONOMY).warn()
+		return
+	
 	var settlement = SettlementManager.current_settlement
 	if not settlement: return
+
+	# Update State: Mark this year as paid
+	_last_paid_winter_year = current_year
 
 	var f_cost = costs.get(GameResources.FOOD, 0)
 	var w_cost = costs.get(GameResources.WOOD, 0)
@@ -27261,7 +27272,7 @@ func apply_winter_consumption(costs: Dictionary) -> void:
 	settlement.treasury[GameResources.FOOD] = max(0, current_food - f_cost)
 	settlement.treasury[GameResources.WOOD] = max(0, current_wood - w_cost)
 	
-	Loggie.msg("EconomyManager: Applied Winter Consumption: %s" % costs).domain(LogDomains.ECONOMY).info()
+	Loggie.msg("EconomyManager: Applied Winter Consumption (Year %d): %s" % [current_year, costs]).domain(LogDomains.ECONOMY).info()
 	EventBus.treasury_updated.emit(settlement.treasury)
 
 ## NEW: Centralized Crisis Resolution (Sacrifices)
@@ -27271,7 +27282,6 @@ func resolve_winter_crisis_sacrifice(sacrifice_type: String, deficit_data: Dicti
 	
 	match sacrifice_type:
 		"starve_peasants":
-			# Use constant string for deficit key for safety
 			var deaths = max(1, int(deficit_data.get("food_deficit", 0) / 5))
 			settlement.population_peasants = max(0, settlement.population_peasants - deaths)
 			Loggie.msg("EconomyManager: Sacrificed %d Peasants" % deaths).domain(LogDomains.ECONOMY).warn()
@@ -27287,7 +27297,6 @@ func resolve_winter_crisis_sacrifice(sacrifice_type: String, deficit_data: Dicti
 	
 	EventBus.treasury_updated.emit(settlement.treasury)
 
-## NEW: Professional Recruitment (Population Neutral)
 func recruit_professional_unit(unit_cost: Dictionary, unit_data: Variant) -> bool:
 	if attempt_purchase(unit_cost):
 		var settlement = SettlementManager.current_settlement
@@ -27300,7 +27309,6 @@ func calculate_seasonal_payout(season_name: String) -> Dictionary:
 	var settlement = SettlementManager.current_settlement
 	if not settlement: return {}
 	
-	# Typed as Variant because it holds both ints (resources) and Array (messages)
 	var total_payout: Dictionary[String, Variant] = { "_messages": [] }
 	
 	# 1. Calculate Payouts
@@ -27331,10 +27339,9 @@ func calculate_seasonal_payout(season_name: String) -> Dictionary:
 	if season_name == SEASON_WINTER:
 		var jarl = DynastyManager.get_current_jarl()
 		_calculate_demographics(settlement, total_payout, jarl)
-		# Note: Hunger logic handled by Orchestrator
 	
 	var log_report = total_payout.duplicate()
-	log_report.erase("_messages") # Remove UI clutter from console log
+	log_report.erase("_messages") 
 	
 	if log_report.is_empty():
 		Loggie.msg("Seasonal Payout: None").domain(LogDomains.ECONOMY).info()
@@ -27356,6 +27363,9 @@ func _apply_payout_to_treasury(settlement: SettlementData, payout: Dictionary) -
 		var space_left = cap - current
 		var amount_to_add = clampi(amount, 0, max(0, space_left))
 		
+		if amount_to_add < amount:
+			Loggie.msg("Storage Cap Reached! Wasted %d %s." % [amount - amount_to_add, key]).domain(LogDomains.ECONOMY).warn()
+		
 		if settlement.treasury.has(key):
 			settlement.treasury[key] += amount_to_add
 		else:
@@ -27365,20 +27375,25 @@ func _calculate_demographics(settlement: SettlementData, payout_report: Dictiona
 	var pop = settlement.population_peasants
 	var current_food = settlement.treasury.get("food", 0)
 	var total_food_available = current_food 
-	var food_required = pop * FOOD_PER_PERSON_PER_YEAR
+	
+	# BUG FIX: Double Taxation Removed.
+	# We rely on apply_winter_consumption to do the damage.
+	# This function ONLY checks if we have enough surplus for bonuses/growth.
+	var food_required_for_growth = pop * WINTER_FOOD_BASE * 2 
 	
 	var growth_rate = BASE_GROWTH_RATE
 	var event_msg = ""
 	
-	if total_food_available < food_required:
+	if total_food_available <= 0:
+		# If apply_winter_consumption left us at 0, we are starving.
 		growth_rate = STARVATION_PENALTY
 		event_msg = "[color=red]FAMINE: Food shortage caused deaths![/color]"
-		settlement.treasury["food"] = 0
 	else:
-		var food_consumed = food_required
-		settlement.treasury["food"] -= food_consumed
-		if total_food_available > (food_required * 1.5): growth_rate += FERTILITY_BONUS
-		if jarl and jarl.has_trait(TRAIT_FERTILE): growth_rate += FERTILITY_BONUS
+		# We survived. Do we flourish?
+		if total_food_available > food_required_for_growth: 
+			growth_rate += FERTILITY_BONUS
+		if jarl and jarl.has_trait(TRAIT_FERTILE): 
+			growth_rate += FERTILITY_BONUS
 			
 	var net_change = int(pop * growth_rate)
 	if growth_rate > 0 and net_change == 0: net_change = 1
@@ -27412,7 +27427,6 @@ func _calculate_total_land_capacity(settlement: SettlementData) -> int:
 	return total_cap
 
 # --- DELEGATED FUNCTIONS ---
-## Returns a snapshot of the current population state (Total vs Idle)
 func get_population_census() -> Dictionary:
 	var settlement = SettlementManager.current_settlement
 	if not settlement: 
@@ -27422,7 +27436,6 @@ func get_population_census() -> Dictionary:
 			"warbands": 0
 		}
 	
-	# 1. Calculate Assigned Workers by iterating buildings
 	var assigned_peasants = 0
 	var assigned_thralls = 0
 	
@@ -27430,12 +27443,10 @@ func get_population_census() -> Dictionary:
 		assigned_peasants += b_entry.get("peasant_count", 0)
 		assigned_thralls += b_entry.get("thrall_count", 0)
 		
-	# 2. Calculate Totals
 	var total_peasants = settlement.population_peasants
 	var total_thralls = settlement.population_thralls
 	var warband_count = settlement.warbands.size()
 	
-	# 3. Return Snapshot
 	return {
 		"peasants": {
 			"total": total_peasants,
@@ -27448,7 +27459,6 @@ func get_population_census() -> Dictionary:
 		"warbands": warband_count
 	}
 
-## Checks if the settlement can afford the cost without deducting resources.
 func can_afford(cost: Dictionary) -> bool:
 	var settlement = SettlementManager.current_settlement
 	if not settlement: return false
@@ -27483,9 +27493,7 @@ func deposit_resources(loot: Dictionary) -> void:
 				settlement.treasury[key] = to_add
 			
 	EventBus.treasury_updated.emit(settlement.treasury)
-	# NOTE: Caller must save_settlement() if needed.
 
-# Relaxed typing to accept generic Dictionaries from UI/Resources
 func attempt_purchase(item_cost: Dictionary) -> bool:
 	var settlement = SettlementManager.current_settlement
 	if not settlement: return false
@@ -27546,14 +27554,11 @@ func add_resources(resources: Dictionary) -> void:
 	
 # --- ALLOCATION & PROJECTION API (NEW) ---
 
-## NEW: Authoritative Peasant Drafting (Conservation of Mass)
-## Converts Peasants -> Warbands. Handles state mutation and RaidManager integration.
 func draft_peasants_to_raiders(count: int, template: UnitData) -> void:
 	var settlement = SettlementManager.current_settlement
 	if not settlement: return
 	if count <= 0: return
 
-	# 1. Deduct Peasants (State Mutation)
 	var available = settlement.population_peasants
 	var actual_draft = min(available, count)
 	
@@ -27562,20 +27567,14 @@ func draft_peasants_to_raiders(count: int, template: UnitData) -> void:
 	
 	settlement.population_peasants -= actual_draft
 	
-	# 2. Create Warbands
 	var new_warbands: Array[WarbandData] = []
 	var remaining = actual_draft
 	
 	while remaining > 0:
-		var batch_size = min(remaining, 10) # 10 men per band default
-		
-		# Calls _init(template), which sets name, max manpower, and loyalty automatically
+		var batch_size = min(remaining, 10) 
 		var bondi_band = WarbandData.new(template)
-		
-		# Overwrite only what differs from default (Peasant bands are rarely full strength initially)
 		bondi_band.is_bondi = true
 		bondi_band.current_manpower = batch_size 
-		# Note: We keep the auto-generated name from _init unless you specifically want "The Bondi"
 		bondi_band.custom_name = "The Bondi" 
 		
 		new_warbands.append(bondi_band)
@@ -27587,16 +27586,12 @@ func draft_peasants_to_raiders(count: int, template: UnitData) -> void:
 	Loggie.msg("EconomyManager: Drafted %d Peasants into %d Warbands" % [actual_draft, new_warbands.size()]).domain(LogDomains.ECONOMY).info()
 	EventBus.population_changed.emit()
 
-## NEW: Authoritative Yield Projection
-## Returns estimated output based on a theoretical distribution of labor
-# Updated signature: accepts Dictionary { "food": int, "wood": int }
 func calculate_hypothetical_yields(worker_counts: Dictionary) -> Dictionary:
 	var settlement = SettlementManager.current_settlement
 	if not settlement: return {}
 	
 	var yields = {"food": 0, "wood": 0}
 	
-	# Pools
 	var food_workers = worker_counts.get("food", 0)
 	var wood_workers = worker_counts.get("wood", 0)
 	
@@ -27605,9 +27600,8 @@ func calculate_hypothetical_yields(worker_counts: Dictionary) -> Dictionary:
 			var b_data = load(entry["resource_path"])
 			if b_data is EconomicBuildingData:
 				var cap = b_data.peasant_capacity
-				var type = b_data.resource_type # "food" or "wood"
+				var type = b_data.resource_type 
 				
-				# Check based on type
 				if type == "food" and food_workers > 0:
 					var assigned = min(food_workers, cap)
 					yields["food"] += assigned * b_data.base_passive_output
@@ -27622,9 +27616,6 @@ func calculate_hypothetical_yields(worker_counts: Dictionary) -> Dictionary:
 
 # --- RAID OUTCOME API (NEW) ---
 
-## NEW: Centralized Raid Return Logic
-## Handles Wergild, XP, Disbanding, Jarl Stats, and Treasury updates.
-## Returns a 'Receipt' dictionary for the UI to display.
 func process_raid_return(result: RaidResultData) -> Dictionary:
 	var settlement = SettlementManager.current_settlement
 	if not settlement: return {}
@@ -27632,7 +27623,6 @@ func process_raid_return(result: RaidResultData) -> Dictionary:
 	var outcome = result.outcome
 	var grade = result.victory_grade
 	
-	# 1. Calculate Wergild (Death Taxes)
 	var raw_gold = result.loot.get(GameResources.GOLD, 0)
 	var total_wergild = 0
 	var dead_count = 0
@@ -27644,35 +27634,29 @@ func process_raid_return(result: RaidResultData) -> Dictionary:
 			
 	var net_gold = max(0, raw_gold - total_wergild)
 	
-	# 2. Handle Disbanding (Bondi return to fields) & XP
 	var xp_gain = _calculate_raid_xp(outcome, grade)
 	var warbands_to_remove: Array[WarbandData] = []
 	
 	for warband in settlement.warbands:
-		# Disbanding Logic
 		if warband.is_bondi or warband.is_seasonal:
 			if warband.is_bondi and warband.current_manpower > 0:
 				settlement.population_peasants += warband.current_manpower
 			
 			warbands_to_remove.append(warband)
 			
-		# XP Logic (Only for survivors)
 		if not warband.is_wounded and xp_gain > 0:
 			warband.experience += xp_gain
 			
-	# Apply Removals
 	for wb in warbands_to_remove:
 		settlement.warbands.erase(wb)
 		
 	Loggie.msg("EconomyManager: Disbanded %d seasonal warbands." % warbands_to_remove.size()).domain(LogDomains.ECONOMY).info()
-	EventBus.population_changed.emit() # Notify UI that peasants returned
+	EventBus.population_changed.emit() 
 	
-	# 3. Calculate Final Loot & Bonuses
 	var final_report = result.loot.duplicate()
 	
-	# Victory Bonus Logic
 	if outcome == "victory":
-		var difficulty = 1 # Default
+		var difficulty = 1 
 		if RaidManager: difficulty = RaidManager.current_raid_difficulty
 		
 		var bonus = 200 + (difficulty * 50)
@@ -27680,11 +27664,9 @@ func process_raid_return(result: RaidResultData) -> Dictionary:
 		
 		net_gold += bonus
 		
-		# Thrall Logic (Preserving logic: "population" key used in loot summary)
 		if not final_report.has("population") and not final_report.has(GameResources.POP_THRALL):
-			 # Logic from snippet: randi_range(2, 4) * difficulty
 			var thralls = randi_range(2, 4) * difficulty
-			final_report["population"] = thralls # Using string literal to match UI expectation
+			final_report["population"] = thralls 
 			 
 		_update_jarl_stats(grade)
 		
@@ -27692,10 +27674,8 @@ func process_raid_return(result: RaidResultData) -> Dictionary:
 	if result.renown_earned != 0:
 		final_report["renown"] = result.renown_earned
 		
-	# 4. Apply to Treasury (State Mutation)
 	deposit_resources(final_report)
 	
-	# 5. Return Receipt for UI
 	return {
 		"outcome": outcome,
 		"grade": grade,
@@ -27731,9 +27711,6 @@ func _update_jarl_stats(grade: String) -> void:
 		
 # --- CONSTRUCTION API (NEW) ---
 
-## NEW: Authoritative Construction Progress
-## Iterates all pending buildings, applies worker progress, and returns a list of 
-## building entries that have completed construction this turn.
 func advance_construction_progress() -> Array[Dictionary]:
 	var settlement = SettlementManager.current_settlement
 	if not settlement: return []
@@ -27741,40 +27718,32 @@ func advance_construction_progress() -> Array[Dictionary]:
 	var completed_buildings: Array[Dictionary] = []
 	var indices_to_remove: Array[int] = []
 	
-	# Iterate backwards to safely track removals if needed, 
-	# though we usually remove after the loop.
 	for i in range(settlement.pending_construction_buildings.size()):
 		var entry = settlement.pending_construction_buildings[i]
 		
-		# 1. Get Workers
 		var workers = entry.get("peasant_count", 0)
 		if workers <= 0: continue
 		
-		# 2. Load Data for Requirements
 		var b_path = entry.get("resource_path", "")
 		if b_path == "": continue
 		
 		var b_data = load(b_path) as BuildingData
 		if not b_data: continue
 		
-		var effort_required = 100 # Default fallback
+		var effort_required = 100 
 		if "construction_effort_required" in b_data:
 			effort_required = b_data.construction_effort_required
 			
-		# 3. Apply Progress (Math Source of Truth)
 		var progress_gain = workers * BUILDER_EFFICIENCY
 		var current_progress = entry.get("progress", 0)
 		var new_progress = current_progress + progress_gain
 		
 		entry["progress"] = new_progress
 		
-		# 4. Check Completion
 		if new_progress >= effort_required:
 			completed_buildings.append(entry)
 			indices_to_remove.append(i)
 	
-	# Clean up pending list (State Mutation)
-	# Sort descending to remove from end first to preserve indices
 	indices_to_remove.sort()
 	indices_to_remove.reverse()
 	
@@ -27785,6 +27754,21 @@ func advance_construction_progress() -> Array[Dictionary]:
 		Loggie.msg("EconomyManager: %d buildings completed construction." % completed_buildings.size()).domain(LogDomains.ECONOMY).info()
 		
 	return completed_buildings
+
+## TODO: AUTUMN LEDGER IMPLEMENTATION (See: https://docs.google.com/document/d/1hPcGKTZ7utKlkwq4-laimI88i7LfDC3eBhSOqZXQmKE/edit?tab=t.0)
+## 1. Create FinancialSnapshot Resource (class_name FinancialSnapshot)
+## 2. Capture treasury state on Summer transition
+## 3. Categorize transactions (PLAYER_ACTION, RAID_LOOT, UPKEEP)
+## 4. Calculate: Start + Gains - (Spent + Upkeep)
+## 5. Emit seasonal_ledger_finalized via EventBus
+
+
+## TODO: STORAGE & POPULATION CAPS
+## 1. Implement get_max_capacity(resource_type: String) -> int
+## 2. Clamp deposit_resources() results to capacity
+## 3. Add 'is_at_pop_cap(unit_type)' check to recruitment logic
+## 4. Emit EventBus.resource_capped when overflow occurs
+## 5. Sync TopBar UI to show actual [Current / Max]
 
 
 --------------------------------------------------
@@ -31453,7 +31437,6 @@ metadata/_custom_type_script = "uid://cni5gdnpbb1v2"
 --------------------------------------------------
 FILE: res:///data/resources/SeasonalCardResource.gd
 --------------------------------------------------
-#res://data/resources/SeasonalCardResource.gd
 class_name SeasonalCardResource
 extends Resource
 
@@ -31483,7 +31466,7 @@ enum SeasonType { SPRING, WINTER }
 @export var grant_gold: int = 0
 ## Renown granted immediately
 @export var grant_renown: int = 0
-##Authority granted
+## Authority granted
 @export var grant_authority: int = 0
 
 @export_group("Seasonal Modifiers")
@@ -31512,14 +31495,11 @@ FILE: res:///data/resources/Winter Cards/Card_Winter_Feast.tres
 
 [resource]
 script = ExtResource("1_ieg62")
-season = 1
-title = "Host a Grand Feast"
 description = "Display your prosperity and invite local lords to your hall. 
 
-- 100 food
-+ 50 renown
+- 100 food; + 50 renown
 "
-cost_ap = 1
+season = 1
 cost_food = 100
 grant_renown = 50
 metadata/_custom_type_script = "uid://cni5gdnpbb1v2"
@@ -31534,13 +31514,12 @@ FILE: res:///data/resources/Winter Cards/Card_Winter_Recruit.tres
 
 [resource]
 script = ExtResource("1_vhnwa")
-season = 1
-title = "Invite Vikings"
 description = "You spread the word that you plan to go viking in the summer. 
 - 100 renown
 + 3 AP
 - Chance of a warband joining your this summer
-- Must collect at least 150 byt the end of Autumn"
+- Must collect at least 150 gold by Autumn"
+season = 1
 cost_ap = 2
 metadata/_custom_type_script = "uid://cni5gdnpbb1v2"
 
@@ -47514,7 +47493,7 @@ alignment = 2
 --------------------------------------------------
 FILE: res:///ui/MainGameUI.tscn
 --------------------------------------------------
-[gd_scene load_steps=13 format=3 uid="uid://b6x8q4y205n1"]
+[gd_scene load_steps=12 format=3 uid="uid://b6x8q4y205n1"]
 
 [ext_resource type="Script" uid="uid://c6dx4ttc1ufe3" path="res://ui/MainGameUi.gd" id="1_uuvct"]
 [ext_resource type="PackedScene" uid="uid://gyu45fs0qg5m" path="res://ui/TopBarUIComponent.tscn" id="2_3ebjf"]
@@ -47527,7 +47506,6 @@ FILE: res:///ui/MainGameUI.tscn
 [ext_resource type="PackedScene" uid="uid://djup50xtuylo4" path="res://ui/components/AllocationMenu.tscn" id="8_h5nvc"]
 [ext_resource type="PackedScene" uid="uid://dsa4vufqdwp0" path="res://ui/components/BuildMenu.tscn" id="9_amvws"]
 [ext_resource type="PackedScene" uid="uid://b808q4y205n3" path="res://ui/components/RaidMenu.tscn" id="9_h5nvc"]
-[ext_resource type="Script" uid="uid://21b3dv647udu" path="res://ui/MainUiDebugger.gd" id="12_ju110"]
 
 [node name="MainGameUI" type="Control" node_paths=PackedStringArray("top_bar", "bottom_bar", "season_advance_btn", "sidebar_panel", "sidebar_content")]
 layout_mode = 3
@@ -47631,7 +47609,6 @@ grow_vertical = 2
 text = "End Season"
 
 [node name="MainUIDebugger" type="Node" parent="."]
-script = ExtResource("12_ju110")
 
 [editable path="MainLayout/BottomBar"]
 [editable path="MainLayout/BottomBar/SeasonalActionsPanel/RaidPrepWindow"]
@@ -47853,7 +47830,7 @@ func _update_season_state(context: Dictionary = {}) -> void:
 		match current_season:
 			DynastyManager.Season.SPRING: season_advance_btn.text = "Start Summer"
 			DynastyManager.Season.SUMMER: season_advance_btn.text = "End Summer"
-			DynastyManager.Season.AUTUMN: season_advance_btn.text = "End Harvest"
+			DynastyManager.Season.AUTUMN: season_advance_btn.text = "Sign and Seal Ledger"
 			DynastyManager.Season.WINTER: season_advance_btn.text = "End Year"
 
 	_update_center_view(current_season, context)
@@ -49110,6 +49087,7 @@ layout_mode = 2
 layout_mode = 2
 
 [node name="VillagerIcon" type="TextureRect" parent="MarginContainer/MainLayout/PopulationHUD/Labels and Icons"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_vertical = 0
@@ -49118,11 +49096,13 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="VillagerLabel" type="Label" parent="MarginContainer/MainLayout/PopulationHUD/Labels and Icons"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 0
 text = "0"
 
 [node name="ThrallIcon" type="TextureRect" parent="MarginContainer/MainLayout/PopulationHUD/Labels and Icons"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_vertical = 0
@@ -49131,11 +49111,13 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="ThrallLabel" type="Label" parent="MarginContainer/MainLayout/PopulationHUD/Labels and Icons"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 0
 text = "0"
 
 [node name="SoldierIcon" type="TextureRect" parent="MarginContainer/MainLayout/PopulationHUD/Labels and Icons"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_vertical = 0
@@ -49144,16 +49126,20 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="SoldierLabel" type="Label" parent="MarginContainer/MainLayout/PopulationHUD/Labels and Icons"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 0
 text = "0"
 
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/MainLayout/PopulationHUD"]
-layout_mode = 2
-
-[node name="TotalPopLabel" type="Label" parent="MarginContainer/MainLayout/PopulationHUD/HBoxContainer"]
+[node name="TotalPopLabel" type="Label" parent="MarginContainer/MainLayout/PopulationHUD"]
+unique_name_in_owner = true
 layout_mode = 2
 text = "Total Population:  50"
+
+[node name="TotalIdlePopLabel" type="Label" parent="MarginContainer/MainLayout/PopulationHUD"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Idle Population:  50"
 
 [node name="VSeparator3" type="VSeparator" parent="MarginContainer/MainLayout"]
 layout_mode = 2
@@ -49211,11 +49197,11 @@ signal dynasty_view_requested
 # Population Section (New Text-Based HUD)
 # Note: Paths derived from new .tscn structure. 
 # Recommend setting 'Access as Unique Name' in Scene dock for robustness if structure changes.
-@onready var villager_label: Label = $"MarginContainer/MainLayout/PopulationHUD/Labels and Icons/VillagerLabel"
-@onready var thrall_label: Label = $"MarginContainer/MainLayout/PopulationHUD/Labels and Icons/ThrallLabel"
-@onready var soldier_label: Label = $"MarginContainer/MainLayout/PopulationHUD/Labels and Icons/SoldierLabel"
-@onready var total_pop_label: Label = $"MarginContainer/MainLayout/PopulationHUD/HBoxContainer/TotalPopLabel"
-
+@onready var villager_label: Label = %VillagerLabel
+@onready var thrall_label: Label = %ThrallLabel
+@onready var soldier_label: Label = %SoldierLabel
+@onready var total_pop_label: Label = %TotalPopLabel
+@onready var total_idle_pop_label: Label = %TotalIdlePopLabel
 # Legacy Army Count (Keep reference if needed for tooltip or debug, otherwise ignore)
 @onready var unit_count_label: Label = %UnitCountLabel
 
@@ -49301,27 +49287,42 @@ func _update_resource_labels(treasury: Dictionary) -> void:
 
 ## NEW: Aggregates census data and updates the segmented labels
 func _update_population_display() -> void:
-	if not EconomyManager: return
+	if not EconomyManager: 
+		Loggie.msg("TopBar: EconomyManager not found during update").domain(LogDomains.UI).warn()
+		return
 	
-	# Pull complete census (includes calculated soldier manpower)
+	# Pull complete census (includes calculated totals and idle counts)
 	var census = EconomyManager.get_population_census()
 	
-	# Extract Values
-	var peasants = census.get("peasants", {}).get("total", 0)
-	var thralls = census.get("thralls", {}).get("total", 0)
-	var soldiers = census.get("soldiers", {}).get("total", 0)
+	# Extract Totals
+	var peasants_total = census.get("peasants", {}).get("total", 0)
+	var thralls_total = census.get("thralls", {}).get("total", 0)
+	var soldiers_total = census.get("soldiers", {}).get("total", 0)
 	
-	# Calculate Total (or use EconomyManager.get_total_population_count())
-	var total = peasants + thralls + soldiers
+	# Extract Idle counts
+	var peasants_idle = census.get("peasants", {}).get("idle", 0)
+	var thralls_idle = census.get("thralls", {}).get("idle", 0)
 	
-	# Update Labels with Empty Space Handling (Dim if 0)
-	_update_count_label(villager_label, peasants)
-	_update_count_label(thrall_label, thralls)
-	_update_count_label(soldier_label, soldiers)
+	# Calculate Global Totals
+	var total_pop = peasants_total + thralls_total + soldiers_total
+	var total_idle = peasants_idle + thralls_idle
 	
-	# Update Total
+	# Update Category Labels
+	_update_count_label(villager_label, peasants_total)
+	_update_count_label(thrall_label, thralls_total)
+	_update_count_label(soldier_label, soldiers_total)
+	
+	# Update Total Population Label
 	if total_pop_label:
-		total_pop_label.text = "Total Population: %d" % total
+		total_pop_label.text = "Total Population: %d" % total_pop
+		
+	# Update Idle Population Label
+	if total_idle_pop_label:
+		total_idle_pop_label.text = "Idle: %d" % total_idle
+		# Optional: Visual cue if idle pop is high or zero
+		total_idle_pop_label.modulate = Color.WHITE if total_idle > 0 else Color(1, 1, 1, 0.5)
+
+	Loggie.msg("TopBar updated: Total %d | Idle %d" % [total_pop, total_idle]).domain(LogDomains.UI).debug()
 
 ## Helper to format and dim labels based on value
 func _update_count_label(lbl: Label, count: int) -> void:
@@ -50723,9 +50724,9 @@ extends Control
 var current_report: AutumnReport
 var active_tween: Tween
 var is_animation_finished: bool = false
-var can_interact: bool = false 
 
-# --- Visual Configuration (High Contrast) ---
+# --- Configuration ---
+const MAX_STORAGE_CAP_PLACEHOLDER: int = 999 # Placeholder for future storage system
 const COLOR_OK = Color("55ff55") # Neon Green
 const COLOR_FAIL = Color("ff5555") # Soft Red
 const COLOR_WARN = Color("ffaa00") # Gold/Orange
@@ -50742,25 +50743,28 @@ func _apply_text_colors() -> void:
 		if lbl: lbl.add_theme_color_override("font_color", COLOR_TEXT_DEFAULT)
 
 func _setup_connections() -> void:
-	if not sign_button.pressed.is_connected(_on_sign_pressed):
+	if sign_button and not sign_button.pressed.is_connected(_on_sign_pressed):
 		sign_button.pressed.connect(_on_sign_pressed)
 	
 	if EventBus.has_signal("season_changed"):
 		EventBus.season_changed.connect(_on_season_changed)
+		
+	if EventBus.has_signal("advance_season_requested"):
+		EventBus.advance_season_requested.connect(_on_advance_requested)
 
-func _on_season_changed(new_season_name: String, context_data: Dictionary) -> void:
+func _on_season_changed(new_season_name: String, _context_data: Dictionary) -> void:
 	if new_season_name == "Autumn":
-		# FIX: Wait one frame to ensure WinterManager has processed the signal 
-		# and rolled the new Severity/Weather before we display it.
 		await get_tree().process_frame
-		_start_ritual(context_data)
+		_start_ritual(_context_data)
+
+func _on_advance_requested() -> void:
+	if visible:
+		_close_ledger()
 
 func _start_ritual(context_data: Dictionary) -> void:
 	current_report = AutumnReport.new()
 	current_report.init_from_context(context_data)
 	
-	# FIX: Force-refresh the winter demand using the Authoritative Source.
-	# The 'context_data' might be stale (built before WinterManager rolled the dice).
 	var fresh_forecast = EconomyManager.get_winter_forecast()
 	var fresh_food_demand = fresh_forecast.get(GameResources.FOOD, 0)
 	
@@ -50768,13 +50772,16 @@ func _start_ritual(context_data: Dictionary) -> void:
 		Loggie.msg("AutumnLedger: Correcting Stale Forecast (%d -> %d)" % [current_report.winter_demand, fresh_food_demand]).domain(LogDomains.UI).info()
 		current_report.winter_demand = fresh_food_demand
 
+	modulate.a = 1.0
 	visible = true
 	move_to_front()
 	is_animation_finished = false
-	can_interact = false
 	
-	sign_button.text = "Skip Animation"
-	sign_button.disabled = false 
+	if sign_button:
+		sign_button.text = "Skip Animation"
+		sign_button.modulate.a = 1.0
+		sign_button.show()
+		sign_button.disabled = false 
 	
 	_populate_header()
 	_animate_sequence()
@@ -50799,9 +50806,9 @@ func _animate_sequence() -> void:
 	var food_held = int(current_report.treasury_snapshot.get(GameResources.FOOD, 0))
 	var wood_held = int(current_report.treasury_snapshot.get(GameResources.WOOD, 0))
 	
-	# Initial set
-	_update_resource_label(0, food_stock_label, current_report.winter_demand)
-	_update_resource_label(0, wood_stock_label, 0)
+	# Initial set with full formula
+	_update_resource_label(0, food_stock_label, current_report.winter_demand, current_report.harvest_yield)
+	_update_resource_label(0, wood_stock_label, 0, 0)
 	
 	food_status_label.modulate.a = 0
 	wood_status_label.modulate.a = 0
@@ -50810,32 +50817,43 @@ func _animate_sequence() -> void:
 	var duration = 1.5
 	active_tween.set_parallel(true)
 	
-	# Animate Food
-	active_tween.tween_method(_update_resource_label.bind(food_stock_label, current_report.winter_demand), 0, food_held, duration)\
-		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	# Animate Food Stockpile using the complex formatter
+	active_tween.tween_method(
+		func(val): _update_resource_label(val, food_stock_label, current_report.winter_demand, current_report.harvest_yield),
+		0, food_held, duration
+	).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		
-	# Animate Wood
-	active_tween.tween_method(_update_resource_label.bind(wood_stock_label, 0), 0, wood_held, duration)\
-		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	# Animate Wood Stockpile
+	active_tween.tween_method(
+		func(val): _update_resource_label(val, wood_stock_label, 0, 0),
+		0, wood_held, duration
+	).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	
 	active_tween.chain().tween_callback(_reveal_verdict)
 
-## Generic helper to update label text: "Current / Demand"
-func _update_resource_label(current_val: int, label: Label, demand: int) -> void:
+## Updated Helper to show: [Stockpile] / [Cap] - [Consumption] + [Harvest]
+func _update_resource_label(current_val: int, label: Label, demand: int, harvest: int) -> void:
+	if not label: return
+	
+	# Format: Stockpile / Cap
+	var base_str = "%d / %d" % [current_val, MAX_STORAGE_CAP_PLACEHOLDER]
+	
+	# Append math context if relevant (Consumption and Harvest)
+	var math_str = ""
 	if demand > 0:
-		label.text = "%d / %d" % [current_val, demand]
-	else:
-		label.text = "%d" % [current_val]
+		math_str += " - %d" % demand
+	if harvest > 0:
+		math_str += " + %d" % harvest
+		
+	label.text = base_str + math_str
 
 func _reveal_verdict() -> void:
 	is_animation_finished = true
-	sign_button.text = "Sign and Seal Ledger"
+	_hide_sign_button()
 	
 	var food_held = int(current_report.treasury_snapshot.get(GameResources.FOOD, 0))
-	var is_food_safe = food_held >= current_report.winter_demand
-	
-	if current_report.harvest_yield > 0:
-		food_stock_label.text += " (+%d Harvest)" % current_report.harvest_yield
+	var total_food_available = food_held + current_report.harvest_yield
+	var is_food_safe = total_food_available >= current_report.winter_demand
 	
 	var fade_tween = create_tween().set_parallel(true)
 	
@@ -50848,14 +50866,11 @@ func _reveal_verdict() -> void:
 	var wood_held = int(current_report.treasury_snapshot.get(GameResources.WOOD, 0))
 	var is_wood_ok = wood_held > 20 
 	wood_status_label.text = "[ STOCKPILED ]" if is_wood_ok else "[ LOW ]"
-	# Use Warning Color (Orange/Gold) for low wood instead of Red
 	wood_status_label.modulate = COLOR_OK if is_wood_ok else COLOR_WARN
 	fade_tween.tween_property(wood_status_label, "modulate:a", 1.0, 0.5)
 	
 	# Winter Outlook
 	var outlook_text = "WINTER OUTLOOK: " + ("SECURE" if is_food_safe else "DANGEROUS")
-	
-	# NEW: Add context for Severity
 	if WinterManager.upcoming_severity == WinterManager.WinterSeverity.HARSH:
 		outlook_text += " (HARSH)"
 	elif WinterManager.upcoming_severity == WinterManager.WinterSeverity.MILD:
@@ -50865,13 +50880,12 @@ func _reveal_verdict() -> void:
 	outlook_label.modulate = COLOR_OK if is_food_safe else COLOR_FAIL
 	fade_tween.tween_property(outlook_label, "modulate:a", 1.0, 0.5)
 	
-	get_tree().create_timer(0.5).timeout.connect(func(): can_interact = true)
+	EventBus.autumn_resolved.emit()
+	Loggie.msg("Autumn Ledger: Verdict revealed with formula view.").domain(LogDomains.UI).info()
 
 func _on_sign_pressed() -> void:
 	if not is_animation_finished:
 		_skip_animation()
-	elif can_interact:
-		_commit_and_close()
 
 func _skip_animation() -> void:
 	if active_tween and active_tween.is_valid():
@@ -50880,27 +50894,22 @@ func _skip_animation() -> void:
 	var food_held = int(current_report.treasury_snapshot.get(GameResources.FOOD, 0))
 	var wood_held = int(current_report.treasury_snapshot.get(GameResources.WOOD, 0))
 	
-	_update_resource_label(food_held, food_stock_label, current_report.winter_demand)
-	_update_resource_label(wood_held, wood_stock_label, 0)
+	_update_resource_label(food_held, food_stock_label, current_report.winter_demand, current_report.harvest_yield)
+	_update_resource_label(wood_held, wood_stock_label, 0, 0)
 	
 	_reveal_verdict()
 
-func _commit_and_close() -> void:
-	Loggie.msg("Autumn Ledger Signed.").domain(LogDomains.ECONOMY).info()
-	EventBus.autumn_resolved.emit()
-	EventBus.advance_season_requested.emit()
-	visible = false
+func _hide_sign_button() -> void:
+	if not sign_button: return
+	var btween = create_tween()
+	btween.tween_property(sign_button, "modulate:a", 0.0, 0.4)
+	btween.tween_callback(sign_button.hide)
 
-# --- Debugging Helper ---
-func _build_live_context() -> Dictionary:
-	var ctx = {}
-	if SettlementManager.current_settlement:
-		ctx["treasury"] = SettlementManager.current_settlement.treasury.duplicate()
-	else:
-		ctx["treasury"] = {}
-	ctx["forecast"] = EconomyManager.get_winter_forecast()
-	ctx["payout"] = {GameResources.FOOD: 0}
-	return ctx
+func _close_ledger() -> void:
+	var fade_out = create_tween()
+	fade_out.tween_property(self, "modulate:a", 0.0, 0.5)
+	fade_out.tween_callback(func(): visible = false)
+	Loggie.msg("Autumn Ledger: Closing UI.").domain(LogDomains.UI).debug()
 
 
 --------------------------------------------------
@@ -51440,7 +51449,7 @@ corner_radius_bottom_right = 5
 corner_radius_bottom_left = 5
 
 [node name="SeasonalCard_UI" type="PanelContainer"]
-custom_minimum_size = Vector2(200, 300)
+custom_minimum_size = Vector2(180, 300)
 offset_right = 40.0
 offset_bottom = 40.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_nweke")
@@ -51458,9 +51467,11 @@ layout_mode = 2
 
 [node name="TitleLabel" type="Label" parent="MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(180, 0)
 layout_mode = 2
 text = "Title "
 horizontal_alignment = 1
+autowrap_mode = 3
 
 [node name="IconRect" type="TextureRect" parent="MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
@@ -51468,24 +51479,17 @@ layout_mode = 2
 
 [node name="DescriptionLabel" type="Label" parent="MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(50, 50)
+custom_minimum_size = Vector2(180, 0)
 layout_mode = 2
-text = "Description"
+text = "[Flavor Description]"
 autowrap_mode = 3
 
-[node name="CostContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+[node name="CostLabel" type="Label" parent="MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(180, 0)
 layout_mode = 2
-
-[node name="APCostLabel" type="Label" parent="MarginContainer/VBoxContainer/CostContainer"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "AP Cost: 100"
-
-[node name="GoldCostLabel" type="Label" parent="MarginContainer/VBoxContainer/CostContainer"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Gold Cost:100"
+text = "[Costs]"
+autowrap_mode = 3
 
 [node name="SelectButton" type="Button" parent="MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
@@ -51496,57 +51500,132 @@ text = "Select"
 --------------------------------------------------
 FILE: res:///ui/seasonal/SeasonalCard_UI.gd
 --------------------------------------------------
-#res://ui/seasonal/SeasonalCard_UI.gd
 class_name SeasonalCard_UI
 extends Control
 
-## Visual representation of a SeasonalCardResource.
-## Handles clicks and hover states.
+## Individual Winter Court Card UI
+## Handles visual representation and selection of seasonal choices.
+## Implements Universal Input Handling for robust hover effects.
 
-# --- Signals ---
 signal card_clicked(card_data: SeasonalCardResource)
+signal card_denied(card_data: SeasonalCardResource, reason: String)
+signal card_hovered(card_data: SeasonalCardResource)
+signal card_exited()
 
-# --- Nodes ---
-# Ensure these exist in your scene tree with Unique Names (%)
-# Suggested Tree: PanelContainer -> VBox -> (Icon, Title, Desc, CostContainer, SelectButton)
-@onready var title_label: Label = %TitleLabel
-@onready var description_label: Label = %DescriptionLabel
-@onready var icon_rect: TextureRect = %IconRect
-@onready var cost_container: HBoxContainer = %CostContainer
-@onready var ap_cost_label: Label = %APCostLabel # Inside CostContainer
-@onready var gold_cost_label: Label = %GoldCostLabel
 @onready var select_button: Button = %SelectButton
+@onready var title_label: Label = %TitleLabel 
+@onready var description_label: Label = %DescriptionLabel
+@onready var cost_label: Label = %CostLabel 
 
-# --- Data ---
 var _card_data: SeasonalCardResource
+var _can_afford: bool = true
+var _is_hovered: bool = false
 
 func _ready() -> void:
-	select_button.pressed.connect(_on_button_pressed)
+	# 1. Connect the Button (for Clicks & Pass-through)
+	if select_button:
+		if not select_button.pressed.is_connected(_on_button_pressed):
+			select_button.pressed.connect(_on_button_pressed)
+		
+		# CRITICAL: Allow mouse events to pass through the button to the Control root
+		select_button.mouse_filter = Control.MOUSE_FILTER_PASS
 
-## Configures the card visual based on the resource.
+	# 2. Connect the Root Control (For Universal Hover)
+	if not mouse_entered.is_connected(_on_mouse_entered):
+		mouse_entered.connect(_on_mouse_entered)
+	if not mouse_exited.is_connected(_on_mouse_exited):
+		mouse_exited.connect(_on_mouse_exited)
+
+	# 3. Ensure Pivot is Centered for Scaling
+	call_deferred("_update_pivot")
+	if not resized.is_connected(_update_pivot):
+		resized.connect(_update_pivot)
+
+func _update_pivot() -> void:
+	pivot_offset = size / 2.0
+
 func setup(card: SeasonalCardResource, can_afford: bool = true) -> void:
 	_card_data = card
+	_can_afford = can_afford
 	
-	title_label.text = card.display_name
-	description_label.text = card.description
-	icon_rect.texture = card.icon
+	# 1. Set Text Content
+	if title_label: title_label.text = card.display_name
+	if description_label: description_label.text = card.description
 	
-	# Handle Winter Costs (Hide if 0)
-	if card.cost_ap > 0 or card.cost_gold > 0:
-		cost_container.show()
-		ap_cost_label.text = "AP: %d" % card.cost_ap
-		gold_cost_label.text = "Gold: %d" % card.cost_gold# Add gold label handling here if needed
-	else:
-		cost_container.hide()
+	# 2. Build Cost String
+	var cost_text = ""
+	if card.cost_ap > 0: cost_text += "%d AP " % card.cost_ap
+	if card.cost_gold > 0: cost_text += "%d Gold " % card.cost_gold
+	if card.cost_food > 0: cost_text += "%d Food " % card.cost_food
 	
-	# Handle Affordability
-	select_button.disabled = not can_afford
+	if cost_text.is_empty():
+		cost_text = "Free"
+	
+	# 3. Configure Button & Labels
+	if select_button:
+		select_button.disabled = false 
+	
+	if cost_label:
+		cost_label.text = cost_text
+		if not can_afford:
+			cost_label.add_theme_color_override("font_color", Color.TOMATO)
+		else:
+			cost_label.remove_theme_color_override("font_color")
+	
+	# 4. Apply Visual State (Affordability)
 	if not can_afford:
-		modulate = Color(0.7, 0.7, 0.7, 0.8) # Dim out
+		modulate = Color(0.5, 0.5, 0.5, 0.9) 
+	else:
+		modulate = Color.WHITE
 
 func _on_button_pressed() -> void:
-	if _card_data:
+	if not _card_data: return
+	
+	if _can_afford:
 		card_clicked.emit(_card_data)
+	else:
+		_play_error_animation()
+		card_denied.emit(_card_data, "Insufficient Resources")
+
+func _play_error_animation() -> void:
+	var tween = create_tween()
+	var base_x = position.x
+	tween.tween_property(self, "position:x", base_x + 5, 0.05)
+	tween.tween_property(self, "position:x", base_x - 5, 0.05)
+	tween.tween_property(self, "position:x", base_x, 0.05)
+
+# --- HOVER LOGIC ---
+func _on_mouse_entered() -> void:
+	if _is_hovered: return 
+	_is_hovered = true
+	
+	# Ensure the card renders On Top of neighbors during hover
+	z_index = 10 
+	
+	# Scale Up
+	var tween = create_tween()
+	tween.tween_property(self, "scale", Vector2(1.05, 1.05), 0.1).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	
+	if _card_data:
+		card_hovered.emit(_card_data)
+
+func _on_mouse_exited() -> void:
+	# FLICKER FIX: Verify the mouse actually left the card's geometry.
+	# If the mouse is still inside the Rect, it just entered a child node (like a label).
+	# In that case, we ignore the exit signal.
+	if get_global_rect().has_point(get_global_mouse_position()):
+		return
+
+	_is_hovered = false
+	
+	# Reset Z-Index
+	z_index = 0
+	
+	# Reset Scale
+	var tween = create_tween()
+	tween.tween_property(self, "scale", Vector2(1.0, 1.0), 0.1).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	
+	card_exited.emit()
 
 
 --------------------------------------------------
@@ -51704,7 +51783,7 @@ func _deal_cards() -> void:
 	var cards_to_spawn = min(hand_size, spring_deck.size())
 	
 	for i in range(cards_to_spawn):
-		var card_instance = card_prefab.instantiate() as SeasonalCard_UI
+		var card_instance = card_prefab.instantiate()
 		card_container.add_child(card_instance)
 		card_instance.setup(spring_deck[i], true) 
 		card_instance.card_clicked.connect(_on_card_selected)
@@ -53568,39 +53647,33 @@ FILE: res:///ui/seasonal/WinterCourtUI.gd
 --------------------------------------------------
 extends Control
 
-
 ## WinterCourtUI - The Seasonal Workspace
 ##
-## Organizes the Winter phase into three persistent strata:
-## 1. Burden (Deficits & Severity) - Live Calculation
-## 2. Great Hall (Actions & Cards) - Interactive
-## 3. Bloodline (Dynasty Context) - Read Only
+## ARCHITECTURE: "The Pillar & The Triptych"
+## Zone A (Left): The Spine/Pillar. Holds Context (Burden, AP, Descriptions).
+## Zone B (Right): The Ritual Stage. Holds the Content (Cards).
 
 # ------------------------------------------------------------------------------
 # Configuration
 # ------------------------------------------------------------------------------
 @export_group("Great Hall Stratum")
-## The list of Seasonal Cards available this winter (Assigned by Game Design or Manager)
+## The list of Seasonal Cards available this winter
 @export var available_court_cards: Array[SeasonalCardResource] = []
-## The UI Prefab for a single card (SeasonalCardUi.tscn)
+## The UI Prefab for a single card
 @export var card_prefab: PackedScene
 
 # ------------------------------------------------------------------------------
-# Node References (Unique Names)
+# Node References (The Blueprint)
 # ------------------------------------------------------------------------------
-# Stratum I: Burden
+# ZONE A: THE LEFT SPINE
 @onready var severity_label: Label = %SeverityLabel
-@onready var deficit_container: VBoxContainer = %DeficitContainer
-
-# Stratum II: Great Hall
+@onready var resource_totem: VBoxContainer = %ResourceTotem # Was DeficitContainer
 @onready var action_points_label: Label = %ActionPointsLabel
-@onready var cards_container: HBoxContainer = %CardsContainer
-@onready var end_winter_button: Button = %EndWinterButton
+@onready var description_label: Label = %DescriptionLabel # Now anchored in the Spine
+@onready var jarl_name_label: Label = %JarlNameLabel # Dynasty Context
 
-# Stratum III: Bloodline
-@onready var jarl_name_label: Label = %JarlNameLabel
-@onready var jarl_status_label: Label = %JarlStatusLabel
-@onready var heir_status_label: Label = %HeirStatusLabel
+# ZONE B: THE RITUAL STAGE
+@onready var cards_container: HBoxContainer = %CardsContainer
 
 # ------------------------------------------------------------------------------
 # State
@@ -53614,20 +53687,14 @@ var max_ap: int = 0
 func _ready() -> void:
 	visible = false
 	
-	# Connect internal signals
-	end_winter_button.pressed.connect(_on_end_winter_pressed)
-	
-	# Connect global signals
-	EventBus.hall_action_updated.connect(_on_ap_updated)
-	
-	# NEW: Listen for treasury updates to refresh the "Burden" stratum live
-	EventBus.treasury_updated.connect(_on_treasury_updated)
-	
-	# Listen for season changes to toggle visibility
-	if EventBus.has_signal("season_changed"):
-		EventBus.season_changed.connect(_on_season_changed)
-	elif EventBus.has_signal("winter_started"): 
-		EventBus.winter_started.connect(func(): _on_season_changed("Winter", {}))
+	if EventBus:
+		EventBus.hall_action_updated.connect(_on_ap_updated)
+		EventBus.treasury_updated.connect(_on_treasury_updated)
+		
+		if EventBus.has_signal("season_changed"):
+			EventBus.season_changed.connect(_on_season_changed)
+		elif EventBus.has_signal("winter_started"): 
+			EventBus.winter_started.connect(func(): _on_season_changed("Winter", {}))
 
 func _on_season_changed(new_season: String, _context: Dictionary) -> void:
 	if new_season == "Winter":
@@ -53638,24 +53705,20 @@ func _on_season_changed(new_season: String, _context: Dictionary) -> void:
 
 func _on_ap_updated(new_amount: int) -> void:
 	current_ap = new_amount
-	_update_hall_ui()
-	_refresh_stratum_hall()
+	_update_spine_header()
+	_refresh_ritual_stage()
 
-# NEW: Refresh burden when resources change (e.g. Card Played -> Gain Food)
 func _on_treasury_updated(_new_treasury: Dictionary) -> void:
 	if visible:
-		_refresh_stratum_burden()
-		# Also refresh cards as affordability might have changed
-		_refresh_stratum_hall()
+		_refresh_resource_totem()
+		_refresh_ritual_stage()
 
 # ------------------------------------------------------------------------------
 # Public API
 # ------------------------------------------------------------------------------
-## Main entry point called when the Winter Phase begins
 func setup_winter_view() -> void:
-	Loggie.msg("Initializing Winter Court UI Strata").domain(LogDomains.UI).info()
+	Loggie.msg("Initializing Winter Court: Pillar & Triptych").domain(LogDomains.UI).info()
 	
-	# 1. Fetch Jarl Context & Sync AP
 	var jarl: JarlData = DynastyManager.get_current_jarl()
 	if jarl:
 		current_ap = jarl.current_hall_actions
@@ -53664,72 +53727,91 @@ func setup_winter_view() -> void:
 		current_ap = 0
 		max_ap = 0
 	
-	# 2. Refresh All Strata
-	_refresh_stratum_burden()
-	_refresh_stratum_bloodline()
-	_refresh_stratum_hall()
-	_update_hall_ui()
+	_refresh_resource_totem()
+	_refresh_dynasty_context()
+	_refresh_ritual_stage()
+	_update_spine_header()
+	
+	# Reset Description
+	if description_label: 
+		description_label.text = "Select a card to view details..."
+		# Ensure the container is visible if we hid it previously
+		var parent = description_label.get_parent()
+		if parent is Control: parent.show()
 
 # ------------------------------------------------------------------------------
-# STRATUM I: The Burden of Winter (Live Calculation)
+# ZONE A: THE LEFT SPINE (Context)
 # ------------------------------------------------------------------------------
-func _refresh_stratum_burden() -> void:
-	# 1. Severity (Still read from Manager as it is constant for the season)
-	# Fallback logic to prevent crashes if 'winter_consumption_report' is missing/empty
+func _refresh_resource_totem() -> void:
+	# 1. Severity Header
 	var severity_name = "NORMAL"
 	if WinterManager.has_method("get_severity_name"):
 		severity_name = WinterManager.get_severity_name()
 	elif "winter_consumption_report" in WinterManager and not WinterManager.winter_consumption_report.is_empty():
 		severity_name = WinterManager.winter_consumption_report.get("severity_name", "NORMAL")
 		
-	severity_label.text = "Winter Severity: %s" % severity_name
-	
-	if severity_name == "HARSH": severity_label.modulate = Color.RED
-	elif severity_name == "MILD": severity_label.modulate = Color.GREEN
-	else: severity_label.modulate = Color.WHITE
+	if severity_label:
+		severity_label.text = "SEVERITY: %s" % severity_name
+		if severity_name == "HARSH": severity_label.modulate = Color.RED
+		elif severity_name == "MILD": severity_label.modulate = Color.GREEN
+		else: severity_label.modulate = Color.WHITE
 
-	# 2. Deficit Visualization (FIX: Calculate LIVE based on Treasury vs Forecast)
-	for child in deficit_container.get_children():
+	# 2. Resource Deficits (The Totem)
+	for child in resource_totem.get_children():
 		child.queue_free()
 	
 	var treasury = SettlementManager.current_settlement.treasury
 	var forecast = EconomyManager.get_winter_forecast()
 	
-	# Get Demand (Forecast)
-	var food_demand = forecast.get(GameResources.FOOD, 0)
-	var wood_demand = forecast.get(GameResources.WOOD, 0)
+	var food_deficit = max(0, forecast.get(GameResources.FOOD, 0) - treasury.get(GameResources.FOOD, 0))
+	var wood_deficit = max(0, forecast.get(GameResources.WOOD, 0) - treasury.get(GameResources.WOOD, 0))
 	
-	# Get Supply (Treasury)
-	var food_stock = treasury.get(GameResources.FOOD, 0)
-	var wood_stock = treasury.get(GameResources.WOOD, 0)
-	
-	# Calculate Deficits (Demand - Supply)
-	var food_deficit = max(0, food_demand - food_stock)
-	var wood_deficit = max(0, wood_demand - wood_stock)
-	
+	# Stylized Totem Entries
 	if food_deficit > 0:
-		_add_burden_entry("Starvation Risk", "-%d Food" % food_deficit, Color.RED)
-		
+		_add_totem_entry("FOOD RISK", "-%d" % food_deficit, Color.RED)
 	if wood_deficit > 0:
-		_add_burden_entry("Freezing Risk", "-%d Wood" % wood_deficit, Color.ORANGE)
+		_add_totem_entry("COLD RISK", "-%d" % wood_deficit, Color.ORANGE)
 		
 	if food_deficit <= 0 and wood_deficit <= 0:
-		_add_burden_entry("Supplies Sufficient", "Stockpiles Holding", Color.GREEN)
+		_add_totem_entry("STOCKPILES", "SECURE", Color.GREEN)
 
-func _add_burden_entry(title: String, value: String, color: Color) -> void:
-	var entry = Label.new()
-	entry.text = "%s: %s" % [title, value]
-	entry.modulate = color
-	deficit_container.add_child(entry)
+func _add_totem_entry(title: String, value: String, color: Color) -> void:
+	# Create a simple HBox for the totem entry (Label - Value)
+	var box = HBoxContainer.new()
+	var lbl_title = Label.new()
+	lbl_title.text = title
+	lbl_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	
+	var lbl_val = Label.new()
+	lbl_val.text = value
+	lbl_val.modulate = color
+	
+	box.add_child(lbl_title)
+	box.add_child(lbl_val)
+	resource_totem.add_child(box)
+
+func _update_spine_header() -> void:
+	if action_points_label:
+		action_points_label.text = "ATTENTION: %d / %d" % [current_ap, max_ap]
+
+func _refresh_dynasty_context() -> void:
+	var jarl: JarlData = DynastyManager.get_current_jarl()
+	if jarl_name_label:
+		if jarl:
+			jarl_name_label.text = "%s (Age %d)" % [jarl.display_name.to_upper(), jarl.age]
+		else:
+			jarl_name_label.text = "INTERREGNUM"
 
 # ------------------------------------------------------------------------------
-# STRATUM II: The Great Hall (Interactive)
+# ZONE B: THE RITUAL STAGE (Content)
 # ------------------------------------------------------------------------------
-func _refresh_stratum_hall() -> void:
+func _refresh_ritual_stage() -> void:
 	for child in cards_container.get_children():
 		child.queue_free()
 	
-	if not card_prefab: return
+	if not card_prefab: 
+		Loggie.msg("WinterCourt: Missing Card Prefab").domain(LogDomains.UI).error()
+		return
 
 	for card_data in available_court_cards:
 		var card_instance = card_prefab.instantiate()
@@ -53737,7 +53819,6 @@ func _refresh_stratum_hall() -> void:
 		
 		var can_afford = _can_afford(card_data)
 		
-		# Robust Setup Call
 		if card_instance.has_method("setup"):
 			card_instance.setup(card_data, can_afford)
 		elif "resource" in card_instance:
@@ -53745,8 +53826,17 @@ func _refresh_stratum_hall() -> void:
 			if "is_disabled" in card_instance:
 				card_instance.is_disabled = not can_afford
 			
+		# Connect Signals
 		if card_instance.has_signal("card_clicked"):
 			card_instance.card_clicked.connect(_on_card_clicked)
+		if card_instance.has_signal("card_denied"):
+			card_instance.card_denied.connect(_on_card_denied)
+			
+		# Hover Signals -> Target the Spine Description
+		if card_instance.has_signal("card_hovered"):
+			card_instance.card_hovered.connect(_on_card_hovered)
+		if card_instance.has_signal("card_exited"):
+			card_instance.card_exited.connect(_on_card_exited)
 
 func _can_afford(card: SeasonalCardResource) -> bool:
 	if current_ap < card.cost_ap:
@@ -53763,93 +53853,420 @@ func _can_afford(card: SeasonalCardResource) -> bool:
 	
 	return true
 
-func _update_hall_ui() -> void:
-	action_points_label.text = "Dynastic Attention: %d / %d" % [current_ap, max_ap]
-	
-	if WinterManager.winter_crisis_active:
-		end_winter_button.text = "Face the Crisis..."
-		end_winter_button.modulate = Color(1.0, 0.5, 0.5) 
-	else:
-		end_winter_button.text = "The Ice Melts..."
-		end_winter_button.modulate = Color.WHITE
-
 func _on_card_clicked(card: SeasonalCardResource) -> void:
 	var success: bool = WinterManager.play_seasonal_card(card)
-	
 	if success:
 		Loggie.msg("Played Winter Card: %s" % card.display_name).domain(LogDomains.GAMEPLAY).info()
+		_refresh_ritual_stage()
+		_on_card_exited() # Clear description
 	else:
-		Loggie.msg("Failed to play card").domain(LogDomains.UI).warn()
+		# Use the Totem area or AP label for quick feedback
+		_flash_spine_warning("RITUAL FAILED")
 
-# ------------------------------------------------------------------------------
-# STRATUM III: The Bloodline Thread (Read-Only)
-# ------------------------------------------------------------------------------
-func _refresh_stratum_bloodline() -> void:
-	var jarl: JarlData = DynastyManager.get_current_jarl()
+func _on_card_denied(card: SeasonalCardResource, _reason: String) -> void:
+	_flash_spine_warning("NEED RESOURCES")
+
+# --- MASTER-DETAIL LOGIC (Targets the Spine) ---
+func _on_card_hovered(card: SeasonalCardResource) -> void:
+	if description_label:
+		description_label.text = "[b]%s[/b]\n\n%s" % [card.display_name.to_upper(), card.description]
+		# Ensure visible
+		description_label.get_parent().show()
+
+func _on_card_exited() -> void:
+	if description_label:
+		description_label.text = "Select a card..."
+
+func _flash_spine_warning(message: String) -> void:
+	if action_points_label:
+		var original_text = action_points_label.text
+		action_points_label.text = message
+		action_points_label.add_theme_color_override("font_color", Color.TOMATO)
+		
+		get_tree().create_timer(1.5).timeout.connect(func():
+			if action_points_label:
+				action_points_label.text = original_text
+				action_points_label.remove_theme_color_override("font_color")
+		)
+
+
+--------------------------------------------------
+FILE: res:///ui/seasonal/WinterCourtUiDiagnostics.gd
+--------------------------------------------------
+@tool
+class_name WinterCourtDiagnostic
+extends Node
+
+## WINTER COURT DIAGNOSTIC TOOL
+## A standalone component to audit the health of the Winter Court UI system.
+## NOW INCLUDES: REVERSE-ENGINEERING AUDIT to track missing resources.
+
+@export_group("Controls")
+## Trigger the check manually in the Editor
+@export_tool_button("Run Full Diagnostics") var _run_check_action = _run_diagnostics
+## Key to trigger diagnostics during gameplay
+@export var hotkey: Key = KEY_F6
+
+@export_group("Reference Checks")
+@export var critical_node_properties: Array[String] = [
+	"severity_label",
+	"resource_totem", 
+	"action_points_label",
+	"cards_container",
+	"jarl_name_label"
+]
+
+@export var required_bus_signals: Array[String] = [
+	"season_changed",
+	"hall_action_updated",
+	"treasury_updated"
+]
+
+@export_group("Layout Symmetry Settings")
+@export var target_aspect_ratio: float = 0.66
+@export var preferred_gutter_px: int = 40
+@export var preferred_margin_px: int = 60
+
+# --- SPY STATE ---
+var _last_known_food: int = -9999
+var _spy_active: bool = false
+
+func _ready() -> void:
+	if not Engine.is_editor_hint():
+		set_process_input(true)
+		Loggie.msg("[Diagnostics] WinterCourt Monitor initialized. Press F6 to scan.").domain(LogDomains.UI).info()
+		
+		# ACTIVATE SPY
+		if get_node_or_null("/root/EventBus"):
+			var bus = get_node("/root/EventBus")
+			if bus.has_signal("treasury_updated"):
+				bus.treasury_updated.connect(_on_treasury_spy_event)
+				_spy_active = true
+				Loggie.msg("[Spy] Live Treasury Monitor ACTIVE.").domain(LogDomains.ECONOMY).info()
+				
+				# Initialize baseline
+				if get_node_or_null("/root/SettlementManager"):
+					var sm = get_node("/root/SettlementManager")
+					if sm.current_settlement:
+						_last_known_food = sm.current_settlement.treasury.get("food", 0)
+
+func _input(event: InputEvent) -> void:
+	if not Engine.is_editor_hint() and event is InputEventKey and event.pressed and event.keycode == hotkey:
+		_run_diagnostics()
+
+# --- SPY HANDLER ---
+func _on_treasury_spy_event(new_treasury: Dictionary) -> void:
+	var new_food = new_treasury.get("food", 0)
 	
-	if not jarl:
-		jarl_name_label.text = "Interregnum (No Jarl)"
-		jarl_status_label.text = "The throne is empty."
-		heir_status_label.text = ""
+	# Detect change
+	if _last_known_food != -9999 and new_food != _last_known_food:
+		var delta = new_food - _last_known_food
+		var direction = "GAINED" if delta > 0 else "LOST"
+		
+		Loggie.msg("[Spy] TREASURY CHANGED: Food %d -> %d (%s %d)" % [_last_known_food, new_food, direction, abs(delta)]).domain(LogDomains.ECONOMY).debug()
+		
+		if delta < -50:
+			Loggie.msg("[Spy] !!! MASSIVE DROP DETECTED !!! Check WinterManager Consumption Logic.").domain(LogDomains.ECONOMY).error()
+			# print_stack() # Optional: Uncomment to trace calls
+			
+	_last_known_food = new_food
+
+func _run_diagnostics() -> void:
+	Loggie.msg("--- WINTER COURT SYSTEM DIAGNOSTIC START ---").domain(LogDomains.UI).info()
+	
+	var parent = get_parent()
+	if not parent:
+		Loggie.msg("Diagnostic Node has no parent! Attach to WinterCourtUI.").domain(LogDomains.UI).error()
 		return
-		
-	jarl_name_label.text = "%s (Age %d)" % [jarl.display_name, jarl.age]
 	
-	var status_text: String = "Vigorous"
-	var status_color: Color = Color.GREEN
+	var passed_checks = 0
+	var total_checks = 0
 	
-	if jarl.is_in_exile:
-		status_text = "In Exile"
-		status_color = Color.GRAY
-	elif jarl.is_wounded:
-		status_text = "Wounded"
-		status_color = Color.ORANGE
-	elif jarl.age > 60:
-		status_text = "Frail"
-		status_color = Color.YELLOW
-		
-	jarl_status_label.text = status_text
-	jarl_status_label.modulate = status_color
+	# --------------------------------------------------------------------------
+	# 1. Dependency & Hierarchy Check
+	# --------------------------------------------------------------------------
+	Loggie.msg("1. Dependency & Node Audit").domain(LogDomains.UI).info()
 	
-	var heir_count: int = jarl.get_available_heir_count()
-	if heir_count == 0:
-		heir_status_label.text = "Succession: DANGEROUS (No Heirs)"
-		heir_status_label.modulate = Color.RED
-	elif heir_count == 1:
-		heir_status_label.text = "Succession: Fragile (1 Heir)"
-		heir_status_label.modulate = Color.YELLOW
+	total_checks += 1
+	if parent.get_class() == "Control" or parent.is_class("Control"):
+		_pass("Parent is valid Control/UI node.")
+		passed_checks += 1
 	else:
-		heir_status_label.text = "Succession: Secure (%d Heirs)" % heir_count
-		heir_status_label.modulate = Color.GREEN
+		_fail("Parent is not a Control node (Found: %s)" % parent.get_class())
 
-# ------------------------------------------------------------------------------
-# Interaction
-# ------------------------------------------------------------------------------
-func _on_end_winter_pressed() -> void:
-	if WinterManager.winter_crisis_active:
-		Loggie.msg("Winter ended with unresolved crisis").domain(LogDomains.GAMEPLAY).warn()
-		# FIX: This signal now exists in EventBus
-		EventBus.winter_crisis_triggered.emit()
+	for prop_name in critical_node_properties:
+		if prop_name == "deficit_container":
+			_warn("Skipping legacy property 'deficit_container'. Please reset 'Critical Node Properties' in Inspector.")
+			continue
+			
+		total_checks += 1
+		var val = parent.get(prop_name)
+		if val == null:
+			if prop_name == "resource_totem" and parent.get("deficit_container") != null:
+				_fail("Architecture Mismatch: Script expects 'resource_totem' but Parent has 'deficit_container'. Update Parent Script.")
+			else:
+				_fail("Critical Node Reference missing: %s" % prop_name)
+		elif val is Node:
+			if not val.is_inside_tree():
+				_fail("Reference '%s' is assigned but NOT in Scene Tree (Orphaned Node)." % prop_name)
+			else:
+				_pass("Reference '%s' linked to: %s" % [prop_name, val.name])
+				passed_checks += 1
+		else:
+			_fail("Property '%s' exists but is not a Node (Val: %s)" % [prop_name, val])
+
+	# --------------------------------------------------------------------------
+	# 2. Resource Integrity
+	# --------------------------------------------------------------------------
+	Loggie.msg("2. Resource Integrity").domain(LogDomains.UI).info()
+	
+	total_checks += 1
+	var cards = parent.get("available_court_cards")
+	if cards == null:
+		_fail("Parent missing 'available_court_cards' variable.")
+	elif cards.is_empty():
+		_warn("Card deck is empty. (This is normal if setup hasn't run, bad if In-Game)")
 	else:
-		Loggie.msg("Winter passed peacefully").domain(LogDomains.GAMEPLAY).info()
-		WinterManager.end_winter_phase()
+		var null_cards = 0
+		for c in cards:
+			if c == null: null_cards += 1
+		if null_cards > 0:
+			_fail("Found %d NULL entries in 'available_court_cards'!" % null_cards)
+		else:
+			_pass("Card Deck Valid: %d cards loaded." % cards.size())
+			passed_checks += 1
+			
+	total_checks += 1
+	var prefab = parent.get("card_prefab")
+	if prefab == null:
+		_fail("Card Prefab is MISSING.")
+	else:
+		_pass("Card Prefab loaded.")
+		passed_checks += 1
+
+	# --------------------------------------------------------------------------
+	# 3. Signal Bus Integrity
+	# --------------------------------------------------------------------------
+	Loggie.msg("3. Signal Bus Integrity").domain(LogDomains.UI).info()
+	
+	var event_bus = get_node_or_null("/root/EventBus")
+	if not event_bus:
+		_warn("Cannot access /root/EventBus. Skipping signal check.")
+	else:
+		for sig_name in required_bus_signals:
+			total_checks += 1
+			if event_bus.has_signal(sig_name):
+				var connections = event_bus.get_signal_connection_list(sig_name)
+				var is_connected = false
+				for conn in connections:
+					if conn["callable"].get_object() == parent:
+						is_connected = true
+						break
+				if is_connected:
+					_pass("Connected to EventBus.%s" % sig_name)
+					passed_checks += 1
+				else:
+					_fail("Parent NOT connected to EventBus.%s" % sig_name)
+			else:
+				_fail("EventBus missing signal: %s" % sig_name)
+
+	# --------------------------------------------------------------------------
+	# 4. Visibility & Input Check
+	# --------------------------------------------------------------------------
+	Loggie.msg("4. Visibility & Input Blockers").domain(LogDomains.UI).info()
+	
+	total_checks += 1
+	if parent.visible:
+		_pass("UI is Visible.")
+		passed_checks += 1
+	else:
+		_warn("UI is Hidden (visible = false). Inputs will be ignored.")
+	
+	total_checks += 1
+	var blocker_found = false
+	var root = parent.get_parent()
+	if root:
+		for i in range(root.get_child_count()):
+			var sibling = root.get_child(i)
+			if sibling == parent: break
+			if sibling.get_index() > parent.get_index() and sibling is Control:
+				if sibling.mouse_filter == Control.MOUSE_FILTER_STOP:
+					if sibling.get_global_rect().intersects(parent.get_global_rect()):
+						_warn("Sibling '%s' draws on top of WinterCourtUI and might block input!" % sibling.name)
+						blocker_found = true
+	
+	if not blocker_found:
+		_pass("No obvious input blockers found.")
+		passed_checks += 1
+	else:
+		_fail("Input blocked by UI overlay.")
+
+	# --------------------------------------------------------------------------
+	# 5. Data Flow (Dry Run)
+	# --------------------------------------------------------------------------
+	Loggie.msg("5. Data Flow (Dry Run)").domain(LogDomains.UI).info()
+	
+	var econ = get_node_or_null("/root/EconomyManager")
+	var settlement = get_node_or_null("/root/SettlementManager")
+	
+	if econ and settlement:
+		total_checks += 1
+		var forecast = econ.get_winter_forecast() if econ.has_method("get_winter_forecast") else {}
+		if forecast.is_empty():
+			_warn("EconomyManager returned empty forecast.")
+		else:
+			Loggie.msg("   Forecast: %s" % str(forecast)).domain(LogDomains.ECONOMY).debug()
+			_pass("Economy Data Accessible.")
+			passed_checks += 1
+	else:
+		_warn("Cannot access Managers (Editor Mode?). Skipping Dry Run.")
+
+	# --------------------------------------------------------------------------
+	# 6. Layout Symmetry & Reality Check
+	# --------------------------------------------------------------------------
+	Loggie.msg("6. Layout Symmetry & Reality Check").domain(LogDomains.UI).info()
+	
+	var container = parent.get("cards_container")
+	if container and container is Control and container.is_inside_tree():
+		var metrics = get_trio_layout_metrics()
+		
+		total_checks += 1
+		var cont_rect = container.get_global_rect()
+		var parent_rect = parent.get_global_rect()
+		
+		var overflow_x = cont_rect.position.x < parent_rect.position.x - 10 or cont_rect.end.x > parent_rect.end.x + 10
+		var overflow_y = cont_rect.position.y < parent_rect.position.y - 10 or cont_rect.end.y > parent_rect.end.y + 10
+			
+		if overflow_x or overflow_y:
+			_fail("CONTAINER OVERFLOW: The CardsContainer is bigger than the Screen/Root!")
+		else:
+			_pass("Container fits within Screen/Root bounds.")
+			passed_checks += 1
+
+		total_checks += 1
+		var children = container.get_children()
+		var actual_card_found = false
+		for child in children:
+			if child is Control and child.visible:
+				actual_card_found = true
+				var size = child.size
+				if size.x > metrics.card_width + 5:
+					_warn("Card is WIDER than optimal. Reduce 'Custom Minimum Width' to ~%.0f" % metrics.card_width)
+				else:
+					_pass("Card asset size is within optimal bounds.")
+					passed_checks += 1
+				break
+		if not actual_card_found: _warn("No cards visible in container to measure.")
+	else:
+		_warn("Cannot perform layout check: Cards container not found.")
+
+	# --------------------------------------------------------------------------
+	# 7. FORENSIC ECONOMY AUDIT
+	# --------------------------------------------------------------------------
+	Loggie.msg("7. FORENSIC ECONOMY AUDIT").domain(LogDomains.ECONOMY).info()
+	total_checks += 1
+	
+	if econ and settlement:
+		var treasury = settlement.current_settlement.treasury
+		var forecast = econ.get_winter_forecast()
+		var severity = "NORMAL"
+		
+		if get_node_or_null("/root/WinterManager"):
+			var wm = get_node("/root/WinterManager")
+			if wm.has_method("get_severity_name"):
+				severity = wm.get_severity_name()
+			elif "winter_consumption_report" in wm:
+				severity = wm.winter_consumption_report.get("severity_name", "NORMAL")
+		
+		# REVERSE ENGINEERING
+		var food_stock = treasury.get("food", 0)
+		var food_demand = forecast.get("food", 0)
+		var wood_stock = treasury.get("wood", 0)
+		var wood_demand = forecast.get("wood", 0)
+		
+		var implied_start_food = food_stock + food_demand # Assuming deficit was met or consumption applied
+		var implied_start_wood = wood_stock + wood_demand
+		
+		Loggie.msg("   LIVE SNAPSHOT: Food %d | Wood %d" % [food_stock, wood_stock]).domain(LogDomains.ECONOMY).info()
+		Loggie.msg("   CONSUMPTION:   Food %d | Wood %d" % [food_demand, wood_demand]).domain(LogDomains.ECONOMY).info()
+		Loggie.msg("   IMPLIED START: Food %d | Wood %d" % [implied_start_food, implied_start_wood]).domain(LogDomains.ECONOMY).warn()
+		
+		if implied_start_food < 50:
+			Loggie.msg("   >>> SUSPICIOUS: Started Winter with only %d Food. Harvest likely missing." % implied_start_food).domain(LogDomains.ECONOMY).error()
+		
+		# Check for Caps (If implemented)
+		if econ.has_method("get_storage_cap"):
+			var food_cap = econ.get_storage_cap("food")
+			Loggie.msg("   STORAGE CAP:   %d" % food_cap).domain(LogDomains.ECONOMY).info()
+			if implied_start_food == food_cap:
+				Loggie.msg("   >>> CAUSE FOUND: Resources clamped to Storage Cap!").domain(LogDomains.ECONOMY).warn()
+		
+		_pass("Forensic Audit Complete.")
+		passed_checks += 1
+	else:
+		_fail("Cannot run Forensic Audit: Managers missing.")
+
+	# --------------------------------------------------------------------------
+	# CONCLUSION
+	# --------------------------------------------------------------------------
+	if passed_checks == total_checks:
+		Loggie.msg("STATUS: READY (%d/%d Checks Passed)" % [passed_checks, total_checks]).domain(LogDomains.UI).info()
+	else:
+		Loggie.msg("STATUS: UNSTABLE (%d/%d Checks Passed)" % [passed_checks, total_checks]).domain(LogDomains.UI).error()
+
+func get_trio_layout_metrics() -> Dictionary:
+	var container = get_parent().get("cards_container")
+	if not container: return {}
+	var cont_rect = container.get_rect()
+	var cont_w = cont_rect.size.x
+	var cont_h = cont_rect.size.y
+	var max_h_safe = cont_h * 0.9
+	var w_based_on_h = max_h_safe * target_aspect_ratio
+	var available_w = cont_w - (preferred_margin_px * 2) - (preferred_gutter_px * 2)
+	var w_based_on_w = available_w / 3.0
+	var final_w = 0.0
+	var final_h = 0.0
+	if w_based_on_h * 3.0 + (preferred_gutter_px * 2) > available_w:
+		final_w = w_based_on_w
+		final_h = final_w / target_aspect_ratio
+	else:
+		final_w = w_based_on_h
+		final_h = max_h_safe
+	var is_safe = final_h <= cont_h
+	return { "card_width": final_w, "card_height": final_h, "is_safe": is_safe }
+
+# Helpers
+func _pass(msg: String) -> void: 
+	Loggie.msg("[PASS] " + msg).domain(LogDomains.UI).info()
+
+func _fail(msg: String) -> void: 
+	Loggie.msg("[FAIL] " + msg).domain(LogDomains.UI).error()
+
+func _warn(msg: String) -> void: 
+	Loggie.msg("[WARN] " + msg).domain(LogDomains.UI).warn()
 
 
 --------------------------------------------------
-FILE: res:///ui/seasonal/WinterCourt_UI.tscn
+FILE: res:///ui/seasonal/WinterCourt_UI(Pilar Refactor.tscn
 --------------------------------------------------
-[gd_scene load_steps=7 format=3 uid="uid://dnndecgdkcffm"]
+[gd_scene load_steps=9 format=3 uid="uid://c7rilx0cdtm3v"]
 
-[ext_resource type="Script" uid="uid://gvajp31vuy31" path="res://ui/seasonal/WinterCourtUI.gd" id="1_cn012"]
-[ext_resource type="Script" uid="uid://cni5gdnpbb1v2" path="res://data/resources/SeasonalCardResource.gd" id="2_agvwj"]
-[ext_resource type="PackedScene" uid="uid://d0px2w8n5r1lv" path="res://ui/seasonal/SeasonalCardUi.tscn" id="2_xo3mn"]
-[ext_resource type="Resource" uid="uid://dg10eqygin8xg" path="res://data/resources/Winter Cards/Card_Winter_Feast.tres" id="3_q5t2d"]
-[ext_resource type="Resource" uid="uid://dcppndmvmf63e" path="res://data/resources/Winter Cards/Card_Winter_Recruit.tres" id="4_4y4fd"]
+[ext_resource type="Script" uid="uid://gvajp31vuy31" path="res://ui/seasonal/WinterCourtUI.gd" id="1_21ph0"]
+[ext_resource type="Script" uid="uid://cni5gdnpbb1v2" path="res://data/resources/SeasonalCardResource.gd" id="2_o4q1v"]
+[ext_resource type="Resource" uid="uid://dg10eqygin8xg" path="res://data/resources/Winter Cards/Card_Winter_Feast.tres" id="3_io7fp"]
+[ext_resource type="Resource" uid="uid://dcppndmvmf63e" path="res://data/resources/Winter Cards/Card_Winter_Recruit.tres" id="4_qbwkr"]
+[ext_resource type="PackedScene" uid="uid://d0px2w8n5r1lv" path="res://ui/seasonal/SeasonalCardUi.tscn" id="5_f6bl8"]
+[ext_resource type="Script" uid="uid://vb3ro4fdymn5" path="res://ui/seasonal/WinterCourtUiDiagnostics.gd" id="6_qub0o"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_burden"]
-bg_color = Color(0.12, 0.15, 0.2, 0.9)
-border_width_bottom = 2
-border_color = Color(0.3, 0.4, 0.5, 1)
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_Spine"]
+bg_color = Color(0.0823529, 0.0980392, 0.14902, 0.98)
+border_width_right = 2
+border_color = Color(0.439216, 0.501961, 0.564706, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_Title"]
+bg_color = Color(0.14902, 0.168627, 0.203922, 1)
+border_width_bottom = 1
+border_color = Color(0.439216, 0.501961, 0.564706, 1)
 
 [node name="WinterCourtUI" type="Control"]
 layout_mode = 3
@@ -53858,137 +54275,264 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_cn012")
-available_court_cards = Array[ExtResource("2_agvwj")]([ExtResource("3_q5t2d"), ExtResource("4_4y4fd")])
-card_prefab = ExtResource("2_xo3mn")
+script = ExtResource("1_21ph0")
+available_court_cards = Array[ExtResource("2_o4q1v")]([ExtResource("3_io7fp"), ExtResource("4_qbwkr"), ExtResource("3_io7fp")])
+card_prefab = ExtResource("5_f6bl8")
 
-[node name="Background" type="Panel" parent="."]
-self_modulate = Color(0.16, 0.22, 0.3, 0.98)
+[node name="Vignette" type="ColorRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+color = Color(0, 0, 0, 0.862745)
 
-[node name="MainLayout" type="VBoxContainer" parent="."]
+[node name="MainSplit" type="HBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 0
 
-[node name="Stratum1_Burden" type="PanelContainer" parent="MainLayout"]
+[node name="LeftSpineBackground" type="PanelContainer" parent="MainSplit"]
+custom_minimum_size = Vector2(350, 0)
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_burden")
+theme_override_styles/panel = SubResource("StyleBoxFlat_Spine")
 
-[node name="Margin" type="MarginContainer" parent="MainLayout/Stratum1_Burden"]
+[node name="LeftSpine" type="VBoxContainer" parent="MainSplit/LeftSpineBackground"]
 layout_mode = 2
-theme_override_constants/margin_left = 30
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 30
-theme_override_constants/margin_bottom = 10
+theme_override_constants/separation = 20
 
-[node name="HBox" type="HBoxContainer" parent="MainLayout/Stratum1_Burden/Margin"]
+[node name="TitlePanel" type="PanelContainer" parent="MainSplit/LeftSpineBackground/LeftSpine"]
 layout_mode = 2
-theme_override_constants/separation = 40
+theme_override_styles/panel = SubResource("StyleBoxFlat_Title")
 
-[node name="SeverityLabel" type="Label" parent="MainLayout/Stratum1_Burden/Margin/HBox"]
+[node name="Margin" type="MarginContainer" parent="MainSplit/LeftSpineBackground/LeftSpine/TitlePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 15
+
+[node name="SeverityLabel" type="Label" parent="MainSplit/LeftSpineBackground/LeftSpine/TitlePanel/Margin"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.9739297, 0.96263725, 0.95415837, 1)
-theme_override_font_sizes/font_size = 20
-text = "Winter Severity: Normal"
-
-[node name="VSeparator" type="VSeparator" parent="MainLayout/Stratum1_Burden/Margin/HBox"]
-layout_mode = 2
-
-[node name="DeficitContainer" type="VBoxContainer" parent="MainLayout/Stratum1_Burden/Margin/HBox"]
-unique_name_in_owner = true
-layout_mode = 2
-alignment = 1
-
-[node name="Stratum2_Hall" type="PanelContainer" parent="MainLayout"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="VBox" type="VBoxContainer" parent="MainLayout/Stratum2_Hall"]
-layout_mode = 2
-theme_override_constants/separation = 15
-alignment = 1
-
-[node name="ActionPointsLabel" type="Label" parent="MainLayout/Stratum2_Hall/VBox"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_colors/font_color = Color(0.8, 0.7, 0.5, 1)
-theme_override_font_sizes/font_size = 28
-text = "Dynastic Attention: 2 / 2"
+theme_override_colors/font_color = Color(0.960784, 0.960784, 0.960784, 1)
+theme_override_font_sizes/font_size = 24
+text = "WINTER SEVERITY"
 horizontal_alignment = 1
 
-[node name="CardScroll" type="ScrollContainer" parent="MainLayout/Stratum2_Hall/VBox"]
+[node name="ContextMargin" type="MarginContainer" parent="MainSplit/LeftSpineBackground/LeftSpine"]
+layout_mode = 2
+theme_override_constants/margin_left = 25
+theme_override_constants/margin_right = 25
+
+[node name="ContextVBox" type="VBoxContainer" parent="MainSplit/LeftSpineBackground/LeftSpine/ContextMargin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="JarlNameLabel" type="Label" parent="MainSplit/LeftSpineBackground/LeftSpine/ContextMargin/ContextVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+text = "JARL NAME (AGE 00)"
+horizontal_alignment = 1
+
+[node name="ActionPointsLabel" type="Label" parent="MainSplit/LeftSpineBackground/LeftSpine/ContextMargin/ContextVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.890196, 0.811765, 0.490196, 1)
+text = "ATTENTION: 0/0"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="MainSplit/LeftSpineBackground/LeftSpine/ContextMargin/ContextVBox"]
+layout_mode = 2
+
+[node name="ResourceTotem" type="VBoxContainer" parent="MainSplit/LeftSpineBackground/LeftSpine/ContextMargin/ContextVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Spacer" type="Control" parent="MainSplit/LeftSpineBackground/LeftSpine"]
 layout_mode = 2
 size_flags_vertical = 3
-vertical_scroll_mode = 3
 
-[node name="Centerer" type="CenterContainer" parent="MainLayout/Stratum2_Hall/VBox/CardScroll"]
+[node name="DescriptionAnchor" type="MarginContainer" parent="MainSplit/LeftSpineBackground/LeftSpine"]
+layout_mode = 2
+theme_override_constants/margin_left = 25
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 25
+theme_override_constants/margin_bottom = 40
+
+[node name="DescriptionLabel" type="Label" parent="MainSplit/LeftSpineBackground/LeftSpine/DescriptionAnchor"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 150)
+layout_mode = 2
+size_flags_vertical = 8
+text = "Select a card to view details..."
+autowrap_mode = 3
+
+[node name="RitualStage" type="CenterContainer" parent="MainSplit"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CardsContainer" type="HBoxContainer" parent="MainSplit/RitualStage"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 40
+alignment = 1
+
+[node name="WinterCourtUIDiagnostics" type="Node" parent="."]
+script = ExtResource("6_qub0o")
+
+
+--------------------------------------------------
+FILE: res:///ui/seasonal/WinterCourt_UI.tscn
+--------------------------------------------------
+[gd_scene load_steps=9 format=3 uid="uid://dqxvcgqjx2s8o"]
+
+[ext_resource type="Script" uid="uid://gvajp31vuy31" path="res://ui/seasonal/WinterCourtUI.gd" id="1_21ph0"]
+[ext_resource type="Script" uid="uid://cni5gdnpbb1v2" path="res://data/resources/SeasonalCardResource.gd" id="2_o4q1v"]
+[ext_resource type="Resource" uid="uid://dg10eqygin8xg" path="res://data/resources/Winter Cards/Card_Winter_Feast.tres" id="3_io7fp"]
+[ext_resource type="Resource" uid="uid://dcppndmvmf63e" path="res://data/resources/Winter Cards/Card_Winter_Recruit.tres" id="4_qbwkr"]
+[ext_resource type="PackedScene" uid="uid://d0px2w8n5r1lv" path="res://ui/seasonal/SeasonalCardUi.tscn" id="5_f6bl8"]
+[ext_resource type="Script" uid="uid://vb3ro4fdymn5" path="res://ui/seasonal/WinterCourtUiDiagnostics.gd" id="6_qub0o"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_Spine"]
+bg_color = Color(0.0823529, 0.0980392, 0.14902, 0.98)
+border_width_right = 2
+border_color = Color(0.439216, 0.501961, 0.564706, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_Title"]
+bg_color = Color(0.14902, 0.168627, 0.203922, 1)
+border_width_bottom = 1
+border_color = Color(0.439216, 0.501961, 0.564706, 1)
+
+[node name="WinterCourtUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_21ph0")
+available_court_cards = Array[ExtResource("2_o4q1v")]([ExtResource("3_io7fp"), ExtResource("4_qbwkr"), ExtResource("3_io7fp")])
+card_prefab = ExtResource("5_f6bl8")
+
+[node name="Vignette" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.862745)
+
+[node name="MainSplit" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="LeftSpineBackground" type="PanelContainer" parent="MainSplit"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_Spine")
+
+[node name="LeftSpine" type="VBoxContainer" parent="MainSplit/LeftSpineBackground"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="TitlePanel" type="PanelContainer" parent="MainSplit/LeftSpineBackground/LeftSpine"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_Title")
+
+[node name="Margin" type="MarginContainer" parent="MainSplit/LeftSpineBackground/LeftSpine/TitlePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 15
+
+[node name="SeverityLabel" type="Label" parent="MainSplit/LeftSpineBackground/LeftSpine/TitlePanel/Margin"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.960784, 0.960784, 0.960784, 1)
+theme_override_font_sizes/font_size = 22
+text = "WINTER SEVERITY"
+horizontal_alignment = 1
+
+[node name="ContextMargin" type="MarginContainer" parent="MainSplit/LeftSpineBackground/LeftSpine"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_right = 20
+
+[node name="ContextVBox" type="VBoxContainer" parent="MainSplit/LeftSpineBackground/LeftSpine/ContextMargin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="JarlNameLabel" type="Label" parent="MainSplit/LeftSpineBackground/LeftSpine/ContextMargin/ContextVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+text = "JARL NAME (AGE 00)"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="ActionPointsLabel" type="Label" parent="MainSplit/LeftSpineBackground/LeftSpine/ContextMargin/ContextVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.890196, 0.811765, 0.490196, 1)
+text = "ATTENTION: 0/0"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="MainSplit/LeftSpineBackground/LeftSpine/ContextMargin/ContextVBox"]
+layout_mode = 2
+
+[node name="ResourceTotem" type="VBoxContainer" parent="MainSplit/LeftSpineBackground/LeftSpine/ContextMargin/ContextVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Spacer" type="Control" parent="MainSplit/LeftSpineBackground/LeftSpine"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="DescriptionAnchor" type="MarginContainer" parent="MainSplit/LeftSpineBackground/LeftSpine"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 40
+
+[node name="DescriptionLabel" type="Label" parent="MainSplit/LeftSpineBackground/LeftSpine/DescriptionAnchor"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 150)
+layout_mode = 2
+size_flags_vertical = 8
+text = "Select a card to view details..."
+autowrap_mode = 3
+
+[node name="RitualStage" type="CenterContainer" parent="MainSplit"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="CardsContainer" type="HBoxContainer" parent="MainLayout/Stratum2_Hall/VBox/CardScroll/Centerer"]
+[node name="CardsContainer" type="HBoxContainer" parent="MainSplit/RitualStage"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/separation = 25
+theme_override_constants/separation = 30
 alignment = 1
 
-[node name="Stratum3_Bloodline" type="PanelContainer" parent="MainLayout"]
-layout_mode = 2
-
-[node name="Margin" type="MarginContainer" parent="MainLayout/Stratum3_Bloodline"]
-layout_mode = 2
-theme_override_constants/margin_left = 30
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 30
-theme_override_constants/margin_bottom = 10
-
-[node name="HBox" type="HBoxContainer" parent="MainLayout/Stratum3_Bloodline/Margin"]
-layout_mode = 2
-theme_override_constants/separation = 40
-alignment = 1
-
-[node name="JarlNameLabel" type="Label" parent="MainLayout/Stratum3_Bloodline/Margin/HBox"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Jarl Bjorn (Age 54)"
-
-[node name="JarlStatusLabel" type="Label" parent="MainLayout/Stratum3_Bloodline/Margin/HBox"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Vigorous"
-
-[node name="VSeparator" type="VSeparator" parent="MainLayout/Stratum3_Bloodline/Margin/HBox"]
-layout_mode = 2
-
-[node name="HeirStatusLabel" type="Label" parent="MainLayout/Stratum3_Bloodline/Margin/HBox"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Succession Secure"
-
-[node name="BottomBar" type="MarginContainer" parent="MainLayout"]
-layout_mode = 2
-theme_override_constants/margin_left = 50
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 50
-theme_override_constants/margin_bottom = 20
-
-[node name="EndWinterButton" type="Button" parent="MainLayout/BottomBar"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "The Ice Melts..."
+[node name="WinterCourtUIDiagnostics" type="Node" parent="."]
+script = ExtResource("6_qub0o")
+critical_node_properties = Array[String](["severity_label", "deficit_container", "action_points_label", "cards_container", "jarl_name_label"])
 
 
 --------------------------------------------------
