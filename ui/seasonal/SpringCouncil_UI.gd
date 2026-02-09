@@ -67,7 +67,7 @@ func _deal_cards() -> void:
 	var cards_to_spawn = min(hand_size, spring_deck.size())
 	
 	for i in range(cards_to_spawn):
-		var card_instance = card_prefab.instantiate() as SeasonalCard_UI
+		var card_instance = card_prefab.instantiate()
 		card_container.add_child(card_instance)
 		card_instance.setup(spring_deck[i], true) 
 		card_instance.card_clicked.connect(_on_card_selected)

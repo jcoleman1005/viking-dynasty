@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3 uid="uid://b6x8q4y205n1"]
+[gd_scene load_steps=12 format=3 uid="uid://b6x8q4y205n1"]
 
 [ext_resource type="Script" uid="uid://c6dx4ttc1ufe3" path="res://ui/MainGameUi.gd" id="1_uuvct"]
 [ext_resource type="PackedScene" uid="uid://gyu45fs0qg5m" path="res://ui/TopBarUIComponent.tscn" id="2_3ebjf"]
@@ -11,7 +11,6 @@
 [ext_resource type="PackedScene" uid="uid://djup50xtuylo4" path="res://ui/components/AllocationMenu.tscn" id="8_h5nvc"]
 [ext_resource type="PackedScene" uid="uid://dsa4vufqdwp0" path="res://ui/components/BuildMenu.tscn" id="9_amvws"]
 [ext_resource type="PackedScene" uid="uid://b808q4y205n3" path="res://ui/components/RaidMenu.tscn" id="9_h5nvc"]
-[ext_resource type="Script" uid="uid://21b3dv647udu" path="res://ui/MainUiDebugger.gd" id="12_ju110"]
 
 [node name="MainGameUI" type="Control" node_paths=PackedStringArray("top_bar", "bottom_bar", "season_advance_btn", "sidebar_panel", "sidebar_content")]
 layout_mode = 3
@@ -115,7 +114,6 @@ grow_vertical = 2
 text = "End Season"
 
 [node name="MainUIDebugger" type="Node" parent="."]
-script = ExtResource("12_ju110")
 
 [editable path="MainLayout/BottomBar"]
 [editable path="MainLayout/BottomBar/SeasonalActionsPanel/RaidPrepWindow"]

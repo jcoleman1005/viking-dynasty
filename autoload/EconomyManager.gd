@@ -676,3 +676,18 @@ func advance_construction_progress() -> Array[Dictionary]:
 		Loggie.msg("EconomyManager: %d buildings completed construction." % completed_buildings.size()).domain(LogDomains.ECONOMY).info()
 		
 	return completed_buildings
+
+## TODO: AUTUMN LEDGER IMPLEMENTATION (See: https://docs.google.com/document/d/1hPcGKTZ7utKlkwq4-laimI88i7LfDC3eBhSOqZXQmKE/edit?tab=t.0)
+## 1. Create FinancialSnapshot Resource (class_name FinancialSnapshot)
+## 2. Capture treasury state on Summer transition
+## 3. Categorize transactions (PLAYER_ACTION, RAID_LOOT, UPKEEP)
+## 4. Calculate: Start + Gains - (Spent + Upkeep)
+## 5. Emit seasonal_ledger_finalized via EventBus
+
+
+## TODO: STORAGE & POPULATION CAPS
+## 1. Implement get_max_capacity(resource_type: String) -> int
+## 2. Clamp deposit_resources() results to capacity
+## 3. Add 'is_at_pop_cap(unit_type)' check to recruitment logic
+## 4. Emit EventBus.resource_capped when overflow occurs
+## 5. Sync TopBar UI to show actual [Current / Max]

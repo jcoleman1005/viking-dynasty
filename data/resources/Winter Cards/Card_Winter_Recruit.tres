@@ -4,12 +4,11 @@
 
 [resource]
 script = ExtResource("1_vhnwa")
-season = 1
-title = "Invite Vikings"
 description = "You spread the word that you plan to go viking in the summer. 
 - 100 renown
 + 3 AP
 - Chance of a warband joining your this summer
-- Must collect at least 150 byt the end of Autumn"
+- Must collect at least 150 gold by Autumn"
+season = 1
 cost_ap = 2
 metadata/_custom_type_script = "uid://cni5gdnpbb1v2"

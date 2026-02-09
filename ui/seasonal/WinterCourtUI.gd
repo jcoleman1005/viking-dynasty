@@ -1,6 +1,5 @@
 extends Control
 
-
 ## WinterCourtUI - The Seasonal Workspace
 ##
 ## Organizes the Winter phase into three persistent strata:
@@ -27,7 +26,8 @@ extends Control
 # Stratum II: Great Hall
 @onready var action_points_label: Label = %ActionPointsLabel
 @onready var cards_container: HBoxContainer = %CardsContainer
-@onready var end_winter_button: Button = %EndWinterButton
+# NEW: Reference to the shared description area
+@onready var description_label: Label = %DescriptionLabel 
 
 # Stratum III: Bloodline
 @onready var jarl_name_label: Label = %JarlNameLabel
@@ -46,20 +46,15 @@ var max_ap: int = 0
 func _ready() -> void:
 	visible = false
 	
-	# Connect internal signals
-	end_winter_button.pressed.connect(_on_end_winter_pressed)
-	
 	# Connect global signals
-	EventBus.hall_action_updated.connect(_on_ap_updated)
-	
-	# NEW: Listen for treasury updates to refresh the "Burden" stratum live
-	EventBus.treasury_updated.connect(_on_treasury_updated)
-	
-	# Listen for season changes to toggle visibility
-	if EventBus.has_signal("season_changed"):
-		EventBus.season_changed.connect(_on_season_changed)
-	elif EventBus.has_signal("winter_started"): 
-		EventBus.winter_started.connect(func(): _on_season_changed("Winter", {}))
+	if EventBus:
+		EventBus.hall_action_updated.connect(_on_ap_updated)
+		EventBus.treasury_updated.connect(_on_treasury_updated)
+		
+		if EventBus.has_signal("season_changed"):
+			EventBus.season_changed.connect(_on_season_changed)
+		elif EventBus.has_signal("winter_started"): 
+			EventBus.winter_started.connect(func(): _on_season_changed("Winter", {}))
 
 func _on_season_changed(new_season: String, _context: Dictionary) -> void:
 	if new_season == "Winter":
@@ -73,21 +68,17 @@ func _on_ap_updated(new_amount: int) -> void:
 	_update_hall_ui()
 	_refresh_stratum_hall()
 
-# NEW: Refresh burden when resources change (e.g. Card Played -> Gain Food)
 func _on_treasury_updated(_new_treasury: Dictionary) -> void:
 	if visible:
 		_refresh_stratum_burden()
-		# Also refresh cards as affordability might have changed
 		_refresh_stratum_hall()
 
 # ------------------------------------------------------------------------------
 # Public API
 # ------------------------------------------------------------------------------
-## Main entry point called when the Winter Phase begins
 func setup_winter_view() -> void:
 	Loggie.msg("Initializing Winter Court UI Strata").domain(LogDomains.UI).info()
 	
-	# 1. Fetch Jarl Context & Sync AP
 	var jarl: JarlData = DynastyManager.get_current_jarl()
 	if jarl:
 		current_ap = jarl.current_hall_actions
@@ -96,18 +87,18 @@ func setup_winter_view() -> void:
 		current_ap = 0
 		max_ap = 0
 	
-	# 2. Refresh All Strata
 	_refresh_stratum_burden()
 	_refresh_stratum_bloodline()
 	_refresh_stratum_hall()
 	_update_hall_ui()
+	
+	# Clear description on open
+	if description_label: description_label.text = "Select a card to view details..."
 
 # ------------------------------------------------------------------------------
 # STRATUM I: The Burden of Winter (Live Calculation)
 # ------------------------------------------------------------------------------
 func _refresh_stratum_burden() -> void:
-	# 1. Severity (Still read from Manager as it is constant for the season)
-	# Fallback logic to prevent crashes if 'winter_consumption_report' is missing/empty
 	var severity_name = "NORMAL"
 	if WinterManager.has_method("get_severity_name"):
 		severity_name = WinterManager.get_severity_name()
@@ -120,31 +111,24 @@ func _refresh_stratum_burden() -> void:
 	elif severity_name == "MILD": severity_label.modulate = Color.GREEN
 	else: severity_label.modulate = Color.WHITE
 
-	# 2. Deficit Visualization (FIX: Calculate LIVE based on Treasury vs Forecast)
 	for child in deficit_container.get_children():
 		child.queue_free()
 	
 	var treasury = SettlementManager.current_settlement.treasury
 	var forecast = EconomyManager.get_winter_forecast()
 	
-	# Get Demand (Forecast)
 	var food_demand = forecast.get(GameResources.FOOD, 0)
 	var wood_demand = forecast.get(GameResources.WOOD, 0)
-	
-	# Get Supply (Treasury)
 	var food_stock = treasury.get(GameResources.FOOD, 0)
 	var wood_stock = treasury.get(GameResources.WOOD, 0)
 	
-	# Calculate Deficits (Demand - Supply)
 	var food_deficit = max(0, food_demand - food_stock)
 	var wood_deficit = max(0, wood_demand - wood_stock)
 	
 	if food_deficit > 0:
 		_add_burden_entry("Starvation Risk", "-%d Food" % food_deficit, Color.RED)
-		
 	if wood_deficit > 0:
 		_add_burden_entry("Freezing Risk", "-%d Wood" % wood_deficit, Color.ORANGE)
-		
 	if food_deficit <= 0 and wood_deficit <= 0:
 		_add_burden_entry("Supplies Sufficient", "Stockpiles Holding", Color.GREEN)
 
@@ -161,7 +145,9 @@ func _refresh_stratum_hall() -> void:
 	for child in cards_container.get_children():
 		child.queue_free()
 	
-	if not card_prefab: return
+	if not card_prefab: 
+		Loggie.msg("WinterCourt: Missing Card Prefab").domain(LogDomains.UI).error()
+		return
 
 	for card_data in available_court_cards:
 		var card_instance = card_prefab.instantiate()
@@ -169,7 +155,6 @@ func _refresh_stratum_hall() -> void:
 		
 		var can_afford = _can_afford(card_data)
 		
-		# Robust Setup Call
 		if card_instance.has_method("setup"):
 			card_instance.setup(card_data, can_afford)
 		elif "resource" in card_instance:
@@ -177,8 +162,17 @@ func _refresh_stratum_hall() -> void:
 			if "is_disabled" in card_instance:
 				card_instance.is_disabled = not can_afford
 			
+		# Connect Signals
 		if card_instance.has_signal("card_clicked"):
 			card_instance.card_clicked.connect(_on_card_clicked)
+		if card_instance.has_signal("card_denied"):
+			card_instance.card_denied.connect(_on_card_denied)
+			
+		# NEW: Connect Hover Signals
+		if card_instance.has_signal("card_hovered"):
+			card_instance.card_hovered.connect(_on_card_hovered)
+		if card_instance.has_signal("card_exited"):
+			card_instance.card_exited.connect(_on_card_exited)
 
 func _can_afford(card: SeasonalCardResource) -> bool:
 	if current_ap < card.cost_ap:
@@ -197,28 +191,56 @@ func _can_afford(card: SeasonalCardResource) -> bool:
 
 func _update_hall_ui() -> void:
 	action_points_label.text = "Dynastic Attention: %d / %d" % [current_ap, max_ap]
-	
-	if WinterManager.winter_crisis_active:
-		end_winter_button.text = "Face the Crisis..."
-		end_winter_button.modulate = Color(1.0, 0.5, 0.5) 
-	else:
-		end_winter_button.text = "The Ice Melts..."
-		end_winter_button.modulate = Color.WHITE
 
 func _on_card_clicked(card: SeasonalCardResource) -> void:
 	var success: bool = WinterManager.play_seasonal_card(card)
-	
 	if success:
 		Loggie.msg("Played Winter Card: %s" % card.display_name).domain(LogDomains.GAMEPLAY).info()
+		_refresh_stratum_hall()
 	else:
-		Loggie.msg("Failed to play card").domain(LogDomains.UI).warn()
+		_show_error_feedback("Ritual failed to bind.")
+
+func _on_card_denied(card: SeasonalCardResource, reason: String) -> void:
+	_show_error_feedback("Not enough resources: %s" % card.display_name)
+
+# NEW: Update the shared description area
+func _on_card_hovered(card: SeasonalCardResource) -> void:
+	if description_label:
+		# Show the text
+		description_label.text = "%s\n%s" % [card.display_name.to_upper(), card.description]
+		
+		# Show the overlay background (The PanelContainer parent)
+		var overlay = description_label.get_parent()
+		if overlay is Control:
+			overlay.show()
+			# Optional: Add a quick fade-in tween here for polish
+
+# NEW: Clear or reset the description
+func _on_card_exited() -> void:
+	if description_label:
+		# Instead of setting text to "Select a card...", we just hide the overlay
+		# so it doesn't block the view of the Bloodline stratum.
+		var overlay = description_label.get_parent()
+		if overlay is Control:
+			overlay.hide()
+
+func _show_error_feedback(message: String) -> void:
+	if action_points_label:
+		var original_text = action_points_label.text
+		action_points_label.text = message
+		action_points_label.add_theme_color_override("font_color", Color.TOMATO)
+		
+		get_tree().create_timer(2.0).timeout.connect(func():
+			if action_points_label:
+				action_points_label.text = original_text
+				action_points_label.remove_theme_color_override("font_color")
+		)
 
 # ------------------------------------------------------------------------------
 # STRATUM III: The Bloodline Thread (Read-Only)
 # ------------------------------------------------------------------------------
 func _refresh_stratum_bloodline() -> void:
 	var jarl: JarlData = DynastyManager.get_current_jarl()
-	
 	if not jarl:
 		jarl_name_label.text = "Interregnum (No Jarl)"
 		jarl_status_label.text = "The throne is empty."
@@ -253,15 +275,3 @@ func _refresh_stratum_bloodline() -> void:
 	else:
 		heir_status_label.text = "Succession: Secure (%d Heirs)" % heir_count
 		heir_status_label.modulate = Color.GREEN
-
-# ------------------------------------------------------------------------------
-# Interaction
-# ------------------------------------------------------------------------------
-func _on_end_winter_pressed() -> void:
-	if WinterManager.winter_crisis_active:
-		Loggie.msg("Winter ended with unresolved crisis").domain(LogDomains.GAMEPLAY).warn()
-		# FIX: This signal now exists in EventBus
-		EventBus.winter_crisis_triggered.emit()
-	else:
-		Loggie.msg("Winter passed peacefully").domain(LogDomains.GAMEPLAY).info()
-		WinterManager.end_winter_phase()

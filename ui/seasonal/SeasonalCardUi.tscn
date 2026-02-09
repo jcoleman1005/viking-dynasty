@@ -15,7 +15,7 @@ corner_radius_bottom_right = 5
 corner_radius_bottom_left = 5
 
 [node name="SeasonalCard_UI" type="PanelContainer"]
-custom_minimum_size = Vector2(200, 300)
+custom_minimum_size = Vector2(180, 300)
 offset_right = 40.0
 offset_bottom = 40.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_nweke")
@@ -43,24 +43,13 @@ layout_mode = 2
 
 [node name="DescriptionLabel" type="Label" parent="MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(50, 50)
 layout_mode = 2
-text = "Description"
-autowrap_mode = 3
+text = "[Flavor Description]"
 
-[node name="CostContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+[node name="CostLabel" type="Label" parent="MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
-
-[node name="APCostLabel" type="Label" parent="MarginContainer/VBoxContainer/CostContainer"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "AP Cost: 100"
-
-[node name="GoldCostLabel" type="Label" parent="MarginContainer/VBoxContainer/CostContainer"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Gold Cost:100"
+text = "[Costs]"
 
 [node name="SelectButton" type="Button" parent="MarginContainer/VBoxContainer"]
 unique_name_in_owner = true

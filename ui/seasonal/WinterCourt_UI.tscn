@@ -1,10 +1,11 @@
-[gd_scene load_steps=7 format=3 uid="uid://dnndecgdkcffm"]
+[gd_scene load_steps=8 format=3 uid="uid://dnndecgdkcffm"]
 
 [ext_resource type="Script" uid="uid://gvajp31vuy31" path="res://ui/seasonal/WinterCourtUI.gd" id="1_cn012"]
 [ext_resource type="Script" uid="uid://cni5gdnpbb1v2" path="res://data/resources/SeasonalCardResource.gd" id="2_agvwj"]
 [ext_resource type="PackedScene" uid="uid://d0px2w8n5r1lv" path="res://ui/seasonal/SeasonalCardUi.tscn" id="2_xo3mn"]
 [ext_resource type="Resource" uid="uid://dg10eqygin8xg" path="res://data/resources/Winter Cards/Card_Winter_Feast.tres" id="3_q5t2d"]
 [ext_resource type="Resource" uid="uid://dcppndmvmf63e" path="res://data/resources/Winter Cards/Card_Winter_Recruit.tres" id="4_4y4fd"]
+[ext_resource type="Script" uid="uid://vb3ro4fdymn5" path="res://ui/seasonal/WinterCourtUiDiagnostics.gd" id="6_q5t2d"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_burden"]
 bg_color = Color(0.12, 0.15, 0.2, 0.9)
@@ -19,7 +20,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_cn012")
-available_court_cards = Array[ExtResource("2_agvwj")]([ExtResource("3_q5t2d"), ExtResource("4_4y4fd")])
+available_court_cards = Array[ExtResource("2_agvwj")]([ExtResource("3_q5t2d"), ExtResource("4_4y4fd"), ExtResource("3_q5t2d")])
 card_prefab = ExtResource("2_xo3mn")
 
 [node name="Background" type="Panel" parent="."]
@@ -76,7 +77,19 @@ size_flags_vertical = 3
 
 [node name="VBox" type="VBoxContainer" parent="MainLayout/Stratum2_Hall"]
 layout_mode = 2
+size_flags_vertical = 8
 theme_override_constants/separation = 15
+alignment = 1
+
+[node name="HallLayout" type="CenterContainer" parent="MainLayout/Stratum2_Hall/VBox"]
+custom_minimum_size = Vector2(0, 450)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="CardsContainer" type="HBoxContainer" parent="MainLayout/Stratum2_Hall/VBox/HallLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 40
 alignment = 1
 
 [node name="ActionPointsLabel" type="Label" parent="MainLayout/Stratum2_Hall/VBox"]
@@ -86,22 +99,6 @@ theme_override_colors/font_color = Color(0.8, 0.7, 0.5, 1)
 theme_override_font_sizes/font_size = 28
 text = "Dynastic Attention: 2 / 2"
 horizontal_alignment = 1
-
-[node name="CardScroll" type="ScrollContainer" parent="MainLayout/Stratum2_Hall/VBox"]
-layout_mode = 2
-size_flags_vertical = 3
-vertical_scroll_mode = 3
-
-[node name="Centerer" type="CenterContainer" parent="MainLayout/Stratum2_Hall/VBox/CardScroll"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-
-[node name="CardsContainer" type="HBoxContainer" parent="MainLayout/Stratum2_Hall/VBox/CardScroll/Centerer"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_constants/separation = 25
-alignment = 1
 
 [node name="Stratum3_Bloodline" type="PanelContainer" parent="MainLayout"]
 layout_mode = 2
@@ -136,16 +133,28 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "Succession Secure"
 
-[node name="BottomBar" type="MarginContainer" parent="MainLayout"]
-layout_mode = 2
-theme_override_constants/margin_left = 50
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 50
-theme_override_constants/margin_bottom = 20
+[node name="WinterCourtUIDiagnostics" type="Node" parent="."]
+script = ExtResource("6_q5t2d")
 
-[node name="EndWinterButton" type="Button" parent="MainLayout/BottomBar"]
+[node name="DescriptionOverlay" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -2.0
+offset_top = -294.0
+offset_right = -2.0
+offset_bottom = -154.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="DescriptionLabel" type="Label" parent="DescriptionOverlay"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "The Ice Melts..."
+size_flags_vertical = 1
+text = " 
+"
+horizontal_alignment = 1
+vertical_alignment = 1

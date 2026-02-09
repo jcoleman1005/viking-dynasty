@@ -30,11 +30,11 @@ signal dynasty_view_requested
 # Population Section (New Text-Based HUD)
 # Note: Paths derived from new .tscn structure. 
 # Recommend setting 'Access as Unique Name' in Scene dock for robustness if structure changes.
-@onready var villager_label: Label = $"MarginContainer/MainLayout/PopulationHUD/Labels and Icons/VillagerLabel"
-@onready var thrall_label: Label = $"MarginContainer/MainLayout/PopulationHUD/Labels and Icons/ThrallLabel"
-@onready var soldier_label: Label = $"MarginContainer/MainLayout/PopulationHUD/Labels and Icons/SoldierLabel"
-@onready var total_pop_label: Label = $"MarginContainer/MainLayout/PopulationHUD/HBoxContainer/TotalPopLabel"
-
+@onready var villager_label: Label = %VillagerLabel
+@onready var thrall_label: Label = %ThrallLabel
+@onready var soldier_label: Label = %SoldierLabel
+@onready var total_pop_label: Label = %TotalPopLabel
+@onready var total_idle_pop_label: Label = %TotalIdlePopLabel
 # Legacy Army Count (Keep reference if needed for tooltip or debug, otherwise ignore)
 @onready var unit_count_label: Label = %UnitCountLabel
 
@@ -120,27 +120,42 @@ func _update_resource_labels(treasury: Dictionary) -> void:
 
 ## NEW: Aggregates census data and updates the segmented labels
 func _update_population_display() -> void:
-	if not EconomyManager: return
+	if not EconomyManager: 
+		Loggie.msg("TopBar: EconomyManager not found during update").domain(LogDomains.UI).warn()
+		return
 	
-	# Pull complete census (includes calculated soldier manpower)
+	# Pull complete census (includes calculated totals and idle counts)
 	var census = EconomyManager.get_population_census()
 	
-	# Extract Values
-	var peasants = census.get("peasants", {}).get("total", 0)
-	var thralls = census.get("thralls", {}).get("total", 0)
-	var soldiers = census.get("soldiers", {}).get("total", 0)
+	# Extract Totals
+	var peasants_total = census.get("peasants", {}).get("total", 0)
+	var thralls_total = census.get("thralls", {}).get("total", 0)
+	var soldiers_total = census.get("soldiers", {}).get("total", 0)
 	
-	# Calculate Total (or use EconomyManager.get_total_population_count())
-	var total = peasants + thralls + soldiers
+	# Extract Idle counts
+	var peasants_idle = census.get("peasants", {}).get("idle", 0)
+	var thralls_idle = census.get("thralls", {}).get("idle", 0)
 	
-	# Update Labels with Empty Space Handling (Dim if 0)
-	_update_count_label(villager_label, peasants)
-	_update_count_label(thrall_label, thralls)
-	_update_count_label(soldier_label, soldiers)
+	# Calculate Global Totals
+	var total_pop = peasants_total + thralls_total + soldiers_total
+	var total_idle = peasants_idle + thralls_idle
 	
-	# Update Total
+	# Update Category Labels
+	_update_count_label(villager_label, peasants_total)
+	_update_count_label(thrall_label, thralls_total)
+	_update_count_label(soldier_label, soldiers_total)
+	
+	# Update Total Population Label
 	if total_pop_label:
-		total_pop_label.text = "Total Population: %d" % total
+		total_pop_label.text = "Total Population: %d" % total_pop
+		
+	# Update Idle Population Label
+	if total_idle_pop_label:
+		total_idle_pop_label.text = "Idle: %d" % total_idle
+		# Optional: Visual cue if idle pop is high or zero
+		total_idle_pop_label.modulate = Color.WHITE if total_idle > 0 else Color(1, 1, 1, 0.5)
+
+	Loggie.msg("TopBar updated: Total %d | Idle %d" % [total_pop, total_idle]).domain(LogDomains.UI).debug()
 
 ## Helper to format and dim labels based on value
 func _update_count_label(lbl: Label, count: int) -> void:

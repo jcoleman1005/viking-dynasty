@@ -211,7 +211,7 @@ func _update_season_state(context: Dictionary = {}) -> void:
 		match current_season:
 			DynastyManager.Season.SPRING: season_advance_btn.text = "Start Summer"
 			DynastyManager.Season.SUMMER: season_advance_btn.text = "End Summer"
-			DynastyManager.Season.AUTUMN: season_advance_btn.text = "End Harvest"
+			DynastyManager.Season.AUTUMN: season_advance_btn.text = "Sign and Seal Ledger"
 			DynastyManager.Season.WINTER: season_advance_btn.text = "End Year"
 
 	_update_center_view(current_season, context)
