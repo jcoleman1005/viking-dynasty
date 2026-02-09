@@ -4,7 +4,7 @@ extends Node
 
 ## WINTER COURT DIAGNOSTIC TOOL
 ## A standalone component to audit the health of the Winter Court UI system.
-## Now includes "Reality Checks" for container overflow and actual card sizes.
+## NOW INCLUDES: REVERSE-ENGINEERING AUDIT to track missing resources.
 
 @export_group("Controls")
 ## Trigger the check manually in the Editor
@@ -13,16 +13,14 @@ extends Node
 @export var hotkey: Key = KEY_F6
 
 @export_group("Reference Checks")
-## List of unique nodes expected in the parent UI
 @export var critical_node_properties: Array[String] = [
 	"severity_label",
-	"deficit_container",
+	"resource_totem", 
 	"action_points_label",
 	"cards_container",
 	"jarl_name_label"
 ]
 
-## List of signals expected to be connected on the EventBus
 @export var required_bus_signals: Array[String] = [
 	"season_changed",
 	"hall_action_updated",
@@ -30,28 +28,60 @@ extends Node
 ]
 
 @export_group("Layout Symmetry Settings")
-## Target Aspect Ratio for cards (Width / Height). Standard Poker is ~0.71. 2:3 is 0.66.
 @export var target_aspect_ratio: float = 0.66
-## Minimum spacing between cards in pixels
 @export var preferred_gutter_px: int = 40
-## Minimum outer margins (left/right) in pixels
 @export var preferred_margin_px: int = 60
+
+# --- SPY STATE ---
+var _last_known_food: int = -9999
+var _spy_active: bool = false
 
 func _ready() -> void:
 	if not Engine.is_editor_hint():
 		set_process_input(true)
-		print_rich("[color=gray][Diagnostics] WinterCourt Monitor initialized. Press F6 to scan.[/color]")
+		Loggie.msg("[Diagnostics] WinterCourt Monitor initialized. Press F6 to scan.").domain(LogDomains.UI).info()
+		
+		# ACTIVATE SPY
+		if get_node_or_null("/root/EventBus"):
+			var bus = get_node("/root/EventBus")
+			if bus.has_signal("treasury_updated"):
+				bus.treasury_updated.connect(_on_treasury_spy_event)
+				_spy_active = true
+				Loggie.msg("[Spy] Live Treasury Monitor ACTIVE.").domain(LogDomains.ECONOMY).info()
+				
+				# Initialize baseline
+				if get_node_or_null("/root/SettlementManager"):
+					var sm = get_node("/root/SettlementManager")
+					if sm.current_settlement:
+						_last_known_food = sm.current_settlement.treasury.get("food", 0)
 
 func _input(event: InputEvent) -> void:
 	if not Engine.is_editor_hint() and event is InputEventKey and event.pressed and event.keycode == hotkey:
 		_run_diagnostics()
 
+# --- SPY HANDLER ---
+func _on_treasury_spy_event(new_treasury: Dictionary) -> void:
+	var new_food = new_treasury.get("food", 0)
+	
+	# Detect change
+	if _last_known_food != -9999 and new_food != _last_known_food:
+		var delta = new_food - _last_known_food
+		var direction = "GAINED" if delta > 0 else "LOST"
+		
+		Loggie.msg("[Spy] TREASURY CHANGED: Food %d -> %d (%s %d)" % [_last_known_food, new_food, direction, abs(delta)]).domain(LogDomains.ECONOMY).debug()
+		
+		if delta < -50:
+			Loggie.msg("[Spy] !!! MASSIVE DROP DETECTED !!! Check WinterManager Consumption Logic.").domain(LogDomains.ECONOMY).error()
+			# print_stack() # Optional: Uncomment to trace calls
+			
+	_last_known_food = new_food
+
 func _run_diagnostics() -> void:
-	print_rich("\n[b][color=yellow]--- WINTER COURT SYSTEM DIAGNOSTIC START ---[/color][/b]")
+	Loggie.msg("--- WINTER COURT SYSTEM DIAGNOSTIC START ---").domain(LogDomains.UI).info()
 	
 	var parent = get_parent()
 	if not parent:
-		push_error("Diagnostic Node has no parent! Attach to WinterCourtUI.")
+		Loggie.msg("Diagnostic Node has no parent! Attach to WinterCourtUI.").domain(LogDomains.UI).error()
 		return
 	
 	var passed_checks = 0
@@ -60,7 +90,7 @@ func _run_diagnostics() -> void:
 	# --------------------------------------------------------------------------
 	# 1. Dependency & Hierarchy Check
 	# --------------------------------------------------------------------------
-	print_rich("[b]1. Dependency & Node Audit[/b]")
+	Loggie.msg("1. Dependency & Node Audit").domain(LogDomains.UI).info()
 	
 	total_checks += 1
 	if parent.get_class() == "Control" or parent.is_class("Control"):
@@ -70,10 +100,17 @@ func _run_diagnostics() -> void:
 		_fail("Parent is not a Control node (Found: %s)" % parent.get_class())
 
 	for prop_name in critical_node_properties:
+		if prop_name == "deficit_container":
+			_warn("Skipping legacy property 'deficit_container'. Please reset 'Critical Node Properties' in Inspector.")
+			continue
+			
 		total_checks += 1
 		var val = parent.get(prop_name)
 		if val == null:
-			_fail("Critical Node Reference missing: %s" % prop_name)
+			if prop_name == "resource_totem" and parent.get("deficit_container") != null:
+				_fail("Architecture Mismatch: Script expects 'resource_totem' but Parent has 'deficit_container'. Update Parent Script.")
+			else:
+				_fail("Critical Node Reference missing: %s" % prop_name)
 		elif val is Node:
 			if not val.is_inside_tree():
 				_fail("Reference '%s' is assigned but NOT in Scene Tree (Orphaned Node)." % prop_name)
@@ -86,7 +123,7 @@ func _run_diagnostics() -> void:
 	# --------------------------------------------------------------------------
 	# 2. Resource Integrity
 	# --------------------------------------------------------------------------
-	print_rich("\n[b]2. Resource Integrity[/b]")
+	Loggie.msg("2. Resource Integrity").domain(LogDomains.UI).info()
 	
 	total_checks += 1
 	var cards = parent.get("available_court_cards")
@@ -98,7 +135,6 @@ func _run_diagnostics() -> void:
 		var null_cards = 0
 		for c in cards:
 			if c == null: null_cards += 1
-		
 		if null_cards > 0:
 			_fail("Found %d NULL entries in 'available_court_cards'!" % null_cards)
 		else:
@@ -116,11 +152,11 @@ func _run_diagnostics() -> void:
 	# --------------------------------------------------------------------------
 	# 3. Signal Bus Integrity
 	# --------------------------------------------------------------------------
-	print_rich("\n[b]3. Signal Bus Integrity[/b]")
+	Loggie.msg("3. Signal Bus Integrity").domain(LogDomains.UI).info()
 	
 	var event_bus = get_node_or_null("/root/EventBus")
 	if not event_bus:
-		_warn("Cannot access /root/EventBus (Normal in Editor unless plugin used). Skipping live signal check.")
+		_warn("Cannot access /root/EventBus. Skipping signal check.")
 	else:
 		for sig_name in required_bus_signals:
 			total_checks += 1
@@ -131,7 +167,6 @@ func _run_diagnostics() -> void:
 					if conn["callable"].get_object() == parent:
 						is_connected = true
 						break
-				
 				if is_connected:
 					_pass("Connected to EventBus.%s" % sig_name)
 					passed_checks += 1
@@ -143,7 +178,7 @@ func _run_diagnostics() -> void:
 	# --------------------------------------------------------------------------
 	# 4. Visibility & Input Check
 	# --------------------------------------------------------------------------
-	print_rich("\n[b]4. Visibility & Input Blockers[/b]")
+	Loggie.msg("4. Visibility & Input Blockers").domain(LogDomains.UI).info()
 	
 	total_checks += 1
 	if parent.visible:
@@ -174,7 +209,7 @@ func _run_diagnostics() -> void:
 	# --------------------------------------------------------------------------
 	# 5. Data Flow (Dry Run)
 	# --------------------------------------------------------------------------
-	print_rich("\n[b]5. Data Flow (Dry Run)[/b]")
+	Loggie.msg("5. Data Flow (Dry Run)").domain(LogDomains.UI).info()
 	
 	var econ = get_node_or_null("/root/EconomyManager")
 	var settlement = get_node_or_null("/root/SettlementManager")
@@ -185,45 +220,34 @@ func _run_diagnostics() -> void:
 		if forecast.is_empty():
 			_warn("EconomyManager returned empty forecast.")
 		else:
-			print_rich("   [color=cyan]Forecast:[/color] %s" % str(forecast))
+			Loggie.msg("   Forecast: %s" % str(forecast)).domain(LogDomains.ECONOMY).debug()
 			_pass("Economy Data Accessible.")
 			passed_checks += 1
 	else:
 		_warn("Cannot access Managers (Editor Mode?). Skipping Dry Run.")
 
 	# --------------------------------------------------------------------------
-	# 6. Layout Symmetry & Reality Check (NEW)
+	# 6. Layout Symmetry & Reality Check
 	# --------------------------------------------------------------------------
-	print_rich("\n[b]6. Layout Symmetry & Reality Check[/b]")
+	Loggie.msg("6. Layout Symmetry & Reality Check").domain(LogDomains.UI).info()
 	
 	var container = parent.get("cards_container")
 	if container and container is Control and container.is_inside_tree():
-		# A. THEORETICAL CHECK
 		var metrics = get_trio_layout_metrics()
 		
-		# B. REALITY CHECK (NEW): Does the container overflow the Parent UI?
 		total_checks += 1
 		var cont_rect = container.get_global_rect()
 		var parent_rect = parent.get_global_rect()
 		
-		# Check if container is wider than parent (with tolerance)
-		var overflow_x = false
-		if cont_rect.position.x < parent_rect.position.x - 10 or cont_rect.end.x > parent_rect.end.x + 10:
-			overflow_x = true
-			
-		var overflow_y = false
-		if cont_rect.position.y < parent_rect.position.y - 10 or cont_rect.end.y > parent_rect.end.y + 10:
-			overflow_y = true
+		var overflow_x = cont_rect.position.x < parent_rect.position.x - 10 or cont_rect.end.x > parent_rect.end.x + 10
+		var overflow_y = cont_rect.position.y < parent_rect.position.y - 10 or cont_rect.end.y > parent_rect.end.y + 10
 			
 		if overflow_x or overflow_y:
 			_fail("CONTAINER OVERFLOW: The CardsContainer is bigger than the Screen/Root!")
-			print_rich("   [color=red]Root Size:[/color] %s vs [color=red]Container Size:[/color] %s" % [parent_rect.size, cont_rect.size])
-			print_rich("   [color=yellow]Fix:[/color] Cards are forcing the container to expand. Check 'Custom Minimum Size' on Card Prefabs.")
 		else:
 			_pass("Container fits within Screen/Root bounds.")
 			passed_checks += 1
 
-		# C. ASSET CHECK (NEW): What size are the actual cards?
 		total_checks += 1
 		var children = container.get_children()
 		var actual_card_found = false
@@ -231,88 +255,97 @@ func _run_diagnostics() -> void:
 			if child is Control and child.visible:
 				actual_card_found = true
 				var size = child.size
-				var min_size = child.custom_minimum_size
-				
-				# Compare Actual vs Optimal
-				var ratio = size.x / size.y if size.y > 0 else 0
-				print_rich("   [color=cyan]Actual Card:[/color] %.1f x %.1f (Ratio: %.2f)" % [size.x, size.y, ratio])
-				print_rich("   [color=gray]Optimal:[/color] %.1f x %.1f (Ratio: %.2f)" % [metrics.card_width, metrics.card_height, target_aspect_ratio])
-				
 				if size.x > metrics.card_width + 5:
-					_warn("Card is WIDER than optimal calculation. This causes clipping.")
-					_warn("Please reduce 'Custom Minimum Width' on Card Prefab to ~%.0f" % metrics.card_width)
-				elif size.y > metrics.card_height + 5:
-					_warn("Card is TALLER than optimal. This causes clipping.")
+					_warn("Card is WIDER than optimal. Reduce 'Custom Minimum Width' to ~%.0f" % metrics.card_width)
 				else:
 					_pass("Card asset size is within optimal bounds.")
 					passed_checks += 1
-				break # Only check first valid card
-		
-		if not actual_card_found:
-			_warn("No cards visible in container to measure.")
-
+				break
+		if not actual_card_found: _warn("No cards visible in container to measure.")
 	else:
-		_warn("Cannot perform layout check: Cards container not found or not in tree.")
+		_warn("Cannot perform layout check: Cards container not found.")
+
+	# --------------------------------------------------------------------------
+	# 7. FORENSIC ECONOMY AUDIT
+	# --------------------------------------------------------------------------
+	Loggie.msg("7. FORENSIC ECONOMY AUDIT").domain(LogDomains.ECONOMY).info()
+	total_checks += 1
+	
+	if econ and settlement:
+		var treasury = settlement.current_settlement.treasury
+		var forecast = econ.get_winter_forecast()
+		var severity = "NORMAL"
+		
+		if get_node_or_null("/root/WinterManager"):
+			var wm = get_node("/root/WinterManager")
+			if wm.has_method("get_severity_name"):
+				severity = wm.get_severity_name()
+			elif "winter_consumption_report" in wm:
+				severity = wm.winter_consumption_report.get("severity_name", "NORMAL")
+		
+		# REVERSE ENGINEERING
+		var food_stock = treasury.get("food", 0)
+		var food_demand = forecast.get("food", 0)
+		var wood_stock = treasury.get("wood", 0)
+		var wood_demand = forecast.get("wood", 0)
+		
+		var implied_start_food = food_stock + food_demand # Assuming deficit was met or consumption applied
+		var implied_start_wood = wood_stock + wood_demand
+		
+		Loggie.msg("   LIVE SNAPSHOT: Food %d | Wood %d" % [food_stock, wood_stock]).domain(LogDomains.ECONOMY).info()
+		Loggie.msg("   CONSUMPTION:   Food %d | Wood %d" % [food_demand, wood_demand]).domain(LogDomains.ECONOMY).info()
+		Loggie.msg("   IMPLIED START: Food %d | Wood %d" % [implied_start_food, implied_start_wood]).domain(LogDomains.ECONOMY).warn()
+		
+		if implied_start_food < 50:
+			Loggie.msg("   >>> SUSPICIOUS: Started Winter with only %d Food. Harvest likely missing." % implied_start_food).domain(LogDomains.ECONOMY).error()
+		
+		# Check for Caps (If implemented)
+		if econ.has_method("get_storage_cap"):
+			var food_cap = econ.get_storage_cap("food")
+			Loggie.msg("   STORAGE CAP:   %d" % food_cap).domain(LogDomains.ECONOMY).info()
+			if implied_start_food == food_cap:
+				Loggie.msg("   >>> CAUSE FOUND: Resources clamped to Storage Cap!").domain(LogDomains.ECONOMY).warn()
+		
+		_pass("Forensic Audit Complete.")
+		passed_checks += 1
+	else:
+		_fail("Cannot run Forensic Audit: Managers missing.")
 
 	# --------------------------------------------------------------------------
 	# CONCLUSION
 	# --------------------------------------------------------------------------
-	print_rich("\n[b]--------------------------------------------------[/b]")
 	if passed_checks == total_checks:
-		print_rich("[b][color=green]STATUS: READY (%d/%d Checks Passed)[/color][/b]" % [passed_checks, total_checks])
+		Loggie.msg("STATUS: READY (%d/%d Checks Passed)" % [passed_checks, total_checks]).domain(LogDomains.UI).info()
 	else:
-		print_rich("[b][color=red]STATUS: UNSTABLE (%d/%d Checks Passed)[/color][/b]" % [passed_checks, total_checks])
-	print_rich("[b]--------------------------------------------------[/b]\n")
+		Loggie.msg("STATUS: UNSTABLE (%d/%d Checks Passed)" % [passed_checks, total_checks]).domain(LogDomains.UI).error()
 
-# ------------------------------------------------------------------------------
-# SYMMETRY ENGINE
-# ------------------------------------------------------------------------------
 func get_trio_layout_metrics() -> Dictionary:
 	var container = get_parent().get("cards_container")
 	if not container: return {}
-	
 	var cont_rect = container.get_rect()
 	var cont_w = cont_rect.size.x
 	var cont_h = cont_rect.size.y
-	
 	var max_h_safe = cont_h * 0.9
 	var w_based_on_h = max_h_safe * target_aspect_ratio
-	
 	var available_w = cont_w - (preferred_margin_px * 2) - (preferred_gutter_px * 2)
 	var w_based_on_w = available_w / 3.0
-	
 	var final_w = 0.0
 	var final_h = 0.0
-	var constraint_type = ""
-	
 	if w_based_on_h * 3.0 + (preferred_gutter_px * 2) > available_w:
 		final_w = w_based_on_w
 		final_h = final_w / target_aspect_ratio
-		constraint_type = "Width Constrained"
 	else:
 		final_w = w_based_on_h
 		final_h = max_h_safe
-		constraint_type = "Height Constrained"
-	
-	var total_content_width = (final_w * 3) + (preferred_gutter_px * 2)
-	var centering_offset = (cont_w - total_content_width) / 2.0
 	var is_safe = final_h <= cont_h
-	
-	return {
-		"card_width": final_w,
-		"card_height": final_h,
-		"spacing": preferred_gutter_px,
-		"constraint_type": constraint_type,
-		"is_safe": is_safe
-	}
+	return { "card_width": final_w, "card_height": final_h, "is_safe": is_safe }
 
 # Helpers
-func _pass(msg: String) -> void:
-	print_rich(" [color=green]PASS[/color] " + msg)
+func _pass(msg: String) -> void: 
+	Loggie.msg("[PASS] " + msg).domain(LogDomains.UI).info()
 
-func _fail(msg: String) -> void:
-	print_rich(" [color=red]FAIL[/color] " + msg)
-	push_error("[WinterCourt Diagnostic] " + msg)
+func _fail(msg: String) -> void: 
+	Loggie.msg("[FAIL] " + msg).domain(LogDomains.UI).error()
 
-func _warn(msg: String) -> void:
-	print_rich(" [color=yellow]WARN[/color] " + msg)
+func _warn(msg: String) -> void: 
+	Loggie.msg("[WARN] " + msg).domain(LogDomains.UI).warn()
