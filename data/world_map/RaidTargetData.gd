@@ -1,3 +1,4 @@
+#res://data/world_map/RaidTargetData.gd
 # res://data/world_map/RaidTargetData.gd
 class_name RaidTargetData
 extends Resource

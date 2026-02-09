@@ -1,3 +1,4 @@
+#res://test/unit/test_dynasty_modifiers.gd
 extends GutTest
 
 ## test_dynasty_modifiers.gd

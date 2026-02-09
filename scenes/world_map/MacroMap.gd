@@ -1,3 +1,4 @@
+#res://scenes/world_map/MacroMap.gd
 # res://scenes/world_map/MacroMap.gd
 extends Node2D
 

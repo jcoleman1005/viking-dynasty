@@ -1,3 +1,4 @@
+#res://tools/EditorOnly.gd
 # res://tools/UpdateRegionNames.gd
 @tool
 extends EditorScript

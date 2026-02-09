@@ -1,0 +1,138 @@
+[gd_scene load_steps=9 format=3 uid="uid://c7rilx0cdtm3v"]
+
+[ext_resource type="Script" uid="uid://gvajp31vuy31" path="res://ui/seasonal/WinterCourtUI.gd" id="1_21ph0"]
+[ext_resource type="Script" uid="uid://cni5gdnpbb1v2" path="res://data/resources/SeasonalCardResource.gd" id="2_o4q1v"]
+[ext_resource type="Resource" uid="uid://dg10eqygin8xg" path="res://data/resources/Winter Cards/Card_Winter_Feast.tres" id="3_io7fp"]
+[ext_resource type="Resource" uid="uid://dcppndmvmf63e" path="res://data/resources/Winter Cards/Card_Winter_Recruit.tres" id="4_qbwkr"]
+[ext_resource type="PackedScene" uid="uid://d0px2w8n5r1lv" path="res://ui/seasonal/SeasonalCardUi.tscn" id="5_f6bl8"]
+[ext_resource type="Script" uid="uid://vb3ro4fdymn5" path="res://ui/seasonal/WinterCourtUiDiagnostics.gd" id="6_qub0o"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_Spine"]
+bg_color = Color(0.0823529, 0.0980392, 0.14902, 0.98)
+border_width_right = 2
+border_color = Color(0.439216, 0.501961, 0.564706, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_Title"]
+bg_color = Color(0.14902, 0.168627, 0.203922, 1)
+border_width_bottom = 1
+border_color = Color(0.439216, 0.501961, 0.564706, 1)
+
+[node name="WinterCourtUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_21ph0")
+available_court_cards = Array[ExtResource("2_o4q1v")]([ExtResource("3_io7fp"), ExtResource("4_qbwkr"), ExtResource("3_io7fp")])
+card_prefab = ExtResource("5_f6bl8")
+
+[node name="Vignette" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.862745)
+
+[node name="MainSplit" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="LeftSpineBackground" type="PanelContainer" parent="MainSplit"]
+custom_minimum_size = Vector2(350, 0)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_Spine")
+
+[node name="LeftSpine" type="VBoxContainer" parent="MainSplit/LeftSpineBackground"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="TitlePanel" type="PanelContainer" parent="MainSplit/LeftSpineBackground/LeftSpine"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_Title")
+
+[node name="Margin" type="MarginContainer" parent="MainSplit/LeftSpineBackground/LeftSpine/TitlePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 15
+
+[node name="SeverityLabel" type="Label" parent="MainSplit/LeftSpineBackground/LeftSpine/TitlePanel/Margin"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.960784, 0.960784, 0.960784, 1)
+theme_override_font_sizes/font_size = 24
+text = "WINTER SEVERITY"
+horizontal_alignment = 1
+
+[node name="ContextMargin" type="MarginContainer" parent="MainSplit/LeftSpineBackground/LeftSpine"]
+layout_mode = 2
+theme_override_constants/margin_left = 25
+theme_override_constants/margin_right = 25
+
+[node name="ContextVBox" type="VBoxContainer" parent="MainSplit/LeftSpineBackground/LeftSpine/ContextMargin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="JarlNameLabel" type="Label" parent="MainSplit/LeftSpineBackground/LeftSpine/ContextMargin/ContextVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+text = "JARL NAME (AGE 00)"
+horizontal_alignment = 1
+
+[node name="ActionPointsLabel" type="Label" parent="MainSplit/LeftSpineBackground/LeftSpine/ContextMargin/ContextVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.890196, 0.811765, 0.490196, 1)
+text = "ATTENTION: 0/0"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="MainSplit/LeftSpineBackground/LeftSpine/ContextMargin/ContextVBox"]
+layout_mode = 2
+
+[node name="ResourceTotem" type="VBoxContainer" parent="MainSplit/LeftSpineBackground/LeftSpine/ContextMargin/ContextVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Spacer" type="Control" parent="MainSplit/LeftSpineBackground/LeftSpine"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="DescriptionAnchor" type="MarginContainer" parent="MainSplit/LeftSpineBackground/LeftSpine"]
+layout_mode = 2
+theme_override_constants/margin_left = 25
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 25
+theme_override_constants/margin_bottom = 40
+
+[node name="DescriptionLabel" type="Label" parent="MainSplit/LeftSpineBackground/LeftSpine/DescriptionAnchor"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 150)
+layout_mode = 2
+size_flags_vertical = 8
+text = "Select a card to view details..."
+autowrap_mode = 3
+
+[node name="RitualStage" type="CenterContainer" parent="MainSplit"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CardsContainer" type="HBoxContainer" parent="MainSplit/RitualStage"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 40
+alignment = 1
+
+[node name="WinterCourtUIDiagnostics" type="Node" parent="."]
+script = ExtResource("6_qub0o")

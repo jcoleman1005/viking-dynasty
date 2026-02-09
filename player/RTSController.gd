@@ -1,3 +1,4 @@
+#res://player/RTSController.gd
 # res://player/RTSController.gd
 extends Node
 class_name RTSController

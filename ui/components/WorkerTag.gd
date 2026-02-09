@@ -1,3 +1,4 @@
+#res://ui/components/WorkerTag.gd
 # res://ui/components/WorkerTag.gd
 class_name WorkerTag
 extends Control

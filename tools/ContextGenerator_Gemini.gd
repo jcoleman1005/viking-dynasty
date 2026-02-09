@@ -1,3 +1,4 @@
+#res://tools/ContextGenerator_Gemini.gd
 @tool
 extends EditorScript
 

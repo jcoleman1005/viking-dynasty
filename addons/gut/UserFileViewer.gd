@@ -1,3 +1,4 @@
+#res://addons/gut/UserFileViewer.gd
 extends Window
 
 @onready var rtl = $TextDisplay/RichTextLabel

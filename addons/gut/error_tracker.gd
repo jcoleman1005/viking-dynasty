@@ -1,3 +1,4 @@
+#res://addons/gut/error_tracker.gd
 extends Logger
 class_name GutErrorTracker
 

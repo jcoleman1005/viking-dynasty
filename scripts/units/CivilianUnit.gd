@@ -1,3 +1,4 @@
+#res://scripts/units/CivilianUnit.gd
 class_name CivilianUnit
 extends BaseUnit
 

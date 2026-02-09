@@ -1,3 +1,4 @@
+#res://addons/loggie/loggie_settings.gd
 @tool
 
 ## Defines a set of variables through which all the relevant settings of Loggie can have their

@@ -1,3 +1,4 @@
+#res://addons/gut/gui/option_maker.gd
 var PanelControls = load("res://addons/gut/gui/panel_controls.gd")
 
 # All titles so we can free them when we want.

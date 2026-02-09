@@ -1,3 +1,4 @@
+#res://test/integration/test_terrain_solids.gd
 extends GutTest
 
 var _manager_ref

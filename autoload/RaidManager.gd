@@ -28,12 +28,12 @@ func reset_raid_state() -> void:
 
 func prepare_raid_force(warbands: Array[WarbandData], provisions: int) -> void:
 	if warbands.is_empty():
-		Loggie.msg("RaidManager: Warning - Raid force prepared with 0 units.").domain("RAID").warn()
+		Loggie.msg("RaidManager: Warning - Raid force prepared with 0 units.").domain(LogDomains.GAMEPLAY).warn()
 	
 	outbound_raid_force = warbands.duplicate()
 	raid_provisions_level = provisions
 	
-	Loggie.msg("Raid Force Prepared: %d Warbands, Provision Level %d" % [outbound_raid_force.size(), provisions]).domain("RAID").info()
+	Loggie.msg("Raid Force Prepared: %d Warbands, Provision Level %d" % [outbound_raid_force.size(), provisions]).domain(LogDomains.GAMEPLAY).info()
 	raid_state_updated.emit()
 
 func set_current_raid_target(data: SettlementData) -> void:
@@ -46,32 +46,61 @@ func get_current_raid_target() -> SettlementData:
 
 # --- CORE LOGIC: MIGRATED FROM DYNASTYMANAGER ---
 
-func calculate_journey_attrition(target_distance: float) -> Dictionary:
+## Calculates fleet damage based on distance and provisions.
+## Updated: Supports 'preview' mode for UI forecasting without side effects.
+func calculate_journey_attrition(target_distance: float, provision_override: int = -1, preview: bool = false) -> Dictionary:
 	# Runtime Dependency Check
 	if not DynastyManager.current_jarl:
-		Loggie.msg("RaidManager: Cannot calculate attrition, no Current Jarl.").domain("RAID").error()
-		return {}
+		Loggie.msg("RaidManager: Cannot calculate attrition, no Current Jarl.").domain(LogDomains.GAMEPLAY).error()
+		return {"title": "Error", "description": "No Jarl", "modifier": 1.0}
 		
 	if target_distance < 0: target_distance = 0.0
 	
+	# Determine Provision Level (Use Override if provided, else use State)
+	var effective_provisions = raid_provisions_level
+	if provision_override != -1:
+		effective_provisions = provision_override
+	
 	var jarl = DynastyManager.current_jarl
 	var safe_range = jarl.get_safe_range()
-	
-	var report = {
-		"title": "Uneventful Journey",
-		"description": "The seas were calm. The fleet arrived intact.",
-		"modifier": 1.0
-	}
 	
 	var base_risk = 0.02
 	if target_distance > safe_range:
 		# Calculate risk based on Jarl's attrition stats
 		base_risk = ((target_distance - safe_range) / 100.0) * jarl.attrition_per_100px
 	
-	if raid_provisions_level == 2:
+	if effective_provisions == 2:
 		base_risk -= 0.15 
 		
 	base_risk = clampf(base_risk, 0.05, 0.90) 
+	
+	# --- PREVIEW MODE (UI Forecast) ---
+	if preview:
+		var max_loss = 25.0 # Storm damage
+		var min_loss = 10.0 # Rough seas
+		
+		if effective_provisions == 2:
+			max_loss *= 0.5
+			min_loss *= 0.5
+			
+		var risk_pct = int(base_risk * 100)
+		var desc = "Est. Attrition Risk: %d%%\nPotential Dmg: %d-%d%%" % [risk_pct, int(min_loss), int(max_loss)]
+		
+		# Return analytical data for UI
+		return {
+			"title": "Forecast",
+			"description": desc,
+			"modifier": 1.0,
+			"risk_pct": risk_pct, # Helper for UI coloring
+			"is_preview": true
+		}
+	# ----------------------------------
+	
+	var report = {
+		"title": "Uneventful Journey",
+		"description": "The seas were calm. The fleet arrived intact.",
+		"modifier": 1.0
+	}
 	
 	var roll = randf()
 	
@@ -85,14 +114,14 @@ func calculate_journey_attrition(target_distance: float) -> Dictionary:
 		else:
 			report["description"] = "High waves and poor winds delayed the crossing. The men are seasick and tired."
 			
-		if raid_provisions_level == 2:
+		if effective_provisions == 2:
 			damage *= 0.5 
 			report["description"] += "\n(Well-Fed: Damage Reduced)"
 			
 		report["modifier"] = 1.0 - damage
 		raid_health_modifier = report["modifier"]
 	else:
-		if raid_provisions_level == 2:
+		if effective_provisions == 2:
 			report["title"] = "High Morale"
 			report["description"] = "Excellent rations kept spirits high. The warriors are eager for battle!"
 			report["modifier"] = 1.1 

@@ -1,3 +1,4 @@
+#res://autoload/PauseManager.gd
 # res://autoload/PauseManager.gd
 #
 # This is a global autoload script that listens for the 'ui_pause'

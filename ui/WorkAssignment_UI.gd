@@ -1,3 +1,4 @@
+#res://ui/WorkAssignment_UI.gd
 # res://ui/WorkAssignment_UI.gd
 extends CanvasLayer
 

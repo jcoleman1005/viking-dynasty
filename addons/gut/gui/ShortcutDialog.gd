@@ -1,3 +1,4 @@
+#res://addons/gut/gui/ShortcutDialog.gd
 @tool
 extends ConfirmationDialog
 

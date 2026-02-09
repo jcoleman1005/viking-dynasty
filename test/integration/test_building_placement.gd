@@ -1,3 +1,4 @@
+#res://test/integration/test_building_placement.gd
 extends GutTest
 
 # --- Mock Building Class ---

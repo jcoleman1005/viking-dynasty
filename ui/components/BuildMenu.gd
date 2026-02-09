@@ -1,3 +1,4 @@
+#res://ui/components/BuildMenu.gd
 class_name BuildMenu
 extends MarginContainer
 

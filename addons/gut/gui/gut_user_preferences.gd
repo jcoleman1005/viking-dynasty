@@ -1,3 +1,4 @@
+#res://addons/gut/gui/gut_user_preferences.gd
 class GutEditorPref:
 	var gut_pref_prefix = 'gut/'
 	var pname = '__not_set__'

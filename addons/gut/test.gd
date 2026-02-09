@@ -1,3 +1,4 @@
+#res://addons/gut/test.gd
 class_name GutTest
 extends Node
 ## This is the base class for your GUT test scripts.[br]

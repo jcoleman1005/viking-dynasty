@@ -1,3 +1,4 @@
+#res://data/events/DisputeEventData.gd
 class_name DisputeEventData
 extends Resource
 

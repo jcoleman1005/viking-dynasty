@@ -1,3 +1,4 @@
+#res://ui/seasonal/SummerJobSlider.gd
 extends PanelContainer
 class_name JobRow_UI
 

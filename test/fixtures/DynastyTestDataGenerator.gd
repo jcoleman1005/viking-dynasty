@@ -1,3 +1,4 @@
+#res://test/fixtures/DynastyTestDataGenerator.gd
 # res://test/DynastyTestDataGenerator.gd
 class_name DynastyTestDataGenerator
 extends RefCounted

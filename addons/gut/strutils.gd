@@ -1,3 +1,4 @@
+#res://addons/gut/strutils.gd
 class_name GutStringUtils
 
 # Hash containing all the built in types in Godot.  This provides an English

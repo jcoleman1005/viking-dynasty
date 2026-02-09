@@ -1,3 +1,4 @@
+#res://addons/gut/diff_tool.gd
 extends 'res://addons/gut/compare_result.gd'
 const INDENT = '    '
 enum {

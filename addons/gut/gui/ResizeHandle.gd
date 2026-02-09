@@ -1,3 +1,4 @@
+#res://addons/gut/gui/ResizeHandle.gd
 @tool
 extends ColorRect
 # #############################################################################

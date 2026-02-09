@@ -1,3 +1,4 @@
+#res://scripts/generators/MapDataGenerator.gd
 class_name MapDataGenerator
 extends RefCounted
 

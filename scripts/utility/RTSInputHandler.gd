@@ -1,3 +1,4 @@
+#res://scripts/utility/RTSInputHandler.gd
 # res://scripts/input/RTSInputHandler.gd
 class_name RTSInputHandler
 extends Node

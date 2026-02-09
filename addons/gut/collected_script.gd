@@ -1,3 +1,4 @@
+#res://addons/gut/collected_script.gd
 # ------------------------------------------------------------------------------
 # This holds all the meta information for a test script.  It contains the
 # name of the inner class and an array of CollectedTests.  This does not parse

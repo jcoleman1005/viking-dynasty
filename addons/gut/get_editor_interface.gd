@@ -1,3 +1,4 @@
+#res://addons/gut/get_editor_interface.gd
 # This file is here so we can load it only when we are in the editor so that
 # other places do not have to have "EditorInterface" in them, which causes a
 # parser error when loaded outside of the editor.  The things we have to do in

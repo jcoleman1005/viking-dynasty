@@ -1,3 +1,4 @@
+#res://tools/TestPopulationLogic.gd
 @tool
 extends EditorScript
 

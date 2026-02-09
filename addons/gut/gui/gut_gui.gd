@@ -1,3 +1,4 @@
+#res://addons/gut/gui/gut_gui.gd
 extends Control
 # ##############################################################################
 # This is the decoupled GUI for gut.gd

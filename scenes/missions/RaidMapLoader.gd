@@ -1,3 +1,4 @@
+#res://scenes/missions/RaidMapLoader.gd
 class_name RaidMapLoader
 extends Node
 

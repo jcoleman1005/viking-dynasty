@@ -1,3 +1,4 @@
+#res://scripts/buildings/SettlementBridge.gd
 # res://scripts/buildings/SettlementBridge.gd
 extends LevelBase
 
@@ -105,7 +106,11 @@ func _ready() -> void:
 		EventBus.interact_command.connect(rts_controller._on_interact_command)
 	
 func _exit_tree() -> void:
-	SettlementManager.unregister_active_scene_nodes()
+	# CRITICAL: When this node leaves the scene tree (scene change/quit),
+	# we MUST release the Singleton's grip on our nodes.
+	# Even with WeakRefs, this prevents logical state errors.
+	if SettlementManager.active_building_container == $BuildingContainer:
+		SettlementManager.unregister_active_scene_nodes()
 
 func _connect_signals() -> void:
 	EventBus.settlement_loaded.connect(_on_settlement_loaded)

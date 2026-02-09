@@ -1,3 +1,4 @@
+#res://ui/components/RaidMenu.gd
 class_name RaidMenu
 extends MarginContainer
 

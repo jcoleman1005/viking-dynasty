@@ -1,126 +1,148 @@
-# res://scripts/units/SquadSoldier.gd
+#res://scripts/units/SquadSoldier.gd
+## SquadSoldier handles specialized formation movement while delegating 
+## core physics and avoidance to BaseUnit.
 class_name SquadSoldier
 extends BaseUnit
 
-var leader: SquadLeader
+@export_group("Squad Settings")
+## Distance at which the soldier stops trying to reach the formation slot.
+@export var stop_dist: float = 5.0
+
+# --- State Variables ---
+var leader: Node2D = null
+## The calculated global position this unit should occupy in formation.
 var formation_target: Vector2 = Vector2.ZERO
 var brawl_target: Node2D = null
 var is_rubber_banding: bool = false
 var stuck_detector: Node
 
+# --- Constants ---
 const MAX_DIST_FROM_LEADER = 300.0
 const CATCHUP_DIST = 80.0
 const SPRINT_SPEED_MULT = 2.5
 
+# --- Prisoner Logic ---
 var pending_prisoners: Array[Node2D] = [] 
 var escorted_prisoners: Array[Node2D] = []
 var retreat_zone_cache: Node2D = null
 
 func _ready() -> void:
+	# Initialize BaseUnit first
+	super._ready()
+	
+	# Squad specific init
 	separation_force = 80.0 
 	separation_radius = 25.0
 	separation_enabled = true
-	avoidance_priority = 1
-	super._ready()
-
+	avoidance_priority = 1 # Lower priority than heavy units?
+	
 	if attack_ai:
 		attack_ai.attack_started.connect(func(t): if not is_rubber_banding: brawl_target = t)
 		attack_ai.attack_stopped.connect(func(): brawl_target = null)
+		# Expand detection for squad behavior if needed
 		if attack_ai.detection_area:
 			for c in attack_ai.detection_area.get_children():
 				if c is CollisionShape2D and c.shape is CircleShape2D: c.shape.radius = 120.0
 
 	stuck_detector = get_node_or_null("StuckDetector")
-	
-	# If you injected it via code in the previous step, find it by that name:
 	if not stuck_detector:
-		stuck_detector = get_node_or_null("DEBUG_StuckReporter") # Or "StuckDetector" depending on your setup
-		
-	super._ready()
-	
+		stuck_detector = get_node_or_null("DEBUG_StuckReporter")
+
+	Loggie.msg("SquadSoldier initialized").domain("GAMEPLAY").info()
+
 func _physics_process(delta: float) -> void:
 	# 1. FSM High Priority (Tasks like Collecting/Escorting take precedence)
-	# (We keep the super call here because these states rely on standard NavAgent logic)
-	if fsm.current_state in [UnitAIConstants.State.COLLECTING, UnitAIConstants.State.ESCORTING, UnitAIConstants.State.REGROUPING, UnitAIConstants.State.RETREATING]:
-		uses_external_steering = false 
+	# These states use standard NavAgent logic via BaseUnit's FSM.
+	if fsm.current_state in [
+		UnitAIConstants.State.COLLECTING, 
+		UnitAIConstants.State.ESCORTING, 
+		UnitAIConstants.State.REGROUPING, 
+		UnitAIConstants.State.RETREATING
+	]:
+		uses_external_steering = false
 		super._physics_process(delta)
 		return
 
-	# 2. Safety
+	# 2. Safety Check
 	if not is_instance_valid(leader):
-		velocity = Vector2.ZERO
+		velocity = velocity.lerp(Vector2.ZERO, data.linear_damping * delta)
+		super._physics_process(delta)
 		return
-		
-	# 3. Take Control
+
+	# 3. Enable External Steering Mode
 	uses_external_steering = true
-	
+
 	# 4. Rubber Banding Logic
-	var speed = data.move_speed
+	# Calculate speed modifier based on distance to leader
+	var current_speed = data.move_speed
 	var dist_leader = global_position.distance_to(leader.global_position)
 	
 	var is_phasing = false
 	if stuck_detector and "is_phasing" in stuck_detector:
 		is_phasing = stuck_detector.is_phasing
 	
-	# Only update Rubber Band state if we are NOT currently phasing through a wall.
-	# If we are phasing, we want to keep the Mask at 0 (set by the detector).
+	# Logic: If we are far behind, disable collision logic (phasing) and sprint
 	if not is_phasing:
 		if not is_rubber_banding and dist_leader > MAX_DIST_FROM_LEADER:
 			is_rubber_banding = true
-			collision_mask = 1 
+			collision_mask = LAYER_ENV # Environment only, ignore units
 			modulate.a = 0.5
-			separation_enabled = false 
+			separation_enabled = false # BaseUnit checks this flag
 		elif is_rubber_banding and dist_leader < CATCHUP_DIST:
 			is_rubber_banding = false
-			_setup_collision_logic()
+			_restore_collision_logic()
 			modulate.a = 1.0
 			separation_enabled = true
 		
 	if is_rubber_banding:
-		brawl_target = null
-		speed *= SPRINT_SPEED_MULT
+		brawl_target = null # Ignore combat when catching up
+		current_speed *= SPRINT_SPEED_MULT
 	
-	# 5. Determine Target
+	# 5. Determine Target (Combat vs Formation)
 	var final_dest = formation_target
-	var stop_dist = 15.0
+	var final_stop_dist = stop_dist
 	
 	if is_instance_valid(brawl_target) and not is_rubber_banding:
 		final_dest = brawl_target.global_position
-		# Smart Stop Distance logic...
+		
+		# Calculate dynamic attack range
 		var range_limit = data.attack_range
 		if brawl_target is BaseBuilding or (brawl_target.name == "Hitbox" and brawl_target.get_parent() is BaseBuilding):
 			range_limit = data.building_attack_range
+			
 		var r_target = _get_radius(brawl_target)
-		stop_dist = r_target + range_limit - 5.0
-		if stop_dist < 5.0: stop_dist = 5.0
-		if attack_ai: attack_ai.force_target(brawl_target)
+		final_stop_dist = r_target + range_limit - 5.0
+		if final_stop_dist < 5.0: final_stop_dist = 5.0
+		
+		if attack_ai: 
+			attack_ai.force_target(brawl_target)
 	
-	# 6. Apply Steering (Formation Attraction)
+	# 6. Apply Velocity (Direct Set for BaseUnit Smoothing)
 	if final_dest != Vector2.ZERO:
 		var dist = global_position.distance_to(final_dest)
 		
-		if dist > stop_dist:
-			# Calculate desired velocity
-			var desired_velocity = (final_dest - global_position).normalized() * speed
-			
-			# Apply simple steering to smooth it out
-			velocity = velocity.lerp(desired_velocity, 10.0 * delta)
+		if dist > final_stop_dist:
+			# Direct assignment: BaseUnit will handle the acceleration/lerp
+			velocity = (final_dest - global_position).normalized() * current_speed
 		else:
-			# Damping when arrived
-			velocity = velocity.lerp(Vector2.ZERO, 10.0 * delta)
-			
-	# --- THE FIX ---
-	# We DO NOT call super._physics_process(delta) here anymore.
-	# The parent likely requires a NavPath to move, which we don't have.
-	# We manually apply separation and move.
-	
-	if separation_enabled:
-		velocity += calculate_separation_push(delta)
-	
-	move_and_slide()
-	# ---------------
+			# Arrived: Let BaseUnit damp to zero
+			velocity = Vector2.ZERO
 
-# ... (Keep the rest of the file: _get_radius, assign_escort_task, etc.) ...
+	# 7. Hand-off to BaseUnit
+	# BaseUnit will handle move_and_slide, separation (if enabled), and avoidance whiskers
+	super._physics_process(delta)
+
+func _restore_collision_logic() -> void:
+	# Use inherited constants from BaseUnit to prevent magic number rot
+	collision_mask = LAYER_ENV | LAYER_PLAYER_UNIT | LAYER_ENEMY_UNIT
+
+## Custom log for squad assignment
+func set_squad_leader(new_leader: Node2D) -> void:
+	leader = new_leader
+	Loggie.msg("Soldier joined squad").domain("GAMEPLAY").context({"leader": leader.name}).info()
+
+# --- Utility & Prisoner Logic (Ported from Legacy) ---
+
 func _get_radius(node: Node2D) -> float:
 	if node.name == "Hitbox" and node.get_parent() is BaseBuilding:
 		var b = node.get_parent()

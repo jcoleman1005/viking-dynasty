@@ -1,3 +1,4 @@
+#res://addons/gut/GutScene.gd
 extends Node2D
 # ##############################################################################
 # This is a wrapper around the normal and compact gui controls and serves as

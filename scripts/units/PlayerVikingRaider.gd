@@ -1,3 +1,4 @@
+#res://scripts/units/PlayerVikingRaider.gd
 # res://scripts/units/PlayerVikingRaider.gd
 #
 # Player-controlled Viking Raider unit.

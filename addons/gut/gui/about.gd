@@ -1,3 +1,4 @@
+#res://addons/gut/gui/about.gd
 @tool
 extends AcceptDialog
 

@@ -1,3 +1,4 @@
+#res://scripts/units/EnemyVikingRaider.gd
 # res://scripts/units/EnemyVikingRaider.gd
 #
 # Concrete implementation of the Viking Raider enemy unit.

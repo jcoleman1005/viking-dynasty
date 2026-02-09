@@ -1,3 +1,4 @@
+#res://autoload/SceneManager.gd
 # res://autoload/SceneManager.gd
 extends Node
 

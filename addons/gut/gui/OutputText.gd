@@ -1,3 +1,4 @@
+#res://addons/gut/gui/OutputText.gd
 @tool
 extends VBoxContainer
 

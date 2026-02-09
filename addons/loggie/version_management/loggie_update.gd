@@ -1,3 +1,4 @@
+#res://addons/loggie/version_management/loggie_update.gd
 @tool
 class_name LoggieUpdate extends Node
 

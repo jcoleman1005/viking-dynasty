@@ -1,4 +1,3 @@
-# res://autoload/EventBus.gd
 extends Node
 
 # --- Build System Signals ---
@@ -9,6 +8,7 @@ signal building_ready_for_placement(building_data: BuildingData)
 signal building_placement_cancelled(building_data: BuildingData)
 signal building_placed(building_data: BuildingData)
 signal building_construction_completed(building_entry: Dictionary)
+
 # --- Inspector Signals ---
 signal building_selected(building: BaseBuilding)
 signal building_deselected()
@@ -25,6 +25,7 @@ signal purchase_successful(item_name: String)
 signal purchase_failed(reason: String)
 signal raid_loot_secured(type: String, amount: int)
 signal population_changed()
+
 # --- Navigation Signals ---
 signal scene_change_requested(scene_key: String)
 signal world_map_opened()
@@ -62,7 +63,9 @@ signal camera_input_lock_requested(is_locked: bool)
 # --- Game Loop & Time Signals ---
 signal end_year_requested() # Legacy (Keep for now to avoid crashes)
 signal advance_season_requested() # NEW: The primary time driver
-signal season_changed(season_name: String) # NEW: Feedback for UI/World
+
+## UPDATED: Now includes context_data (Dictionary) for the season transition payload.
+signal season_changed(season_name: String, context_data: Dictionary) 
 
 # --- NEW: Seasonal UI System Signals ---
 signal hall_action_updated
@@ -80,10 +83,17 @@ signal ui_request_phase_commit(phase_name: String, data: Dictionary)
 ## Emitted by Managers when the specific Seasonal UI needs to open.
 ## Example: DynastyManager emits this when Spring starts.
 signal ui_open_seasonal_screen(screen_type: String) # "spring", "summer", "autumn", "winter"
+
 ## Emitted when a Raid is fully committed from the Summer UI.
 signal raid_launched(target_region: Resource, force_size: int)
+
 ## Emitted when Autumn accounting is finalized.
 signal autumn_resolved()
+
+## Emitted when the Winter Court UI button is pressed while a Crisis is active.
+## Systems like EventManager or a CrisisModal should listen to this.
+signal winter_crisis_triggered() 
+
 ## Emitted when Winter ends and the year rolls over.
 signal winter_ended()
 signal raid_committed(count: int)

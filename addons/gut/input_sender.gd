@@ -1,3 +1,4 @@
+#res://addons/gut/input_sender.gd
 class_name GutInputSender
 ## The GutInputSender class.  It sends input to places.
 ##

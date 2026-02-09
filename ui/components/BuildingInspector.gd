@@ -1,5 +1,6 @@
-# res://ui/components/BuildingInspector.gd
 extends PanelContainer
+
+## Inspector for building details and worker management.
 
 # Refs - Unique names used for portability
 @onready var icon_rect: TextureRect = %Icon
@@ -9,17 +10,27 @@ extends PanelContainer
 @onready var btn_add: Button = %BtnAdd
 @onready var btn_remove: Button = %BtnRemove
 
+const SUMMER_TOOLTIP = "Workers are managed via Summer Allocation Council."
+
 var current_building: BaseBuilding
 var current_entry: Dictionary 
 
 func _ready() -> void:
 	hide()
+	# Connect to core selection and loading events
 	EventBus.building_selected.connect(_on_building_selected)
 	EventBus.building_deselected.connect(hide)
 	EventBus.settlement_loaded.connect(func(_s): _refresh_data())
 	
+	# Connect to season changes to refresh UI state immediately
+	EventBus.season_changed.connect(_on_season_changed)
+	
+	# Initial button signal connections
 	btn_add.pressed.connect(_on_add_worker)
 	btn_remove.pressed.connect(_on_remove_worker)
+
+func _on_season_changed(_name: String, _data: Dictionary) -> void:
+	_refresh_data()
 
 func _on_building_selected(building: BaseBuilding) -> void:
 	if not building:
@@ -85,34 +96,39 @@ func _refresh_data() -> void:
 		text += "[b]Status:[/b] Constructing (%d%%)\n" % pct
 		text += "[b]Progress:[/b] %d / %d\n" % [progress, req]
 		
-		# --- Time Estimate Calculation ---
-		# Uses the global constant for accuracy
 		var labor_per_year = p_count * EconomyManager.BUILDER_EFFICIENCY
 		
 		if labor_per_year > 0:
 			var remaining = req - progress
-			# Ceil ensures 0.1 years displays as "1 Year"
 			var years = ceil(float(remaining) / labor_per_year)
 			text += "[color=blue]Est. Time: %d Year(s)[/color]" % years
 		else:
 			text += "[color=red]Est. Time: NO WORKERS ASSIGNED![/color]"
-		# ---------------------------------
 			
 	stats_label.text = text
 	
-	# 4. Button State
-	var can_add = p_count < capacity
+	# 4. Button State & Season Logic
+	var is_summer = DynastyManager.current_season == DynastyManager.Season.SUMMER
 	
-	btn_add.disabled = not can_add
-	btn_remove.disabled = p_count <= 0
+	if is_summer:
+		# Disable micro-management during Summer macro-management phase
+		btn_add.disabled = true
+		btn_remove.disabled = true
+		btn_add.tooltip_text = SUMMER_TOOLTIP
+		btn_remove.tooltip_text = SUMMER_TOOLTIP
+		
+		Loggie.msg("Building buttons locked for Summer").domain(LogDomains.GAMEPLAY).debug()
+	else:
+		# Standard seasonal behavior
+		btn_add.disabled = p_count >= capacity
+		btn_remove.disabled = p_count <= 0
+		btn_add.tooltip_text = "" 
+		btn_remove.tooltip_text = ""
 
 func _on_add_worker() -> void:
+	Loggie.msg("Manual worker assignment requested").domain(LogDomains.GAMEPLAY).info()
 	EventBus.request_worker_assignment.emit(current_building)
 
 func _on_remove_worker() -> void:
-	# --- REPLACED LEGACY LOGIC WITH SIGNAL ---
+	Loggie.msg("Manual worker removal requested").domain(LogDomains.GAMEPLAY).info()
 	EventBus.request_worker_removal.emit(current_building)
-	# -----------------------------------------
-	
-	# We don't need to manually refresh here because SettlementManager 
-	# will emit 'settlement_loaded' which triggers our _refresh_data listener.

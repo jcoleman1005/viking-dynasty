@@ -1,10 +1,8 @@
-## AutumnLedgerUI.gd
 ## Handles the end-of-season accounting logic and display.
-## Automatically opens when Autumn begins via EventBus.
 class_name AutumnLedgerUI
 extends Control
 
-# Nodes (using unique names for stability)
+# --- Nodes ---
 @onready var settlement_name_label: Label = %SettlementName
 @onready var food_stock_label: Label = %FoodStock
 @onready var food_status_label: Label = %FoodStatus
@@ -13,104 +11,193 @@ extends Control
 @onready var outlook_label: Label = %WinterOutlookLabel
 @onready var sign_button: Button = %SignButton
 
-# Color Constants for Status
-const COLOR_OK = Color.DARK_GREEN
-const COLOR_FAIL = Color.FIREBRICK
+# --- State ---
+var current_report: AutumnReport
+var active_tween: Tween
+var is_animation_finished: bool = false
+
+# --- Configuration ---
+const MAX_STORAGE_CAP_PLACEHOLDER: int = 999 # Placeholder for future storage system
+const COLOR_OK = Color("55ff55") # Neon Green
+const COLOR_FAIL = Color("ff5555") # Soft Red
+const COLOR_WARN = Color("ffaa00") # Gold/Orange
+const COLOR_TEXT_DEFAULT = Color("f0e6d2") # Antique White
 
 func _ready() -> void:
 	_setup_connections()
-	# UI is hidden by default until the season change or manual toggle
 	visible = false
+	_apply_text_colors()
 
-## Connects buttons and global signals via code.
+func _apply_text_colors() -> void:
+	var labels = [settlement_name_label, food_stock_label, wood_stock_label]
+	for lbl in labels:
+		if lbl: lbl.add_theme_color_override("font_color", COLOR_TEXT_DEFAULT)
+
 func _setup_connections() -> void:
-	if not sign_button.pressed.is_connected(_on_sign_pressed):
+	if sign_button and not sign_button.pressed.is_connected(_on_sign_pressed):
 		sign_button.pressed.connect(_on_sign_pressed)
 	
 	if EventBus.has_signal("season_changed"):
 		EventBus.season_changed.connect(_on_season_changed)
-	else:
-		Loggie.msg("EventBus missing season_changed signal").domain(LogDomains.SYSTEM).error()
-
-## Triggered automatically by the DynastyManager via EventBus.
-func _on_season_changed(new_season_name: String) -> void:
-	if new_season_name == "Autumn":
-		_show_ledger()
-
-## Standard bridge toggle for manual opening (e.g., from a HUD button).
-func toggle_interface(interface_name: String = "") -> void:
-	if interface_name != "" and interface_name != "autumn_ledger": 
-		return
-	
-	if visible:
-		visible = false
-	else:
-		_show_ledger()
-
-## Logic for displaying the ledger with fresh data.
-func _show_ledger() -> void:
-	# Guard: Only allow display if we are actually in Autumn
-	if DynastyManager.get_current_season_name() != "Autumn":
-		visible = false
-		return
 		
+	if EventBus.has_signal("advance_season_requested"):
+		EventBus.advance_season_requested.connect(_on_advance_requested)
+
+func _on_season_changed(new_season_name: String, _context_data: Dictionary) -> void:
+	if new_season_name == "Autumn":
+		await get_tree().process_frame
+		_start_ritual(_context_data)
+
+func _on_advance_requested() -> void:
+	if visible:
+		_close_ledger()
+
+func _start_ritual(context_data: Dictionary) -> void:
+	current_report = AutumnReport.new()
+	current_report.init_from_context(context_data)
+	
+	var fresh_forecast = EconomyManager.get_winter_forecast()
+	var fresh_food_demand = fresh_forecast.get(GameResources.FOOD, 0)
+	
+	if fresh_food_demand != current_report.winter_demand:
+		Loggie.msg("AutumnLedger: Correcting Stale Forecast (%d -> %d)" % [current_report.winter_demand, fresh_food_demand]).domain(LogDomains.UI).info()
+		current_report.winter_demand = fresh_food_demand
+
+	modulate.a = 1.0
 	visible = true
-	_initialize_data()
 	move_to_front()
+	is_animation_finished = false
+	
+	if sign_button:
+		sign_button.text = "Skip Animation"
+		sign_button.modulate.a = 1.0
+		sign_button.show()
+		sign_button.disabled = false 
+	
+	_populate_header()
+	_animate_sequence()
 
-## Aggregates data from Managers and updates UI elements.
-func _initialize_data() -> void:
-	var forecast: Dictionary = EconomyManager.get_winter_forecast()
+func _populate_header() -> void:
 	var settlement = SettlementManager.current_settlement
+	var display_name = "Settlement"
+	if settlement:
+		var raw_name = settlement.resource_path.get_file().get_basename()
+		if not raw_name.is_empty():
+			display_name = raw_name.replace("_", " ").capitalize()
 	
-	if not settlement:
-		Loggie.msg("No current settlement for ledger").domain(LogDomains.UI).error()
-		return
+	var year = DynastyManager.get_current_year()
+	settlement_name_label.text = "%s - Year %d" % [display_name, year]
 
-	# IDENTITY: Derive settlement name from resource filename.
-	var raw_name: String = settlement.resource_path.get_file().get_basename()
-	if raw_name.is_empty():
-		raw_name = "Home Base"
+func _animate_sequence() -> void:
+	if active_tween and active_tween.is_valid():
+		active_tween.kill()
 	
-	var display_name: String = raw_name.replace("_", " ").capitalize()
-	var current_year: int = DynastyManager.get_current_year()
+	active_tween = create_tween()
 	
-	settlement_name_label.text = "%s - Year %d" % [display_name, current_year]
-
-	var treasury: Dictionary = settlement.treasury
+	var food_held = int(current_report.treasury_snapshot.get(GameResources.FOOD, 0))
+	var wood_held = int(current_report.treasury_snapshot.get(GameResources.WOOD, 0))
 	
-	# Food Calculation (Expected keys from EconomyManager)
-	var food_req: int = forecast.get("food", 0)
-	var food_held: int = treasury.get("food", 0)
-	_update_row(food_stock_label, food_status_label, food_held, food_req)
-
-	# Wood Calculation (Expected keys from EconomyManager)
-	var wood_req: int = forecast.get("wood", 0)
-	var wood_held: int = treasury.get("wood", 0)
-	_update_row(wood_stock_label, wood_status_label, wood_held, wood_req)
-
-	# Status Outlook: Determines the overall survival probability.
-	var is_ready: bool = (food_held >= food_req) and (wood_held >= wood_req)
-	outlook_label.text = "WINTER OUTLOOK: " + ("SECURE" if is_ready else "DANGEROUS")
-	outlook_label.modulate = COLOR_OK if is_ready else COLOR_FAIL
-
-	# LOGGING: Using the verified .add() method for fluent data attachment.
-	Loggie.msg("Autumn ledger initialized for " + display_name)\
-		.domain(LogDomains.UI)\
-		.add(forecast)\
-		.info()
-
-## Helper to set text and colors for resource rows.
-func _update_row(val_label: Label, status_label: Label, held: int, req: int) -> void:
-	val_label.text = str(held) + " / " + str(req)
-	status_label.text = "[ OK ]" if held >= req else "[ DEFICIT ]"
-	status_label.modulate = COLOR_OK if held >= req else COLOR_FAIL
-
-## Finalizes the phase and notifies the game loop.
-func _on_sign_pressed() -> void:
-	Loggie.msg("Ledger signed and sealed").domain(LogDomains.ECONOMY).info()
+	# Initial set with full formula
+	_update_resource_label(0, food_stock_label, current_report.winter_demand, current_report.harvest_yield)
+	_update_resource_label(0, wood_stock_label, 0, 0)
 	
-	# Emit to EventBus for WinterManager/SeasonManager to process phase end.
+	food_status_label.modulate.a = 0
+	wood_status_label.modulate.a = 0
+	outlook_label.modulate.a = 0
+	
+	var duration = 1.5
+	active_tween.set_parallel(true)
+	
+	# Animate Food Stockpile using the complex formatter
+	active_tween.tween_method(
+		func(val): _update_resource_label(val, food_stock_label, current_report.winter_demand, current_report.harvest_yield),
+		0, food_held, duration
+	).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		
+	# Animate Wood Stockpile
+	active_tween.tween_method(
+		func(val): _update_resource_label(val, wood_stock_label, 0, 0),
+		0, wood_held, duration
+	).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	
+	active_tween.chain().tween_callback(_reveal_verdict)
+
+## Updated Helper to show: [Stockpile] / [Cap] - [Consumption] + [Harvest]
+func _update_resource_label(current_val: int, label: Label, demand: int, harvest: int) -> void:
+	if not label: return
+	
+	# Format: Stockpile / Cap
+	var base_str = "%d / %d" % [current_val, MAX_STORAGE_CAP_PLACEHOLDER]
+	
+	# Append math context if relevant (Consumption and Harvest)
+	var math_str = ""
+	if demand > 0:
+		math_str += " - %d" % demand
+	if harvest > 0:
+		math_str += " + %d" % harvest
+		
+	label.text = base_str + math_str
+
+func _reveal_verdict() -> void:
+	is_animation_finished = true
+	_hide_sign_button()
+	
+	var food_held = int(current_report.treasury_snapshot.get(GameResources.FOOD, 0))
+	var total_food_available = food_held + current_report.harvest_yield
+	var is_food_safe = total_food_available >= current_report.winter_demand
+	
+	var fade_tween = create_tween().set_parallel(true)
+	
+	# Food Status
+	food_status_label.text = "[ SECURE ]" if is_food_safe else "[ STARVATION RISK ]"
+	food_status_label.modulate = COLOR_OK if is_food_safe else COLOR_FAIL
+	fade_tween.tween_property(food_status_label, "modulate:a", 1.0, 0.5)
+	
+	# Wood Status
+	var wood_held = int(current_report.treasury_snapshot.get(GameResources.WOOD, 0))
+	var is_wood_ok = wood_held > 20 
+	wood_status_label.text = "[ STOCKPILED ]" if is_wood_ok else "[ LOW ]"
+	wood_status_label.modulate = COLOR_OK if is_wood_ok else COLOR_WARN
+	fade_tween.tween_property(wood_status_label, "modulate:a", 1.0, 0.5)
+	
+	# Winter Outlook
+	var outlook_text = "WINTER OUTLOOK: " + ("SECURE" if is_food_safe else "DANGEROUS")
+	if WinterManager.upcoming_severity == WinterManager.WinterSeverity.HARSH:
+		outlook_text += " (HARSH)"
+	elif WinterManager.upcoming_severity == WinterManager.WinterSeverity.MILD:
+		outlook_text += " (MILD)"
+		
+	outlook_label.text = outlook_text
+	outlook_label.modulate = COLOR_OK if is_food_safe else COLOR_FAIL
+	fade_tween.tween_property(outlook_label, "modulate:a", 1.0, 0.5)
+	
 	EventBus.autumn_resolved.emit()
+	Loggie.msg("Autumn Ledger: Verdict revealed with formula view.").domain(LogDomains.UI).info()
+
+func _on_sign_pressed() -> void:
+	if not is_animation_finished:
+		_skip_animation()
+
+func _skip_animation() -> void:
+	if active_tween and active_tween.is_valid():
+		active_tween.kill()
 	
-	visible = false
+	var food_held = int(current_report.treasury_snapshot.get(GameResources.FOOD, 0))
+	var wood_held = int(current_report.treasury_snapshot.get(GameResources.WOOD, 0))
+	
+	_update_resource_label(food_held, food_stock_label, current_report.winter_demand, current_report.harvest_yield)
+	_update_resource_label(wood_held, wood_stock_label, 0, 0)
+	
+	_reveal_verdict()
+
+func _hide_sign_button() -> void:
+	if not sign_button: return
+	var btween = create_tween()
+	btween.tween_property(sign_button, "modulate:a", 0.0, 0.4)
+	btween.tween_callback(sign_button.hide)
+
+func _close_ledger() -> void:
+	var fade_out = create_tween()
+	fade_out.tween_property(self, "modulate:a", 0.0, 0.5)
+	fade_out.tween_callback(func(): visible = false)
+	Loggie.msg("Autumn Ledger: Closing UI.").domain(LogDomains.UI).debug()

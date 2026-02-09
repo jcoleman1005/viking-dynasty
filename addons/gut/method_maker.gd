@@ -1,3 +1,4 @@
+#res://addons/gut/method_maker.gd
 class CallParameters:
 	var p_name = null
 	var default = null

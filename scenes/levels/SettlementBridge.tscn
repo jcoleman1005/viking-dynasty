@@ -178,7 +178,6 @@ tile_set = ExtResource("6_cpd76")
 [node name="SelectionBox" parent="UI" instance=ExtResource("8_cpd76")]
 
 [node name="MainGameUI" parent="UI" instance=ExtResource("11_cpd76")]
-mouse_filter = 2
 
 [node name="EndOfYear_Popup" parent="UI" instance=ExtResource("2_5el12")]
 visible = false

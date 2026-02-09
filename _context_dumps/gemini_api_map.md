@@ -1,6 +1,6 @@
 # PROJECT API MAP
 > **CONTEXT INSTRUCTION:** This file contains the STRUCTURE of the project. Implementation details are hidden to save space. Use this to understand available classes, functions, and signals.
-> Generated: 2026-02-03T14:06:15
+> Generated: 2026-02-09T09:40:47
 
 ## 🏛️ GLOBAL ARCHITECTURE
 ### Autoloads (Singletons)
@@ -32,16 +32,16 @@
 - **PromptLibrary** [Window]
 - **MarginContainer** [MarginContainer]
   - **HSplitContainer** [HSplitContainer]
-	- **VBoxContainer** [VBoxContainer]
-	  - **SearchBar** [LineEdit]
-	  - **PromptTree** [Tree]
-	- **VBoxContainer2** [VBoxContainer]
-	  - **TitleLabel** [Label]
-	  - **DescriptionLabel** [Label]
-	  - **HBoxContainer** [HBoxContainer]
-		- **CopyButton** [Button]
-		- **CopyFeedbackLabel** [Label]
-	  - **PromptText** [TextEdit]
+    - **VBoxContainer** [VBoxContainer]
+      - **SearchBar** [LineEdit]
+      - **PromptTree** [Tree]
+    - **VBoxContainer2** [VBoxContainer]
+      - **TitleLabel** [Label]
+      - **DescriptionLabel** [Label]
+      - **HBoxContainer** [HBoxContainer]
+        - **CopyButton** [Button]
+        - **CopyFeedbackLabel** [Label]
+      - **PromptText** [TextEdit]
 
 ### `res:///addons/gut/GutScene.tscn`
 - **GutScene** [Node2D]
@@ -71,57 +71,57 @@
 - **GutBottomPanel** [Control]
 - **layout** [VBoxContainer]
   - **ControlBar** [HBoxContainer]
-	- **RunAll** [Button]
-	- **Sep3** [ColorRect]
-	- **RunAtCursor** []
-	- **CenterContainer2** [CenterContainer]
-	- **MakeFloating** [Button]
+    - **RunAll** [Button]
+    - **Sep3** [ColorRect]
+    - **RunAtCursor** []
+    - **CenterContainer2** [CenterContainer]
+    - **MakeFloating** [Button]
   - **ControlBar2** [HBoxContainer]
-	- **Sep2** [ColorRect]
-	- **StatusIndicator** [Control]
-	- **Passing** [HBoxContainer]
-	  - **Sep** [ColorRect]
-	  - **label** [Label]
-	  - **passing_value** [Label]
-	- **Failing** [HBoxContainer]
-	  - **Sep** [ColorRect]
-	  - **label** [Label]
-	  - **failing_value** [Label]
-	- **Pending** [HBoxContainer]
-	  - **Sep** [ColorRect]
-	  - **label** [Label]
-	  - **pending_value** [Label]
-	- **Orphans** [HBoxContainer]
-	  - **Sep** [ColorRect]
-	  - **label** [Label]
-	  - **orphans_value** [Label]
-	- **Errors** [HBoxContainer]
-	  - **Sep** [ColorRect]
-	  - **label** [Label]
-	  - **errors_value** [Label]
-	- **Warnings** [HBoxContainer]
-	  - **Sep** [ColorRect]
-	  - **label** [Label]
-	  - **warnings_value** [Label]
-	- **CenterContainer** [CenterContainer]
-	- **ExtraButtons** [HBoxContainer]
-	  - **Sep1** [ColorRect]
-	  - **RunMode** [Button]
-	  - **Sep2** [ColorRect]
-	  - **RunResultsBtn** [Button]
-	  - **OutputBtn** [Button]
-	  - **Settings** [Button]
-	  - **Sep3** [ColorRect]
-	  - **Shortcuts** [Button]
-	  - **About** [Button]
+    - **Sep2** [ColorRect]
+    - **StatusIndicator** [Control]
+    - **Passing** [HBoxContainer]
+      - **Sep** [ColorRect]
+      - **label** [Label]
+      - **passing_value** [Label]
+    - **Failing** [HBoxContainer]
+      - **Sep** [ColorRect]
+      - **label** [Label]
+      - **failing_value** [Label]
+    - **Pending** [HBoxContainer]
+      - **Sep** [ColorRect]
+      - **label** [Label]
+      - **pending_value** [Label]
+    - **Orphans** [HBoxContainer]
+      - **Sep** [ColorRect]
+      - **label** [Label]
+      - **orphans_value** [Label]
+    - **Errors** [HBoxContainer]
+      - **Sep** [ColorRect]
+      - **label** [Label]
+      - **errors_value** [Label]
+    - **Warnings** [HBoxContainer]
+      - **Sep** [ColorRect]
+      - **label** [Label]
+      - **warnings_value** [Label]
+    - **CenterContainer** [CenterContainer]
+    - **ExtraButtons** [HBoxContainer]
+      - **Sep1** [ColorRect]
+      - **RunMode** [Button]
+      - **Sep2** [ColorRect]
+      - **RunResultsBtn** [Button]
+      - **OutputBtn** [Button]
+      - **Settings** [Button]
+      - **Sep3** [ColorRect]
+      - **Shortcuts** [Button]
+      - **About** [Button]
   - **RSplit** [HSplitContainer]
-	- **CResults** [VBoxContainer]
-	  - **HSplitResults** [HSplitContainer]
-		- **RunResults** []
-		- **OutputText** []
-	  - **VSplitResults** [VSplitContainer]
-	- **sc** [ScrollContainer]
-	  - **Settings** [VBoxContainer]
+    - **CResults** [VBoxContainer]
+      - **HSplitResults** [HSplitContainer]
+        - **RunResults** []
+        - **OutputText** []
+      - **VSplitResults** [VSplitContainer]
+    - **sc** [ScrollContainer]
+      - **Settings** [VBoxContainer]
 - **ShortcutDialog** []
 - **ShellOutOptions** []
 **Signals:**
@@ -143,12 +143,12 @@
 - **Bg** [ColorRect]
 - **VBox** [VBoxContainer]
   - **Tabs** [TabContainer]
-	- **Tests** [Tree]
-	- **SettingsScroll** [ScrollContainer]
-	  - **Settings** [VBoxContainer]
+    - **Tests** [Tree]
+    - **SettingsScroll** [ScrollContainer]
+      - **Settings** [VBoxContainer]
   - **Buttons** [HBoxContainer]
-	- **RunTests** [Button]
-	- **RunSelected** [Button]
+    - **RunTests** [Button]
+    - **RunSelected** [Button]
 **Signals:**
 - `VBox/Tabs/Tests` -> `.` :: _on_tests_item_activated()
 - `VBox/Buttons/RunTests` -> `.` :: _on_run_tests_pressed()
@@ -159,11 +159,11 @@
 - **ColorRect** [ColorRect]
 - **Layout** [VBoxContainer]
   - **WinControls** [HBoxContainer]
-	- **MenuBar** [MenuBar]
-	- **CenterContainer** [CenterContainer]
-	- **OnTop** [CheckButton]
-	- **HorizLayout** [Button]
-	- **VertLayout** [Button]
+    - **MenuBar** [MenuBar]
+    - **CenterContainer** [CenterContainer]
+    - **OnTop** [CheckButton]
+    - **HorizLayout** [Button]
+    - **VertLayout** [Button]
 **Signals:**
 - `.` -> `.` :: _on_close_requested()
 - `.` -> `.` :: _on_size_changed()
@@ -191,77 +191,77 @@
 - **Min** [Panel]
 - **MainBox** [VBoxContainer]
   - **TitleBar** [Panel]
-	- **TitleBox** [HBoxContainer]
-	  - **Spacer1** [CenterContainer]
-	  - **Title** [Label]
-	  - **Spacer2** [CenterContainer]
-	  - **TimeLabel** [Label]
+    - **TitleBox** [HBoxContainer]
+      - **Spacer1** [CenterContainer]
+      - **Title** [Label]
+      - **Spacer2** [CenterContainer]
+      - **TimeLabel** [Label]
   - **Body** [HBoxContainer]
-	- **LeftMargin** [CenterContainer]
-	- **BodyRows** [VBoxContainer]
-	  - **ProgressBars** [HBoxContainer]
-		- **HBoxContainer** [HBoxContainer]
-		  - **Label** [Label]
-		  - **ProgressTest** [ProgressBar]
-		- **HBoxContainer2** [HBoxContainer]
-		  - **Label** [Label]
-		  - **ProgressScript** [ProgressBar]
-	  - **PathDisplay** [VBoxContainer]
-		- **Path** [Label]
-		- **HBoxContainer** [HBoxContainer]
-		  - **S3** [CenterContainer]
-		  - **File** [Label]
-	  - **Footer** [HBoxContainer]
-		- **HandleLeft** []
-		- **SwitchModes** [Button]
-		- **CenterContainer** [CenterContainer]
-		- **Continue** [Button]
-		- **HandleRight** []
-	- **RightMargin** [CenterContainer]
+    - **LeftMargin** [CenterContainer]
+    - **BodyRows** [VBoxContainer]
+      - **ProgressBars** [HBoxContainer]
+        - **HBoxContainer** [HBoxContainer]
+          - **Label** [Label]
+          - **ProgressTest** [ProgressBar]
+        - **HBoxContainer2** [HBoxContainer]
+          - **Label** [Label]
+          - **ProgressScript** [ProgressBar]
+      - **PathDisplay** [VBoxContainer]
+        - **Path** [Label]
+        - **HBoxContainer** [HBoxContainer]
+          - **S3** [CenterContainer]
+          - **File** [Label]
+      - **Footer** [HBoxContainer]
+        - **HandleLeft** []
+        - **SwitchModes** [Button]
+        - **CenterContainer** [CenterContainer]
+        - **Continue** [Button]
+        - **HandleRight** []
+    - **RightMargin** [CenterContainer]
   - **CenterContainer** [CenterContainer]
 
 ### `res:///addons/gut/gui/NormalGui.tscn`
 - **Large** [Panel]
 - **MainBox** [VBoxContainer]
   - **TitleBar** [Panel]
-	- **TitleBox** [HBoxContainer]
-	  - **Spacer1** [CenterContainer]
-	  - **Title** [Label]
-	  - **Spacer2** [CenterContainer]
-	  - **TimeLabel** [Label]
+    - **TitleBox** [HBoxContainer]
+      - **Spacer1** [CenterContainer]
+      - **Title** [Label]
+      - **Spacer2** [CenterContainer]
+      - **TimeLabel** [Label]
   - **HBoxContainer** [HBoxContainer]
-	- **VBoxContainer** [VBoxContainer]
-	  - **OutputBG** [ColorRect]
-		- **HBoxContainer** [HBoxContainer]
-		  - **S2** [CenterContainer]
-		  - **TestOutput** [RichTextLabel]
-		  - **S1** [CenterContainer]
-	  - **ControlBox** [HBoxContainer]
-		- **S1** [CenterContainer]
-		- **ProgressBars** [VBoxContainer]
-		  - **TestBox** [HBoxContainer]
-			- **Label** [Label]
-			- **ProgressTest** [ProgressBar]
-		  - **ScriptBox** [HBoxContainer]
-			- **Label** [Label]
-			- **ProgressScript** [ProgressBar]
-		- **PathDisplay** [VBoxContainer]
-		  - **Path** [Label]
-		  - **HBoxContainer** [HBoxContainer]
-			- **S3** [CenterContainer]
-			- **File** [Label]
-		- **Buttons** [VBoxContainer]
-		  - **Continue** [Button]
-		  - **WordWrap** [CheckButton]
-		- **S3** [CenterContainer]
+    - **VBoxContainer** [VBoxContainer]
+      - **OutputBG** [ColorRect]
+        - **HBoxContainer** [HBoxContainer]
+          - **S2** [CenterContainer]
+          - **TestOutput** [RichTextLabel]
+          - **S1** [CenterContainer]
+      - **ControlBox** [HBoxContainer]
+        - **S1** [CenterContainer]
+        - **ProgressBars** [VBoxContainer]
+          - **TestBox** [HBoxContainer]
+            - **Label** [Label]
+            - **ProgressTest** [ProgressBar]
+          - **ScriptBox** [HBoxContainer]
+            - **Label** [Label]
+            - **ProgressScript** [ProgressBar]
+        - **PathDisplay** [VBoxContainer]
+          - **Path** [Label]
+          - **HBoxContainer** [HBoxContainer]
+            - **S3** [CenterContainer]
+            - **File** [Label]
+        - **Buttons** [VBoxContainer]
+          - **Continue** [Button]
+          - **WordWrap** [CheckButton]
+        - **S3** [CenterContainer]
   - **BottomPad** [CenterContainer]
   - **Footer** [HBoxContainer]
-	- **SidePad1** [CenterContainer]
-	- **ResizeHandle3** []
-	- **SwitchModes** [Button]
-	- **CenterContainer** [CenterContainer]
-	- **ResizeHandle2** []
-	- **SidePad2** [CenterContainer]
+    - **SidePad1** [CenterContainer]
+    - **ResizeHandle3** []
+    - **SwitchModes** [Button]
+    - **CenterContainer** [CenterContainer]
+    - **ResizeHandle2** []
+    - **SidePad2** [CenterContainer]
   - **BottomPad2** [CenterContainer]
 
 ### `res:///addons/gut/gui/OutputText.tscn`
@@ -320,11 +320,11 @@
 - **DoShellOut** [Control]
 - **BgControl** [Panel]
   - **VBox** [VBoxContainer]
-	- **Spacer** [CenterContainer]
-	- **Title** [Label]
-	- **Spacer2** [CenterContainer]
-	- **Kill** [Button]
-	- **Spacer3** [CenterContainer]
+    - **Spacer** [CenterContainer]
+    - **Title** [Label]
+    - **Spacer2** [CenterContainer]
+    - **Kill** [Button]
+    - **Spacer3** [CenterContainer]
 **Signals:**
 - `BgControl` -> `.` :: _on_color_rect_gui_input()
 - `BgControl/VBox/Kill` -> `.` :: _on_kill_pressed()
@@ -333,21 +333,21 @@
 - **RunResults** [Control]
 - **VBox** [VBoxContainer]
   - **Toolbar** [HBoxContainer]
-	- **Expand** [Button]
-	- **Collapse** [Button]
-	- **Sep** [ColorRect]
-	- **LblAll** [Label]
-	- **ExpandAll** [Button]
-	- **CollapseAll** [Button]
-	- **Sep2** [ColorRect]
-	- **HidePassing** [CheckBox]
-	- **Sep3** [ColorRect]
-	- **LblSync** [Label]
-	- **ShowScript** [Button]
-	- **ScrollOutput** [Button]
+    - **Expand** [Button]
+    - **Collapse** [Button]
+    - **Sep** [ColorRect]
+    - **LblAll** [Label]
+    - **ExpandAll** [Button]
+    - **CollapseAll** [Button]
+    - **Sep2** [ColorRect]
+    - **HidePassing** [CheckBox]
+    - **Sep3** [ColorRect]
+    - **LblSync** [Label]
+    - **ShowScript** [Button]
+    - **ScrollOutput** [Button]
   - **Output** [Panel]
-	- **Scroll** [ScrollContainer]
-	  - **Tree** []
+    - **Scroll** [ScrollContainer]
+      - **Tree** []
 - **FontSampler** [Label]
 **Signals:**
 - `VBox/Toolbar/Expand` -> `.` :: _on_Expand_pressed()
@@ -384,47 +384,47 @@
 - **ShortcutDialog** [ConfirmationDialog]
 - **Scroll** [ScrollContainer]
   - **Layout** [VBoxContainer]
-	- **ShortcutDescription** [RichTextLabel]
-	- **TopPad** [CenterContainer]
-	- **CPanelButton** [HBoxContainer]
-	  - **Label** [Label]
-	  - **ShortcutButton** []
-	- **ShortcutDescription2** [RichTextLabel]
-	- **CRunAll** [HBoxContainer]
-	  - **Label** [Label]
-	  - **ShortcutButton** []
-	- **ShortcutDescription3** [RichTextLabel]
-	- **CRunCurrentScript** [HBoxContainer]
-	  - **Label** [Label]
-	  - **ShortcutButton** []
-	- **ShortcutDescription4** [RichTextLabel]
-	- **CRunCurrentInner** [HBoxContainer]
-	  - **Label** [Label]
-	  - **ShortcutButton** []
-	- **ShortcutDescription5** [RichTextLabel]
-	- **CRunCurrentTest** [HBoxContainer]
-	  - **Label** [Label]
-	  - **ShortcutButton** []
-	- **ShortcutDescription6** [RichTextLabel]
-	- **CRunAtCursor** [HBoxContainer]
-	  - **Label** [Label]
-	  - **ShortcutButton** []
-	- **ShortcutDescription7** [RichTextLabel]
-	- **CRerun** [HBoxContainer]
-	  - **Label** [Label]
-	  - **ShortcutButton** []
-	- **ShortcutDescription8** [RichTextLabel]
-	- **CToggleWindowed** [HBoxContainer]
-	  - **Label** [Label]
-	  - **ShortcutButton** []
-	- **ShortcutDescription9** [RichTextLabel]
+    - **ShortcutDescription** [RichTextLabel]
+    - **TopPad** [CenterContainer]
+    - **CPanelButton** [HBoxContainer]
+      - **Label** [Label]
+      - **ShortcutButton** []
+    - **ShortcutDescription2** [RichTextLabel]
+    - **CRunAll** [HBoxContainer]
+      - **Label** [Label]
+      - **ShortcutButton** []
+    - **ShortcutDescription3** [RichTextLabel]
+    - **CRunCurrentScript** [HBoxContainer]
+      - **Label** [Label]
+      - **ShortcutButton** []
+    - **ShortcutDescription4** [RichTextLabel]
+    - **CRunCurrentInner** [HBoxContainer]
+      - **Label** [Label]
+      - **ShortcutButton** []
+    - **ShortcutDescription5** [RichTextLabel]
+    - **CRunCurrentTest** [HBoxContainer]
+      - **Label** [Label]
+      - **ShortcutButton** []
+    - **ShortcutDescription6** [RichTextLabel]
+    - **CRunAtCursor** [HBoxContainer]
+      - **Label** [Label]
+      - **ShortcutButton** []
+    - **ShortcutDescription7** [RichTextLabel]
+    - **CRerun** [HBoxContainer]
+      - **Label** [Label]
+      - **ShortcutButton** []
+    - **ShortcutDescription8** [RichTextLabel]
+    - **CToggleWindowed** [HBoxContainer]
+      - **Label** [Label]
+      - **ShortcutButton** []
+    - **ShortcutDescription9** [RichTextLabel]
 
 ### `res:///addons/gut/gui/about.tscn`
 - **About** [AcceptDialog]
 - **HBox** [HBoxContainer]
   - **MakeRoomForLogo** [CenterContainer]
   - **Scroll** [ScrollContainer]
-	- **RichTextLabel** [RichTextLabel]
+    - **RichTextLabel** [RichTextLabel]
 - **Logo** []
 **Signals:**
 - `.` -> `.` :: _on_mouse_entered()
@@ -447,12 +447,12 @@
   - **LabelLatestVersion** [Label]
   - **LabelCurrentVersion** [Label]
   - **VBoxContainer** [VBoxContainer]
-	- **Label** [Label]
-	- **HBoxContainer** [HBoxContainer]
-	  - **NoticeButtons** [HBoxContainer]
-		- **ReleaseNotesBtn** [Button]
-		- **UpdateNowBtn** [Button]
-		- **RemindLaterBtn** [Button]
+    - **Label** [Label]
+    - **HBoxContainer** [HBoxContainer]
+      - **NoticeButtons** [HBoxContainer]
+        - **ReleaseNotesBtn** [Button]
+        - **UpdateNowBtn** [Button]
+        - **RemindLaterBtn** [Button]
   - **DontShowAgainCheckbox** [CheckBox]
 - **UpdateMonitor** [Control]
   - **BackgroundUnder** [TextureRect]
@@ -463,11 +463,11 @@
   - **LabelNewVersion** [Label]
   - **LoggieIcon** [TextureRect]
   - **VBoxContainer** [VBoxContainer]
-	- **OptionButtons** [HBoxContainer]
-	  - **OptionRetryUpdateBtn** [Button]
-	  - **OptionRestartGodotBtn** [Button]
-	  - **OptionExitBtn** [Button]
-	- **LabelUpdateStatus** [Label]
+    - **OptionButtons** [HBoxContainer]
+      - **OptionRetryUpdateBtn** [Button]
+      - **OptionRestartGodotBtn** [Button]
+      - **OptionExitBtn** [Button]
+    - **LabelUpdateStatus** [Label]
 - **AnimationPlayer** [AnimationPlayer]
 
 ### `res:///autoload/EventManager.tscn`
@@ -492,7 +492,7 @@
 - **LevelDesignTemplate** [Node2D]
 - **LevelDesignerTools** [Node2D]
   - **GridVisualizer** [Node2D]
-	- **ReferenceRect** [ReferenceRect]
+    - **ReferenceRect** [ReferenceRect]
   - **Instructions (Won\'t be in final scene)** [Label]
   - **_Palette** [Node2D]
     - **Civilian** [Node2D]
@@ -538,16 +538,10 @@
 - **UnitContainer** [Node2D]
 - **UI** [CanvasLayer]
   - **SelectionBox** []
-  - **Storefront_UI** []
-  - **Dynasty_UI** []
+  - **MainGameUI** []
   - **EndOfYear_Popup** []
   - **PauseButton** [Button]
   - **BuildingInspector** []
-  - **SpringCouncil_UI** []
-  - **SummerWorkspace_UI** []
-  - **SummerRaid_UI** []
-  - **AutumnLedgerUI** []
-  - **WinterCourt_UI** []
 - **BuildingCursor** [Node2D]
 - **BuildingContainer** [Node2D]
 - **GridVisualizer** []
@@ -722,6 +716,15 @@
 - **SmokeTest** [Node2D]
 - **CanvasLayer** [CanvasLayer]
 
+### `res:///ui/BottomBar.tscn`
+- **BottomBar** [VBoxContainer]
+- **TabsContainer** [HBoxContainer]
+  - **BtnConstruct** [Button]
+  - **BtnRaids** [Button]
+  - **BtnFarming** [Button]
+- **SeasonalActionsPanel** [PanelContainer]
+  - **PlaceholderLabel** [Label]
+
 ### `res:///ui/BuildingPreviewCursor.tscn`
 - **BuildingPreviewCursor** [Node2D]
 
@@ -772,6 +775,19 @@
       - **HSeparator2** [HSeparator]
       - **ChoiceButtonsContainer** [VBoxContainer]
 
+### `res:///ui/MainGameUI.tscn`
+- **MainGameUI** [Control]
+- **MainLayout** [VBoxContainer]
+  - **TopBar** []
+  - **CenterView** [Control]
+  - **BottomBar** []
+- **SidebarLayer** [CanvasLayer]
+  - **SidebarPanel** [PanelContainer]
+    - **SidebarContent** [MarginContainer]
+- **EndYearOverlay** [Control]
+  - **SeasonAdvanceBtn** [Button]
+- **MainUIDebugger** [Node]
+
 ### `res:///ui/RaidPrepWindow.tscn`
 - **RaidPrepWindow** [PanelContainer]
 - **MarginContainer** [MarginContainer]
@@ -814,39 +830,6 @@
 ### `res:///ui/SelectionBox.tscn`
 - **SelectionBox** [Control]
 
-### `res:///ui/Storefront_UI.tscn`
-- **Storefront_UI** [Control]
-- **TreasuryHUD** []
-- **Windows** [Control]
-  - **BuildWindow** [PanelContainer]
-    - **MarginContainer** [MarginContainer]
-      - **ScrollContainer** [ScrollContainer]
-        - **BuildGrid** [GridContainer]
-  - **RecruitWindow** [PanelContainer]
-    - **MarginContainer** [MarginContainer]
-      - **ScrollContainer** [ScrollContainer]
-        - **RecruitList** [VBoxContainer]
-  - **LegacyWindow** [PanelContainer]
-    - **MarginContainer** [MarginContainer]
-      - **VBoxContainer** [VBoxContainer]
-        - **JarlStats** [HBoxContainer]
-          - **RenownLabel** [Label]
-          - **AuthorityLabel** [Label]
-        - **HSeparator** [HSeparator]
-        - **ScrollContainer** [ScrollContainer]
-          - **LegacyList** [VBoxContainer]
-- **BottomDeck** [PanelContainer]
-  - **HBoxContainer** [HBoxContainer]
-    - **Btn_Build** [Button]
-    - **Btn_Allocation** [Button]
-    - **Btn_Recruit** [Button]
-    - **Btn_LegacyUpgrades** [Button]
-    - **Btn_Family** [Button]
-    - **VSeparator** [VSeparator]
-    - **Btn_Map** [Button]
-    - **Btn_EndYear** [Button]
-    - **DateLabel** [Label]
-
 ### `res:///ui/Succession_Crisis_UI.tscn`
 - **Succession_Crisis_UI** [CanvasLayer]
 - **PanelContainer** [PanelContainer]
@@ -870,6 +853,47 @@
       - **HSeparator3** [HSeparator]
       - **ConfirmButton** [Button]
 
+### `res:///ui/TopBarUIComponent.tscn`
+- **TopBar** [PanelContainer]
+- **MarginContainer** [MarginContainer]
+  - **MainLayout** [HBoxContainer]
+    - **IdentitySection** [HBoxContainer]
+      - **VBoxContainer** [VBoxContainer]
+        - **InfoRow** [HBoxContainer]
+          - **JarlLabel** [Label]
+          - **StatsRow** [HBoxContainer]
+            - **RenownLabel** [Label]
+        - **DynastyButton** [Button]
+    - **VSeparator** [VSeparator]
+    - **ResourceSection** [HBoxContainer]
+      - **GoldGroup** [HBoxContainer]
+        - **Icon** [TextureRect]
+        - **GoldLabel** [Label]
+      - **WoodGroup** [HBoxContainer]
+        - **Icon** [TextureRect]
+        - **WoodLabel** [Label]
+      - **FoodGroup** [HBoxContainer]
+        - **Icon** [TextureRect]
+        - **FoodLabel** [Label]
+      - **StoneGroup** [HBoxContainer]
+        - **Icon** [TextureRect]
+        - **StoneLabel** [Label]
+    - **VSeparator2** [VSeparator]
+    - **PopulationHUD** [VBoxContainer]
+      - **Labels and Icons** [HBoxContainer]
+        - **VillagerIcon** [TextureRect]
+        - **VillagerLabel** [Label]
+        - **ThrallIcon** [TextureRect]
+        - **ThrallLabel** [Label]
+        - **SoldierIcon** [TextureRect]
+        - **SoldierLabel** [Label]
+      - **TotalPopLabel** [Label]
+      - **TotalIdlePopLabel** [Label]
+    - **VSeparator3** [VSeparator]
+    - **WarbandGroup** [VBoxContainer]
+      - **AuthorityLabel** [Label]
+      - **UnitCountLabel** [Label]
+
 ### `res:///ui/WorkAssignment_UI.tscn`
 - **WorkAssignment_UI** [CanvasLayer]
 - **PanelContainer** [PanelContainer]
@@ -882,6 +906,25 @@
       - **SlidersContainer** [VBoxContainer]
       - **HSeparator2** [HSeparator]
       - **ConfirmButton** [Button]
+
+### `res:///ui/components/AllocationMenu.tscn`
+- **AllocationMenu** [MarginContainer]
+- **HBoxContainer** [HBoxContainer]
+  - **ControlPanel** [VBoxContainer]
+    - **FarmersLabel** [Label]
+    - **FarmersSlider** [HSlider]
+    - **WoodLabel** [Label]
+    - **WoodSlider** [HSlider]
+  - **InfoPanel** [VBoxContainer]
+    - **YieldLabel** [Label]
+    - **CommitBtn** [Button]
+
+### `res:///ui/components/BuildMenu.tscn`
+- **BuildMenu** [MarginContainer]
+- **VBoxContainer** [VBoxContainer]
+  - **FeedbackLabel** [Label]
+  - **ScrollContainer** [ScrollContainer]
+    - **GridContainer** [GridContainer]
 
 ### `res:///ui/components/BuildingInfoHud.tscn`
 - **BuildingInfoHUD** [Control]
@@ -916,25 +959,14 @@
   - **NameLabel** [Label]
   - **StatsLabel** [Label]
 
-### `res:///ui/components/TreasuryHud.tscn`
-- **TreasuryHUD** [PanelContainer]
-- **HBoxContainer** [HBoxContainer]
-  - **TreasuryDisplay** [HBoxContainer]
-    - **GoldIcon** [TextureRect]
-    - **GoldLabel** [Label]
-    - **WoodIcon** [TextureRect]
-    - **WoodLabel** [Label]
-    - **FoodIcon** [TextureRect]
-    - **FoodLabel** [Label]
-    - **StoneIcon** [TextureRect]
-    - **StoneLabel** [Label]
-    - **VSeparator** [VSeparator]
-    - **PeasantIcon** [TextureRect]
-    - **PeasantLabel** [Label]
-    - **ThrallIcon** [TextureRect]
-    - **ThrallLabel** [Label]
-    - **VSeparator2** [VSeparator]
-    - **UnitCountLabel** [Label]
+### `res:///ui/components/RaidMenu.tscn`
+- **RaidMenu** [MarginContainer]
+- **CenterContainer** [CenterContainer]
+  - **HBoxContainer** [HBoxContainer]
+    - **StatusLabel** [Label]
+    - **MapBtn** [Button]
+**Signals:**
+- `CenterContainer/HBoxContainer/MapBtn` -> `.` :: _on_open_map_pressed()
 
 ### `res:///ui/components/WorkerTag.tscn`
 - **WorkerTag** [Control]
@@ -973,6 +1005,7 @@
     - **Spacer** [Control]
     - **WinterOutlookLabel** [Label]
     - **SignButton** [Button]
+- **Debugger** [Control]
 
 ### `res:///ui/seasonal/SeasonalCardUi.tscn`
 - **SeasonalCard_UI** [PanelContainer]
@@ -981,9 +1014,7 @@
     - **TitleLabel** [Label]
     - **IconRect** [TextureRect]
     - **DescriptionLabel** [Label]
-    - **CostContainer** [HBoxContainer]
-      - **APCostLabel** [Label]
-      - **GoldCostLabel** [Label]
+    - **CostLabel** [Label]
     - **SelectButton** [Button]
 
 ### `res:///ui/seasonal/SpringCouncilUI.tscn`
@@ -1123,31 +1154,49 @@
     - **MarginContainer** [MarginContainer]
       - **ProceedButton** [Button]
 
+### `res:///ui/seasonal/WinterCourt_UI(Pilar Refactor.tscn`
+- **WinterCourtUI** [Control]
+- **Vignette** [ColorRect]
+- **MainSplit** [HBoxContainer]
+  - **LeftSpineBackground** [PanelContainer]
+    - **LeftSpine** [VBoxContainer]
+      - **TitlePanel** [PanelContainer]
+        - **Margin** [MarginContainer]
+          - **SeverityLabel** [Label]
+      - **ContextMargin** [MarginContainer]
+        - **ContextVBox** [VBoxContainer]
+          - **JarlNameLabel** [Label]
+          - **ActionPointsLabel** [Label]
+          - **HSeparator** [HSeparator]
+          - **ResourceTotem** [VBoxContainer]
+      - **Spacer** [Control]
+      - **DescriptionAnchor** [MarginContainer]
+        - **DescriptionLabel** [Label]
+  - **RitualStage** [CenterContainer]
+    - **CardsContainer** [HBoxContainer]
+- **WinterCourtUIDiagnostics** [Node]
+
 ### `res:///ui/seasonal/WinterCourt_UI.tscn`
 - **WinterCourtUI** [Control]
-- **Background** [Panel]
-- **MainLayout** [VBoxContainer]
-  - **Stratum1_Burden** [PanelContainer]
-    - **Margin** [MarginContainer]
-      - **HBox** [HBoxContainer]
-        - **SeverityLabel** [Label]
-        - **VSeparator** [VSeparator]
-        - **DeficitContainer** [VBoxContainer]
-  - **Stratum2_Hall** [PanelContainer]
-    - **VBox** [VBoxContainer]
-      - **ActionPointsLabel** [Label]
-      - **CardScroll** [ScrollContainer]
-        - **Centerer** [CenterContainer]
-          - **CardsContainer** [HBoxContainer]
-  - **Stratum3_Bloodline** [PanelContainer]
-    - **Margin** [MarginContainer]
-      - **HBox** [HBoxContainer]
-        - **JarlNameLabel** [Label]
-        - **JarlStatusLabel** [Label]
-        - **VSeparator** [VSeparator]
-        - **HeirStatusLabel** [Label]
-  - **BottomBar** [MarginContainer]
-    - **EndWinterButton** [Button]
+- **Vignette** [ColorRect]
+- **MainSplit** [HBoxContainer]
+  - **LeftSpineBackground** [PanelContainer]
+    - **LeftSpine** [VBoxContainer]
+      - **TitlePanel** [PanelContainer]
+        - **Margin** [MarginContainer]
+          - **SeverityLabel** [Label]
+      - **ContextMargin** [MarginContainer]
+        - **ContextVBox** [VBoxContainer]
+          - **JarlNameLabel** [Label]
+          - **ActionPointsLabel** [Label]
+          - **HSeparator** [HSeparator]
+          - **ResourceTotem** [VBoxContainer]
+      - **Spacer** [Control]
+      - **DescriptionAnchor** [MarginContainer]
+        - **DescriptionLabel** [Label]
+  - **RitualStage** [CenterContainer]
+    - **CardsContainer** [HBoxContainer]
+- **WinterCourtUIDiagnostics** [Node]
 
 ## 📜 SCRIPT API (Logic Structures)
 
@@ -5220,6 +5269,11 @@ func add_project_setting(setting_name: String, default_value : Variant, value_ty
 	var error: int = ProjectSettings.save()
 ```
 
+### `res:///addons/loggie/tools/ScriptHeaderTool.gd`
+```gdscript
+extends Node
+```
+
 ### `res:///addons/loggie/tools/UIAssetGenerator.gd`
 ```gdscript
 extends EditorScript
@@ -5599,6 +5653,7 @@ func _transition_to_season(new_season: Season) -> void:
 	var s_name = names[current_season]
 	var payout_report = EconomyManager.calculate_seasonal_payout(s_name)
 			var warnings = SettlementManager.process_warband_hunger()
+	var context_data: Dictionary = {}
 func _display_seasonal_feedback(season_name: String, payout: Dictionary) -> void:
 	var center_screen = Vector2(960, 500)
 	var color = Color.WHITE
@@ -5703,6 +5758,7 @@ const RAID_LOSS_RATIO_MIN: float = 0.2
 const RAID_LOSS_RATIO_MAX: float = 0.4
 const RAID_BUILDING_DMG_MIN: int = 50
 const RAID_BUILDING_DMG_MAX: int = 150
+var _last_paid_winter_year: int = -1
 func get_resource_cap(resource_type: String) -> int:
 	var settlement = SettlementManager.current_settlement
 	var key = resource_type.to_lower()
@@ -5732,6 +5788,8 @@ func get_projected_income() -> Dictionary[String, int]:
 					var key = res.to_lower()
 func get_winter_forecast() -> Dictionary:
 	var settlement = SettlementManager.current_settlement
+	var severity = WinterManager.upcoming_severity
+	var real_multiplier = WinterManager.get_multiplier_for_severity(severity)
 func calculate_winter_consumption_costs(severity_mult: float) -> Dictionary:
 	var settlement = SettlementManager.current_settlement
 	var pop = settlement.population_peasants
@@ -5739,6 +5797,7 @@ func calculate_winter_consumption_costs(severity_mult: float) -> Dictionary:
 	var base_food = (pop * WINTER_FOOD_BASE) + (warbands * WINTER_WARBAND_FOOD)
 	var base_wood = WINTER_WOOD_DEMAND
 func apply_winter_consumption(costs: Dictionary) -> void:
+	var current_year = DynastyManager.get_current_year()
 	var settlement = SettlementManager.current_settlement
 	var f_cost = costs.get(GameResources.FOOD, 0)
 	var w_cost = costs.get(GameResources.WOOD, 0)
@@ -5769,10 +5828,9 @@ func _calculate_demographics(settlement: SettlementData, payout_report: Dictiona
 	var pop = settlement.population_peasants
 	var current_food = settlement.treasury.get("food", 0)
 	var total_food_available = current_food 
-	var food_required = pop * FOOD_PER_PERSON_PER_YEAR
+	var food_required_for_growth = pop * WINTER_FOOD_BASE * 2 
 	var growth_rate = BASE_GROWTH_RATE
 	var event_msg = ""
-		var food_consumed = food_required
 	var net_change = int(pop * growth_rate)
 	var pop_change_str = ""
 	var msg_list: Array = payout_report["_messages"]
@@ -5820,24 +5878,18 @@ func draft_peasants_to_raiders(count: int, template: UnitData) -> void:
 	var actual_draft = min(available, count)
 	var new_warbands: Array[WarbandData] = []
 	var remaining = actual_draft
-		var batch_size = min(remaining, 10) # 10 men per band default
+		var batch_size = min(remaining, 10) 
 		var bondi_band = WarbandData.new(template)
-func calculate_hypothetical_yields(farmer_count: int) -> Dictionary:
+func calculate_hypothetical_yields(worker_counts: Dictionary) -> Dictionary:
 	var settlement = SettlementManager.current_settlement
-	var yields = {}
-	var remaining_farmers = farmer_count
-	var placed = settlement.placed_buildings
-	var food_buildings = []
-	var other_buildings = []
+	var yields = {"food": 0, "wood": 0}
+	var food_workers = worker_counts.get("food", 0)
+	var wood_workers = worker_counts.get("wood", 0)
 			var b_data = load(entry["resource_path"])
-				var item = {"data": b_data, "cap": b_data.peasant_capacity}
-	var total_assigned = 0
-		var assign = min(remaining_farmers, item.cap)
-		var out = assign * item.data.base_passive_output
-		var type = item.data.resource_type
-		var assign = min(remaining_farmers, item.cap)
-		var out = assign * item.data.base_passive_output
-		var type = item.data.resource_type
+				var cap = b_data.peasant_capacity
+				var type = b_data.resource_type 
+					var assigned = min(food_workers, cap)
+					var assigned = min(wood_workers, cap)
 func process_raid_return(result: RaidResultData) -> Dictionary:
 	var settlement = SettlementManager.current_settlement
 	var outcome = result.outcome
@@ -5849,7 +5901,7 @@ func process_raid_return(result: RaidResultData) -> Dictionary:
 	var xp_gain = _calculate_raid_xp(outcome, grade)
 	var warbands_to_remove: Array[WarbandData] = []
 	var final_report = result.loot.duplicate()
-		var difficulty = 1 # Default
+		var difficulty = 1 
 		var bonus = 200 + (difficulty * 50)
 			var thralls = randi_range(2, 4) * difficulty
 func _calculate_raid_xp(outcome: String, grade: String) -> int:
@@ -5865,7 +5917,7 @@ func advance_construction_progress() -> Array[Dictionary]:
 		var workers = entry.get("peasant_count", 0)
 		var b_path = entry.get("resource_path", "")
 		var b_data = load(b_path) as BuildingData
-		var effort_required = 100 # Default fallback
+		var effort_required = 100 
 		var progress_gain = workers * BUILDER_EFFICIENCY
 		var current_progress = entry.get("progress", 0)
 		var new_progress = current_progress + progress_gain
@@ -5879,6 +5931,7 @@ signal building_state_changed(building: BaseBuilding, new_state: int)
 signal build_request_made(building_data: BuildingData, grid_position: Vector2i)
 signal building_ready_for_placement(building_data: BuildingData)
 signal building_placement_cancelled(building_data: BuildingData)
+signal building_placed(building_data: BuildingData)
 signal building_construction_completed(building_entry: Dictionary)
 signal building_selected(building: BaseBuilding)
 signal building_deselected()
@@ -5913,7 +5966,7 @@ signal succession_choices_made(renown_choice: String, gold_choice: String)
 signal camera_input_lock_requested(is_locked: bool)
 signal end_year_requested() # Legacy (Keep for now to avoid crashes)
 signal advance_season_requested() # NEW: The primary time driver
-signal season_changed(season_name: String) # NEW: Feedback for UI/World
+signal season_changed(season_name: String, context_data: Dictionary) 
 signal hall_action_updated
 signal seasonal_card_hovered(card: SeasonalCardResource)
 signal seasonal_card_selected(card: SeasonalCardResource)
@@ -5921,8 +5974,10 @@ signal ui_request_phase_commit(phase_name: String, data: Dictionary)
 signal ui_open_seasonal_screen(screen_type: String) # "spring", "summer", "autumn", "winter"
 signal raid_launched(target_region: Resource, force_size: int)
 signal autumn_resolved()
+signal winter_crisis_triggered() 
 signal winter_ended()
 signal raid_committed(count: int)
+signal sidebar_close_requested
 ```
 
 ### `res:///autoload/EventManager.gd`
@@ -6143,9 +6198,13 @@ const UNWALKABLE_LAYER_NAME: String = "is_unwalkable"
 const GREAT_HALL_BUFFER: int = 4 # Tiles from water required for Great Hall
 var current_settlement: SettlementData 
 var active_map_data: SettlementData      
-var active_building_container: Node2D = null
-var active_tilemap_layer: TileMapLayer = null # Critical for Custom Data lookups
+var _active_building_container_ref: WeakRef = weakref(null)
+var _active_tilemap_layer_ref: WeakRef = weakref(null)
 var pending_seasonal_recruits: Array[UnitData] = []
+var active_building_container: Node2D:
+		var ref = _active_building_container_ref.get_ref()
+var active_tilemap_layer: Node:
+		var ref = _active_tilemap_layer_ref.get_ref()
 func _ready() -> void:
 func is_terrain_walkable(coords: Vector2i) -> bool:
 	var tile_data: TileData = active_tilemap_layer.get_cell_tile_data(coords)
@@ -6176,6 +6235,7 @@ func _spawn_building_node(building_data: BuildingData, grid_pos: Vector2i) -> Ba
 func place_building(building_data: BuildingData, grid_position: Vector2i, is_new_construction: bool = false) -> BaseBuilding:
 	var new_building = _spawn_building_node(building_data, grid_position)
 	var entry = {
+func _on_building_placement_cancelled(building_data: Resource) -> void:
 func reconstruct_buildings_from_data() -> void:
 			var data = load(entry.resource_path)
 			var b = _spawn_building_node(data, entry.grid_position)
@@ -6208,6 +6268,7 @@ func _is_within_district_range(grid_pos: Vector2i, size: Vector2i, data: Economi
 				var dist = center.distance_to(node.global_position)
 				var rad = node.get("district_radius") if "district_radius" in node else 300.0
 func register_active_scene_nodes(container: Node2D) -> void:
+	var found_layer = null
 func unregister_active_scene_nodes() -> void:
 func load_settlement(data: SettlementData) -> void:
 func _load_fallback_data(data: SettlementData) -> void:
@@ -6306,12 +6367,24 @@ func validate_formation_point(target_pos: Vector2, taken_grid_points: Array[Vect
 	var safe_grid_pos = _get_closest_walkable_point_exclusive(grid_pos, 4, taken_grid_points)
 func _get_closest_walkable_point_exclusive(origin: Vector2i, max_radius: int, exclusions: Array[Vector2i]) -> Vector2i:
 				var candidate = origin + Vector2i(x, y)
+func batch_update_labor(assignments: Dictionary) -> void:
+		var builder_pool = assignments["construction"]
+			var data = load(entry["resource_path"]) as BuildingData
+			var cap = data.base_labor_capacity
+			var to_assign = min(builder_pool, cap)
+	var food_pool = assignments.get("food", 0)
+	var wood_pool = assignments.get("wood", 0)
+		var data = load(entry["resource_path"]) as EconomicBuildingData
+			var cap = data.peasant_capacity
+			var to_assign = min(food_pool, cap)
+			var cap = data.peasant_capacity
+			var to_assign = min(wood_pool, cap)
 ```
 
 ### `res:///autoload/WinterManager.gd`
 ```gdscript
 extends Node
-signal winter_started
+signal winter_started(severity: int)
 signal winter_ended
 enum WinterSeverity { MILD, NORMAL, HARSH }
 @export_group("Probabilities")
@@ -6320,21 +6393,27 @@ enum WinterSeverity { MILD, NORMAL, HARSH }
 @export_group("Multipliers")
 @export var harsh_multiplier: float = 1.5
 @export var mild_multiplier: float = 0.75
-var current_severity: WinterSeverity = WinterSeverity.NORMAL
+@export var winter_duration_seconds: float = 60.0
+var current_severity: int = WinterSeverity.NORMAL
+var upcoming_severity: int = WinterSeverity.NORMAL
 var winter_consumption_report: Dictionary = {}
 var winter_upkeep_report: Dictionary = {} 
 var winter_crisis_active: bool = false
+func _ready() -> void:
+func _on_season_changed(new_season: String, _context: Dictionary) -> void:
 func start_winter_phase() -> void:
 func end_winter_phase() -> void:
+func _roll_upcoming_severity() -> void:
+	var roll = randf()
 func calculate_winter_demand(settlement: SettlementData) -> Dictionary:
-	var mult: float = 1.0
+	var mult = get_multiplier_for_severity(upcoming_severity)
 	var base_food = (settlement.population_peasants * 1) + (settlement.warbands.size() * 5)
 	var base_wood = 20
 	var final_food = int(base_food * mult)
 	var final_wood = int(base_wood * mult)
 func _calculate_winter_needs() -> void:
 	var settlement = SettlementManager.current_settlement
-	var mult: float = 1.0
+	var mult = get_multiplier_for_severity(current_severity)
 	var costs = EconomyManager.calculate_winter_consumption_costs(mult)
 	var food_cost = costs.get(GameResources.FOOD, 0)
 	var wood_cost = costs.get(GameResources.WOOD, 0)
@@ -6355,8 +6434,8 @@ func play_seasonal_card(card: SeasonalCardResource) -> bool:
 func resolve_crisis_with_sacrifice(sacrifice_type: String) -> bool:
 	var settlement = SettlementManager.current_settlement
 			var deaths = max(1, int(winter_consumption_report["food_deficit"] / 5))
-func _roll_severity() -> void:
-	var roll = randf()
+func get_multiplier_for_severity(severity_enum: int) -> float:
+func _get_severity_name(severity_enum: int) -> String:
 func _get_empty_report() -> Dictionary:
 ```
 
@@ -6660,6 +6739,21 @@ extends Resource
 @export var renown_earned: int = 0
 ```
 
+### `res:///data/reports/AutumnReport.gd`
+```gdscript
+class_name AutumnReport
+extends Resource
+@export var harvest_yield: int = 0
+@export var winter_demand: int = 0
+@export var net_outcome: int = 0
+@export var treasury_snapshot: Dictionary = {}
+func init_from_context(context: Dictionary) -> void:
+	var payout_data: Dictionary = context.get("payout", {})
+	var forecast_data: Dictionary = context.get("forecast", {})
+	var raw_treasury: Dictionary = context.get("treasury", {})
+	var current_food_total: int = 0
+```
+
 ### `res:///data/resources/SeasonalCardResource.gd`
 ```gdscript
 class_name SeasonalCardResource
@@ -6696,7 +6790,7 @@ class_name SettlementData
 @export var max_garrison_bonus: int = 0
 @export var map_seed: int = 0
 @export var population_peasants: int = 10 # Free Peasants
-@export var population_thralls: int = 5 # Captive Workers
+@export var population_thralls: int = 0 # Captive Workers
 @export var worker_assignments: Dictionary = {}
 @export var has_stability_debuff: bool = false
 @export var unrest: int = 0 # 0-100 scale. 100 = Rebellion.
@@ -7035,23 +7129,16 @@ func _on_lifetime_timeout() -> void:
 
 ### `res:///scenes/levels/TempDebugNode.gd`
 ```gdscript
+class_name AutumnDebugger
 extends Node
-@export var hud_node: TreasuryHUD
-var _previous_treasury: Dictionary = {}
 func _ready() -> void:
-func _on_treasury_updated(_new_treasury: Dictionary) -> void:
-func _on_season_changed(new_season: String) -> void:
-	var current = SettlementManager.current_settlement.treasury
-	var delta_report = ""
-		var old_val = _previous_treasury.get(res, 0)
-		var new_val = current.get(res, 0)
-		var diff = new_val - old_val
-func _verify_ui_integrity() -> void:
-	var data = SettlementManager.current_settlement.treasury
-	var discrepancies = 0
-	var check_res = func(res_key: String, label: Label) -> void:
-		var ui_val = int(label.text.replace(",", ""))
-		var data_val = data.get(res_key, 0)
+func run_diagnostics() -> void:
+	var settlement = SettlementManager.current_settlement
+		var forecast = EconomyManager.get_winter_forecast()
+	var mock_context = _build_mock_context()
+	var report = AutumnReport.new()
+func _build_mock_context() -> Dictionary:
+	var ctx = {}
 ```
 
 ### `res:///scenes/missions/RaidMapLoader.gd`
@@ -7154,6 +7241,7 @@ func command_scramble(target_position: Vector2) -> void:
 	var controllable_units = get_tree().get_nodes_in_group("player_units")
 		var panic_offset = Vector2(randf_range(-80, 80), randf_range(-80, 80))
 		var unique_dest = target_position + panic_offset
+func _exit_tree() -> void:
 ```
 
 ### `res:///scenes/missions/RaidObjectiveManager.gd`
@@ -7685,7 +7773,6 @@ var default_test_building: BuildingData = preload("res://data/buildings/Bldg_Wal
 var default_end_of_year_popup: PackedScene = preload("res://ui/EndOfYear_Popup.tscn")
 @onready var unit_container: Node2D = $UnitContainer
 @onready var ui_layer: CanvasLayer = $UI
-@onready var storefront_ui: Control = $UI/Storefront_UI
 @onready var building_cursor: Node2D = $BuildingCursor
 @onready var building_container: Node2D = $BuildingContainer
 @onready var rts_controller: RTSController = $RTSController
@@ -8042,8 +8129,6 @@ var invalid_color: Color = Color(1.0, 0.4, 0.4, 0.7)  # Reddish
 var nearest_node: Node2D = null 
 var tether_color_valid: Color = Color(0.2, 1.0, 0.2, 0.8) 
 var tether_color_invalid: Color = Color(1.0, 0.2, 0.2, 0.8)
-signal placement_completed
-signal placement_cancelled
 func _ready() -> void:
 func set_building_preview(building_data: BuildingData) -> void:
 	var tex_to_use: Texture2D = null
@@ -8058,8 +8143,11 @@ func _process(_delta: float) -> void:
 	var mouse_pos = get_global_mouse_position()
 		var error = SettlementManager.get_placement_error(current_grid_pos, current_building_data.grid_size, current_building_data)
 func _input(event: InputEvent) -> void:
+		var hovered_control = get_viewport().gui_get_hovered_control()
+			var blocker_name = hovered_control.name.to_lower()
 func _try_place_building() -> void:
 func cancel_preview() -> void:
+	var refunded_data = current_building_data
 func _cleanup_preview() -> void:
 func _update_visual_feedback() -> void:
 func _find_nearest_resource_node(world_pos: Vector2) -> void:
@@ -8076,8 +8164,8 @@ func _draw() -> void:
 		var color = tether_color_valid if is_in_range else tether_color_invalid
 func _create_grid_outline(grid_size: Vector2i) -> void:
 	var tile_size = Vector2(64, 32)
-	var half_w = tile_size.x * 0.5 # 32
-	var half_h = tile_size.y * 0.5 # 16
+	var half_w = tile_size.x * 0.5
+	var half_h = tile_size.y * 0.5
 	var basis_x = Vector2(half_w, half_h)
 	var basis_y = Vector2(-half_w, half_h)
 	var w = float(grid_size.x)
@@ -8303,9 +8391,13 @@ class_name SquadLeader
 extends BaseUnit
 var squad_soldiers: Array[SquadSoldier] = []
 var formation: SquadFormation
+var attached_thralls: Array[Node2D] = [] # Typed as Node2D for flexibility, legacy used ThrallUnit
 var last_facing_direction: Vector2 = Vector2.DOWN
-var attached_thralls: Array[ThrallUnit] = []
 var debug_formation_points: Array[Vector2] = []
+var _last_update_pos: Vector2 = Vector2.INF
+var _last_update_facing: Vector2 = Vector2.ZERO
+const UPDATE_DIST_THRESHOLD_SQ: float = 100.0 # ~10 pixels
+const UPDATE_ANGLE_THRESHOLD: float = 0.05    # ~2.8 degrees
 func _ready() -> void:
 func _initialize_squad() -> void:
 func _recruit_fresh_squad() -> void:
@@ -8313,32 +8405,28 @@ func _recruit_fresh_squad() -> void:
 	var base_scene = data.load_scene()
 		var soldier_instance = base_scene.instantiate()
 		var soldier_script = load("res://scripts/units/SquadSoldier.gd")
-func attach_thrall(thrall: ThrallUnit) -> void:
-		var angle = randf_range(PI/4, 3*PI/4) # Behind (90 to 270 degrees roughly)
-		var dist = randf_range(40.0, 80.0)
 func _physics_process(delta: float) -> void:
 	var is_voluntarily_moving = false
+func _should_update_formation() -> bool:
 func _update_formation_targets(snap_to_position: bool = false) -> void:
 	var slots = formation._calculate_formation_positions(global_position, last_facing_direction)
 		var soldier = squad_soldiers[i]
 			var target = slots[i+1]
-func _draw() -> void:
-			var point = to_local(debug_formation_points[i])
-func remove_soldier(soldier: SquadSoldier) -> void:
-func absorb_existing_soldiers(list: Array[SquadSoldier]) -> void:
+func force_formation_update() -> void:
 func _refresh_formation_registry() -> void:
-func set_selected(val: bool) -> void:
-func die() -> void:
-	var living_soldiers: Array[SquadSoldier] = []
-		var new_leader_host = living_soldiers.pop_front()
-		var new_leader = duplicate()
 func on_state_changed(new_state: int) -> void:
 func _order_squad_attack() -> void:
 	var target = fsm.current_target
 func _order_squad_regroup() -> void:
+func die() -> void:
+	var living_soldiers: Array[SquadSoldier] = []
+		var new_leader_host = living_soldiers.pop_front()
+		var base_scene = data.load_scene()
+		var new_leader = base_scene.instantiate()
+func absorb_existing_soldiers(list: Array[SquadSoldier]) -> void:
+func remove_soldier(soldier: SquadSoldier) -> void:
 func request_escort_for(civilian: Node2D) -> void:
 	var best_candidate: SquadSoldier = null
-	var min_dist = INF
 	var max_batch_dist = 300.0
 	var max_prisoners = 3
 			var total_load = soldier.escorted_prisoners.size() + soldier.pending_prisoners.size()
@@ -8347,13 +8435,20 @@ func request_escort_for(civilian: Node2D) -> void:
 		var closest_d = INF
 			var state = soldier.fsm.current_state
 				var dist = soldier.global_position.distance_to(civilian.global_position)
+func attach_thrall(thrall: Node2D) -> void:
+		var angle = randf_range(PI/4, 3*PI/4) # Behind (90 to 270 degrees roughly)
+		var dist = randf_range(40.0, 80.0)
+func _draw() -> void:
+			var p = to_local(debug_formation_points[i])
 ```
 
 ### `res:///scripts/units/SquadSoldier.gd`
 ```gdscript
 class_name SquadSoldier
 extends BaseUnit
-var leader: SquadLeader
+@export_group("Squad Settings")
+@export var stop_dist: float = 5.0
+var leader: Node2D = null
 var formation_target: Vector2 = Vector2.ZERO
 var brawl_target: Node2D = null
 var is_rubber_banding: bool = false
@@ -8366,15 +8461,16 @@ var escorted_prisoners: Array[Node2D] = []
 var retreat_zone_cache: Node2D = null
 func _ready() -> void:
 func _physics_process(delta: float) -> void:
-	var speed = data.move_speed
+	var current_speed = data.move_speed
 	var dist_leader = global_position.distance_to(leader.global_position)
 	var is_phasing = false
 	var final_dest = formation_target
-	var stop_dist = 15.0
+	var final_stop_dist = stop_dist
 		var range_limit = data.attack_range
 		var r_target = _get_radius(brawl_target)
 		var dist = global_position.distance_to(final_dest)
-			var desired_velocity = (final_dest - global_position).normalized() * speed
+func _restore_collision_logic() -> void:
+func set_squad_leader(new_leader: Node2D) -> void:
 func _get_radius(node: Node2D) -> float:
 		var b = node.get_parent()
 func assign_escort_task(prisoner: Node2D) -> void:
@@ -9453,6 +9549,41 @@ func _try_load_font(filename: String) -> Font:
 	var path = FONT_PATH + filename
 ```
 
+### `res:///ui/BottomBar.gd`
+```gdscript
+class_name BottomBar
+extends VBoxContainer
+signal scene_navigation_requested(scene_path: String)
+@export_group("Sub-Components")
+@export var build_menu_scene: PackedScene
+@export var allocation_menu_scene: PackedScene
+@export var raid_menu_scene: PackedScene
+@onready var seasonal_actions_panel: PanelContainer = %SeasonalActionsPanel
+@onready var btn_construct: Button = %BtnConstruct
+@onready var btn_raids: Button = %BtnRaids
+@onready var btn_farming: Button = %BtnFarming
+var cached_buildings: Array[Resource] = []
+var is_agency_active: bool = false
+var last_active_category: String = "" # [NEW] Tracks the open tab to restore it later
+func _ready() -> void:
+func _connect_tabs() -> void:
+func _connect_signals() -> void:
+func setup(buildings: Array[Resource], _units: Array[Resource] = []) -> void:
+func set_agency_state(active: bool) -> void:
+	var opacity = 1.0 if active else 0.5
+func _on_tab_clicked(category: String) -> void:
+func _load_menu(category: String) -> void:
+				var instance: BuildMenu = build_menu_scene.instantiate()
+				var instance: RaidMenu = raid_menu_scene.instantiate()
+				var instance: AllocationMenu = allocation_menu_scene.instantiate()
+func _clear_content() -> void:
+func _log_missing_scene(menu_name: String) -> void:
+	var label = Label.new()
+func _on_building_placement_initiated(building_data: Resource) -> void:
+func _on_placement_cancelled(_data = null) -> void:
+func _on_placement_completed(_data = null) -> void:
+```
+
 ### `res:///ui/DynastyUI.gd`
 ```gdscript
 class_name DynastyUI
@@ -9464,6 +9595,7 @@ extends PanelContainer
 @onready var heirs_container: HBoxContainer = $Margin/MainLayout/HeirsScroll/HeirsHBox
 @onready var close_button: Button = $Margin/MainLayout/CloseButton
 @onready var context_menu: PopupMenu = $ContextMenu
+signal close_requested
 const HEIR_CARD_SCENE = preload("res://ui/components/HeirCard.tscn")
 const PLACEHOLDER_ICON = preload("res://textures/placeholders/unit_placeholder.png")
 var selected_heir: JarlHeirData
@@ -9532,6 +9664,74 @@ func display_event(event_data: EventData) -> void:
 			var choice_button = Button.new()
 	var first_button = choice_buttons_container.get_child(0) as Button
 func _on_choice_button_pressed(choice: EventChoice) -> void:
+```
+
+### `res:///ui/MainGameUi.gd`
+```gdscript
+extends Control
+class_name MainGameUI
+const BUILDING_PATHS = [
+@export_group("Components")
+@export var top_bar: Control
+@export var bottom_bar: Control 
+@export var season_advance_btn: Button
+@export_group("Sidebar Modules")
+@export var dynasty_ui_scene: PackedScene
+@export_group("Seasonal Panels")
+@export var spring_panel_scene: PackedScene
+@export var autumn_panel_scene: PackedScene
+@export var winter_panel_scene: PackedScene
+@onready var center_view: Control = %CenterView
+@export var sidebar_panel: Control
+@export var sidebar_content: Control
+var is_sidebar_open: bool = false
+var sidebar_tween: Tween
+var idle_worker_warning: ConfirmationDialog # NEW: Runtime generated dialog
+func _ready() -> void:
+	var available_buildings = _scan_for_buildings()
+func _setup_warning_dialog() -> void:
+func _connect_signals() -> void:
+func _setup_initial_state() -> void:
+func _on_dynasty_view_requested() -> void:
+func _toggle_sidebar(scene: PackedScene, module_name: String) -> void:
+	var current_child = sidebar_content.get_child(0) if sidebar_content.get_child_count() > 0 else null
+	var is_same_module = current_child and current_child.name == module_name
+func _open_sidebar(scene: PackedScene, module_name: String) -> void:
+		var instance = scene.instantiate()
+func _close_sidebar() -> void:
+	var target_x = -sidebar_panel.size.x
+func _scan_for_buildings() -> Array[Resource]:
+	var buildings: Array[Resource] = []
+		var dir = DirAccess.open(folder_path)
+			var file_name = dir.get_next()
+					var full_path = folder_path + "/" + file_name
+					var res = load(full_path)
+func _on_season_changed_signal(_season_name: String, context: Dictionary) -> void:
+func _update_season_state(context: Dictionary = {}) -> void:
+	var current_season = DynastyManager.current_season
+	var is_summer = (current_season == DynastyManager.Season.SUMMER)
+func _on_advance_season_clicked() -> void:
+		var census = EconomyManager.get_population_census()
+		var idle_peasants = census["peasants"]["idle"]
+		var idle_thralls = census["thralls"]["idle"]
+		var total_idle = idle_peasants + idle_thralls
+			var msg = "You have %d idle workers (%d Peasants, %d Thralls).\n\n" % [total_idle, idle_peasants, idle_thralls]
+func _update_center_view(season_enum: int, context: Dictionary) -> void:
+	var scene_to_load: PackedScene
+	var season_string_name = ""
+		var instance = scene_to_load.instantiate()
+```
+
+### `res:///ui/MainUiDebugger.gd`
+```gdscript
+extends Node
+func _ready() -> void:
+func _perform_audit(trigger: String) -> void:
+	var settlement = SettlementManager.current_settlement
+	var raw_peasants = settlement.population_peasants
+	var raw_thralls = settlement.population_thralls
+	var soldier_count = 0
+	var total_biological_humans = raw_peasants + raw_thralls + soldier_count
 ```
 
 ### `res:///ui/PauseButton.gd`
@@ -9623,7 +9823,9 @@ var is_dragging := false
 var start_pos := Vector2.ZERO
 var is_command_dragging := false
 var command_start_pos := Vector2.ZERO
+var is_placement_active: bool = false
 func _ready() -> void:
+func _unhandled_input(event: InputEvent) -> void:
 func _gui_input(event: InputEvent) -> void:
 				var end_pos := get_local_mouse_position()
 				var rect := Rect2(start_pos, end_pos - start_pos).abs()
@@ -9655,119 +9857,6 @@ func _draw() -> void:
 		var current_pos := get_local_mouse_position()
 ```
 
-### `res:///ui/StorefrontUI.gd`
-```gdscript
-extends Control
-const LegacyUpgradeData = preload("res://data/legacy/LegacyUpgradeData.gd")
-const RICH_TOOLTIP_SCRIPT = preload("res://ui/components/RichTooltipButton.gd")
-const WINTER_FOOD_PER_PEASANT: int = 1
-const WINTER_FOOD_PER_WARBAND: int = 5
-const WINTER_WOOD_BASE_COST: int = 20
-@onready var build_window: Control = %BuildWindow
-@onready var recruit_window: Control = %RecruitWindow
-@onready var legacy_window: Control = %LegacyWindow
-@onready var build_grid: Container = %BuildGrid
-@onready var recruit_list: Container = %RecruitList
-@onready var legacy_list: Container = %LegacyList
-@onready var renown_label: Label = %RenownLabel
-@onready var authority_label: Label = %AuthorityLabel
-@onready var btn_build: Button = %Btn_Build
-@onready var btn_recruit: Button = %Btn_Recruit
-@onready var btn_upgrades: Button = %Btn_LegacyUpgrades
-@onready var btn_family: Button = %Btn_Family
-@onready var btn_map: Button = %Btn_Map
-@onready var btn_end_year: Button = %Btn_EndYear
-@onready var btn_allocation: Button = %Btn_Allocation
-@onready var date_label: Label = %DateLabel
-@export var available_buildings: Array[BuildingData] = []
-@export var available_units: Array[UnitData] = []
-@export var auto_load_units_from_directory: bool = true
-var pending_cost: Dictionary = {} 
-func _ready() -> void:
-func _on_units_selected(selected_units: Array) -> void:
-	var has_builder = false
-func _update_end_year_tooltip(season_name: String) -> void:
-	var next_season_name = "Spring"
-	var action_text = "Advance to %s" % next_season_name
-	var tooltip = "[b]%s[/b]" % action_text
-		var s = SettlementManager.current_settlement
-		var yearly: Dictionary[String, int] = EconomyManager.get_projected_income()
-		var has_gains = false
-		var has_potential_but_no_workers = false
-			var amount = 0
-				var is_full = EconomyManager.is_storage_full(res)
-				var display_text = ""
-					var color = "green"
-			var forecast = EconomyManager.get_winter_forecast()
-			var food_demand = forecast["food"]
-			var wood_demand = forecast["wood"]
-			var current_food = s.treasury.get("food", 0)
-			var food_col = "orange"
-			var current_wood = s.treasury.get("wood", 0)
-			var wood_col = "orange"
-func _on_season_changed(season_name: String) -> void:
-func _update_date_display(season_name: String) -> void:
-		var year = DynastyManager.current_year
-func _populate_build_grid() -> void:
-		var btn = Button.new()
-		var details = ""
-			var eco = b_data as EconomicBuildingData
-				var cursor = get_tree().get_first_node_in_group("building_preview_cursor")
-func _on_placement_cancelled() -> void:
-func _on_placement_completed() -> void:
-func _setup_dock_icons() -> void:
-func _set_btn_icon(btn: Button, path: String) -> void:
-func _setup_window_logic() -> void:
-	var windows = [build_window, recruit_window, legacy_window]
-func _toggle_window(target_window: Control) -> void:
-func _close_all_windows() -> void:
-func _refresh_all() -> void:
-func _on_purchase_successful(_item: String) -> void:
-func _on_purchase_failed(reason: String) -> void:
-func _show_toast(text: String, color: Color) -> void:
-	var label = Label.new()
-	var tween = create_tween()
-func _on_settlement_loaded(_data: SettlementData) -> void:
-func _on_year_ended() -> void:
-func _update_jarl_stats_display(jarl_data: JarlData) -> void:
-func _update_garrison_display() -> void:
-		var header = Label.new()
-		var sep = HSeparator.new()
-		var header2 = Label.new()
-			var btn = Button.new()
-func _create_warband_entry(warband: WarbandData) -> void:
-	var row = HBoxContainer.new()
-	var lbl = RichTextLabel.new()
-	var jarl_name = "Jarl"
-		var btn = Button.new()
-	var guard = Button.new()
-func _populate_legacy_buttons() -> void:
-		var label = Label.new()
-	var jarl = DynastyManager.get_current_jarl()
-	var is_pious = jarl.has_trait("Pious")
-		var current_renown_cost = upgrade_data.renown_cost
-		var btn = Button.new()
-		var cost_text = "Cost: %d Renown, %d Auth" % [current_renown_cost, upgrade_data.authority_cost]
-func _load_building_data() -> void:
-func _scan_directory_for_buildings(path: String) -> void:
-	var dir = DirAccess.open(path)
-		var file = dir.get_next()
-				var full_path = path + file
-				var data = load(full_path)
-func _load_unit_data() -> void:
-	var dir = DirAccess.open("res://data/units/")
-		var file = dir.get_next()
-				var data = load("res://data/units/" + file)
-func _format_cost(cost: Dictionary) -> String:
-	var s: PackedStringArray = []
-		var display_name = GameResources.get_display_name(k)
-func _apply_theme_overrides() -> void:
-	var tooltip_bg_path = "res://ui/assets/tooltip_bg.png"
-	var default_theme_path = "res://ui/themes/VikingDynastyTheme.tres"
-		var tooltip_tex = load(tooltip_bg_path)
-		var style_tooltip = StyleBoxTexture.new()
-```
-
 ### `res:///ui/Succession_Crisis_UI.gd`
 ```gdscript
 extends CanvasLayer
@@ -9794,6 +9883,49 @@ func display_crisis(jarl: JarlData, settlement: SettlementData) -> void:
 func _on_renown_choice(choice: String) -> void:
 func _on_gold_choice(choice: String) -> void:
 func _on_confirm() -> void:
+```
+
+### `res:///ui/TopBarUiComponent.gd`
+```gdscript
+class_name TopBar
+extends PanelContainer
+signal dynasty_view_requested
+@onready var jarl_label: Label = %JarlLabel
+@onready var authority_label: Label = %AuthorityLabel
+@onready var renown_label: Label = %RenownLabel
+@onready var dynasty_button: Button = %DynastyButton
+@onready var gold_label: Label = %GoldLabel
+@onready var wood_label: Label = %WoodLabel
+@onready var food_label: Label = %FoodLabel
+@onready var stone_label: Label = %StoneLabel
+@onready var villager_label: Label = %VillagerLabel
+@onready var thrall_label: Label = %ThrallLabel
+@onready var soldier_label: Label = %SoldierLabel
+@onready var total_pop_label: Label = %TotalPopLabel
+@onready var total_idle_pop_label: Label = %TotalIdlePopLabel
+@onready var unit_count_label: Label = %UnitCountLabel
+func _ready() -> void:
+func _connect_signals() -> void:
+func _connect_local_input() -> void:
+func refresh_all() -> void:
+func refresh_identity(jarl_data: Resource = null) -> void:
+func refresh_treasury(treasury_data: Dictionary) -> void:
+func _refresh_identity() -> void:
+		var jarl = DynastyManager.get_current_jarl()
+func _refresh_treasury_from_manager() -> void:
+func _update_identity_labels(jarl: Resource) -> void:
+func _update_resource_labels(treasury: Dictionary) -> void:
+func _update_population_display() -> void:
+	var census = EconomyManager.get_population_census()
+	var peasants_total = census.get("peasants", {}).get("total", 0)
+	var thralls_total = census.get("thralls", {}).get("total", 0)
+	var soldiers_total = census.get("soldiers", {}).get("total", 0)
+	var peasants_idle = census.get("peasants", {}).get("idle", 0)
+	var thralls_idle = census.get("thralls", {}).get("idle", 0)
+	var total_pop = peasants_total + thralls_total + soldiers_total
+	var total_idle = peasants_idle + thralls_idle
+func _update_count_label(lbl: Label, count: int) -> void:
+func _on_treasury_updated(new_treasury: Dictionary) -> void:
 ```
 
 ### `res:///ui/WorkAssignment_UI.gd`
@@ -9838,6 +9970,52 @@ func _update_prediction_display(data: Dictionary) -> void:
 			var color_tag = "[color=white]"
 	var completed = data.get("buildings_completing", [])
 func _on_confirm_pressed() -> void:
+```
+
+### `res:///ui/components/AllocationMenu.gd`
+```gdscript
+class_name AllocationMenu
+extends MarginContainer
+@onready var farmers_slider: HSlider = %FarmersSlider
+@onready var farmers_label: Label = %FarmersLabel
+@onready var wood_slider: HSlider = %WoodSlider
+@onready var wood_label: Label = %WoodLabel
+@onready var yield_label: Label = %YieldLabel
+@onready var commit_btn: Button = %CommitBtn
+var total_peasants: int = 0
+func _ready() -> void:
+func setup(_args = null) -> void:
+func _fetch_population_data() -> void:
+		var assigns = SettlementManager.current_settlement.worker_assignments
+func _on_allocation_changed(val: float, source: String) -> void:
+	var farmers = int(farmers_slider.value)
+	var woodcutters = int(wood_slider.value)
+	var used_pop = farmers + woodcutters
+	var builders = max(0, total_peasants - used_pop)
+		var projected = EconomyManager.calculate_hypothetical_yields({"food": farmers, "wood": woodcutters})
+		var food_gain = 0
+		var wood_gain = 0
+func _on_commit_pressed() -> void:
+	var farmers = int(farmers_slider.value)
+	var woodcutters = int(wood_slider.value)
+	var builders = max(0, total_peasants - (farmers + woodcutters))
+```
+
+### `res:///ui/components/BuildMenu.gd`
+```gdscript
+class_name BuildMenu
+extends MarginContainer
+@onready var grid_container: GridContainer = %GridContainer
+@onready var feedback_label: Label = %FeedbackLabel
+var available_buildings: Array[Resource] = []
+func setup(buildings: Array[Resource]) -> void:
+func _render_grid() -> void:
+		var btn = Button.new()
+		var cost_str = "Unknown"
+func _on_building_clicked(b_data: Resource) -> void:
+func _format_cost(cost: Dictionary) -> String:
+	var s: PackedStringArray = []
+		var name = GameResources.get_display_name(k) if GameResources else str(k)
 ```
 
 ### `res:///ui/components/BuildingInfoHUD.gd`
@@ -9907,6 +10085,16 @@ func _update_status_visuals() -> void:
 func _gui_input(event: InputEvent) -> void:
 ```
 
+### `res:///ui/components/RaidMenu.gd`
+```gdscript
+class_name RaidMenu
+extends MarginContainer
+@onready var status_label: Label = %StatusLabel
+func setup(_args = null) -> void:
+		var force_size = RaidManager.outbound_raid_force.size()
+func _on_open_map_pressed() -> void:
+```
+
 ### `res:///ui/components/RichTooltipButton.gd`
 ```gdscript
 class_name RichTooltipButton
@@ -9963,27 +10151,120 @@ extends Control
 @onready var wood_status_label: Label = %WoodStatus
 @onready var outlook_label: Label = %WinterOutlookLabel
 @onready var sign_button: Button = %SignButton
-const COLOR_OK = Color.DARK_GREEN
-const COLOR_FAIL = Color.FIREBRICK
+var current_report: AutumnReport
+var active_tween: Tween
+var is_animation_finished: bool = false
+const MAX_STORAGE_CAP_PLACEHOLDER: int = 999 # Placeholder for future storage system
+const COLOR_OK = Color("55ff55") # Neon Green
+const COLOR_FAIL = Color("ff5555") # Soft Red
+const COLOR_WARN = Color("ffaa00") # Gold/Orange
+const COLOR_TEXT_DEFAULT = Color("f0e6d2") # Antique White
 func _ready() -> void:
+func _apply_text_colors() -> void:
+	var labels = [settlement_name_label, food_stock_label, wood_stock_label]
 func _setup_connections() -> void:
-func _on_season_changed(new_season_name: String) -> void:
-func toggle_interface(interface_name: String = "") -> void:
-func _show_ledger() -> void:
-func _initialize_data() -> void:
-	var forecast: Dictionary = EconomyManager.get_winter_forecast()
+func _on_season_changed(new_season_name: String, _context_data: Dictionary) -> void:
+func _on_advance_requested() -> void:
+func _start_ritual(context_data: Dictionary) -> void:
+	var fresh_forecast = EconomyManager.get_winter_forecast()
+	var fresh_food_demand = fresh_forecast.get(GameResources.FOOD, 0)
+func _populate_header() -> void:
 	var settlement = SettlementManager.current_settlement
-	var raw_name: String = settlement.resource_path.get_file().get_basename()
-	var display_name: String = raw_name.replace("_", " ").capitalize()
-	var current_year: int = DynastyManager.get_current_year()
-	var treasury: Dictionary = settlement.treasury
-	var food_req: int = forecast.get("food", 0)
-	var food_held: int = treasury.get("food", 0)
-	var wood_req: int = forecast.get("wood", 0)
-	var wood_held: int = treasury.get("wood", 0)
-	var is_ready: bool = (food_held >= food_req) and (wood_held >= wood_req)
-func _update_row(val_label: Label, status_label: Label, held: int, req: int) -> void:
+	var display_name = "Settlement"
+		var raw_name = settlement.resource_path.get_file().get_basename()
+	var year = DynastyManager.get_current_year()
+func _animate_sequence() -> void:
+	var food_held = int(current_report.treasury_snapshot.get(GameResources.FOOD, 0))
+	var wood_held = int(current_report.treasury_snapshot.get(GameResources.WOOD, 0))
+	var duration = 1.5
+func _update_resource_label(current_val: int, label: Label, demand: int, harvest: int) -> void:
+	var base_str = "%d / %d" % [current_val, MAX_STORAGE_CAP_PLACEHOLDER]
+	var math_str = ""
+func _reveal_verdict() -> void:
+	var food_held = int(current_report.treasury_snapshot.get(GameResources.FOOD, 0))
+	var total_food_available = food_held + current_report.harvest_yield
+	var is_food_safe = total_food_available >= current_report.winter_demand
+	var fade_tween = create_tween().set_parallel(true)
+	var wood_held = int(current_report.treasury_snapshot.get(GameResources.WOOD, 0))
+	var is_wood_ok = wood_held > 20 
+	var outlook_text = "WINTER OUTLOOK: " + ("SECURE" if is_food_safe else "DANGEROUS")
 func _on_sign_pressed() -> void:
+func _skip_animation() -> void:
+	var food_held = int(current_report.treasury_snapshot.get(GameResources.FOOD, 0))
+	var wood_held = int(current_report.treasury_snapshot.get(GameResources.WOOD, 0))
+func _hide_sign_button() -> void:
+	var btween = create_tween()
+func _close_ledger() -> void:
+	var fade_out = create_tween()
+```
+
+### `res:///ui/seasonal/AutumnUiDebugger.gd`
+```gdscript
+extends Control
+class_name WinterCourtUI
+@export_group("Great Hall Stratum")
+@export var available_court_cards: Array[SeasonalCardResource] = []
+@export var card_prefab: PackedScene
+@onready var severity_label: Label = %SeverityLabel
+@onready var deficit_container: VBoxContainer = %DeficitContainer
+@onready var action_points_label: Label = %ActionPointsLabel
+@onready var cards_container: HBoxContainer = %CardsContainer
+@onready var end_winter_button: Button = %EndWinterButton
+@onready var jarl_name_label: Label = %JarlNameLabel
+@onready var jarl_status_label: Label = %JarlStatusLabel
+@onready var heir_status_label: Label = %HeirStatusLabel
+var current_ap: int = 0
+var max_ap: int = 0
+func _ready() -> void:
+func _on_season_changed(new_season: String, _context: Dictionary) -> void:
+func _on_ap_updated(new_amount: int) -> void:
+func _on_treasury_updated(_new_treasury: Dictionary) -> void:
+func setup_winter_view() -> void:
+	var jarl: JarlData = DynastyManager.get_current_jarl()
+func _refresh_stratum_burden() -> void:
+	var severity_name = "NORMAL"
+	var treasury = SettlementManager.current_settlement.treasury
+	var forecast = EconomyManager.get_winter_forecast()
+	var food_demand = forecast.get(GameResources.FOOD, 0)
+	var wood_demand = forecast.get(GameResources.WOOD, 0)
+	var food_stock = treasury.get(GameResources.FOOD, 0)
+	var wood_stock = treasury.get(GameResources.WOOD, 0)
+	var food_deficit = max(0, food_demand - food_stock)
+	var wood_deficit = max(0, wood_demand - wood_stock)
+func _add_burden_entry(title: String, value: String, color: Color) -> void:
+	var entry = Label.new()
+func _refresh_stratum_hall() -> void:
+		var card_instance = card_prefab.instantiate()
+		var can_afford = _can_afford(card_data)
+func _can_afford(card: SeasonalCardResource) -> bool:
+	var costs = {}
+func _update_hall_ui() -> void:
+func _on_card_clicked(card: SeasonalCardResource) -> void:
+	var success: bool = WinterManager.play_seasonal_card(card)
+func _refresh_stratum_bloodline() -> void:
+	var jarl: JarlData = DynastyManager.get_current_jarl()
+	var status_text: String = "Vigorous"
+	var status_color: Color = Color.GREEN
+	var heir_count: int = jarl.get_available_heir_count()
+func _on_end_winter_pressed() -> void:
+```
+
+### `res:///ui/seasonal/Debugger.gd`
+```gdscript
+extends Node
+func _ready() -> void:
+func _perform_harvest_audit() -> void:
+	var projection = EconomyManager.get_projected_income()
+	var yearly_food = projection.get("food", 0)
+	var theoretical_harvest = yearly_food 
+	var settlement = SettlementManager.current_settlement
+	var found_farms = 0
+			var b_data = load(entry["resource_path"])
+				var p_count = entry.get("peasant_count", 0)
+				var passive = b_data.base_passive_output
+				var output = p_count * passive
+	var parent = get_parent() # AutumnLedgerUI
+	var report_yield = 0
 ```
 
 ### `res:///ui/seasonal/SeasonalCard_UI.gd`
@@ -9991,17 +10272,28 @@ func _on_sign_pressed() -> void:
 class_name SeasonalCard_UI
 extends Control
 signal card_clicked(card_data: SeasonalCardResource)
-@onready var title_label: Label = %TitleLabel
-@onready var description_label: Label = %DescriptionLabel
-@onready var icon_rect: TextureRect = %IconRect
-@onready var cost_container: HBoxContainer = %CostContainer
-@onready var ap_cost_label: Label = %APCostLabel # Inside CostContainer
-@onready var gold_cost_label: Label = %GoldCostLabel
+signal card_denied(card_data: SeasonalCardResource, reason: String)
+signal card_hovered(card_data: SeasonalCardResource)
+signal card_exited()
 @onready var select_button: Button = %SelectButton
+@onready var title_label: Label = %TitleLabel 
+@onready var description_label: Label = %DescriptionLabel
+@onready var cost_label: Label = %CostLabel 
 var _card_data: SeasonalCardResource
+var _can_afford: bool = true
+var _is_hovered: bool = false
 func _ready() -> void:
+func _update_pivot() -> void:
 func setup(card: SeasonalCardResource, can_afford: bool = true) -> void:
+	var cost_text = ""
 func _on_button_pressed() -> void:
+func _play_error_animation() -> void:
+	var tween = create_tween()
+	var base_x = position.x
+func _on_mouse_entered() -> void:
+	var tween = create_tween()
+func _on_mouse_exited() -> void:
+	var tween = create_tween()
 ```
 
 ### `res:///ui/seasonal/SpringCouncil_UI.gd`
@@ -10017,13 +10309,13 @@ extends Control
 var _selected_card: SeasonalCardResource
 var _has_activated: bool = false
 func _ready() -> void:
-func _on_season_changed(season_name: String) -> void:
+func _on_season_changed(season_name: String, context) -> void:
 func _activate_spring_ui() -> void:
 func _on_diagnostic_timeout() -> void:
 func _deal_cards() -> void:
 	var spring_deck: Array[SeasonalCardResource] = []
 	var cards_to_spawn = min(hand_size, spring_deck.size())
-		var card_instance = card_prefab.instantiate() as SeasonalCard_UI
+		var card_instance = card_prefab.instantiate()
 func _on_card_selected(card: SeasonalCardResource) -> void:
 func _commit_choice() -> void:
 ```
@@ -10316,7 +10608,7 @@ func _on_proceed_pressed() -> void:
 func _on_settlement_loaded(_data) -> void:
 func _on_treasury_updated(new_treasury: Dictionary) -> void:
 func _on_population_changed() -> void:
-func _on_season_changed(new_season: String) -> void:
+func _on_season_changed(new_season: String, _context: Dictionary) -> void:
 func _toggle_raid_panel() -> void:
 	var tween = create_tween()
 func _set_project_view(show_construction: bool) -> void:
@@ -10325,47 +10617,127 @@ func _set_project_view(show_construction: bool) -> void:
 ### `res:///ui/seasonal/WinterCourtUI.gd`
 ```gdscript
 extends Control
-class_name WinterCourtUI
 @export_group("Great Hall Stratum")
 @export var available_court_cards: Array[SeasonalCardResource] = []
 @export var card_prefab: PackedScene
 @onready var severity_label: Label = %SeverityLabel
-@onready var deficit_container: VBoxContainer = %DeficitContainer
+@onready var resource_totem: VBoxContainer = %ResourceTotem # Was DeficitContainer
 @onready var action_points_label: Label = %ActionPointsLabel
+@onready var description_label: Label = %DescriptionLabel # Now anchored in the Spine
+@onready var jarl_name_label: Label = %JarlNameLabel # Dynasty Context
 @onready var cards_container: HBoxContainer = %CardsContainer
-@onready var end_winter_button: Button = %EndWinterButton
-@onready var jarl_name_label: Label = %JarlNameLabel
-@onready var jarl_status_label: Label = %JarlStatusLabel
-@onready var heir_status_label: Label = %HeirStatusLabel
 var current_ap: int = 0
 var max_ap: int = 0
 func _ready() -> void:
-func _on_season_changed(new_season: String) -> void:
+func _on_season_changed(new_season: String, _context: Dictionary) -> void:
 func _on_ap_updated(new_amount: int) -> void:
+func _on_treasury_updated(_new_treasury: Dictionary) -> void:
 func setup_winter_view() -> void:
 	var jarl: JarlData = DynastyManager.get_current_jarl()
-func _refresh_stratum_burden() -> void:
-	var report: Dictionary = WinterManager.winter_consumption_report
-	var severity_enum: int = report.get("severity_enum", 1) 
-	var severity_name: String = report.get("severity_name", "NORMAL")
-	var food_deficit: int = report.get("food_deficit", 0)
-	var wood_deficit: int = report.get("wood_deficit", 0)
-func _add_burden_entry(title: String, value: String, color: Color) -> void:
-	var entry = Label.new()
-func _refresh_stratum_hall() -> void:
+		var parent = description_label.get_parent()
+func _refresh_resource_totem() -> void:
+	var severity_name = "NORMAL"
+	var treasury = SettlementManager.current_settlement.treasury
+	var forecast = EconomyManager.get_winter_forecast()
+	var food_deficit = max(0, forecast.get(GameResources.FOOD, 0) - treasury.get(GameResources.FOOD, 0))
+	var wood_deficit = max(0, forecast.get(GameResources.WOOD, 0) - treasury.get(GameResources.WOOD, 0))
+func _add_totem_entry(title: String, value: String, color: Color) -> void:
+	var box = HBoxContainer.new()
+	var lbl_title = Label.new()
+	var lbl_val = Label.new()
+func _update_spine_header() -> void:
+func _refresh_dynasty_context() -> void:
+	var jarl: JarlData = DynastyManager.get_current_jarl()
+func _refresh_ritual_stage() -> void:
 		var card_instance = card_prefab.instantiate()
 		var can_afford = _can_afford(card_data)
 func _can_afford(card: SeasonalCardResource) -> bool:
 	var costs = {}
-func _update_hall_ui() -> void:
 func _on_card_clicked(card: SeasonalCardResource) -> void:
 	var success: bool = WinterManager.play_seasonal_card(card)
-func _refresh_stratum_bloodline() -> void:
-	var jarl: JarlData = DynastyManager.get_current_jarl()
-	var status_text: String = "Vigorous"
-	var status_color: Color = Color.GREEN
-	var heir_count: int = jarl.get_available_heir_count()
-func _on_end_winter_pressed() -> void:
+func _on_card_denied(card: SeasonalCardResource, _reason: String) -> void:
+func _on_card_hovered(card: SeasonalCardResource) -> void:
+func _on_card_exited() -> void:
+func _flash_spine_warning(message: String) -> void:
+		var original_text = action_points_label.text
+```
+
+### `res:///ui/seasonal/WinterCourtUiDiagnostics.gd`
+```gdscript
+class_name WinterCourtDiagnostic
+extends Node
+@export_group("Controls")
+@export_tool_button("Run Full Diagnostics") var _run_check_action = _run_diagnostics
+@export var hotkey: Key = KEY_F6
+@export_group("Reference Checks")
+@export var critical_node_properties: Array[String] = [
+@export var required_bus_signals: Array[String] = [
+@export_group("Layout Symmetry Settings")
+@export var target_aspect_ratio: float = 0.66
+@export var preferred_gutter_px: int = 40
+@export var preferred_margin_px: int = 60
+var _last_known_food: int = -9999
+var _spy_active: bool = false
+func _ready() -> void:
+			var bus = get_node("/root/EventBus")
+					var sm = get_node("/root/SettlementManager")
+func _input(event: InputEvent) -> void:
+func _on_treasury_spy_event(new_treasury: Dictionary) -> void:
+	var new_food = new_treasury.get("food", 0)
+		var delta = new_food - _last_known_food
+		var direction = "GAINED" if delta > 0 else "LOST"
+func _run_diagnostics() -> void:
+	var parent = get_parent()
+	var passed_checks = 0
+	var total_checks = 0
+		var val = parent.get(prop_name)
+	var cards = parent.get("available_court_cards")
+		var null_cards = 0
+	var prefab = parent.get("card_prefab")
+	var event_bus = get_node_or_null("/root/EventBus")
+				var connections = event_bus.get_signal_connection_list(sig_name)
+				var is_connected = false
+	var blocker_found = false
+	var root = parent.get_parent()
+			var sibling = root.get_child(i)
+	var econ = get_node_or_null("/root/EconomyManager")
+	var settlement = get_node_or_null("/root/SettlementManager")
+		var forecast = econ.get_winter_forecast() if econ.has_method("get_winter_forecast") else {}
+	var container = parent.get("cards_container")
+		var metrics = get_trio_layout_metrics()
+		var cont_rect = container.get_global_rect()
+		var parent_rect = parent.get_global_rect()
+		var overflow_x = cont_rect.position.x < parent_rect.position.x - 10 or cont_rect.end.x > parent_rect.end.x + 10
+		var overflow_y = cont_rect.position.y < parent_rect.position.y - 10 or cont_rect.end.y > parent_rect.end.y + 10
+		var children = container.get_children()
+		var actual_card_found = false
+				var size = child.size
+		var treasury = settlement.current_settlement.treasury
+		var forecast = econ.get_winter_forecast()
+		var severity = "NORMAL"
+			var wm = get_node("/root/WinterManager")
+		var food_stock = treasury.get("food", 0)
+		var food_demand = forecast.get("food", 0)
+		var wood_stock = treasury.get("wood", 0)
+		var wood_demand = forecast.get("wood", 0)
+		var implied_start_food = food_stock + food_demand # Assuming deficit was met or consumption applied
+		var implied_start_wood = wood_stock + wood_demand
+			var food_cap = econ.get_storage_cap("food")
+func get_trio_layout_metrics() -> Dictionary:
+	var container = get_parent().get("cards_container")
+	var cont_rect = container.get_rect()
+	var cont_w = cont_rect.size.x
+	var cont_h = cont_rect.size.y
+	var max_h_safe = cont_h * 0.9
+	var w_based_on_h = max_h_safe * target_aspect_ratio
+	var available_w = cont_w - (preferred_margin_px * 2) - (preferred_gutter_px * 2)
+	var w_based_on_w = available_w / 3.0
+	var final_w = 0.0
+	var final_h = 0.0
+	var is_safe = final_h <= cont_h
+func _pass(msg: String) -> void: 
+func _fail(msg: String) -> void: 
+func _warn(msg: String) -> void: 
 ```
 
 ## 💾 GAME DATA (Resources)
@@ -10922,7 +11294,6 @@ prerequisite_key = ""
 [ext_resource type="Script" uid="uid://cni5gdnpbb1v2" path="res://data/resources/SeasonalCardResource.gd" id="1_r2a8h"]
 [resource]
 script = ExtResource("1_r2a8h")
-title = "Viking Focus"
 description = "Boost Authority for multiple raids. Increases amount of time needed to complete buildings"
 ```
 
@@ -10941,13 +11312,10 @@ description = "Boosts building construction time. Decreases authority for raids.
 [ext_resource type="Script" uid="uid://cni5gdnpbb1v2" path="res://data/resources/SeasonalCardResource.gd" id="1_ieg62"]
 [resource]
 script = ExtResource("1_ieg62")
-season = 1
-title = "Host a Grand Feast"
 description = "Display your prosperity and invite local lords to your hall.
-- 100 food
-+ 50 renown
+- 100 food; + 50 renown
 "
-cost_ap = 1
+season = 1
 cost_food = 100
 grant_renown = 50
 ```
@@ -10958,13 +11326,12 @@ grant_renown = 50
 [ext_resource type="Script" uid="uid://cni5gdnpbb1v2" path="res://data/resources/SeasonalCardResource.gd" id="1_vhnwa"]
 [resource]
 script = ExtResource("1_vhnwa")
-season = 1
-title = "Invite Vikings"
 description = "You spread the word that you plan to go viking in the summer.
 - 100 renown
 + 3 AP
 - Chance of a warband joining your this summer
-- Must collect at least 150 byt the end of Autumn"
+- Must collect at least 150 gold by Autumn"
+season = 1
 cost_ap = 2
 ```
 
@@ -12285,6 +12652,8 @@ size = Vector2(10, 2)
   - depends on: `resource_path`
   - depends on: `resource_path`
   - depends on: `resource_path`
+  - depends on: `resource_path`
+  - depends on: `resource_path`
 - `res:///data/buildings/Base_Building.gd`
   - depends on: `res://ui/components/BuildingInfoHUD.tscn`
   - depends on: `res://scripts/utility/IsoPlaceholder.gd`
@@ -12343,10 +12712,8 @@ size = Vector2(10, 2)
 - `res:///ui/DynastyUI.gd`
   - depends on: `res://ui/components/HeirCard.tscn`
   - depends on: `res://textures/placeholders/unit_placeholder.png`
-- `res:///ui/StorefrontUI.gd`
-  - depends on: `res://data/legacy/LegacyUpgradeData.gd`
-  - depends on: `res://ui/components/RichTooltipButton.gd`
-  - depends on: `res://data/units/`
+- `res:///ui/seasonal/Debugger.gd`
+  - depends on: `resource_path`
 - `res:///ui/seasonal/SummerAllocation_UI.gd`
   - depends on: `resource_path`
   - depends on: `resource_path`

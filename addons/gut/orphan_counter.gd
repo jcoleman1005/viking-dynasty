@@ -1,3 +1,4 @@
+#res://addons/gut/orphan_counter.gd
 # ------------------------------------------------------------------------------
 # It keeps track of the orphans...so this is best name it could ever have.
 # ------------------------------------------------------------------------------

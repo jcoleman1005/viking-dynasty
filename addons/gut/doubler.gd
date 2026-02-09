@@ -1,3 +1,4 @@
+#res://addons/gut/doubler.gd
 extends RefCounted
 
 

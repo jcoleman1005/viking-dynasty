@@ -1,3 +1,4 @@
+#res://addons/loggie/channels/discord.gd
 class_name DiscordLoggieMsgChannel extends LoggieMsgChannel
 
 const discord_msg_character_limit = 2000 # The max. amount of characters the content of the message can contain before discord refuses to post it.

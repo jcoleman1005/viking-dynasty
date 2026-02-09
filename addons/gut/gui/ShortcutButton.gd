@@ -1,3 +1,4 @@
+#res://addons/gut/gui/ShortcutButton.gd
 @tool
 extends Control
 

@@ -1,3 +1,4 @@
+#res://data/legacy/LegacyUpgradeData.gd
 # res://data/legacy/LegacyUpgradeData.gd
 #
 # Defines a permanent, one-time dynasty upgrade.

@@ -1,3 +1,4 @@
+#res://test/base/GutTestBase.gd
 # res://test/base/GutTestBase.gd
 class_name GutTestBase
 extends GutTest

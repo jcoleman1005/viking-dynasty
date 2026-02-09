@@ -1,3 +1,4 @@
+#res://addons/gut/warnings_manager.gd
 const IGNORE = 0
 const WARN = 1
 const ERROR = 2

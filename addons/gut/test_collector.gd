@@ -1,3 +1,4 @@
+#res://addons/gut/test_collector.gd
 # ------------------------------------------------------------------------------
 # This class handles calling out to the test parser and maintaining an array of
 # collected_script.gd.  This is used for both calling the tests and tracking

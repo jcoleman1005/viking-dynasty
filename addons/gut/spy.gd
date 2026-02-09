@@ -1,3 +1,4 @@
+#res://addons/gut/spy.gd
 # {
 #   instance_id_or_path1:{
 #       method1:[ [p1, p2], [p1, p2] ],

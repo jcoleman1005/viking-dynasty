@@ -1,3 +1,4 @@
+#res://scripts/generators/TerrainGenerator.gd
 class_name TerrainGenerator
 extends RefCounted
 

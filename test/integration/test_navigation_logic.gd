@@ -1,3 +1,4 @@
+#res://test/integration/test_navigation_logic.gd
 extends GutTest
 
 var _grid: AStarGrid2D

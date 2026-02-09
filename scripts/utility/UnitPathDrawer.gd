@@ -1,3 +1,4 @@
+#res://scripts/utility/UnitPathDrawer.gd
 class_name UnitPathDrawer
 extends Node2D
 

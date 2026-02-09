@@ -1,3 +1,4 @@
+#res://addons/gut/gut_plugin.gd
 @tool
 extends EditorPlugin
 

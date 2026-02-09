@@ -1,3 +1,4 @@
+#res://test/integration/test_winter_systems.gd
 # res://test/integration/test_winter_systems.gd
 extends GutTest
 

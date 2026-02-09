@@ -1,3 +1,4 @@
+#res://addons/gut/result_exporter.gd
 # ------------------------------------------------------------------------------
 # Creates a structure that contains all the data about the results of running
 # tests.  This was created to make an intermediate step organizing the result

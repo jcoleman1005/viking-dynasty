@@ -1,3 +1,4 @@
+#res://tools/GenerateRaidMap.gd
 # res://tools/GenerateRaidMap.gd
 @tool
 extends EditorScript

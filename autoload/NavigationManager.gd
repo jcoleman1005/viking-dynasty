@@ -1,3 +1,4 @@
+#res://autoload/NavigationManager.gd
 extends Node
 
 ## Singleton handling AStarGrid2D pathfinding and Coordinate Conversions.

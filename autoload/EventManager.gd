@@ -1,3 +1,4 @@
+#res://autoload/EventManager.gd
 # res://autoload/EventManager.gd
 extends Node
 

@@ -43,6 +43,7 @@ const BUILDING_PATHS = [
 
 var is_sidebar_open: bool = false
 var sidebar_tween: Tween
+var idle_worker_warning: ConfirmationDialog # NEW: Runtime generated dialog
 
 # ------------------------------------------------------------------------------
 # LIFECYCLE
@@ -56,8 +57,23 @@ func _ready() -> void:
 	
 	_connect_signals()
 	_setup_initial_state()
+	_setup_warning_dialog() # NEW
 	
 	Loggie.msg("MainGameUI initialized").domain(LogDomains.UI).info()
+
+func _setup_warning_dialog() -> void:
+	# Programmatically create the dialog so we don't depend on scene edits
+	idle_worker_warning = ConfirmationDialog.new()
+	idle_worker_warning.title = "Unassigned Workers"
+	idle_worker_warning.initial_position = Window.WINDOW_INITIAL_POSITION_CENTER_MAIN_WINDOW_SCREEN
+	idle_worker_warning.size = Vector2(400, 150)
+	
+	# Connect the "OK" button to the actual advancement
+	idle_worker_warning.confirmed.connect(func(): 
+		if DynastyManager: DynastyManager.advance_season()
+	)
+	
+	add_child(idle_worker_warning)
 
 func _connect_signals() -> void:
 	if EventBus:
@@ -83,7 +99,8 @@ func _connect_signals() -> void:
 		top_bar.dynasty_view_requested.connect(_on_dynasty_view_requested)
 
 func _setup_initial_state() -> void:
-	_update_season_state()
+	# Initial setup usually lacks context data (game load), pass empty dict
+	_update_season_state({})
 	if top_bar and top_bar.has_method("refresh_all"):
 		top_bar.refresh_all()
 	
@@ -133,9 +150,6 @@ func _open_sidebar(scene: PackedScene, module_name: String) -> void:
 		if instance.has_method("setup"):
 			instance.setup()
 			
-		# [REMOVED] We no longer manually connect 'close_requested' here.
-		# The EventBus handles it now.
-				
 	else:
 		Loggie.msg("Sidebar scene is null for: " + module_name).error()
 		return
@@ -156,7 +170,6 @@ func _close_sidebar() -> void:
 	sidebar_tween = create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
 	sidebar_tween.tween_property(sidebar_panel, "position:x", target_x, 0.3)
 	
-	# Clean up logic could happen after tween, but keeping it simple for now
 	is_sidebar_open = false
 
 # ------------------------------------------------------------------------------
@@ -184,10 +197,10 @@ func _scan_for_buildings() -> Array[Resource]:
 # EVENT HANDLERS (Season)
 # ------------------------------------------------------------------------------
 
-func _on_season_changed_signal(_season_name: String) -> void:
-	_update_season_state()
+func _on_season_changed_signal(_season_name: String, context: Dictionary) -> void:
+	_update_season_state(context)
 
-func _update_season_state() -> void:
+func _update_season_state(context: Dictionary = {}) -> void:
 	if not DynastyManager: return
 	var current_season = DynastyManager.current_season
 	var is_summer = (current_season == DynastyManager.Season.SUMMER)
@@ -198,26 +211,61 @@ func _update_season_state() -> void:
 		match current_season:
 			DynastyManager.Season.SPRING: season_advance_btn.text = "Start Summer"
 			DynastyManager.Season.SUMMER: season_advance_btn.text = "End Summer"
-			DynastyManager.Season.AUTUMN: season_advance_btn.text = "End Harvest"
+			DynastyManager.Season.AUTUMN: season_advance_btn.text = "Sign and Seal Ledger"
 			DynastyManager.Season.WINTER: season_advance_btn.text = "End Year"
 
-	_update_center_view(current_season)
+	_update_center_view(current_season, context)
 	Loggie.msg("UI Season State Updated: " + str(current_season)).info()
 
+# MODIFIED: Intercepts the click to check for idle workers in Summer
 func _on_advance_season_clicked() -> void:
-	if DynastyManager: DynastyManager.advance_season()
+	if not DynastyManager: return
 
-func _update_center_view(season_enum: int) -> void:
+	# 1. Harvest Safety Check (Only in Summer)
+	if DynastyManager.current_season == DynastyManager.Season.SUMMER:
+		var census = EconomyManager.get_population_census()
+		
+		var idle_peasants = census["peasants"]["idle"]
+		var idle_thralls = census["thralls"]["idle"]
+		var total_idle = idle_peasants + idle_thralls
+		
+		if total_idle > 0:
+			var msg = "You have %d idle workers (%d Peasants, %d Thralls).\n\n" % [total_idle, idle_peasants, idle_thralls]
+			msg += "Workers not assigned to buildings will produce NOTHING during the Autumn Harvest.\n\n"
+			msg += "Are you sure you want to end the Summer?"
+			
+			idle_worker_warning.dialog_text = msg
+			idle_worker_warning.popup_centered()
+			return # STOP execution here; wait for dialog confirmation
+
+	# 2. Proceed normally for other seasons or if no idles
+	DynastyManager.advance_season()
+
+func _update_center_view(season_enum: int, context: Dictionary) -> void:
 	if not center_view: return
 	for child in center_view.get_children(): child.queue_free()
 	
 	var scene_to_load: PackedScene
+	var season_string_name = ""
+	
 	match season_enum:
-		DynastyManager.Season.SPRING: scene_to_load = spring_panel_scene
-		DynastyManager.Season.AUTUMN: scene_to_load = autumn_panel_scene
-		DynastyManager.Season.WINTER: scene_to_load = winter_panel_scene
+		DynastyManager.Season.SPRING: 
+			scene_to_load = spring_panel_scene
+			season_string_name = "Spring"
+		DynastyManager.Season.AUTUMN: 
+			scene_to_load = autumn_panel_scene
+			season_string_name = "Autumn"
+		DynastyManager.Season.WINTER: 
+			scene_to_load = winter_panel_scene
+			season_string_name = "Winter"
 			
 	if scene_to_load:
 		var instance = scene_to_load.instantiate()
 		center_view.add_child(instance)
 		if instance is Control: instance.set_anchors_preset(Control.PRESET_FULL_RECT)
+		
+		# MANUAL HANDSHAKE:
+		# Since the instance was just created, it missed the signal emission.
+		# We manually force-feed it the context so it can initialize.
+		if instance.has_method("_on_season_changed"):
+			instance._on_season_changed(season_string_name, context)

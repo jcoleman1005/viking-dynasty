@@ -1,3 +1,4 @@
+#res://test/unit/test_wergild.gd
 extends GutTestBase
 
 var bridge_instance = null

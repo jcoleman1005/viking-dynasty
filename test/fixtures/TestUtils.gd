@@ -1,3 +1,4 @@
+#res://test/fixtures/TestUtils.gd
 class_name TestUtils
 extends RefCounted
 

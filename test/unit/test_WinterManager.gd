@@ -1,3 +1,4 @@
+#res://test/unit/test_WinterManager.gd
 extends GutTest
 
 var winter_manager

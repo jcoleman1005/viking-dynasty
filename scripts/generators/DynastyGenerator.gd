@@ -1,3 +1,4 @@
+#res://scripts/generators/DynastyGenerator.gd
 # res://scripts/generators/DynastyGenerator.gd
 class_name DynastyGenerator
 extends RefCounted

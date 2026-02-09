@@ -1,3 +1,4 @@
+#res://addons/gut/gui/run_from_editor.gd
 # ------------------------------------------------------------------------------
 # This is the entry point when running tests from the editor.
 #

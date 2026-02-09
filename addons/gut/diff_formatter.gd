@@ -1,3 +1,4 @@
+#res://addons/gut/diff_formatter.gd
 var _strutils = GutUtils.Strutils.new()
 const INDENT = '    '
 var _max_to_display = 30

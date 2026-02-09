@@ -1,3 +1,4 @@
+#res://addons/gut/gut_menu.gd
 var sub_menu : PopupMenu = null
 
 var _menus = {

@@ -1,3 +1,4 @@
+#res://addons/loggie/loggie.gd
 @tool
 
 ## Loggie is a basic logging utility for those who need common minor improvements and helpers around the basic [method print], [method print_rich]

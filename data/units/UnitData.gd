@@ -1,3 +1,4 @@
+#res://data/units/UnitData.gd
 ### FILE: res://data/units/UnitData.gd ###
 class_name UnitData
 extends Resource

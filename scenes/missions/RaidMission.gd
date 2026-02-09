@@ -1,3 +1,4 @@
+#res://scenes/missions/RaidMission.gd
 # res://scenes/missions/RaidMission.gd
 extends Node2D
 
@@ -382,3 +383,10 @@ func command_scramble(target_position: Vector2) -> void:
 			unit.fsm.command_retreat(unique_dest)
 		elif unit.has_method("command_move_to"):
 			unit.command_move_to(unique_dest)
+
+func _exit_tree() -> void:
+	# CRITICAL: When this node leaves the scene tree (scene change/quit),
+	# we MUST release the Singleton's grip on our nodes.
+	# Even with WeakRefs, this prevents logical state errors.
+	if SettlementManager.active_building_container == $BuildingContainer:
+		SettlementManager.unregister_active_scene_nodes()

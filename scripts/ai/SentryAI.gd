@@ -1,3 +1,4 @@
+#res://scripts/ai/SentryAI.gd
 # res://scripts/ai/SentryAI.gd
 # Simple Sentry AI for enemy defenders in Phase 3
 # GDD Ref: Phase 3 - Enemy MVP (Simple Sentry AI)

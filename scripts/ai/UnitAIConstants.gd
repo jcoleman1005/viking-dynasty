@@ -1,3 +1,4 @@
+#res://scripts/ai/UnitAIConstants.gd
 # res://scripts/ai/UnitAIConstants.gd
 class_name UnitAIConstants
 extends RefCounted

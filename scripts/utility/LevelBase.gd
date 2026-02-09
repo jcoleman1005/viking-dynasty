@@ -1,3 +1,4 @@
+#res://scripts/utility/LevelBase.gd
 # res://scripts/levels/LevelBase.gd
 class_name LevelBase
 extends Node2D

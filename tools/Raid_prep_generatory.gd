@@ -1,3 +1,4 @@
+#res://tools/Raid_prep_generatory.gd
 # res://tools/SceneGenerator_RaidPrep.gd
 @tool
 extends EditorScript

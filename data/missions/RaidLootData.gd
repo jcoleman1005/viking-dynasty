@@ -1,3 +1,4 @@
+#res://data/missions/RaidLootData.gd
 # res://data/missions/RaidLootData.gd
 extends Resource
 class_name RaidLootData

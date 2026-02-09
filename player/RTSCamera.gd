@@ -1,3 +1,4 @@
+#res://player/RTSCamera.gd
 # res://player/RTSCamera.gd
 # Basic RTS-style camera controller for Phase 3
 # Provides WASD movement, mouse edge panning, drag panning, and zooming.

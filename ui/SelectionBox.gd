@@ -1,3 +1,4 @@
+#res://ui/SelectionBox.gd
 # res://ui/SelectionBox.gd
 # This Control node covers the entire screen.
 # It listens for

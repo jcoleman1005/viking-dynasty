@@ -1,3 +1,4 @@
+#res://data/settlements/SettlementData.gd
 # res://data/settlements/SettlementData.gd
 extends Resource
 class_name SettlementData
@@ -16,7 +17,7 @@ class_name SettlementData
 @export var map_seed: int = 0
 # --- Population ---
 @export var population_peasants: int = 10 # Free Peasants
-@export var population_thralls: int = 5 # Captive Workers
+@export var population_thralls: int = 0 # Captive Workers
 @export var worker_assignments: Dictionary = {}
 
 # --- Stability ---

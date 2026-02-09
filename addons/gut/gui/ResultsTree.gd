@@ -1,3 +1,4 @@
+#res://addons/gut/gui/ResultsTree.gd
 @tool
 extends Tree
 

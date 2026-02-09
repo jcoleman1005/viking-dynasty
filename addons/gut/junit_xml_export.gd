@@ -1,3 +1,4 @@
+#res://addons/gut/junit_xml_export.gd
 ## Creates an export of a test run in the JUnit XML format.
 ##
 ## More words needed?

@@ -4,14 +4,11 @@
 
 [resource]
 script = ExtResource("1_ieg62")
-season = 1
-title = "Host a Grand Feast"
 description = "Display your prosperity and invite local lords to your hall. 
 
-- 100 food
-+ 50 renown
+- 100 food; + 50 renown
 "
-cost_ap = 1
+season = 1
 cost_food = 100
 grant_renown = 50
 metadata/_custom_type_script = "uid://cni5gdnpbb1v2"

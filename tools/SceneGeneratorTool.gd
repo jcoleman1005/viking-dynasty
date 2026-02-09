@@ -1,3 +1,4 @@
+#res://tools/SceneGeneratorTool.gd
 # res://tools/MakeDrengrMelee.gd
 @tool
 extends EditorScript

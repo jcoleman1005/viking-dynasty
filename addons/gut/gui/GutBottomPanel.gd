@@ -1,3 +1,4 @@
+#res://addons/gut/gui/GutBottomPanel.gd
 @tool
 extends Control
 

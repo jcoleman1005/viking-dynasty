@@ -1,3 +1,4 @@
+#res://ui/seasonal/SpringCouncil_UI.gd
 class_name SpringCouncil_UI
 extends Control
 
@@ -31,7 +32,7 @@ func _ready() -> void:
 	
 	get_tree().create_timer(5.0).timeout.connect(_on_diagnostic_timeout)
 
-func _on_season_changed(season_name: String) -> void:
+func _on_season_changed(season_name: String, context) -> void:
 	if season_name.to_lower() == "spring":
 		_activate_spring_ui()
 	else:
@@ -66,7 +67,7 @@ func _deal_cards() -> void:
 	var cards_to_spawn = min(hand_size, spring_deck.size())
 	
 	for i in range(cards_to_spawn):
-		var card_instance = card_prefab.instantiate() as SeasonalCard_UI
+		var card_instance = card_prefab.instantiate()
 		card_container.add_child(card_instance)
 		card_instance.setup(spring_deck[i], true) 
 		card_instance.card_clicked.connect(_on_card_selected)

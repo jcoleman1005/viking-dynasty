@@ -1,3 +1,4 @@
+#res://addons/loggie/loggie_preset.gd
 ## An extension of the [LoggieMsg] class, meant to clearly differentiate between a message
 ## that was created with the sole purpose of being used as a Preset.
 ## Future behaviors of the message may diverge from regular behaviors of LoggieMsg, hence

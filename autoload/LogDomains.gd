@@ -1,3 +1,4 @@
+#res://autoload/LogDomains.gd
 # res://autoload/LogDomains.gd
 class_name LogDomains
 

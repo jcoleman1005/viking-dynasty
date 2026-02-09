@@ -1,3 +1,4 @@
+#res://scenes/units/UnitDebugger.gd
 extends Node2D
 class_name UnitDebugger
 

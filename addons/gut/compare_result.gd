@@ -1,3 +1,4 @@
+#res://addons/gut/compare_result.gd
 var _are_equal = false
 var are_equal = false :
 	get:

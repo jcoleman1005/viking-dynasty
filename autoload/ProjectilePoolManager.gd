@@ -1,3 +1,4 @@
+#res://autoload/ProjectilePoolManager.gd
 # res://autoload/ProjectilePoolManager.gd
 #
 # Manages an object pool of projectiles to avoid the performance

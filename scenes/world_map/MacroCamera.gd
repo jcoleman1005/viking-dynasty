@@ -1,3 +1,4 @@
+#res://scenes/world_map/MacroCamera.gd
 # res://scenes/world_map/MacroCamera.gd
 # Upgraded with Zoom and Edge Panning
 extends Camera2D 

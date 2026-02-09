@@ -1,3 +1,4 @@
+#res://data/characters/JarlHeirData.gd
 # res://data/characters/JarlHeirData.gd
 class_name JarlHeirData
 extends Resource

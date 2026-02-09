@@ -1,3 +1,4 @@
+#res://test/integration/test_military_spawning.gd
 # res://test/integration/test_military_spawning.gd
 extends GutTestBase
 

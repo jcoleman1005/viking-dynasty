@@ -1,3 +1,4 @@
+#res://data/buildings/Base_Building.gd
 @tool
 class_name BaseBuilding
 extends StaticBody2D

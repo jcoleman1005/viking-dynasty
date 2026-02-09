@@ -113,5 +113,7 @@ grow_horizontal = 2
 grow_vertical = 2
 text = "End Season"
 
+[node name="MainUIDebugger" type="Node" parent="."]
+
 [editable path="MainLayout/BottomBar"]
 [editable path="MainLayout/BottomBar/SeasonalActionsPanel/RaidPrepWindow"]

@@ -1,3 +1,4 @@
+#res://addons/gut/editor_caret_context_notifier.gd
 @tool
 extends Node
 # ##############################################################################

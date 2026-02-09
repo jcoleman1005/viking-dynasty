@@ -1,3 +1,4 @@
+#res://tools/LevelExporter.gd
 # res://tools/LevelExporter.gd
 @tool
 extends EditorScript

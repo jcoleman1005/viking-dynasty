@@ -1,3 +1,4 @@
+#res://scripts/ui/PauseMenu.gd
 # res://scripts/ui/PauseMenu.gd
 extends CanvasLayer
 

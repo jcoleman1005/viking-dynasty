@@ -27,7 +27,7 @@ enum SeasonType { SPRING, WINTER }
 @export var grant_gold: int = 0
 ## Renown granted immediately
 @export var grant_renown: int = 0
-##Authority granted
+## Authority granted
 @export var grant_authority: int = 0
 
 @export_group("Seasonal Modifiers")

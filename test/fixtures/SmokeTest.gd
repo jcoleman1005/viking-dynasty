@@ -1,3 +1,4 @@
+#res://test/fixtures/SmokeTest.gd
 # res://test/SquadSystemTest.gd
 extends Node2D
 

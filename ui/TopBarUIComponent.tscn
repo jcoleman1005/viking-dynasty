@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://gyu45fs0qg5m"]
+[gd_scene load_steps=10 format=3 uid="uid://gyu45fs0qg5m"]
 
 [ext_resource type="Theme" uid="uid://63duv3n1vwhg" path="res://ui/themes/VikingDynastyTheme.tres" id="2_theme"]
 [ext_resource type="Script" uid="uid://ci7e0n2tw0k21" path="res://ui/TopBarUiComponent.gd" id="2_tmg04"]
@@ -8,13 +8,14 @@
 [ext_resource type="Texture2D" uid="uid://denkxl6ex742y" path="res://ui/assets/res_stone.png" id="6_stone"]
 [ext_resource type="Texture2D" uid="uid://cukqh3t2wkmua" path="res://ui/assets/res_peasant.png" id="7_peasant"]
 [ext_resource type="Texture2D" uid="uid://day6g5ykwqgyb" path="res://ui/assets/res_thrall.png" id="8_thrall"]
+[ext_resource type="Texture2D" uid="uid://dubbpimj375s8" path="res://ui/assets/icon_army.png" id="9_qm455"]
 
 [node name="TopBar" type="PanelContainer"]
 modulate = Color(1, 1, 1, 0.95)
 custom_minimum_size = Vector2(0, 60)
 anchors_preset = 10
 anchor_right = 1.0
-offset_bottom = 123.0
+offset_bottom = 127.0
 grow_horizontal = 2
 mouse_filter = 2
 theme = ExtResource("2_theme")
@@ -146,65 +147,83 @@ text = "0"
 [node name="VSeparator2" type="VSeparator" parent="MarginContainer/MainLayout"]
 layout_mode = 2
 
-[node name="PopSection" type="HBoxContainer" parent="MarginContainer/MainLayout"]
+[node name="PopulationHUD" type="VBoxContainer" parent="MarginContainer/MainLayout"]
 layout_mode = 2
-theme_override_constants/separation = 15
 
-[node name="PeasantGroup" type="HBoxContainer" parent="MarginContainer/MainLayout/PopSection"]
+[node name="Labels and Icons" type="HBoxContainer" parent="MarginContainer/MainLayout/PopulationHUD"]
 layout_mode = 2
-size_flags_vertical = 0
-tooltip_text = "Idle Villagers / Total Population"
 
-[node name="Icon" type="TextureRect" parent="MarginContainer/MainLayout/PopSection/PeasantGroup"]
+[node name="VillagerIcon" type="TextureRect" parent="MarginContainer/MainLayout/PopulationHUD/Labels and Icons"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
+size_flags_vertical = 0
 texture = ExtResource("7_peasant")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="PeasantLabel" type="Label" parent="MarginContainer/MainLayout/PopSection/PeasantGroup"]
+[node name="VillagerLabel" type="Label" parent="MarginContainer/MainLayout/PopulationHUD/Labels and Icons"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "0/0"
-
-[node name="ThrallGroup" type="HBoxContainer" parent="MarginContainer/MainLayout/PopSection"]
-layout_mode = 2
 size_flags_vertical = 0
-tooltip_text = "Idle Thralls / Total Thralls"
+text = "0"
 
-[node name="Icon" type="TextureRect" parent="MarginContainer/MainLayout/PopSection/ThrallGroup"]
+[node name="ThrallIcon" type="TextureRect" parent="MarginContainer/MainLayout/PopulationHUD/Labels and Icons"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
+size_flags_vertical = 0
 texture = ExtResource("8_thrall")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="ThrallLabel" type="Label" parent="MarginContainer/MainLayout/PopSection/ThrallGroup"]
+[node name="ThrallLabel" type="Label" parent="MarginContainer/MainLayout/PopulationHUD/Labels and Icons"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "0/0"
+size_flags_vertical = 0
+text = "0"
 
-[node name="VSeparator3" type="VSeparator" parent="MarginContainer/MainLayout/PopSection"]
+[node name="SoldierIcon" type="TextureRect" parent="MarginContainer/MainLayout/PopulationHUD/Labels and Icons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+size_flags_vertical = 0
+texture = ExtResource("9_qm455")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="SoldierLabel" type="Label" parent="MarginContainer/MainLayout/PopulationHUD/Labels and Icons"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 0
+text = "0"
+
+[node name="TotalPopLabel" type="Label" parent="MarginContainer/MainLayout/PopulationHUD"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Total Population:  50"
+
+[node name="TotalIdlePopLabel" type="Label" parent="MarginContainer/MainLayout/PopulationHUD"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Idle Population:  50"
+
+[node name="VSeparator3" type="VSeparator" parent="MarginContainer/MainLayout"]
 layout_mode = 2
 
-[node name="WarbandGroup" type="VBoxContainer" parent="MarginContainer/MainLayout/PopSection"]
+[node name="WarbandGroup" type="VBoxContainer" parent="MarginContainer/MainLayout"]
 layout_mode = 2
 size_flags_vertical = 0
 tooltip_text = "Active Warbands"
 
-[node name="AuthorityLabel" type="Label" parent="MarginContainer/MainLayout/PopSection/WarbandGroup"]
+[node name="AuthorityLabel" type="Label" parent="MarginContainer/MainLayout/WarbandGroup"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Auth: 0"
 
-[node name="Label" type="Label" parent="MarginContainer/MainLayout/PopSection/WarbandGroup"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 15
-text = "Warbands:"
-
-[node name="UnitCountLabel" type="Label" parent="MarginContainer/MainLayout/PopSection/WarbandGroup"]
+[node name="UnitCountLabel" type="Label" parent="MarginContainer/MainLayout/WarbandGroup"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
-text = "0"
+text = "Warbands: 0"
