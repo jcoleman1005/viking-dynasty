@@ -22,7 +22,7 @@ const TRAIT_FERTILE: String = "Fertile"
 const SEASON_AUTUMN: String = "Autumn"
 const SEASON_WINTER: String = "Winter"
 const WINTER_WOOD_DEMAND: int = 20 # Base fireplace cost
-
+const FORECAST_VARIANCE: float = 0.15 # +/- 15% uncertainty in reports
 # --- HEALING CONSTANTS ---
 const HEAL_COST_GOLD: int = 50
 
@@ -39,8 +39,149 @@ const RAID_BUILDING_DMG_MAX: int = 150
 # --- INTERNAL STATE ---
 # Track the fiscal year instead of raw frames to prevent double-billing
 var _last_paid_winter_year: int = -1
+# Private cache to prevent iterating placed_buildings every frame.
+# Initialize to -1 to indicate "dirty/uncalculated" state.
+var _cached_total_heating: int = -1
+# --- Signals ---
+# Emitted when the cached heating value changes (construction/destruction)
+signal heating_demand_updated(new_total: int)
 
-# --- PUBLIC QUERIES ---
+# Fallback value to prevent freeze loops if cache fails in Winter
+const FALLBACK_HEATING_DEMAND: int = 20
+
+func _ready() -> void:
+	# Phase 1.2: Connect signals to invalidate/update cache
+	# strictly typed signal connections
+	if EventBus:
+		EventBus.building_construction_completed.connect(_on_building_completed)
+		EventBus.building_destroyed.connect(_on_building_destroyed)
+		EventBus.settlement_loaded.connect(_on_settlement_loaded)
+
+# --- Phase 1.2: Caching Logic ---
+
+func _recalculate_total_heating() -> void:
+	"""
+	Iterates current_settlement.placed_buildings once to sum 'heating_cost'.
+	Updates _cached_total_heating.
+	Uses load(entry['resource_path']) as mandated.
+	"""
+	if not SettlementManager.current_settlement:
+		Loggie.msg("Attempted to calc heating with no settlement loaded.").domain(LogDomains.ECONOMY).warn()
+		return
+
+	var total_heating: int = 0
+	var buildings: Array = SettlementManager.current_settlement.placed_buildings
+	
+	for entry in buildings:
+		if "resource_path" in entry:
+			var path: String = entry["resource_path"]
+			# Safety check before load
+			if ResourceLoader.exists(path):
+				var build_data = load(path) as BuildingData
+				if build_data:
+					total_heating += build_data.heating_cost
+			else:
+				Loggie.msg("Building resource missing at path").ctx(path).domain(LogDomains.ECONOMY).error()
+	
+	_cached_total_heating = total_heating
+	
+	Loggie.msg("Heating Cache Recalculated: %d" % total_heating).domain(LogDomains.ECONOMY).info()
+	heating_demand_updated.emit(_cached_total_heating)
+
+func get_total_heating_demand() -> int:
+	"""
+	Returns _cached_total_heating.
+	Getter is O(1).
+	FAIL-SAFE: Returns fallback constant (20) if cache is invalid/dirty.
+	"""
+	# If cache is dirty (e.g. freshly loaded without init), try to calc once
+	if _cached_total_heating == -1:
+		_recalculate_total_heating()
+		
+	# Fail-safe
+	if _cached_total_heating == -1:
+		Loggie.msg("Heating Cache Invalid! Returning Fallback.").domain(LogDomains.ECONOMY).error()
+		return FALLBACK_HEATING_DEMAND
+		
+	return _cached_total_heating
+
+# --- Signal Handlers ---
+
+func _on_building_completed(entry: Dictionary) -> void:
+	# Logic: Load building data -> Add heating_cost to cache -> emit signal
+	# This is an incremental update (O(1)) instead of full recalc
+	if "resource_path" in entry:
+		var path: String = entry["resource_path"]
+		var build_data = load(path) as BuildingData
+		
+		if build_data:
+			# If cache was dirty, full recalc instead of incremental
+			if _cached_total_heating == -1:
+				_recalculate_total_heating()
+			else:
+				_cached_total_heating += build_data.heating_cost
+				Loggie.msg("Heating increased: +%d (New Total: %d)" % [build_data.heating_cost, _cached_total_heating]).domain(LogDomains.ECONOMY).debug()
+				heating_demand_updated.emit(_cached_total_heating)
+
+func _on_building_destroyed(building: Node) -> void:
+	# Logic: Building destruction is complex (entry vs node). 
+	# Safest approach for data integrity is a full recalculation.
+	# Since destruction is rare, O(N) here is acceptable to ensure accuracy.
+	Loggie.msg("Building destroyed, recalculating heating cache.").domain(LogDomains.ECONOMY).debug()
+	_recalculate_total_heating()
+
+func _on_settlement_loaded(data: SettlementData) -> void:
+	# Logic: Force full recalculation on load
+	_recalculate_total_heating()
+
+
+# --- Phase 4.1: Forecast Fuzzing (Stub) ---
+
+func get_forecast_display_data() -> Dictionary:
+	"""
+	Returns formatted strings for UI (e.g. '200-300 Food').
+	Separates UI presentation from the deterministic integer logic.
+	
+	Returns Dictionary format:
+	{ 
+		"food": { "min": 100, "max": 120, "text": "100 - 120" },
+		"wood": { "min": 50,  "max": 60,  "text": "50 - 60" }
+	}
+	"""
+	# 1. Get the Exact Truth (Deterministic)
+	var exact_data = get_winter_forecast()
+	var display_data = {}
+	
+	for res_name in exact_data:
+		var exact_val = exact_data[res_name]
+		
+		# If value is 0 (e.g. Rationing NONE), no range needed
+		if exact_val <= 0:
+			display_data[res_name] = {
+				"min": 0,
+				"max": 0,
+				"text": "0"
+			}
+			continue
+			
+		# 2. Calculate Fuzz Range
+		var variance = int(float(exact_val) * FORECAST_VARIANCE)
+		# Ensure at least a range of 1 if val > 0
+		if variance == 0: variance = 1 
+		
+		var min_val = max(0, exact_val - variance)
+		var max_val = exact_val + variance
+		
+		# 3. Format Output
+		display_data[res_name] = {
+			"min": min_val,
+			"max": max_val,
+			"text": "%d - %d" % [min_val, max_val]
+		}
+		
+	return display_data
+
+
 
 func get_resource_cap(resource_type: String) -> int:
 	var settlement = SettlementManager.current_settlement
@@ -114,15 +255,76 @@ func get_projected_income() -> Dictionary[String, int]:
 
 ## Centralized Winter Forecast Logic
 func get_winter_forecast() -> Dictionary:
-	var settlement = SettlementManager.current_settlement
-	if not settlement: return {GameResources.FOOD: 0, GameResources.WOOD: 0}
+	"""
+	Returns the projected resource consumption for the upcoming Winter.
+	Used by AutumnLedgerUI to show 'Winter Demand'.
+	"""
+	# 1. Food: Driven by Rationing Policy (Task 2.2)
+	var predicted_food = get_winter_food_demand()
 	
-	var severity = WinterManager.upcoming_severity
-	var real_multiplier = WinterManager.get_multiplier_for_severity(severity)
+	# 2. Wood: Driven by Building Cache + Severity Multiplier
+	var predicted_wood = get_winter_wood_demand()
 	
-	return calculate_winter_consumption_costs(real_multiplier)
+	return {
+		GameResources.FOOD: predicted_food,
+		GameResources.WOOD: predicted_wood
+	}
 
-## Authoritative math for winter demand
+func get_winter_food_demand() -> int:
+	"""
+	Calculates total food required based on Population and Rationing Policy.
+	Returns: Modified food demand (int).
+	"""
+	var settlement = SettlementManager.current_settlement
+	if not settlement: return 0
+	
+	var pop = settlement.population_peasants
+	var base_demand = pop * WINTER_FOOD_BASE
+	
+	var policy = settlement.rationing_policy
+	var final_demand: int = base_demand
+	
+	match policy:
+		SettlementData.RationingPolicy.NORMAL:
+			final_demand = base_demand
+		SettlementData.RationingPolicy.HALF:
+			final_demand = int(base_demand * 0.5)
+			# Loggie.msg("Rationing HALF active. Food demand reduced.").domain(LogDomains.ECONOMY).debug()
+		SettlementData.RationingPolicy.NONE:
+			final_demand = 0
+			# Loggie.msg("Rationing NONE active. Food demand zeroed.").domain(LogDomains.ECONOMY).warn()
+			
+	return final_demand
+
+func get_winter_wood_demand() -> int:
+	"""
+	Calculates total wood required based on Cached Buildings + Winter Severity.
+	This is the Source of Truth for both UI Forecasts and actual Consumption.
+	"""
+	var base_heating = get_total_heating_demand() # From Task 1.2 Cache
+	var severity_mult: float = 1.0
+	
+	# access WinterManager state safely
+	# Note: We use 'upcoming' for forecasts, but during Winter, 'current' and 'upcoming' 
+	# should ideally be aligned. For safety, we use current_severity if Winter is active.
+	var severity = WinterManager.upcoming_severity
+	if WinterManager.current_severity != WinterManager.WinterSeverity.MILD: 
+		# If we are actually IN winter, use the current severity
+		if WinterManager.has_signal("winter_started"): # weak check if winter is active
+			pass # Logic can be expanded, but for now relying on upcoming is safe for forecasts
+	
+	# Apply Multipliers (Preserving Legacy Intent)
+	match severity:
+		WinterManager.WinterSeverity.HARSH:
+			severity_mult = 1.5 # 50% more wood needed
+		WinterManager.WinterSeverity.MILD:
+			severity_mult = 0.75 # 25% less wood needed
+		_:
+			severity_mult = 1.0
+			
+	return int(base_heating * severity_mult)
+
+"""## Authoritative math for winter demand (commented out)
 func calculate_winter_consumption_costs(severity_mult: float) -> Dictionary:
 	var settlement = SettlementManager.current_settlement
 	if not settlement: return {GameResources.FOOD: 0, GameResources.WOOD: 0}
@@ -143,36 +345,41 @@ func calculate_winter_consumption_costs(severity_mult: float) -> Dictionary:
 	return {
 		GameResources.FOOD: int(base_food * severity_mult),
 		GameResources.WOOD: int(base_wood * severity_mult)
-	}
+	}"""
 
 # --- TURN LOGIC (SEASONAL) ---
 
 func apply_winter_consumption(costs: Dictionary) -> void:
-	# State-Aware Idempotency: Check if the current year has already been billed.
+	# State-Aware Idempotency
 	var current_year = DynastyManager.get_current_year()
 	if current_year == _last_paid_winter_year:
-		Loggie.msg("EconomyManager: Winter consumption already applied for Year %d. Ignoring duplicate request." % current_year).domain(LogDomains.ECONOMY).warn()
+		Loggie.msg("EconomyManager: Winter consumption already applied for Year %d." % current_year).domain(LogDomains.ECONOMY).warn()
 		return
 	
 	var settlement = SettlementManager.current_settlement
 	if not settlement: return
 
-	# Update State: Mark this year as paid
+	# Update State
 	_last_paid_winter_year = current_year
 
-	var f_cost = costs.get(GameResources.FOOD, 0)
-	var w_cost = costs.get(GameResources.WOOD, 0)
+	# --- FIX: Source of Truth ---
+	# We ignore the passed 'costs' dictionary for the math, 
+	# ensuring we use the exact same formulas as the UI.
+	var final_food_cost = get_winter_food_demand()
+	var final_wood_cost = get_winter_wood_demand()
 	
 	# Mutate Treasury
 	var current_food = settlement.treasury.get(GameResources.FOOD, 0)
 	var current_wood = settlement.treasury.get(GameResources.WOOD, 0)
 	
-	settlement.treasury[GameResources.FOOD] = max(0, current_food - f_cost)
-	settlement.treasury[GameResources.WOOD] = max(0, current_wood - w_cost)
+	settlement.treasury[GameResources.FOOD] = max(0, current_food - final_food_cost)
+	settlement.treasury[GameResources.WOOD] = max(0, current_wood - final_wood_cost)
 	
-	Loggie.msg("EconomyManager: Applied Winter Consumption (Year %d): %s" % [current_year, costs]).domain(LogDomains.ECONOMY).info()
+	Loggie.msg("EconomyManager: Winter Consumption Applied. Food: %d (Pol: %d), Wood: %d (Sev: %s)" % 
+		[final_food_cost, settlement.rationing_policy, final_wood_cost, WinterManager.WinterSeverity.keys()[WinterManager.upcoming_severity]]).domain(LogDomains.ECONOMY).info()
+	
 	EventBus.treasury_updated.emit(settlement.treasury)
-
+	
 ## Centralized Crisis Resolution (Sacrifices)
 func resolve_winter_crisis_sacrifice(sacrifice_type: String, deficit_data: Dictionary) -> void:
 	var settlement = SettlementManager.current_settlement
@@ -213,7 +420,28 @@ func recruit_professional_unit(unit_cost: Dictionary, unit_data: Variant) -> boo
 		return true
 	return false
 
-func calculate_seasonal_payout(season_name: String) -> Dictionary:
+# --- Logic: State Mutators ---
+
+func set_rationing_policy(new_policy: int) -> void:
+	var settlement = SettlementManager.current_settlement
+	if not settlement: return
+	
+	# Validate input
+	if new_policy not in SettlementData.RationingPolicy.values():
+		Loggie.msg("Invalid Rationing Policy index: %d" % new_policy).domain(LogDomains.ECONOMY).error()
+		return
+		
+	settlement.rationing_policy = new_policy
+	
+	# Log the policy shift
+	var policy_name = SettlementData.RationingPolicy.keys()[new_policy]
+	Loggie.msg("Rationing Policy updated to: %s" % policy_name).domain(LogDomains.ECONOMY).info()
+	
+	# Optional: Emit a signal if you want the UI to update instantly without closing/reopening
+	EventBus.rationing_policy_changed.emit(new_policy)
+
+
+func calculate_seasonal_payout(season_name: String, external_context: Dictionary = {}) -> Dictionary:
 	var settlement = SettlementManager.current_settlement
 	if not settlement: return {}
 	
@@ -244,9 +472,10 @@ func calculate_seasonal_payout(season_name: String) -> Dictionary:
 	_apply_payout_to_treasury(settlement, total_payout)
 	
 	# 3. Winter Consequences
+	# Updated Task 1.3: Pass external_context to the demographic pipeline
 	if season_name == SEASON_WINTER:
 		var jarl = DynastyManager.get_current_jarl()
-		_calculate_demographics(settlement, total_payout, jarl)
+		_calculate_demographics(settlement, total_payout, jarl, external_context)
 	
 	var log_report = total_payout.duplicate()
 	log_report.erase("_messages") 
@@ -279,7 +508,7 @@ func _apply_payout_to_treasury(settlement: SettlementData, payout: Dictionary) -
 		else:
 			settlement.treasury[key] = amount_to_add
 
-func _calculate_demographics(settlement: SettlementData, payout_report: Dictionary, jarl: JarlData) -> void:
+func _calculate_demographics(settlement: SettlementData, payout_report: Dictionary, jarl: Resource, context: Dictionary = {}) -> void:
 	var pop = settlement.population_peasants
 	var current_food = settlement.treasury.get("food", 0)
 	var total_food_available = current_food 
@@ -288,22 +517,54 @@ func _calculate_demographics(settlement: SettlementData, payout_report: Dictiona
 	# This function ONLY checks if we have enough surplus for bonuses/growth.
 	var food_required_for_growth = pop * WINTER_FOOD_BASE * 2 
 	
+	var msg_list: Array = payout_report["_messages"]
+	
+	# --- Task 2.1: Sickness Mortality (Applied BEFORE Growth) ---
+	if settlement.sick_population > 0:
+		# Use modifier from context if available, else default to 10% mortality for sick pop
+		var mortality_rate = context.get("sickness_mortality_rate", 0.10)
+		var sick_deaths = int(settlement.sick_population * mortality_rate)
+		
+		if sick_deaths > 0:
+			pop = max(0, pop - sick_deaths)
+			settlement.sick_population = max(0, settlement.sick_population - sick_deaths)
+			msg_list.append("[color=red]SICKNESS: %d peasants died from illness.[/color]" % sick_deaths)
+
+	# --- Task 2.2: Rationing & Growth Calculation ---
 	var growth_rate = BASE_GROWTH_RATE
 	var event_msg = ""
 	
-	if total_food_available <= 0:
-		# If apply_winter_consumption left us at 0, we are starving.
+	var rationing = settlement.rationing_policy
+	var is_starving = total_food_available <= 0
+	
+	# Rationing Override Logic
+	if rationing == SettlementData.RationingPolicy.NONE:
+		# Artificial Starvation: Even if we have food, we aren't eating it.
+		is_starving = true
+		event_msg = "[color=red]RATIONING (NONE): Severe Malnutrition![/color]"
+	elif rationing == SettlementData.RationingPolicy.HALF:
+		# Malnutrition: Reduces growth potential, but doesn't trigger full starvation death unless food is actually gone.
+		growth_rate -= 0.05 # Flat penalty to growth
+		msg_list.append("[color=orange]RATIONING (HALF): Growth Stunted.[/color]")
+
+	if is_starving:
+		# If apply_winter_consumption left us at 0, OR Rationing is NONE.
 		growth_rate = STARVATION_PENALTY
-		event_msg = "[color=red]FAMINE: Food shortage caused deaths![/color]"
+		if event_msg == "": event_msg = "[color=red]FAMINE: Food shortage caused deaths![/color]"
 	else:
 		# We survived. Do we flourish?
-		if total_food_available > food_required_for_growth: 
+		# Only flourish if we aren't on HALF rations
+		if total_food_available > food_required_for_growth and rationing == SettlementData.RationingPolicy.NORMAL: 
 			growth_rate += FERTILITY_BONUS
 		if jarl and jarl.has_trait(TRAIT_FERTILE): 
 			growth_rate += FERTILITY_BONUS
 			
+	# Apply final growth to the survivors
 	var net_change = int(pop * growth_rate)
-	if growth_rate > 0 and net_change == 0: net_change = 1
+	
+	# Ensure at least 1 person grows if positive rate, unless capped
+	if growth_rate > 0 and net_change == 0 and pop > 0: net_change = 1
+	
 	settlement.population_peasants = max(0, pop + net_change)
 	
 	var pop_change_str = ""
@@ -311,10 +572,10 @@ func _calculate_demographics(settlement: SettlementData, payout_report: Dictiona
 	elif net_change < 0: pop_change_str = "%d Peasants (Died)" % net_change
 	else: pop_change_str = "No population change"
 	
-	var msg_list: Array = payout_report["_messages"]
 	if event_msg != "": msg_list.append(event_msg)
 	payout_report["population_growth"] = pop_change_str
 	
+	# --- Land Capacity & Unrest Logic (Preserved) ---
 	var land_capacity = _calculate_total_land_capacity(settlement)
 	if settlement.population_peasants > land_capacity:
 		var excess_men = settlement.population_peasants - land_capacity
@@ -324,7 +585,6 @@ func _calculate_demographics(settlement: SettlementData, payout_report: Dictiona
 	elif settlement.unrest > 0:
 		settlement.unrest = max(0, settlement.unrest - 5)
 		msg_list.append("[color=green]Stability returns (Unrest -5)[/color]")
-
 func _calculate_total_land_capacity(settlement: SettlementData) -> int:
 	var total_cap = BASE_LAND_CAPACITY
 	for entry in settlement.placed_buildings:

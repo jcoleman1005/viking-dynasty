@@ -96,37 +96,41 @@ func setup_winter_view() -> void:
 # ZONE A: THE LEFT SPINE (Context)
 # ------------------------------------------------------------------------------
 func _refresh_resource_totem() -> void:
-	# 1. Severity Header
-	var severity_name = "NORMAL"
-	if WinterManager.has_method("get_severity_name"):
-		severity_name = WinterManager.get_severity_name()
-	elif "winter_consumption_report" in WinterManager and not WinterManager.winter_consumption_report.is_empty():
-		severity_name = WinterManager.winter_consumption_report.get("severity_name", "NORMAL")
-		
-	if severity_label:
-		severity_label.text = "SEVERITY: %s" % severity_name
-		if severity_name == "HARSH": severity_label.modulate = Color.RED
-		elif severity_name == "MILD": severity_label.modulate = Color.GREEN
-		else: severity_label.modulate = Color.WHITE
+	# Get latest data
+	var settlement = SettlementManager.current_settlement
+	if not settlement: return
 
-	# 2. Resource Deficits (The Totem)
+	# Clears existing children
 	for child in resource_totem.get_children():
 		child.queue_free()
+
+	# --- Task 3.1: New Survival Rows ---
+
+	# 1. Sickness Row (Only if present)
+	if settlement.sick_population > 0:
+		_add_totem_entry("SICK POPULATION", str(settlement.sick_population), Color.MAGENTA)
+
+	# 2. Heating Demand (Always show in Winter)
+	# This uses the Phase 1 Cache + Phase 2 Severity Multiplier
+	var heating_demand = EconomyManager.get_winter_wood_demand()
+	if heating_demand > 0:
+		_add_totem_entry("EST. BURN", "-%d Wood" % heating_demand, Color.ORANGE)
+
+	# --- Existing Deficit Logic (Preserved) ---
 	
-	var treasury = SettlementManager.current_settlement.treasury
+	# Recalculate deficits based on current stocks vs projected demand
+	# We grab the forecast again to ensure we match the UI numbers
 	var forecast = EconomyManager.get_winter_forecast()
-	
-	var food_deficit = max(0, forecast.get(GameResources.FOOD, 0) - treasury.get(GameResources.FOOD, 0))
-	var wood_deficit = max(0, forecast.get(GameResources.WOOD, 0) - treasury.get(GameResources.WOOD, 0))
-	
-	# Stylized Totem Entries
+	var wood_deficit = max(0, forecast[GameResources.WOOD] - settlement.treasury.get(GameResources.WOOD, 0))
+	var food_deficit = max(0, forecast[GameResources.FOOD] - settlement.treasury.get(GameResources.FOOD, 0))
+
 	if food_deficit > 0:
 		_add_totem_entry("FOOD RISK", "-%d" % food_deficit, Color.RED)
+
 	if wood_deficit > 0:
-		_add_totem_entry("COLD RISK", "-%d" % wood_deficit, Color.ORANGE)
-		
-	if food_deficit <= 0 and wood_deficit <= 0:
-		_add_totem_entry("STOCKPILES", "SECURE", Color.GREEN)
+		_add_totem_entry("COLD RISK", "-%d" % wood_deficit, Color.ORANGE) # or Color.CYAN for freezing
+
+	Loggie.msg("Winter Court: Resource Totem Refreshed").domain(LogDomains.UI).debug()
 
 func _add_totem_entry(title: String, value: String, color: Color) -> void:
 	# Create a simple HBox for the totem entry (Label - Value)

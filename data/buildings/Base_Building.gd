@@ -241,6 +241,7 @@ func take_damage(amount: int, _attacker: Node2D = null) -> void:
 
 func die() -> void:
 	building_destroyed.emit(self)
+	EventBus.building_destroyed.emit(self)
 	queue_free()
 
 func _input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:

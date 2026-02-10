@@ -8,6 +8,7 @@ signal building_ready_for_placement(building_data: BuildingData)
 signal building_placement_cancelled(building_data: BuildingData)
 signal building_placed(building_data: BuildingData)
 signal building_construction_completed(building_entry: Dictionary)
+signal building_destroyed(building_data: BuildingData)
 
 # --- Inspector Signals ---
 signal building_selected(building: BaseBuilding)
@@ -25,7 +26,7 @@ signal purchase_successful(item_name: String)
 signal purchase_failed(reason: String)
 signal raid_loot_secured(type: String, amount: int)
 signal population_changed()
-
+signal rationing_policy_changed(new_policy)
 # --- Navigation Signals ---
 signal scene_change_requested(scene_key: String)
 signal world_map_opened()

@@ -48,23 +48,24 @@ func _transition_to_season(new_season: Season) -> void:
 	var names = ["Spring", "Summer", "Autumn", "Winter"]
 	var s_name = names[current_season]
 	
-	# FIX: Removed .data() call, using string formatting instead
 	Loggie.msg("Season Advancing to: %s..." % s_name).domain(LogDomains.DYNASTY).info()
 	
 	# --- ORCHESTRATION: The Game Loop ---
 	
 	# 1. Labor (Construction)
-	# Processed first so buildings complete before resources are calculated/consumed.
 	if SettlementManager.has_method("process_construction_labor"):
 		SettlementManager.process_construction_labor()
 	
+	# --- Task 1.4 FIX: Roll Severity Early ---
+	# We must roll the severity for the *upcoming* Winter when we enter Autumn.
+	# This ensures the Autumn Ledger UI can display the correct forecast.
+	if s_name == "Autumn":
+		WinterManager.roll_upcoming_severity()
+	
 	# 2. Economy & Payout (THE SOURCE OF TRUTH)
-	# We calculate and APPLY the payout first. This ensures SettlementManager's treasury
-	# reflects the new state (e.g., Harvest added) before we snapshot it.
 	var payout_report = EconomyManager.calculate_seasonal_payout(s_name)
 	
 	# 3. Winter Specifics (Hunger Check)
-	# We process this now so any starvation warnings are included in the context.
 	if s_name == "Winter":
 		if SettlementManager.has_method("process_warband_hunger"):
 			var warnings = SettlementManager.process_warband_hunger()
@@ -77,29 +78,24 @@ func _transition_to_season(new_season: Season) -> void:
 		SettlementManager.save_settlement()
 		
 	# 5. ASSEMBLE CONTEXT PAYLOAD (The Fix)
-	# This dictionary provides the "Immutable Context" for UI reports.
 	var context_data: Dictionary = {}
-	
-	# A. Payout Data (What just happened)
 	context_data["payout"] = payout_report
 	
-	# B. Treasury Snapshot (Current State)
 	if SettlementManager.current_settlement and "treasury" in SettlementManager.current_settlement:
 		context_data["treasury"] = SettlementManager.current_settlement.treasury.duplicate()
 	else:
 		context_data["treasury"] = {}
 		
-	# C. Forecast Data (Projected Future)
-	# Crucial for the Autumn Report to show "Winter Demand".
 	if EconomyManager.has_method("get_winter_forecast"):
 		context_data["forecast"] = EconomyManager.get_winter_forecast()
+		# Inject the rolled severity into the context for UI convenience,
+		# though the UI can also access WinterManager directly.
+		context_data["upcoming_severity"] = WinterManager.upcoming_severity
 	
-	# 6. EMIT SIGNAL (Now carries the payload)
-	# The AutumnLedgerUI listens to this. It will grab 'payout' and 'forecast' 
-	# to build the AutumnReport resource.
+	# 6. EMIT SIGNAL
 	EventBus.season_changed.emit(s_name, context_data)
 	
-	# 7. Legacy Feedback (Floating Text)
+	# 7. Legacy Feedback
 	_display_seasonal_feedback(s_name, payout_report)
 
 func _display_seasonal_feedback(season_name: String, payout: Dictionary) -> void:

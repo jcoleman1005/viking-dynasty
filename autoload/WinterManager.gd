@@ -7,7 +7,11 @@ extends Node
 signal winter_started(severity: int)
 signal winter_ended
 
-enum WinterSeverity { MILD, NORMAL, HARSH }
+enum WinterSeverity {
+	MILD = 0,
+	NORMAL = 1,
+	HARSH = 2
+}
 
 # --- Configuration ---
 @export_group("Probabilities")
@@ -20,13 +24,16 @@ enum WinterSeverity { MILD, NORMAL, HARSH }
 @export var winter_duration_seconds: float = 60.0
 
 # --- Internal State ---
-var current_severity: int = WinterSeverity.NORMAL
+var current_severity: WinterSeverity = WinterSeverity.NORMAL
 ## Stores the fate of the COMING winter so UI can predict it accurately.
-var upcoming_severity: int = WinterSeverity.NORMAL
-
+var upcoming_severity: WinterSeverity = WinterSeverity.NORMAL
+var sickness_chance_base: float = 0.10
 var winter_consumption_report: Dictionary = {}
 var winter_upkeep_report: Dictionary = {} 
 var winter_crisis_active: bool = false
+# Base chance range for sickness (5% to 20%)
+const SICKNESS_MIN_PCT: float = 0.05
+const SICKNESS_MAX_PCT: float = 0.20
 
 func _ready() -> void:
 	if EventBus:
@@ -37,7 +44,7 @@ func _ready() -> void:
 func _on_season_changed(new_season: String, _context: Dictionary) -> void:
 	# Roll in Spring so Summer Council can see it
 	if new_season == "Spring":
-		_roll_upcoming_severity()
+		roll_upcoming_severity()
 	
 	if new_season == "Winter":
 		start_winter_phase()
@@ -54,7 +61,61 @@ func start_winter_phase() -> void:
 	# 2. Calculate Needs
 	_calculate_winter_needs()
 	
+	# 3. Sickness triggers
+	var settlement = SettlementManager.current_settlement
+	if settlement:
+		# 1. Calculate and Apply Sickness
+		var new_sick_count = _calculate_sickness_risk(settlement)
+		
+		if new_sick_count > 0:
+			# Update Data Model (Persistence)
+			# We add to existing sick population (in case of carry-over), clamped to total pop.
+			var total_sick = settlement.sick_population + new_sick_count
+			settlement.sick_population = min(settlement.population_peasants, total_sick)
+			
+			Loggie.msg("Outbreak! %d new peasants have fallen ill." % new_sick_count).domain(LogDomains.GAMEPLAY).warn()
+		else:
+			Loggie.msg("Winter started with clean bill of health.").domain(LogDomains.GAMEPLAY).info()
+	
 	winter_started.emit(current_severity)
+	var severity_name = WinterSeverity.keys()[current_severity]
+	Loggie.msg("Winter Phase Started. Severity: %s" % severity_name).domain(LogDomains.GAMEPLAY).info()
+
+func _calculate_sickness_risk(settlement: SettlementData) -> int:
+	"""
+	Determines how many people get sick.
+	Triggers: HARSH severity OR Critical Food Shortage.
+	Returns: Integer count of NEW sick people.
+	"""
+	var risk_triggered: bool = false
+	var reason: String = ""
+	
+	# Trigger 1: Environmental Severity
+	if current_severity == WinterSeverity.HARSH:
+		risk_triggered = true
+		reason = "Harsh Winter"
+		
+	# Trigger 2: Critical Food Shortage (Start of Winter)
+	# If we have less food than population, malnutrition weakens immunity immediately.
+	var current_food = settlement.treasury.get(GameResources.FOOD, 0)
+	if current_food < settlement.population_peasants:
+		risk_triggered = true
+		reason = "Malnutrition (Low Food)"
+
+	if not risk_triggered:
+		return 0
+		
+	# Calculate Payload
+	var sick_pct = randf_range(SICKNESS_MIN_PCT, SICKNESS_MAX_PCT)
+	var sick_count = int(settlement.population_peasants * sick_pct)
+	
+	# Ensure at least 1 person gets sick if triggered and pop > 0
+	if sick_count == 0 and settlement.population_peasants > 0:
+		sick_count = 1
+		
+	Loggie.msg("Sickness Triggered by %s. Rate: %.1f%%" % [reason, sick_pct * 100]).domain(LogDomains.GAMEPLAY).debug()
+	
+	return sick_count
 
 func end_winter_phase() -> void:
 	winter_crisis_active = false
@@ -66,16 +127,22 @@ func end_winter_phase() -> void:
 
 # --- CORE LOGIC ---
 
-func _roll_upcoming_severity() -> void:
-	var roll = randf()
-	if roll < harsh_chance:
+func roll_upcoming_severity() -> void:
+	"""
+	Determines the severity of the NEXT winter.
+	Must be called by DynastyManager in Autumn before 'season_changed' is emitted.
+	"""
+	# Logic: 30% chance of HARSH, otherwise NORMAL.
+	# (MILD is currently unused in this specific logic pass, but available for future expansion)
+	if randf() < 0.3:
 		upcoming_severity = WinterSeverity.HARSH
-	elif roll > (1.0 - mild_chance):
-		upcoming_severity = WinterSeverity.MILD
 	else:
 		upcoming_severity = WinterSeverity.NORMAL
-	
-	Loggie.msg("Winter Oracle: Forecast for this year is %s" % _get_severity_name(upcoming_severity)).domain(LogDomains.GAMEPLAY).info()
+		
+	# Log using the keys from the Enum for readability
+	var severity_name = WinterSeverity.keys()[upcoming_severity]
+	Loggie.msg("Winter Forecast Rolled: %s" % severity_name).domain(LogDomains.GAMEPLAY).info()
+
 
 func get_forecast_details() -> Dictionary:
 	var mult = get_multiplier_for_severity(upcoming_severity)
@@ -108,20 +175,24 @@ func _calculate_winter_needs() -> void:
 	var settlement = SettlementManager.current_settlement
 	if not settlement: return
 	
-	var mult = get_multiplier_for_severity(current_severity)
-	var costs = EconomyManager.calculate_winter_consumption_costs(mult)
-	var food_cost = costs.get(GameResources.FOOD, 0)
-	var wood_cost = costs.get(GameResources.WOOD, 0)
+	# --- FIX: Use new EconomyManager API (Phase 2) ---
+	# We no longer calculate costs based on a single generic multiplier.
+	# Food is driven by Rationing; Wood is driven by Heating + Severity.
 	
+	var food_cost = EconomyManager.get_winter_food_demand()
+	var wood_cost = EconomyManager.get_winter_wood_demand()
+	
+	# Calculate Stocks & Deficits
 	var food_stock = settlement.treasury.get(GameResources.FOOD, 0)
 	var wood_stock = settlement.treasury.get(GameResources.WOOD, 0)
 	
 	var food_deficit = max(0, food_cost - food_stock)
 	var wood_deficit = max(0, wood_cost - wood_stock)
 	
+	# Construct Report (Updated for new logic)
 	winter_consumption_report = {
-		"severity_name": _get_severity_name(current_severity),
-		"multiplier": mult,
+		"severity_name": WinterSeverity.keys()[current_severity],
+		"rationing_policy": SettlementData.RationingPolicy.keys()[settlement.rationing_policy],
 		"food_cost": food_cost,
 		"wood_cost": wood_cost,
 		"food_deficit": food_deficit,
@@ -130,12 +201,19 @@ func _calculate_winter_needs() -> void:
 	
 	Loggie.msg("Winter Calculation Complete: %s" % str(winter_consumption_report)).domain(LogDomains.ECONOMY).info()
 	
+	# Determine Crisis State
 	if food_deficit > 0 or wood_deficit > 0:
 		winter_crisis_active = true
-		Loggie.msg("Winter Crisis Active! Deficit: %s" % winter_consumption_report).domain(LogDomains.SYSTEM).warn()
+		Loggie.msg("Winter Crisis Active! Deficits: Food %d, Wood %d" % [food_deficit, wood_deficit]).domain(LogDomains.SYSTEM).warn()
 	else:
 		winter_crisis_active = false
-		_apply_winter_consumption()
+		
+		# Apply Consumption immediately if affordable
+		# We pass the calculated costs for logging/consistency, though EconomyManager relies on its internal truth.
+		EconomyManager.apply_winter_consumption({
+			GameResources.FOOD: food_cost,
+			GameResources.WOOD: wood_cost
+		})
 
 func _apply_winter_consumption() -> void:
 	var costs = {

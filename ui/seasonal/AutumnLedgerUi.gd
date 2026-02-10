@@ -142,25 +142,41 @@ func _reveal_verdict() -> void:
 	is_animation_finished = true
 	_hide_sign_button()
 	
+	# --- Fetch Fuzzy Display Data (Task 4.1) ---
+	var forecast_ranges = EconomyManager.get_forecast_display_data()
+	var food_range_txt = forecast_ranges.get(GameResources.FOOD, {}).get("text", "???")
+	var wood_range_txt = forecast_ranges.get(GameResources.WOOD, {}).get("text", "???")
+	
+	# --- Food Status ---
 	var food_held = int(current_report.treasury_snapshot.get(GameResources.FOOD, 0))
 	var total_food_available = food_held + current_report.harvest_yield
 	var is_food_safe = total_food_available >= current_report.winter_demand
 	
-	var fade_tween = create_tween().set_parallel(true)
+	# Update Text with Range
+	var food_verdict = "[ SECURE ]" if is_food_safe else "[ STARVATION RISK ]"
+	food_status_label.text = "%s\n(Est. %s)" % [food_verdict, food_range_txt]
 	
-	# Food Status
-	food_status_label.text = "[ SECURE ]" if is_food_safe else "[ STARVATION RISK ]"
 	food_status_label.modulate = COLOR_OK if is_food_safe else COLOR_FAIL
-	fade_tween.tween_property(food_status_label, "modulate:a", 1.0, 0.5)
 	
-	# Wood Status
+	# --- Wood Status ---
 	var wood_held = int(current_report.treasury_snapshot.get(GameResources.WOOD, 0))
-	var is_wood_ok = wood_held > 20 
-	wood_status_label.text = "[ STOCKPILED ]" if is_wood_ok else "[ LOW ]"
+	
+	# Exact math for the verdict color (Task 1.5 logic)
+	var required_heating = EconomyManager.get_total_heating_demand()
+	var is_wood_ok = wood_held >= required_heating
+	
+	# Update Text with Range
+	var wood_verdict = "[ STOCKPILED ]" if is_wood_ok else "[ LOW ]"
+	wood_status_label.text = "%s\n(Est. %s)" % [wood_verdict, wood_range_txt]
+	
 	wood_status_label.modulate = COLOR_OK if is_wood_ok else COLOR_WARN
+	
+	# --- Animations ---
+	var fade_tween = create_tween().set_parallel(true)
+	fade_tween.tween_property(food_status_label, "modulate:a", 1.0, 0.5)
 	fade_tween.tween_property(wood_status_label, "modulate:a", 1.0, 0.5)
 	
-	# Winter Outlook
+	# --- Winter Outlook ---
 	var outlook_text = "WINTER OUTLOOK: " + ("SECURE" if is_food_safe else "DANGEROUS")
 	if WinterManager.upcoming_severity == WinterManager.WinterSeverity.HARSH:
 		outlook_text += " (HARSH)"
@@ -172,7 +188,7 @@ func _reveal_verdict() -> void:
 	fade_tween.tween_property(outlook_label, "modulate:a", 1.0, 0.5)
 	
 	EventBus.autumn_resolved.emit()
-	Loggie.msg("Autumn Ledger: Verdict revealed with formula view.").domain(LogDomains.UI).info()
+	Loggie.msg("Autumn Ledger: Verdict revealed with fuzzy ranges.").domain(LogDomains.UI).info()
 
 func _on_sign_pressed() -> void:
 	if not is_animation_finished:

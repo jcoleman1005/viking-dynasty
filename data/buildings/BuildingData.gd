@@ -15,6 +15,10 @@ extends Resource
 @export var grid_size: Vector2i = Vector2i.ONE
 @export var dev_color: Color = Color.GRAY
 @export var is_player_buildable: bool = false
+## Base wood cost to heat this structure per day in Winter.
+@export var heating_cost: int = 2
+## If true, this building acts as a heat source or insulation (reduces total demand).
+@export var provides_insulation: bool = false
 
 @export_group("Construction")
 @export var construction_effort_required: int = 100

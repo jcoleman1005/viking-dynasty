@@ -391,10 +391,29 @@ func unregister_active_scene_nodes() -> void:
 func load_settlement(data: SettlementData) -> void:
 	if ResourceLoader.exists(USER_SAVE_PATH):
 		current_settlement = load(USER_SAVE_PATH)
+		
+		# --- Phase 1.1: Legacy Save Sanitization ---
+		# Check for missing Winter properties in older save files to prevent crashes.
+		if current_settlement:
+			# 1. Sanitize Rationing Policy
+			# "get" returns null if the property doesn't exist in the loaded resource
+			if current_settlement.get("rationing_policy") == null:
+				Loggie.msg("Legacy Save detected: Injecting default Rationing Policy (NORMAL).").domain(LogDomains.SYSTEM).info()
+				current_settlement.set("rationing_policy", 0) # 0 = NORMAL
+			
+			# 2. Sanitize Sick Population
+			if current_settlement.get("sick_population") == null:
+				Loggie.msg("Legacy Save detected: Initializing Sick Population to 0.").domain(LogDomains.SYSTEM).info()
+				current_settlement.set("sick_population", 0)
+
 	else:
 		_load_fallback_data(data)
+	
 	active_map_data = current_settlement
-	if active_building_container: reconstruct_buildings_from_data()
+	
+	if active_building_container: 
+		reconstruct_buildings_from_data()
+	
 	EventBus.settlement_loaded.emit(current_settlement)
 	
 func _load_fallback_data(data: SettlementData) -> void:
