@@ -23,9 +23,8 @@ const BUILDING_PATHS = [
 @export var dynasty_ui_scene: PackedScene
 
 @export_group("Seasonal Panels")
-@export var spring_panel_scene: PackedScene
+@export var council_panel_scene: PackedScene # Unified scene for Spring & Winter
 @export var autumn_panel_scene: PackedScene
-@export var winter_panel_scene: PackedScene
 
 # ------------------------------------------------------------------------------
 # NODE REFERENCES
@@ -208,6 +207,9 @@ func _update_season_state(context: Dictionary = {}) -> void:
 	if bottom_bar: bottom_bar.set_agency_state(is_summer)
 	
 	if season_advance_btn:
+		# HIDE in Spring: The player MUST pick a council card to advance.
+		season_advance_btn.visible = (current_season != DynastyManager.Season.SPRING)
+		
 		match current_season:
 			DynastyManager.Season.SPRING: season_advance_btn.text = "Start Summer"
 			DynastyManager.Season.SUMMER: season_advance_btn.text = "End Summer"
@@ -249,15 +251,12 @@ func _update_center_view(season_enum: int, context: Dictionary) -> void:
 	var season_string_name = ""
 	
 	match season_enum:
-		DynastyManager.Season.SPRING: 
-			scene_to_load = spring_panel_scene
-			season_string_name = "Spring"
+		DynastyManager.Season.SPRING, DynastyManager.Season.WINTER:
+			scene_to_load = council_panel_scene
+			season_string_name = "Spring" if season_enum == DynastyManager.Season.SPRING else "Winter"
 		DynastyManager.Season.AUTUMN: 
 			scene_to_load = autumn_panel_scene
 			season_string_name = "Autumn"
-		DynastyManager.Season.WINTER: 
-			scene_to_load = winter_panel_scene
-			season_string_name = "Winter"
 			
 	if scene_to_load:
 		var instance = scene_to_load.instantiate()

@@ -455,6 +455,7 @@ func resolve_winter_crisis_sacrifice(sacrifice_type: String, deficit_data: Dicti
 			var deaths = max(1, int(deficit_data.get("food_deficit", 0) / 5))
 			settlement.population_peasants = max(0, settlement.population_peasants - deaths)
 			Loggie.msg("EconomyManager: Sacrificed %d Peasants" % deaths).domain(LogDomains.ECONOMY).warn()
+			clamp_demographics(settlement)
 			
 		"disband_warband":
 			if not settlement.warbands.is_empty(): 
@@ -650,6 +651,8 @@ func _calculate_demographics(settlement: SettlementData, payout_report: Dictiona
 	elif settlement.unrest > 0:
 		settlement.unrest = max(0, settlement.unrest - 5)
 		msg_list.append("[color=green]Stability returns (Unrest -5)[/color]")
+	
+	clamp_demographics(settlement)
 func _calculate_total_land_capacity(settlement: SettlementData) -> int:
 	var total_cap = BASE_LAND_CAPACITY
 	for entry in settlement.placed_buildings:
@@ -657,6 +660,19 @@ func _calculate_total_land_capacity(settlement: SettlementData) -> int:
 		if data:
 			total_cap += data.arable_land_capacity
 	return total_cap
+
+## NEW: Ensures demographic integrity (e.g. sick cannot exceed total pop)
+func clamp_demographics(settlement: SettlementData) -> void:
+	if not settlement: return
+	
+	# Ensure sick population does not exceed total population
+	if settlement.sick_population > settlement.population_peasants:
+		Loggie.msg("Demographic mismatch: Sick (%d) > Total (%d). Clamping." % [settlement.sick_population, settlement.population_peasants]).domain(LogDomains.ECONOMY).warn()
+		settlement.sick_population = settlement.population_peasants
+	
+	# Optional: Ensure values are never negative
+	settlement.population_peasants = max(0, settlement.population_peasants)
+	settlement.sick_population = max(0, settlement.sick_population)
 
 # --- DELEGATED FUNCTIONS ---
 func get_population_census() -> Dictionary:
@@ -798,6 +814,7 @@ func draft_peasants_to_raiders(count: int, template: UnitData) -> void:
 		Loggie.msg("EconomyManager: Draft request reduced (Req: %d, Avail: %d)" % [count, available]).domain(LogDomains.ECONOMY).warn()
 	
 	settlement.population_peasants -= actual_draft
+	clamp_demographics(settlement)
 	
 	var new_warbands: Array[WarbandData] = []
 	var remaining = actual_draft

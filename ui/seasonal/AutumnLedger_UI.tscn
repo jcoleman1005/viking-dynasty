@@ -82,7 +82,7 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 32
 text = "Food Stores"
 
-[node name="FoodStock" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/FoodRow"]
+[node name="FoodStartingStockLabel" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/FoodRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -90,7 +90,23 @@ theme_override_font_sizes/font_size = 32
 text = "0 / 0"
 horizontal_alignment = 1
 
-[node name="FoodStatus" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/FoodRow"]
+[node name="FoodHarvestLabel" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/FoodRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "[ STATUS ]"
+horizontal_alignment = 2
+
+[node name="FoodDemandLabel" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/FoodRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "[ STATUS ]"
+horizontal_alignment = 2
+
+[node name="FoodFinalResultLabel" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/FoodRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
@@ -114,7 +130,7 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 32
 text = "Wood/Fuel"
 
-[node name="WoodStock" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/WoodRow"]
+[node name="WoodStartingStockLabel2" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/WoodRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -122,7 +138,23 @@ theme_override_font_sizes/font_size = 32
 text = "0 / 0"
 horizontal_alignment = 1
 
-[node name="WoodStatus" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/WoodRow"]
+[node name="WoodHarvestLabel2" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/WoodRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "[ STATUS ]"
+horizontal_alignment = 2
+
+[node name="WoodDemandLabel2" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/WoodRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "[ STATUS ]"
+horizontal_alignment = 2
+
+[node name="WoodFinalResultLabel2" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/WoodRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2

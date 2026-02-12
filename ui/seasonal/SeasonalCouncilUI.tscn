@@ -1,9 +1,11 @@
-[gd_scene load_steps=8 format=3 uid="uid://dqxvcgqjx2s8o"]
+[gd_scene load_steps=10 format=3 uid="uid://dqxvcgqjx2s8o"]
 
-[ext_resource type="Script" uid="uid://gvajp31vuy31" path="res://ui/seasonal/WinterCourtUI.gd" id="1_21ph0"]
+[ext_resource type="Script" uid="uid://cj8v03w2i5c0r" path="res://ui/seasonal/SeasonalCouncilUI.gd" id="1_1"]
 [ext_resource type="Script" uid="uid://cni5gdnpbb1v2" path="res://data/resources/SeasonalCardResource.gd" id="2_agvwj"]
+[ext_resource type="Resource" uid="uid://dt38bx8jkvrno" path="res://data/resources/Card_Spring_Expansion.tres" id="3_nc3k2"]
 [ext_resource type="Resource" uid="uid://dcppndmvmf63e" path="res://data/resources/Winter Cards/Card_Winter_Recruit.tres" id="3_q5t2d"]
 [ext_resource type="Resource" uid="uid://dg10eqygin8xg" path="res://data/resources/Winter Cards/Card_Winter_Feast.tres" id="4_4y4fd"]
+[ext_resource type="Resource" uid="uid://du2gsa2xinlrm" path="res://data/resources/Card_Focus_Raid.tres" id="4_bp12f"]
 [ext_resource type="PackedScene" uid="uid://d0px2w8n5r1lv" path="res://ui/seasonal/SeasonalCardUi.tscn" id="5_f6bl8"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_Spine"]
@@ -16,15 +18,16 @@ bg_color = Color(0.14902, 0.168627, 0.203922, 1)
 border_width_bottom = 1
 border_color = Color(0.439216, 0.501961, 0.564706, 1)
 
-[node name="WinterCourtUI" type="Control"]
+[node name="SeasonalCouncilUI" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_21ph0")
-available_court_cards = Array[ExtResource("2_agvwj")]([ExtResource("3_q5t2d"), ExtResource("4_4y4fd"), ExtResource("3_q5t2d")])
+script = ExtResource("1_1")
+spring_council_cards = Array[ExtResource("2_agvwj")]([ExtResource("3_nc3k2"), ExtResource("3_nc3k2"), ExtResource("3_nc3k2"), ExtResource("4_bp12f")])
+winter_court_cards = Array[ExtResource("2_agvwj")]([ExtResource("3_q5t2d"), ExtResource("4_4y4fd"), ExtResource("4_4y4fd"), ExtResource("3_q5t2d")])
 card_prefab = ExtResource("5_f6bl8")
 
 [node name="Vignette" type="ColorRect" parent="."]
@@ -94,7 +97,14 @@ autowrap_mode = 3
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.890196, 0.811765, 0.490196, 1)
-text = "ATTENTION: 0/0"
+text = "HALL ACTIONS: 0/0"
+horizontal_alignment = 1
+
+[node name="SicknessOmenLabel" type="Label" parent="MainSplit/LeftSpineBackground/LeftSpine/ContextMargin/ContextVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.890196, 0.811765, 0.490196, 1)
+text = "Sickness"
 horizontal_alignment = 1
 
 [node name="HSeparator" type="HSeparator" parent="MainSplit/LeftSpineBackground/LeftSpine/ContextMargin/ContextVBox"]
@@ -135,4 +145,4 @@ layout_mode = 2
 theme_override_constants/separation = 30
 alignment = 1
 
-[node name="WinterCourtUIDiagnostics" type="Node" parent="."]
+[node name="CouncilUIDiagnostics" type="Node" parent="."]

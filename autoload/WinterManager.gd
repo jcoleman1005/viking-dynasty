@@ -253,12 +253,15 @@ func resolve_crisis_with_gold() -> bool:
 	return false
 
 func play_seasonal_card(card: SeasonalCardResource) -> bool:
-	# 1. Validate AP
 	var jarl = DynastyManager.get_current_jarl()
-	if not jarl or jarl.current_hall_actions < card.cost_ap:
-		return false
+	
+	# 1. Validate AP (ONLY for Winter cards)
+	var is_winter_card = (card.season == SeasonalCardResource.SeasonType.WINTER)
+	if is_winter_card:
+		if not jarl or jarl.current_hall_actions < card.cost_ap:
+			return false
 
-	# 2. Validate Resources
+	# 2. Validate Resources (Always required)
 	var cost_dict = {}
 	if card.cost_gold > 0: cost_dict["gold"] = card.cost_gold
 	if card.cost_food > 0: cost_dict["food"] = card.cost_food
@@ -266,8 +269,9 @@ func play_seasonal_card(card: SeasonalCardResource) -> bool:
 	if not EconomyManager.attempt_purchase(cost_dict):
 		return false
 
-	# 3. Deduct AP
-	DynastyManager.perform_hall_action(card.cost_ap)
+	# 3. Deduct AP (ONLY for Winter cards)
+	if is_winter_card:
+		DynastyManager.perform_hall_action(card.cost_ap)
 
 	# 4. Apply Rewards
 	if card.grant_gold > 0:
@@ -295,6 +299,7 @@ func resolve_crisis_with_sacrifice(sacrifice_type: String) -> bool:
 			var deaths = max(1, int(winter_consumption_report["food_deficit"] / 5))
 			settlement.population_peasants = max(0, settlement.population_peasants - deaths)
 			Loggie.msg("%d Peasants starved." % deaths).domain(LogDomains.SYSTEM).warn()
+			EconomyManager.clamp_demographics(settlement)
 		"disband_warband":
 			if not settlement.warbands.is_empty(): 
 				settlement.warbands.pop_back()

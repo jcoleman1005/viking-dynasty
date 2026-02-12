@@ -91,8 +91,8 @@ extends Resource
 @export var offensive_wins: int = 0 
 
 @export_group("Winter Court")
-var current_hall_actions: int = 0
-var max_hall_actions: int = 0
+@export var current_hall_actions: int = 0
+@export var max_hall_actions: int = 0
 # --- HELPER FUNCTIONS ---
 
 func calculate_hall_actions() -> void:

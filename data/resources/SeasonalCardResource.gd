@@ -8,6 +8,8 @@ enum SeasonType { SPRING, WINTER }
 
 ## The description text (supports BBCode)
 @export_multiline var description: String = "Card Description"
+## A condensed summary of the card's effects for quick UI display (e.g., "↑ Gold: +100")
+@export_multiline var condensed_effects: String = ""
 
 ## Icon for the card
 @export var icon: Texture2D

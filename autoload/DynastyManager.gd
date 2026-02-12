@@ -37,7 +37,6 @@ func advance_season() -> void:
 			_transition_to_season(Season.AUTUMN)
 		Season.AUTUMN:
 			_transition_to_season(Season.WINTER)
-			start_winter_cycle() 
 		Season.WINTER:
 			end_winter_cycle_complete()
 
@@ -67,6 +66,7 @@ func _transition_to_season(new_season: Season) -> void:
 	
 	# 3. Winter Specifics (Hunger Check)
 	if s_name == "Winter":
+		start_winter_cycle() # Recalculate Hall Actions BEFORE signal
 		if SettlementManager.has_method("process_warband_hunger"):
 			var warnings = SettlementManager.process_warband_hunger()
 			if not warnings.is_empty():

@@ -4,12 +4,20 @@ extends Control
 
 # --- Nodes ---
 @onready var settlement_name_label: Label = %SettlementName
-@onready var food_stock_label: Label = %FoodStock
-@onready var food_status_label: Label = %FoodStatus
-@onready var wood_stock_label: Label = %WoodStock
-@onready var wood_status_label: Label = %WoodStatus
 @onready var outlook_label: Label = %WinterOutlookLabel
 @onready var sign_button: Button = %SignButton
+
+# --- NEW: Breakdown Labels (Replaces old stock/status labels) ---
+@onready var food_starting_label: Label = %FoodStartingStockLabel
+@onready var food_harvest_label: Label = %FoodHarvestLabel
+@onready var food_demand_label: Label = %FoodDemandLabel
+@onready var food_final_label: Label = %FoodFinalResultLabel
+
+@onready var wood_starting_label: Label = %WoodStartingStockLabel2
+@onready var wood_harvest_label: Label = %WoodHarvestLabel2
+@onready var wood_demand_label: Label = %WoodDemandLabel2
+@onready var wood_final_label: Label = %WoodFinalResultLabel2
+
 
 # --- State ---
 var current_report: AutumnReport
@@ -17,7 +25,6 @@ var active_tween: Tween
 var is_animation_finished: bool = false
 
 # --- Configuration ---
-const MAX_STORAGE_CAP_PLACEHOLDER: int = 999 # Placeholder for future storage system
 const COLOR_OK = Color("55ff55") # Neon Green
 const COLOR_FAIL = Color("ff5555") # Soft Red
 const COLOR_WARN = Color("ffaa00") # Gold/Orange
@@ -26,12 +33,7 @@ const COLOR_TEXT_DEFAULT = Color("f0e6d2") # Antique White
 func _ready() -> void:
 	_setup_connections()
 	visible = false
-	_apply_text_colors()
-
-func _apply_text_colors() -> void:
-	var labels = [settlement_name_label, food_stock_label, wood_stock_label]
-	for lbl in labels:
-		if lbl: lbl.add_theme_color_override("font_color", COLOR_TEXT_DEFAULT)
+	# _apply_text_colors() is no longer needed as colors are set in the animation
 
 func _setup_connections() -> void:
 	if sign_button and not sign_button.pressed.is_connected(_on_sign_pressed):
@@ -88,122 +90,95 @@ func _populate_header() -> void:
 	var year = DynastyManager.get_current_year()
 	settlement_name_label.text = "%s - Year %d" % [display_name, year]
 
+# --- REFACTORED ANIMATION & DISPLAY LOGIC ---
+
 func _animate_sequence() -> void:
 	if active_tween and active_tween.is_valid():
 		active_tween.kill()
-	
-	active_tween = create_tween()
+
+	# --- Initial State ---
+	var labels_to_clear = [
+		food_starting_label, food_harvest_label, food_demand_label, food_final_label,
+		wood_starting_label, wood_harvest_label, wood_demand_label, wood_final_label,
+		outlook_label
+	]
+	for lbl in labels_to_clear:
+		if lbl:
+			lbl.text = ""
+			lbl.modulate.a = 0
+
+	# --- Animation Sequence ---
+	active_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
 	
 	var food_held = int(current_report.treasury_snapshot.get(GameResources.FOOD, 0))
 	var wood_held = int(current_report.treasury_snapshot.get(GameResources.WOOD, 0))
+	var harvest = current_report.harvest_yield
+	var food_demand = current_report.winter_demand
+	var wood_demand = EconomyManager.get_winter_wood_demand()
 	
-	# Initial set with full formula
-	_update_resource_label(0, food_stock_label, current_report.winter_demand, current_report.harvest_yield)
-	_update_resource_label(0, wood_stock_label, 0, 0)
+	var final_food = food_held + harvest - food_demand
+	var final_wood = wood_held - wood_demand
+
+	# Animate rows sequentially for clarity
+	active_tween.tween_callback(func(): _animate_label_reveal(food_starting_label, "Starting Stock: %d" % food_held))
+	active_tween.tween_interval(0.3)
+	active_tween.tween_callback(func(): _animate_label_reveal(wood_starting_label, "Starting Stock: %d" % wood_held))
+	active_tween.tween_interval(0.5)
 	
-	food_status_label.modulate.a = 0
-	wood_status_label.modulate.a = 0
-	outlook_label.modulate.a = 0
-	
-	var duration = 1.5
-	active_tween.set_parallel(true)
-	
-	# Animate Food Stockpile using the complex formatter
-	active_tween.tween_method(
-		func(val): _update_resource_label(val, food_stock_label, current_report.winter_demand, current_report.harvest_yield),
-		0, food_held, duration
-	).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		
-	# Animate Wood Stockpile
-	active_tween.tween_method(
-		func(val): _update_resource_label(val, wood_stock_label, 0, 0),
-		0, wood_held, duration
-	).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	
+	active_tween.tween_callback(func(): _animate_label_reveal(food_harvest_label, "Harvest: +%d" % harvest, COLOR_OK))
+	active_tween.tween_interval(0.3)
+	active_tween.tween_callback(func(): _animate_label_reveal(wood_harvest_label, "Gathered: +0"))
+	active_tween.tween_interval(0.5)
+
+	active_tween.tween_callback(func(): _animate_label_reveal(food_demand_label, "Winter Demand: -%d" % food_demand, COLOR_FAIL))
+	active_tween.tween_interval(0.3)
+	active_tween.tween_callback(func(): _animate_label_reveal(wood_demand_label, "Winter Upkeep: -%d" % wood_demand, COLOR_FAIL))
+	active_tween.tween_interval(0.8)
+
+	active_tween.tween_callback(func(): _animate_label_reveal(food_final_label, "Surplus/Deficit: %s%d" % ["+" if final_food >= 0 else "", final_food], COLOR_OK if final_food >= 0 else COLOR_FAIL))
+	active_tween.tween_interval(0.3)
+	active_tween.tween_callback(func(): _animate_label_reveal(wood_final_label, "Surplus/Deficit: %s%d" % ["+" if final_wood >= 0 else "", final_wood], COLOR_OK if final_wood >= 0 else COLOR_FAIL))
+
 	active_tween.chain().tween_callback(_reveal_verdict)
 
-## Updated Helper to show: [Stockpile] / [Cap] - [Consumption] + [Harvest]
-func _update_resource_label(current_val: int, label: Label, demand: int, harvest: int) -> void:
+func _animate_label_reveal(label: Label, text: String, color: Color = COLOR_TEXT_DEFAULT) -> void:
 	if not label: return
-	
-	# Format: Stockpile / Cap
-	var base_str = "%d / %d" % [current_val, MAX_STORAGE_CAP_PLACEHOLDER]
-	
-	# Append math context if relevant (Consumption and Harvest)
-	var math_str = ""
-	if demand > 0:
-		math_str += " - %d" % demand
-	if harvest > 0:
-		math_str += " + %d" % harvest
-		
-	label.text = base_str + math_str
+	label.text = text
+	label.add_theme_color_override("font_color", color)
+	var tween = create_tween()
+	tween.tween_property(label, "modulate:a", 1.0, 0.4)
 
 func _reveal_verdict() -> void:
 	is_animation_finished = true
 	_hide_sign_button()
 	
-	# --- Get Authoritative Verdict (Task 2.2 Refactor) ---
-	# This single call now drives all verdict-related UI.
 	var current_stockpile = SettlementManager.current_settlement.treasury.duplicate()
-	# IMPORTANT: We must account for the harvest when checking the verdict!
 	current_stockpile[GameResources.FOOD] = current_stockpile.get(GameResources.FOOD, 0) + current_report.harvest_yield
 	var survival_verdict = EconomyManager.get_survival_verdict(current_stockpile)
-
-	# --- Fetch Fuzzy Display Data for text labels ---
-	var forecast_ranges = EconomyManager.get_forecast_display_data()
-	var food_range_txt = forecast_ranges.get(GameResources.FOOD, {}).get("text", "???")
-	var wood_range_txt = forecast_ranges.get(GameResources.WOOD, {}).get("text", "???")
 	
-	var food_verdict_text: String
-	var food_color: Color
-	var wood_verdict_text: String
-	var wood_color: Color
 	var outlook_text = "WINTER OUTLOOK: "
-	var outlook_color: Color
+	var outlook_color = COLOR_OK
 
 	match survival_verdict:
 		EconomyManager.SurvivalVerdict.SECURE:
-			food_verdict_text = "[ SURPLUS ]"
-			food_color = COLOR_OK
-			wood_verdict_text = "[ SURPLUS ]"
-			wood_color = COLOR_OK
 			outlook_text += "SECURE"
 			outlook_color = COLOR_OK
 		EconomyManager.SurvivalVerdict.UNCERTAIN:
-			food_verdict_text = "[ SHORTAGE ]"
-			food_color = COLOR_WARN
-			wood_verdict_text = "[ SHORTAGE ]"
-			wood_color = COLOR_WARN
 			outlook_text += "UNCERTAIN"
 			outlook_color = COLOR_WARN
 		EconomyManager.SurvivalVerdict.CRITICAL:
-			food_verdict_text = "[ FAMINE RISK ]"
-			food_color = COLOR_FAIL
-			wood_verdict_text = "[ CRITICAL DEFICIT ]"
-			wood_color = COLOR_FAIL
 			outlook_text += "CRITICAL"
 			outlook_color = COLOR_FAIL
 			
-	# --- Update UI Elements from Single Source of Truth ---
-	food_status_label.text = "%s\n(Est. %s)" % [food_verdict_text, food_range_txt]
-	food_status_label.modulate = food_color
-	
-	wood_status_label.text = "%s\n(Est. %s)" % [wood_verdict_text, wood_range_txt]
-	wood_status_label.modulate = wood_color
-	
-	# Append severity context to the main outlook
 	if WinterManager.upcoming_severity == WinterManager.WinterSeverity.HARSH:
 		outlook_text += " (HARSH)"
 	elif WinterManager.upcoming_severity == WinterManager.WinterSeverity.MILD:
 		outlook_text += " (MILD)"
 		
 	outlook_label.text = outlook_text
-	outlook_label.modulate = outlook_color
+	outlook_label.add_theme_color_override("font_color", outlook_color)
 	
-	# --- Animations ---
-	var fade_tween = create_tween().set_parallel(true)
-	fade_tween.tween_property(food_status_label, "modulate:a", 1.0, 0.5)
-	fade_tween.tween_property(wood_status_label, "modulate:a", 1.0, 0.5)
+	var fade_tween = create_tween()
 	fade_tween.tween_property(outlook_label, "modulate:a", 1.0, 0.5)
 	
 	EventBus.autumn_resolved.emit()
@@ -217,11 +192,23 @@ func _skip_animation() -> void:
 	if active_tween and active_tween.is_valid():
 		active_tween.kill()
 	
+	# Manually set all labels to their final state
 	var food_held = int(current_report.treasury_snapshot.get(GameResources.FOOD, 0))
 	var wood_held = int(current_report.treasury_snapshot.get(GameResources.WOOD, 0))
+	var harvest = current_report.harvest_yield
+	var food_demand = current_report.winter_demand
+	var wood_demand = EconomyManager.get_winter_wood_demand()
+	var final_food = food_held + harvest - food_demand
+	var final_wood = wood_held - wood_demand
 	
-	_update_resource_label(food_held, food_stock_label, current_report.winter_demand, current_report.harvest_yield)
-	_update_resource_label(wood_held, wood_stock_label, 0, 0)
+	_animate_label_reveal(food_starting_label, "Starting Stock: %d" % food_held)
+	_animate_label_reveal(wood_starting_label, "Starting Stock: %d" % wood_held)
+	_animate_label_reveal(food_harvest_label, "Harvest: +%d" % harvest, COLOR_OK)
+	_animate_label_reveal(wood_harvest_label, "Gathered: +0")
+	_animate_label_reveal(food_demand_label, "Winter Demand: -%d" % food_demand, COLOR_FAIL)
+	_animate_label_reveal(wood_demand_label, "Winter Upkeep: -%d" % wood_demand, COLOR_FAIL)
+	_animate_label_reveal(food_final_label, "Surplus/Deficit: %s%d" % ["+" if final_food >= 0 else "", final_food], COLOR_OK if final_food >= 0 else COLOR_FAIL)
+	_animate_label_reveal(wood_final_label, "Surplus/Deficit: %s%d" % ["+" if final_wood >= 0 else "", final_wood], COLOR_OK if final_wood >= 0 else COLOR_FAIL)
 	
 	_reveal_verdict()
 

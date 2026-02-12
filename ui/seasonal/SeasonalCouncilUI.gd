@@ -1,6 +1,8 @@
 extends Control
+class_name SeasonalCouncilUI
 
-## WinterCourtUI - The Seasonal Workspace
+## SeasonalCouncilUI - The Unified Seasonal Workspace
+## Handles both Spring Council and Winter Court logic.
 ##
 ## ARCHITECTURE: "The Pillar & The Triptych"
 ## Zone A (Left): The Spine/Pillar. Holds Context (Burden, AP, Descriptions).
@@ -10,8 +12,12 @@ extends Control
 # Configuration
 # ------------------------------------------------------------------------------
 @export_group("Great Hall Stratum")
-## The list of Seasonal Cards available this winter
-@export var available_court_cards: Array[SeasonalCardResource] = []
+## Cards available during the Spring Council
+@export var spring_council_cards: Array[SeasonalCardResource] = []
+## Cards available during the Winter Court
+@export var winter_court_cards: Array[SeasonalCardResource] = []
+## The number of random cards to display from the deck
+@export var hand_size: int = 3
 ## The UI Prefab for a single card
 @export var card_prefab: PackedScene
 
@@ -20,10 +26,11 @@ extends Control
 # ------------------------------------------------------------------------------
 # ZONE A: THE LEFT SPINE
 @onready var severity_label: Label = %SeverityLabel
-@onready var resource_totem: VBoxContainer = %ResourceTotem # Was DeficitContainer
+@onready var resource_totem: VBoxContainer = %ResourceTotem
 @onready var action_points_label: Label = %ActionPointsLabel
-@onready var description_label: Label = %DescriptionLabel # Now anchored in the Spine
-@onready var jarl_name_label: Label = %JarlNameLabel # Dynasty Context
+@onready var description_label: Label = %DescriptionLabel 
+@onready var jarl_name_label: Label = %JarlNameLabel
+@onready var sickness_omen_label: Label = %SicknessOmenLabel 
 
 # ZONE B: THE RITUAL STAGE
 @onready var cards_container: HBoxContainer = %CardsContainer
@@ -33,6 +40,12 @@ extends Control
 # ------------------------------------------------------------------------------
 var current_ap: int = 0
 var max_ap: int = 0
+var _current_season: String = "Winter"
+
+const COLOR_SPRING = Color("a8e6cf") # Soft Spring Green
+const COLOR_WINTER = Color("dcedc1") # Existing Winter Cream/White
+const COLOR_FAIL = Color("ff5555")
+const COLOR_OK = Color("55ff55")
 
 # ------------------------------------------------------------------------------
 # Lifecycle
@@ -43,20 +56,18 @@ func _ready() -> void:
 	if EventBus:
 		EventBus.hall_action_updated.connect(_on_ap_updated)
 		EventBus.treasury_updated.connect(_on_treasury_updated)
-		
-		# Task 3.2.2: Connect signals to the new dashboard updater
-		EventBus.hall_action_updated.connect(_update_dashboard)
 		EventBus.treasury_updated.connect(_update_dashboard)
+		EventBus.hall_action_updated.connect(_update_dashboard)
 		
 		if EventBus.has_signal("season_changed"):
 			EventBus.season_changed.connect(_on_season_changed)
-		elif EventBus.has_signal("winter_started"): 
-			EventBus.winter_started.connect(func(): _on_season_changed("Winter", {}))
 
 func _on_season_changed(new_season: String, _context: Dictionary) -> void:
-	if new_season == "Winter":
+	_current_season = new_season
+	if _current_season == "Winter" or _current_season == "Spring":
 		show()
-		setup_winter_view()
+		setup_seasonal_view()
+		_apply_seasonal_theme()
 	else:
 		hide()
 
@@ -73,8 +84,8 @@ func _on_treasury_updated(_new_treasury: Dictionary) -> void:
 # ------------------------------------------------------------------------------
 # Public API
 # ------------------------------------------------------------------------------
-func setup_winter_view() -> void:
-	Loggie.msg("Initializing Winter Court: Pillar & Triptych").domain(LogDomains.UI).info()
+func setup_seasonal_view() -> void:
+	Loggie.msg("Initializing %s Council" % _current_season).domain(LogDomains.UI).info()
 	
 	var jarl: JarlData = DynastyManager.get_current_jarl()
 	if jarl:
@@ -88,56 +99,50 @@ func setup_winter_view() -> void:
 	_refresh_dynasty_context()
 	_refresh_ritual_stage()
 	_update_spine_header()
+	_update_dashboard()
 	
-	# Reset Description
 	if description_label: 
-		description_label.text = "Select a card to view details..."
-		# Ensure the container is visible if we hid it previously
-		var parent = description_label.get_parent()
-		if parent is Control: parent.show()
+		description_label.text = "Select a course of action..."
+		description_label.get_parent().show()
+
+func _apply_seasonal_theme() -> void:
+	var theme_color = COLOR_WINTER
+	var show_severity = true
+	
+	if _current_season == "Spring":
+		theme_color = COLOR_SPRING
+		show_severity = false
+	
+	# Apply color and visibility to the main labels for a thematic shift
+	if severity_label: 
+		severity_label.modulate = theme_color
+		severity_label.visible = show_severity
+		
+	if jarl_name_label: jarl_name_label.modulate = theme_color
 
 # ------------------------------------------------------------------------------
 # ZONE A: THE LEFT SPINE (Context)
 # ------------------------------------------------------------------------------
 func _refresh_resource_totem() -> void:
-	# Get latest data
 	var settlement = SettlementManager.current_settlement
 	if not settlement: return
 
-	# Clears existing children
 	for child in resource_totem.get_children():
 		child.queue_free()
 
-	# --- Task 3.1: New Survival Rows ---
-
-	# 1. Sickness Row (Only if present)
-	if settlement.sick_population > 0:
+	# 1. Sickness (Winter Only)
+	if _current_season == "Winter" and settlement.sick_population > 0:
 		_add_totem_entry("THE SICK", str(settlement.sick_population), Color.MAGENTA)
 
-	# 2. Heating Demand (Always show in Winter)
-	# This uses the Phase 1 Cache + Phase 2 Severity Multiplier
-	var heating_demand = EconomyManager.get_winter_wood_demand()
-	if heating_demand > 0:
-		_add_totem_entry("WINTER UPKEEP", "-%d Wood" % heating_demand, Color.ORANGE)
+	# 2. Upkeep (Winter Only)
+	if _current_season == "Winter":
+		var heating_demand = EconomyManager.get_winter_wood_demand()
+		if heating_demand > 0:
+			_add_totem_entry("WINTER UPKEEP", "-%d Wood" % heating_demand, Color.ORANGE)
 
-	# --- Existing Deficit Logic (Preserved) ---
-	
-	# Recalculate deficits based on current stocks vs projected demand
-	# We grab the forecast again to ensure we match the UI numbers
-	var forecast = EconomyManager.get_winter_forecast()
-	var wood_deficit = max(0, forecast[GameResources.WOOD] - settlement.treasury.get(GameResources.WOOD, 0))
-	var food_deficit = max(0, forecast[GameResources.FOOD] - settlement.treasury.get(GameResources.FOOD, 0))
-
-	if food_deficit > 0:
-		_add_totem_entry("FOOD SHORTAGE", "-%d" % food_deficit, Color.RED)
-
-	if wood_deficit > 0:
-		_add_totem_entry("WOOD SHORTAGE", "-%d" % wood_deficit, Color.ORANGE) # or Color.CYAN for freezing
-
-	Loggie.msg("Winter Court: Resource Totem Refreshed").domain(LogDomains.UI).debug()
+	Loggie.msg("Seasonal Council: Resource Totem Refreshed").domain(LogDomains.UI).debug()
 
 func _add_totem_entry(title: String, value: String, color: Color) -> void:
-	# Create a simple HBox for the totem entry (Label - Value)
 	var box = HBoxContainer.new()
 	var lbl_title = Label.new()
 	lbl_title.text = title
@@ -153,7 +158,10 @@ func _add_totem_entry(title: String, value: String, color: Color) -> void:
 
 func _update_spine_header() -> void:
 	if action_points_label:
-		action_points_label.text = "ATTENTION: %d / %d" % [current_ap, max_ap]
+		if _current_season == "Spring":
+			action_points_label.text = "SPRING COUNCIL"
+		else:
+			action_points_label.text = "HALL ACTIONS: %d / %d" % [current_ap, max_ap]
 
 func _refresh_dynasty_context() -> void:
 	var jarl: JarlData = DynastyManager.get_current_jarl()
@@ -170,11 +178,18 @@ func _refresh_ritual_stage() -> void:
 	for child in cards_container.get_children():
 		child.queue_free()
 	
-	if not card_prefab: 
-		Loggie.msg("WinterCourt: Missing Card Prefab").domain(LogDomains.UI).error()
-		return
+	if not card_prefab: return
 
-	for card_data in available_court_cards:
+	# Use the appropriate deck for the current season
+	var active_deck = winter_court_cards.duplicate() if _current_season == "Winter" else spring_council_cards.duplicate()
+	active_deck.shuffle()
+	
+	var cards_to_show = min(hand_size, active_deck.size())
+	
+	for i in range(cards_to_show):
+		var card_data = active_deck[i]
+		if not card_data: continue
+		
 		var card_instance = card_prefab.instantiate()
 		cards_container.add_child(card_instance)
 		
@@ -182,25 +197,17 @@ func _refresh_ritual_stage() -> void:
 		
 		if card_instance.has_method("setup"):
 			card_instance.setup(card_data, can_afford)
-		elif "resource" in card_instance:
-			card_instance.resource = card_data
-			if "is_disabled" in card_instance:
-				card_instance.is_disabled = not can_afford
-			
-		# Connect Signals
+		
 		if card_instance.has_signal("card_clicked"):
 			card_instance.card_clicked.connect(_on_card_clicked)
-		if card_instance.has_signal("card_denied"):
-			card_instance.card_denied.connect(_on_card_denied)
-			
-		# Hover Signals -> Target the Spine Description
 		if card_instance.has_signal("card_hovered"):
 			card_instance.card_hovered.connect(_on_card_hovered)
 		if card_instance.has_signal("card_exited"):
 			card_instance.card_exited.connect(_on_card_exited)
 
 func _can_afford(card: SeasonalCardResource) -> bool:
-	if current_ap < card.cost_ap:
+	# Spring decisions ignore AP
+	if _current_season == "Winter" and current_ap < card.cost_ap:
 		return false
 		
 	var costs = {}
@@ -208,97 +215,95 @@ func _can_afford(card: SeasonalCardResource) -> bool:
 	if card.cost_food > 0: costs[GameResources.FOOD] = card.cost_food
 	
 	if not costs.is_empty():
-		if EconomyManager.has_method("can_afford"):
-			return EconomyManager.can_afford(costs)
-		return false
+		return EconomyManager.can_afford(costs)
 	
 	return true
 
 func _on_card_clicked(card: SeasonalCardResource) -> void:
 	var success: bool = WinterManager.play_seasonal_card(card)
 	if success:
-		Loggie.msg("Played Winter Card: %s" % card.display_name).domain(LogDomains.GAMEPLAY).info()
-		_refresh_ritual_stage()
-		_on_card_exited() # Clear description
+		Loggie.msg("Executed %s Choice: %s" % [_current_season, card.display_name]).domain(LogDomains.GAMEPLAY).info()
+		
+		if _current_season == "Spring":
+			# Spring is a one-time major decision. Advance immediately.
+			EventBus.advance_season_requested.emit()
+			hide()
+		else:
+			_refresh_ritual_stage()
+			_on_card_exited()
 	else:
-		# Use the Totem area or AP label for quick feedback
-		_flash_spine_warning("RITUAL FAILED")
+		_flash_spine_warning("NEED RESOURCES")
 
-func _on_card_denied(card: SeasonalCardResource, _reason: String) -> void:
-	_flash_spine_warning("NEED RESOURCES")
-
-# --- MASTER-DETAIL LOGIC (Targets the Spine) ---
+# --- MASTER-DETAIL LOGIC ---
 func _on_card_hovered(card: SeasonalCardResource) -> void:
 	if description_label:
-		description_label.text = "[b]%s[/b]\n\n%s" % [card.display_name.to_upper(), card.description]
-		# Ensure visible
+		var text_to_show = card.condensed_effects if not card.condensed_effects.is_empty() else card.description
+		description_label.text = "[b]%s[/b]
+
+%s" % [card.display_name.to_upper(), text_to_show]
 		description_label.get_parent().show()
+
+	# Ghost logic (Only relevant in Winter crisis)
+	if _current_season == "Winter":
+		_check_ghost_preview(card)
+
+func _check_ghost_preview(card: SeasonalCardResource) -> void:
+	if not SettlementManager.has_current_settlement(): return
+	var current_treasury = SettlementManager.current_settlement.treasury
+	var hypothetical_treasury = current_treasury.duplicate()
+	
+	hypothetical_treasury[GameResources.GOLD] = max(0, hypothetical_treasury.get(GameResources.GOLD, 0) - card.cost_gold)
+	hypothetical_treasury[GameResources.FOOD] = max(0, hypothetical_treasury.get(GameResources.FOOD, 0) - card.cost_food)
+	
+	var current_verdict = EconomyManager.get_survival_verdict(current_treasury)
+	var hypothetical_verdict = EconomyManager.get_survival_verdict(hypothetical_treasury)
+	
+	if current_verdict >= EconomyManager.SurvivalVerdict.UNCERTAIN and hypothetical_verdict == EconomyManager.SurvivalVerdict.SECURE:
+		_pulse_resource_totem_green()
 
 func _on_card_exited() -> void:
 	if description_label:
-		description_label.text = "Select a card..."
+		description_label.text = "Select a course of action..."
 
 func _flash_spine_warning(message: String) -> void:
 	if action_points_label:
-		var original_text = action_points_label.text
+		var old_text = action_points_label.text
 		action_points_label.text = message
 		action_points_label.add_theme_color_override("font_color", Color.TOMATO)
-		
 		get_tree().create_timer(1.5).timeout.connect(func():
 			if action_points_label:
-				action_points_label.text = original_text
+				action_points_label.text = old_text
 				action_points_label.remove_theme_color_override("font_color")
 		)
 
-
-# --- Ghost Preview Helpers (Task 4.1) ---
 func _pulse_resource_totem_green() -> void:
-	if not resource_totem: return
-	
-	var pulse_tween = create_tween()
-	pulse_tween.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	
-	# Pulse in green
+	var pulse_tween = create_tween().set_loops(3)
 	pulse_tween.tween_property(resource_totem, "modulate", Color.LIME_GREEN, 0.3)
-	# Pulse out to white (or original color)
 	pulse_tween.tween_property(resource_totem, "modulate", Color.WHITE, 0.5)
-	# Repeat a few times
-	pulse_tween.set_loops(3)
 
-
-# --- Dashboard Updater (Task 3.2.1) ---
-# The _payload argument is unused, but required to match the signature of
-# signals like 'treasury_updated' which emit a value.
+# --- Dashboard Updater ---
 func _update_dashboard(_payload = null) -> void:
-	# Checkpoint for Task 3.2.1
-	Loggie.msg("UI: Dashboard Refreshed").domain(LogDomains.UI).info()
-	
 	var settlement = SettlementManager.current_settlement
-	if not settlement:
-		Loggie.msg("UI: Cannot update dashboard, no settlement loaded.").domain(LogDomains.UI).warn()
-		return
+	if not settlement: return
 
-	# --- Update Crisis Banner (Severity Label) ---
-	var crisis_report = WinterManager.get_live_crisis_report()
-	
-	if crisis_report.is_crisis:
-		severity_label.text = "CRISIS! Food: %d, Wood: %d" % [crisis_report.food_deficit, crisis_report.wood_deficit]
-		if "modulate" in severity_label: severity_label.modulate = Color.RED
+	# 1. Severity/Crisis Banner
+	if _current_season == "Winter":
+		var report = WinterManager.get_live_crisis_report()
+		if report.is_crisis:
+			severity_label.text = "CRISIS! Food: %d, Wood: %d" % [report.food_deficit, report.wood_deficit]
+			severity_label.modulate = Color.RED
+		else:
+			severity_label.text = "All is well."
+			severity_label.modulate = COLOR_OK
 	else:
-		# Use the forecast details for a non-crisis label
-		var forecast = WinterManager.get_forecast_details()
-		severity_label.text = "Winter Outlook: %s" % forecast.label
-		if "modulate" in severity_label: severity_label.modulate = Color.WHITE
+		severity_label.text = "A New Year Begins"
+		severity_label.modulate = COLOR_SPRING
 
-	# --- Update Sickness Omen (Description Label) ---
-	# Note: This will be overwritten by card hover. It serves as a default state.
-	var sick_population = settlement.sick_population
-	var total_population = settlement.population_peasants
-	
-	var omen = WinterManager.get_sickness_omen(sick_population, total_population)
-	if not omen.text.is_empty():
-		description_label.text = "[b]OMEN:[/b] %s" % omen.text
-		if "modulate" in description_label: description_label.modulate = omen.color
-	else:
-		description_label.text = "Select a card to view details..."
-		if "modulate" in description_label: description_label.modulate = Color.WHITE
+	# 2. Sickness Omen
+	if sickness_omen_label:
+		var omen = WinterManager.get_sickness_omen(settlement.sick_population, settlement.population_peasants)
+		if _current_season == "Winter" and not omen.text.is_empty():
+			sickness_omen_label.text = "[b]OMEN:[/b] %s" % omen.text
+			sickness_omen_label.modulate = omen.color
+		else:
+			sickness_omen_label.text = ""

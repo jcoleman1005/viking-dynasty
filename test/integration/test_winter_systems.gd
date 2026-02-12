@@ -71,7 +71,7 @@ func test_ui_locking_during_crisis():
 	DynastyManager._calculate_winter_needs()
 	
 	# 2. Load UI
-	var ui = autoqfree(load("res://ui/WinterCourt_UI.tscn").instantiate())
+	var ui = autoqfree(load("res://ui/seasonal/SeasonalCouncilUI.tscn").instantiate())
 	add_child(ui)
 	
 	# --- FIX: Use new wait method ---
