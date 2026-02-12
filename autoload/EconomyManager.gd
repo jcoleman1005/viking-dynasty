@@ -302,6 +302,10 @@ func get_projected_income() -> Dictionary[String, int]:
 			var t_out = t_count * b_data.output_per_thrall
 			var production = int((p_out + t_out) * stewardship_bonus)
 			
+			# Apply Harvest Yield Modifier (Task 1.4 Logic)
+			var harvest_mod = DynastyManager.active_year_modifiers.get("mod_harvest_yield", 0.0)
+			production = int(production * (1.0 + harvest_mod))
+			
 			projection[type] += production
 
 	if jarl:
@@ -626,10 +630,11 @@ func _calculate_demographics(settlement: SettlementData, payout_report: Dictiona
 			growth_rate += FERTILITY_BONUS
 			
 	# Apply final growth to the survivors
-	var net_change = int(pop * growth_rate)
+	var final_growth_rate = growth_rate + DynastyManager.active_year_modifiers.get("mod_pop_growth", 0.0)
+	var net_change = int(pop * final_growth_rate)
 	
 	# Ensure at least 1 person grows if positive rate, unless capped
-	if growth_rate > 0 and net_change == 0 and pop > 0: net_change = 1
+	if final_growth_rate > 0 and net_change == 0 and pop > 0: net_change = 1
 	
 	settlement.population_peasants = max(0, pop + net_change)
 	
@@ -945,7 +950,7 @@ func _calculate_raid_xp(outcome: String, grade: String) -> int:
 	elif outcome == "retreat": 
 		xp = 20
 		
-	var xp_bonus = DynastyManager.active_year_stats.get("mod_raid_xp", 0.0)
+	var xp_bonus = DynastyManager.active_year_modifiers.get("mod_raid_xp", 0.0)
 	xp = int(xp * (1.0 + xp_bonus))
 		
 	return xp

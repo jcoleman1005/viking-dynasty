@@ -42,8 +42,11 @@ enum SeasonType { SPRING, WINTER }
 ## Percentage bonus to Raid XP gain (e.g., 0.20 = +20%)
 @export_range(-1.0, 5.0, 0.05) var mod_raid_xp: float = 0.0
 
-## Flat increase to birth probability (e.g., 0.05 = +5% chance)
-@export_range(-1.0, 1.0, 0.01) var mod_birth_chance: float = 0.0
+## Multiplier for settlement population growth (e.g., 0.05 = +5% faster growth)
+@export_range(-1.0, 1.0, 0.01) var mod_pop_growth: float = 0.0
+
+## Flat increase to the Jarl's heir birth probability (e.g., 0.10 = +10% chance)
+@export_range(-1.0, 1.0, 0.01) var mod_heir_birth_chance: float = 0.0
 
 ## Multiplier for harvest yield next season (e.g. 0.10 = +10%)
 @export_range(-1.0, 5.0, 0.05) var mod_harvest_yield: float = 0.0

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="SeasonalCardResource" load_steps=2 format=3 uid="uid://du2gsa2xinlrm"]
+
+[ext_resource type="Script" uid="uid://cni5gdnpbb1v2" path="res://data/resources/SeasonalCardResource.gd" id="1_p1pbu"]
+
+[resource]
+script = ExtResource("1_p1pbu")
+display_name = "Early Spring Raid"
+description = "\"The ice has barely broken, but the coastal villages are soft. Strike now before they can prepare their defenses.\""
+condensed_effects = "↑ Raid XP: +25% | ↑ Unit Damage: +10% | ↓ Harvest Yield: -20%"
+mod_unit_damage = 0.10000000000000009
+mod_raid_xp = 0.25
+mod_harvest_yield = -0.19999999999999996
+metadata/_custom_type_script = "uid://cni5gdnpbb1v2"

@@ -8,10 +8,11 @@ var minimum_inherited_legitimacy: int = 0
 var loaded_legacy_upgrades: Array[LegacyUpgradeData] = []
 
 var active_year_modifiers: Dictionary[String, float] = {
-	"damage_mult": 0.0,
-	"xp_mult": 0.0,
-	"birth_chance": 0.0,
-	"harvest_mult": 0.0
+	"mod_unit_damage": 0.0,
+	"mod_raid_xp": 0.0,
+	"mod_pop_growth": 0.0,
+	"mod_heir_birth_chance": 0.0,
+	"mod_harvest_yield": 0.0
 }
 var current_year: int = 867 
 # --- SEASON STATE ---
@@ -143,8 +144,10 @@ func aggregate_card_effects(card: SeasonalCardResource) -> void:
 		active_year_modifiers["mod_unit_damage"] = active_year_modifiers.get("mod_unit_damage", 0.0) + card.mod_unit_damage
 	if "mod_raid_xp" in card:
 		active_year_modifiers["mod_raid_xp"] = active_year_modifiers.get("mod_raid_xp", 0.0) + card.mod_raid_xp
-	if "mod_birth_chance" in card:
-		active_year_modifiers["mod_birth_chance"] = active_year_modifiers.get("mod_birth_chance", 0.0) + card.mod_birth_chance
+	if "mod_pop_growth" in card:
+		active_year_modifiers["mod_pop_growth"] = active_year_modifiers.get("mod_pop_growth", 0.0) + card.mod_pop_growth
+	if "mod_heir_birth_chance" in card:
+		active_year_modifiers["mod_heir_birth_chance"] = active_year_modifiers.get("mod_heir_birth_chance", 0.0) + card.mod_heir_birth_chance
 	if "mod_harvest_yield" in card:
 		active_year_modifiers["mod_harvest_yield"] = active_year_modifiers.get("mod_harvest_yield", 0.0) + card.mod_harvest_yield
 		
@@ -162,7 +165,8 @@ func reset_year_stats() -> void:
 	active_year_modifiers.clear()
 	active_year_modifiers["mod_unit_damage"] = 0.0
 	active_year_modifiers["mod_raid_xp"] = 0.0
-	active_year_modifiers["mod_birth_chance"] = 0.0
+	active_year_modifiers["mod_pop_growth"] = 0.0
+	active_year_modifiers["mod_heir_birth_chance"] = 0.0
 	active_year_modifiers["mod_harvest_yield"] = 0.0
 	
 	Loggie.msg("DynastyManager: Year stats reset for new cycle.").domain(LogDomains.DYNASTY).info()
@@ -416,6 +420,9 @@ func _resolve_expedition(heir: JarlHeirData) -> void:
 func _try_birth_event() -> void:
 	if current_jarl.heirs.size() >= 6: return
 	var base_chance = 0.30
+	
+	# Apply card-based birth modifiers (Heirs Only)
+	base_chance += active_year_modifiers.get("mod_heir_birth_chance", 0.0)
 	
 	if active_year_modifiers.has("BLOT_FREYR"):
 		base_chance += 0.50 

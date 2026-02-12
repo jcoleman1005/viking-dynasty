@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="SeasonalCardResource" load_steps=2 format=3 uid="uid://b3fo7mwxyrekp"]
+
+[ext_resource type="Script" uid="uid://cni5gdnpbb1v2" path="res://data/resources/SeasonalCardResource.gd" id="1_bmf3x"]
+
+[resource]
+script = ExtResource("1_bmf3x")
+description = "\"Foreign traders arrive with the melting snow. Trade your surplus grain for silver, even if the nurseries stay empty for a while.\""
+condensed_effects = "↑ Gold: +100 | ↓ Birth Chance: -10% | ↓ Food: -20"
+cost_ap = 0
+cost_food = 20
+grant_gold = 100
+mod_birth_chance = -0.09999999999999998
+metadata/_custom_type_script = "uid://cni5gdnpbb1v2"
