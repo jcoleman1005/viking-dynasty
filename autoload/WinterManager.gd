@@ -325,3 +325,66 @@ func _get_empty_report() -> Dictionary:
 		"food_demand": 0,
 		"wood_demand": 0
 	}
+
+
+# --- UI HOOKS & LIVE DATA API ---
+
+func get_live_crisis_report() -> Dictionary:
+	"""
+	Recalculates winter deficits on-demand for live UI updates.
+	Compares current treasury vs the forecast from EconomyManager.
+	Updates the manager's internal `winter_crisis_active` state.
+	"""
+	var settlement = SettlementManager.current_settlement
+	if not settlement:
+		return {"food_deficit": 0, "wood_deficit": 0, "is_crisis": false}
+
+	# Get the authoritative demand forecast from EconomyManager
+	var forecast = EconomyManager.get_winter_forecast()
+	var food_demand = forecast.get(GameResources.FOOD, 0)
+	var wood_demand = forecast.get(GameResources.WOOD, 0)
+	
+	# Get current stockpile
+	var food_stock = settlement.treasury.get(GameResources.FOOD, 0)
+	var wood_stock = settlement.treasury.get(GameResources.WOOD, 0)
+	
+	# Calculate deficits
+	var food_deficit = max(0, food_demand - food_stock)
+	var wood_deficit = max(0, wood_demand - wood_stock)
+	
+	# Update internal state
+	winter_crisis_active = (food_deficit > 0 or wood_deficit > 0)
+	
+	return {
+		"food_deficit": food_deficit,
+		"wood_deficit": wood_deficit,
+		"is_crisis": winter_crisis_active
+	}
+
+func get_sickness_omen(sick_pop: int, total_pop: int) -> Dictionary:
+	"""
+	Returns thematic text and color based on the percentage of sick population.
+	Used for flavor text in the UI.
+	"""
+	if total_pop <= 0 or sick_pop <= 0:
+		return {"text": "", "color": Color.WHITE}
+
+	var ratio = float(sick_pop) / float(total_pop)
+	
+	if ratio >= 0.5:
+		return {
+			"text": "The long dark has taken root...",
+			"color": Color.DARK_RED
+		}
+	elif ratio >= 0.2:
+		return {
+			"text": "The breath of the frost is on their necks.",
+			"color": Color.ORANGE_RED
+		}
+	elif ratio > 0:
+		return {
+			"text": "A cough echoes in the hall.",
+			"color": Color.PALE_VIOLET_RED
+		}
+		
+	return {"text": "", "color": Color.WHITE}

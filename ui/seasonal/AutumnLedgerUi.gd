@@ -142,53 +142,72 @@ func _reveal_verdict() -> void:
 	is_animation_finished = true
 	_hide_sign_button()
 	
-	# --- Fetch Fuzzy Display Data (Task 4.1) ---
+	# --- Get Authoritative Verdict (Task 2.2 Refactor) ---
+	# This single call now drives all verdict-related UI.
+	var current_stockpile = SettlementManager.current_settlement.treasury.duplicate()
+	# IMPORTANT: We must account for the harvest when checking the verdict!
+	current_stockpile[GameResources.FOOD] = current_stockpile.get(GameResources.FOOD, 0) + current_report.harvest_yield
+	var survival_verdict = EconomyManager.get_survival_verdict(current_stockpile)
+
+	# --- Fetch Fuzzy Display Data for text labels ---
 	var forecast_ranges = EconomyManager.get_forecast_display_data()
 	var food_range_txt = forecast_ranges.get(GameResources.FOOD, {}).get("text", "???")
 	var wood_range_txt = forecast_ranges.get(GameResources.WOOD, {}).get("text", "???")
 	
-	# --- Food Status ---
-	var food_held = int(current_report.treasury_snapshot.get(GameResources.FOOD, 0))
-	var total_food_available = food_held + current_report.harvest_yield
-	var is_food_safe = total_food_available >= current_report.winter_demand
+	var food_verdict_text: String
+	var food_color: Color
+	var wood_verdict_text: String
+	var wood_color: Color
+	var outlook_text = "WINTER OUTLOOK: "
+	var outlook_color: Color
+
+	match survival_verdict:
+		EconomyManager.SurvivalVerdict.SECURE:
+			food_verdict_text = "[ SURPLUS ]"
+			food_color = COLOR_OK
+			wood_verdict_text = "[ SURPLUS ]"
+			wood_color = COLOR_OK
+			outlook_text += "SECURE"
+			outlook_color = COLOR_OK
+		EconomyManager.SurvivalVerdict.UNCERTAIN:
+			food_verdict_text = "[ SHORTAGE ]"
+			food_color = COLOR_WARN
+			wood_verdict_text = "[ SHORTAGE ]"
+			wood_color = COLOR_WARN
+			outlook_text += "UNCERTAIN"
+			outlook_color = COLOR_WARN
+		EconomyManager.SurvivalVerdict.CRITICAL:
+			food_verdict_text = "[ FAMINE RISK ]"
+			food_color = COLOR_FAIL
+			wood_verdict_text = "[ CRITICAL DEFICIT ]"
+			wood_color = COLOR_FAIL
+			outlook_text += "CRITICAL"
+			outlook_color = COLOR_FAIL
+			
+	# --- Update UI Elements from Single Source of Truth ---
+	food_status_label.text = "%s\n(Est. %s)" % [food_verdict_text, food_range_txt]
+	food_status_label.modulate = food_color
 	
-	# Update Text with Range
-	var food_verdict = "[ SECURE ]" if is_food_safe else "[ STARVATION RISK ]"
-	food_status_label.text = "%s\n(Est. %s)" % [food_verdict, food_range_txt]
+	wood_status_label.text = "%s\n(Est. %s)" % [wood_verdict_text, wood_range_txt]
+	wood_status_label.modulate = wood_color
 	
-	food_status_label.modulate = COLOR_OK if is_food_safe else COLOR_FAIL
-	
-	# --- Wood Status ---
-	var wood_held = int(current_report.treasury_snapshot.get(GameResources.WOOD, 0))
-	
-	# Exact math for the verdict color (Task 1.5 logic)
-	var required_heating = EconomyManager.get_total_heating_demand()
-	var is_wood_ok = wood_held >= required_heating
-	
-	# Update Text with Range
-	var wood_verdict = "[ STOCKPILED ]" if is_wood_ok else "[ LOW ]"
-	wood_status_label.text = "%s\n(Est. %s)" % [wood_verdict, wood_range_txt]
-	
-	wood_status_label.modulate = COLOR_OK if is_wood_ok else COLOR_WARN
-	
-	# --- Animations ---
-	var fade_tween = create_tween().set_parallel(true)
-	fade_tween.tween_property(food_status_label, "modulate:a", 1.0, 0.5)
-	fade_tween.tween_property(wood_status_label, "modulate:a", 1.0, 0.5)
-	
-	# --- Winter Outlook ---
-	var outlook_text = "WINTER OUTLOOK: " + ("SECURE" if is_food_safe else "DANGEROUS")
+	# Append severity context to the main outlook
 	if WinterManager.upcoming_severity == WinterManager.WinterSeverity.HARSH:
 		outlook_text += " (HARSH)"
 	elif WinterManager.upcoming_severity == WinterManager.WinterSeverity.MILD:
 		outlook_text += " (MILD)"
 		
 	outlook_label.text = outlook_text
-	outlook_label.modulate = COLOR_OK if is_food_safe else COLOR_FAIL
+	outlook_label.modulate = outlook_color
+	
+	# --- Animations ---
+	var fade_tween = create_tween().set_parallel(true)
+	fade_tween.tween_property(food_status_label, "modulate:a", 1.0, 0.5)
+	fade_tween.tween_property(wood_status_label, "modulate:a", 1.0, 0.5)
 	fade_tween.tween_property(outlook_label, "modulate:a", 1.0, 0.5)
 	
 	EventBus.autumn_resolved.emit()
-	Loggie.msg("Autumn Ledger: Verdict revealed with fuzzy ranges.").domain(LogDomains.UI).info()
+	Loggie.msg("Autumn Ledger: Verdict revealed from single source.").domain(LogDomains.UI).info()
 
 func _on_sign_pressed() -> void:
 	if not is_animation_finished:

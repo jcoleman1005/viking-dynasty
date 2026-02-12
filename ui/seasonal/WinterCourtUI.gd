@@ -44,6 +44,10 @@ func _ready() -> void:
 		EventBus.hall_action_updated.connect(_on_ap_updated)
 		EventBus.treasury_updated.connect(_on_treasury_updated)
 		
+		# Task 3.2.2: Connect signals to the new dashboard updater
+		EventBus.hall_action_updated.connect(_update_dashboard)
+		EventBus.treasury_updated.connect(_update_dashboard)
+		
 		if EventBus.has_signal("season_changed"):
 			EventBus.season_changed.connect(_on_season_changed)
 		elif EventBus.has_signal("winter_started"): 
@@ -108,13 +112,13 @@ func _refresh_resource_totem() -> void:
 
 	# 1. Sickness Row (Only if present)
 	if settlement.sick_population > 0:
-		_add_totem_entry("SICK POPULATION", str(settlement.sick_population), Color.MAGENTA)
+		_add_totem_entry("THE SICK", str(settlement.sick_population), Color.MAGENTA)
 
 	# 2. Heating Demand (Always show in Winter)
 	# This uses the Phase 1 Cache + Phase 2 Severity Multiplier
 	var heating_demand = EconomyManager.get_winter_wood_demand()
 	if heating_demand > 0:
-		_add_totem_entry("EST. BURN", "-%d Wood" % heating_demand, Color.ORANGE)
+		_add_totem_entry("WINTER UPKEEP", "-%d Wood" % heating_demand, Color.ORANGE)
 
 	# --- Existing Deficit Logic (Preserved) ---
 	
@@ -125,10 +129,10 @@ func _refresh_resource_totem() -> void:
 	var food_deficit = max(0, forecast[GameResources.FOOD] - settlement.treasury.get(GameResources.FOOD, 0))
 
 	if food_deficit > 0:
-		_add_totem_entry("FOOD RISK", "-%d" % food_deficit, Color.RED)
+		_add_totem_entry("FOOD SHORTAGE", "-%d" % food_deficit, Color.RED)
 
 	if wood_deficit > 0:
-		_add_totem_entry("COLD RISK", "-%d" % wood_deficit, Color.ORANGE) # or Color.CYAN for freezing
+		_add_totem_entry("WOOD SHORTAGE", "-%d" % wood_deficit, Color.ORANGE) # or Color.CYAN for freezing
 
 	Loggie.msg("Winter Court: Resource Totem Refreshed").domain(LogDomains.UI).debug()
 
@@ -245,3 +249,56 @@ func _flash_spine_warning(message: String) -> void:
 				action_points_label.text = original_text
 				action_points_label.remove_theme_color_override("font_color")
 		)
+
+
+# --- Ghost Preview Helpers (Task 4.1) ---
+func _pulse_resource_totem_green() -> void:
+	if not resource_totem: return
+	
+	var pulse_tween = create_tween()
+	pulse_tween.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	
+	# Pulse in green
+	pulse_tween.tween_property(resource_totem, "modulate", Color.LIME_GREEN, 0.3)
+	# Pulse out to white (or original color)
+	pulse_tween.tween_property(resource_totem, "modulate", Color.WHITE, 0.5)
+	# Repeat a few times
+	pulse_tween.set_loops(3)
+
+
+# --- Dashboard Updater (Task 3.2.1) ---
+# The _payload argument is unused, but required to match the signature of
+# signals like 'treasury_updated' which emit a value.
+func _update_dashboard(_payload = null) -> void:
+	# Checkpoint for Task 3.2.1
+	Loggie.msg("UI: Dashboard Refreshed").domain(LogDomains.UI).info()
+	
+	var settlement = SettlementManager.current_settlement
+	if not settlement:
+		Loggie.msg("UI: Cannot update dashboard, no settlement loaded.").domain(LogDomains.UI).warn()
+		return
+
+	# --- Update Crisis Banner (Severity Label) ---
+	var crisis_report = WinterManager.get_live_crisis_report()
+	
+	if crisis_report.is_crisis:
+		severity_label.text = "CRISIS! Food: %d, Wood: %d" % [crisis_report.food_deficit, crisis_report.wood_deficit]
+		if "modulate" in severity_label: severity_label.modulate = Color.RED
+	else:
+		# Use the forecast details for a non-crisis label
+		var forecast = WinterManager.get_forecast_details()
+		severity_label.text = "Winter Outlook: %s" % forecast.label
+		if "modulate" in severity_label: severity_label.modulate = Color.WHITE
+
+	# --- Update Sickness Omen (Description Label) ---
+	# Note: This will be overwritten by card hover. It serves as a default state.
+	var sick_population = settlement.sick_population
+	var total_population = settlement.population_peasants
+	
+	var omen = WinterManager.get_sickness_omen(sick_population, total_population)
+	if not omen.text.is_empty():
+		description_label.text = "[b]OMEN:[/b] %s" % omen.text
+		if "modulate" in description_label: description_label.modulate = omen.color
+	else:
+		description_label.text = "Select a card to view details..."
+		if "modulate" in description_label: description_label.modulate = Color.WHITE

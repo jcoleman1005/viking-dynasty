@@ -105,6 +105,64 @@ func get_total_heating_demand() -> int:
 		
 	return _cached_total_heating
 
+
+# --- Phase 1.2: HEATING & SURVIVAL APIs ---
+
+func get_heating_demand_breakdown() -> Dictionary:
+	"""
+	Provides a detailed breakdown of the current heating demand.
+	Used by the UI to explain the total wood cost.
+	"""
+	var building_heat = get_total_heating_demand() # This uses the existing cache
+	var base_demand = WINTER_WOOD_DEMAND
+	var total = base_demand + building_heat
+	
+	var debug_string = "Base: %d + Buildings: %d = Total: %d" % [base_demand, building_heat, total]
+	
+	return {
+		"base": base_demand,
+		"buildings": building_heat,
+		"total": total,
+		"debug_string": debug_string
+	}
+
+enum SurvivalVerdict { SECURE, UNCERTAIN, CRITICAL }
+
+func get_survival_verdict(stockpile_snapshot: Dictionary) -> int:
+	"""
+	Compares a snapshot of the stockpile against the winter forecast for ALL resources.
+	Returns the WORST case verdict as a SurvivalVerdict enum value (0, 1, or 2).
+	"""
+	if not stockpile_snapshot:
+		return SurvivalVerdict.CRITICAL
+
+	var forecast = get_winter_forecast()
+	
+	# --- Verdict for Food ---
+	var food_stock = stockpile_snapshot.get(GameResources.FOOD, 0)
+	var food_demand = forecast.get(GameResources.FOOD, 0)
+	var food_verdict = SurvivalVerdict.SECURE
+	if food_demand > 0:
+		var food_ratio = float(food_stock) / float(food_demand)
+		if food_ratio < 1.0:
+			food_verdict = SurvivalVerdict.CRITICAL
+		elif food_ratio < 1.25:
+			food_verdict = SurvivalVerdict.UNCERTAIN
+	
+	# --- Verdict for Wood ---
+	var wood_stock = stockpile_snapshot.get(GameResources.WOOD, 0)
+	var wood_demand = forecast.get(GameResources.WOOD, 0)
+	var wood_verdict = SurvivalVerdict.SECURE
+	if wood_demand > 0:
+		var wood_ratio = float(wood_stock) / float(wood_demand)
+		if wood_ratio < 1.0:
+			wood_verdict = SurvivalVerdict.CRITICAL
+		elif wood_ratio < 1.25:
+			wood_verdict = SurvivalVerdict.UNCERTAIN
+
+	# The final verdict is the most severe (highest enum value) of the two.
+	return max(food_verdict, wood_verdict)
+
 # --- Signal Handlers ---
 
 func _on_building_completed(entry: Dictionary) -> void:
@@ -131,6 +189,10 @@ func _on_building_destroyed(building: Node) -> void:
 	_recalculate_total_heating()
 
 func _on_settlement_loaded(data: SettlementData) -> void:
+	# TODO: Investigate why this function is called multiple times on load.
+	# Observed behavior indicates settlement state fluctuates, leading to redundant calculations.
+	# See NBLM audit for details.
+
 	# Logic: Force full recalculation on load
 	_recalculate_total_heating()
 
@@ -301,7 +363,10 @@ func get_winter_wood_demand() -> int:
 	Calculates total wood required based on Cached Buildings + Winter Severity.
 	This is the Source of Truth for both UI Forecasts and actual Consumption.
 	"""
-	var base_heating = get_total_heating_demand() # From Task 1.2 Cache
+	var building_heating = get_total_heating_demand() # From Task 1.2 Cache
+	var base_fireplace_demand = WINTER_WOOD_DEMAND # Base cost for settlement
+	var total_heating_demand = building_heating + base_fireplace_demand
+	
 	var severity_mult: float = 1.0
 	
 	# access WinterManager state safely
@@ -322,7 +387,7 @@ func get_winter_wood_demand() -> int:
 		_:
 			severity_mult = 1.0
 			
-	return int(base_heating * severity_mult)
+	return int(total_heating_demand * severity_mult)
 
 """## Authoritative math for winter demand (commented out)
 func calculate_winter_consumption_costs(severity_mult: float) -> Dictionary:

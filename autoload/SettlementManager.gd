@@ -93,7 +93,7 @@ func get_nearest_valid_spawn_point(target_coords: Vector2i) -> Vector2i:
 	if is_tile_valid_for_placement(target_coords):
 		return target_coords
 		
-	Loggie.msg("Target invalid %s, searching for nearest land" % target_coords).domain(LogDomains.GAMEPLAY).debug()
+	Loggie.msg("Target invalid %s, searching for nearest land" % target_coords).domain(LogDomains.GAMEPLAY).warn()
 	
 	# BFS Flood Fill to find nearest valid tile
 	var visited: Dictionary[Vector2i, bool] = {} # Typed dictionary for 4.4
@@ -413,6 +413,9 @@ func load_settlement(data: SettlementData) -> void:
 	
 	if active_building_container: 
 		reconstruct_buildings_from_data()
+
+	# Checkpoint for Task 1.1.1
+	Loggie.msg('Settlement loaded. Buildings found: %d' % get_all_buildings_data().size()).domain(LogDomains.SETTLEMENT).info()
 	
 	EventBus.settlement_loaded.emit(current_settlement)
 	
@@ -776,6 +779,31 @@ func get_building_index(building_instance: Node2D) -> int:
 		var pos = entry["grid_position"]
 		if Vector2i(pos.x, pos.y) == grid_pos: return i
 	return -1
+
+
+# --- DATA & STATE ACCESSORS (NEW from NBLM Audit) ---
+
+## NEW: Safe iterator for all placed buildings' data.
+func get_all_buildings_data() -> Array[BuildingData]:
+	var buildings_data_list: Array[BuildingData] = []
+	if not current_settlement:
+		return buildings_data_list
+
+	# Iterate both placed and pending buildings
+	var all_building_entries = current_settlement.placed_buildings + current_settlement.pending_construction_buildings
+
+	for building_entry in all_building_entries:
+		var path = building_entry.get("resource_path")
+		if path and ResourceLoader.exists(path):
+			var building_res = load(path)
+			if building_res is BuildingData:
+				buildings_data_list.append(building_res)
+			else:
+				Loggie.msg("Loaded resource is not BuildingData. Path: %s" % path).domain(LogDomains.SETTLEMENT).warn()
+		else:
+			Loggie.msg("Invalid building resource path in settlement data. Path: %s" % path).domain(LogDomains.SETTLEMENT).error()
+			
+	return buildings_data_list
 
 func queue_seasonal_recruit(unit_data: UnitData, count: int) -> void:
 	for i in range(count): pending_seasonal_recruits.append(unit_data)

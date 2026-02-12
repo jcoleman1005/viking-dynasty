@@ -1,6 +1,9 @@
-[gd_scene load_steps=5 format=3 uid="uid://dqxvcgqjx2s8o"]
+[gd_scene load_steps=8 format=3 uid="uid://dqxvcgqjx2s8o"]
 
 [ext_resource type="Script" uid="uid://gvajp31vuy31" path="res://ui/seasonal/WinterCourtUI.gd" id="1_21ph0"]
+[ext_resource type="Script" uid="uid://cni5gdnpbb1v2" path="res://data/resources/SeasonalCardResource.gd" id="2_agvwj"]
+[ext_resource type="Resource" uid="uid://dcppndmvmf63e" path="res://data/resources/Winter Cards/Card_Winter_Recruit.tres" id="3_q5t2d"]
+[ext_resource type="Resource" uid="uid://dg10eqygin8xg" path="res://data/resources/Winter Cards/Card_Winter_Feast.tres" id="4_4y4fd"]
 [ext_resource type="PackedScene" uid="uid://d0px2w8n5r1lv" path="res://ui/seasonal/SeasonalCardUi.tscn" id="5_f6bl8"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_Spine"]
@@ -21,6 +24,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_21ph0")
+available_court_cards = Array[ExtResource("2_agvwj")]([ExtResource("3_q5t2d"), ExtResource("4_4y4fd"), ExtResource("3_q5t2d")])
 card_prefab = ExtResource("5_f6bl8")
 
 [node name="Vignette" type="ColorRect" parent="."]
