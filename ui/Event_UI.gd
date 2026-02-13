@@ -13,7 +13,7 @@ signal choice_made(event: EventData, choice: EventChoice)
 
 # Node References
 @onready var title_label: Label = $PanelContainer/Margin/VBox/TitleLabel
-@onready var description_label: Label = $PanelContainer/Margin/VBox/HBox/DescriptionLabel
+@onready var description_label: RichTextLabel = $PanelContainer/Margin/VBox/HBox/ScrollContainer/DescriptionLabel
 @onready var portrait: TextureRect = %Portrait
 @onready var choice_buttons_container: VBoxContainer = $PanelContainer/Margin/VBox/ChoiceButtonsContainer
 

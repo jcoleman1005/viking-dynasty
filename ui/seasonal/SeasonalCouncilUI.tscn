@@ -30,6 +30,7 @@ script = ExtResource("1_1")
 spring_council_cards = Array[ExtResource("2_agvwj")]([ExtResource("3_nc3k2"), ExtResource("4_bp12f"), ExtResource("5_bp12f")])
 winter_court_cards = Array[ExtResource("2_agvwj")]([ExtResource("3_q5t2d"), ExtResource("4_4y4fd"), ExtResource("4_4y4fd"), ExtResource("3_q5t2d")])
 card_prefab = ExtResource("5_f6bl8")
+spring_spine_color = Color(0.19985494, 0.40940982, 0.24042094, 0.98039216)
 
 [node name="Vignette" type="ColorRect" parent="."]
 layout_mode = 1

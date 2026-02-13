@@ -89,11 +89,26 @@ func _check_conditions(event: EventData, jarl: JarlData) -> bool:
 	return true
 
 func _trigger_event(event_data: EventData) -> void:
-	# Implementation depends on your existing EventManager, 
-	# assuming it emits a signal or opens a UI.
-	# For this refactor, we just ensure this file exists and works.
-	Loggie.msg("Event Triggered: %s" % event_data.event_id).domain("EVENT").info()
-	# Example: EventBus.event_triggered.emit(event_data)
+	if not event_ui:
+		Loggie.msg("EventManager: EventUI not initialized.").domain("EVENT").error()
+		return
+		
+	Loggie.msg("Triggering Event: %s" % event_data.event_id).domain("EVENT").info()
+	
+	# Pause the game for the modal event
+	get_tree().paused = true
+	event_ui.display_event(event_data)
+	
+	if event_data.is_unique:
+		fired_unique_events.append(event_data.event_id)
+
+func trigger_event_by_id(id: String) -> void:
+	for event in available_events:
+		if event.event_id == id:
+			_trigger_event(event)
+			return
+	
+	Loggie.msg("EventManager: Event ID '%s' not found." % id).domain("EVENT").warn()
 
 ## Returns a list of disputes available for the current winter.
 func get_available_disputes() -> Array[DisputeEventData]:
@@ -113,16 +128,44 @@ func draw_dispute_card() -> DisputeEventData:
 	return card
 
 func _on_choice_made(event: EventData, choice: EventChoice) -> void:
+	if not event:
+		Loggie.msg("EventManager: choice_made signal received with null event data.").domain("EVENT").warn()
+		# Clean up UI state
+		if not event_ui.visible:
+			get_tree().paused = false
+			EventBus.event_system_finished.emit()
+		return
+
 	if choice:
 		Loggie.msg("Player chose '%s' (%s) for event '%s'" % [choice.choice_text, choice.effect_key, event.event_id]).domain("EVENT").info()
 		_apply_event_consequences(event, choice)
 	else:
 		Loggie.msg("Event '%s' closed with no choice." % event.event_id).domain("EVENT").info()
 		
-	get_tree().paused = false
-	EventBus.event_system_finished.emit()
+	# ONLY unpause if the UI is actually hidden (i.e., no follow-up event was triggered)
+	if not event_ui.visible:
+		get_tree().paused = false
+		EventBus.event_system_finished.emit()
 
 func _apply_event_consequences(event: EventData, choice: EventChoice) -> void:
+	var result_data: Dictionary = {}
+	
+	# --- Winter Crisis Logic ---
+	if choice.effect_key == "winter_crisis_buy_gold":
+		result_data = WinterManager.resolve_crisis_with_gold()
+	
+	elif choice.effect_key == "winter_crisis_starve_peasants":
+		result_data = WinterManager.resolve_crisis_with_sacrifice("starve_peasants")
+		
+	elif choice.effect_key == "winter_crisis_family_rations":
+		result_data = WinterManager.resolve_crisis_with_family_sacrifice()
+
+	# If we have a crisis result, show the follow-up narrative window
+	if not result_data.is_empty():
+		show_crisis_result(result_data)
+		return
+
+	# --- Legacy Event Logic ---
 	if event.event_id == "ambitious_heir_1":
 		if choice.effect_key == "accept":
 			if not DynastyManager.spend_renown(100):
@@ -133,3 +176,26 @@ func _apply_event_consequences(event: EventData, choice: EventChoice) -> void:
 				DynastyManager.add_trait_to_heir(heir, TRAIT_RIVAL)
 			else:
 				Loggie.msg("Could not apply 'Rival' trait.").domain("EVENT").warn()
+
+func show_crisis_result(data: Dictionary) -> void:
+	if not data.get("success", false): return
+	
+	# Create a dynamic "Result" event
+	var result_event = EventData.new()
+	result_event.title = "THE CONSEQUENCES"
+	result_event.event_id = "winter_crisis_result"
+	
+	var desc = data.get("narrative", "")
+	desc += "\n\n[b]Consequences:[/b]"
+	for consequence in data.get("consequences", []):
+		desc += "\n- %s" % consequence
+		
+	result_event.description = desc
+	
+	# Add a simple "It is done" button
+	var close_choice = EventChoice.new()
+	close_choice.choice_text = "It is done."
+	result_event.choices.append(close_choice)
+	
+	# Trigger the UI again with this new data
+	event_ui.display_event(result_event)

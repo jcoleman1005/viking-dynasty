@@ -21,9 +21,40 @@ class_name SeasonalCouncilUI
 ## The UI Prefab for a single card
 @export var card_prefab: PackedScene
 
+@export_group("Spring Palette")
+## Main color for Spring UI elements (Labels, Icons)
+@export var spring_main_color: Color = Color("a8e6cf")
+## Color for the background vignette overlay in Spring
+@export var spring_vignette_color: Color = Color(0, 0, 0, 0.86)
+## Background color for the left column in Spring
+@export var spring_spine_color: Color = Color(0.08, 0.15, 0.1, 0.98)
+## Background color for the top title panel in Spring
+@export var spring_title_color: Color = Color(0.12, 0.2, 0.15, 1.0)
+## Accent color for positive Spring states
+@export var spring_accent_color: Color = Color("55ff55")
+
+@export_group("Winter Palette")
+## Main color for Winter UI elements (Labels, Icons)
+@export var winter_main_color: Color = Color("dcedc1")
+## Color for the background vignette overlay in Winter
+@export var winter_vignette_color: Color = Color(0, 0, 0, 0.86)
+## Background color for the left column in Winter
+@export var winter_spine_color: Color = Color(0.08, 0.1, 0.15, 0.98)
+## Background color for the top title panel in Winter
+@export var winter_title_color: Color = Color(0.15, 0.17, 0.2, 1.0)
+## Color used for the Crisis banner when deficits exist
+@export var winter_crisis_color: Color = Color("ff5555")
+## Color used for the status banner when settlement is secure
+@export var winter_stable_color: Color = Color("55ff55")
+
 # ------------------------------------------------------------------------------
 # Node References (The Blueprint)
 # ------------------------------------------------------------------------------
+# BACKGROUND & PANELS
+@onready var vignette_rect: ColorRect = $Vignette
+@onready var left_spine_background: PanelContainer = $MainSplit/LeftSpineBackground
+@onready var title_panel: PanelContainer = $MainSplit/LeftSpineBackground/LeftSpine/TitlePanel
+
 # ZONE A: THE LEFT SPINE
 @onready var severity_label: Label = %SeverityLabel
 @onready var resource_totem: VBoxContainer = %ResourceTotem
@@ -41,11 +72,6 @@ class_name SeasonalCouncilUI
 var current_ap: int = 0
 var max_ap: int = 0
 var _current_season: String = "Winter"
-
-const COLOR_SPRING = Color("a8e6cf") # Soft Spring Green
-const COLOR_WINTER = Color("dcedc1") # Existing Winter Cream/White
-const COLOR_FAIL = Color("ff5555")
-const COLOR_OK = Color("55ff55")
 
 # ------------------------------------------------------------------------------
 # Lifecycle
@@ -115,19 +141,41 @@ func setup_seasonal_view() -> void:
 		description_label.get_parent().show()
 
 func _apply_seasonal_theme() -> void:
-	var theme_color = COLOR_WINTER
+	var main_color = winter_main_color
+	var vignette_color = winter_vignette_color
+	var spine_color = winter_spine_color
+	var title_color = winter_title_color
 	var show_severity = true
 	
 	if _current_season == "Spring":
-		theme_color = COLOR_SPRING
+		main_color = spring_main_color
+		vignette_color = spring_vignette_color
+		spine_color = spring_spine_color
+		title_color = spring_title_color
 		show_severity = false
 	
-	# Apply color and visibility to the main labels for a thematic shift
+	# 1. Apply Colors to Labels
 	if severity_label: 
-		severity_label.modulate = theme_color
+		severity_label.modulate = main_color
 		severity_label.visible = show_severity
+	if jarl_name_label: jarl_name_label.modulate = main_color
+	
+	# 2. Apply Background Colors
+	if vignette_rect:
+		vignette_rect.color = vignette_color
 		
-	if jarl_name_label: jarl_name_label.modulate = theme_color
+	# 3. Apply Panel Styles (Using duplication to preserve borders/shapes)
+	if left_spine_background:
+		var style = left_spine_background.get_theme_stylebox("panel").duplicate()
+		if style is StyleBoxFlat:
+			style.bg_color = spine_color
+			left_spine_background.add_theme_stylebox_override("panel", style)
+			
+	if title_panel:
+		var style = title_panel.get_theme_stylebox("panel").duplicate()
+		if style is StyleBoxFlat:
+			style.bg_color = title_color
+			title_panel.add_theme_stylebox_override("panel", style)
 
 # ------------------------------------------------------------------------------
 # ZONE A: THE LEFT SPINE (Context)
@@ -321,13 +369,13 @@ func _update_dashboard(_payload = null) -> void:
 		var report = WinterManager.get_live_crisis_report()
 		if report.is_crisis:
 			severity_label.text = "CRISIS! Food: %d, Wood: %d" % [report.food_deficit, report.wood_deficit]
-			severity_label.modulate = Color.RED
+			severity_label.modulate = winter_crisis_color
 		else:
 			severity_label.text = "All is well."
-			severity_label.modulate = COLOR_OK
+			severity_label.modulate = winter_stable_color
 	else:
 		severity_label.text = "A New Year Begins"
-		severity_label.modulate = COLOR_SPRING
+		severity_label.modulate = spring_main_color
 
 	# 2. Sickness Omen
 	if sickness_omen_label:

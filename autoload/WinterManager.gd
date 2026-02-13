@@ -36,18 +36,8 @@ const SICKNESS_MIN_PCT: float = 0.05
 const SICKNESS_MAX_PCT: float = 0.20
 
 func _ready() -> void:
-	if EventBus:
-		EventBus.season_changed.connect(_on_season_changed)
-	else:
-		Loggie.msg("WinterManager: EventBus not found!").domain(LogDomains.SYSTEM).error()
-
-func _on_season_changed(new_season: String, _context: Dictionary) -> void:
-	# Roll in Spring so Summer Council can see it
-	if new_season == "Spring":
-		roll_upcoming_severity()
-	
-	if new_season == "Winter":
-		start_winter_phase()
+	# REDUNDANT: Control moved to DynastyManager explicit orchestration
+	pass
 
 func start_winter_phase() -> void:
 	# Commit the forecast fate
@@ -172,6 +162,10 @@ func calculate_winter_demand(settlement: SettlementData) -> Dictionary:
 	}
 
 func _calculate_winter_needs() -> void:
+	# GUARD: Only calculate needs and trigger crisis if we are actually in Winter.
+	if DynastyManager.current_season != DynastyManager.Season.WINTER:
+		return
+
 	var settlement = SettlementManager.current_settlement
 	if not settlement: return
 	
@@ -205,6 +199,9 @@ func _calculate_winter_needs() -> void:
 	if food_deficit > 0 or wood_deficit > 0:
 		winter_crisis_active = true
 		Loggie.msg("Winter Crisis Active! Deficits: Food %d, Wood %d" % [food_deficit, wood_deficit]).domain(LogDomains.SYSTEM).warn()
+		
+		# Trigger modal crisis event
+		EventManager.trigger_event_by_id("winter_crisis")
 	else:
 		winter_crisis_active = false
 		
@@ -237,20 +234,28 @@ func _apply_environmental_decay() -> void:
 
 # --- CRISIS RESOLUTION ---
 
-func resolve_crisis_with_gold() -> bool:
+func resolve_crisis_with_gold() -> Dictionary:
 	# REBALANCE: Increased cost from 5x to 50x to force harder choices.
 	# A simple deficit should not be solvable by a single raid.
 	var cost_multiplier = 50 
+	var food_cost = winter_consumption_report["food_deficit"] * cost_multiplier
+	var wood_cost = winter_consumption_report["wood_deficit"] * cost_multiplier
+	var total_gold_cost = food_cost + wood_cost
 	
-	var total_gold_cost = (winter_consumption_report["food_deficit"] * cost_multiplier) + (winter_consumption_report["wood_deficit"] * cost_multiplier)
+	var result = {
+		"narrative": "The gold of the dynasty flows to foreign merchants. Ships arrive laden with grain and wood, and the fires in the hall burn bright once more.",
+		"consequences": ["Gold spent: %d" % total_gold_cost],
+		"success": false
+	}
 	
 	if EconomyManager.attempt_purchase({GameResources.GOLD: total_gold_cost}):
 		winter_crisis_active = false
 		_apply_winter_consumption()
 		Loggie.msg("Crisis resolved via Gold purchase (%dg)" % total_gold_cost).domain(LogDomains.ECONOMY).info()
-		return true
+		result["success"] = true
+		return result
 		
-	return false
+	return result
 
 func play_seasonal_card(card: SeasonalCardResource) -> bool:
 	var jarl = DynastyManager.get_current_jarl()
@@ -289,28 +294,71 @@ func play_seasonal_card(card: SeasonalCardResource) -> bool:
 		
 	return true
 
-func resolve_crisis_with_sacrifice(sacrifice_type: String) -> bool:
+func resolve_crisis_with_sacrifice(sacrifice_type: String) -> Dictionary:
 	if not DynastyManager.perform_hall_action(1): 
-		return false
+		return {"success": false, "narrative": "Insufficient Hall Actions", "consequences": []}
 		
 	var settlement = SettlementManager.current_settlement
+	var result = {"success": true, "narrative": "", "consequences": []}
+	
 	match sacrifice_type:
 		"starve_peasants":
 			var deaths = max(1, int(winter_consumption_report["food_deficit"] / 5))
 			settlement.population_peasants = max(0, settlement.population_peasants - deaths)
 			Loggie.msg("%d Peasants starved." % deaths).domain(LogDomains.SYSTEM).warn()
 			EconomyManager.clamp_demographics(settlement)
+			result["narrative"] = "You leave the villagers to fend for themselves. The strong survive, but many of the weak did not make it through the bitter nights. The hall is quiet, save for the weeping of those left behind."
+			result["consequences"].append("Peasants lost: %d" % deaths)
+			
 		"disband_warband":
 			if not settlement.warbands.is_empty(): 
-				settlement.warbands.pop_back()
+				var wb = settlement.warbands.pop_back()
 				Loggie.msg("Warband disbanded.").domain(LogDomains.SYSTEM).warn()
+				result["narrative"] = "To save on bread, you cast out your sworn men. They leave into the snow, their loyalty shattered, but the grain stays in the bellies of the tillers."
+				result["consequences"].append("Warband lost: %s" % wb.custom_name)
+				
 		"burn_ships":
 			settlement.fleet_readiness = 0.0
 			Loggie.msg("Ships burned for wood.").domain(LogDomains.SYSTEM).warn()
+			result["narrative"] = "The dragon-ships, pride of the fjord, are chopped for kindling. The village stays warm, but you are now a Jarl without a fleet."
+			result["consequences"].append("Fleet Readiness reduced to 0%")
 			
 	winter_crisis_active = false
 	_apply_winter_consumption()
-	return true
+	return result
+
+func resolve_crisis_with_family_sacrifice() -> Dictionary:
+	if not DynastyManager.perform_hall_action(1): 
+		return {"success": false, "narrative": "Insufficient Hall Actions", "consequences": []}
+		
+	var result = {
+		"success": true,
+		"narrative": "The Jarl's own table is bare. By sharing the hardship of the common folk, you have preserved the village, but at a heavy cost to your own bloodline's health and pride.",
+		"consequences": ["Renown lost: 200"]
+	}
+		
+	# 1. Cost: Renown
+	DynastyManager.spend_renown(200)
+	
+	# 2. Consequence: Family Risk
+	var sick_heirs = 0
+	var jarl = DynastyManager.get_current_jarl()
+	if jarl:
+		for heir in jarl.heirs:
+			if heir.status == JarlHeirData.HeirStatus.Available:
+				if randf() < 0.30: # 30% Risk
+					heir.status = JarlHeirData.HeirStatus.Maimed
+					sick_heirs += 1
+					Loggie.msg("%s has fallen ill due to starvation rations!" % heir.display_name).domain(LogDomains.SYSTEM).warn()
+	
+	if sick_heirs > 0:
+		result["consequences"].append("Heirs fallen ill: %d" % sick_heirs)
+	
+	Loggie.msg("Family sacrificed comfort and health to preserve the village.").domain(LogDomains.SYSTEM).info()
+	
+	winter_crisis_active = false
+	_apply_winter_consumption()
+	return result
 
 # --- HELPERS ---
 
