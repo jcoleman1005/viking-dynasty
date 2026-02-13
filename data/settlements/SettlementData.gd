@@ -22,6 +22,7 @@ class_name SettlementData
 @export var population_peasants: int = 10 # Free Peasants
 @export var population_thralls: int = 0 # Captive Workers
 @export var worker_assignments: Dictionary = {}
+@export var households: Array[HouseholdData] = [] # New: Clan Labor Refactor
 @export var sick_population: int = 0
 ## Current food rationing setting. Defaults to NORMAL (0) for backward compatibility.
 @export var rationing_policy: RationingPolicy = RationingPolicy.NORMAL

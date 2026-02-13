@@ -24,6 +24,7 @@ const BUILDING_PATHS = [
 
 @export_group("Seasonal Panels")
 @export var council_panel_scene: PackedScene # Unified scene for Spring & Winter
+@export var summer_panel_scene: PackedScene  # New: Clan Allocation Menu
 @export var autumn_panel_scene: PackedScene
 
 # ------------------------------------------------------------------------------
@@ -254,6 +255,9 @@ func _update_center_view(season_enum: int, context: Dictionary) -> void:
 		DynastyManager.Season.SPRING, DynastyManager.Season.WINTER:
 			scene_to_load = council_panel_scene
 			season_string_name = "Spring" if season_enum == DynastyManager.Season.SPRING else "Winter"
+		DynastyManager.Season.SUMMER:
+			scene_to_load = summer_panel_scene
+			season_string_name = "Summer"
 		DynastyManager.Season.AUTUMN: 
 			scene_to_load = autumn_panel_scene
 			season_string_name = "Autumn"

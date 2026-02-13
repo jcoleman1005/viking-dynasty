@@ -1,0 +1,48 @@
+[gd_scene load_steps=2 format=3 uid="uid://dfjr2sk1m5n2p"]
+
+[ext_resource type="Script" path="res://ui/settlement/HouseholdOathRow.gd" id="1_row"]
+
+[node name="HouseholdOathRow" type="HBoxContainer"]
+custom_minimum_size = Vector2(0, 40)
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 40.0
+grow_horizontal = 2
+theme_override_constants/separation = 20
+script = ExtResource("1_row")
+
+[node name="HouseholdNameLabel" type="Label" parent="."]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+text = "The Red-Shields"
+vertical_alignment = 1
+
+[node name="MemberCountLabel" type="Label" parent="."]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+text = "10 members"
+vertical_alignment = 1
+
+[node name="OathDropdown" type="OptionButton" parent="."]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+item_count = 5
+selected = 0
+popup/item_0/text = "Resting"
+popup/item_0/id = 0
+popup/item_1/text = "Harvest"
+popup/item_1/id = 1
+popup/item_2/text = "Timber"
+popup/item_2/id = 2
+popup/item_3/text = "Build"
+popup/item_3/id = 3
+popup/item_4/text = "Raid"
+popup/item_4/id = 4
+
+[node name="YieldPreviewLabel" type="Label" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Resting"
+horizontal_alignment = 2
+vertical_alignment = 1

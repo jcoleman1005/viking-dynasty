@@ -414,8 +414,8 @@ func load_settlement(data: SettlementData) -> void:
 	if active_building_container: 
 		reconstruct_buildings_from_data()
 
-	# Checkpoint for Task 1.1.1
-	Loggie.msg('Settlement loaded. Buildings found: %d' % get_all_buildings_data().size()).domain(LogDomains.SETTLEMENT).info()
+	# Task 1.2.2: Reconcile households after load
+	reconcile_households()
 	
 	EventBus.settlement_loaded.emit(current_settlement)
 	
@@ -865,7 +865,7 @@ func _get_closest_walkable_point_exclusive(origin: Vector2i, max_radius: int, ex
 func batch_update_labor(assignments: Dictionary) -> void:
 	if not current_settlement: return
 	
-	# 1. Handle Builders (Same as before)
+	# 1. Handle Builders (Strict BUILD oath only)
 	if assignments.has("construction"):
 		var builder_pool = assignments["construction"]
 		for entry in current_settlement.pending_construction_buildings:
@@ -876,7 +876,6 @@ func batch_update_labor(assignments: Dictionary) -> void:
 			builder_pool -= to_assign
 
 	# 2. Handle Specific Resource Workers (Split Logic)
-	# We iterate placed buildings ONCE for efficiency
 	var food_pool = assignments.get("food", 0)
 	var wood_pool = assignments.get("wood", 0)
 	
@@ -900,7 +899,70 @@ func batch_update_labor(assignments: Dictionary) -> void:
 			wood_pool -= to_assign
 
 	# 3. Save & Emit
-	# Update the assignments dictionary for persistence
 	current_settlement.worker_assignments = assignments
 	save_settlement()
 	EventBus.settlement_loaded.emit(current_settlement)
+
+
+# --- HOUSEHOLD RECONCILIATION (Task 1.2) ---
+
+## Auto-generates households for legacy saves and keeps totals in sync.
+func reconcile_households() -> void:
+	if not current_settlement:
+		return
+
+	var total_pop = current_settlement.population_peasants
+
+	# Generate households for legacy saves (if array is empty)
+	if current_settlement.households.is_empty() and total_pop > 0:
+		_generate_default_households(total_pop)
+		return
+
+	# Sync existing household totals to current population
+	var current_total = 0
+	for house in current_settlement.households:
+		current_total += house.member_count
+
+	if current_total == total_pop:
+		return
+
+	# Adjust for deaths or growth (proportionally)
+	var delta = total_pop - current_total
+	_distribute_population_delta(delta)
+
+	# Remove empty households (safety cleanup)
+	current_settlement.households = current_settlement.households.filter(
+		func(h): return h.member_count > 0
+	)
+
+func _generate_default_households(total_pop: int) -> void:
+	var household_size = 10
+	var count = max(1, total_pop / household_size)
+	var names = ["The Red-Shields", "The Ironbark Clan", "The Frost-Born", 
+				 "The Grey-Wolves", "The Stone-Hands"]
+
+	for i in range(count):
+		var house = HouseholdData.new()
+		house.household_name = names[i % names.size()]
+		house.member_count = household_size
+		house.current_oath = HouseholdData.SeasonalOath.IDLE
+		current_settlement.households.append(house)
+	
+	Loggie.msg("Generated %d default households for legacy save." % count).domain(LogDomains.SETTLEMENT).info()
+
+func _distribute_population_delta(delta: int) -> void:
+	if current_settlement.households.is_empty():
+		return
+		
+	# Distribute change proportionally across all households
+	var house_count = current_settlement.households.size()
+	var per_house = delta / house_count
+	var remainder = delta % house_count # Keep it accurate
+	
+	for i in range(house_count):
+		var house = current_settlement.households[i]
+		var adjustment = per_house
+		if i < abs(remainder):
+			adjustment += 1 if remainder > 0 else -1
+			
+		house.member_count = max(0, house.member_count + adjustment)
