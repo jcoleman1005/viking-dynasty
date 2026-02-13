@@ -690,11 +690,15 @@ func get_population_census() -> Dictionary:
 			"warbands": 0
 		}
 	
-	var assigned_peasants = 0
-	var assigned_thralls = 0
+	# NEW: In the Clan system, 'Idle' is a social choice (the IDLE oath)
+	var idle_peasants = 0
+	for house in settlement.households:
+		if house.current_oath == HouseholdData.SeasonalOath.IDLE:
+			idle_peasants += house.member_count
 	
+	# Thralls aren't in households (yet), so we keep the legacy remainder check for them
+	var assigned_thralls = 0
 	for b_entry in settlement.placed_buildings:
-		assigned_peasants += b_entry.get("peasant_count", 0)
 		assigned_thralls += b_entry.get("thrall_count", 0)
 		
 	var total_peasants = settlement.population_peasants
@@ -704,7 +708,7 @@ func get_population_census() -> Dictionary:
 	return {
 		"peasants": {
 			"total": total_peasants,
-			"idle": max(0, total_peasants - assigned_peasants)
+			"idle": idle_peasants # Now driven by Oaths
 		},
 		"thralls": {
 			"total": total_thralls,
@@ -891,6 +895,9 @@ func process_raid_return(result: RaidResultData) -> Dictionary:
 			dead_count += 1
 			
 	var net_gold = max(0, raw_gold - total_wergild)
+	
+	# Apply social consequences to households based on success
+	SettlementManager.apply_raid_social_results(net_gold)
 	
 	var xp_gain = _calculate_raid_xp(outcome, grade)
 	var warbands_to_remove: Array[WarbandData] = []

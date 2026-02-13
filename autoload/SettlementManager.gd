@@ -17,6 +17,7 @@ const GREAT_HALL_BUFFER: int = 4 # Tiles from water required for Great Hall
 # --- Data State ---
 var current_settlement: SettlementData 
 var active_map_data: SettlementData      
+var pending_succession_news: Array[String] = [] # Task 3.4
 
 # --- Scene Refs ---
 var _active_building_container_ref: WeakRef = weakref(null)
@@ -55,7 +56,8 @@ func _ready() -> void:
 	Loggie.msg("SettlementManager Initialized").domain(LogDomains.GAMEPLAY).info()
 
 func _on_season_changed(_season_name: String, _context: Dictionary) -> void:
-	check_and_trigger_successions()
+	# Store news for the EventManager to pick up
+	pending_succession_news = check_and_trigger_successions()
 	
 # --- TERRAIN & COORDINATE VALIDATION (NEW) ---
 
@@ -954,22 +956,36 @@ func _reconcile_household_heads() -> void:
 			house.head_of_household = PatronymicGenerator.create_founder_head()
 
 ## NEW: Succession Logic (Task 2.5.3)
-func trigger_succession(household: HouseholdData) -> void:
+func trigger_succession(household: HouseholdData) -> String:
 	if not household.head_of_household:
 		household.head_of_household = PatronymicGenerator.create_founder_head()
-		return
+		return "A new leader has emerged for %s." % household.household_name
 
 	var old_head = household.head_of_household
 	var new_head = PatronymicGenerator.create_successor_head(old_head)
+	
+	# Task 4.3: Loyalty Inheritance
+	# Inherit 70% of previous loyalty + 15 baseline points (representing 30% of neutral 50)
+	var inherited_loyalty = int(household.loyalty * 0.7) + 15
+	household.loyalty = inherited_loyalty
+	
 	household.head_of_household = new_head
-	Loggie.msg("Succession: %s has taken over the %s household." % [new_head.given_name, household.household_name]).domain(LogDomains.SETTLEMENT).info()
+	
+	var news = "%s %s has taken over the %s household." % [new_head.given_name, new_head.patronymic, household.household_name]
+	Loggie.msg("Succession: " + news).domain(LogDomains.SETTLEMENT).info()
+	return news
 
-func check_and_trigger_successions() -> void:
+func check_and_trigger_successions() -> Array[String]:
+	var news_list: Array[String] = []
 	if not current_settlement:
-		return
+		return news_list
+		
 	for house in current_settlement.households:
 		if house.head_of_household and not house.head_of_household.alive:
-			trigger_succession(house)
+			var report = trigger_succession(house)
+			news_list.append(report)
+			
+	return news_list
 
 func _generate_default_households(total_pop: int) -> void:
 	var household_size = 10
@@ -990,15 +1006,61 @@ func _distribute_population_delta(delta: int) -> void:
 	if current_settlement.households.is_empty():
 		return
 		
-	# Distribute change proportionally across all households
 	var house_count = current_settlement.households.size()
-	var per_house = delta / house_count
-	var remainder = delta % house_count # Keep it accurate
 	
-	for i in range(house_count):
-		var house = current_settlement.households[i]
-		var adjustment = per_house
-		if i < abs(remainder):
-			adjustment += 1 if remainder > 0 else -1
+	# --- CASE 1: GROWTH (Proportional/Equal) ---
+	if delta > 0:
+		var per_house = delta / house_count
+		var remainder = delta % house_count
+		
+		for i in range(house_count):
+			var house = current_settlement.households[i]
+			var adjustment = per_house
+			if i < abs(remainder):
+				adjustment += 1
+			house.member_count += adjustment
 			
-		house.member_count = max(0, house.member_count + adjustment)
+	# --- CASE 2: DEATHS (Political/Proportional) ---
+	elif delta < 0:
+		var total_deaths = abs(delta)
+		
+		# Sort households by loyalty (ascending: least loyal first)
+		var sorted_houses = current_settlement.households.duplicate()
+		sorted_houses.sort_custom(func(a, b): return a.loyalty < b.loyalty)
+		
+		# Apply deaths until none remain
+		while total_deaths > 0:
+			var deaths_applied_this_pass = 0
+			
+			for house in sorted_houses:
+				if total_deaths <= 0: break
+				if house.member_count <= 0: continue
+				
+				# Weighted chance: Less loyal households are more likely to lose people
+				# In Phase 3.3, we simply iterate the sorted list and take 1 person at a time
+				# until the delta is satisfied.
+				house.member_count -= 1
+				total_deaths -= 1
+				deaths_applied_this_pass += 1
+				
+			# Safety break if no one is left to die
+			if deaths_applied_this_pass == 0: break
+		
+		Loggie.msg("Crisis mortality applied based on household loyalty.").domain(LogDomains.SETTLEMENT).info()
+
+## NEW: Handles social impact of raid results (Phase 3.5)
+func apply_raid_social_results(net_gold: int) -> void:
+	if not current_settlement: return
+	
+	if net_gold > 0:
+		Loggie.msg("Raid Success: Applying social consequences (Jealousy/Compensation)").domain(LogDomains.SETTLEMENT).info()
+		
+		for house in current_settlement.households:
+			if house.current_oath == HouseholdData.SeasonalOath.RAID:
+				# Risk Compensation: Remove the initial -10 penalty
+				house.loyalty += 10
+			else:
+				# Jealousy: Non-raiders feel left out of the loot/glory
+				house.loyalty -= 5
+	else:
+		Loggie.msg("Raid Failure: No social shifts (Shared hardship)").domain(LogDomains.SETTLEMENT).info()

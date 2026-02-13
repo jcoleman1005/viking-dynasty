@@ -43,10 +43,44 @@ func _calculate_totals_from_oaths() -> Dictionary:
 func apply_oaths() -> void:
 	var payload = _calculate_totals_from_oaths()
 	
+	# Apply social consequences before submitting labor
+	_apply_social_consequences()
+	
 	# Scaffolding for Task 1.3.2 verification
 	Loggie.msg("Clan Council: Labor payload calculated: %s" % str(payload)).domain(LogDomains.ECONOMY).info()
 	
 	SettlementManager.batch_update_labor(payload)
+
+func _apply_social_consequences() -> void:
+	var settlement = SettlementManager.current_settlement
+	if not settlement: return
+	
+	for house in settlement.households:
+		if not house: continue
+		
+		var loyalty_change = 0
+		match house.current_oath:
+			HouseholdData.SeasonalOath.RAID:
+				loyalty_change = -10 # Risk and absence
+			HouseholdData.SeasonalOath.BUILD:
+				loyalty_change = -5  # Hard physical labor
+			HouseholdData.SeasonalOath.IDLE:
+				loyalty_change = +10 # Gratitude and rest
+			_:
+				loyalty_change = 0   # Normal duty (Harvest/Timber)
+		
+		if loyalty_change != 0:
+			house.loyalty += loyalty_change
+			var dir = "improved" if loyalty_change > 0 else "strained"
+			Loggie.msg("Household loyalty %s: %s (Oath: %s)" % [dir, house.household_name, HouseholdData.SeasonalOath.keys()[house.current_oath]]).domain(LogDomains.UI).debug()
+		
+		# Task 5.1: Tradition tracking
+		if house.current_oath == house.last_oath_type and house.current_oath != HouseholdData.SeasonalOath.IDLE:
+			house.consecutive_oath_years += 1
+		else:
+			house.consecutive_oath_years = 0
+			
+		house.last_oath_type = house.current_oath
 
 # --- UI LOGIC (Task 2.0) ---
 

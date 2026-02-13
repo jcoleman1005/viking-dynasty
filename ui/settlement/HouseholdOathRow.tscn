@@ -11,6 +11,13 @@ grow_horizontal = 2
 theme_override_constants/separation = 20
 script = ExtResource("1_row")
 
+[node name="HouseholdIcon" type="TextureRect" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
 [node name="HouseholdNameLabel" type="Label" parent="."]
 custom_minimum_size = Vector2(250, 0)
 layout_mode = 2

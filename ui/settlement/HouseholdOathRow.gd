@@ -3,6 +3,7 @@ extends HBoxContainer
 ## HouseholdOathRow - UI component for a single household.
 ## Displays name, count, and allows oath selection via dropdown.
 
+@onready var household_icon: TextureRect = %HouseholdIcon
 @onready var name_label: Label = $HouseholdNameLabel
 @onready var generation_label: Label = $GenerationLabel
 @onready var count_label: Label = $MemberCountLabel
@@ -14,6 +15,14 @@ var household_data: HouseholdData
 
 func setup(data: HouseholdData) -> void:
 	household_data = data
+	
+	# 0. Icon
+	if household_icon:
+		if data.icon:
+			household_icon.texture = data.icon
+			household_icon.show()
+		else:
+			household_icon.hide()
 	
 	# 1. Identity & Lineage
 	name_label.text = _get_display_name(data)

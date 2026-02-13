@@ -10,5 +10,8 @@ extends Resource
 @export var age: int = 35
 @export var alive: bool = true
 
+## Optional: Trait that influences the household (e.g. Mason Blood)
+@export var head_trait: JarlTraitData = null
+
 ## Narrative lineage - stores given_names of all previous heads oldest to newest
 @export var ancestors: Array[String] = []

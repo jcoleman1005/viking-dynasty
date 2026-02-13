@@ -22,6 +22,11 @@ static func create_founder_head() -> HouseholdHead:
 	head.generation = 1
 	head.age = randi_range(25, 55)
 	head.alive = true
+	
+	# Add chance for head trait (20%)
+	if randf() < 0.20:
+		head.head_trait = _roll_random_head_trait()
+		
 	# FIX: Proper initialization of typed array
 	head.ancestors.clear()
 	head.ancestors.append(head.given_name)
@@ -35,7 +40,23 @@ static func create_successor_head(predecessor: HouseholdHead) -> HouseholdHead:
 	head.age = randi_range(18, 40)
 	head.alive = true
 	
+	# Add chance for head trait (Inherited or new)
+	if randf() < 0.20:
+		head.head_trait = _roll_random_head_trait()
+	
 	# FIX: Use assign() to copy contents into the typed array correctly
 	head.ancestors.assign(predecessor.ancestors)
 	head.ancestors.append(head.given_name)
 	return head
+
+static func _roll_random_head_trait() -> JarlTraitData:
+	var trait_data = JarlTraitData.new()
+	var types = [
+		{"name": "Mason Blood", "desc": "Ancestral builders. +15% Build speed."},
+		{"name": "Sea-Reaver", "desc": "Fearless raiders. +10% Raid power."},
+		{"name": "Farmer's Hand", "desc": "Born to the soil. +10% Harvest yield."}
+	]
+	var choice = types.pick_random()
+	trait_data.display_name = choice.name
+	trait_data.description = choice.desc
+	return trait_data

@@ -192,6 +192,14 @@ func show_crisis_result(data: Dictionary) -> void:
 		
 	result_event.description = desc
 	
+	# --- Task 3.4: Integrate Succession News ---
+	var news = SettlementManager.pending_succession_news
+	if not news.is_empty():
+		result_event.description += "\n\n[b]Household News:[/b]"
+		for item in news:
+			result_event.description += "\n- %s" % item
+		SettlementManager.pending_succession_news.clear()
+	
 	# Add a simple "It is done" button
 	var close_choice = EventChoice.new()
 	close_choice.choice_text = "It is done."
