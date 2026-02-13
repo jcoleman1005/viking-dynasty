@@ -1,7 +1,10 @@
-extends Control
+extends CanvasLayer
+class_name ClanAllocationMenu
 
 ## ClanAllocationMenu - The new labor assignment interface.
 ## Converts social 'Oaths' into mechanical 'Labor Payloads'.
+
+signal close_requested
 
 # --- AGGREGATOR LAYER (Task 1.3) ---
 
@@ -49,6 +52,7 @@ func apply_oaths() -> void:
 
 @onready var household_list: VBoxContainer = %HouseholdList
 @onready var apply_button: Button = %ApplyOathsButton
+@onready var close_button: Button = %CloseButton 
 
 @onready var food_summary: Label = %FoodSummaryLabel
 @onready var wood_summary: Label = %WoodSummaryLabel
@@ -60,6 +64,9 @@ const HouseholdOathRow = preload("res://ui/settlement/HouseholdOathRow.tscn")
 func _ready() -> void:
 	if apply_button:
 		apply_button.pressed.connect(_on_apply_pressed)
+	
+	if close_button:
+		close_button.pressed.connect(_on_close_pressed)
 	
 	# Initial populate
 	_populate_households()
@@ -97,6 +104,12 @@ func _on_apply_pressed() -> void:
 	apply_oaths()
 	_update_summary()
 	Loggie.msg("Seasonal Oaths Pledged.").domain(LogDomains.UI).info()
+	close_requested.emit()
+	queue_free() # Close overlay on success
+	queue_free() # Close overlay on apply
+func _on_close_pressed() -> void:
+	close_requested.emit()
+	queue_free() # Clean up when closed as an overlay
 
 
 # --- MILITARY SEPARATION (Task 1.4) ---

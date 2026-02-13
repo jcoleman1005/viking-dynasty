@@ -131,12 +131,15 @@ func _load_menu(category: String) -> void:
 
 		"farming":
 			if allocation_menu_scene:
-				var instance: AllocationMenu = allocation_menu_scene.instantiate()
-				seasonal_actions_panel.add_child(instance)
-				instance.setup() # AllocationMenu.setup() takes optional args
-				Loggie.msg("Menu Loaded: AllocationMenu").info()
+				var instance: ClanAllocationMenu = allocation_menu_scene.instantiate()
+				# Add to the root or a dedicated UI layer to ensure it's an overlay
+				get_tree().root.add_child(instance)
+				# Reset BottomBar selection so it doesn't look like a sub-tab
+				_clear_content()
+				last_active_category = ""
+				Loggie.msg("Menu Loaded: ClanAllocationMenu (Overlay)").info()
 			else:
-				_log_missing_scene("AllocationMenu")
+				_log_missing_scene("ClanAllocationMenu")
 				
 		_:
 			Loggie.msg("Unknown category: " + str(category)).warn()

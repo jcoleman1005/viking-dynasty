@@ -1,112 +1,126 @@
-[gd_scene load_steps=4 format=3 uid="uid://btsp8rkjum5r2"]
+[gd_scene load_steps=4 format=3 uid="uid://b8w7hgtu4g7j"]
 
-[ext_resource type="Script" uid="uid://burcphrgdr1dv" path="res://ui/settlement/ClanAllocationMenu.gd" id="1_menu"]
+[ext_resource type="Script" path="res://ui/settlement/ClanAllocationMenu.gd" id="1_menu"]
 [ext_resource type="Texture2D" uid="uid://dy8bikbul4bne" path="res://ui/assets/scroll_bg.png" id="2_bg"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_Summary"]
-bg_color = Color(0, 0, 0, 0.4)
+bg_color = Color(0, 0, 0, 0.6)
 border_width_top = 2
 border_color = Color(0.439216, 0.501961, 0.564706, 1)
 
-[node name="ClanAllocationMenu" type="Control"]
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="ClanAllocationMenu" type="CanvasLayer"]
+layer = 15
 script = ExtResource("1_menu")
 
-[node name="ParchmentBackground" type="TextureRect" parent="."]
-modulate = Color(0.3, 0.3, 0.3, 0.7)
-layout_mode = 1
+[node name="BackgroundDim" type="ColorRect" parent="."]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+color = Color(0, 0, 0, 0.5)
+
+[node name="MainPanel" type="PanelContainer" parent="."]
+custom_minimum_size = Vector2(800, 600)
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -400.0
+offset_top = -300.0
+offset_right = 400.0
+offset_bottom = 300.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ParchmentBackground" type="TextureRect" parent="MainPanel"]
+modulate = Color(0.4, 0.4, 0.4, 1)
+layout_mode = 2
 texture = ExtResource("2_bg")
 expand_mode = 1
 stretch_mode = 6
 
-[node name="MarginContainer" type="MarginContainer" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_constants/margin_left = 100
-theme_override_constants/margin_top = 80
-theme_override_constants/margin_right = 100
-theme_override_constants/margin_bottom = 80
-
-[node name="MainLayout" type="VBoxContainer" parent="MarginContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="MainPanel"]
 layout_mode = 2
-theme_override_constants/separation = 25
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 40
 
-[node name="TitleLabel" type="Label" parent="MarginContainer/MainLayout"]
+[node name="MainLayout" type="VBoxContainer" parent="MainPanel/MarginContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 36
+theme_override_constants/separation = 20
+
+[node name="Header" type="HBoxContainer" parent="MainPanel/MarginContainer/MainLayout"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="MainPanel/MarginContainer/MainLayout/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 28
 text = "THE SEASONAL OATHS"
 horizontal_alignment = 1
 
-[node name="HSeparator" type="HSeparator" parent="MarginContainer/MainLayout"]
+[node name="CloseButton" type="Button" parent="MainPanel/MarginContainer/MainLayout/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+text = "X"
+
+[node name="HSeparator" type="HSeparator" parent="MainPanel/MarginContainer/MainLayout"]
 layout_mode = 2
 
-[node name="HouseholdScroll" type="ScrollContainer" parent="MarginContainer/MainLayout"]
+[node name="HouseholdScroll" type="ScrollContainer" parent="MainPanel/MarginContainer/MainLayout"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="HouseholdList" type="VBoxContainer" parent="MarginContainer/MainLayout/HouseholdScroll"]
+[node name="HouseholdList" type="VBoxContainer" parent="MainPanel/MarginContainer/MainLayout/HouseholdScroll"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 10
 
-[node name="SummaryPanel" type="PanelContainer" parent="MarginContainer/MainLayout"]
+[node name="SummaryPanel" type="PanelContainer" parent="MainPanel/MarginContainer/MainLayout"]
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_Summary")
 
-[node name="Margin" type="MarginContainer" parent="MarginContainer/MainLayout/SummaryPanel"]
+[node name="Margin" type="MarginContainer" parent="MainPanel/MarginContainer/MainLayout/SummaryPanel"]
 layout_mode = 2
 theme_override_constants/margin_left = 20
-theme_override_constants/margin_top = 15
+theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 20
-theme_override_constants/margin_bottom = 15
+theme_override_constants/margin_bottom = 10
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/MainLayout/SummaryPanel/Margin"]
-layout_mode = 2
-
-[node name="GridContainer" type="GridContainer" parent="MarginContainer/MainLayout/SummaryPanel/Margin/VBoxContainer"]
+[node name="GridContainer" type="GridContainer" parent="MainPanel/MarginContainer/MainLayout/SummaryPanel/Margin"]
 layout_mode = 2
 theme_override_constants/h_separation = 40
 columns = 2
 
-[node name="FoodSummaryLabel" type="Label" parent="MarginContainer/MainLayout/SummaryPanel/Margin/VBoxContainer/GridContainer"]
+[node name="FoodSummaryLabel" type="Label" parent="MainPanel/MarginContainer/MainLayout/SummaryPanel/Margin/GridContainer"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Farmers: 0"
+text = "Food Workers: 0"
 
-[node name="WoodSummaryLabel" type="Label" parent="MarginContainer/MainLayout/SummaryPanel/Margin/VBoxContainer/GridContainer"]
+[node name="WoodSummaryLabel" type="Label" parent="MainPanel/MarginContainer/MainLayout/SummaryPanel/Margin/GridContainer"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Lumber: 0"
+text = "Wood Workers: 0"
 
-[node name="BuildSummaryLabel" type="Label" parent="MarginContainer/MainLayout/SummaryPanel/Margin/VBoxContainer/GridContainer"]
+[node name="BuildSummaryLabel" type="Label" parent="MainPanel/MarginContainer/MainLayout/SummaryPanel/Margin/GridContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Builders: 0"
 
-[node name="RaidSummaryLabel" type="Label" parent="MarginContainer/MainLayout/SummaryPanel/Margin/VBoxContainer/GridContainer"]
+[node name="RaidSummaryLabel" type="Label" parent="MainPanel/MarginContainer/MainLayout/SummaryPanel/Margin/GridContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Raiders: 0"
 
-[node name="ApplyOathsButton" type="Button" parent="MarginContainer/MainLayout"]
+[node name="ApplyOathsButton" type="Button" parent="MainPanel/MarginContainer/MainLayout"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(300, 60)
+custom_minimum_size = Vector2(250, 50)
 layout_mode = 2
 size_flags_horizontal = 4
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 20
 text = "Pledge Seasonal Oaths"

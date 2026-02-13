@@ -48,7 +48,14 @@ var active_tilemap_layer: Node:
 func _ready() -> void:
 	EventBus.player_unit_died.connect(_on_player_unit_died)
 	EventBus.building_placement_cancelled.connect(_on_building_placement_cancelled)
+	
+	if EventBus.has_signal("season_changed"):
+		EventBus.season_changed.connect(_on_season_changed)
+		
 	Loggie.msg("SettlementManager Initialized").domain(LogDomains.GAMEPLAY).info()
+
+func _on_season_changed(_season_name: String, _context: Dictionary) -> void:
+	check_and_trigger_successions()
 	
 # --- TERRAIN & COORDINATE VALIDATION (NEW) ---
 
@@ -911,6 +918,10 @@ func reconcile_households() -> void:
 	if not current_settlement:
 		return
 
+	# Phase 2.5 extension - generate founder heads for headless households
+	# This MUST happen before any early returns to ensure all data is valid.
+	_reconcile_household_heads()
+
 	var total_pop = current_settlement.population_peasants
 
 	# Generate households for legacy saves (if array is empty)
@@ -934,6 +945,31 @@ func reconcile_households() -> void:
 	current_settlement.households = current_settlement.households.filter(
 		func(h): return h.member_count > 0
 	)
+
+func _reconcile_household_heads() -> void:
+	if not current_settlement:
+		return
+	for house in current_settlement.households:
+		if house.head_of_household == null:
+			house.head_of_household = PatronymicGenerator.create_founder_head()
+
+## NEW: Succession Logic (Task 2.5.3)
+func trigger_succession(household: HouseholdData) -> void:
+	if not household.head_of_household:
+		household.head_of_household = PatronymicGenerator.create_founder_head()
+		return
+
+	var old_head = household.head_of_household
+	var new_head = PatronymicGenerator.create_successor_head(old_head)
+	household.head_of_household = new_head
+	Loggie.msg("Succession: %s has taken over the %s household." % [new_head.given_name, household.household_name]).domain(LogDomains.SETTLEMENT).info()
+
+func check_and_trigger_successions() -> void:
+	if not current_settlement:
+		return
+	for house in current_settlement.households:
+		if house.head_of_household and not house.head_of_household.alive:
+			trigger_succession(house)
 
 func _generate_default_households(total_pop: int) -> void:
 	var household_size = 10

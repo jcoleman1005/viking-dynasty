@@ -4,6 +4,7 @@ extends Resource
 enum SeasonalOath { IDLE, HARVEST, TIMBER, BUILD, RAID }
 
 @export var household_name: String = "The Red-Shields"
+@export var head_of_household: HouseholdHead = null # New: Lineage system
 @export var member_count: int = 10
 @export var current_oath: SeasonalOath = SeasonalOath.IDLE
 
