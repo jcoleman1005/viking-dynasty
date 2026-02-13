@@ -59,8 +59,17 @@ func _ready() -> void:
 		EventBus.treasury_updated.connect(_update_dashboard)
 		EventBus.hall_action_updated.connect(_update_dashboard)
 		
+		# Fix: Re-evaluate cards as soon as real settlement data arrives
+		EventBus.settlement_loaded.connect(_on_settlement_loaded)
+		
 		if EventBus.has_signal("season_changed"):
 			EventBus.season_changed.connect(_on_season_changed)
+
+func _on_settlement_loaded(_data: SettlementData) -> void:
+	if visible:
+		Loggie.msg("Seasonal Council: Settlement Loaded. Refreshing cards.").domain(LogDomains.UI).debug()
+		_refresh_resource_totem()
+		_refresh_ritual_stage()
 
 func _on_season_changed(new_season: String, _context: Dictionary) -> void:
 	_current_season = new_season
@@ -168,8 +177,21 @@ func _refresh_dynasty_context() -> void:
 	if jarl_name_label:
 		if jarl:
 			jarl_name_label.text = "%s (Age %d)" % [jarl.display_name.to_upper(), jarl.age]
+			
+			# Add Tooltip for Pillar Scores (Condensed breakdown)
+			var damage_bonus = (jarl.might_score - 10) * 10 if jarl.might_score > 10 else 0
+			var income_bonus = (jarl.prosperity_score - 10) * 5 if jarl.prosperity_score > 10 else 0
+			
+			var tip = "THE JARL'S PILLARS:\n"
+			tip += "⚔️ MIGHT: %d (+%d%% Damage)\n" % [jarl.might_score, damage_bonus]
+			tip += "💰 PROSPERITY: %d (+%d%% Income)\n" % [jarl.prosperity_score, income_bonus]
+			tip += "👑 AUTHORITY: %d (%d Hall Actions)" % [jarl.authority_score, jarl.max_hall_actions]
+			
+			jarl_name_label.tooltip_text = tip
+			jarl_name_label.mouse_filter = Control.MOUSE_FILTER_PASS # Ensure tooltip shows
 		else:
 			jarl_name_label.text = "INTERREGNUM"
+			jarl_name_label.tooltip_text = ""
 
 # ------------------------------------------------------------------------------
 # ZONE B: THE RITUAL STAGE (Content)
@@ -194,9 +216,12 @@ func _refresh_ritual_stage() -> void:
 		cards_container.add_child(card_instance)
 		
 		var can_afford = _can_afford(card_data)
+		var denial_reason = ""
+		if not can_afford:
+			denial_reason = _get_denial_reason(card_data)
 		
 		if card_instance.has_method("setup"):
-			card_instance.setup(card_data, can_afford)
+			card_instance.setup(card_data, can_afford, denial_reason)
 		
 		if card_instance.has_signal("card_clicked"):
 			card_instance.card_clicked.connect(_on_card_clicked)
@@ -206,18 +231,23 @@ func _refresh_ritual_stage() -> void:
 			card_instance.card_exited.connect(_on_card_exited)
 
 func _can_afford(card: SeasonalCardResource) -> bool:
-	# Spring decisions ignore AP
+	return _get_denial_reason(card) == ""
+
+func _get_denial_reason(card: SeasonalCardResource) -> String:
+	# 1. Check AP (Winter Only)
 	if _current_season == "Winter" and current_ap < card.cost_ap:
-		return false
+		return "Not enough Hall Actions"
 		
-	var costs = {}
-	if card.cost_gold > 0: costs[GameResources.GOLD] = card.cost_gold
-	if card.cost_food > 0: costs[GameResources.FOOD] = card.cost_food
+	# 2. Check Resources
+	if card.cost_gold > 0:
+		if not EconomyManager.can_afford({GameResources.GOLD: card.cost_gold}):
+			return "Insufficient Gold"
+			
+	if card.cost_food > 0:
+		if not EconomyManager.can_afford({GameResources.FOOD: card.cost_food}):
+			return "Insufficient Food"
 	
-	if not costs.is_empty():
-		return EconomyManager.can_afford(costs)
-	
-	return true
+	return ""
 
 func _on_card_clicked(card: SeasonalCardResource) -> void:
 	var success: bool = WinterManager.play_seasonal_card(card)

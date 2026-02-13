@@ -91,14 +91,20 @@ func test_storage_caps():
 	# Should be clamped at 1500
 	assert_eq(_mock_settlement.treasury["gold"], 1500, "Treasury should not exceed calculated cap (1500)")
 
-func test_stewardship_bonus():
-	# Increase Jarl Skill to 20 (+50% bonus)
-	_mock_jarl.stewardship = 20 
+func test_prosperity_bonus():
+	# Configure stats to result in a Prosperity Score of 20
+	# (Steward 15 + Learning 10) - (Command 5 + Prowess 5) * 0.5 = 20
+	_mock_jarl.stewardship = 15
+	_mock_jarl.learning = 10
+	_mock_jarl.command = 5
+	_mock_jarl.prowess = 5
+	
 	_add_building_to_settlement(TEMP_BUILDING_PATH)
 	
 	var projection = EconomyManager.get_projected_income()
+	# Prosperity Score 20 results in a +50% bonus (1.0 + (20-10) * 0.05)
 	# Base 100 * 1.5 = 150
-	assert_eq(projection["gold"], 150, "Stewardship should boost income by 50%")
+	assert_eq(projection["gold"], 150, "Prosperity Pillar Score should boost income by 50%")
 
 # --- HELPER ---
 

@@ -89,8 +89,11 @@ func _ready() -> void:
 		if warband_ref.assigned_heir_name != "":
 			var heir = DynastyManager.find_heir_by_name(warband_ref.assigned_heir_name)
 			if heir:
-				if heir.prowess > 5:
-					var p_bonus = 1.0 + ((heir.prowess - 5) * 0.10)
+				# Use the Jarl's Might Score logic for heirs as well
+				# Base Might Score for units = Command + Prowess
+				var might = heir.command + heir.prowess
+				if might > 10:
+					var p_bonus = 1.0 + ((might - 10) * 0.10)
 					dmg_mult *= p_bonus
 				modulate = Color(1.2, 1.2, 0.8) 
 				

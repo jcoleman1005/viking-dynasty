@@ -90,16 +90,39 @@ extends Resource
 ## Tracks progress towards Warlord trait
 @export var offensive_wins: int = 0 
 
+# --- PILLAR SCORE SYSTEM (Triangular Tension) ---
+
+## WAR PILLAR: Focused on Combat and XP. Shadowed by WORD.
+var might_score: int:
+	get:
+		var base = command + prowess
+		var penalty = int((diplomacy + charisma) * 0.5)
+		return max(1, base - penalty)
+
+## WEALTH PILLAR: Focused on Income and Construction. Shadowed by WAR.
+var prosperity_score: int:
+	get:
+		var base = stewardship + learning
+		var penalty = int((command + prowess) * 0.5)
+		return max(1, base - penalty)
+
+## WORD PILLAR: Focused on Hall Actions and Renown. Shadowed by WEALTH.
+var authority_score: int:
+	get:
+		var base = diplomacy + charisma
+		var penalty = int((stewardship + learning) * 0.5)
+		return max(1, base - penalty)
+
+
 @export_group("Winter Court")
 @export var current_hall_actions: int = 0
 @export var max_hall_actions: int = 0
 # --- HELPER FUNCTIONS ---
 
 func calculate_hall_actions() -> void:
-	# Formula: (Stewardship + Diplomacy) / 5, clamped 2 to 5.
-	# Note: Using 'charisma' as proxy for Diplomacy if Diplomacy isn't explicitly defined yet.
-	var score = stewardship + charisma 
-	max_hall_actions = clampi(score / 5, 2, 5)
+	# Formula: authority_score / 3, clamped 2 to 6.
+	# This rewards high-Word Jarls but penalizes them if they are too focused on Wealth.
+	max_hall_actions = clampi(authority_score / 3, 2, 6)
 	current_hall_actions = max_hall_actions
 
 func get_safe_range() -> float:

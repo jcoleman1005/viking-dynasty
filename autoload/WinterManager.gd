@@ -263,8 +263,8 @@ func play_seasonal_card(card: SeasonalCardResource) -> bool:
 
 	# 2. Validate Resources (Always required)
 	var cost_dict = {}
-	if card.cost_gold > 0: cost_dict["gold"] = card.cost_gold
-	if card.cost_food > 0: cost_dict["food"] = card.cost_food
+	if card.cost_gold > 0: cost_dict[GameResources.GOLD] = card.cost_gold
+	if card.cost_food > 0: cost_dict[GameResources.FOOD] = card.cost_food
 	
 	if not EconomyManager.attempt_purchase(cost_dict):
 		return false

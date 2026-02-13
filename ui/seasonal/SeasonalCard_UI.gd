@@ -42,7 +42,7 @@ func _ready() -> void:
 func _update_pivot() -> void:
 	pivot_offset = size / 2.0
 
-func setup(card: SeasonalCardResource, can_afford: bool = true) -> void:
+func setup(card: SeasonalCardResource, can_afford: bool = true, denial_reason: String = "") -> void:
 	_card_data = card
 	_can_afford = can_afford
 	
@@ -72,9 +72,11 @@ func setup(card: SeasonalCardResource, can_afford: bool = true) -> void:
 	
 	# 4. Apply Visual State (Affordability)
 	if not can_afford:
-		modulate = Color(0.5, 0.5, 0.5, 0.9) 
+		modulate = Color(0.5, 0.5, 0.5, 0.9)
+		tooltip_text = denial_reason # Set tooltip for greayed out cards
 	else:
 		modulate = Color.WHITE
+		tooltip_text = ""
 
 func _on_button_pressed() -> void:
 	if not _card_data: return

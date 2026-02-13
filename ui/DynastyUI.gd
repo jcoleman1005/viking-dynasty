@@ -58,16 +58,41 @@ func _on_jarl_stats_updated(jarl: JarlData) -> void:
 	# 1. Update Current Jarl Name
 	current_jarl_name.text = jarl.display_name
 	
-	# 2. Update Full Stats
+	# 2. Update Full Stats & Pillars
 	var prowess = jarl.get_effective_skill("prowess")
-	var stewardship = jarl.get_effective_skill("stewardship")
 	var command = jarl.get_effective_skill("command")
+	var stewardship = jarl.get_effective_skill("stewardship")
 	var learning = jarl.get_effective_skill("learning")
+	var diplomacy = jarl.get_effective_skill("diplomacy")
+	var charisma = jarl.get_effective_skill("charisma")
+	
+	# Calculate derived bonuses for display
+	var damage_bonus = (jarl.might_score - 10) * 10 if jarl.might_score > 10 else 0
+	var income_bonus = (jarl.prosperity_score - 10) * 5 if jarl.prosperity_score > 10 else 0
 	
 	var stats_text = "Age: %d  |  Renown: %d  |  Authority: %d/%d\n" % [jarl.age, jarl.renown, jarl.current_authority, jarl.max_authority]
 	stats_text += "------------------------------------------------\n"
-	stats_text += "⚔️ Prowess: %d   👑 Command: %d\n" % [prowess, command]
-	stats_text += "💰 Stewardship: %d   📜 Learning: %d" % [stewardship, learning]
+	
+	# MIGHT PILLAR
+	var war_base = prowess + command
+	var war_penalty = int((diplomacy + charisma) * 0.5)
+	stats_text += "[color=salmon]⚔️ MIGHT: %d[/color] (+%d%% Damage)\n" % [jarl.might_score, damage_bonus]
+	stats_text += "   [color=gray](Base: %d | Shadow: -%d from Word)[/color]\n" % [war_base, war_penalty]
+	stats_text += "   Prowess: %d | Command: %d\n\n" % [prowess, command]
+	
+	# PROSPERITY PILLAR
+	var wealth_base = stewardship + learning
+	var wealth_penalty = int((prowess + command) * 0.5)
+	stats_text += "[color=gold]💰 PROSPERITY: %d[/color] (+%d%% Income)\n" % [jarl.prosperity_score, income_bonus]
+	stats_text += "   [color=gray](Base: %d | Shadow: -%d from War)[/color]\n" % [wealth_base, wealth_penalty]
+	stats_text += "   Steward: %d | Learning: %d\n\n" % [stewardship, learning]
+	
+	# AUTHORITY PILLAR
+	var word_base = diplomacy + charisma
+	var word_penalty = int((stewardship + learning) * 0.5)
+	stats_text += "[color=skyblue]👑 AUTHORITY: %d[/color] (%d Hall Actions)\n" % [jarl.authority_score, jarl.max_hall_actions]
+	stats_text += "   [color=gray](Base: %d | Shadow: -%d from Wealth)[/color]\n" % [word_base, word_penalty]
+	stats_text += "   Diplomacy: %d | Charisma: %d" % [diplomacy, charisma]
 	
 	current_jarl_stats.text = stats_text
 

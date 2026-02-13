@@ -282,12 +282,13 @@ func get_projected_income() -> Dictionary[String, int]:
 	
 	var projection: Dictionary[String, int] = {}
 	
-	var stewardship_bonus := 1.0
+	var prosperity_bonus := 1.0
 	var jarl = DynastyManager.get_current_jarl()
 	if jarl:
-		var skill = jarl.get_effective_skill("stewardship")
-		stewardship_bonus = 1.0 + (skill - BASE_STEWARDSHIP_THRESHOLD) * STEWARDSHIP_SCALAR
-		stewardship_bonus = max(0.5, stewardship_bonus)
+		# Use the new Pillar Score instead of isolated Stewardship
+		# Threshold adjusted to 10 (base score for a starting Jarl is ~10-15)
+		prosperity_bonus = 1.0 + (jarl.prosperity_score - 10) * STEWARDSHIP_SCALAR
+		prosperity_bonus = max(0.5, prosperity_bonus)
 
 	for entry in settlement.placed_buildings:
 		var b_data = load(entry["resource_path"])
@@ -300,7 +301,7 @@ func get_projected_income() -> Dictionary[String, int]:
 			var p_out = p_count * b_data.base_passive_output
 			var t_count = entry.get("thrall_count", 0)
 			var t_out = t_count * b_data.output_per_thrall
-			var production = int((p_out + t_out) * stewardship_bonus)
+			var production = int((p_out + t_out) * prosperity_bonus)
 			
 			# Apply Harvest Yield Modifier (Task 1.4 Logic)
 			var harvest_mod = DynastyManager.active_year_modifiers.get("mod_harvest_yield", 0.0)
@@ -315,7 +316,7 @@ func get_projected_income() -> Dictionary[String, int]:
 				for res in r_data.yearly_income:
 					var key = res.to_lower()
 					if not projection.has(key): projection[key] = 0
-					projection[key] += int(r_data.yearly_income[res] * stewardship_bonus)
+					projection[key] += int(r_data.yearly_income[res] * prosperity_bonus)
 					
 	return projection
 
@@ -718,7 +719,9 @@ func can_afford(cost: Dictionary) -> bool:
 	
 	for res in cost:
 		var key = res.to_lower()
-		if not settlement.treasury.has(key) or settlement.treasury[key] < cost[res]:
+		var current = settlement.treasury.get(key, 0)
+		
+		if not settlement.treasury.has(key) or current < cost[res]:
 			return false
 	return true
 
@@ -753,9 +756,10 @@ func attempt_purchase(item_cost: Dictionary) -> bool:
 	
 	for res in item_cost:
 		var key = res.to_lower()
-		if not settlement.treasury.has(key) or settlement.treasury[key] < item_cost[res]:
+		var current = settlement.treasury.get(key, 0)
+		
+		if not settlement.treasury.has(key) or current < item_cost[res]:
 			EventBus.purchase_failed.emit("Insufficient %s" % res.capitalize())
-			Loggie.msg("Purchase failed (Insufficient %s). Cost: %s" % [res, item_cost]).domain(LogDomains.ECONOMY).debug()
 			return false
 			
 	for res in item_cost:
