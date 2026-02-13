@@ -79,6 +79,20 @@ func _populate_oath_dropdown() -> void:
 	oath_dropdown.add_item("Build", HouseholdData.SeasonalOath.BUILD)
 	oath_dropdown.add_item("Raid", HouseholdData.SeasonalOath.RAID)
 	
+	# Task 5.3: Oath Refusal (Disgruntled families refuse hard/risky labor)
+	if household_data.loyalty < 20:
+		# Disable Build (Index 3) and Raid (Index 4)
+		oath_dropdown.set_item_disabled(3, true)
+		oath_dropdown.set_item_disabled(4, true)
+		oath_dropdown.tooltip_text = "This family is too disgruntled to accept hard labor or risky raids."
+		
+		# If they were currently on a refused oath, force them to IDLE or HARVEST
+		if household_data.current_oath == HouseholdData.SeasonalOath.BUILD or \
+		   household_data.current_oath == HouseholdData.SeasonalOath.RAID:
+			household_data.current_oath = HouseholdData.SeasonalOath.IDLE
+	else:
+		oath_dropdown.tooltip_text = "Assign a seasonal duty to this household."
+	
 	oath_dropdown.select(household_data.current_oath)
 	
 	if not oath_dropdown.item_selected.is_connected(_on_oath_selected):

@@ -8,7 +8,6 @@
 [ext_resource type="PackedScene" uid="uid://dqxvcgqjx2s8o" path="res://ui/seasonal/SeasonalCouncilUI.tscn" id="3_h5nvc"]
 [ext_resource type="PackedScene" uid="uid://ciue5kdakyr78" path="res://ui/RaidPrepWindow.tscn" id="7_xkt7x"]
 [ext_resource type="PackedScene" uid="uid://btsp8rkjum5r2" path="res://ui/settlement/ClanAllocationMenu.tscn" id="8_amvws"]
-[ext_resource type="PackedScene" uid="uid://djup50xtuylo4" path="res://ui/components/AllocationMenu.tscn" id="8_h5nvc"]
 [ext_resource type="PackedScene" uid="uid://dsa4vufqdwp0" path="res://ui/components/BuildMenu.tscn" id="9_amvws"]
 [ext_resource type="PackedScene" uid="uid://b808q4y205n3" path="res://ui/components/RaidMenu.tscn" id="9_h5nvc"]
 
@@ -61,11 +60,7 @@ visible = false
 visible = false
 layout_mode = 2
 
-[node name="AllocationMenu" parent="MainLayout/BottomBar/SeasonalActionsPanel" index="2" instance=ExtResource("8_h5nvc")]
-visible = false
-layout_mode = 2
-
-[node name="BuildMenu" parent="MainLayout/BottomBar/SeasonalActionsPanel" index="3" instance=ExtResource("9_amvws")]
+[node name="BuildMenu" parent="MainLayout/BottomBar/SeasonalActionsPanel" index="2" instance=ExtResource("9_amvws")]
 visible = false
 layout_mode = 2
 

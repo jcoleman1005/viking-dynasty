@@ -57,11 +57,8 @@ var default_end_of_year_popup: PackedScene = preload("res://ui/EndOfYear_Popup.t
 @onready var rts_controller: RTSController = $RTSController
 @onready var unit_spawner: UnitSpawner = $UnitSpawner
 
-# --- Worker & End Year UI ---
-const WORK_ASSIGNMENT_SCENE_PATH = "res://ui/WorkAssignment_UI.tscn"
-var work_assignment_ui: CanvasLayer
+# --- UI State ---
 var end_of_year_popup: PanelContainer
-var idle_warning_dialog: ConfirmationDialog
 
 # --- State Variables ---
 var great_hall_instance: BaseBuilding = null
@@ -120,12 +117,9 @@ func _connect_signals() -> void:
 	EventBus.building_placement_cancelled.connect(_on_building_placement_cancelled)
 	EventBus.building_right_clicked.connect(_on_building_right_clicked)
 	EventBus.dynasty_view_requested.connect(_toggle_dynasty_view)
-	EventBus.end_year_requested.connect(_on_end_year_pressed)
 	
 	EventBus.request_worker_assignment.connect(_on_worker_requested)
 	EventBus.request_worker_removal.connect(_on_worker_removal_requested)
-	
-	
 
 func _setup_default_resources() -> void:
 	if not test_building_data: test_building_data = default_test_building
@@ -137,34 +131,6 @@ func _setup_ui() -> void:
 	end_of_year_popup = end_of_year_popup_scene.instantiate()
 	ui_layer.add_child(end_of_year_popup)
 	end_of_year_popup.collect_button_pressed.connect(_on_payout_collected)
-	
-	# Worker UI
-	if ResourceLoader.exists(WORK_ASSIGNMENT_SCENE_PATH):
-		var scene = load(WORK_ASSIGNMENT_SCENE_PATH)
-		if scene:
-			work_assignment_ui = scene.instantiate()
-			add_child(work_assignment_ui)
-			if work_assignment_ui.has_signal("assignments_confirmed"):
-				work_assignment_ui.assignments_confirmed.connect(_on_worker_assignments_confirmed)
-	
-	# Idle Warning Dialog
-	idle_warning_dialog = ConfirmationDialog.new()
-	idle_warning_dialog.title = "Idle Villagers"
-	idle_warning_dialog.ok_button_text = "End Year Anyway"
-	idle_warning_dialog.cancel_button_text = "Select Idle Worker"
-	idle_warning_dialog.confirmed.connect(_start_end_year_sequence)
-	
-	idle_warning_dialog.canceled.connect(func():
-		EventBus.worker_management_toggled.emit()
-	)
-	
-	add_child(idle_warning_dialog)
-
-func _on_worker_assignments_confirmed(assignments: Dictionary) -> void:
-	Loggie.msg("SettlementBridge: Work assignments saved.").domain("BUILDING").info()
-	if SettlementManager.current_settlement:
-		SettlementManager.current_settlement.worker_assignments = assignments
-		SettlementManager.save_settlement()
 
 # =========================================================
 # === WORKER ASSIGNMENT LOGIC ===
@@ -312,26 +278,6 @@ func _force_inspector_refresh(target: BaseBuilding) -> void:
 # === WINTER PHASE TRANSITION ===
 # =========================================================
 
-func _on_end_year_pressed() -> void:
-	Loggie.msg("SettlementBridge: End Year requested.").domain("BUILDING").info()
-	
-	var idle_p = SettlementManager.get_idle_peasants()
-	var idle_t = SettlementManager.get_idle_thralls()
-	var total_idle = idle_p + idle_t
-	
-	if total_idle > 0:
-		idle_warning_dialog.dialog_text = "You have %d idle workers.\nUnassigned workers produce nothing.\n\nEnd year anyway?" % total_idle
-		idle_warning_dialog.popup_centered()
-	else:
-		_start_end_year_sequence()
-
-func _start_end_year_sequence() -> void:
-	_close_all_popups()
-	Loggie.msg("SettlementBridge: Handing off to DynastyManager for Winter Cycle.").domain("SETTLEMENT").info()
-	
-	# FIX: Call DynastyManager to prep the Jarl, not WinterManager directly
-	DynastyManager.start_winter_cycle()
-
 func _on_payout_collected(payout: Dictionary) -> void:
 	if payout.has("renown"):
 		var amount = payout["renown"]
@@ -351,7 +297,6 @@ func _on_payout_collected(payout: Dictionary) -> void:
 func _close_all_popups() -> void:
 	var dynasty_ui = ui_layer.get_node_or_null("Dynasty_UI")
 	if dynasty_ui: dynasty_ui.hide()
-	if work_assignment_ui: work_assignment_ui.hide()
 	if end_of_year_popup: end_of_year_popup.hide()
 
 func _clear_all_buildings() -> void:
