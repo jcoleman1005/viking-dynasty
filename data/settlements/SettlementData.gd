@@ -14,6 +14,7 @@ class_name SettlementData
 # Format: { "resource_path": String, "x": int, "y": int, ... }
 @export var placed_buildings: Array[Dictionary] = []
 @export var pending_construction_buildings: Array = []
+@export var decree_queue: Array[ConstructionDecree] = []
 @export var warbands: Array[WarbandData] = []
 @export var max_garrison_bonus: int = 0
 @export var map_seed: int = 0

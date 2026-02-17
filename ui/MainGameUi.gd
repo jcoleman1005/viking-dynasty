@@ -27,15 +27,13 @@ const BUILDING_PATHS = [
 @export var summer_panel_scene: PackedScene  # New: Clan Allocation Menu
 @export var autumn_panel_scene: PackedScene
 
-# ------------------------------------------------------------------------------
-# NODE REFERENCES
-# ------------------------------------------------------------------------------
+@export var decree_popup_scene: PackedScene
 
-@onready var center_view: Control = %CenterView
-
-# Sidebar References
+@export_group("Sidebar Configuration")
 @export var sidebar_panel: Control
 @export var sidebar_content: Control
+
+@onready var center_view: Control = %CenterView
 
 # ------------------------------------------------------------------------------
 # STATE
@@ -50,6 +48,7 @@ var idle_worker_warning: ConfirmationDialog # NEW: Runtime generated dialog
 # ------------------------------------------------------------------------------
 
 func _ready() -> void:
+	Loggie.msg("MainGameUI: decree_popup_scene state: " + str(decree_popup_scene)).domain(LogDomains.UI).info()
 	var available_buildings = _scan_for_buildings()
 	
 	if bottom_bar and bottom_bar.has_method("setup"):
@@ -83,6 +82,8 @@ func _connect_signals() -> void:
 			Loggie.msg("EventBus missing 'sidebar_close_requested' signal").domain(LogDomains.UI).error()
 		else:
 			EventBus.sidebar_close_requested.connect(_close_sidebar)
+		
+		EventBus.construction_decree_issued.connect(_on_construction_decree_issued)
 		
 		if bottom_bar:
 			bottom_bar.scene_navigation_requested.connect(func(path):
@@ -134,7 +135,7 @@ func _open_sidebar(scene: PackedScene, module_name: String) -> void:
 	
 	# 2. Instance new module
 	if scene:
-		Loggie.msg("Instantiating Module: " + module_name).info()
+		Loggie.msg("Instantiating Module: " + module_name).domain(LogDomains.UI).info()
 		
 		var instance = scene.instantiate()
 		instance.name = module_name
@@ -151,7 +152,7 @@ func _open_sidebar(scene: PackedScene, module_name: String) -> void:
 			instance.setup()
 			
 	else:
-		Loggie.msg("Sidebar scene is null for: " + module_name).error()
+		Loggie.msg("Sidebar scene is null for: " + module_name).domain(LogDomains.UI).error()
 		return
 
 	# 3. Animate Open
@@ -171,6 +172,16 @@ func _close_sidebar() -> void:
 	sidebar_tween.tween_property(sidebar_panel, "position:x", target_x, 0.3)
 	
 	is_sidebar_open = false
+
+func _on_construction_decree_issued(decree: ConstructionDecree) -> void:
+	if decree_popup_scene:
+		var popup = decree_popup_scene.instantiate()
+		add_child(popup)
+		if popup.has_method("setup"):
+			popup.setup(decree)
+		Loggie.msg("Decree Popup Opened via MainGameUI").domain(LogDomains.UI).info()
+	else:
+		Loggie.msg("decree_popup_scene not assigned in MainGameUI").domain(LogDomains.UI).error()
 
 # ------------------------------------------------------------------------------
 # DATA LOADING
@@ -218,7 +229,7 @@ func _update_season_state(context: Dictionary = {}) -> void:
 			DynastyManager.Season.WINTER: season_advance_btn.text = "End Year"
 
 	_update_center_view(current_season, context)
-	Loggie.msg("UI Season State Updated: " + str(current_season)).info()
+	Loggie.msg("UI Season State Updated: " + str(current_season)).domain(LogDomains.UI).info()
 
 # MODIFIED: Intercepts the click to check for idle workers in Summer
 func _on_advance_season_clicked() -> void:

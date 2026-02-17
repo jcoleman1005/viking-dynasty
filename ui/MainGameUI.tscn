@@ -7,9 +7,10 @@
 [ext_resource type="PackedScene" uid="uid://c8k2j1m5oax4" path="res://ui/BottomBar.tscn" id="3_3ebjf"]
 [ext_resource type="PackedScene" uid="uid://dqxvcgqjx2s8o" path="res://ui/seasonal/SeasonalCouncilUI.tscn" id="3_h5nvc"]
 [ext_resource type="PackedScene" uid="uid://ciue5kdakyr78" path="res://ui/RaidPrepWindow.tscn" id="7_xkt7x"]
-[ext_resource type="PackedScene" uid="uid://btsp8rkjum5r2" path="res://ui/settlement/ClanAllocationMenu.tscn" id="8_amvws"]
+[ext_resource type="PackedScene" uid="uid://b8w7hgtu4g7j" path="res://ui/settlement/ClanAllocationMenu.tscn" id="8_amvws"]
 [ext_resource type="PackedScene" uid="uid://dsa4vufqdwp0" path="res://ui/components/BuildMenu.tscn" id="9_amvws"]
 [ext_resource type="PackedScene" uid="uid://b808q4y205n3" path="res://ui/components/RaidMenu.tscn" id="9_h5nvc"]
+[ext_resource type="PackedScene" uid="uid://dg8k5m2j6l1p" path="res://ui/construction/DecreeAuthorizationPopup.tscn" id="10_decree"]
 
 [node name="MainGameUI" type="Control" node_paths=PackedStringArray("top_bar", "bottom_bar", "season_advance_btn", "sidebar_panel", "sidebar_content")]
 layout_mode = 3
@@ -25,7 +26,9 @@ bottom_bar = NodePath("MainLayout/BottomBar")
 season_advance_btn = NodePath("EndYearOverlay/SeasonAdvanceBtn")
 dynasty_ui_scene = ExtResource("2_amvws")
 council_panel_scene = ExtResource("3_h5nvc")
+summer_panel_scene = ExtResource("8_amvws")
 autumn_panel_scene = ExtResource("3_0u8js")
+decree_popup_scene = ExtResource("10_decree")
 sidebar_panel = NodePath("SidebarLayer/SidebarPanel")
 sidebar_content = NodePath("SidebarLayer/SidebarPanel/SidebarContent")
 

@@ -10,6 +10,12 @@ var preview_visuals: Node2D
 var is_active: bool = false
 var error_label: Label 
 
+# --- Decree Mode State ---
+var is_decree_mode: bool = false
+var _decree_building_data: BuildingData = null
+var _decree_footprints: Dictionary = {} # maps Vector2i grid_pos to Line2D node
+var footprint_container: Node2D
+
 # --- Grid & Placement ---
 var grid_overlay: Node2D
 var can_place: bool = false
@@ -26,6 +32,10 @@ var tether_color_invalid: Color = Color(1.0, 0.2, 0.2, 0.8)
 
 func _ready() -> void:
 	z_index = 100 
+	
+	footprint_container = Node2D.new()
+	footprint_container.name = "FootprintContainer"
+	add_child(footprint_container)
 	
 	grid_overlay = Node2D.new()
 	grid_overlay.name = "GridOverlay"
@@ -45,6 +55,14 @@ func _ready() -> void:
 	# Listen for placement requests
 	if EventBus.has_signal("building_ready_for_placement"):
 		EventBus.building_ready_for_placement.connect(set_building_preview)
+	
+	if EventBus.has_signal("decree_selection_mode_started"):
+		EventBus.decree_selection_mode_started.connect(_on_decree_selection_mode_started)
+	
+	EventBus.decree_authorized.connect(_on_decree_authorized)
+	EventBus.decree_sealed.connect(_on_decree_sealed)
+	EventBus.decree_cancelled.connect(_on_decree_cancelled)
+	EventBus.decree_interaction_finished.connect(_on_decree_interaction_finished)
 	
 	visible = false
 	set_process(false)
@@ -150,6 +168,84 @@ func _process(_delta: float) -> void:
 	_update_visual_feedback()
 	queue_redraw()
 
+func _on_decree_selection_mode_started(building_data: BuildingData) -> void:
+	is_decree_mode = true
+	_decree_building_data = building_data
+	set_building_preview(building_data)
+	Loggie.msg("Decree Selection Mode Active: Select a resource node").domain(LogDomains.UI).info()
+
+func _on_decree_authorized(decree: ConstructionDecree) -> void:
+	Loggie.msg("BuildingPreviewCursor: Decree authorized signal received").domain(LogDomains.UI).info()
+	if not SettlementManager.active_tilemap_layer:
+		Loggie.msg("BuildingPreviewCursor: No active tilemap layer").domain(LogDomains.UI).warn()
+		return
+
+	# The green preview is still visible, so remove it first.
+	_cleanup_preview()
+		
+	# Create a new Line2D for the footprint
+	var tile_size = Vector2(64, 32)
+	if SettlementManager.has_method("get_active_grid_cell_size"):
+		tile_size = SettlementManager.get_active_grid_cell_size()
+		
+	var half_w = tile_size.x * 0.5
+	var half_h = tile_size.y * 0.5
+	var basis_x = Vector2(half_w, half_h)
+	var basis_y = Vector2(-half_w, half_h)
+	
+	var w = float(decree.building_data.grid_size.x)
+	var h = float(decree.building_data.grid_size.y)
+	var top_left_grid = Vector2(-w * 0.5, -h * 0.5)
+	
+	var p_top_left = (basis_x * top_left_grid.x) + (basis_y * top_left_grid.y)
+	var p_top_right = (basis_x * (top_left_grid.x + w)) + (basis_y * top_left_grid.y)
+	var p_bot_right = (basis_x * (top_left_grid.x + w)) + (basis_y * (top_left_grid.y + h))
+	var p_bot_left = (basis_x * top_left_grid.x) + (basis_y * (top_left_grid.y + h))
+	
+	var footprint = Line2D.new()
+	footprint.name = "DecreeFootprint_%s" % str(decree.resolved_grid_pos)
+	footprint.points = PackedVector2Array([
+		p_top_left,
+		p_top_right,
+		p_bot_right,
+		p_bot_left,
+		p_top_left
+	])
+	
+	footprint.width = 2.0
+	footprint.default_color = Color(0.8, 0.6, 0.15, 0.85) # Muted Gold
+	
+	# Position the outline
+	footprint_container.add_child(footprint)
+	_decree_footprints[decree.resolved_grid_pos] = footprint
+	
+	# Ensure the cursor node itself is visible so children are rendered
+	visible = true
+	Loggie.msg("BuildingPreviewCursor: Footprint added at " + str(decree.resolved_grid_pos)).domain(LogDomains.UI).info()
+
+func _on_decree_interaction_finished() -> void:
+	_cancel_decree_mode()
+
+func _on_decree_sealed(grid_pos: Vector2i) -> void:
+	if _decree_footprints.has(grid_pos):
+		var footprint = _decree_footprints[grid_pos]
+		if is_instance_valid(footprint):
+			footprint.queue_free()
+		_decree_footprints.erase(grid_pos)
+		
+	if _decree_footprints.is_empty() and not is_active:
+		visible = false
+
+func _on_decree_cancelled(grid_pos: Vector2i) -> void:
+	if _decree_footprints.has(grid_pos):
+		var footprint = _decree_footprints[grid_pos]
+		if is_instance_valid(footprint):
+			footprint.queue_free()
+		_decree_footprints.erase(grid_pos)
+		
+	# This signal can now mean the whole flow is cancelled
+	_cancel_decree_mode()
+
 func _input(event: InputEvent) -> void:
 	if not is_active: return
 	
@@ -172,17 +268,57 @@ func _input(event: InputEvent) -> void:
 				
 				# Allow cancelling via Right Click even over UI
 				if event.button_index == MOUSE_BUTTON_RIGHT:
-					cancel_preview()
+					if is_decree_mode:
+						_cancel_decree_mode()
+					else:
+						cancel_preview()
 					get_viewport().set_input_as_handled()
 				return 
 
 		if event.button_index == MOUSE_BUTTON_LEFT:
-			_try_place_building()
+			if is_decree_mode:
+				_try_issue_decree()
+			else:
+				_try_place_building()
 			get_viewport().set_input_as_handled() 
 			
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
-			cancel_preview()
+			if is_decree_mode:
+				_cancel_decree_mode()
+			else:
+				cancel_preview()
 			get_viewport().set_input_as_handled()
+
+func _try_issue_decree() -> void:
+	if not nearest_node:
+		Loggie.msg("No valid resource node selected").domain(LogDomains.UI).warn()
+		return
+		
+	# Verify resource type matches
+	var economic_data = _decree_building_data as EconomicBuildingData
+	if not economic_data or not "resource_type" in nearest_node or nearest_node.resource_type != economic_data.resource_type:
+		Loggie.msg("Selected node does not match building resource type").domain(LogDomains.UI).warn()
+		return
+
+	var decree = ConstructionAuthority.issue_decree(_decree_building_data, nearest_node)
+	if decree:
+		_open_decree_popup(decree)
+		# Freeze the cursor in place while the popup is open.
+		# The full cleanup is handled by the interaction finished/cancelled signals.
+		set_process(false)
+	else:
+		Loggie.msg("Failed to issue decree - No valid placement found near node").domain(LogDomains.UI).error()
+
+func _cancel_decree_mode() -> void:
+	is_decree_mode = false
+	_decree_building_data = null
+	cancel_preview()
+
+func _open_decree_popup(decree: ConstructionDecree) -> void:
+	if EventBus:
+		EventBus.construction_decree_issued.emit(decree)
+	else:
+		Loggie.msg("EventBus missing, cannot open decree popup").domain(LogDomains.UI).error()
 
 func _try_place_building() -> void:
 	if not is_active or not can_place: return
@@ -200,7 +336,9 @@ func cancel_preview() -> void:
 	var refunded_data = current_building_data
 
 	is_active = false
-	visible = false
+	if _decree_footprints.is_empty():
+		visible = false
+		
 	set_process(false)
 	set_process_input(false)
 	
@@ -209,6 +347,7 @@ func cancel_preview() -> void:
 	
 	EventBus.building_placement_cancelled.emit(refunded_data)
 	Loggie.msg("Placement Cancelled").domain(LogDomains.UI).debug()
+	queue_redraw()
 
 func _cleanup_preview() -> void:
 	if preview_visuals: 

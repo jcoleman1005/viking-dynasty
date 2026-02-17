@@ -1,0 +1,87 @@
+[gd_scene load_steps=2 format=3 uid="uid://dg8k5m2j6l1p"]
+
+[ext_resource type="Script" path="res://ui/construction/DecreeAuthorizationPopup.gd" id="1_script"]
+
+[node name="DecreeAuthorizationPopup" type="PanelContainer"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -250.0
+offset_right = 200.0
+offset_bottom = 250.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Title" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "CONSTRUCTION DECREE"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="BuildingNameLabel" type="Label" parent="VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "[Building Name]"
+horizontal_alignment = 1
+
+[node name="CostLabel" type="Label" parent="VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Build Cost: ..."
+horizontal_alignment = 1
+
+[node name="UpkeepLabel" type="Label" parent="VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.6, 0.6, 1)
+text = "Winter Upkeep: ..."
+horizontal_alignment = 1
+
+[node name="HSeparator2" type="HSeparator" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="Instruction" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Assign Household (BUILD Oath only):"
+
+[node name="HouseholdList" type="ItemList" parent="VBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 150)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ErrorLabel" type="Label" parent="VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+text = "Error message"
+horizontal_alignment = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="ConfirmButton" type="Button" parent="VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+text = "AUTHORIZE"
+
+[node name="CancelButton" type="Button" parent="VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+text = "CANCEL"

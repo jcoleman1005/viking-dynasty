@@ -10,6 +10,14 @@ signal building_placed(building_data: BuildingData)
 signal building_construction_completed(building_entry: Dictionary)
 signal building_destroyed(building_data: BuildingData)
 
+# --- Construction Decree Signals ---
+signal decree_selection_mode_started(building_data: BuildingData)
+signal construction_decree_issued(decree: ConstructionDecree)
+signal decree_authorized(decree: ConstructionDecree)
+signal decree_sealed(grid_pos: Vector2i)
+signal decree_cancelled(grid_pos: Vector2i)
+signal decree_interaction_finished()
+
 # --- Inspector Signals ---
 signal building_selected(building: BaseBuilding)
 signal building_deselected()

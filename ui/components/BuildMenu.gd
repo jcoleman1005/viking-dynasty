@@ -68,6 +68,12 @@ func _render_grid() -> void:
 		grid_container.add_child(btn)
 
 func _on_building_clicked(b_data: Resource) -> void:
+	if b_data is EconomicBuildingData:
+		# Economic buildings go through the Decree flow
+		EventBus.decree_selection_mode_started.emit(b_data)
+		Loggie.msg("Economic Building selected - Entering Decree Selection Mode").domain(LogDomains.UI).info()
+		return
+
 	# NBLM Trap 2 Fix: Validate purchase here
 	if EconomyManager.attempt_purchase(b_data.build_cost):
 		Loggie.msg("Building Purchased" + (b_data.display_name) ).info()
