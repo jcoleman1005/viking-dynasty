@@ -320,9 +320,16 @@ func _clear_all_buildings() -> void:
 
 func _initialize_settlement() -> void:
 	# 1. SETUP DATA
-	home_base_data = _create_default_settlement() 
 	SettlementManager.register_active_scene_nodes(building_container)
-	SettlementManager.load_settlement(home_base_data) 
+	
+	if not SettlementManager.has_save_file():
+		Loggie.msg("No save file found. Initializing default settlement.").domain(LogDomains.SETTLEMENT).info()
+		home_base_data = _create_default_settlement() 
+		SettlementManager.load_settlement(home_base_data) 
+	else:
+		Loggie.msg("Save file found. Loading existing settlement.").domain(LogDomains.SETTLEMENT).info()
+		SettlementManager.load_settlement()
+		
 	home_base_data = SettlementManager.current_settlement 
 
 	# 2. GENERATE TERRAIN

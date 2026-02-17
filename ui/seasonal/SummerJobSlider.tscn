@@ -1,16 +1,8 @@
-[gd_scene load_steps=2 format=3 uid="uid://bhsqb83x1g3v0"]
+[gd_scene format=3 uid="uid://bhsqb83x1g3v0"]
 
-[ext_resource type="Script" uid="uid://cl30v0wegwxd4" path="res://ui/seasonal/SummerJobSlider.gd" id="1_script"]
-
-[node name="JobRow_UI" type="PanelContainer" node_paths=PackedStringArray("label_role", "label_count", "btn_minus", "btn_plus", "icon_rect")]
+[node name="JobRow_UI" type="PanelContainer"]
 offset_right = 400.0
 offset_bottom = 50.0
-script = ExtResource("1_script")
-label_role = NodePath("MarginContainer/HBoxContainer/Label_Role")
-label_count = NodePath("MarginContainer/HBoxContainer/CountContainer/Label_Count")
-btn_minus = NodePath("MarginContainer/HBoxContainer/CountContainer/Btn_Minus")
-btn_plus = NodePath("MarginContainer/HBoxContainer/CountContainer/Btn_Plus")
-icon_rect = NodePath("MarginContainer/HBoxContainer/Icon")
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 layout_mode = 2

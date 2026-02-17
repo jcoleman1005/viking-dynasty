@@ -397,7 +397,7 @@ func unregister_active_scene_nodes() -> void:
 	_active_tilemap_layer_ref = weakref(null)
 # --- PERSISTENCE ---
 
-func load_settlement(data: SettlementData) -> void:
+func load_settlement(data: SettlementData = null) -> void:
 	if ResourceLoader.exists(USER_SAVE_PATH):
 		current_settlement = load(USER_SAVE_PATH)
 		
@@ -464,6 +464,9 @@ func reset_manager_state() -> void:
 
 func has_current_settlement() -> bool:
 	return current_settlement != null
+
+func has_save_file() -> bool:
+	return FileAccess.file_exists(USER_SAVE_PATH)
 
 # --- ECONOMY & WORKERS ---
 
