@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="EventData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="Resource_pyre"]
+script = ExtResource("2_event_choice")
+choice_text = "Hold a proper burning. Give the elder a warrior's send-off."
+tooltip_text = "-15 Wood (pyre). Household loyalty +1. Morale stabilised."
+effect_key = "funeral_pyre"
+
+[sub_resource type="Resource" id="Resource_burial"]
+script = ExtResource("2_event_choice")
+choice_text = "A quiet burial. Preserve the wood for warmth."
+tooltip_text = "No Wood cost. Household loyalty +0. Slight unease in hall."
+effect_key = "quiet_burial"
+
+[sub_resource type="Resource" id="Resource_speaks"]
+script = ExtResource("2_event_choice")
+choice_text = "Speak words over the grave yourself."
+tooltip_text = "Requires Renown 20. Free. Household loyalty +2. Your presence means something."
+effect_key = "jarl_speaks"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "The First Death"
+description = "The coldest week of winter takes its first life — an elder from one of your households, found in the morning cold. It was not unexpected, but it is a bad omen, and the hall feels it. How you respond will be remembered."
+event_id = "winter_first_death"
+is_unique = false
+base_chance = 0.5
+prerequisites = Array[String]([])
+trigger_season = "Winter"
+trigger_day = 2
+min_stewardship = -1
+min_command = -1
+min_prowess = -1
+min_renown = -1
+must_have_trait = ""
+must_not_have_trait = ""
+min_available_heirs = -1
+min_conquered_regions = -1
+choices = Array[ExtResource("2_event_choice")]([SubResource("Resource_pyre"), SubResource("Resource_burial"), SubResource("Resource_speaks")])

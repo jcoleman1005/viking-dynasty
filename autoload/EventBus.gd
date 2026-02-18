@@ -74,6 +74,7 @@ signal advance_season_requested() # NEW: The primary time driver
 
 ## UPDATED: Now includes context_data (Dictionary) for the season transition payload.
 signal season_changed(season_name: String, context_data: Dictionary) 
+signal summer_day_changed(current_day: int, max_days: int)
 
 # --- NEW: Seasonal UI System Signals ---
 signal hall_action_updated

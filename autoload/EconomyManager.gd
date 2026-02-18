@@ -979,6 +979,8 @@ func _update_jarl_stats(grade: String) -> void:
 # --- CONSTRUCTION API ---
 
 func advance_construction_progress() -> Array[Dictionary]:
+	# TODO: Add incremental progress bar updates here to reflect daily progress in the UI 
+	# during the new Summer turn-based day system.
 	var settlement = SettlementManager.current_settlement
 	if not settlement: return []
 	

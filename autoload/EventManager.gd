@@ -60,6 +60,22 @@ func _on_year_ended() -> void:
 	if not event_was_triggered:
 		EventBus.event_system_finished.emit()
 
+func check_daily_events(day: int) -> void:
+	var jarl = DynastyManager.current_jarl
+	if not jarl:
+		return
+	var season_name = DynastyManager.get_current_season_name()
+	for event in available_events:
+		if event.trigger_season != "" \
+		and event.trigger_season != season_name:
+			continue
+		if event.trigger_day != -1 \
+		and event.trigger_day != day:
+			continue
+		if _check_conditions(event, jarl):
+			_trigger_event(event)
+			return
+
 func _check_event_triggers() -> bool:
 	var jarl = DynastyManager.get_current_jarl()
 	if not jarl:

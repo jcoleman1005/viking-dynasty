@@ -84,6 +84,7 @@ func _connect_signals() -> void:
 			EventBus.sidebar_close_requested.connect(_close_sidebar)
 		
 		EventBus.construction_decree_issued.connect(_on_construction_decree_issued)
+		EventBus.summer_day_changed.connect(_update_advance_button)
 		
 		if bottom_bar:
 			bottom_bar.scene_navigation_requested.connect(func(path):
@@ -231,9 +232,20 @@ func _update_season_state(context: Dictionary = {}) -> void:
 	_update_center_view(current_season, context)
 	Loggie.msg("UI Season State Updated: " + str(current_season)).domain(LogDomains.UI).info()
 
+func _update_advance_button(current_day: int, max_days: int) -> void:
+	if DynastyManager.current_season == DynastyManager.Season.SUMMER:
+		season_advance_btn.text = "Next Day (%d/%d)" % [current_day, max_days]
+	else:
+		season_advance_btn.text = "End Season"
+
 # MODIFIED: Intercepts the click to check for idle workers in Summer
 func _on_advance_season_clicked() -> void:
 	if not DynastyManager: return
+	
+	if DynastyManager.current_season == DynastyManager.Season.SUMMER \
+	and DynastyManager.current_day < DynastyManager.SUMMER_DAYS:
+		DynastyManager.advance_day()
+		return
 
 	# 1. Harvest Safety Check (Only in Summer)
 	if DynastyManager.current_season == DynastyManager.Season.SUMMER:

@@ -29,6 +29,9 @@ extends Resource
 ## *before* this event can be considered.
 @export var prerequisites: Array[String] = []
 
+@export var trigger_season: String = ""
+@export var trigger_day: int = -1
+
 @export_group("Event Conditions")
 ## Conditions related to the Jarl's stats.
 @export var min_stewardship: int = -1

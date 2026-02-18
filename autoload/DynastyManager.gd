@@ -18,6 +18,8 @@ var current_year: int = 867
 # --- SEASON STATE ---
 enum Season { SPRING, SUMMER, AUTUMN, WINTER }
 var current_season: Season = Season.SPRING
+const SUMMER_DAYS: int = 12
+var current_day: int = 0
 
 # --- CONSTANTS ---
 const USER_DYNASTY_PATH = "user://savegame_dynasty.tres"
@@ -30,10 +32,19 @@ func _ready() -> void:
 
 # --- SEASON LOGIC ---
 
+func advance_day() -> void:
+	current_day += 1
+	EventBus.summer_day_changed.emit(current_day, SUMMER_DAYS)
+	EventManager.check_daily_events(current_day)
+	if current_day >= SUMMER_DAYS:
+		advance_season()
+
 func advance_season() -> void:
 	match current_season:
 		Season.SPRING:
 			_transition_to_season(Season.SUMMER)
+			current_day = 1
+			EventBus.summer_day_changed.emit(current_day, SUMMER_DAYS)
 		Season.SUMMER:
 			_transition_to_season(Season.AUTUMN)
 		Season.AUTUMN:

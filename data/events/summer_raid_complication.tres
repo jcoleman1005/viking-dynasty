@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="EventData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="Resource_burial"]
+script = ExtResource("2_event_choice")
+choice_text = "Hold a proper burial rite. Honour the fallen."
+tooltip_text = "-20 Food (feast). +10 Renown. Surviving warriors morale +1."
+effect_key = "burial_rite"
+
+[sub_resource type="Resource" id="Resource_wergild"]
+script = ExtResource("2_event_choice")
+choice_text = "Pay wergild to their families."
+tooltip_text = "-60 Gold. Household loyalty maintained. No Renown."
+effect_key = "pay_wergild"
+
+[sub_resource type="Resource" id="Resource_ignore"]
+script = ExtResource("2_event_choice")
+choice_text = "Say nothing. Focus on next season."
+tooltip_text = "No cost now. Renown -5 over time. Household loyalty -2."
+effect_key = "ignore_fallen"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "The Raid Goes Wrong"
+description = "A rider reaches you mid-summer with grim news from the raid: your warband has taken the target's goods, but the Fyrd arrived faster than expected. Your squad leader is wounded and the retreat was costly. Three warriors did not come back."
+event_id = "summer_raid_complication"
+is_unique = false
+base_chance = 0.55
+prerequisites = Array[String]([])
+trigger_season = "Summer"
+trigger_day = 8
+min_stewardship = -1
+min_command = -1
+min_prowess = -1
+min_renown = -1
+must_have_trait = ""
+must_not_have_trait = ""
+min_available_heirs = -1
+min_conquered_regions = -1
+choices = Array[ExtResource("2_event_choice")]([SubResource("Resource_burial"), SubResource("Resource_wergild"), SubResource("Resource_ignore")])
