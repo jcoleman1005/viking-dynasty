@@ -242,3 +242,7 @@ func remove_trait(trait_name: String) -> bool:
 			traits.remove_at(i)
 			return true
 	return false
+
+@export_group("Game State")
+@export var campaign_flags: Dictionary = {}
+@export var event_history: Array[String] = []

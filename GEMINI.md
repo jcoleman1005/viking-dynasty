@@ -33,6 +33,8 @@
 - **Orchestration**: `DynastyManager.advance_day()` manages the increment, signal emission, and event checks.
 - **UI Integration**: The main advancement button now reflects the current day (e.g., "Next Day (1/12)") during Summer and intercepts clicks to advance the day until the limit is reached.
 - **Event Hook**: `EventManager.check_daily_events()` now filters events by `trigger_season` and `trigger_day` defined in `EventData.gd`, allowing for precise event timing.
+- **Persistence**: Event history is now stored directly in `JarlData`, ensuring unique events remain unique across save/load cycles.
+- **Campaign Flags**: Added `campaign_flags` to `JarlData` to support future multi-event story arcs and state-based triggers.
 
 ## Current Context (Feb 17, 2026)
 - **Active Branch**: `Winter-Refactor`

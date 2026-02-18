@@ -29,8 +29,14 @@ func initialize_event_system() -> void:
 	
 	if DynastyManager:
 		DynastyManager.year_ended.connect(_on_year_ended)
+		DynastyManager.jarl_stats_updated.connect(func(_data): _sync_event_history())
 	else:
 		Loggie.msg("DynastyManager Autoload not found!").domain("EVENT").error()
+
+func _sync_event_history() -> void:
+	if DynastyManager.current_jarl:
+		fired_unique_events = \
+		DynastyManager.current_jarl.event_history.duplicate()
 
 func _load_events_from_disk() -> void:
 	available_events.clear()
@@ -117,6 +123,9 @@ func _trigger_event(event_data: EventData) -> void:
 	
 	if event_data.is_unique:
 		fired_unique_events.append(event_data.event_id)
+		if DynastyManager.current_jarl:
+			DynastyManager.current_jarl.event_history.append(
+				event_data.event_id)
 
 func trigger_event_by_id(id: String) -> void:
 	for event in available_events:
