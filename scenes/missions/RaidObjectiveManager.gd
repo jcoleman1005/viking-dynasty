@@ -8,6 +8,21 @@ class_name RaidObjectiveManager
 @export var settlement_bridge_scene_path: String = "res://scenes/levels/SettlementBridge.tscn"
 @export var is_defensive_mission: bool = false
 
+@export_group("Timers")
+@export var fyrd_arrival_time: float = 120.0
+@export var decisive_victory_time: float = 300.0
+@export var defensive_delay: float = 3.0
+@export var failure_delay: float = 6.0
+
+@export_group("Grading")
+@export var casualty_limit: int = 2
+
+@export_group("Loot")
+@export var base_victory_gold: int = 200
+@export var base_renown: int = 200
+@export var renown_per_difficulty: int = 50
+@export var non_eco_building_loot: int = 50
+
 # --- Internal State ---
 var raid_loot: RaidLootData
 var rts_controller: RTSController
@@ -26,8 +41,7 @@ var dead_units_log: Array[UnitData] = []
 var escaped_unit_count: int = 0
 
 # --- FYRD TIMER STATE ---
-const FYRD_ARRIVAL_TIME: float = 120.0 # 2 Minutes
-var time_remaining: float = FYRD_ARRIVAL_TIME
+var time_remaining: float = 120.0 # Initialized to default, updated in initialize
 var fyrd_timer_active: bool = false
 var timer_label: Label
 
@@ -38,6 +52,7 @@ const UI_THEME = preload("res://ui/themes/VikingDynastyTheme.tres")
 
 func _ready() -> void:
 	raid_loot = RaidLootData.new()
+	time_remaining = fyrd_arrival_time
 	# Connect to global unit death signal to track casualties
 	EventBus.player_unit_died.connect(_on_player_unit_died)
 	EventBus.raid_loot_secured.connect(_on_raid_loot_secured)
@@ -280,7 +295,7 @@ func _on_defensive_mission_won() -> void:
 	if mission_over: return
 	mission_over = true
 	_show_victory_message("VICTORY!", "All attackers have been defeated.")
-	await get_tree().create_timer(3.0).timeout
+	await get_tree().create_timer(defensive_delay).timeout
 	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
 
 func _on_mission_failed(reason: String) -> void:
@@ -295,7 +310,7 @@ func _on_mission_failed(reason: String) -> void:
 	else:
 		_show_failure_message(reason + "\n\nYour raid failed. No loot was secured.")
 	
-	await get_tree().create_timer(6.0).timeout
+	await get_tree().create_timer(failure_delay).timeout
 	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
 
 # --- VICTORY GRADING LOGIC ---
@@ -305,11 +320,14 @@ func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	
 	var duration_sec = (Time.get_ticks_msec() - battle_start_time) / 1000.0
 	var grade = "Standard"
-	var casualty_limit = 2
 	var lost_count = dead_units_log.size()
 	
+	# Logic fix: Use target's par time or default
+	var target = RaidManager.current_raid_target
+	var par = target.par_time_seconds if target else decisive_victory_time
+	
 	# Simple Grading Logic
-	if lost_count == 0 and duration_sec < 300:
+	if lost_count == 0 and duration_sec < par:
 		grade = "Decisive"
 	elif lost_count > casualty_limit:
 		grade = "Pyrrhic"
@@ -333,7 +351,7 @@ func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	# Calculate Renown
 	var difficulty = RaidManager.current_raid_difficulty
 	# Base 200 + 50 per star
-	mission_result.renown_earned = 200 + (difficulty * 50)
+	mission_result.renown_earned = base_renown + (difficulty * renown_per_difficulty)
 	
 	mission_result.casualties = dead_units_log.duplicate()
 	

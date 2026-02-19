@@ -86,12 +86,14 @@ func _spawn_unit_core(warband: WarbandData, target_pos: Vector2, is_player: bool
 	# 1. Coordinate Safety Check
 	var final_pos = target_pos
 	
-	# REFACTOR FIX: Use NavigationManager directly
-	if NavigationManager:
+	if RaidNavigationManager.is_raid_active:
+		final_pos = RaidNavigationManager.request_valid_spawn_point(target_pos, 4)
+	elif NavigationManager:
 		final_pos = NavigationManager.request_valid_spawn_point(target_pos, 4)
-		if final_pos == Vector2.INF:
-			Loggie.msg("Spawn blocked at %s for %s" % [target_pos, unit_data.display_name]).domain(LogDomains.NAVIGATION).warn()
-			return null
+		
+	if final_pos == Vector2.INF:
+		Loggie.msg("Spawn blocked at %s for %s" % [target_pos, unit_data.display_name]).domain(LogDomains.NAVIGATION).warn()
+		return null
 	
 	# 2. Instantiate
 	var unit = scene_ref.instantiate() as BaseUnit
@@ -196,19 +198,21 @@ func _spawn_civilians(count: int, origin: Vector2, is_enemy: bool) -> void:
 		var final_pos = tentative_pos
 		
 		# 3. --- SAFETY CHECK (REFACTORED) ---
-		if NavigationManager:
-			# Debug: What is the random spot?
+		if RaidNavigationManager.is_raid_active:
+			var closest = RaidNavigationManager.request_valid_spawn_point(tentative_pos, 5)
+			if closest != Vector2.INF:
+				final_pos = closest
+			else:
+				final_pos = origin
+		elif NavigationManager:
 			var grid_check = NavigationManager._world_to_grid(tentative_pos)
 			var is_water = NavigationManager.is_point_solid(grid_check)
 			
 			if is_water:
-				# It landed in water. Request nearest land (Radius 5 tiles).
 				var safe_pos = NavigationManager.request_valid_spawn_point(tentative_pos, 5)
-				
 				if safe_pos != Vector2.INF:
 					final_pos = safe_pos
 				else:
-					# Deep water / No land found. Fallback to Origin.
 					final_pos = origin 
 		# -----------------------
 		

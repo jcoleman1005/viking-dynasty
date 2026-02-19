@@ -20,6 +20,8 @@ default_enemy_base_path = "res://data/settlements/generated/raid_rich_hub_01.tre
 enemy_spawn_position = NodePath("EnemySpawnPosition")
 fyrd_unit_scene = ExtResource("4_k882g")
 
+[node name="RaidNavRegion" type="NavigationRegion2D" parent="."]
+
 [node name="TileMapLayer" type="TileMapLayer" parent="."]
 tile_set = ExtResource("5_k882g")
 

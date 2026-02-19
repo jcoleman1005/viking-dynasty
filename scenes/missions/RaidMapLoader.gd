@@ -2,6 +2,9 @@
 class_name RaidMapLoader
 extends Node
 
+const GRID_WIDTH = 60
+const GRID_HEIGHT = 60
+
 var building_container: Node2D
 
 func setup(p_container: Node2D, enemy_data: SettlementData) -> void:
@@ -23,20 +26,17 @@ func setup(p_container: Node2D, enemy_data: SettlementData) -> void:
 		print("[DIAGNOSTIC] RaidMapLoader: Generating Terrain with Seed: ", enemy_data.map_seed)
 		TerrainGenerator.generate_base_terrain(
 			tile_map,
-			SettlementManager.GRID_WIDTH, 
-			SettlementManager.GRID_HEIGHT, 
+			GRID_WIDTH, 
+			GRID_HEIGHT, 
 			enemy_data.map_seed
 		)
 		
-		# [CRITICAL WAIT]
-		# Ensure TileMap has processed the changes before we scan
-		# (Usually synchronous, but safe to be explicit)
+		# [CRITICAL] Register the new map with NavigationManager
+		if NavigationManager:
+			NavigationManager.register_map(tile_map, Rect2i(0, 0, GRID_WIDTH, GRID_HEIGHT))
 	else:
 		printerr("RaidMapLoader: Could not find TileMapLayer!")
 
-	# 3. REFRESH GRID (Now that tiles exist, scan them)
-	print("[DIAGNOSTIC] RaidMapLoader: Refreshing Grid State...")
-	SettlementManager._refresh_grid_state()
 	print("[DIAGNOSTIC] RaidMapLoader: Setup Complete.")
 
 func load_base(data: SettlementData, is_player_owner: bool) -> BaseBuilding:
@@ -58,29 +58,13 @@ func _spawn_single_building_visual(entry: Dictionary) -> BaseBuilding:
 	if not b_data: return null
 	
 	# --- NEW: SAFETY CHECK ---
-	# Ensure we don't spawn on water. If the spot is solid, find a new one.
+	# Ensure we don't spawn on water.
 	var final_grid_pos = original_pos
+	if SettlementManager.has_method("get_nearest_valid_spawn_point"):
+		final_grid_pos = SettlementManager.get_nearest_valid_spawn_point(original_pos)
 	
-	# 1. Check if the generated spot is illegal (Solid/Water)
-	if SettlementManager.active_astar_grid.is_point_solid(original_pos):
-		# 2. Search for nearest land (Spiral out 5 tiles)
-		var found_land = false
-		for r in range(1, 6):
-			for x in range(-r, r + 1):
-				for y in range(-r, r + 1):
-					var check = original_pos + Vector2i(x, y)
-					# Must be in bounds and NOT solid
-					if SettlementManager.active_astar_grid.region.has_point(check):
-						if not SettlementManager.active_astar_grid.is_point_solid(check):
-							final_grid_pos = check
-							found_land = true
-							break
-				if found_land: break
-			if found_land: break
-		
-		if not found_land:
-			print("RaidMapLoader: Could not find land for %s at %s. Skipping." % [b_data.display_name, original_pos])
-			return null # Delete building rather than floating on water
+	if final_grid_pos != original_pos:
+		Loggie.msg("RaidMapLoader: Repositioned %s to nearest land." % b_data.display_name).domain(LogDomains.GAMEPLAY).info()
 			
 	# Update the entry so the data matches the visual reality
 	entry["grid_position"] = final_grid_pos

@@ -29,6 +29,7 @@ NavigationManager="*res://autoload/NavigationManager.gd"
 EconomyManager="*res://autoload/EconomyManager.gd"
 RaidManager="*res://autoload/RaidManager.gd"
 ConstructionAuthority="*res://autoload/ConstructionAuthority.gd"
+RaidNavigationManager="*res://autoload/RaidNavigationManager.gd"
 
 [display]
 

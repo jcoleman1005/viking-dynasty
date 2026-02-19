@@ -2,7 +2,7 @@ PROJECT SOURCE CODE LIBRARY
 ===========================
 CONTAINS: Full Implementation Logic, Scene Trees, and Resource Data.
 INSTRUCTION: This is the raw source code. Use this to answer specific implementation questions.
-GENERATED: 2026-02-17T17:39:43
+GENERATED: 2026-02-19T09:46:15
 ===========================
 
 
@@ -26763,6 +26763,8 @@ var current_year: int = 867
 # --- SEASON STATE ---
 enum Season { SPRING, SUMMER, AUTUMN, WINTER }
 var current_season: Season = Season.SPRING
+const SUMMER_DAYS: int = 12
+var current_day: int = 0
 
 # --- CONSTANTS ---
 const USER_DYNASTY_PATH = "user://savegame_dynasty.tres"
@@ -26775,10 +26777,20 @@ func _ready() -> void:
 
 # --- SEASON LOGIC ---
 
+func advance_day() -> void:
+	current_day += 1
+	EventBus.summer_day_changed.emit(current_day, SUMMER_DAYS)
+	EventManager.check_daily_events(current_day)
+	if current_day >= SUMMER_DAYS:
+		advance_season()
+
 func advance_season() -> void:
 	match current_season:
 		Season.SPRING:
 			_transition_to_season(Season.SUMMER)
+			current_day = 1
+			EventBus.summer_day_changed.emit(current_day, SUMMER_DAYS)
+			EventManager.check_daily_events(current_day)
 		Season.SUMMER:
 			_transition_to_season(Season.AUTUMN)
 		Season.AUTUMN:
@@ -26812,6 +26824,8 @@ func _transition_to_season(new_season: Season) -> void:
 	
 	# 3. Winter Specifics (Hunger Check)
 	if s_name == "Winter":
+		# TODO: Implement a turn-based day system for Winter (e.g., WINTER_DAYS = 6)
+		# to allow for daily events and incremental survival pressure.
 		start_winter_cycle() # Recalculate Hall Actions BEFORE signal
 		if SettlementManager.has_method("process_warband_hunger"):
 			var warnings = SettlementManager.process_warband_hunger()
@@ -26843,6 +26857,9 @@ func _transition_to_season(new_season: Season) -> void:
 	
 	# 7. Legacy Feedback
 	_display_seasonal_feedback(s_name, payout_report)
+	
+	# 8. Check for seasonal events (Day -1)
+	EventManager.check_daily_events(-1)
 
 func _display_seasonal_feedback(season_name: String, payout: Dictionary) -> void:
 	var center_screen = Vector2(960, 500)
@@ -28106,6 +28123,12 @@ func apply_raid_damages() -> Dictionary:
 
 func add_resources(resources: Dictionary) -> void:
 	deposit_resources(resources)
+
+func add_resource(type: String, amount: int) -> void:
+	deposit_resources({type: amount})
+
+func get_harvest_yield_modifier() -> float:
+	return DynastyManager.active_year_modifiers.get("mod_harvest_yield", 0.0)
 	
 # --- ALLOCATION & PROJECTION API ---
 
@@ -28273,6 +28296,8 @@ func _update_jarl_stats(grade: String) -> void:
 # --- CONSTRUCTION API ---
 
 func advance_construction_progress() -> Array[Dictionary]:
+	# TODO: Add incremental progress bar updates here to reflect daily progress in the UI 
+	# during the new Summer turn-based day system.
 	var settlement = SettlementManager.current_settlement
 	if not settlement: return []
 	
@@ -28411,6 +28436,7 @@ signal advance_season_requested() # NEW: The primary time driver
 
 ## UPDATED: Now includes context_data (Dictionary) for the season transition payload.
 signal season_changed(season_name: String, context_data: Dictionary) 
+signal summer_day_changed(current_day: int, max_days: int)
 
 # --- NEW: Seasonal UI System Signals ---
 signal hall_action_updated
@@ -28479,8 +28505,14 @@ func initialize_event_system() -> void:
 	
 	if DynastyManager:
 		DynastyManager.year_ended.connect(_on_year_ended)
+		DynastyManager.jarl_stats_updated.connect(func(_data): _sync_event_history())
 	else:
 		Loggie.msg("DynastyManager Autoload not found!").domain("EVENT").error()
+
+func _sync_event_history() -> void:
+	if DynastyManager.current_jarl:
+		fired_unique_events = \
+		DynastyManager.current_jarl.event_history.duplicate()
 
 func _load_events_from_disk() -> void:
 	available_events.clear()
@@ -28502,13 +28534,33 @@ func _load_events_from_disk() -> void:
 					Loggie.msg("Loaded resource is neither EventData nor DisputeEventData: %s" % path).domain("EVENT").warn()
 			file_name = dir.get_next()
 	# CHANGE: Updated log to reflect both types
-	Loggie.msg("Loaded %d events and %d disputes from disk." % [available_events.size(), available_disputes.size()]).domain("EVENT").info()
+	Loggie.msg("Loaded %d events and %d disputes from disk. Total Pool: %d" % [available_events.size(), available_disputes.size(), available_events.size()]).domain("EVENT").info()
 
 func _on_year_ended() -> void:
 	Loggie.msg("Checking event triggers for end of year...").domain("EVENT").info()
 	var event_was_triggered: bool = _check_event_triggers()
 	if not event_was_triggered:
 		EventBus.event_system_finished.emit()
+
+func check_daily_events(day: int) -> void:
+	Loggie.msg("check_daily_events called. Day: %d Season: %s | Events in Pool: %d" % [day, DynastyManager.get_current_season_name(), available_events.size()]).domain("EVENT").info()
+	var jarl = DynastyManager.current_jarl
+	if not jarl:
+		return
+	var season_name = DynastyManager.get_current_season_name()
+	
+	for event in available_events:
+		if event.trigger_season != "" \
+		and event.trigger_season != season_name:
+			continue
+		
+		if event.trigger_day != -1 \
+		and event.trigger_day != day:
+			continue
+			
+		if _check_conditions(event, jarl):
+			_trigger_event(event)
+			return
 
 func _check_event_triggers() -> bool:
 	var jarl = DynastyManager.get_current_jarl()
@@ -28517,23 +28569,67 @@ func _check_event_triggers() -> bool:
 		return false
 
 	for event in available_events:
+		if not event.trigger_season.is_empty():
+			continue
+			
 		if _check_conditions(event, jarl):
 			_trigger_event(event)
 			return true 
 	return false
 
 func _check_conditions(event: EventData, jarl: JarlData) -> bool:
-	if event.is_unique and event.event_id in fired_unique_events: return false
-	for pre_id in event.prerequisites:
-		if not pre_id in fired_unique_events: return false 
+	Loggie.msg("Checking conditions for event: %s" % event.event_id).domain("EVENT").debug()
 	
-	if event.min_renown > -1 and jarl.renown < event.min_renown: return false
-	if event.min_stewardship > -1 and jarl.get_effective_skill("stewardship") < event.min_stewardship: return false
-	if not event.must_have_trait.is_empty() and not jarl.has_trait(event.must_have_trait): return false
-	if not event.must_not_have_trait.is_empty() and jarl.has_trait(event.must_not_have_trait): return false
-	if event.min_available_heirs > -1 and jarl.get_available_heir_count() < event.min_available_heirs: return false
-	if event.min_conquered_regions > -1 and jarl.conquered_regions.size() < event.min_conquered_regions: return false
-	if randf() > event.base_chance: return false
+	if event.is_unique and event.event_id in fired_unique_events: 
+		Loggie.msg("%s FAILED: already fired" % event.event_id).domain("EVENT").debug()
+		return false
+	for pre_id in event.prerequisites:
+		if not pre_id in fired_unique_events: 
+			Loggie.msg("%s FAILED: prerequisite missing: %s" % [event.event_id, pre_id]).domain("EVENT").debug()
+			return false 
+	
+	if event.min_renown > -1 and jarl.renown < event.min_renown: 
+		Loggie.msg("%s FAILED: low renown" % event.event_id).domain("EVENT").debug()
+		return false
+	if event.min_stewardship > -1 and jarl.get_effective_skill("stewardship") < event.min_stewardship: 
+		Loggie.msg("%s FAILED: low stewardship" % event.event_id).domain("EVENT").debug()
+		return false
+	if not event.must_have_trait.is_empty() and not jarl.has_trait(event.must_have_trait): 
+		Loggie.msg("%s FAILED: missing trait: %s" % [event.event_id, event.must_have_trait]).domain("EVENT").debug()
+		return false
+	if not event.must_not_have_trait.is_empty() and jarl.has_trait(event.must_not_have_trait): 
+		Loggie.msg("%s FAILED: has forbidden trait: %s" % [event.event_id, event.must_not_have_trait]).domain("EVENT").debug()
+		return false
+	if event.min_available_heirs > -1 and jarl.get_available_heir_count() < event.min_available_heirs: 
+		Loggie.msg("%s FAILED: low heirs" % event.event_id).domain("EVENT").debug()
+		return false
+	if event.min_conquered_regions > -1 and jarl.conquered_regions.size() < event.min_conquered_regions: 
+		Loggie.msg("%s FAILED: low regions" % event.event_id).domain("EVENT").debug()
+		return false
+	
+	# --- Pass 3 Custom Conditions ---
+	# Harvest yield condition
+	if event.event_id == "autumn_wounded_harvest":
+		var modifier = EconomyManager.get_harvest_yield_modifier()
+		if modifier >= -0.3:
+			Loggie.msg("%s FAILED: harvest not wounded enough" % event.event_id).domain("EVENT").debug()
+			return false
+
+	# Household loyalty condition  
+	if event.event_id == "summer_oath_break":
+		if SettlementManager.get_lowest_loyalty() >= 3:
+			Loggie.msg("%s FAILED: loyalty too high" % event.event_id).domain("EVENT").debug()
+			return false
+	
+	# Flag-based chance modifier
+	var chance = event.base_chance
+	if event.event_id == "winter_sickness_outbreak":
+		if DynastyManager.active_year_modifiers.has("sickness_seed"):
+			chance = 0.85
+	
+	if randf() > chance: 
+		Loggie.msg("%s FAILED: chance roll" % event.event_id).domain("EVENT").debug()
+		return false
 	
 	Loggie.msg("Conditions MET for event '%s'" % event.event_id).domain("EVENT").info()
 	return true
@@ -28551,6 +28647,9 @@ func _trigger_event(event_data: EventData) -> void:
 	
 	if event_data.is_unique:
 		fired_unique_events.append(event_data.event_id)
+		if DynastyManager.current_jarl:
+			DynastyManager.current_jarl.event_history.append(
+				event_data.event_id)
 
 func trigger_event_by_id(id: String) -> void:
 	for event in available_events:
@@ -28610,6 +28709,110 @@ func _apply_event_consequences(event: EventData, choice: EventChoice) -> void:
 	elif choice.effect_key == "winter_crisis_family_rations":
 		result_data = WinterManager.resolve_crisis_with_family_sacrifice()
 
+	# --- Pass 2 Event Handlers ---
+	elif choice.effect_key == "hire_seer":
+		DynastyManager.apply_year_modifier("seer_present")
+		EconomyManager.add_resource("gold", -30)
+	
+	elif choice.effect_key == "dismiss_seer":
+		pass
+	
+	elif choice.effect_key == "demand_seer":
+		if DynastyManager.current_jarl:
+			DynastyManager.current_jarl.renown -= 10
+	
+	elif choice.effect_key == "contain_fever":
+		EconomyManager.add_resource("food", -20)
+		EconomyManager.add_resource("gold", -10)
+	
+	elif choice.effect_key == "partial_response":
+		EconomyManager.add_resource("food", -10)
+		if randf() < 0.5:
+			DynastyManager.apply_year_modifier("sickness_seed")
+	
+	elif choice.effect_key == "ignore_fever":
+		DynastyManager.apply_year_modifier("sickness_seed")
+	
+	elif choice.effect_key == "full_quarantine":
+		# Placeholder - household labor reduction
+		# not yet implemented, print for now
+		print("full_quarantine: household labor TBD")
+	
+	elif choice.effect_key == "partial_quarantine":
+		if randf() < 0.5:
+			print("partial_quarantine: sickness spreads TBD")
+	
+	elif choice.effect_key == "consult_volva":
+		if DynastyManager.active_year_modifiers.has("sickness_seed"):
+			DynastyManager.active_year_modifiers.erase("sickness_seed")
+		print("consult_volva: sickness resolved")
+	
+	elif choice.effect_key == "ignore_sickness":
+		print("ignore_sickness: population penalty TBD")
+
+	# --- Pass 3 Event Handlers ---
+	elif choice.effect_key == "honour_oath":
+		EconomyManager.add_resource("gold", -20)
+		if DynastyManager.current_jarl:
+			DynastyManager.current_jarl.renown += 10
+	
+	elif choice.effect_key == "deflect_oath":
+		DynastyManager.apply_year_modifier("deflected_oath")
+	
+	elif choice.effect_key == "pay_off_oath":
+		EconomyManager.add_resource("gold", -40)
+	
+	elif choice.effect_key == "grant_land":
+		if DynastyManager.current_jarl:
+			DynastyManager.current_jarl.renown += 10
+		print("grant_land: building plot reduction TBD")
+	
+	elif choice.effect_key == "pay_bondi":
+		EconomyManager.add_resource("gold", -50)
+	
+	elif choice.effect_key == "assert_authority":
+		print("assert_authority: bondi disgruntled flag TBD")
+	
+	elif choice.effect_key == "elevate_bondi":
+		if DynastyManager.current_jarl:
+			DynastyManager.current_jarl.current_authority -= 1
+		print("elevate_bondi: new household creation TBD")
+	
+	elif choice.effect_key == "mediate_oath":
+		if DynastyManager.current_jarl:
+			DynastyManager.current_jarl.current_authority -= 1
+	
+	elif choice.effect_key == "gift_mediate":
+		EconomyManager.add_resource("gold", -30)
+	
+	elif choice.effect_key == "reassign_rival":
+		if DynastyManager.current_jarl:
+			DynastyManager.current_jarl.current_authority -= 1
+	
+	elif choice.effect_key == "coerce_harvest":
+		print("coerce_harvest: permanent loyalty TBD")
+	
+	elif choice.effect_key == "trial_stranger":
+		if DynastyManager.current_jarl:
+			DynastyManager.current_jarl.campaign_flags["stranger_accepted"] = true
+		print("trial_stranger: champion unit spawn TBD")
+	
+	elif choice.effect_key == "refuse_stranger":
+		pass
+	
+	elif choice.effect_key == "interrogate_stranger":
+		print("interrogate_stranger: unique branch TBD")
+	
+	elif choice.effect_key == "slaughter_livestock":
+		EconomyManager.add_resource("food", 40)
+		DynastyManager.apply_year_modifier("harvest_penalty_next")
+	
+	elif choice.effect_key == "emergency_hunt":
+		print("emergency_hunt: household reassignment TBD")
+	
+	elif choice.effect_key == "weather_shortage":
+		DynastyManager.apply_year_modifier("harsh_winter_threshold")
+
 	# If we have a crisis result, show the follow-up narrative window
 	if not result_data.is_empty():
 		show_crisis_result(result_data)
@@ -28626,9 +28829,25 @@ func _apply_event_consequences(event: EventData, choice: EventChoice) -> void:
 				DynastyManager.add_trait_to_heir(heir, TRAIT_RIVAL)
 			else:
 				Loggie.msg("Could not apply 'Rival' trait.").domain("EVENT").warn()
+				
+	# TODO: Implement handlers for all 'pass_1' event effect_keys (e.g., 'great_feast', 'burial_rite', 'buy_grain_all').
+	# These must interface with EconomyManager for resource additions/deductions and emit
+	# EventBus.treasury_updated to refresh the UI, alongside floating text for player feedback.
 
 func show_crisis_result(data: Dictionary) -> void:
-	if not data.get("success", false): return
+	if not data.get("success", false): 
+		var fail_event = EventData.new()
+		fail_event.title = "THE ATTEMPT FAILS"
+		fail_event.description = data.get("narrative", "You could not afford it. The crisis remains.")
+		fail_event.event_id = "winter_crisis_failure"
+		
+		# Add a simple dismiss button
+		var close_choice = EventChoice.new()
+		close_choice.choice_text = "It is done."
+		fail_event.choices.append(close_choice)
+		
+		event_ui.display_event(fail_event)
+		return
 	
 	# Create a dynamic "Result" event
 	var result_event = EventData.new()
@@ -29338,6 +29557,57 @@ func process_defensive_loss() -> Dictionary:
 	
 	last_raid_outcome = "defeat"
 	return aftermath_report
+
+
+--------------------------------------------------
+FILE: res:///autoload/RaidNavigationManager.gd
+--------------------------------------------------
+extends Node
+
+## RaidNavigationManager
+## Wraps NavigationServer2D for use during raids only.
+## Does not interact with NavigationManager.gd (Settlement AStar).
+
+class_name RaidNavigationManager
+
+var navigation_map: RID
+var is_raid_active: bool = false
+
+## Called when a raid scene loads.
+## Gets the NavigationServer map RID from the NavigationRegion2D in the scene.
+func initialize_raid_map(navigation_region: NavigationRegion2D) -> void:
+	navigation_map = navigation_region.get_navigation_map()
+	is_raid_active = true
+	Loggie.msg("RaidNavigationManager: Map initialized.").domain("NAV").info()
+
+## Called when raid scene unloads.
+func cleanup_raid_map() -> void:
+	is_raid_active = false
+	navigation_map = RID()
+
+## Finds a valid spawn position near a target using NavigationServer2D.
+## Replaces NavigationManager.request_valid_spawn_point() during raids.
+func request_valid_spawn_point(target_pos: Vector2, radius: float = 64.0) -> Vector2:
+	if not is_raid_active: return target_pos
+	
+	# NavigationServer2D.map_get_closest_point returns the closest point on the navmesh.
+	var closest = NavigationServer2D.map_get_closest_point(navigation_map, target_pos)
+	return closest
+
+## Not used directly — NavigationAgent2D handles path following per unit.
+## This is a utility for debug purposes.
+func get_next_path_position(from: Vector2, to: Vector2) -> PackedVector2Array:
+	if not is_raid_active: return PackedVector2Array()
+	
+	var query = NavigationPathQueryParameters2D.new()
+	query.map = navigation_map
+	query.start_position = from
+	query.target_position = to
+	
+	var result = NavigationPathQueryResult2D.new()
+	NavigationServer2D.query_path(query, result)
+	
+	return result.get_path()
 
 
 --------------------------------------------------
@@ -30476,6 +30746,22 @@ func apply_raid_social_results(net_gold: int) -> void:
 	else:
 		Loggie.msg("Raid Failure: No social shifts (Shared hardship)").domain(LogDomains.SETTLEMENT).info()
 
+func get_lowest_loyalty() -> int:
+	var lowest = 999
+	if not current_settlement: return lowest
+	for household in current_settlement.households:
+		if household.loyalty < lowest:
+			lowest = household.loyalty
+	return lowest
+
+func get_average_loyalty() -> float:
+	if not current_settlement or current_settlement.households.is_empty():
+		return 0.0
+	var total = 0
+	for household in current_settlement.households:
+		total += household.loyalty
+	return float(total) / current_settlement.households.size()
+
 
 --------------------------------------------------
 FILE: res:///autoload/WinterManager.gd
@@ -30499,6 +30785,8 @@ enum WinterSeverity {
 @export_group("Probabilities")
 @export_range(0.0, 1.0) var harsh_chance: float = 0.20
 @export_range(0.0, 1.0) var mild_chance: float = 0.05
+@export var harsh_winter_chance: float = 0.3
+@export var family_illness_chance: float = 0.3
 
 @export_group("Multipliers")
 @export var harsh_multiplier: float = 1.5
@@ -30606,7 +30894,7 @@ func roll_upcoming_severity() -> void:
 	"""
 	# Logic: 30% chance of HARSH, otherwise NORMAL.
 	# (MILD is currently unused in this specific logic pass, but available for future expansion)
-	if randf() < 0.3:
+	if randf() < harsh_winter_chance:
 		upcoming_severity = WinterSeverity.HARSH
 	else:
 		upcoming_severity = WinterSeverity.NORMAL
@@ -30828,7 +31116,7 @@ func resolve_crisis_with_family_sacrifice() -> Dictionary:
 	if jarl:
 		for heir in jarl.heirs:
 			if heir.status == JarlHeirData.HeirStatus.Available:
-				if randf() < 0.30: # 30% Risk
+				if randf() < family_illness_chance: # 30% Risk
 					heir.status = JarlHeirData.HeirStatus.Maimed
 					sick_heirs += 1
 					Loggie.msg("%s has fallen ill due to starvation rations!" % heir.display_name).domain(LogDomains.SYSTEM).warn()
@@ -32039,6 +32327,10 @@ func remove_trait(trait_name: String) -> bool:
 			return true
 	return false
 
+@export_group("Game State")
+@export var campaign_flags: Dictionary = {}
+@export var event_history: Array[String] = []
+
 
 --------------------------------------------------
 FILE: res:///data/characters/JarlHeirData.gd
@@ -32232,6 +32524,9 @@ extends Resource
 ## *before* this event can be considered.
 @export var prerequisites: Array[String] = []
 
+@export var trigger_season: String = ""
+@export var trigger_day: int = -1
+
 @export_group("Event Conditions")
 ## Conditions related to the Jarl's stats.
 @export var min_stewardship: int = -1
@@ -32285,6 +32580,586 @@ metadata/_custom_type_script = "uid://c7lxr02yr1fn6"
 
 
 --------------------------------------------------
+FILE: res:///data/events/autumn_feast_decision.tres
+--------------------------------------------------
+[gd_resource type="Resource" script_class="EventData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="Resource_great"]
+script = ExtResource("2_event_choice")
+choice_text = "Hold a great feast. Spare nothing."
+tooltip_text = "-60 Food, -30 Gold. All household morale +3. Renown +8."
+effect_key = "great_feast"
+
+[sub_resource type="Resource" id="Resource_modest"]
+script = ExtResource("2_event_choice")
+choice_text = "Hold a modest feast. Enough to honour the season."
+tooltip_text = "-25 Food, -10 Gold. All household morale +1. No Renown."
+effect_key = "modest_feast"
+
+[sub_resource type="Resource" id="Resource_cancel"]
+script = ExtResource("2_event_choice")
+choice_text = "Cancel the feast. Survival comes first."
+tooltip_text = "No cost. All household morale -2. Renown -5. May trigger resentment event in winter."
+effect_key = "cancel_feast"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "The Jarl's Table"
+description = "Autumn demands a feast — it is tradition, and your people expect it. But the ledger is close. Your steward stands at the door with two expressions ready: anticipation or disappointment. You must decide what kind of ruler you are this year."
+event_id = "autumn_feast_decision"
+is_unique = false
+base_chance = 0.7
+prerequisites = Array[String]([])
+trigger_season = "Autumn"
+trigger_day = -1
+min_stewardship = -1
+min_command = -1
+min_prowess = -1
+min_renown = -1
+must_have_trait = ""
+must_not_have_trait = ""
+min_available_heirs = -1
+min_conquered_regions = -1
+choices = Array[ExtResource("2_event_choice")]([SubResource("Resource_great"), SubResource("Resource_modest"), SubResource("Resource_cancel")])
+
+
+--------------------------------------------------
+FILE: res:///data/events/autumn_last_trade.tres
+--------------------------------------------------
+[gd_resource type="Resource" script_class="EventData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="Resource_buy_all"]
+script = ExtResource("2_event_choice")
+choice_text = "Buy as much grain as your gold allows."
+tooltip_text = "Up to -100 Gold. +Food proportional to spend. Affects survival verdict."
+effect_key = "buy_grain_all"
+
+[sub_resource type="Resource" id="Resource_buy_modest"]
+script = ExtResource("2_event_choice")
+choice_text = "Buy a modest amount. Preserve gold for winter."
+tooltip_text = "-40 Gold. +Food moderate. Balanced choice."
+effect_key = "buy_grain_modest"
+
+[sub_resource type="Resource" id="Resource_decline"]
+script = ExtResource("2_event_choice")
+choice_text = "Let them sail. Trust your stores."
+tooltip_text = "No cost. Survival verdict unchanged."
+effect_key = "decline_merchant"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "Before the Ledger Closes"
+description = "A merchant vessel is making its final run before the sea-lanes close for winter. Your steward brings word: they are selling grain at fair prices, but only today. The Autumn Ledger has not yet been settled — this is your last chance to shore up the stores."
+event_id = "autumn_last_trade"
+is_unique = false
+base_chance = 0.6
+prerequisites = Array[String]([])
+trigger_season = "Autumn"
+trigger_day = -1
+min_stewardship = -1
+min_command = -1
+min_prowess = -1
+min_renown = -1
+must_have_trait = ""
+must_not_have_trait = ""
+min_available_heirs = -1
+min_conquered_regions = -1
+choices = Array[ExtResource("2_event_choice")]([SubResource("Resource_buy_all"), SubResource("Resource_buy_modest"), SubResource("Resource_decline")])
+
+
+--------------------------------------------------
+FILE: res:///data/events/autumn_wounded_harvest.tres
+--------------------------------------------------
+[gd_resource type="Resource" script_class="EventData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="Resource_slaughter"]
+script = ExtResource("2_event_choice")
+choice_text = "Slaughter half the livestock for immediate food."
+tooltip_text = "-50% livestock. +Food significant. Next year's Harvest capacity reduced."
+effect_key = "slaughter_livestock"
+
+[sub_resource type="Resource" id="Resource_emergency"]
+script = ExtResource("2_event_choice")
+choice_text = "Send out emergency hunting parties."
+tooltip_text = "Reassigns 1 household to Hunting for winter. Moderate food gain. Reduces winter labor."
+effect_key = "emergency_hunt"
+
+[sub_resource type="Resource" id="Resource_tighten"]
+script = ExtResource("2_event_choice")
+choice_text = "Tighten belts and hope. Winter will be hard."
+tooltip_text = "No asset loss. Winter food consumption triggers Harsh verdict threshold. Sickness risk up."
+effect_key = "weather_shortage"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "The Wounded Harvest"
+description = "The harvest is in — but it is short. Blight took the eastern field and your steward's face tells the story before he speaks a word. The Autumn Ledger will not be kind. The question is what you sacrifice now to survive the winter."
+event_id = "autumn_wounded_harvest"
+is_unique = false
+base_chance = 0.45
+prerequisites = Array[String]([])
+trigger_season = "Autumn"
+trigger_day = -1
+min_stewardship = -1
+min_command = -1
+min_prowess = -1
+min_renown = -1
+must_have_trait = ""
+must_not_have_trait = ""
+min_available_heirs = -1
+min_conquered_regions = -1
+choices = Array[ExtResource("2_event_choice")]([SubResource("Resource_slaughter"), SubResource("Resource_emergency"), SubResource("Resource_tighten")])
+
+
+--------------------------------------------------
+FILE: res:///data/events/spring_oath_remembered.tres
+--------------------------------------------------
+[gd_resource type="Resource" script_class="EventData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="Resource_honour"]
+script = ExtResource("2_event_choice")
+choice_text = "Honour the oath. Grant them first choice of spoils."
+tooltip_text = "-20 Gold. +10 Renown. Red-Shields loyalty +2."
+effect_key = "honour_oath"
+
+[sub_resource type="Resource" id="Resource_deflect"]
+script = ExtResource("2_event_choice")
+choice_text = "Make excuses. Promise it will be different this season."
+tooltip_text = "No cost. Red-Shields loyalty -1. May trigger summer resentment."
+effect_key = "deflect_oath"
+
+[sub_resource type="Resource" id="Resource_payoff"]
+script = ExtResource("2_event_choice")
+choice_text = "Offer coin instead of honour."
+tooltip_text = "-40 Gold. Red-Shields loyalty +1 (unsatisfied)."
+effect_key = "pay_off_oath"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "The Oath Remembered"
+description = "As you prepare your Spring Council, an elder of the Red-Shields approaches with fire in her eyes. Last summer, you swore their household would be given first pick of raid spoils. That oath was never kept. The hall grows quiet as she speaks."
+event_id = "spring_oath_remembered"
+is_unique = false
+base_chance = 0.6
+prerequisites = Array[String](["spring_card_early_raid"])
+trigger_season = "Spring"
+trigger_day = -1
+min_stewardship = -1
+min_command = -1
+min_prowess = -1
+min_renown = -1
+must_have_trait = ""
+must_not_have_trait = ""
+min_available_heirs = -1
+min_conquered_regions = -1
+choices = Array[ExtResource("2_event_choice")]([SubResource("Resource_honour"), SubResource("Resource_deflect"), SubResource("Resource_payoff")])
+
+
+--------------------------------------------------
+FILE: res:///data/events/spring_seer_warning.tres
+--------------------------------------------------
+[gd_resource type="Resource" script_class="EventData" load_steps=6 format=3 uid="uid://b3426s5yuoyh"]
+
+[ext_resource type="Script" uid="uid://c7lxr02yr1fn6" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" uid="uid://dvc7gumtvwaal" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="Resource_hire"]
+script = ExtResource("2_event_choice")
+choice_text = "Pay her to stay. Her counsel may be worth it."
+tooltip_text = "-30 Gold. Sets seer_present flag. Summer crisis events gain an extra choice."
+effect_key = "hire_seer"
+
+[sub_resource type="Resource" id="Resource_dismiss"]
+script = ExtResource("2_event_choice")
+choice_text = "Thank her and send her on her way."
+tooltip_text = "No cost. Summer events proceed normally."
+effect_key = "dismiss_seer"
+
+[sub_resource type="Resource" id="Resource_demand"]
+script = ExtResource("2_event_choice")
+choice_text = "Ask her to name the traitor."
+tooltip_text = "-10 Renown (she is offended). No extra information."
+effect_key = "demand_seer"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "The Seer's Warning"
+description = "A wandering volva arrives at your hall before the thaw. She reads the bones and the omens are dark: she speaks of a hand without a ring causing ruin before the leaves fall. She offers to remain through summer — for a price."
+event_id = "spring_seer_warning"
+is_unique = false
+base_chance = 1.0
+trigger_season = "Spring"
+trigger_day = 1
+min_renown = 15
+choices = Array[ExtResource("2_event_choice")]([SubResource("Resource_hire"), SubResource("Resource_dismiss"), SubResource("Resource_demand")])
+
+
+--------------------------------------------------
+FILE: res:///data/events/spring_thrall_dispute.tres
+--------------------------------------------------
+[gd_resource type="Resource" script_class="EventData" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="Resource_favour"]
+script = ExtResource("2_event_choice")
+choice_text = "Rule in favour of the stronger household."
+tooltip_text = "Winning household loyalty +2. Losing household loyalty -2. Fast resolution."
+effect_key = "favour_strong"
+
+[sub_resource type="Resource" id="Resource_split"]
+script = ExtResource("2_event_choice")
+choice_text = "Split the thrall's labour between both households."
+tooltip_text = "Both households loyalty +0. Neither satisfied. Avoid conflict."
+effect_key = "split_labour"
+
+[sub_resource type="Resource" id="Resource_claim"]
+script = ExtResource("2_event_choice")
+choice_text = "Declare the thrall belongs to your hall directly."
+tooltip_text = "+1 Thrall assigned to Great Hall output. Both households loyalty -1."
+effect_key = "claim_thrall"
+
+[sub_resource type="Resource" id="Resource_ordeal"]
+script = ExtResource("2_event_choice")
+choice_text = "Hold a trial by ordeal."
+tooltip_text = "Requires Command 12. Winner gains thrall + Renown +5. Loser loyalty -3."
+effect_key = "ordeal_thrall"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "A Disputed Thrall"
+description = "Two households both claim ownership of a thrall captured in last year's raid. The argument has grown loud enough to reach your hall. Blood has not been spilled — yet."
+event_id = "spring_thrall_dispute"
+is_unique = false
+base_chance = 0.5
+prerequisites = Array[String]([])
+trigger_season = "Spring"
+trigger_day = -1
+min_stewardship = -1
+min_command = -1
+min_prowess = -1
+min_renown = -1
+must_have_trait = ""
+must_not_have_trait = ""
+min_available_heirs = -1
+min_conquered_regions = -1
+choices = Array[ExtResource("2_event_choice")]([SubResource("Resource_favour"), SubResource("Resource_split"), SubResource("Resource_claim"), SubResource("Resource_ordeal")])
+
+
+--------------------------------------------------
+FILE: res:///data/events/summer_bondi_grievance.tres
+--------------------------------------------------
+[gd_resource type="Resource" script_class="EventData" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="Resource_grant"]
+script = ExtResource("2_event_choice")
+choice_text = "Grant them a parcel of land from your expansion."
+tooltip_text = "-1 building plot from new region. Bondi become loyal freemen: +Population, +Renown."
+effect_key = "grant_land"
+
+[sub_resource type="Resource" id="Resource_pay"]
+script = ExtResource("2_event_choice")
+choice_text = "Pay them off with gold and send them away."
+tooltip_text = "-50 Gold. Tension resolved. No loyalty gained."
+effect_key = "pay_bondi"
+
+[sub_resource type="Resource" id="Resource_assert"]
+script = ExtResource("2_event_choice")
+choice_text = "Remind them who holds authority here."
+tooltip_text = "Requires Command 14. Bondi permanently disgruntled — may trigger future event."
+effect_key = "assert_authority"
+
+[sub_resource type="Resource" id="Resource_elevate"]
+script = ExtResource("2_event_choice")
+choice_text = "Offer them Household status in your clan."
+tooltip_text = "-1 Authority. New household created with low loyalty. Significant long-term upside."
+effect_key = "elevate_bondi"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "The Bondi's Grievance"
+description = "A free farmer — a bondi, not sworn to any household — comes to your hall with a grievance. Your expansion has enclosed land his family farmed for three generations. He is not alone; six others stand behind him. They are not warriors, but they are angry, and they talk to your thralls."
+event_id = "summer_bondi_grievance"
+is_unique = false
+base_chance = 0.5
+prerequisites = Array[String]([])
+trigger_season = "Summer"
+trigger_day = 5
+min_stewardship = -1
+min_command = -1
+min_prowess = -1
+min_renown = -1
+must_have_trait = ""
+must_not_have_trait = ""
+min_available_heirs = -1
+min_conquered_regions = 1
+choices = Array[ExtResource("2_event_choice")]([SubResource("Resource_grant"), SubResource("Resource_pay"), SubResource("Resource_assert"), SubResource("Resource_elevate")])
+
+
+--------------------------------------------------
+FILE: res:///data/events/summer_early_fever.tres
+--------------------------------------------------
+[gd_resource type="Resource" script_class="EventData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="Resource_contain"]
+script = ExtResource("2_event_choice")
+choice_text = "Send the healer immediately. Quarantine the longhouse."
+tooltip_text = "-20 Food, -10 Gold. Sickness contained. No winter penalty."
+effect_key = "contain_fever"
+
+[sub_resource type="Resource" id="Resource_partial"]
+script = ExtResource("2_event_choice")
+choice_text = "Give them rest but keep working the fields."
+tooltip_text = "-10 Food. 50% containment. 50% chance: sickness_seed flag set."
+effect_key = "partial_response"
+
+[sub_resource type="Resource" id="Resource_ignore"]
+script = ExtResource("2_event_choice")
+choice_text = "Cannot afford to stop. Push through it."
+tooltip_text = "No cost now. sickness_seed flag set. Winter outbreak chance +25%."
+effect_key = "ignore_fever"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "The Fever in the Longhouse"
+description = "A household has fallen sick — not the bone-cold illness of winter, but a summer fever that spreads fast through close quarters. The healer says it can be contained, but only if you act now. Waiting will cost more than the remedy."
+event_id = "summer_early_fever"
+is_unique = false
+base_chance = 0.3
+prerequisites = Array[String]([])
+trigger_season = "Summer"
+trigger_day = 6
+min_stewardship = -1
+min_command = -1
+min_prowess = -1
+min_renown = -1
+must_have_trait = ""
+must_not_have_trait = ""
+min_available_heirs = -1
+min_conquered_regions = -1
+choices = Array[ExtResource("2_event_choice")]([SubResource("Resource_contain"), SubResource("Resource_partial"), SubResource("Resource_ignore")])
+
+
+--------------------------------------------------
+FILE: res:///data/events/summer_oath_break.tres
+--------------------------------------------------
+[gd_resource type="Resource" script_class="EventData" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="Resource_mediate"]
+script = ExtResource("2_event_choice")
+choice_text = "Go to the fields yourself. Hear Sigrid out."
+tooltip_text = "Requires Stewardship 11. Costs 1 AP. Loyalty restored. Harvest proceeds at -10%."
+effect_key = "mediate_oath"
+
+[sub_resource type="Resource" id="Resource_gift"]
+script = ExtResource("2_event_choice")
+choice_text = "Send a representative with gifts."
+tooltip_text = "-30 Gold. 70% chance loyalty restored. 30% chance it makes things worse."
+effect_key = "gift_mediate"
+
+[sub_resource type="Resource" id="Resource_reassign"]
+script = ExtResource("2_event_choice")
+choice_text = "Reassign the rival household to Timber duty."
+tooltip_text = "Harvest resumes. Timber output -20% for the season. Costs 1 AP."
+effect_key = "reassign_rival"
+
+[sub_resource type="Resource" id="Resource_coerce"]
+script = ExtResource("2_event_choice")
+choice_text = "Force them back to work under threat."
+tooltip_text = "Requires Command 16. Harvest proceeds. Sigrid's household loyalty drops to 1 permanently."
+effect_key = "coerce_harvest"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "The Harvest Oath Breaks"
+description = "Word reaches you from the fields: the household sworn to Harvest has downed their tools. Their leader — old Sigrid — says her family cannot work beside a rival household that wronged them last spring. The grain stands uncut."
+event_id = "summer_oath_break"
+is_unique = false
+base_chance = 0.4
+prerequisites = Array[String]([])
+trigger_season = "Summer"
+trigger_day = 7
+min_stewardship = -1
+min_command = -1
+min_prowess = -1
+min_renown = -1
+must_have_trait = ""
+must_not_have_trait = ""
+min_available_heirs = -1
+min_conquered_regions = -1
+choices = Array[ExtResource("2_event_choice")]([SubResource("Resource_mediate"), SubResource("Resource_gift"), SubResource("Resource_reassign"), SubResource("Resource_coerce")])
+
+
+--------------------------------------------------
+FILE: res:///data/events/summer_raid_complication.tres
+--------------------------------------------------
+[gd_resource type="Resource" script_class="EventData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="Resource_burial"]
+script = ExtResource("2_event_choice")
+choice_text = "Hold a proper burial rite. Honour the fallen."
+tooltip_text = "-20 Food (feast). +10 Renown. Surviving warriors morale +1."
+effect_key = "burial_rite"
+
+[sub_resource type="Resource" id="Resource_wergild"]
+script = ExtResource("2_event_choice")
+choice_text = "Pay wergild to their families."
+tooltip_text = "-60 Gold. Household loyalty maintained. No Renown."
+effect_key = "pay_wergild"
+
+[sub_resource type="Resource" id="Resource_ignore"]
+script = ExtResource("2_event_choice")
+choice_text = "Say nothing. Focus on next season."
+tooltip_text = "No cost now. Renown -5 over time. Household loyalty -2."
+effect_key = "ignore_fallen"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "The Raid Goes Wrong"
+description = "A rider reaches you mid-summer with grim news from the raid: your warband has taken the target's goods, but the Fyrd arrived faster than expected. Your squad leader is wounded and the retreat was costly. Three warriors did not come back."
+event_id = "summer_raid_complication"
+is_unique = false
+base_chance = 0.55
+prerequisites = Array[String]([])
+trigger_season = "Summer"
+trigger_day = 8
+min_stewardship = -1
+min_command = -1
+min_prowess = -1
+min_renown = -1
+must_have_trait = ""
+must_not_have_trait = ""
+min_available_heirs = -1
+min_conquered_regions = -1
+choices = Array[ExtResource("2_event_choice")]([SubResource("Resource_burial"), SubResource("Resource_wergild"), SubResource("Resource_ignore")])
+
+
+--------------------------------------------------
+FILE: res:///data/events/summer_rival_ships.tres
+--------------------------------------------------
+[gd_resource type="Resource" script_class="EventData" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="Resource_defend"]
+script = ExtResource("2_event_choice")
+choice_text = "Sound the horn. Pull warriors from the fields to defend the shore."
+tooltip_text = "Harvest households interrupted: -15% food yield. Threat deterred."
+effect_key = "defend_shore"
+
+[sub_resource type="Resource" id="Resource_parley"]
+script = ExtResource("2_event_choice")
+choice_text = "Send a small delegation — perhaps they seek trade."
+tooltip_text = "+15% chance of trade offer next turn. 25% chance of ambush if hostile."
+effect_key = "parley_ships"
+
+[sub_resource type="Resource" id="Resource_ignore"]
+script = ExtResource("2_event_choice")
+choice_text = "Ignore them. Your walls are strong."
+tooltip_text = "25% chance of raid on outlying fields: -Food, -1 random building durability."
+effect_key = "ignore_ships"
+
+[sub_resource type="Resource" id="Resource_intercept"]
+script = ExtResource("2_event_choice")
+choice_text = "Launch your own longships and intercept at sea."
+tooltip_text = "Requires Command 15. Naval skirmish. Win: +Renown +Loot. Lose: -Warriors."
+effect_key = "intercept_ships"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "Longships on the Horizon"
+description = "A boy from the coastal watch sprints to your hall, breathless: foreign longships have been spotted rounding the headland. They fly no colours you recognise. They have not attacked — but they are watching your shore."
+event_id = "summer_rival_ships"
+is_unique = false
+base_chance = 0.45
+prerequisites = Array[String]([])
+trigger_season = "Summer"
+trigger_day = 4
+min_stewardship = -1
+min_command = -1
+min_prowess = -1
+min_renown = -1
+must_have_trait = ""
+must_not_have_trait = ""
+min_available_heirs = -1
+min_conquered_regions = -1
+choices = Array[ExtResource("2_event_choice")]([SubResource("Resource_defend"), SubResource("Resource_parley"), SubResource("Resource_ignore"), SubResource("Resource_intercept")])
+
+
+--------------------------------------------------
+FILE: res:///data/events/summer_stranger_arrival.tres
+--------------------------------------------------
+[gd_resource type="Resource" script_class="EventData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="Resource_trial"]
+script = ExtResource("2_event_choice")
+choice_text = "Offer him a trial. Put him with the warband for the season."
+tooltip_text = "+1 temporary champion unit. Sets stranger_accepted flag. May trigger follow-up event."
+effect_key = "trial_stranger"
+
+[sub_resource type="Resource" id="Resource_refuse"]
+script = ExtResource("2_event_choice")
+choice_text = "Refuse him entry. Your hall has enough mouths."
+tooltip_text = "No effect. Stranger leaves. May reappear in a rival's service."
+effect_key = "refuse_stranger"
+
+[sub_resource type="Resource" id="Resource_interrogate"]
+script = ExtResource("2_event_choice")
+choice_text = "Question him hard before deciding."
+tooltip_text = "Requires Stewardship 13. Learn his true name and origin. Opens unique dialogue branch."
+effect_key = "interrogate_stranger"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "A Stranger at the Gate"
+description = "An armed man arrives alone at your settlement gate. He gives no clan name. His equipment is fine — too fine for a wanderer — and he has a scar across his jaw that speaks of surviving things most men don't. He says only that he is looking for work worth doing."
+event_id = "summer_stranger_arrival"
+is_unique = true
+base_chance = 0.35
+prerequisites = Array[String]([])
+trigger_season = "Summer"
+trigger_day = 9
+min_stewardship = -1
+min_command = -1
+min_prowess = -1
+min_renown = -1
+must_have_trait = ""
+must_not_have_trait = ""
+min_available_heirs = -1
+min_conquered_regions = -1
+choices = Array[ExtResource("2_event_choice")]([SubResource("Resource_trial"), SubResource("Resource_refuse"), SubResource("Resource_interrogate")])
+
+
+--------------------------------------------------
 FILE: res:///data/events/winter_crisis.tres
 --------------------------------------------------
 [gd_resource type="Resource" script_class="EventData" load_steps=6 format=3 uid="uid://df8sk2j1m5n2p"]
@@ -32318,6 +33193,159 @@ event_id = "winter_crisis"
 is_unique = false
 base_chance = 0.0
 choices = Array[ExtResource("2_event_choice")]([SubResource("EventChoice_buy"), SubResource("EventChoice_starve"), SubResource("EventChoice_family")])
+
+
+--------------------------------------------------
+FILE: res:///data/events/winter_first_death.tres
+--------------------------------------------------
+[gd_resource type="Resource" script_class="EventData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="Resource_pyre"]
+script = ExtResource("2_event_choice")
+choice_text = "Hold a proper burning. Give the elder a warrior's send-off."
+tooltip_text = "-15 Wood (pyre). Household loyalty +1. Morale stabilised."
+effect_key = "funeral_pyre"
+
+[sub_resource type="Resource" id="Resource_burial"]
+script = ExtResource("2_event_choice")
+choice_text = "A quiet burial. Preserve the wood for warmth."
+tooltip_text = "No Wood cost. Household loyalty +0. Slight unease in hall."
+effect_key = "quiet_burial"
+
+[sub_resource type="Resource" id="Resource_speaks"]
+script = ExtResource("2_event_choice")
+choice_text = "Speak words over the grave yourself."
+tooltip_text = "Requires Renown 20. Free. Household loyalty +2. Your presence means something."
+effect_key = "jarl_speaks"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "The First Death"
+description = "The coldest week of winter takes its first life — an elder from one of your households, found in the morning cold. It was not unexpected, but it is a bad omen, and the hall feels it. How you respond will be remembered."
+event_id = "winter_first_death"
+is_unique = false
+base_chance = 0.5
+prerequisites = Array[String]([])
+trigger_season = "Winter"
+trigger_day = 2
+min_stewardship = -1
+min_command = -1
+min_prowess = -1
+min_renown = -1
+must_have_trait = ""
+must_not_have_trait = ""
+min_available_heirs = -1
+min_conquered_regions = -1
+choices = Array[ExtResource("2_event_choice")]([SubResource("Resource_pyre"), SubResource("Resource_burial"), SubResource("Resource_speaks")])
+
+
+--------------------------------------------------
+FILE: res:///data/events/winter_long_night_council.tres
+--------------------------------------------------
+[gd_resource type="Resource" script_class="EventData" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="Resource_name"]
+script = ExtResource("2_event_choice")
+choice_text = "Name your heir publicly, before the fire and witnesses."
+tooltip_text = "-1 Authority. Heir legitimacy +20. Succession crisis chance -30% if you die this year."
+effect_key = "name_heir_public"
+
+[sub_resource type="Resource" id="Resource_deflect"]
+script = ExtResource("2_event_choice")
+choice_text = "Deflect. You do not plan to die."
+tooltip_text = "No cost. Hall tension rises. Succession crisis chance unchanged."
+effect_key = "deflect_succession"
+
+[sub_resource type="Resource" id="Resource_marriage"]
+script = ExtResource("2_event_choice")
+choice_text = "Announce a marriage negotiation for your heir."
+tooltip_text = "Begins alliance negotiation chain. Costs AP next spring."
+effect_key = "announce_marriage"
+
+[sub_resource type="Resource" id="Resource_oaths"]
+script = ExtResource("2_event_choice")
+choice_text = "Use the moment to test loyalty. Ask each head to swear anew."
+tooltip_text = "Requires Command 13. Renown +5. 1 household may refuse — revealing hidden disloyalty."
+effect_key = "demand_oaths"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "The Long Night Council"
+description = "In the deep of winter, when there is nothing to do but survive, the household heads gather unbidden in your hall. The fire is low. Someone speaks the question that has been unspoken for weeks: what happens to all of this if you do not return from next summer's campaign? Eyes move to your heirs."
+event_id = "winter_long_night_council"
+is_unique = false
+base_chance = 0.65
+prerequisites = Array[String]([])
+trigger_season = "Winter"
+trigger_day = 6
+min_stewardship = -1
+min_command = -1
+min_prowess = -1
+min_renown = -1
+must_have_trait = ""
+must_not_have_trait = ""
+min_available_heirs = 1
+min_conquered_regions = -1
+choices = Array[ExtResource("2_event_choice")]([SubResource("Resource_name"), SubResource("Resource_deflect"), SubResource("Resource_marriage"), SubResource("Resource_oaths")])
+
+
+--------------------------------------------------
+FILE: res:///data/events/winter_sickness_outbreak.tres
+--------------------------------------------------
+[gd_resource type="Resource" script_class="EventData" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="Resource_full"]
+script = ExtResource("2_event_choice")
+choice_text = "Full quarantine. Seal the longhouse and post guards."
+tooltip_text = "-1 household winter labor. 80% containment chance. -10 Food extra rations."
+effect_key = "full_quarantine"
+
+[sub_resource type="Resource" id="Resource_partial_q"]
+script = ExtResource("2_event_choice")
+choice_text = "Quarantine but allow supervised work outside."
+tooltip_text = "Partial labor retained. 50% containment. 50%: sickness spreads to adjacent household."
+effect_key = "partial_quarantine"
+
+[sub_resource type="Resource" id="Resource_volva"]
+script = ExtResource("2_event_choice")
+choice_text = "Call on the volva."
+tooltip_text = "Requires seer_present flag. Sickness resolved without quarantine cost."
+effect_key = "consult_volva"
+
+[sub_resource type="Resource" id="Resource_ignore_s"]
+script = ExtResource("2_event_choice")
+choice_text = "Force them to work through it."
+tooltip_text = "Labor retained. Sickness spreads to 1 additional household. -5 population over winter."
+effect_key = "ignore_sickness"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "Sickness in the Night"
+description = "It starts with one longhouse. By the third night, two households are afflicted. Your healer says it will spread further unless quarantine is enforced — but the quarantine will mean those households cannot work the winter tasks you need them for."
+event_id = "winter_sickness_outbreak"
+is_unique = false
+base_chance = 0.6
+prerequisites = Array[String]([])
+trigger_season = "Winter"
+trigger_day = 4
+min_stewardship = -1
+min_command = -1
+min_prowess = -1
+min_renown = -1
+must_have_trait = ""
+must_not_have_trait = ""
+min_available_heirs = -1
+min_conquered_regions = -1
+choices = Array[ExtResource("2_event_choice")]([SubResource("Resource_full"), SubResource("Resource_partial_q"), SubResource("Resource_volva"), SubResource("Resource_ignore_s")])
 
 
 --------------------------------------------------
@@ -36813,66 +37841,11 @@ FILE: res:///scenes/levels/TempDebugNode.gd
 --------------------------------------------------
 extends Node
 
-## TempDebugNode - Footprint System Tracing
-## Traces signals and state for the gold footprint system.
+## TempDebugNode - Cleared
+## Use this file for temporary diagnostic logic during development.
 
 func _ready() -> void:
-	Loggie.msg("=== [FOOTPRINT TRACE V2] STARTING ===").domain(LogDomains.SYSTEM).info()
-	_setup_tracers()
-	_inspect_loop()
-
-func _setup_tracers() -> void:
-	if not EventBus:
-		Loggie.msg("[TRACE] FAIL: EventBus missing").domain(LogDomains.SYSTEM).error()
-		return
-
-	EventBus.decree_authorized.connect(func(decree):
-		var msg = "[TRACE] Event: decree_authorized RECEIVED | ID: %s | Pos: %s | Building: %s" % [decree.decree_id, decree.resolved_grid_pos, decree.building_data.display_name]
-		Loggie.msg(msg).domain(LogDomains.SYSTEM).info()
-		await get_tree().process_frame
-		_inspect_building_cursor()
-	)
-
-func _inspect_loop() -> void:
-	while true:
-		await get_tree().create_timer(5.0).timeout
-		_inspect_building_cursor()
-
-func _inspect_building_cursor() -> void:
-	var cursor = get_tree().root.find_child("BuildingCursor", true, false)
-	if not cursor:
-		Loggie.msg("[TRACE] BuildingCursor node NOT FOUND in tree!").domain(LogDomains.SYSTEM).warn()
-		return
-		
-	var tree_dump = _dump_node_recursively(cursor)
-	
-	var msg = "[TRACE] BuildingCursor Inspection | Visible: %s | Z-Index: %d" % [cursor.visible, cursor.z_index]
-	Loggie.msg(msg).domain(LogDomains.SYSTEM).info()
-	Loggie.msg("[TRACE] Node Tree Dump:\n" + tree_dump).domain(LogDomains.SYSTEM).info()
-
-func _dump_node_recursively(node: Node, indent: String = "") -> String:
-	if not is_instance_valid(node):
-		return indent + "[Invalid Node]\n"
-		
-	var s = indent + "> " + node.name + " (" + node.get_class() + ")"
-	var details = []
-	if node is CanvasItem:
-		details.append("Visible: " + str(node.visible))
-	if node is Node2D:
-		details.append("Pos: " + str(node.global_position))
-	if node is Line2D:
-		details.append("Color: " + str(node.default_color))
-		details.append("Width: " + str(node.width))
-		details.append("Points: " + str(node.points.size()))
-		
-	if not details.is_empty():
-		s += " | " + ", ".join(details)
-	s += "\n"
-	
-	for child in node.get_children():
-		s += _dump_node_recursively(child, indent + "  ")
-		
-	return s
+	pass
 
 
 --------------------------------------------------
@@ -37014,6 +37987,9 @@ extends Node2D
 @onready var objective_manager: RaidObjectiveManager = $RaidObjectiveManager
 @onready var unit_spawner: UnitSpawner = $UnitSpawner
 @export var fyrd_unit_scene: PackedScene
+
+@export_group("Fyrd")
+@export var fyrd_spawn_count: int = 5
 
 # --- Internal ---
 var map_loader: RaidMapLoader
@@ -37255,7 +38231,7 @@ func _on_fyrd_arrived() -> void:
 	var spawner = get_node_or_null(enemy_spawn_position)
 	var origin = spawner.global_position if spawner else Vector2(1000, 0)
 	
-	for i in range(5):
+	for i in range(fyrd_spawn_count):
 		var unit = fyrd_unit_scene.instantiate()
 		
 		# --- FIX: Randomized but Validated ---
@@ -37458,6 +38434,21 @@ class_name RaidObjectiveManager
 @export var settlement_bridge_scene_path: String = "res://scenes/levels/SettlementBridge.tscn"
 @export var is_defensive_mission: bool = false
 
+@export_group("Timers")
+@export var fyrd_arrival_time: float = 120.0
+@export var decisive_victory_time: float = 300.0
+@export var defensive_delay: float = 3.0
+@export var failure_delay: float = 6.0
+
+@export_group("Grading")
+@export var casualty_limit: int = 2
+
+@export_group("Loot")
+@export var base_victory_gold: int = 200
+@export var base_renown: int = 200
+@export var renown_per_difficulty: int = 50
+@export var non_eco_building_loot: int = 50
+
 # --- Internal State ---
 var raid_loot: RaidLootData
 var rts_controller: RTSController
@@ -37476,8 +38467,7 @@ var dead_units_log: Array[UnitData] = []
 var escaped_unit_count: int = 0
 
 # --- FYRD TIMER STATE ---
-const FYRD_ARRIVAL_TIME: float = 120.0 # 2 Minutes
-var time_remaining: float = FYRD_ARRIVAL_TIME
+var time_remaining: float = 120.0 # Initialized to default, updated in initialize
 var fyrd_timer_active: bool = false
 var timer_label: Label
 
@@ -37488,6 +38478,7 @@ const UI_THEME = preload("res://ui/themes/VikingDynastyTheme.tres")
 
 func _ready() -> void:
 	raid_loot = RaidLootData.new()
+	time_remaining = fyrd_arrival_time
 	# Connect to global unit death signal to track casualties
 	EventBus.player_unit_died.connect(_on_player_unit_died)
 	EventBus.raid_loot_secured.connect(_on_raid_loot_secured)
@@ -37730,7 +38721,7 @@ func _on_defensive_mission_won() -> void:
 	if mission_over: return
 	mission_over = true
 	_show_victory_message("VICTORY!", "All attackers have been defeated.")
-	await get_tree().create_timer(3.0).timeout
+	await get_tree().create_timer(defensive_delay).timeout
 	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
 
 func _on_mission_failed(reason: String) -> void:
@@ -37745,7 +38736,7 @@ func _on_mission_failed(reason: String) -> void:
 	else:
 		_show_failure_message(reason + "\n\nYour raid failed. No loot was secured.")
 	
-	await get_tree().create_timer(6.0).timeout
+	await get_tree().create_timer(failure_delay).timeout
 	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
 
 # --- VICTORY GRADING LOGIC ---
@@ -37755,11 +38746,14 @@ func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	
 	var duration_sec = (Time.get_ticks_msec() - battle_start_time) / 1000.0
 	var grade = "Standard"
-	var casualty_limit = 2
 	var lost_count = dead_units_log.size()
 	
+	# Logic fix: Use target's par time or default
+	var target = RaidManager.current_raid_target
+	var par = target.par_time_seconds if target else decisive_victory_time
+	
 	# Simple Grading Logic
-	if lost_count == 0 and duration_sec < 300:
+	if lost_count == 0 and duration_sec < par:
 		grade = "Decisive"
 	elif lost_count > casualty_limit:
 		grade = "Pyrrhic"
@@ -37783,7 +38777,7 @@ func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	# Calculate Renown
 	var difficulty = RaidManager.current_raid_difficulty
 	# Base 200 + 50 per star
-	mission_result.renown_earned = 200 + (difficulty * 50)
+	mission_result.renown_earned = base_renown + (difficulty * renown_per_difficulty)
 	
 	mission_result.casualties = dead_units_log.duplicate()
 	
@@ -42726,6 +43720,11 @@ func _on_grid_updated(_grid_pos: Vector2i) -> void:
 
 func _physics_process(delta: float) -> void:
 	if not data: return
+	
+	# TODO: Implement task-specific animations based on current assignments:
+	# - Harvesting: Walk back and forth from the Great Hall to the resource building.
+	# - Construction: Walk around the building perimeter and stop for a few seconds.
+	# - Raiding: March in formation towards targets.
 
 	var desired_velocity = Vector2.ZERO
 	
@@ -44488,6 +45487,149 @@ func spawn_worker_at(location: Vector2) -> void:
 	if unit_container:
 		unit_container.add_child(civ)
 		EventBus.player_unit_spawned.emit(civ)
+
+
+--------------------------------------------------
+FILE: res:///test/RaidSandbox.gd
+--------------------------------------------------
+extends Node2D
+
+## RaidSandbox
+## Standalone testing scene for Raid Mechanics.
+## Sets up mock Jarl, Raid Force, and Target before initializing RaidMission.
+
+@onready var raid_mission = $RaidMission
+var debug_label: Label
+
+func _ready() -> void:
+	Loggie.msg("=== Raid Sandbox: Starting Setup ===").domain(LogDomains.RAID).info()
+	
+	_setup_mock_jarl()
+	_setup_mock_raid_force()
+	_setup_mock_target()
+	_setup_debug_overlay()
+	
+	if EventBus:
+		EventBus.scene_change_requested.connect(_on_mission_end_requested)
+	
+	Loggie.msg("=== Raid Sandbox: Setup Complete ===").domain(LogDomains.RAID).info()
+
+func _setup_debug_overlay() -> void:
+	var canvas = CanvasLayer.new()
+	add_child(canvas)
+	
+	debug_label = Label.new()
+	debug_label.add_theme_color_override("font_color", Color.YELLOW)
+	debug_label.add_theme_constant_override("outline_size", 4)
+	debug_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	debug_label.position = Vector2(20, 20)
+	canvas.add_child(debug_label)
+
+func _process(_delta: float) -> void:
+	if is_instance_valid(debug_label):
+		var text = "--- RAID SANDBOX DEBUG ---\n"
+		
+		# 1. Raid Active (Mocked or checked via Managers)
+		var raid_active = false
+		if is_instance_valid(raid_mission):
+			var obj_mgr = raid_mission.get_node_or_null("RaidObjectiveManager")
+			if obj_mgr: raid_active = obj_mgr.is_initialized and not obj_mgr.mission_over
+		text += "Raid Active: %s\n" % str(raid_active)
+		
+		# 2. Player Unit Count
+		var units = get_tree().get_nodes_in_group("player_units")
+		text += "Player Units: %d\n" % units.size()
+		
+		# 3. Smoke Signal (Checked via Objective Manager timer activity)
+		var smoke_active = false
+		if is_instance_valid(raid_mission):
+			var obj_mgr = raid_mission.get_node_or_null("RaidObjectiveManager")
+			if obj_mgr: smoke_active = obj_mgr.fyrd_timer_active
+		text += "Smoke Signal: %s\n" % str(smoke_active)
+		
+		# 4. Timer / Day (If applicable)
+		if is_instance_valid(raid_mission):
+			var obj_mgr = raid_mission.get_node_or_null("RaidObjectiveManager")
+			if obj_mgr and obj_mgr.fyrd_timer_active:
+				text += "Fyrd Timer: %.1fs\n" % obj_mgr.time_remaining
+		
+		debug_label.text = text
+
+func _on_mission_end_requested(scene_path: String) -> void:
+	Loggie.msg("Raid Sandbox: Mission End Requested -> " + scene_path).domain(LogDomains.RAID).info()
+	if RaidManager.pending_raid_result:
+		var res = RaidManager.pending_raid_result
+		Loggie.msg("FINAL RESULT: " + res.outcome + " (" + res.victory_grade + ")").domain(LogDomains.RAID).info()
+		Loggie.msg("LOOT: " + str(res.loot)).domain(LogDomains.RAID).info()
+		Loggie.msg("CASUALTIES: " + str(res.casualties.size())).domain(LogDomains.RAID).info()
+	else:
+		Loggie.msg("FINAL RESULT: No result data found in RaidManager.").domain(LogDomains.RAID).warn()
+	
+	# Instead of changing scene, we just log it in the sandbox.
+	Loggie.msg("Sandbox: Scene change suppressed. Press 'R' to restart.").domain(LogDomains.RAID).info()
+
+func _setup_mock_jarl() -> void:
+	if not DynastyManager.current_jarl:
+		var mock_jarl = JarlData.new()
+		mock_jarl.display_name = "Test Jarl"
+		mock_jarl.command = 15
+		mock_jarl.prowess = 15
+		DynastyManager.current_jarl = mock_jarl
+		Loggie.msg("Mock Jarl Created.").domain(LogDomains.RAID).info()
+
+func _setup_mock_raid_force() -> void:
+	RaidManager.reset_raid_state()
+	
+	var warrior_data = load("res://data/units/PlayerVikingRaider_Data.tres")
+	if not warrior_data:
+		# Fallback if specific file missing, try generic
+		warrior_data = load("res://data/units/VikingRaider_Data.tres")
+		
+	if warrior_data:
+		var warband = WarbandData.new(warrior_data)
+		warband.custom_name = "Sandbox Veterans"
+		warband.current_manpower = 10
+		RaidManager.prepare_raid_force([warband], 2) # Provision level 2
+		Loggie.msg("Mock Raid Force Prepared (10 Warriors).").domain(LogDomains.RAID).info()
+	else:
+		push_error("RaidSandbox: Could not find VikingRaider_Data.tres")
+
+func _setup_mock_target() -> void:
+	# Try to find an existing settlement file or use procedural
+	var target_path = "res://data/settlements/monastery_base.tres"
+	var target_data: SettlementData
+	
+	if ResourceLoader.exists(target_path):
+		target_data = load(target_path)
+		Loggie.msg("Loaded Target from disk: " + target_path).domain(LogDomains.RAID).info()
+	else:
+		# Generate a procedural one
+		target_data = MapDataGenerator._generate_procedural_settlement("Monastery", 1.0)
+		target_data.map_seed = randi()
+		Loggie.msg("Generated Procedural Target.").domain(LogDomains.RAID).info()
+	
+	RaidManager.set_current_raid_target(target_data)
+	RaidManager.current_raid_difficulty = 2
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed:
+		if event.keycode == KEY_R:
+			Loggie.msg("Raid Sandbox: Reloading Scene...").domain(LogDomains.RAID).info()
+			get_tree().reload_current_scene()
+
+
+--------------------------------------------------
+FILE: res:///test/RaidSandbox.tscn
+--------------------------------------------------
+[gd_scene load_steps=3 format=3 uid="uid://b7y8kak0l1m2n"]
+
+[ext_resource type="Script" path="res://test/RaidSandbox.gd" id="1_sandbox"]
+[ext_resource type="PackedScene" uid="uid://d3ifdm0rvd5kl" path="res://scenes/missions/RaidMission.tscn" id="2_raid_mission"]
+
+[node name="RaidSandbox" type="Node2D"]
+script = ExtResource("1_sandbox")
+
+[node name="RaidMission" parent="." instance=ExtResource("2_raid_mission")]
 
 
 --------------------------------------------------
@@ -49301,6 +50443,7 @@ func _connect_signals() -> void:
 			EventBus.sidebar_close_requested.connect(_close_sidebar)
 		
 		EventBus.construction_decree_issued.connect(_on_construction_decree_issued)
+		EventBus.summer_day_changed.connect(_update_advance_button)
 		
 		if bottom_bar:
 			bottom_bar.scene_navigation_requested.connect(func(path):
@@ -49448,9 +50591,20 @@ func _update_season_state(context: Dictionary = {}) -> void:
 	_update_center_view(current_season, context)
 	Loggie.msg("UI Season State Updated: " + str(current_season)).domain(LogDomains.UI).info()
 
+func _update_advance_button(current_day: int, max_days: int) -> void:
+	if DynastyManager.current_season == DynastyManager.Season.SUMMER:
+		season_advance_btn.text = "Next Day (%d/%d)" % [current_day, max_days]
+	else:
+		season_advance_btn.text = "End Season"
+
 # MODIFIED: Intercepts the click to check for idle workers in Summer
 func _on_advance_season_clicked() -> void:
 	if not DynastyManager: return
+	
+	if DynastyManager.current_season == DynastyManager.Season.SUMMER \
+	and DynastyManager.current_day < DynastyManager.SUMMER_DAYS:
+		DynastyManager.advance_day()
+		return
 
 	# 1. Harvest Safety Check (Only in Summer)
 	if DynastyManager.current_season == DynastyManager.Season.SUMMER:

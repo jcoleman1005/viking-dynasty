@@ -312,7 +312,9 @@ func _clear_all_buildings() -> void:
 		SettlementManager.current_settlement.placed_buildings.clear()
 		SettlementManager.current_settlement.pending_construction_buildings.clear()
 		SettlementManager.current_settlement.warbands.clear()
-		SettlementManager._refresh_grid_state()
+		NavigationManager.register_map(
+			NavigationManager.active_tilemap_layer,
+			NavigationManager.active_astar_grid.region)
 	
 	great_hall_instance = null
 	game_is_over = false

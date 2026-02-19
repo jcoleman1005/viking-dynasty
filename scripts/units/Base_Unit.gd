@@ -20,6 +20,7 @@ var _stuck_timer: float = 0.0
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
 @onready var separation_area: Area2D = $SeparationArea
+@onready var nav_agent: NavigationAgent2D = $NavAgent
 
 @export_group("AI")
 @export var separation_enabled: bool = true
@@ -360,6 +361,10 @@ func _tween_color(to_color: Color, duration: float = 0.2) -> void:
 	if _color_tween and _color_tween.is_running(): _color_tween.kill()
 	_color_tween = create_tween()
 	_color_tween.tween_property(sprite, "modulate", to_color, duration).set_trans(Tween.TRANS_SINE)
+
+func set_movement_target(target_pos: Vector2) -> void:
+	if RaidNavigationManager.is_raid_active:
+		nav_agent.target_position = target_pos
 
 func take_damage(amount: int, attacker: Node2D = null) -> void:
 	if _is_dying: return

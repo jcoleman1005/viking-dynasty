@@ -230,6 +230,9 @@ func _on_control_group_command(group_index: int, is_assigning: bool) -> void:
 
 func _on_formation_change_command(formation_type: int) -> void:
 	current_formation = formation_type as SquadFormation.FormationType
+	for unit in selected_units:
+		if unit.has_method("set_formation_type"):
+			unit.set_formation_type(current_formation)
 
 func _set_control_group(num: int) -> void:
 	control_groups[num].clear()

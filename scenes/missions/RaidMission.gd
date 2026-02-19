@@ -18,12 +18,50 @@ extends Node2D
 @onready var building_container: Node2D = $BuildingContainer
 @onready var objective_manager: RaidObjectiveManager = $RaidObjectiveManager
 @onready var unit_spawner: UnitSpawner = $UnitSpawner
+@onready var raid_nav_region: NavigationRegion2D = $RaidNavRegion
 @export var fyrd_unit_scene: PackedScene
+
+@export_group("Fyrd")
+@export var fyrd_spawn_count: int = 5
 
 # --- Internal ---
 var map_loader: RaidMapLoader
 var objective_building: BaseBuilding = null
 var unit_container: Node2D
+@export var force_warbands: Array[WarbandData] = []
+@export var force_enemy_settlement: SettlementData = null
+
+func _initialize_navigation() -> void:
+	# Use standard map size (60x60) converted to world space
+	var width = SettlementManager.TILE_WIDTH * 60
+	var height = SettlementManager.TILE_HEIGHT * 60
+	
+	# Create a loose bounding box for the navmesh
+	var nav_poly = NavigationPolygon.new()
+	var outline = PackedVector2Array([
+		Vector2(-width, -height),
+		Vector2(width, -height),
+		Vector2(width, height),
+		Vector2(-width, height)
+	])
+	nav_poly.add_outline(outline)
+	nav_poly.make_polygons_from_outlines()
+	raid_nav_region.navigation_polygon = nav_poly
+	
+	# Wait for the region to be enabled and processed
+	if not raid_nav_region.is_inside_tree():
+		await raid_nav_region.tree_entered
+		
+	# Force a synchronization cycle
+	await get_tree().physics_frame
+	
+	RaidNavigationManager.initialize_raid_map(raid_nav_region)
+	
+	# Wait for the NavigationServer to actually bake/sync the polygon into the map
+	# This avoids the "query failed before first map synchronization" error.
+	var map_rid = raid_nav_region.get_navigation_map()
+	while NavigationServer2D.map_get_iteration_id(map_rid) == 0:
+		await get_tree().physics_frame
 
 func _ready() -> void:
 	Loggie.set_domain_enabled("UI", true)
@@ -49,7 +87,7 @@ func _ready() -> void:
 	
 	EventBus.settlement_loaded.connect(_on_settlement_ready_for_mission)
 	
-	if not SettlementManager.has_current_settlement():
+	if not SettlementManager.has_current_settlement() and not force_enemy_settlement:
 		_load_test_settlement()
 		call_deferred("initialize_mission")
 	else:
@@ -70,9 +108,14 @@ func initialize_mission() -> void:
 	
 	enemy_base_data = null
 	
+	# 0. PRIORITY 0: INJECTED DATA (Encapsulation)
+	if force_enemy_settlement:
+		enemy_base_data = force_enemy_settlement
+		Loggie.msg("Using Injected SettlementData. Seed: %d" % enemy_base_data.map_seed).domain(LogDomains.RAID).info()
+
 	# 1. PRIORITY 1: CAMPAIGN FLOW
 	# We check if RaidManager has a target.
-	if RaidManager.current_raid_target:
+	elif RaidManager.current_raid_target:
 		# [FIX] Unwrap the data! 
 		# RaidManager.current_raid_target is usually 'RaidTargetData' (The Wrapper).
 		# We need the 'SettlementData' inside it.
@@ -117,12 +160,20 @@ func initialize_mission() -> void:
 	if enemy_base_data.map_seed == 0:
 		Loggie.msg("WARNING: Map Seed is 0. RaidMapLoader will randomize terrain!").domain(LogDomains.RAID).warn()
 		
-	map_loader.setup(unit_container, enemy_base_data) 
+	map_loader.setup(building_container, enemy_base_data) 
 	
 	# 3. Generate Map Visuals and refresh manager
 	objective_building = map_loader.load_base(enemy_base_data, false)
-	Loggie.msg("Force Refreshing Grid (Raid)...").domain(LogDomains.RAID).info()
-	SettlementManager._refresh_grid_state()
+	Loggie.msg("Tactical Navigation Initializing (Raid)...").domain(LogDomains.RAID).info()
+	
+	# Initialize Tactical Navigation
+	await _initialize_navigation()
+	
+	# Safety wait for NavigationServer synchronization
+	# In Godot 4, NavigationServer2D synchronizes at the end of the physics frame.
+	# We wait a couple of frames to be absolutely sure.
+	await get_tree().physics_frame
+	await get_tree().physics_frame
 	
 	# 4. Spawn Civilians
 	if enemy_base_data and enemy_base_data.population_peasants > 0:
@@ -135,7 +186,7 @@ func initialize_mission() -> void:
 				spawn_origin = objective_building.global_position + Vector2(0, 100)
 			
 			# Ensure it's valid
-			spawn_origin = SettlementManager.request_valid_spawn_point(spawn_origin, 5)
+			spawn_origin = NavigationManager.request_valid_spawn_point(spawn_origin, 5)
 			
 			unit_spawner.sync_civilians(enemy_base_data.population_peasants, spawn_origin, true)
 			
@@ -183,7 +234,9 @@ func _on_building_destroyed_grid_update(building: BaseBuilding) -> void:
 func _spawn_player_garrison() -> void:
 	var warbands_to_spawn: Array[WarbandData] = []
 	
-	if is_defensive_mission:
+	if not force_warbands.is_empty():
+		warbands_to_spawn = force_warbands
+	elif is_defensive_mission:
 		if SettlementManager.current_settlement:
 			warbands_to_spawn = SettlementManager.current_settlement.warbands
 	else:
@@ -209,7 +262,7 @@ func _spawn_player_garrison() -> void:
 		spawn_origin += landing_direction * 200.0
 		
 	# Safety Check for Player Spawn
-	spawn_origin = SettlementManager.request_valid_spawn_point(spawn_origin, 4)
+	spawn_origin = NavigationManager.request_valid_spawn_point(spawn_origin, 4)
 	
 	if unit_spawner:
 		unit_spawner.spawn_garrison(warbands_to_spawn, spawn_origin)
@@ -236,7 +289,7 @@ func _spawn_enemy_wave() -> void:
 		var target_pos = origin + offset
 		
 		# Validate against Grid
-		unit.global_position = SettlementManager.request_valid_spawn_point(target_pos, 3)
+		unit.global_position = NavigationManager.request_valid_spawn_point(target_pos, 3)
 		if unit.global_position == Vector2.INF:
 			unit.global_position = target_pos # Fallback if grid is totally full
 		# --------------------------
@@ -260,13 +313,13 @@ func _on_fyrd_arrived() -> void:
 	var spawner = get_node_or_null(enemy_spawn_position)
 	var origin = spawner.global_position if spawner else Vector2(1000, 0)
 	
-	for i in range(5):
+	for i in range(fyrd_spawn_count):
 		var unit = fyrd_unit_scene.instantiate()
 		
 		# --- FIX: Randomized but Validated ---
 		var random_offset = Vector2(randf_range(-100, 100), randf_range(-100, 100))
 		var try_pos = origin + random_offset
-		var valid_pos = SettlementManager.request_valid_spawn_point(try_pos, 3)
+		var valid_pos = NavigationManager.request_valid_spawn_point(try_pos, 3)
 		
 		if valid_pos != Vector2.INF:
 			unit.global_position = valid_pos
@@ -320,7 +373,7 @@ func _spawn_test_units() -> void:
 		var pos = player_spawn_pos.global_position + offset
 		
 		# Safe Spawn
-		var safe_pos = SettlementManager.request_valid_spawn_point(pos, 2)
+		var safe_pos = NavigationManager.request_valid_spawn_point(pos, 2)
 		if safe_pos != Vector2.INF: u.global_position = safe_pos
 		else: u.global_position = pos
 		
@@ -390,3 +443,5 @@ func _exit_tree() -> void:
 	# Even with WeakRefs, this prevents logical state errors.
 	if SettlementManager.active_building_container == $BuildingContainer:
 		SettlementManager.unregister_active_scene_nodes()
+	
+	RaidNavigationManager.cleanup_raid_map()

@@ -30,3 +30,9 @@ shape = ExtResource("3_b08re")
 
 [node name="StuckDetector" type="Node" parent="."]
 script = ExtResource("4_ssn5w")
+
+[node name="NavAgent" type="NavigationAgent2D" parent="."]
+path_desired_distance = 4.0
+target_desired_distance = 4.0
+avoidance_enabled = true
+radius = 16.0

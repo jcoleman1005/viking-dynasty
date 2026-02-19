@@ -1,0 +1,59 @@
+[gd_scene load_steps=14 format=3 uid="uid://b7y8kak0l1m2n"]
+
+[ext_resource type="Script" uid="uid://diodjhqmrlj0o" path="res://test/RaidSandbox.gd" id="1_sandbox"]
+[ext_resource type="Script" uid="uid://cuw68f180xbui" path="res://scenes/missions/RaidMission.gd" id="2_pq2o4"]
+[ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="3_v60ob"]
+[ext_resource type="Resource" uid="uid://brnbvjwnoyh3j" path="res://data/units/EnemyVikingRaider_Data.tres" id="4_x2wbm"]
+[ext_resource type="PackedScene" uid="uid://btlcifwc6ckux" path="res://scenes/units/VikingRaider.tscn" id="5_11prl"]
+[ext_resource type="TileSet" uid="uid://xoe70lhybj8l" path="res://scenes/levels/Isometric Tileset.tres" id="6_ci5xc"]
+[ext_resource type="PackedScene" uid="uid://cyp3t7gbdg0wx" path="res://player/RTSController.tscn" id="7_22nvu"]
+[ext_resource type="Script" uid="uid://bm330jy5v6a7d" path="res://scripts/utility/RTSInputHandler.gd" id="8_elvgi"]
+[ext_resource type="PackedScene" uid="uid://1ly65bng2mep" path="res://ui/SelectionBox.tscn" id="9_qf548"]
+[ext_resource type="Script" uid="uid://bxbqkyp1d6750" path="res://player/RTSCamera.gd" id="10_1d1ss"]
+[ext_resource type="PackedScene" uid="uid://ptujtdi5jtsk" path="res://scripts/utility/GridVisualizer.tscn" id="11_qfq6l"]
+[ext_resource type="Script" uid="uid://by77ij2ft60cp" path="res://scenes/missions/RaidObjectiveManager.gd" id="12_b1q30"]
+[ext_resource type="PackedScene" uid="uid://io325box3m4m" path="res://scenes/world/UnitSpawner.tscn" id="13_7irpx"]
+
+[node name="RaidSandbox" type="Node2D"]
+script = ExtResource("1_sandbox")
+
+[node name="RaidMission" type="Node2D" parent="."]
+script = ExtResource("2_pq2o4")
+enemy_wave_units = Array[ExtResource("3_v60ob")]([ExtResource("4_x2wbm")])
+default_enemy_base_path = "res://data/settlements/generated/raid_rich_hub_01.tres"
+enemy_spawn_position = NodePath("EnemySpawnPosition")
+fyrd_unit_scene = ExtResource("5_11prl")
+
+[node name="RaidNavRegion" type="NavigationRegion2D" parent="RaidMission"]
+
+[node name="TileMapLayer" type="TileMapLayer" parent="RaidMission"]
+tile_set = ExtResource("6_ci5xc")
+
+[node name="PlayerStartPosition" type="Marker2D" parent="RaidMission"]
+position = Vector2(100, 600)
+
+[node name="EnemySpawnPosition" type="Marker2D" parent="RaidMission"]
+position = Vector2(383, -21)
+
+[node name="RTSController" parent="RaidMission" instance=ExtResource("7_22nvu")]
+
+[node name="RTSInputHandler" type="Node" parent="RaidMission"]
+script = ExtResource("8_elvgi")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="RaidMission"]
+
+[node name="SelectionBox" parent="RaidMission/CanvasLayer" instance=ExtResource("9_qf548")]
+
+[node name="RTSCamera" type="Camera2D" parent="RaidMission"]
+position = Vector2(400, 300)
+script = ExtResource("10_1d1ss")
+
+[node name="GridVisualizer" parent="RaidMission" instance=ExtResource("11_qfq6l")]
+grid_size = Vector2i(60, 60)
+
+[node name="BuildingContainer" type="Node2D" parent="RaidMission"]
+
+[node name="RaidObjectiveManager" type="Node" parent="RaidMission"]
+script = ExtResource("12_b1q30")
+
+[node name="UnitSpawner" parent="RaidMission" instance=ExtResource("13_7irpx")]

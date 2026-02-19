@@ -17,6 +17,8 @@ enum WinterSeverity {
 @export_group("Probabilities")
 @export_range(0.0, 1.0) var harsh_chance: float = 0.20
 @export_range(0.0, 1.0) var mild_chance: float = 0.05
+@export var harsh_winter_chance: float = 0.3
+@export var family_illness_chance: float = 0.3
 
 @export_group("Multipliers")
 @export var harsh_multiplier: float = 1.5
@@ -124,7 +126,7 @@ func roll_upcoming_severity() -> void:
 	"""
 	# Logic: 30% chance of HARSH, otherwise NORMAL.
 	# (MILD is currently unused in this specific logic pass, but available for future expansion)
-	if randf() < 0.3:
+	if randf() < harsh_winter_chance:
 		upcoming_severity = WinterSeverity.HARSH
 	else:
 		upcoming_severity = WinterSeverity.NORMAL
@@ -346,7 +348,7 @@ func resolve_crisis_with_family_sacrifice() -> Dictionary:
 	if jarl:
 		for heir in jarl.heirs:
 			if heir.status == JarlHeirData.HeirStatus.Available:
-				if randf() < 0.30: # 30% Risk
+				if randf() < family_illness_chance: # 30% Risk
 					heir.status = JarlHeirData.HeirStatus.Maimed
 					sick_heirs += 1
 					Loggie.msg("%s has fallen ill due to starvation rations!" % heir.display_name).domain(LogDomains.SYSTEM).warn()

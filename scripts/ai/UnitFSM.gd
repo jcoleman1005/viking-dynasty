@@ -283,6 +283,16 @@ func _idle_state(_delta: float) -> void:
 	unit.velocity = Vector2.ZERO
 
 func _formation_move_state(_delta: float) -> void:
+	if RaidNavigationManager.is_raid_active:
+		unit.set_movement_target(target_position)
+		var next_pos = unit.nav_agent.get_next_path_position()
+		var direction = (next_pos - unit.global_position).normalized()
+		unit.velocity = direction * unit.data.move_speed
+		
+		if unit.nav_agent.is_navigation_finished():
+			change_state(UnitAIConstants.State.IDLE)
+		return
+
 	if path.is_empty():
 		change_state(UnitAIConstants.State.IDLE)
 		return
@@ -299,6 +309,25 @@ func _formation_move_state(_delta: float) -> void:
 			change_state(UnitAIConstants.State.IDLE)
 
 func _move_state(delta: float) -> void:
+	if RaidNavigationManager.is_raid_active:
+		unit.set_movement_target(target_position)
+		var next_pos = unit.nav_agent.get_next_path_position()
+		var direction = (next_pos - unit.global_position).normalized()
+		
+		var speed_mult = unit.get_speed_multiplier()
+		unit.velocity = direction * unit.data.move_speed * speed_mult
+		
+		if unit.nav_agent.is_navigation_finished():
+			# If we were moving to a specific target (like a building), switch to Interact/Attack
+			if is_instance_valid(objective_target):
+				if objective_target is BaseBuilding:
+					change_state(UnitAIConstants.State.INTERACTING)
+				else:
+					change_state(UnitAIConstants.State.ATTACKING)
+			else:
+				change_state(UnitAIConstants.State.IDLE)
+		return
+
 	if path.is_empty():
 		change_state(UnitAIConstants.State.IDLE)
 		return

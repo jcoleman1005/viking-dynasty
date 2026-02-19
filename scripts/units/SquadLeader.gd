@@ -145,6 +145,11 @@ func _refresh_formation_registry() -> void:
 	if _should_update_formation() or squad_soldiers.size() > 0:
 		force_formation_update()
 
+func set_formation_type(type: int) -> void:
+	if formation:
+		formation.formation_type = type as SquadFormation.FormationType
+		force_formation_update()
+
 # --- Gameplay Logic (Restored) ---
 
 func on_state_changed(new_state: int) -> void:

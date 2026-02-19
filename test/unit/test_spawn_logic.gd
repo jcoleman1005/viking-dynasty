@@ -14,20 +14,20 @@ func before_all():
 		add_child_autofree(_manager_ref)
 		
 	# 2. Force Initialize the AStarGrid
-	_manager_ref.active_astar_grid = AStarGrid2D.new()
-	_manager_ref.active_astar_grid.region = Rect2i(0, 0, _grid_width, _grid_height)
-	_manager_ref.active_astar_grid.cell_size = Vector2(64, 32)
-	_manager_ref.active_astar_grid.update()
+	NavigationManager.active_astar_grid = AStarGrid2D.new()
+	NavigationManager.active_astar_grid.region = Rect2i(0, 0, _grid_width, _grid_height)
+	NavigationManager.active_astar_grid.cell_size = Vector2(64, 32)
+	NavigationManager.active_astar_grid.update()
 	
 	# 3. FILL MAP WITH WATER (Make everything Solid)
 	# We simulate a map that is 100% water initially
 	for x in range(_grid_width):
 		for y in range(_grid_height):
-			_manager_ref.active_astar_grid.set_point_solid(Vector2i(x, y), true)
+			NavigationManager.active_astar_grid.set_point_solid(Vector2i(x, y), true)
 
 	# 4. Create a Tiny Island at (5,5)
 	# Only (5,5) is walkable.
-	_manager_ref.active_astar_grid.set_point_solid(Vector2i(5, 5), false)
+	NavigationManager.active_astar_grid.set_point_solid(Vector2i(5, 5), false)
 
 func test_spawn_safety_check():
 	# --- SCENARIO 1: Spawn in Deep Water (0,0) ---
