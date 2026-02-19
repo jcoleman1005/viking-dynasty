@@ -19,6 +19,7 @@ extends Node2D
 @onready var objective_manager: RaidObjectiveManager = $RaidObjectiveManager
 @onready var unit_spawner: UnitSpawner = $UnitSpawner
 @onready var raid_nav_region: NavigationRegion2D = $RaidNavRegion
+var extraction_zone: Area2D
 @export var fyrd_unit_scene: PackedScene
 
 @export_group("Fyrd")
@@ -30,6 +31,9 @@ var objective_building: BaseBuilding = null
 var unit_container: Node2D
 @export var force_warbands: Array[WarbandData] = []
 @export var force_enemy_settlement: SettlementData = null
+
+func _enter_tree() -> void:
+	_setup_unit_container()
 
 func _initialize_navigation() -> void:
 	# Use standard map size (60x60) converted to world space
@@ -69,7 +73,9 @@ func _ready() -> void:
 	Loggie.set_domain_enabled("RAID", true)
 	Loggie.set_domain_enabled("MAP", true)
 	
-	_setup_unit_container()
+	extraction_zone = get_node_or_null("ExtractionZone")
+	if not extraction_zone:
+		Loggie.msg("ExtractionZone not found in scene tree.").domain("RAID").warn()
 	
 	if unit_spawner:
 		unit_spawner.unit_container = unit_container
@@ -161,6 +167,18 @@ func initialize_mission() -> void:
 		Loggie.msg("WARNING: Map Seed is 0. RaidMapLoader will randomize terrain!").domain(LogDomains.RAID).warn()
 		
 	map_loader.setup(building_container, enemy_base_data) 
+	
+	# Setup Extraction Zone
+	if extraction_zone and map_loader.last_map_data.has("extraction_zone"):
+		var rect = map_loader.last_map_data["extraction_zone"]
+		extraction_zone.global_position = rect.position + rect.size / 2.0
+		var shape = extraction_zone.get_node("ExtractionShape")
+		if shape and shape.shape is RectangleShape2D:
+			shape.shape.size = rect.size
+		var visual = extraction_zone.get_node("ExtractionVisual")
+		if visual is ColorRect:
+			visual.size = rect.size
+			visual.position = -rect.size / 2.0
 	
 	# 3. Generate Map Visuals and refresh manager
 	objective_building = map_loader.load_base(enemy_base_data, false)

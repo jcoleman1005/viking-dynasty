@@ -73,3 +73,11 @@ extends Resource
 @export var projectile_scene: PackedScene
 ## Speed of the projectile in world units per second.
 @export var projectile_speed: float = 400.0
+
+@export_group("Raid Loot")
+@export var loot_type: String = "gold"
+@export var loot_yield_min: int = 20
+@export var loot_yield_max: int = 40
+@export var loot_yield_safe: int = 0
+@export var loot_yield_fast: int = 0
+@export var loot_despawn_time: float = 30.0

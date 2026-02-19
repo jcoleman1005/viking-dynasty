@@ -1,4 +1,7 @@
-[gd_scene load_steps=13 format=3 uid="uid://d3ifdm0rvd5kl"]
+[gd_scene load_steps=15 format=3 uid="uid://d3ifdm0rvd5kl"]
+
+[sub_resource type="RectangleShape2D" id="1"]
+size = Vector2(100, 100)
 
 [ext_resource type="Script" uid="uid://cuw68f180xbui" path="res://scenes/missions/RaidMission.gd" id="1_qt4qp"]
 [ext_resource type="PackedScene" uid="uid://cyp3t7gbdg0wx" path="res://player/RTSController.tscn" id="2_8icmc"]
@@ -53,3 +56,15 @@ grid_size = Vector2i(60, 60)
 script = ExtResource("6_olj83")
 
 [node name="UnitSpawner" parent="." instance=ExtResource("11_eoj4n")]
+
+[node name="ExtractionZone" type="Area2D" parent="."]
+
+[node name="ExtractionShape" type="CollisionShape2D" parent="ExtractionZone"]
+shape = SubResource("1")
+
+[node name="ExtractionVisual" type="ColorRect" parent="ExtractionZone"]
+offset_left = -50.0
+offset_top = -50.0
+offset_right = 50.0
+offset_bottom = 50.0
+color = Color(0, 1, 0.2, 0.3)
