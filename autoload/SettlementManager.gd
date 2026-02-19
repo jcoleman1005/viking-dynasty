@@ -1067,3 +1067,19 @@ func apply_raid_social_results(net_gold: int) -> void:
 				house.loyalty -= 5
 	else:
 		Loggie.msg("Raid Failure: No social shifts (Shared hardship)").domain(LogDomains.SETTLEMENT).info()
+
+func get_lowest_loyalty() -> int:
+	var lowest = 999
+	if not current_settlement: return lowest
+	for household in current_settlement.households:
+		if household.loyalty < lowest:
+			lowest = household.loyalty
+	return lowest
+
+func get_average_loyalty() -> float:
+	if not current_settlement or current_settlement.households.is_empty():
+		return 0.0
+	var total = 0
+	for household in current_settlement.households:
+		total += household.loyalty
+	return float(total) / current_settlement.households.size()

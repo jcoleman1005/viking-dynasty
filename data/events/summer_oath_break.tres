@@ -1,0 +1,48 @@
+[gd_resource type="Resource" script_class="EventData" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="Resource_mediate"]
+script = ExtResource("2_event_choice")
+choice_text = "Go to the fields yourself. Hear Sigrid out."
+tooltip_text = "Requires Stewardship 11. Costs 1 AP. Loyalty restored. Harvest proceeds at -10%."
+effect_key = "mediate_oath"
+
+[sub_resource type="Resource" id="Resource_gift"]
+script = ExtResource("2_event_choice")
+choice_text = "Send a representative with gifts."
+tooltip_text = "-30 Gold. 70% chance loyalty restored. 30% chance it makes things worse."
+effect_key = "gift_mediate"
+
+[sub_resource type="Resource" id="Resource_reassign"]
+script = ExtResource("2_event_choice")
+choice_text = "Reassign the rival household to Timber duty."
+tooltip_text = "Harvest resumes. Timber output -20% for the season. Costs 1 AP."
+effect_key = "reassign_rival"
+
+[sub_resource type="Resource" id="Resource_coerce"]
+script = ExtResource("2_event_choice")
+choice_text = "Force them back to work under threat."
+tooltip_text = "Requires Command 16. Harvest proceeds. Sigrid's household loyalty drops to 1 permanently."
+effect_key = "coerce_harvest"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "The Harvest Oath Breaks"
+description = "Word reaches you from the fields: the household sworn to Harvest has downed their tools. Their leader — old Sigrid — says her family cannot work beside a rival household that wronged them last spring. The grain stands uncut."
+event_id = "summer_oath_break"
+is_unique = false
+base_chance = 0.4
+prerequisites = Array[String]([])
+trigger_season = "Summer"
+trigger_day = 7
+min_stewardship = -1
+min_command = -1
+min_prowess = -1
+min_renown = -1
+must_have_trait = ""
+must_not_have_trait = ""
+min_available_heirs = -1
+min_conquered_regions = -1
+choices = Array[ExtResource("2_event_choice")]([SubResource("Resource_mediate"), SubResource("Resource_gift"), SubResource("Resource_reassign"), SubResource("Resource_coerce")])

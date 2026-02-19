@@ -179,6 +179,11 @@ func _on_grid_updated(_grid_pos: Vector2i) -> void:
 
 func _physics_process(delta: float) -> void:
 	if not data: return
+	
+	# TODO: Implement task-specific animations based on current assignments:
+	# - Harvesting: Walk back and forth from the Great Hall to the resource building.
+	# - Construction: Walk around the building perimeter and stop for a few seconds.
+	# - Raiding: March in formation towards targets.
 
 	var desired_velocity = Vector2.ZERO
 	

@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="EventData" load_steps=6 format=3 uid="uid://b3426s5yuoyh"]
+
+[ext_resource type="Script" uid="uid://c7lxr02yr1fn6" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" uid="uid://dvc7gumtvwaal" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="Resource_hire"]
+script = ExtResource("2_event_choice")
+choice_text = "Pay her to stay. Her counsel may be worth it."
+tooltip_text = "-30 Gold. Sets seer_present flag. Summer crisis events gain an extra choice."
+effect_key = "hire_seer"
+
+[sub_resource type="Resource" id="Resource_dismiss"]
+script = ExtResource("2_event_choice")
+choice_text = "Thank her and send her on her way."
+tooltip_text = "No cost. Summer events proceed normally."
+effect_key = "dismiss_seer"
+
+[sub_resource type="Resource" id="Resource_demand"]
+script = ExtResource("2_event_choice")
+choice_text = "Ask her to name the traitor."
+tooltip_text = "-10 Renown (she is offended). No extra information."
+effect_key = "demand_seer"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "The Seer's Warning"
+description = "A wandering volva arrives at your hall before the thaw. She reads the bones and the omens are dark: she speaks of a hand without a ring causing ruin before the leaves fall. She offers to remain through summer — for a price."
+event_id = "spring_seer_warning"
+is_unique = false
+base_chance = 1.0
+trigger_season = "Spring"
+trigger_day = 1
+min_renown = 15
+choices = Array[ExtResource("2_event_choice")]([SubResource("Resource_hire"), SubResource("Resource_dismiss"), SubResource("Resource_demand")])

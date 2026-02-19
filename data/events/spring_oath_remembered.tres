@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="EventData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="Resource_honour"]
+script = ExtResource("2_event_choice")
+choice_text = "Honour the oath. Grant them first choice of spoils."
+tooltip_text = "-20 Gold. +10 Renown. Red-Shields loyalty +2."
+effect_key = "honour_oath"
+
+[sub_resource type="Resource" id="Resource_deflect"]
+script = ExtResource("2_event_choice")
+choice_text = "Make excuses. Promise it will be different this season."
+tooltip_text = "No cost. Red-Shields loyalty -1. May trigger summer resentment."
+effect_key = "deflect_oath"
+
+[sub_resource type="Resource" id="Resource_payoff"]
+script = ExtResource("2_event_choice")
+choice_text = "Offer coin instead of honour."
+tooltip_text = "-40 Gold. Red-Shields loyalty +1 (unsatisfied)."
+effect_key = "pay_off_oath"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "The Oath Remembered"
+description = "As you prepare your Spring Council, an elder of the Red-Shields approaches with fire in her eyes. Last summer, you swore their household would be given first pick of raid spoils. That oath was never kept. The hall grows quiet as she speaks."
+event_id = "spring_oath_remembered"
+is_unique = false
+base_chance = 0.6
+prerequisites = Array[String](["spring_card_early_raid"])
+trigger_season = "Spring"
+trigger_day = -1
+min_stewardship = -1
+min_command = -1
+min_prowess = -1
+min_renown = -1
+must_have_trait = ""
+must_not_have_trait = ""
+min_available_heirs = -1
+min_conquered_regions = -1
+choices = Array[ExtResource("2_event_choice")]([SubResource("Resource_honour"), SubResource("Resource_deflect"), SubResource("Resource_payoff")])

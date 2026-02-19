@@ -36,6 +36,26 @@
 - **Persistence**: Event history is now stored directly in `JarlData`, ensuring unique events remain unique across save/load cycles.
 - **Campaign Flags**: Added `campaign_flags` to `JarlData` to support future multi-event story arcs and state-based triggers.
 
+## Pending Tasks (TODOs)
+
+### Core Gameplay & Simulation
+- **Winter Day System**: Implement a turn-based day cycle for Winter (e.g., `WINTER_DAYS = 6`) to match the Summer mechanic (`DynastyManager.gd`).
+- **Construction Progress**: Add incremental progress bar updates to reflect daily building progress in the UI (`EconomyManager.gd`).
+- **Save Loading Investigation**: Investigate redundant calls to `_on_settlement_loaded` during game start (`EconomyManager.gd`).
+
+### UI & Economics
+- **Autumn Ledger**: Fully implement the financial snapshot and seasonal ledger UI (transactions, categories, and totals) (`EconomyManager.gd`).
+- **Resource Caps**: Implement and enforce storage and population capacity limits across all systems (`EconomyManager.gd`).
+- **Event Consequences**: Hook up event effect keys (e.g., `great_feast`, `burial_rite`) to actual treasury deductions/additions and UI feedback (`EventManager.gd`).
+
+### Unit Behavior & Visuals
+- **Animation Roadmap**: Implement task-specific worker animations:
+    - Harvesting: Walking between Great Hall and resource buildings.
+    - Construction: Perimeter patrolling and timed stops.
+    - Raiding: Formation marching (`Base_Unit.gd`).
+- **Inventory & Encumbrance**: Connect `get_speed_multiplier()` to unit inventory weight (`UnitFSM.gd`).
+- **Logic Consolidation**: Unify resource gathering and pillaging logic between units and the `EconomyManager` (`UnitFSM.gd`).
+
 ## Current Context (Feb 17, 2026)
 - **Active Branch**: `Winter-Refactor`
 - **Focus**: Integrating social systems with economic gameplay and hardening the save/load pipeline.

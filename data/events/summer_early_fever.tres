@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="EventData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="Resource_contain"]
+script = ExtResource("2_event_choice")
+choice_text = "Send the healer immediately. Quarantine the longhouse."
+tooltip_text = "-20 Food, -10 Gold. Sickness contained. No winter penalty."
+effect_key = "contain_fever"
+
+[sub_resource type="Resource" id="Resource_partial"]
+script = ExtResource("2_event_choice")
+choice_text = "Give them rest but keep working the fields."
+tooltip_text = "-10 Food. 50% containment. 50% chance: sickness_seed flag set."
+effect_key = "partial_response"
+
+[sub_resource type="Resource" id="Resource_ignore"]
+script = ExtResource("2_event_choice")
+choice_text = "Cannot afford to stop. Push through it."
+tooltip_text = "No cost now. sickness_seed flag set. Winter outbreak chance +25%."
+effect_key = "ignore_fever"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "The Fever in the Longhouse"
+description = "A household has fallen sick — not the bone-cold illness of winter, but a summer fever that spreads fast through close quarters. The healer says it can be contained, but only if you act now. Waiting will cost more than the remedy."
+event_id = "summer_early_fever"
+is_unique = false
+base_chance = 0.3
+prerequisites = Array[String]([])
+trigger_season = "Summer"
+trigger_day = 6
+min_stewardship = -1
+min_command = -1
+min_prowess = -1
+min_renown = -1
+must_have_trait = ""
+must_not_have_trait = ""
+min_available_heirs = -1
+min_conquered_regions = -1
+choices = Array[ExtResource("2_event_choice")]([SubResource("Resource_contain"), SubResource("Resource_partial"), SubResource("Resource_ignore")])

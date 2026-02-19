@@ -812,6 +812,12 @@ func apply_raid_damages() -> Dictionary:
 
 func add_resources(resources: Dictionary) -> void:
 	deposit_resources(resources)
+
+func add_resource(type: String, amount: int) -> void:
+	deposit_resources({type: amount})
+
+func get_harvest_yield_modifier() -> float:
+	return DynastyManager.active_year_modifiers.get("mod_harvest_yield", 0.0)
 	
 # --- ALLOCATION & PROJECTION API ---
 

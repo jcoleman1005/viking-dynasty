@@ -45,6 +45,7 @@ func advance_season() -> void:
 			_transition_to_season(Season.SUMMER)
 			current_day = 1
 			EventBus.summer_day_changed.emit(current_day, SUMMER_DAYS)
+			EventManager.check_daily_events(current_day)
 		Season.SUMMER:
 			_transition_to_season(Season.AUTUMN)
 		Season.AUTUMN:
@@ -78,6 +79,8 @@ func _transition_to_season(new_season: Season) -> void:
 	
 	# 3. Winter Specifics (Hunger Check)
 	if s_name == "Winter":
+		# TODO: Implement a turn-based day system for Winter (e.g., WINTER_DAYS = 6)
+		# to allow for daily events and incremental survival pressure.
 		start_winter_cycle() # Recalculate Hall Actions BEFORE signal
 		if SettlementManager.has_method("process_warband_hunger"):
 			var warnings = SettlementManager.process_warband_hunger()
@@ -109,6 +112,9 @@ func _transition_to_season(new_season: Season) -> void:
 	
 	# 7. Legacy Feedback
 	_display_seasonal_feedback(s_name, payout_report)
+	
+	# 8. Check for seasonal events (Day -1)
+	EventManager.check_daily_events(-1)
 
 func _display_seasonal_feedback(season_name: String, payout: Dictionary) -> void:
 	var center_screen = Vector2(960, 500)
