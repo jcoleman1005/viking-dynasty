@@ -229,6 +229,12 @@ func update(delta: float) -> void:
 			_escort_state(delta)
 		UnitAIConstants.State.REGROUPING:
 			_regroup_state(delta)
+		UnitAIConstants.State.UNAWARE:
+			_unaware_state(delta)
+		UnitAIConstants.State.ALARMED:
+			_alarmed_state(delta)
+		UnitAIConstants.State.FLEEING:
+			_fleeing_state(delta)
 
 # --- STATE LOGIC ---
 
@@ -581,3 +587,111 @@ func _simple_move_to(target: Vector2, _delta: float) -> void:
 	
 	unit.velocity = dir * final_speed
 	# Note: BaseUnit._physics_process is responsible for calling move_and_slide()
+
+func _unaware_state(_delta: float) -> void:
+	unit.velocity = Vector2.ZERO
+	if not RaidNavigationManager.is_raid_active:
+		return
+	var player_units = unit.get_tree().get_nodes_in_group("player_units")
+	for player_unit in player_units:
+		if not is_instance_valid(player_unit):
+			continue
+		var distance = unit.global_position.distance_to(player_unit.global_position)
+		if distance < unit.data.detection_range:
+			var space = unit.get_world_2d().direct_space_state
+			var query = PhysicsRayQueryParameters2D.create(
+				unit.global_position,
+				player_unit.global_position)
+			var result = space.intersect_ray(query)
+			if result and result.collider == player_unit:
+				change_state(UnitAIConstants.State.ALARMED)
+				return
+
+func _alarmed_state(_delta: float) -> void:
+	if not RaidNavigationManager.is_raid_active:
+		return
+	if not unit.has_meta("alarm_spread_done"):
+		unit.set_meta("alarm_spread_done", true)
+		var nearby = unit.get_tree().get_nodes_in_group("enemy_units")
+		for enemy in nearby:
+			if not is_instance_valid(enemy): continue
+			if enemy == unit: continue
+			var dist = unit.global_position.distance_to(enemy.global_position)
+			if dist < 200.0 and enemy.has_method("get_fsm"):
+				var fsm_ref = enemy.get_fsm()
+				if fsm_ref and fsm_ref.current_state == UnitAIConstants.State.UNAWARE:
+					fsm_ref.change_state(UnitAIConstants.State.ALARMED)
+		unit.set_movement_target(_get_nearest_boundary())
+
+	var next_pos = unit.nav_agent.get_next_path_position()
+	var direction = (next_pos - unit.global_position).normalized()
+	unit.velocity = direction * unit.data.move_speed
+
+	if unit.nav_agent.is_navigation_finished():
+		if unit.has_method("emit_alarm"):
+			unit.emit_alarm()
+		change_state(UnitAIConstants.State.IDLE)
+
+func _fleeing_state(_delta: float) -> void:
+	if not RaidNavigationManager.is_raid_active:
+		unit.velocity = Vector2.ZERO
+		return
+	if not unit.has_meta("flee_target_set"):
+		unit.set_meta("flee_target_set", true)
+		var nearest = _get_nearest_player_unit()
+		if nearest:
+			var flee_dir = (unit.global_position - nearest.global_position).normalized()
+			var flee_target_pos = unit.global_position + flee_dir * 800.0
+			unit.set_movement_target(flee_target_pos)
+	
+	var next_pos = unit.nav_agent.get_next_path_position()
+	var direction = (next_pos - unit.global_position).normalized()
+	unit.velocity = direction * unit.data.move_speed
+
+	if unit.nav_agent.is_navigation_finished():
+		var nearest = _get_nearest_player_unit()
+		if nearest:
+			var flee_dir = (unit.global_position - nearest.global_position).normalized()
+			unit.set_movement_target(unit.global_position + flee_dir * 400.0)
+
+func _get_nearest_boundary() -> Vector2:
+	var map_width = 5760.0
+	var map_height = 2160.0
+	
+	# Find map loader in tree to get current map data
+	var raid_mission = unit.get_tree().current_scene.get_node_or_null("RaidMission")
+	if not raid_mission:
+		# Fallback for sandbox scenes
+		raid_mission = unit.get_tree().current_scene
+		
+	if raid_mission and "map_loader" in raid_mission and is_instance_valid(raid_mission.map_loader):
+		var loader = raid_mission.map_loader
+		map_width = loader.last_map_data.get("map_width", 5760.0)
+		map_height = loader.last_map_data.get("map_height", 2160.0)
+	
+	var map_rect = Rect2(Vector2.ZERO, Vector2(map_width, map_height))
+	var pos = unit.global_position
+	var candidates = [
+		Vector2(pos.x, map_rect.position.y),
+		Vector2(pos.x, map_rect.end.y),
+		Vector2(map_rect.position.x, pos.y),
+		Vector2(map_rect.end.x, pos.y)
+	]
+	var nearest = candidates[0]
+	for c in candidates:
+		if pos.distance_to(c) < pos.distance_to(nearest):
+			nearest = c
+			
+	return nearest
+
+func _get_nearest_player_unit() -> Node:
+	var player_units = unit.get_tree().get_nodes_in_group("player_units")
+	var nearest = null
+	var nearest_dist = INF
+	for u in player_units:
+		if not is_instance_valid(u): continue
+		var d = unit.global_position.distance_to(u.global_position)
+		if d < nearest_dist:
+			nearest_dist = d
+			nearest = u
+	return nearest

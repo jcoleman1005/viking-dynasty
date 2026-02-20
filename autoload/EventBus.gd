@@ -46,6 +46,7 @@ signal settlement_loaded(settlement_data: SettlementData)
 # --- Unit Management Signals ---
 signal player_unit_died(unit: Node2D)
 signal player_unit_spawned(unit: Node2D)
+signal alarm_raised(unit: Node)
 signal dynasty_view_requested()
 
 # --- RTS Command Signals ---

@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="UnitData" load_steps=3 format=3 uid="uid://test_player_raider"]
+
+[ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://de3nko6b1rqyg" path="res://scenes/components/AttackAI.tscn" id="2_ai"]
+
+[resource]
+script = ExtResource("1_script")
+display_name = "Test Raider"
+scene_path = "uid://cfanwutbtfcp2"
+max_health = 60
+move_speed = 100.0
+attack_damage = 15
+attack_range = 80.0
+acceleration = 12.0
+linear_damping = 6.0
+ai_component_scene = ExtResource("2_ai")
+projectile_speed = 400.0
+debug_color = Color(0.2, 0.4, 1, 1)
+debug_shape = "square"
+visual_radius = 16.0
+facing_arrow_length = 24.0
+can_carry_loot = true

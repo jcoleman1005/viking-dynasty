@@ -41,6 +41,20 @@ extends Resource
 @export_group("Social Stats")
 @export var wergild_cost: int = 50
 
+@export_group("Programmer Art")
+@export var debug_color: Color = Color.WHITE
+@export var debug_shape: String = "circle"
+@export var visual_radius: float = 16.0
+@export var facing_arrow_length: float = 24.0
+@export var draw_formation_spacing: bool = false
+
+@export_group("Combat Flags")
+@export var can_carry_loot: bool = false
+@export var is_escorted: bool = false
+@export var shield_wall_damage_reduction: float = 0.3
+@export var thrall_capacity_divisor: int = 2
+@export var detection_range: float = 300.0
+
 func load_scene() -> PackedScene:
 	if scene_to_spawn:
 		return scene_to_spawn

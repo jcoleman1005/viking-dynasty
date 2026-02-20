@@ -31,3 +31,8 @@ func set_attack_target(target: BaseBuilding) -> void:
 	fsm.change_state(UnitAIConstants.State.MOVING)
 	# --- END FIX ---
 	Loggie.msg("Viking Raider initialized and moving to target: %s" % target.data.display_name).domain("RTS").info()
+
+func _deferred_setup(damage_mult: float = 1.0) -> void:
+	super._deferred_setup(damage_mult)
+	if fsm:
+		fsm.change_state(UnitAIConstants.State.UNAWARE)

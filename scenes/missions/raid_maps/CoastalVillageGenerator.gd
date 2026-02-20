@@ -3,8 +3,8 @@ class_name CoastalVillageGenerator
 extends Node
 
 @export_group("Map Dimensions")
-@export var map_width: float = 5760.0
-@export var map_height: float = 2160.0
+@export var map_width: float = 3840.0
+@export var map_height: float = 1920.0
 @export var beach_depth: float = 480.0
 
 @export_group("Building Counts")

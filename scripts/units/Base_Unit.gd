@@ -21,6 +21,7 @@ var _stuck_timer: float = 0.0
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
 @onready var separation_area: Area2D = $SeparationArea
 @onready var nav_agent: NavigationAgent2D = $NavAgent
+@onready var unit_visualizer: UnitVisualizer = $UnitVisualizer
 
 @export_group("AI")
 @export var separation_enabled: bool = true
@@ -386,6 +387,18 @@ func command_move_to(target_pos: Vector2) -> void:
 
 func command_attack(target: Node2D) -> void:
 	if fsm: fsm.command_attack(target)
+
+func get_fsm() -> Node:
+	return fsm
+
+func _set_initial_state(state: UnitAIConstants.State) -> void:
+	var fsm_ref = get_fsm()
+	if fsm_ref:
+		fsm_ref.change_state(state)
+
+func emit_alarm() -> void:
+	Loggie.msg("Alarm raised by: %s" % name).domain("RAID").info()
+	EventBus.alarm_raised.emit(self)
 
 var is_selected: bool = false
 func set_selected(selected: bool) -> void:

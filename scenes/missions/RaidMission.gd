@@ -25,6 +25,10 @@ var extraction_zone: Area2D
 @export_group("Fyrd")
 @export var fyrd_spawn_count: int = 5
 
+@export_group("Test Data")
+@export var enemy_test_data: UnitData
+@export var villager_test_data: UnitData
+
 # --- Internal ---
 var map_loader: RaidMapLoader
 var objective_building: BaseBuilding = null
@@ -111,6 +115,12 @@ func _setup_unit_container() -> void:
 
 func initialize_mission() -> void:
 	Loggie.msg("RaidMission: Initializing...").domain(LogDomains.RAID).info()
+	
+	# Load default test data if missing
+	if not enemy_test_data:
+		enemy_test_data = load("res://data/units/Test_EnemyDefender.tres")
+	if not villager_test_data:
+		villager_test_data = load("res://data/units/Test_Villager.tres")
 	
 	enemy_base_data = null
 	
@@ -240,7 +250,8 @@ func _setup_offensive_mode() -> void:
 	
 	for child in building_container.get_children():
 		if child is BaseBuilding:
-			child.building_destroyed.connect(_on_building_destroyed_grid_update)
+			if not child.building_destroyed.is_connected(_on_building_destroyed_grid_update):
+				child.building_destroyed.connect(_on_building_destroyed_grid_update)
 			
 	_spawn_player_garrison()
 	_spawn_retreat_zone()

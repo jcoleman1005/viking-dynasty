@@ -13,7 +13,10 @@ enum State {
 	INTERACTING,
 	COLLECTING, # New
 	ESCORTING,  # New
-	REGROUPING 
+	REGROUPING,
+	UNAWARE,
+	ALARMED,
+	FLEEING
 }
 
 # Defines behavior stances

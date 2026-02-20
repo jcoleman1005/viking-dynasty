@@ -5,9 +5,14 @@ extends Node2D
 ## Sets up mock Jarl, Raid Force, and Target before initializing RaidMission.
 
 @onready var raid_mission = $RaidMission
+@export var player_test_data: UnitData
 var debug_label: Label
 
 func _ready() -> void:
+	# Load default if not assigned in inspector
+	if not player_test_data:
+		player_test_data = load("res://data/units/Test_PlayerRaider.tres")
+	
 	Loggie.msg("=== Raid Sandbox: Starting Setup ===").domain(LogDomains.RAID).info()
 	
 	_setup_mock_jarl()
@@ -86,11 +91,7 @@ func _setup_mock_jarl() -> void:
 func _setup_mock_raid_force() -> void:
 	RaidManager.reset_raid_state()
 	
-	# Correct path for Player Raiders
-	var warrior_data = load("res://data/units/Unit_PlayerRaider.tres")
-	if not warrior_data:
-		# Fallback if specific file missing, try generic
-		warrior_data = load("res://data/units/EnemyVikingRaider_Data.tres")
+	var warrior_data = player_test_data
 	if warrior_data:
 		var warband = WarbandData.new(warrior_data)
 		warband.custom_name = "Sandbox Veterans"
@@ -113,6 +114,15 @@ func _setup_mock_target() -> void:
 	if ResourceLoader.exists(target_path):
 		target_data = load(target_path)
 		Loggie.msg("Loaded Target from disk: " + target_path).domain(LogDomains.RAID).info()
+		
+		# --- Fix 1: Manual Population of Warbands (Legacy Bypass) ---
+		var defender_type = load("res://data/units/Test_EnemyDefender.tres")
+		if defender_type:
+			var defender_warband = WarbandData.new(defender_type)
+			defender_warband.custom_name = "Monastery Guard"
+			defender_warband.current_manpower = 6
+			target_data.warbands = [defender_warband]
+		# -----------------------------------------------------------
 	else:
 		# Generate a procedural one
 		target_data = MapDataGenerator._generate_procedural_settlement("Monastery", 1.0)

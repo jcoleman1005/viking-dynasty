@@ -83,3 +83,8 @@ func command_interact(target: Node2D) -> void:
 		interaction_target = target
 		if fsm and fsm.has_method("command_interact_move"):
 			fsm.command_interact_move(target)
+
+func _deferred_setup(damage_mult: float = 1.0) -> void:
+	super._deferred_setup(damage_mult)
+	if fsm:
+		fsm.change_state(UnitAIConstants.State.FLEEING)
