@@ -32,6 +32,12 @@ var enemy_units: Array[BaseUnit] = []
 var is_initialized: bool = false
 var mission_over: bool = false
 
+var smoke_timer: float = 0.0
+var smoke_active: bool = false
+var wave1_spawned: bool = false
+var wave2_spawned: bool = false
+var buildings_looted: int = 0
+
 # --- NEW: Performance Tracking ---
 var battle_start_time: int = 0
 var dead_units_log: Array[UnitData] = []
@@ -46,6 +52,14 @@ var fyrd_timer_active: bool = false
 var timer_label: Label
 
 signal fyrd_arrived()
+signal smoke_signal_triggered
+signal wave1_fyrd_arrived
+signal wave2_fyrd_arrived
+signal raid_failed
+
+@export_group("Fyrd Timing")
+@export var smoke_to_wave1_time: float = 5.0 # TEMP: was 90.0 — revert after Phase 4 testing
+@export var wave1_to_wave2_time: float = 5.0 # TEMP: was 60.0 — revert after Phase 4 testing
 
 # --- UI Theme ---
 const UI_THEME = preload("res://ui/themes/VikingDynastyTheme.tres")
@@ -56,22 +70,42 @@ func _ready() -> void:
 	# Connect to global unit death signal to track casualties
 	EventBus.player_unit_died.connect(_on_player_unit_died)
 	EventBus.raid_loot_secured.connect(_on_raid_loot_secured)
+	EventBus.alarm_raised.connect(func(_unit): trigger_smoke_signal())
 
 func _process(delta: float) -> void:
-	if fyrd_timer_active and not mission_over:
-		time_remaining -= delta
+	if mission_over: return
+	
+	if smoke_active:
+		smoke_timer += delta
 		
 		# Update UI
 		if is_instance_valid(timer_label):
-			var minutes = int(time_remaining / 60)
-			var seconds = int(time_remaining) % 60
-			timer_label.text = "FYRD ARRIVAL: %02d:%02d" % [minutes, seconds]
+			var time_to_wave1 = max(0, smoke_to_wave1_time - smoke_timer)
+			var time_to_wave2 = max(0, (smoke_to_wave1_time + wave1_to_wave2_time) - smoke_timer)
 			
-			if time_remaining < 30:
-				timer_label.modulate = Color.RED # Panic color
-		
-		if time_remaining <= 0:
-			_trigger_fyrd()
+			if not wave1_spawned:
+				var minutes = int(time_to_wave1 / 60)
+				var seconds = int(time_to_wave1) % 60
+				timer_label.text = "FYRD WAVE 1: %02d:%02d" % [minutes, seconds]
+				if time_to_wave1 < 15: timer_label.modulate = Color.RED
+			elif not wave2_spawned:
+				var minutes = int(time_to_wave2 / 60)
+				var seconds = int(time_to_wave2) % 60
+				timer_label.text = "FYRD WAVE 2: %02d:%02d" % [minutes, seconds]
+				if time_to_wave2 < 15: timer_label.modulate = Color.ORANGE
+			else:
+				timer_label.text = "FYRD IS HERE!"
+				timer_label.modulate = Color.RED
+
+		# Wave 1 Spawn
+		if not wave1_spawned and smoke_timer >= smoke_to_wave1_time:
+			_spawn_fyrd_wave1()
+			wave1_spawned = true
+			
+		# Wave 2 Spawn
+		if wave1_spawned and not wave2_spawned and smoke_timer >= (smoke_to_wave1_time + wave1_to_wave2_time):
+			_spawn_fyrd_wave2()
+			wave2_spawned = true
 
 func initialize(
 	p_rts_controller: RTSController, 
@@ -242,6 +276,8 @@ func _connect_to_building_signals() -> void:
 func _on_loot_stolen(type: String, amount: int) -> void:
 	if mission_over: return
 	
+	trigger_smoke_signal()
+	
 	# Add to the temporary raid stash
 	raid_loot.add_loot(type, amount)
 	
@@ -249,6 +285,9 @@ func _on_loot_stolen(type: String, amount: int) -> void:
 
 func _on_enemy_building_destroyed_for_loot(building: BaseBuilding) -> void:
 	if mission_over: return
+	
+	trigger_smoke_signal()
+	
 	var building_data = building.data as BuildingData
 	if raid_loot and building_data:
 		raid_loot.add_loot_from_building(building_data)
@@ -367,6 +406,21 @@ func _trigger_fyrd() -> void:
 	if is_instance_valid(timer_label):
 		timer_label.text = "THE FYRD IS HERE!"
 	fyrd_arrived.emit()
+
+func trigger_smoke_signal() -> void:
+	if smoke_active: return
+	smoke_active = true
+	smoke_timer = 0.0
+	smoke_signal_triggered.emit()
+	Loggie.msg("SMOKE SIGNAL! Fyrd Wave 1 in %d seconds." % int(smoke_to_wave1_time)).domain("RAID").warn()
+
+func _spawn_fyrd_wave1() -> void:
+	Loggie.msg("STUB: Wave 1 would spawn here").domain("RAID").warn()
+	wave1_fyrd_arrived.emit()
+
+func _spawn_fyrd_wave2() -> void:
+	Loggie.msg("STUB: Wave 2 would spawn here").domain("RAID").warn()
+	wave2_fyrd_arrived.emit()
 
 # --- HELPERS ---
 func _show_failure_message(reason: String) -> void:

@@ -227,8 +227,12 @@ func initialize_mission() -> void:
 			
 			Loggie.msg("Setup 6/6 — Mission live.").domain("RAID").info()
 			
-			if not objective_manager.fyrd_arrived.is_connected(_on_fyrd_arrived):
-				objective_manager.fyrd_arrived.connect(_on_fyrd_arrived)
+			if not objective_manager.wave1_fyrd_arrived.is_connected(_on_wave1_fyrd):
+				objective_manager.wave1_fyrd_arrived.connect(_on_wave1_fyrd)
+			if not objective_manager.wave2_fyrd_arrived.is_connected(_on_wave2_fyrd):
+				objective_manager.wave2_fyrd_arrived.connect(_on_wave2_fyrd)
+			
+			Loggie.msg("Fyrd wave signals connected to RaidMission").domain("RAID").info()
 	else:
 		Loggie.msg("Critical: No Objective Building found!").domain(LogDomains.RAID).error()
 
@@ -290,13 +294,6 @@ func _setup_defensive_mode() -> void:
 	_spawn_enemy_wave()
 
 func _setup_offensive_mode() -> void:
-	if not enemy_base_data:
-		if ResourceLoader.exists(default_enemy_base_path):
-			enemy_base_data = load(default_enemy_base_path)
-		else: return
-	
-	objective_building = map_loader.load_base(enemy_base_data, false)
-	
 	for child in building_container.get_children():
 		if child is BaseBuilding:
 			if not child.building_destroyed.is_connected(_on_building_destroyed_grid_update):
@@ -378,6 +375,55 @@ func _spawn_enemy_wave() -> void:
 			unit.fsm_ready.connect(func(u): 
 				if u.fsm: u.fsm.command_attack(objective_building)
 			)
+
+func _on_wave1_fyrd() -> void:
+	var count = randi_range(8, 10)
+	Loggie.msg("WAVE 1: Spawning %d Fyrd at boundary" % count).domain("RAID").warn()
+	_spawn_fyrd_at_boundary(count)
+
+func _on_wave2_fyrd() -> void:
+	var count = randi_range(5, 8)
+	Loggie.msg("WAVE 2: Spawning %d Fyrd targeting extraction" % count).domain("RAID").warn()
+	_spawn_fyrd_at_boundary(count)
+
+func _spawn_fyrd_at_boundary(count: int) -> void:
+	if not fyrd_unit_scene:
+		Loggie.msg("No fyrd_unit_scene assigned!").domain("RAID").error()
+		return
+
+	# Get boundary positions from map data
+	var boundary_points = map_loader.last_map_data.get("fyrd_boundary", [])
+	if boundary_points.is_empty():
+		# Fallback: top edge of map
+		for i in range(count):
+			boundary_points.append(Vector2(randf_range(200, 3600), 50))
+
+	for i in range(count):
+		var unit_inst = fyrd_unit_scene.instantiate()
+		unit_inst.collision_layer = 4
+		unit_inst.add_to_group("enemy_units")
+
+		# Pick a boundary point, add some randomness
+		var base_pos = boundary_points[i % boundary_points.size()]
+		var offset = Vector2(randf_range(-80, 80), randf_range(-80, 80))
+		var spawn_pos = base_pos + offset
+
+		# Validate against raid navmesh (NOT NavigationManager)
+		var valid_pos = RaidNavigationManager.request_valid_spawn_point(spawn_pos, 4)
+		if valid_pos != Vector2.INF:
+			unit_inst.global_position = valid_pos
+		else:
+			unit_inst.global_position = spawn_pos
+
+		unit_container.add_child(unit_inst)
+
+		# Give them a target — player spawn area
+		if unit_inst.has_method("set_attack_target") and is_instance_valid(objective_building):
+			unit_inst.call_deferred("set_attack_target", objective_building)
+		elif unit_inst.get("fsm"):
+			var target_pos = player_spawn_pos.global_position if player_spawn_pos else Vector2(100, 600)
+			unit_inst.fsm.call_deferred("change_state", UnitAIConstants.State.MOVING)
+			unit_inst.call_deferred("set_movement_target", target_pos)
 
 func _on_fyrd_arrived() -> void:
 	Loggie.msg("--- FYRD SPAWN START ---").domain(LogDomains.RAID).info()

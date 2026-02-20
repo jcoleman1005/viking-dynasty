@@ -7,6 +7,7 @@ extends Node2D
 @onready var raid_mission = $RaidMission
 @export var player_test_data: UnitData
 var debug_label: Label
+var fyrd_timer_label: Label
 
 func _ready() -> void:
 	# Load default if not assigned in inspector
@@ -20,8 +21,28 @@ func _ready() -> void:
 	_setup_mock_target()
 	_setup_debug_overlay()
 	
+	# Fyrd Timer UI
+	var canvas = get_node("CanvasLayer") if has_node("CanvasLayer") else null
+	if not canvas:
+		canvas = CanvasLayer.new()
+		add_child(canvas)
+		
+	fyrd_timer_label = Label.new()
+	fyrd_timer_label.add_theme_font_size_override("font_size", 32)
+	fyrd_timer_label.add_theme_color_override("font_color", Color.ORANGE)
+	fyrd_timer_label.add_theme_constant_override("outline_size", 6)
+	fyrd_timer_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	fyrd_timer_label.position = Vector2(20, 150) # Below debug label
+	canvas.add_child(fyrd_timer_label)
+	fyrd_timer_label.hide()
+	
 	if EventBus:
 		EventBus.scene_change_requested.connect(_on_mission_end_requested)
+	
+	var diag = Node.new()
+	diag.name = "RaidDiagnostics"
+	diag.set_script(load("res://test/RaidDiagnostics.gd"))
+	add_child(diag)
 	
 	Loggie.msg("=== Raid Sandbox: Setup Complete ===").domain(LogDomains.RAID).info()
 
@@ -65,6 +86,27 @@ func _process(_delta: float) -> void:
 				text += "Fyrd Timer: %.1fs\n" % obj_mgr.time_remaining
 		
 		debug_label.text = text
+		
+	# Update Fyrd Timer Label
+	if is_instance_valid(raid_mission) and is_instance_valid(fyrd_timer_label):
+		var obj_mgr = raid_mission.get_node_or_null("RaidObjectiveManager")
+		if obj_mgr and obj_mgr.smoke_active and not obj_mgr.mission_over:
+			fyrd_timer_label.show()
+			
+			var time_to_wave1 = max(0, obj_mgr.smoke_to_wave1_time - obj_mgr.smoke_timer)
+			var time_to_wave2 = max(0, (obj_mgr.smoke_to_wave1_time + obj_mgr.wave1_to_wave2_time) - obj_mgr.smoke_timer)
+			
+			if not obj_mgr.wave1_spawned:
+				fyrd_timer_label.text = "FYRD WAVE 1: %.1fs" % time_to_wave1
+				fyrd_timer_label.modulate = Color.YELLOW if time_to_wave1 > 15 else Color.RED
+			elif not obj_mgr.wave2_spawned:
+				fyrd_timer_label.text = "FYRD WAVE 2: %.1fs" % time_to_wave2
+				fyrd_timer_label.modulate = Color.ORANGE if time_to_wave2 > 10 else Color.RED
+			else:
+				fyrd_timer_label.text = "THE FYRD IS HERE!"
+				fyrd_timer_label.modulate = Color.RED
+		else:
+			fyrd_timer_label.hide()
 
 func _on_mission_end_requested(scene_path: String) -> void:
 	Loggie.msg("Raid Sandbox: Mission End Requested -> " + scene_path).domain(LogDomains.RAID).info()

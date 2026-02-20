@@ -325,10 +325,7 @@ func _calculate_obstacle_avoidance() -> Vector2:
 		_debug_log_timer += get_process_delta_time()
 		if _debug_log_timer > 0.5:
 			_debug_log_timer = 0.0
-			print("\n[AVOIDANCE DEBUG] Unit: %s" % name)
-			print(" -> Velocity: %s" % velocity)
-			print(" -> Hits: %d | Final Steer: %s" % [hit_count, final_steer])
-			print("------------------------------------------------")
+			
 			
 	return final_steer
 

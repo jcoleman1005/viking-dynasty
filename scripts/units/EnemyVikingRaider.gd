@@ -17,7 +17,7 @@ func set_attack_target(target: BaseBuilding) -> void:
 		return
 
 	# Set the node (for attacking)
-	fsm.target_unit = target
+	fsm.objective_target = target
 	
 	# --- THIS IS THE FIX ---
 	# Target the building's actual center.
