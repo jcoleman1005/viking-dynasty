@@ -30,9 +30,10 @@ var extraction_zone: Area2D
 @export var villager_test_data: UnitData
 
 # --- Internal ---
-var map_loader: RaidMapLoader
+@onready var map_loader: RaidMapLoader = $RaidMapLoader
 var objective_building: BaseBuilding = null
 var unit_container: Node2D
+var _mission_initialized: bool = false
 @export var force_warbands: Array[WarbandData] = []
 @export var force_enemy_settlement: SettlementData = null
 
@@ -47,29 +48,33 @@ func _initialize_navigation() -> void:
 	# Create a loose bounding box for the navmesh
 	var nav_poly = NavigationPolygon.new()
 	var outline = PackedVector2Array([
-		Vector2(-width, -height),
-		Vector2(width, -height),
+		Vector2(0, 0),
+		Vector2(width, 0),
 		Vector2(width, height),
-		Vector2(-width, height)
+		Vector2(0, height)
 	])
 	nav_poly.add_outline(outline)
-	nav_poly.make_polygons_from_outlines()
 	raid_nav_region.navigation_polygon = nav_poly
 	
-	# Wait for the region to be enabled and processed
-	if not raid_nav_region.is_inside_tree():
-		await raid_nav_region.tree_entered
-		
-	# Force a synchronization cycle
-	await get_tree().physics_frame
+	raid_nav_region.bake_navigation_polygon()
+	await raid_nav_region.bake_finished
 	
-	RaidNavigationManager.initialize_raid_map(raid_nav_region)
-	
-	# Wait for the NavigationServer to actually bake/sync the polygon into the map
-	# This avoids the "query failed before first map synchronization" error.
+	# Poll until NavServer confirms geometry exists
 	var map_rid = raid_nav_region.get_navigation_map()
-	while NavigationServer2D.map_get_iteration_id(map_rid) == 0:
+	var attempts = 0
+	var test_point = Vector2(1920.0, 960.0)
+	while attempts < 30:
+		var result = NavigationServer2D.map_get_closest_point(map_rid, test_point)
+		if result != Vector2.ZERO:
+			Loggie.msg("NavMesh ready after %d frames" % attempts).domain("NAVIGATION").info()
+			break
 		await get_tree().physics_frame
+		attempts += 1
+	
+	if attempts >= 30:
+		Loggie.msg("WARNING: NavMesh not ready after 30 frames").domain("NAVIGATION").warn()
+		
+	RaidNavigationManager.initialize_raid_map(raid_nav_region)
 
 func _ready() -> void:
 	Loggie.set_domain_enabled("UI", true)
@@ -87,21 +92,16 @@ func _ready() -> void:
 	else:
 		printerr("CRITICAL: UnitSpawner node is missing in RaidMission!")
 	
-	map_loader = RaidMapLoader.new()
-	add_child(map_loader)
-	
 	if RaidManager.is_defensive_raid:
 		self.is_defensive_mission = true
 		objective_manager.is_defensive_mission = true
 		RaidManager.is_defensive_raid = false
 	
-	EventBus.settlement_loaded.connect(_on_settlement_ready_for_mission)
-	
-	if not SettlementManager.has_current_settlement() and not force_enemy_settlement:
-		_load_test_settlement()
+	if SettlementManager.has_current_settlement() or force_enemy_settlement:
 		call_deferred("initialize_mission")
 	else:
-		call_deferred("initialize_mission")
+		EventBus.settlement_loaded.connect(_on_settlement_ready_for_mission, CONNECT_ONE_SHOT)
+		_load_test_settlement()
 		
 	get_tree().node_added.connect(_on_node_added)
 
@@ -114,6 +114,11 @@ func _setup_unit_container() -> void:
 		add_child(unit_container)
 
 func initialize_mission() -> void:
+	if _mission_initialized:
+		Loggie.msg("initialize_mission called twice — ignoring.").domain("RAID").warn()
+		return
+	_mission_initialized = true
+	
 	Loggie.msg("RaidMission: Initializing...").domain(LogDomains.RAID).info()
 	
 	# Load default test data if missing
@@ -163,20 +168,27 @@ func initialize_mission() -> void:
 		Loggie.msg("Critical: No enemy_base_data assigned!").domain(LogDomains.RAID).error()
 		return
 
+	Loggie.msg("Setup 1/6 — Data resolved. seed=%d warbands=%d peasants=%d" % [
+		enemy_base_data.map_seed,
+		enemy_base_data.warbands.size(),
+		enemy_base_data.population_peasants]
+	).domain("RAID").info()
+
 	if not _validate_nodes(): return
 	
 	# 4. Register & Setup
 	SettlementManager.register_active_scene_nodes(unit_container)
-	
-	if not map_loader:
-		map_loader = RaidMapLoader.new()
-		add_child(map_loader)
 	
 	# [DIAGNOSTIC] Final check before generation
 	if enemy_base_data.map_seed == 0:
 		Loggie.msg("WARNING: Map Seed is 0. RaidMapLoader will randomize terrain!").domain(LogDomains.RAID).warn()
 		
 	map_loader.setup(building_container, enemy_base_data) 
+	
+	Loggie.msg("Setup 2/6 — Map generated. buildings=%d has_extraction=%s" % [
+		map_loader.last_map_data.get("buildings", []).size(),
+		str(map_loader.last_map_data.has("extraction_zone"))]
+	).domain("RAID").info()
 	
 	# Setup Extraction Zone
 	if extraction_zone and map_loader.last_map_data.has("extraction_zone"):
@@ -192,46 +204,83 @@ func initialize_mission() -> void:
 	
 	# 3. Generate Map Visuals and refresh manager
 	objective_building = map_loader.load_base(enemy_base_data, false)
+	
 	Loggie.msg("Tactical Navigation Initializing (Raid)...").domain(LogDomains.RAID).info()
 	
 	# Initialize Tactical Navigation
 	await _initialize_navigation()
 	
-	# Safety wait for NavigationServer synchronization
-	# In Godot 4, NavigationServer2D synchronizes at the end of the physics frame.
-	# We wait a couple of frames to be absolutely sure.
-	await get_tree().physics_frame
-	await get_tree().physics_frame
+	Loggie.msg("Setup 4/6 — Navigation ready. is_raid_active=%s bounds=%s" % [
+		str(RaidNavigationManager.is_raid_active),
+		str(RaidNavigationManager.map_bounds)]
+	).domain("RAID").info()
+	
+	if RaidNavigationManager.is_raid_active:
+		_spawn_all_units()
+	else:
+		RaidNavigationManager.navigation_ready.connect(_spawn_all_units, CONNECT_ONE_SHOT)
+	
+	# 6. Finalize Objective
+	if is_instance_valid(objective_building):
+		if objective_manager:
+			objective_manager.initialize(rts_controller, objective_building, unit_container)
+			
+			Loggie.msg("Setup 6/6 — Mission live.").domain("RAID").info()
+			
+			if not objective_manager.fyrd_arrived.is_connected(_on_fyrd_arrived):
+				objective_manager.fyrd_arrived.connect(_on_fyrd_arrived)
+	else:
+		Loggie.msg("Critical: No Objective Building found!").domain(LogDomains.RAID).error()
+
+func _spawn_all_units() -> void:
+	# Find objective building if not already set
+	if not is_instance_valid(objective_building):
+		for entry in map_loader.last_map_data.get("buildings", []):
+			Loggie.msg("Checking: type='%s' node=%s" % [
+				str(entry.get("type", "MISSING")),
+				str(entry.get("node", null))]
+			).domain("RAID").info()
+			
+			if entry.get("type", "") == "Hall" and entry.get("node", null) != null:
+				objective_building = entry["node"]
+				Loggie.msg("Objective building found: %s" % str(objective_building.name)).domain("RAID").info()
+				break
+	
+	Loggie.msg("Setup 3/6 — Objective building: %s" % str(is_instance_valid(objective_building))).domain("RAID").info()
+	
+	Loggie.msg("Setup 5/6 — Spawning units. warbands=%d peasants=%d" % [
+		enemy_base_data.warbands.size() if enemy_base_data else -1,
+		enemy_base_data.population_peasants if enemy_base_data else -1]
+	).domain("RAID").info()
 	
 	# 4. Spawn Civilians
 	if enemy_base_data and enemy_base_data.population_peasants > 0:
 		if unit_spawner:
 			unit_spawner.unit_container = unit_container
 			
-			# Find a safe spot near the main building, or default to offset
+			# Find a safe spot from procedural data or fallback
+			var villager_spawns = map_loader.last_map_data.get("villager_spawns", [])
 			var spawn_origin = Vector2(200, 300)
-			if is_instance_valid(objective_building):
+			if villager_spawns.size() > 0:
+				spawn_origin = villager_spawns[0]
+			elif is_instance_valid(objective_building):
 				spawn_origin = objective_building.global_position + Vector2(0, 100)
 			
 			# Ensure it's valid
-			spawn_origin = NavigationManager.request_valid_spawn_point(spawn_origin, 5)
+			spawn_origin = RaidNavigationManager.request_valid_spawn_point(spawn_origin, 5)
 			
 			unit_spawner.sync_civilians(enemy_base_data.population_peasants, spawn_origin, true)
+			
+			Loggie.msg("Civilians spawned around: %s" % str(spawn_origin)).domain("RAID").info()
 			
 	# 5. Spawn Units
 	if is_defensive_mission:
 		_setup_defensive_mode()
 	else:
 		_setup_offensive_mode()
-	
-	# 6. Finalize Objective
-	if is_instance_valid(objective_building):
-		if objective_manager:
-			objective_manager.initialize(rts_controller, objective_building, unit_container)
-			if not objective_manager.fyrd_arrived.is_connected(_on_fyrd_arrived):
-				objective_manager.fyrd_arrived.connect(_on_fyrd_arrived)
-	else:
-		Loggie.msg("Critical: No Objective Building found!").domain(LogDomains.RAID).error()
+		
+	if enemy_base_data:
+		Loggie.msg("Enemy warbands spawned: %d" % enemy_base_data.warbands.size()).domain("RAID").info()
 
 func _setup_defensive_mode() -> void:
 	var settlement = SettlementManager.current_settlement
@@ -385,8 +434,7 @@ func _load_test_settlement() -> void:
 		if data: SettlementManager.load_settlement(data)
 
 func _on_settlement_ready_for_mission(_d):
-	if not is_instance_valid(objective_manager.rts_controller):
-		initialize_mission()
+	initialize_mission()
 
 func _validate_nodes() -> bool:
 	if not rts_controller: return false

@@ -33,6 +33,8 @@ extends Node
 @export var church_data: BuildingData
 
 func generate(seed_val: int = -1) -> Dictionary:
+	Loggie.msg("Generator: Starting. seed=%d" % seed_val).domain("RAID").info()
+	
 	if seed_val == -1 or seed_val == 0:
 		randomize()
 	else:
@@ -46,6 +48,14 @@ func generate(seed_val: int = -1) -> Dictionary:
 	var village_center = village_zone.get_center()
 	
 	var building_placements = _place_buildings(village_zone)
+	
+	var has_hall = false
+	var has_church = false
+	for b in building_placements:
+		if b.type == "Hall": has_hall = true
+		if b.type == "Church": has_church = true
+		
+	Loggie.msg("Generator: Placed %d buildings. hall=%s church=%s" % [building_placements.size(), str(has_hall), str(has_church)]).domain("RAID").info()
 	
 	var defender_spawns = []
 	var hall_defender_spawns = []
@@ -92,7 +102,7 @@ func generate(seed_val: int = -1) -> Dictionary:
 		fyrd_boundary.append(Vector2(randf() * 200.0, randf() * map_height))
 		fyrd_boundary.append(Vector2(map_width - randf() * 200.0, randf() * map_height))
 
-	return {
+	var result = {
 		"extraction_zone": extraction_zone,
 		"buildings": building_placements,
 		"defender_spawns": defender_spawns,
@@ -101,6 +111,10 @@ func generate(seed_val: int = -1) -> Dictionary:
 		"fyrd_boundary": fyrd_boundary,
 		"navmesh_bounds": village_zone 
 	}
+	
+	Loggie.msg("Generator: Complete. extraction_zone=%s" % str(result.has("extraction_zone"))).domain("RAID").info()
+	
+	return result
 
 func _place_buildings(village_zone: Rect2) -> Array:
 	var placements = []

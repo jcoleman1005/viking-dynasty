@@ -621,7 +621,7 @@ func _alarmed_state(_delta: float) -> void:
 				var fsm_ref = enemy.get_fsm()
 				if fsm_ref and fsm_ref.current_state == UnitAIConstants.State.UNAWARE:
 					fsm_ref.change_state(UnitAIConstants.State.ALARMED)
-		unit.set_movement_target(_get_nearest_boundary())
+		unit.set_movement_target(_get_hall_position())
 
 	var next_pos = unit.nav_agent.get_next_path_position()
 	var direction = (next_pos - unit.global_position).normalized()
@@ -636,8 +636,22 @@ func _fleeing_state(_delta: float) -> void:
 	if not RaidNavigationManager.is_raid_active:
 		unit.velocity = Vector2.ZERO
 		return
+		
+	# Update flee target periodically (every 60 frames approx)
+	var update_flee = false
 	if not unit.has_meta("flee_target_set"):
 		unit.set_meta("flee_target_set", true)
+		unit.set_meta("flee_update_timer", 0)
+		update_flee = true
+	else:
+		var timer = unit.get_meta("flee_update_timer") + 1
+		if timer >= 60:
+			update_flee = true
+			unit.set_meta("flee_update_timer", 0)
+		else:
+			unit.set_meta("flee_update_timer", timer)
+			
+	if update_flee:
 		var nearest = _get_nearest_player_unit()
 		if nearest:
 			var flee_dir = (unit.global_position - nearest.global_position).normalized()
@@ -648,41 +662,18 @@ func _fleeing_state(_delta: float) -> void:
 	var direction = (next_pos - unit.global_position).normalized()
 	unit.velocity = direction * unit.data.move_speed
 
-	if unit.nav_agent.is_navigation_finished():
-		var nearest = _get_nearest_player_unit()
-		if nearest:
-			var flee_dir = (unit.global_position - nearest.global_position).normalized()
-			unit.set_movement_target(unit.global_position + flee_dir * 400.0)
-
-func _get_nearest_boundary() -> Vector2:
-	var map_width = 5760.0
-	var map_height = 2160.0
-	
-	# Find map loader in tree to get current map data
-	var raid_mission = unit.get_tree().current_scene.get_node_or_null("RaidMission")
-	if not raid_mission:
-		# Fallback for sandbox scenes
-		raid_mission = unit.get_tree().current_scene
-		
-	if raid_mission and "map_loader" in raid_mission and is_instance_valid(raid_mission.map_loader):
-		var loader = raid_mission.map_loader
-		map_width = loader.last_map_data.get("map_width", 5760.0)
-		map_height = loader.last_map_data.get("map_height", 2160.0)
-	
-	var map_rect = Rect2(Vector2.ZERO, Vector2(map_width, map_height))
-	var pos = unit.global_position
-	var candidates = [
-		Vector2(pos.x, map_rect.position.y),
-		Vector2(pos.x, map_rect.end.y),
-		Vector2(map_rect.position.x, pos.y),
-		Vector2(map_rect.end.x, pos.y)
-	]
-	var nearest = candidates[0]
-	for c in candidates:
-		if pos.distance_to(c) < pos.distance_to(nearest):
-			nearest = c
-			
-	return nearest
+	if unit.nav_agent.is_navigation_finished() and unit.global_position != Vector2.ZERO:
+		if unit.has_method("emit_alarm"):
+			unit.emit_alarm()
+		change_state(UnitAIConstants.State.IDLE)
+func _get_hall_position() -> Vector2:
+	var buildings = unit.get_tree().get_nodes_in_group("buildings")
+	for building in buildings:
+		if is_instance_valid(building) and building.data and building.data.is_territory_hub:
+			return building.global_position
+	# Fallback to map center if Hall not found
+	var bounds = RaidNavigationManager.map_bounds
+	return bounds.get_center()
 
 func _get_nearest_player_unit() -> Node:
 	var player_units = unit.get_tree().get_nodes_in_group("player_units")

@@ -115,14 +115,21 @@ func _setup_mock_target() -> void:
 		target_data = load(target_path)
 		Loggie.msg("Loaded Target from disk: " + target_path).domain(LogDomains.RAID).info()
 		
-		# --- Fix 1: Manual Population of Warbands (Legacy Bypass) ---
+		# --- Override Warbands (Legacy Bypass) ---
 		var defender_type = load("res://data/units/Test_EnemyDefender.tres")
 		if defender_type:
-			var defender_warband = WarbandData.new(defender_type)
-			defender_warband.custom_name = "Monastery Guard"
+			var defender_warband = WarbandData.new()
+			defender_warband.unit_type = defender_type
 			defender_warband.current_manpower = 6
-			target_data.warbands = [defender_warband]
-		# -----------------------------------------------------------
+			target_data.warbands.clear()
+			target_data.warbands.append(defender_warband)
+			
+			Loggie.msg("Defender unit_type: %s shape=%s color=%s" % [
+				str(defender_warband.unit_type.display_name),
+				str(defender_warband.unit_type.debug_shape),
+				str(defender_warband.unit_type.debug_color)]
+			).domain("RAID").info()
+		# -----------------------------------------
 	else:
 		# Generate a procedural one
 		target_data = MapDataGenerator._generate_procedural_settlement("Monastery", 1.0)

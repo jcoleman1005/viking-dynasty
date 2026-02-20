@@ -6,13 +6,28 @@ extends Node
 
 var navigation_map: RID
 var is_raid_active: bool = false
+var map_bounds: Rect2 = Rect2()
+
+signal navigation_ready
 
 ## Called when a raid scene loads.
 ## Gets the NavigationServer map RID from the NavigationRegion2D in the scene.
 func initialize_raid_map(navigation_region: NavigationRegion2D) -> void:
 	navigation_map = navigation_region.get_navigation_map()
 	is_raid_active = true
-	Loggie.msg("RaidNavigationManager: Map initialized.").domain("NAV").info()
+	
+	var poly = navigation_region.navigation_polygon
+	if poly and poly.get_outline_count() > 0:
+		var outline = poly.get_outline(0)
+		var min_point = outline[0]
+		var max_point = outline[0]
+		for point in outline:
+			min_point = min_point.min(point)
+			max_point = max_point.max(point)
+		map_bounds = Rect2(min_point, max_point - min_point)
+	
+	Loggie.msg("RaidNavigationManager: Map initialized. Bounds: %s" % str(map_bounds)).domain("NAVIGATION").info()
+	navigation_ready.emit()
 
 ## Called when raid scene unloads.
 func cleanup_raid_map() -> void:

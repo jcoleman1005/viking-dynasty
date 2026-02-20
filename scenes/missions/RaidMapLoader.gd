@@ -8,6 +8,13 @@ const GRID_HEIGHT = 60
 var building_container: Node2D
 var last_map_data: Dictionary = {}
 
+@export_group("Procedural Generation")
+@export var hall_data: BuildingData
+@export var longhouse_data: BuildingData
+@export var granary_data: BuildingData
+@export var storehouse_data: BuildingData
+@export var church_data: BuildingData
+
 func setup(p_container: Node2D, enemy_data: SettlementData) -> void:
 	Loggie.msg("[DIAGNOSTIC] RaidMapLoader: Beginning Setup Sequence.").domain("RAID").info()
 	building_container = p_container
@@ -35,10 +42,40 @@ func setup(p_container: Node2D, enemy_data: SettlementData) -> void:
 		# NEW — procedural village generation
 		var generator = CoastalVillageGenerator.new()
 		add_child(generator)
+		
+		# Pass exported data to generator
+		generator.hall_data = hall_data
+		generator.longhouse_data = longhouse_data
+		generator.granary_data = granary_data
+		generator.storehouse_data = storehouse_data
+		generator.church_data = church_data
+		
 		var map_data = generator.generate(enemy_data.map_seed)
 		
 		# Store map_data for RaidMission to consume
 		last_map_data = map_data
+		
+		Loggie.msg("MapLoader: Generation complete. map_data keys=%s" % str(last_map_data.keys())).domain("RAID").info()
+		
+		# --- Procedural Building Spawning ---
+		var buildings = last_map_data.get("buildings", [])
+		for i in buildings.size():
+			var entry = buildings[i]
+			var b_data = entry.get("building_data", null)
+			if not b_data:
+				Loggie.msg("Building %d missing building_data" % i).domain("RAID").warn()
+				continue
+			var scene = b_data.scene_to_spawn
+			if not scene:
+				Loggie.msg("Building %d missing scene_to_spawn" % i).domain("RAID").warn()
+				continue
+			var building = scene.instantiate()
+			building.data = b_data
+			building.global_position = entry["position"]
+			building_container.add_child(building)
+			buildings[i]["node"] = building
+			Loggie.msg("Spawned: %s at %s" % [str(entry.get("type")), str(entry.get("position"))]).domain("RAID").info()
+		# ------------------------------------
 		
 		# [CRITICAL] Register the new map with NavigationManager
 		if NavigationManager:

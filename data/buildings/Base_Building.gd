@@ -47,6 +47,8 @@ func _ready() -> void:
 	if not data: return
 	current_health = data.max_health
 	
+	add_to_group("buildings")
+	
 	# 1. Setup Physics/Collision
 	if not collision_shape:
 		collision_shape = CollisionShape2D.new()

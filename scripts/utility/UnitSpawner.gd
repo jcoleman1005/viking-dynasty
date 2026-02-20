@@ -61,6 +61,9 @@ func spawn_enemy_garrison(warbands: Array[WarbandData], buildings: Array) -> voi
 
 	for i in range(warbands.size()):
 		var warband = warbands[i]
+		
+		Loggie.msg("Warband unit_type: %s" % str(warband.unit_type.display_name if warband.unit_type else "NULL")).domain("RAID").info()
+		
 		var guard_pos = Vector2.ZERO
 		if not buildings.is_empty():
 			var b = buildings[i % buildings.size()]
@@ -118,6 +121,7 @@ func _spawn_unit_core(warband: WarbandData, target_pos: Vector2, is_player: bool
 		unit.add_to_group("enemy_units")
 	
 	# 4. Position & Parent
+	Loggie.msg("DEBUG SPAWN: %s final_pos=%s target_pos=%s" % [unit.name, str(final_pos), str(target_pos)]).domain("NAVIGATION").info()
 	unit.global_position = final_pos
 	unit_container.add_child(unit)
 	
@@ -216,6 +220,7 @@ func _spawn_civilians(count: int, origin: Vector2, is_enemy: bool) -> void:
 					final_pos = origin 
 		# -----------------------
 		
+		Loggie.msg("DEBUG SPAWN CIV: final_pos=%s tentative=%s" % [str(final_pos), str(tentative_pos)]).domain("NAVIGATION").info()
 		civ.global_position = final_pos
 		unit_container.add_child(civ)
 		

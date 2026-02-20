@@ -1,17 +1,22 @@
-[gd_scene load_steps=15 format=3 uid="uid://d3ifdm0rvd5kl"]
+[gd_scene load_steps=19 format=3 uid="uid://d3ifdm0rvd5kl"]
 
 [ext_resource type="Script" uid="uid://cuw68f180xbui" path="res://scenes/missions/RaidMission.gd" id="1_qt4qp"]
 [ext_resource type="PackedScene" uid="uid://cyp3t7gbdg0wx" path="res://player/RTSController.tscn" id="2_8icmc"]
 [ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="2_y6ix7"]
 [ext_resource type="PackedScene" uid="uid://1ly65bng2mep" path="res://ui/SelectionBox.tscn" id="3_24u83"]
 [ext_resource type="Script" uid="uid://bm330jy5v6a7d" path="res://scripts/utility/RTSInputHandler.gd" id="3_e8k8h"]
-[ext_resource type="Resource" uid="uid://test_enemy_defender" path="res://data/units/Test_EnemyDefender.tres" id="3_test_enemy"]
+[ext_resource type="Resource" path="res://data/units/Test_EnemyDefender.tres" id="3_test_enemy"]
 [ext_resource type="PackedScene" uid="uid://btlcifwc6ckux" path="res://scenes/units/VikingRaider.tscn" id="4_k882g"]
 [ext_resource type="TileSet" uid="uid://xoe70lhybj8l" path="res://scenes/levels/Isometric Tileset.tres" id="5_k882g"]
 [ext_resource type="Script" uid="uid://bxbqkyp1d6750" path="res://player/RTSCamera.gd" id="5_xkh2l"]
 [ext_resource type="PackedScene" uid="uid://ptujtdi5jtsk" path="res://scripts/utility/GridVisualizer.tscn" id="6_l8hqj"]
 [ext_resource type="Script" uid="uid://by77ij2ft60cp" path="res://scenes/missions/RaidObjectiveManager.gd" id="6_olj83"]
 [ext_resource type="PackedScene" uid="uid://io325box3m4m" path="res://scenes/world/UnitSpawner.tscn" id="11_eoj4n"]
+[ext_resource type="Script" uid="uid://cthahnf0edkia" path="res://scenes/missions/RaidMapLoader.gd" id="13_maxvx"]
+[ext_resource type="Resource" uid="uid://bs1e1mgqnldwq" path="res://data/buildings/GreatHall.tres" id="14_chtw6"]
+[ext_resource type="Resource" uid="uid://cqp5ethcro4wy" path="res://data/buildings/player_economy/Bld_Langhus.tres" id="15_4bly6"]
+[ext_resource type="Resource" uid="uid://bscr3flprg5ts" path="res://data/buildings/Monastery_Granary.tres" id="16_wr1q7"]
+[ext_resource type="Resource" uid="uid://b7p70u4vm3uem" path="res://data/buildings/Monastery_Chapel.tres" id="17_c5qgt"]
 
 [sub_resource type="RectangleShape2D" id="1"]
 size = Vector2(100, 100)
@@ -68,3 +73,12 @@ offset_top = -50.0
 offset_right = 50.0
 offset_bottom = 50.0
 color = Color(0, 1, 0.2, 0.3)
+
+[node name="RaidMapLoader" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("13_maxvx")
+hall_data = ExtResource("14_chtw6")
+longhouse_data = ExtResource("15_4bly6")
+granary_data = ExtResource("16_wr1q7")
+storehouse_data = ExtResource("16_wr1q7")
+church_data = ExtResource("17_c5qgt")

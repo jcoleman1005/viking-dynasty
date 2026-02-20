@@ -11,11 +11,23 @@ var unit_data: UnitData
 var current_health_ratio: float = 1.0
 var is_selected: bool = false
 var facing_direction: Vector2 = Vector2.DOWN
+var state_label: Label
 
 func _ready() -> void:
 	var parent = get_parent()
 	if parent and "data" in parent:
 		unit_data = parent.data
+	
+	# Add State Label
+	state_label = Label.new()
+	add_child(state_label)
+	state_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	state_label.add_theme_font_size_override("font_size", 12)
+	state_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	state_label.add_theme_constant_override("outline_size", 4)
+	# Position above the unit (above the health bar)
+	state_label.position = Vector2(-50, -unit_data.visual_radius - 35.0 if unit_data else -40.0)
+	state_label.custom_minimum_size = Vector2(100, 20)
 	
 	if parent.has_signal("health_changed"):
 		parent.connect("health_changed", _on_health_changed)
@@ -44,6 +56,11 @@ func _process(_delta: float) -> void:
 			if abs(new_ratio - current_health_ratio) > 0.01:
 				current_health_ratio = new_ratio
 				queue_redraw()
+		
+		# Update State Label
+		if "fsm" in parent and parent.fsm and state_label:
+			var state_name = UnitAIConstants.State.keys()[parent.fsm.current_state]
+			state_label.text = state_name
 		
 		# Constant redraw if facing changes or always for now to keep it simple
 		queue_redraw()

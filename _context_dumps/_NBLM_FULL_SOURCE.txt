@@ -2,7 +2,7 @@ PROJECT SOURCE CODE LIBRARY
 ===========================
 CONTAINS: Full Implementation Logic, Scene Trees, and Resource Data.
 INSTRUCTION: This is the raw source code. Use this to answer specific implementation questions.
-GENERATED: 2026-02-19T09:46:15
+GENERATED: 2026-02-20T11:21:29
 ===========================
 
 
@@ -28408,6 +28408,7 @@ signal settlement_loaded(settlement_data: SettlementData)
 # --- Unit Management Signals ---
 signal player_unit_died(unit: Node2D)
 signal player_unit_spawned(unit: Node2D)
+signal alarm_raised(unit: Node)
 signal dynasty_view_requested()
 
 # --- RTS Command Signals ---
@@ -29568,17 +29569,30 @@ extends Node
 ## Wraps NavigationServer2D for use during raids only.
 ## Does not interact with NavigationManager.gd (Settlement AStar).
 
-class_name RaidNavigationManager
-
 var navigation_map: RID
 var is_raid_active: bool = false
+var map_bounds: Rect2 = Rect2()
+
+signal navigation_ready
 
 ## Called when a raid scene loads.
 ## Gets the NavigationServer map RID from the NavigationRegion2D in the scene.
 func initialize_raid_map(navigation_region: NavigationRegion2D) -> void:
 	navigation_map = navigation_region.get_navigation_map()
 	is_raid_active = true
-	Loggie.msg("RaidNavigationManager: Map initialized.").domain("NAV").info()
+	
+	var poly = navigation_region.navigation_polygon
+	if poly and poly.get_outline_count() > 0:
+		var outline = poly.get_outline(0)
+		var min_point = outline[0]
+		var max_point = outline[0]
+		for point in outline:
+			min_point = min_point.min(point)
+			max_point = max_point.max(point)
+		map_bounds = Rect2(min_point, max_point - min_point)
+	
+	Loggie.msg("RaidNavigationManager: Map initialized. Bounds: %s" % str(map_bounds)).domain("NAVIGATION").info()
+	navigation_ready.emit()
 
 ## Called when raid scene unloads.
 func cleanup_raid_map() -> void:
@@ -29588,8 +29602,12 @@ func cleanup_raid_map() -> void:
 ## Finds a valid spawn position near a target using NavigationServer2D.
 ## Replaces NavigationManager.request_valid_spawn_point() during raids.
 func request_valid_spawn_point(target_pos: Vector2, radius: float = 64.0) -> Vector2:
-	if not is_raid_active: return target_pos
+	if not is_raid_active or not navigation_map.is_valid(): return target_pos
 	
+	# Safety check: NavigationServer might not have synchronized yet
+	if NavigationServer2D.map_get_iteration_id(navigation_map) == 0:
+		return target_pos
+
 	# NavigationServer2D.map_get_closest_point returns the closest point on the navmesh.
 	var closest = NavigationServer2D.map_get_closest_point(navigation_map, target_pos)
 	return closest
@@ -31276,6 +31294,8 @@ func _ready() -> void:
 	if not data: return
 	current_health = data.max_health
 	
+	add_to_group("buildings")
+	
 	# 1. Setup Physics/Collision
 	if not collision_shape:
 		collision_shape = CollisionShape2D.new()
@@ -31601,6 +31621,14 @@ extends Resource
 @export var projectile_scene: PackedScene
 ## Speed of the projectile in world units per second.
 @export var projectile_speed: float = 400.0
+
+@export_group("Raid Loot")
+@export var loot_type: String = "gold"
+@export var loot_yield_min: int = 20
+@export var loot_yield_max: int = 40
+@export var loot_yield_safe: int = 0
+@export var loot_yield_fast: int = 0
+@export var loot_despawn_time: float = 30.0
 
 
 --------------------------------------------------
@@ -35035,6 +35063,107 @@ ai_component_scene = ExtResource("1_4g7rt")
 
 
 --------------------------------------------------
+FILE: res:///data/units/Test_EnemyDefender.tres
+--------------------------------------------------
+[gd_resource type="Resource" script_class="UnitData" load_steps=3 format=3 uid="uid://test_enemy_defender"]
+
+[ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://de3nko6b1rqyg" path="res://scenes/components/AttackAI.tscn" id="2_ai"]
+
+[resource]
+script = ExtResource("1_script")
+display_name = "Test Defender"
+scene_path = "uid://btlcifwc6ckux"
+max_health = 45
+move_speed = 90.0
+attack_damage = 10
+attack_range = 100.0
+acceleration = 10.0
+linear_damping = 5.0
+ai_component_scene = ExtResource("2_ai")
+initial_state = 9
+debug_color = Color(1, 0.2, 0.2, 1)
+debug_shape = "triangle"
+visual_radius = 16.0
+detection_range = 300.0
+
+
+--------------------------------------------------
+FILE: res:///data/units/Test_PlayerRaider.tres
+--------------------------------------------------
+[gd_resource type="Resource" script_class="UnitData" load_steps=3 format=3 uid="uid://test_player_raider"]
+
+[ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://de3nko6b1rqyg" path="res://scenes/components/AttackAI.tscn" id="2_ai"]
+
+[resource]
+script = ExtResource("1_script")
+display_name = "Test Raider"
+scene_path = "uid://cfanwutbtfcp2"
+max_health = 60
+move_speed = 100.0
+attack_damage = 15
+attack_range = 80.0
+acceleration = 12.0
+linear_damping = 6.0
+ai_component_scene = ExtResource("2_ai")
+projectile_speed = 400.0
+debug_color = Color(0.2, 0.4, 1, 1)
+debug_shape = "square"
+visual_radius = 16.0
+facing_arrow_length = 24.0
+can_carry_loot = true
+
+
+--------------------------------------------------
+FILE: res:///data/units/Test_SquadLeader.tres
+--------------------------------------------------
+[gd_resource type="Resource" script_class="UnitData" load_steps=3 format=3 uid="uid://test_squad_leader"]
+
+[ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://de3nko6b1rqyg" path="res://scenes/components/AttackAI.tscn" id="2_ai"]
+
+[resource]
+script = ExtResource("1_script")
+display_name = "Test Leader"
+scene_path = "uid://cfanwutbtfcp2"
+max_health = 80
+move_speed = 100.0
+attack_damage = 20
+attack_range = 80.0
+acceleration = 12.0
+linear_damping = 6.0
+ai_component_scene = ExtResource("2_ai")
+projectile_speed = 400.0
+debug_color = Color(1, 0.9, 0, 1)
+debug_shape = "diamond"
+visual_radius = 20.0
+facing_arrow_length = 32.0
+can_carry_loot = true
+
+
+--------------------------------------------------
+FILE: res:///data/units/Test_Villager.tres
+--------------------------------------------------
+[gd_resource type="Resource" script_class="UnitData" load_steps=2 format=3 uid="uid://test_villager"]
+
+[ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+display_name = "Test Villager"
+scene_path = "uid://c7powse34uuxc"
+max_health = 20
+move_speed = 120.0
+acceleration = 10.0
+linear_damping = 5.0
+initial_state = 11
+debug_color = Color(0.2, 0.9, 0.2, 1)
+debug_shape = "circle"
+visual_radius = 12.0
+
+
+--------------------------------------------------
 FILE: res:///data/units/UnitData.gd
 --------------------------------------------------
 #res://data/units/UnitData.gd
@@ -35079,6 +35208,20 @@ extends Resource
 
 @export_group("Social Stats")
 @export var wergild_cost: int = 50
+
+@export_group("Programmer Art")
+@export var debug_color: Color = Color.WHITE
+@export var debug_shape: String = "circle"
+@export var visual_radius: float = 16.0
+@export var facing_arrow_length: float = 24.0
+@export var draw_formation_spacing: bool = false
+
+@export_group("Combat Flags")
+@export var can_carry_loot: bool = false
+@export var is_escorted: bool = false
+@export var shield_wall_damage_reduction: float = 0.3
+@export var thrall_capacity_divisor: int = 2
+@export var detection_range: float = 300.0
 
 func load_scene() -> PackedScene:
 	if scene_to_spawn:
@@ -35824,6 +35967,9 @@ func _on_control_group_command(group_index: int, is_assigning: bool) -> void:
 
 func _on_formation_change_command(formation_type: int) -> void:
 	current_formation = formation_type as SquadFormation.FormationType
+	for unit in selected_units:
+		if unit.has_method("set_formation_type"):
+			unit.set_formation_type(current_formation)
 
 func _set_control_group(num: int) -> void:
 	control_groups[num].clear()
@@ -36355,6 +36501,135 @@ script = ExtResource("1_2a4el")
 shape = SubResource("CircleShape2D_2baay")
 
 [node name="AttackTimer" type="Timer" parent="."]
+
+
+--------------------------------------------------
+FILE: res:///scenes/components/UnitVisualizer.gd
+--------------------------------------------------
+# res://scenes/components/UnitVisualizer.gd
+class_name UnitVisualizer
+extends Node2D
+
+@export var enabled: bool = true
+@export var show_health_bar: bool = true
+@export var show_facing_arrow: bool = true
+@export var show_selection_ring: bool = true
+
+var unit_data: UnitData
+var current_health_ratio: float = 1.0
+var is_selected: bool = false
+var facing_direction: Vector2 = Vector2.DOWN
+var state_label: Label
+
+func _ready() -> void:
+	var parent = get_parent()
+	if parent and "data" in parent:
+		unit_data = parent.data
+	
+	# Add State Label
+	state_label = Label.new()
+	add_child(state_label)
+	state_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	state_label.add_theme_font_size_override("font_size", 12)
+	state_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	state_label.add_theme_constant_override("outline_size", 4)
+	# Position above the unit (above the health bar)
+	state_label.position = Vector2(-50, -unit_data.visual_radius - 35.0 if unit_data else -40.0)
+	state_label.custom_minimum_size = Vector2(100, 20)
+	
+	if parent.has_signal("health_changed"):
+		parent.connect("health_changed", _on_health_changed)
+	
+	# Initial draw
+	queue_redraw()
+
+func _process(_delta: float) -> void:
+	if not enabled: return
+	
+	var parent = get_parent()
+	if parent:
+		# Update facing direction from velocity if moving
+		if parent.velocity.length_squared() > 1.0:
+			facing_direction = parent.velocity.normalized()
+		
+		# Update selection state
+		if "is_selected" in parent:
+			if is_selected != parent.is_selected:
+				is_selected = parent.is_selected
+				queue_redraw()
+		
+		# Update health ratio if parent has it
+		if "current_health" in parent and unit_data:
+			var new_ratio = float(parent.current_health) / float(unit_data.max_health)
+			if abs(new_ratio - current_health_ratio) > 0.01:
+				current_health_ratio = new_ratio
+				queue_redraw()
+		
+		# Update State Label
+		if "fsm" in parent and parent.fsm and state_label:
+			var state_name = UnitAIConstants.State.keys()[parent.fsm.current_state]
+			state_label.text = state_name
+		
+		# Constant redraw if facing changes or always for now to keep it simple
+		queue_redraw()
+
+func _draw() -> void:
+	if not enabled or not unit_data: return
+	
+	# 1. Draw Shape
+	var r = unit_data.visual_radius
+	match unit_data.debug_shape:
+		"square":
+			draw_rect(Rect2(-r, -r, r * 2, r * 2), unit_data.debug_color)
+		"circle":
+			draw_circle(Vector2.ZERO, r, unit_data.debug_color)
+		"triangle":
+			var pts = PackedVector2Array([
+				Vector2(0, -r),
+				Vector2(r, r),
+				Vector2(-r, r)
+			])
+			draw_colored_polygon(pts, unit_data.debug_color)
+		"diamond":
+			var pts = PackedVector2Array([
+				Vector2(0, -r),
+				Vector2(r, 0),
+				Vector2(0, r),
+				Vector2(-r, 0)
+			])
+			draw_colored_polygon(pts, unit_data.debug_color)
+	
+	# 2. Selection Ring
+	if is_selected and show_selection_ring:
+		draw_arc(Vector2.ZERO, r + 4, 0, TAU, 32, Color.WHITE, 1.5)
+	
+	# 3. Facing Arrow
+	if show_facing_arrow:
+		var arrow_len = unit_data.facing_arrow_length
+		draw_line(Vector2.ZERO, facing_direction * arrow_len, Color.WHITE, 2.0)
+	
+	# 4. Health Bar
+	if show_health_bar:
+		_draw_health_bar()
+
+func _draw_health_bar() -> void:
+	var bar_width = unit_data.visual_radius * 2.0
+	var bar_height = 4.0
+	var bar_pos = Vector2(-bar_width / 2.0, -unit_data.visual_radius - 10.0)
+	
+	# Background
+	draw_rect(Rect2(bar_pos, Vector2(bar_width, bar_height)), Color.BLACK)
+	
+	# Fill
+	var fill_color = Color.GREEN.lerp(Color.RED, 1.0 - current_health_ratio)
+	draw_rect(Rect2(bar_pos, Vector2(bar_width * current_health_ratio, bar_height)), fill_color)
+
+func _on_health_changed(new_health: int, max_health: int) -> void:
+	current_health_ratio = float(new_health) / float(max_health)
+	queue_redraw()
+
+func refresh() -> void:
+	queue_redraw()
 
 
 --------------------------------------------------
@@ -37855,10 +38130,21 @@ FILE: res:///scenes/missions/RaidMapLoader.gd
 class_name RaidMapLoader
 extends Node
 
+const GRID_WIDTH = 60
+const GRID_HEIGHT = 60
+
 var building_container: Node2D
+var last_map_data: Dictionary = {}
+
+@export_group("Procedural Generation")
+@export var hall_data: BuildingData
+@export var longhouse_data: BuildingData
+@export var granary_data: BuildingData
+@export var storehouse_data: BuildingData
+@export var church_data: BuildingData
 
 func setup(p_container: Node2D, enemy_data: SettlementData) -> void:
-	print("[DIAGNOSTIC] RaidMapLoader: Beginning Setup Sequence.")
+	Loggie.msg("[DIAGNOSTIC] RaidMapLoader: Beginning Setup Sequence.").domain("RAID").info()
 	building_container = p_container
 	
 	# 1. Register Nodes (So Manager knows WHO to scan, but doesn't scan yet)
@@ -37873,24 +38159,59 @@ func setup(p_container: Node2D, enemy_data: SettlementData) -> void:
 		if enemy_data.map_seed == 0:
 			enemy_data.map_seed = randi()
 			
-		print("[DIAGNOSTIC] RaidMapLoader: Generating Terrain with Seed: ", enemy_data.map_seed)
+		Loggie.msg("[DIAGNOSTIC] RaidMapLoader: Generating Terrain with Seed: %d" % enemy_data.map_seed).domain("RAID").info()
 		TerrainGenerator.generate_base_terrain(
 			tile_map,
-			SettlementManager.GRID_WIDTH, 
-			SettlementManager.GRID_HEIGHT, 
+			GRID_WIDTH, 
+			GRID_HEIGHT, 
 			enemy_data.map_seed
 		)
 		
-		# [CRITICAL WAIT]
-		# Ensure TileMap has processed the changes before we scan
-		# (Usually synchronous, but safe to be explicit)
+		# NEW — procedural village generation
+		var generator = CoastalVillageGenerator.new()
+		add_child(generator)
+		
+		# Pass exported data to generator
+		generator.hall_data = hall_data
+		generator.longhouse_data = longhouse_data
+		generator.granary_data = granary_data
+		generator.storehouse_data = storehouse_data
+		generator.church_data = church_data
+		
+		var map_data = generator.generate(enemy_data.map_seed)
+		
+		# Store map_data for RaidMission to consume
+		last_map_data = map_data
+		
+		Loggie.msg("MapLoader: Generation complete. map_data keys=%s" % str(last_map_data.keys())).domain("RAID").info()
+		
+		# --- Procedural Building Spawning ---
+		var buildings = last_map_data.get("buildings", [])
+		for i in buildings.size():
+			var entry = buildings[i]
+			var b_data = entry.get("building_data", null)
+			if not b_data:
+				Loggie.msg("Building %d missing building_data" % i).domain("RAID").warn()
+				continue
+			var scene = b_data.scene_to_spawn
+			if not scene:
+				Loggie.msg("Building %d missing scene_to_spawn" % i).domain("RAID").warn()
+				continue
+			var building = scene.instantiate()
+			building.data = b_data
+			building.global_position = entry["position"]
+			building_container.add_child(building)
+			buildings[i]["node"] = building
+			Loggie.msg("Spawned: %s at %s" % [str(entry.get("type")), str(entry.get("position"))]).domain("RAID").info()
+		# ------------------------------------
+		
+		# [CRITICAL] Register the new map with NavigationManager
+		if NavigationManager:
+			NavigationManager.register_map(tile_map, Rect2i(0, 0, GRID_WIDTH, GRID_HEIGHT))
 	else:
-		printerr("RaidMapLoader: Could not find TileMapLayer!")
+		Loggie.msg("RaidMapLoader: Could not find TileMapLayer!").domain("RAID").error()
 
-	# 3. REFRESH GRID (Now that tiles exist, scan them)
-	print("[DIAGNOSTIC] RaidMapLoader: Refreshing Grid State...")
-	SettlementManager._refresh_grid_state()
-	print("[DIAGNOSTIC] RaidMapLoader: Setup Complete.")
+	Loggie.msg("[DIAGNOSTIC] RaidMapLoader: Setup Complete.").domain("RAID").info()
 
 func load_base(data: SettlementData, is_player_owner: bool) -> BaseBuilding:
 	var objective_ref: BaseBuilding = null
@@ -37911,29 +38232,13 @@ func _spawn_single_building_visual(entry: Dictionary) -> BaseBuilding:
 	if not b_data: return null
 	
 	# --- NEW: SAFETY CHECK ---
-	# Ensure we don't spawn on water. If the spot is solid, find a new one.
+	# Ensure we don't spawn on water.
 	var final_grid_pos = original_pos
+	if SettlementManager.has_method("get_nearest_valid_spawn_point"):
+		final_grid_pos = SettlementManager.get_nearest_valid_spawn_point(original_pos)
 	
-	# 1. Check if the generated spot is illegal (Solid/Water)
-	if SettlementManager.active_astar_grid.is_point_solid(original_pos):
-		# 2. Search for nearest land (Spiral out 5 tiles)
-		var found_land = false
-		for r in range(1, 6):
-			for x in range(-r, r + 1):
-				for y in range(-r, r + 1):
-					var check = original_pos + Vector2i(x, y)
-					# Must be in bounds and NOT solid
-					if SettlementManager.active_astar_grid.region.has_point(check):
-						if not SettlementManager.active_astar_grid.is_point_solid(check):
-							final_grid_pos = check
-							found_land = true
-							break
-				if found_land: break
-			if found_land: break
-		
-		if not found_land:
-			print("RaidMapLoader: Could not find land for %s at %s. Skipping." % [b_data.display_name, original_pos])
-			return null # Delete building rather than floating on water
+	if final_grid_pos != original_pos:
+		Loggie.msg("RaidMapLoader: Repositioned %s to nearest land." % b_data.display_name).domain(LogDomains.GAMEPLAY).info()
 			
 	# Update the entry so the data matches the visual reality
 	entry["grid_position"] = final_grid_pos
@@ -37986,15 +38291,63 @@ extends Node2D
 @onready var building_container: Node2D = $BuildingContainer
 @onready var objective_manager: RaidObjectiveManager = $RaidObjectiveManager
 @onready var unit_spawner: UnitSpawner = $UnitSpawner
+@onready var raid_nav_region: NavigationRegion2D = $RaidNavRegion
+var extraction_zone: Area2D
 @export var fyrd_unit_scene: PackedScene
 
 @export_group("Fyrd")
 @export var fyrd_spawn_count: int = 5
 
+@export_group("Test Data")
+@export var enemy_test_data: UnitData
+@export var villager_test_data: UnitData
+
 # --- Internal ---
-var map_loader: RaidMapLoader
+@onready var map_loader: RaidMapLoader = $RaidMapLoader
 var objective_building: BaseBuilding = null
 var unit_container: Node2D
+var _mission_initialized: bool = false
+@export var force_warbands: Array[WarbandData] = []
+@export var force_enemy_settlement: SettlementData = null
+
+func _enter_tree() -> void:
+	_setup_unit_container()
+
+func _initialize_navigation() -> void:
+	# Use standard map size (60x60) converted to world space
+	var width = SettlementManager.TILE_WIDTH * 60
+	var height = SettlementManager.TILE_HEIGHT * 60
+	
+	# Create a loose bounding box for the navmesh
+	var nav_poly = NavigationPolygon.new()
+	var outline = PackedVector2Array([
+		Vector2(0, 0),
+		Vector2(width, 0),
+		Vector2(width, height),
+		Vector2(0, height)
+	])
+	nav_poly.add_outline(outline)
+	raid_nav_region.navigation_polygon = nav_poly
+	
+	raid_nav_region.bake_navigation_polygon()
+	await raid_nav_region.bake_finished
+	
+	# Poll until NavServer confirms geometry exists
+	var map_rid = raid_nav_region.get_navigation_map()
+	var attempts = 0
+	var test_point = Vector2(1920.0, 960.0)
+	while attempts < 30:
+		var result = NavigationServer2D.map_get_closest_point(map_rid, test_point)
+		if result != Vector2.ZERO:
+			Loggie.msg("NavMesh ready after %d frames" % attempts).domain("NAVIGATION").info()
+			break
+		await get_tree().physics_frame
+		attempts += 1
+	
+	if attempts >= 30:
+		Loggie.msg("WARNING: NavMesh not ready after 30 frames").domain("NAVIGATION").warn()
+		
+	RaidNavigationManager.initialize_raid_map(raid_nav_region)
 
 func _ready() -> void:
 	Loggie.set_domain_enabled("UI", true)
@@ -38002,7 +38355,9 @@ func _ready() -> void:
 	Loggie.set_domain_enabled("RAID", true)
 	Loggie.set_domain_enabled("MAP", true)
 	
-	_setup_unit_container()
+	extraction_zone = get_node_or_null("ExtractionZone")
+	if not extraction_zone:
+		Loggie.msg("ExtractionZone not found in scene tree.").domain("RAID").warn()
 	
 	if unit_spawner:
 		unit_spawner.unit_container = unit_container
@@ -38010,21 +38365,16 @@ func _ready() -> void:
 	else:
 		printerr("CRITICAL: UnitSpawner node is missing in RaidMission!")
 	
-	map_loader = RaidMapLoader.new()
-	add_child(map_loader)
-	
 	if RaidManager.is_defensive_raid:
 		self.is_defensive_mission = true
 		objective_manager.is_defensive_mission = true
 		RaidManager.is_defensive_raid = false
 	
-	EventBus.settlement_loaded.connect(_on_settlement_ready_for_mission)
-	
-	if not SettlementManager.has_current_settlement():
-		_load_test_settlement()
+	if SettlementManager.has_current_settlement() or force_enemy_settlement:
 		call_deferred("initialize_mission")
 	else:
-		call_deferred("initialize_mission")
+		EventBus.settlement_loaded.connect(_on_settlement_ready_for_mission, CONNECT_ONE_SHOT)
+		_load_test_settlement()
 		
 	get_tree().node_added.connect(_on_node_added)
 
@@ -38037,13 +38387,29 @@ func _setup_unit_container() -> void:
 		add_child(unit_container)
 
 func initialize_mission() -> void:
+	if _mission_initialized:
+		Loggie.msg("initialize_mission called twice — ignoring.").domain("RAID").warn()
+		return
+	_mission_initialized = true
+	
 	Loggie.msg("RaidMission: Initializing...").domain(LogDomains.RAID).info()
+	
+	# Load default test data if missing
+	if not enemy_test_data:
+		enemy_test_data = load("res://data/units/Test_EnemyDefender.tres")
+	if not villager_test_data:
+		villager_test_data = load("res://data/units/Test_Villager.tres")
 	
 	enemy_base_data = null
 	
+	# 0. PRIORITY 0: INJECTED DATA (Encapsulation)
+	if force_enemy_settlement:
+		enemy_base_data = force_enemy_settlement
+		Loggie.msg("Using Injected SettlementData. Seed: %d" % enemy_base_data.map_seed).domain(LogDomains.RAID).info()
+
 	# 1. PRIORITY 1: CAMPAIGN FLOW
 	# We check if RaidManager has a target.
-	if RaidManager.current_raid_target:
+	elif RaidManager.current_raid_target:
 		# [FIX] Unwrap the data! 
 		# RaidManager.current_raid_target is usually 'RaidTargetData' (The Wrapper).
 		# We need the 'SettlementData' inside it.
@@ -38075,55 +38441,119 @@ func initialize_mission() -> void:
 		Loggie.msg("Critical: No enemy_base_data assigned!").domain(LogDomains.RAID).error()
 		return
 
+	Loggie.msg("Setup 1/6 — Data resolved. seed=%d warbands=%d peasants=%d" % [
+		enemy_base_data.map_seed,
+		enemy_base_data.warbands.size(),
+		enemy_base_data.population_peasants]
+	).domain("RAID").info()
+
 	if not _validate_nodes(): return
 	
 	# 4. Register & Setup
 	SettlementManager.register_active_scene_nodes(unit_container)
 	
-	if not map_loader:
-		map_loader = RaidMapLoader.new()
-		add_child(map_loader)
-	
 	# [DIAGNOSTIC] Final check before generation
 	if enemy_base_data.map_seed == 0:
 		Loggie.msg("WARNING: Map Seed is 0. RaidMapLoader will randomize terrain!").domain(LogDomains.RAID).warn()
 		
-	map_loader.setup(unit_container, enemy_base_data) 
+	map_loader.setup(building_container, enemy_base_data) 
+	
+	Loggie.msg("Setup 2/6 — Map generated. buildings=%d has_extraction=%s" % [
+		map_loader.last_map_data.get("buildings", []).size(),
+		str(map_loader.last_map_data.has("extraction_zone"))]
+	).domain("RAID").info()
+	
+	# Setup Extraction Zone
+	if extraction_zone and map_loader.last_map_data.has("extraction_zone"):
+		var rect = map_loader.last_map_data["extraction_zone"]
+		extraction_zone.global_position = rect.position + rect.size / 2.0
+		var shape = extraction_zone.get_node("ExtractionShape")
+		if shape and shape.shape is RectangleShape2D:
+			shape.shape.size = rect.size
+		var visual = extraction_zone.get_node("ExtractionVisual")
+		if visual is ColorRect:
+			visual.size = rect.size
+			visual.position = -rect.size / 2.0
 	
 	# 3. Generate Map Visuals and refresh manager
 	objective_building = map_loader.load_base(enemy_base_data, false)
-	Loggie.msg("Force Refreshing Grid (Raid)...").domain(LogDomains.RAID).info()
-	SettlementManager._refresh_grid_state()
+	
+	Loggie.msg("Tactical Navigation Initializing (Raid)...").domain(LogDomains.RAID).info()
+	
+	# Initialize Tactical Navigation
+	await _initialize_navigation()
+	
+	Loggie.msg("Setup 4/6 — Navigation ready. is_raid_active=%s bounds=%s" % [
+		str(RaidNavigationManager.is_raid_active),
+		str(RaidNavigationManager.map_bounds)]
+	).domain("RAID").info()
+	
+	if RaidNavigationManager.is_raid_active:
+		_spawn_all_units()
+	else:
+		RaidNavigationManager.navigation_ready.connect(_spawn_all_units, CONNECT_ONE_SHOT)
+	
+	# 6. Finalize Objective
+	if is_instance_valid(objective_building):
+		if objective_manager:
+			objective_manager.initialize(rts_controller, objective_building, unit_container)
+			
+			Loggie.msg("Setup 6/6 — Mission live.").domain("RAID").info()
+			
+			if not objective_manager.fyrd_arrived.is_connected(_on_fyrd_arrived):
+				objective_manager.fyrd_arrived.connect(_on_fyrd_arrived)
+	else:
+		Loggie.msg("Critical: No Objective Building found!").domain(LogDomains.RAID).error()
+
+func _spawn_all_units() -> void:
+	# Find objective building if not already set
+	if not is_instance_valid(objective_building):
+		for entry in map_loader.last_map_data.get("buildings", []):
+			Loggie.msg("Checking: type='%s' node=%s" % [
+				str(entry.get("type", "MISSING")),
+				str(entry.get("node", null))]
+			).domain("RAID").info()
+			
+			if entry.get("type", "") == "Hall" and entry.get("node", null) != null:
+				objective_building = entry["node"]
+				Loggie.msg("Objective building found: %s" % str(objective_building.name)).domain("RAID").info()
+				break
+	
+	Loggie.msg("Setup 3/6 — Objective building: %s" % str(is_instance_valid(objective_building))).domain("RAID").info()
+	
+	Loggie.msg("Setup 5/6 — Spawning units. warbands=%d peasants=%d" % [
+		enemy_base_data.warbands.size() if enemy_base_data else -1,
+		enemy_base_data.population_peasants if enemy_base_data else -1]
+	).domain("RAID").info()
 	
 	# 4. Spawn Civilians
 	if enemy_base_data and enemy_base_data.population_peasants > 0:
 		if unit_spawner:
 			unit_spawner.unit_container = unit_container
 			
-			# Find a safe spot near the main building, or default to offset
+			# Find a safe spot from procedural data or fallback
+			var villager_spawns = map_loader.last_map_data.get("villager_spawns", [])
 			var spawn_origin = Vector2(200, 300)
-			if is_instance_valid(objective_building):
+			if villager_spawns.size() > 0:
+				spawn_origin = villager_spawns[0]
+			elif is_instance_valid(objective_building):
 				spawn_origin = objective_building.global_position + Vector2(0, 100)
 			
 			# Ensure it's valid
-			spawn_origin = SettlementManager.request_valid_spawn_point(spawn_origin, 5)
+			spawn_origin = RaidNavigationManager.request_valid_spawn_point(spawn_origin, 5)
 			
 			unit_spawner.sync_civilians(enemy_base_data.population_peasants, spawn_origin, true)
+			
+			Loggie.msg("Civilians spawned around: %s" % str(spawn_origin)).domain("RAID").info()
 			
 	# 5. Spawn Units
 	if is_defensive_mission:
 		_setup_defensive_mode()
 	else:
 		_setup_offensive_mode()
-	
-	# 6. Finalize Objective
-	if is_instance_valid(objective_building):
-		if objective_manager:
-			objective_manager.initialize(rts_controller, objective_building, unit_container)
-			if not objective_manager.fyrd_arrived.is_connected(_on_fyrd_arrived):
-				objective_manager.fyrd_arrived.connect(_on_fyrd_arrived)
-	else:
-		Loggie.msg("Critical: No Objective Building found!").domain(LogDomains.RAID).error()
+		
+	if enemy_base_data:
+		Loggie.msg("Enemy warbands spawned: %d" % enemy_base_data.warbands.size()).domain("RAID").info()
 
 func _setup_defensive_mode() -> void:
 	var settlement = SettlementManager.current_settlement
@@ -38142,7 +38572,8 @@ func _setup_offensive_mode() -> void:
 	
 	for child in building_container.get_children():
 		if child is BaseBuilding:
-			child.building_destroyed.connect(_on_building_destroyed_grid_update)
+			if not child.building_destroyed.is_connected(_on_building_destroyed_grid_update):
+				child.building_destroyed.connect(_on_building_destroyed_grid_update)
 			
 	_spawn_player_garrison()
 	_spawn_retreat_zone()
@@ -38154,7 +38585,9 @@ func _on_building_destroyed_grid_update(building: BaseBuilding) -> void:
 func _spawn_player_garrison() -> void:
 	var warbands_to_spawn: Array[WarbandData] = []
 	
-	if is_defensive_mission:
+	if not force_warbands.is_empty():
+		warbands_to_spawn = force_warbands
+	elif is_defensive_mission:
 		if SettlementManager.current_settlement:
 			warbands_to_spawn = SettlementManager.current_settlement.warbands
 	else:
@@ -38180,7 +38613,7 @@ func _spawn_player_garrison() -> void:
 		spawn_origin += landing_direction * 200.0
 		
 	# Safety Check for Player Spawn
-	spawn_origin = SettlementManager.request_valid_spawn_point(spawn_origin, 4)
+	spawn_origin = NavigationManager.request_valid_spawn_point(spawn_origin, 4)
 	
 	if unit_spawner:
 		unit_spawner.spawn_garrison(warbands_to_spawn, spawn_origin)
@@ -38207,7 +38640,7 @@ func _spawn_enemy_wave() -> void:
 		var target_pos = origin + offset
 		
 		# Validate against Grid
-		unit.global_position = SettlementManager.request_valid_spawn_point(target_pos, 3)
+		unit.global_position = NavigationManager.request_valid_spawn_point(target_pos, 3)
 		if unit.global_position == Vector2.INF:
 			unit.global_position = target_pos # Fallback if grid is totally full
 		# --------------------------
@@ -38237,7 +38670,7 @@ func _on_fyrd_arrived() -> void:
 		# --- FIX: Randomized but Validated ---
 		var random_offset = Vector2(randf_range(-100, 100), randf_range(-100, 100))
 		var try_pos = origin + random_offset
-		var valid_pos = SettlementManager.request_valid_spawn_point(try_pos, 3)
+		var valid_pos = NavigationManager.request_valid_spawn_point(try_pos, 3)
 		
 		if valid_pos != Vector2.INF:
 			unit.global_position = valid_pos
@@ -38274,8 +38707,7 @@ func _load_test_settlement() -> void:
 		if data: SettlementManager.load_settlement(data)
 
 func _on_settlement_ready_for_mission(_d):
-	if not is_instance_valid(objective_manager.rts_controller):
-		initialize_mission()
+	initialize_mission()
 
 func _validate_nodes() -> bool:
 	if not rts_controller: return false
@@ -38291,7 +38723,7 @@ func _spawn_test_units() -> void:
 		var pos = player_spawn_pos.global_position + offset
 		
 		# Safe Spawn
-		var safe_pos = SettlementManager.request_valid_spawn_point(pos, 2)
+		var safe_pos = NavigationManager.request_valid_spawn_point(pos, 2)
 		if safe_pos != Vector2.INF: u.global_position = safe_pos
 		else: u.global_position = pos
 		
@@ -38361,32 +38793,44 @@ func _exit_tree() -> void:
 	# Even with WeakRefs, this prevents logical state errors.
 	if SettlementManager.active_building_container == $BuildingContainer:
 		SettlementManager.unregister_active_scene_nodes()
+	
+	RaidNavigationManager.cleanup_raid_map()
 
 
 --------------------------------------------------
 FILE: res:///scenes/missions/RaidMission.tscn
 --------------------------------------------------
-[gd_scene load_steps=13 format=3 uid="uid://d3ifdm0rvd5kl"]
+[gd_scene load_steps=19 format=3 uid="uid://d3ifdm0rvd5kl"]
 
 [ext_resource type="Script" uid="uid://cuw68f180xbui" path="res://scenes/missions/RaidMission.gd" id="1_qt4qp"]
 [ext_resource type="PackedScene" uid="uid://cyp3t7gbdg0wx" path="res://player/RTSController.tscn" id="2_8icmc"]
 [ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="2_y6ix7"]
 [ext_resource type="PackedScene" uid="uid://1ly65bng2mep" path="res://ui/SelectionBox.tscn" id="3_24u83"]
 [ext_resource type="Script" uid="uid://bm330jy5v6a7d" path="res://scripts/utility/RTSInputHandler.gd" id="3_e8k8h"]
-[ext_resource type="Resource" uid="uid://brnbvjwnoyh3j" path="res://data/units/EnemyVikingRaider_Data.tres" id="3_eoj4n"]
+[ext_resource type="Resource" path="res://data/units/Test_EnemyDefender.tres" id="3_test_enemy"]
 [ext_resource type="PackedScene" uid="uid://btlcifwc6ckux" path="res://scenes/units/VikingRaider.tscn" id="4_k882g"]
 [ext_resource type="TileSet" uid="uid://xoe70lhybj8l" path="res://scenes/levels/Isometric Tileset.tres" id="5_k882g"]
 [ext_resource type="Script" uid="uid://bxbqkyp1d6750" path="res://player/RTSCamera.gd" id="5_xkh2l"]
 [ext_resource type="PackedScene" uid="uid://ptujtdi5jtsk" path="res://scripts/utility/GridVisualizer.tscn" id="6_l8hqj"]
 [ext_resource type="Script" uid="uid://by77ij2ft60cp" path="res://scenes/missions/RaidObjectiveManager.gd" id="6_olj83"]
 [ext_resource type="PackedScene" uid="uid://io325box3m4m" path="res://scenes/world/UnitSpawner.tscn" id="11_eoj4n"]
+[ext_resource type="Script" uid="uid://cthahnf0edkia" path="res://scenes/missions/RaidMapLoader.gd" id="13_maxvx"]
+[ext_resource type="Resource" uid="uid://bs1e1mgqnldwq" path="res://data/buildings/GreatHall.tres" id="14_chtw6"]
+[ext_resource type="Resource" uid="uid://cqp5ethcro4wy" path="res://data/buildings/player_economy/Bld_Langhus.tres" id="15_4bly6"]
+[ext_resource type="Resource" uid="uid://bscr3flprg5ts" path="res://data/buildings/Monastery_Granary.tres" id="16_wr1q7"]
+[ext_resource type="Resource" uid="uid://b7p70u4vm3uem" path="res://data/buildings/Monastery_Chapel.tres" id="17_c5qgt"]
+
+[sub_resource type="RectangleShape2D" id="1"]
+size = Vector2(100, 100)
 
 [node name="RaidMission" type="Node2D"]
 script = ExtResource("1_qt4qp")
-enemy_wave_units = Array[ExtResource("2_y6ix7")]([ExtResource("3_eoj4n")])
+enemy_wave_units = Array[ExtResource("2_y6ix7")]([ExtResource("3_test_enemy")])
 default_enemy_base_path = "res://data/settlements/generated/raid_rich_hub_01.tres"
 enemy_spawn_position = NodePath("EnemySpawnPosition")
 fyrd_unit_scene = ExtResource("4_k882g")
+
+[node name="RaidNavRegion" type="NavigationRegion2D" parent="."]
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]
 tile_set = ExtResource("5_k882g")
@@ -38419,6 +38863,27 @@ grid_size = Vector2i(60, 60)
 script = ExtResource("6_olj83")
 
 [node name="UnitSpawner" parent="." instance=ExtResource("11_eoj4n")]
+
+[node name="ExtractionZone" type="Area2D" parent="."]
+
+[node name="ExtractionShape" type="CollisionShape2D" parent="ExtractionZone"]
+shape = SubResource("1")
+
+[node name="ExtractionVisual" type="ColorRect" parent="ExtractionZone"]
+offset_left = -50.0
+offset_top = -50.0
+offset_right = 50.0
+offset_bottom = 50.0
+color = Color(0, 1, 0.2, 0.3)
+
+[node name="RaidMapLoader" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("13_maxvx")
+hall_data = ExtResource("14_chtw6")
+longhouse_data = ExtResource("15_4bly6")
+granary_data = ExtResource("16_wr1q7")
+storehouse_data = ExtResource("16_wr1q7")
+church_data = ExtResource("17_c5qgt")
 
 
 --------------------------------------------------
@@ -38458,6 +38923,12 @@ var enemy_units: Array[BaseUnit] = []
 var is_initialized: bool = false
 var mission_over: bool = false
 
+var smoke_timer: float = 0.0
+var smoke_active: bool = false
+var wave1_spawned: bool = false
+var wave2_spawned: bool = false
+var buildings_looted: int = 0
+
 # --- NEW: Performance Tracking ---
 var battle_start_time: int = 0
 var dead_units_log: Array[UnitData] = []
@@ -38472,6 +38943,14 @@ var fyrd_timer_active: bool = false
 var timer_label: Label
 
 signal fyrd_arrived()
+signal smoke_signal_triggered
+signal wave1_fyrd_arrived
+signal wave2_fyrd_arrived
+signal raid_failed
+
+@export_group("Fyrd Timing")
+@export var smoke_to_wave1_time: float = 90.0
+@export var wave1_to_wave2_time: float = 60.0
 
 # --- UI Theme ---
 const UI_THEME = preload("res://ui/themes/VikingDynastyTheme.tres")
@@ -38484,20 +38963,39 @@ func _ready() -> void:
 	EventBus.raid_loot_secured.connect(_on_raid_loot_secured)
 
 func _process(delta: float) -> void:
-	if fyrd_timer_active and not mission_over:
-		time_remaining -= delta
+	if mission_over: return
+	
+	if smoke_active:
+		smoke_timer += delta
 		
 		# Update UI
 		if is_instance_valid(timer_label):
-			var minutes = int(time_remaining / 60)
-			var seconds = int(time_remaining) % 60
-			timer_label.text = "FYRD ARRIVAL: %02d:%02d" % [minutes, seconds]
+			var time_to_wave1 = max(0, smoke_to_wave1_time - smoke_timer)
+			var time_to_wave2 = max(0, (smoke_to_wave1_time + wave1_to_wave2_time) - smoke_timer)
 			
-			if time_remaining < 30:
-				timer_label.modulate = Color.RED # Panic color
-		
-		if time_remaining <= 0:
-			_trigger_fyrd()
+			if not wave1_spawned:
+				var minutes = int(time_to_wave1 / 60)
+				var seconds = int(time_to_wave1) % 60
+				timer_label.text = "FYRD WAVE 1: %02d:%02d" % [minutes, seconds]
+				if time_to_wave1 < 15: timer_label.modulate = Color.RED
+			elif not wave2_spawned:
+				var minutes = int(time_to_wave2 / 60)
+				var seconds = int(time_to_wave2) % 60
+				timer_label.text = "FYRD WAVE 2: %02d:%02d" % [minutes, seconds]
+				if time_to_wave2 < 15: timer_label.modulate = Color.ORANGE
+			else:
+				timer_label.text = "FYRD IS HERE!"
+				timer_label.modulate = Color.RED
+
+		# Wave 1 Spawn
+		if not wave1_spawned and smoke_timer >= smoke_to_wave1_time:
+			_spawn_fyrd_wave1()
+			wave1_spawned = true
+			
+		# Wave 2 Spawn
+		if wave1_spawned and not wave2_spawned and smoke_timer >= (smoke_to_wave1_time + wave1_to_wave2_time):
+			_spawn_fyrd_wave2()
+			wave2_spawned = true
 
 func initialize(
 	p_rts_controller: RTSController, 
@@ -38944,14 +39442,187 @@ func _evacuate_unit(unit: BaseUnit) -> void:
 
 
 --------------------------------------------------
+FILE: res:///scenes/missions/raid_maps/CoastalVillageGenerator.gd
+--------------------------------------------------
+# res://scenes/missions/raid_maps/CoastalVillageGenerator.gd
+class_name CoastalVillageGenerator
+extends Node
+
+@export_group("Map Dimensions")
+@export var map_width: float = 3840.0
+@export var map_height: float = 1920.0
+@export var beach_depth: float = 480.0
+
+@export_group("Building Counts")
+@export var building_count_min: int = 8
+@export var building_count_max: int = 12
+@export var longhouse_count_min: int = 3
+@export var longhouse_count_max: int = 4
+@export var granary_count_min: int = 2
+@export var granary_count_max: int = 3
+@export var storehouse_count_min: int = 1
+@export var storehouse_count_max: int = 2
+@export var church_spawn_chance: float = 0.5
+
+@export_group("Population")
+@export var defender_count_min: int = 6
+@export var defender_count_max: int = 8
+@export var hall_defender_count: int = 3
+@export var villager_count_min: int = 4
+@export var villager_count_max: int = 6
+
+@export_group("Building Resources")
+@export var hall_data: BuildingData
+@export var longhouse_data: BuildingData
+@export var granary_data: BuildingData
+@export var storehouse_data: BuildingData
+@export var church_data: BuildingData
+
+func generate(seed_val: int = -1) -> Dictionary:
+	Loggie.msg("Generator: Starting. seed=%d" % seed_val).domain("RAID").info()
+	
+	if seed_val == -1 or seed_val == 0:
+		randomize()
+	else:
+		seed(seed_val)
+	
+	var beach_zone = Rect2(0, map_height - beach_depth, map_width, beach_depth)
+	var village_zone = Rect2(0, 0, map_width, map_height - beach_depth)
+	# Extraction zone centered at bottom of beach
+	var extraction_zone = Rect2(map_width * 0.4, map_height - 150, map_width * 0.2, 150) 
+	
+	var village_center = village_zone.get_center()
+	
+	var building_placements = _place_buildings(village_zone)
+	
+	var has_hall = false
+	var has_church = false
+	for b in building_placements:
+		if b.type == "Hall": has_hall = true
+		if b.type == "Church": has_church = true
+		
+	Loggie.msg("Generator: Placed %d buildings. hall=%s church=%s" % [building_placements.size(), str(has_hall), str(has_church)]).domain("RAID").info()
+	
+	var defender_spawns = []
+	var hall_defender_spawns = []
+	var villager_spawns = []
+	
+	# Find hall position
+	var hall_pos = village_center
+	for b in building_placements:
+		if b.type == "Hall":
+			hall_pos = b.position
+			break
+	
+	# Defender placement
+	for i in range(hall_defender_count):
+		var angle = randf() * TAU
+		var dist = randf() * 150.0
+		hall_defender_spawns.append(hall_pos + Vector2(cos(angle), sin(angle)) * dist)
+	
+	var num_defenders = randi_range(defender_count_min, defender_count_max)
+	for i in range(num_defenders):
+		var pos = _sample_village_zone_position(village_zone)
+		# Keep away from beach
+		while pos.y > village_zone.end.y - 100:
+			pos = _sample_village_zone_position(village_zone)
+		defender_spawns.append(pos)
+		
+	# Villager placement
+	var num_villagers = randi_range(villager_count_min, villager_count_max)
+	var all_defender_spawns = defender_spawns + hall_defender_spawns
+	for i in range(num_villagers):
+		var attempts = 0
+		var pos = _sample_village_zone_position(village_zone)
+		while not _is_position_clear(pos, all_defender_spawns, 80.0) and attempts < 20:
+			pos = _sample_village_zone_position(village_zone)
+			attempts += 1
+		villager_spawns.append(pos)
+
+	var fyrd_boundary = []
+	# Top edge
+	for i in range(10):
+		fyrd_boundary.append(Vector2(randf() * map_width, randf() * 200.0))
+	# Sides
+	for i in range(5):
+		fyrd_boundary.append(Vector2(randf() * 200.0, randf() * map_height))
+		fyrd_boundary.append(Vector2(map_width - randf() * 200.0, randf() * map_height))
+
+	var result = {
+		"extraction_zone": extraction_zone,
+		"buildings": building_placements,
+		"defender_spawns": defender_spawns,
+		"hall_defender_spawns": hall_defender_spawns,
+		"villager_spawns": villager_spawns,
+		"fyrd_boundary": fyrd_boundary,
+		"navmesh_bounds": village_zone 
+	}
+	
+	Loggie.msg("Generator: Complete. extraction_zone=%s" % str(result.has("extraction_zone"))).domain("RAID").info()
+	
+	return result
+
+func _place_buildings(village_zone: Rect2) -> Array:
+	var placements = []
+	var centers = []
+	
+	# 1. Hall
+	var hall_pos = village_zone.get_center()
+	placements.append({"type": "Hall", "position": hall_pos, "building_data": hall_data})
+	centers.append(hall_pos)
+	
+	# 2. Church
+	if randf() < church_spawn_chance:
+		var church_pos = hall_pos + Vector2(randf_range(-300, 300), randf_range(-300, 300))
+		if _is_position_clear(church_pos, centers, 150.0) and village_zone.has_point(church_pos):
+			placements.append({"type": "Church", "position": church_pos, "building_data": church_data})
+			centers.append(church_pos)
+
+	# 3. Typed buildings
+	var types = [
+		{"type": "Longhouse", "data": longhouse_data, "min": longhouse_count_min, "max": longhouse_count_max},
+		{"type": "Granary", "data": granary_data, "min": granary_count_min, "max": granary_count_max},
+		{"type": "Storehouse", "data": storehouse_data, "min": storehouse_count_min, "max": storehouse_count_max}
+	]
+	
+	for t in types:
+		var count = randi_range(t.min, t.max)
+		for i in range(count):
+			var pos = _sample_village_zone_position(village_zone)
+			var attempts = 0
+			while not _is_position_clear(pos, centers, 120.0) and attempts < 20:
+				pos = _sample_village_zone_position(village_zone)
+				attempts += 1
+			
+			if attempts < 20:
+				placements.append({"type": t.type, "position": pos, "building_data": t.data})
+				centers.append(pos)
+				
+	return placements
+
+func _sample_village_zone_position(village_zone: Rect2) -> Vector2:
+	return Vector2(
+		randf_range(village_zone.position.x + 100, village_zone.end.x - 100),
+		randf_range(village_zone.position.y + 100, village_zone.end.y - 100)
+	)
+
+func _is_position_clear(pos: Vector2, existing_positions: Array, min_distance: float) -> bool:
+	for p in existing_positions:
+		if pos.distance_to(p) < min_distance:
+			return false
+	return true
+
+
+--------------------------------------------------
 FILE: res:///scenes/units/Base_Unit.tscn
 --------------------------------------------------
-[gd_scene load_steps=6 format=3 uid="uid://bky4c6y8fkk8g"]
+[gd_scene load_steps=7 format=3 uid="uid://bky4c6y8fkk8g"]
 
 [ext_resource type="Script" uid="uid://djhncrlnql4ae" path="res://scripts/units/Base_Unit.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://pwi4bv5ch827" path="res://textures/placeholders/unit_placeholder.png" id="2_lfiq5"]
 [ext_resource type="Shape2D" uid="uid://bda7xb0judu2h" path="res://resources/separation_circle_shape.tres" id="3_b08re"]
 [ext_resource type="Script" uid="uid://di5v5jxy7ocug" path="res://scenes/units/StuckDetector.gd" id="4_ssn5w"]
+[ext_resource type="Script" uid="uid://dpbhsvscovvge" path="res://scenes/components/UnitVisualizer.gd" id="5_visualizer"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_n6s0a"]
 size = Vector2(72, 72)
@@ -38978,6 +39649,15 @@ shape = ExtResource("3_b08re")
 
 [node name="StuckDetector" type="Node" parent="."]
 script = ExtResource("4_ssn5w")
+
+[node name="NavAgent" type="NavigationAgent2D" parent="."]
+path_desired_distance = 4.0
+target_desired_distance = 4.0
+avoidance_enabled = true
+radius = 16.0
+
+[node name="UnitVisualizer" type="Node2D" parent="."]
+script = ExtResource("5_visualizer")
 
 
 --------------------------------------------------
@@ -39466,11 +40146,11 @@ FILE: res:///scenes/world/UnitSpawner.tscn
 [gd_scene load_steps=3 format=3 uid="uid://io325box3m4m"]
 
 [ext_resource type="Script" uid="uid://bu6n0wwl0x5ic" path="res://scripts/utility/UnitSpawner.gd" id="1_eyemm"]
-[ext_resource type="Resource" uid="uid://iiho31ik0qvb" path="res://data/units/Unit_Civilian.tres" id="2_nudm2"]
+[ext_resource type="Resource" uid="uid://test_villager" path="res://data/units/Test_Villager.tres" id="2_test_villager"]
 
 [node name="UnitSpawner" type="Node"]
 script = ExtResource("1_eyemm")
-civilian_data = ExtResource("2_nudm2")
+civilian_data = ExtResource("2_test_villager")
 
 
 --------------------------------------------------
@@ -40772,7 +41452,10 @@ enum State {
 	INTERACTING,
 	COLLECTING, # New
 	ESCORTING,  # New
-	REGROUPING 
+	REGROUPING,
+	UNAWARE,
+	ALARMED,
+	FLEEING
 }
 
 # Defines behavior stances
@@ -41054,6 +41737,12 @@ func update(delta: float) -> void:
 			_escort_state(delta)
 		UnitAIConstants.State.REGROUPING:
 			_regroup_state(delta)
+		UnitAIConstants.State.UNAWARE:
+			_unaware_state(delta)
+		UnitAIConstants.State.ALARMED:
+			_alarmed_state(delta)
+		UnitAIConstants.State.FLEEING:
+			_fleeing_state(delta)
 
 # --- STATE LOGIC ---
 
@@ -41108,6 +41797,16 @@ func _idle_state(_delta: float) -> void:
 	unit.velocity = Vector2.ZERO
 
 func _formation_move_state(_delta: float) -> void:
+	if RaidNavigationManager.is_raid_active:
+		unit.set_movement_target(target_position)
+		var next_pos = unit.nav_agent.get_next_path_position()
+		var direction = (next_pos - unit.global_position).normalized()
+		unit.velocity = direction * unit.data.move_speed
+		
+		if unit.nav_agent.is_navigation_finished():
+			change_state(UnitAIConstants.State.IDLE)
+		return
+
 	if path.is_empty():
 		change_state(UnitAIConstants.State.IDLE)
 		return
@@ -41124,6 +41823,25 @@ func _formation_move_state(_delta: float) -> void:
 			change_state(UnitAIConstants.State.IDLE)
 
 func _move_state(delta: float) -> void:
+	if RaidNavigationManager.is_raid_active:
+		unit.set_movement_target(target_position)
+		var next_pos = unit.nav_agent.get_next_path_position()
+		var direction = (next_pos - unit.global_position).normalized()
+		
+		var speed_mult = unit.get_speed_multiplier()
+		unit.velocity = direction * unit.data.move_speed * speed_mult
+		
+		if unit.nav_agent.is_navigation_finished():
+			# If we were moving to a specific target (like a building), switch to Interact/Attack
+			if is_instance_valid(objective_target):
+				if objective_target is BaseBuilding:
+					change_state(UnitAIConstants.State.INTERACTING)
+				else:
+					change_state(UnitAIConstants.State.ATTACKING)
+			else:
+				change_state(UnitAIConstants.State.IDLE)
+		return
+
 	if path.is_empty():
 		change_state(UnitAIConstants.State.IDLE)
 		return
@@ -41377,6 +42095,105 @@ func _simple_move_to(target: Vector2, _delta: float) -> void:
 	
 	unit.velocity = dir * final_speed
 	# Note: BaseUnit._physics_process is responsible for calling move_and_slide()
+
+func _unaware_state(_delta: float) -> void:
+	unit.velocity = Vector2.ZERO
+	if not RaidNavigationManager.is_raid_active:
+		return
+	var player_units = unit.get_tree().get_nodes_in_group("player_units")
+	for player_unit in player_units:
+		if not is_instance_valid(player_unit):
+			continue
+		var distance = unit.global_position.distance_to(player_unit.global_position)
+		if distance < unit.data.detection_range:
+			var space = unit.get_world_2d().direct_space_state
+			var query = PhysicsRayQueryParameters2D.create(
+				unit.global_position,
+				player_unit.global_position)
+			var result = space.intersect_ray(query)
+			if result and result.collider == player_unit:
+				change_state(UnitAIConstants.State.ALARMED)
+				return
+
+func _alarmed_state(_delta: float) -> void:
+	if not RaidNavigationManager.is_raid_active:
+		return
+	if not unit.has_meta("alarm_spread_done"):
+		unit.set_meta("alarm_spread_done", true)
+		var nearby = unit.get_tree().get_nodes_in_group("enemy_units")
+		for enemy in nearby:
+			if not is_instance_valid(enemy): continue
+			if enemy == unit: continue
+			var dist = unit.global_position.distance_to(enemy.global_position)
+			if dist < 200.0 and enemy.has_method("get_fsm"):
+				var fsm_ref = enemy.get_fsm()
+				if fsm_ref and fsm_ref.current_state == UnitAIConstants.State.UNAWARE:
+					fsm_ref.change_state(UnitAIConstants.State.ALARMED)
+		unit.set_movement_target(_get_hall_position())
+
+	var next_pos = unit.nav_agent.get_next_path_position()
+	var direction = (next_pos - unit.global_position).normalized()
+	unit.velocity = direction * unit.data.move_speed
+
+	if unit.nav_agent.is_navigation_finished():
+		if unit.has_method("emit_alarm"):
+			unit.emit_alarm()
+		change_state(UnitAIConstants.State.IDLE)
+
+func _fleeing_state(_delta: float) -> void:
+	if not RaidNavigationManager.is_raid_active:
+		unit.velocity = Vector2.ZERO
+		return
+		
+	# Update flee target periodically (every 60 frames approx)
+	var update_flee = false
+	if not unit.has_meta("flee_target_set"):
+		unit.set_meta("flee_target_set", true)
+		unit.set_meta("flee_update_timer", 0)
+		update_flee = true
+	else:
+		var timer = unit.get_meta("flee_update_timer") + 1
+		if timer >= 60:
+			update_flee = true
+			unit.set_meta("flee_update_timer", 0)
+		else:
+			unit.set_meta("flee_update_timer", timer)
+			
+	if update_flee:
+		var nearest = _get_nearest_player_unit()
+		if nearest:
+			var flee_dir = (unit.global_position - nearest.global_position).normalized()
+			var flee_target_pos = unit.global_position + flee_dir * 800.0
+			unit.set_movement_target(flee_target_pos)
+	
+	var next_pos = unit.nav_agent.get_next_path_position()
+	var direction = (next_pos - unit.global_position).normalized()
+	unit.velocity = direction * unit.data.move_speed
+
+	if unit.nav_agent.is_navigation_finished() and unit.global_position != Vector2.ZERO:
+		if unit.has_method("emit_alarm"):
+			unit.emit_alarm()
+		change_state(UnitAIConstants.State.IDLE)
+func _get_hall_position() -> Vector2:
+	var buildings = unit.get_tree().get_nodes_in_group("buildings")
+	for building in buildings:
+		if is_instance_valid(building) and building.data and building.data.is_territory_hub:
+			return building.global_position
+	# Fallback to map center if Hall not found
+	var bounds = RaidNavigationManager.map_bounds
+	return bounds.get_center()
+
+func _get_nearest_player_unit() -> Node:
+	var player_units = unit.get_tree().get_nodes_in_group("player_units")
+	var nearest = null
+	var nearest_dist = INF
+	for u in player_units:
+		if not is_instance_valid(u): continue
+		var d = unit.global_position.distance_to(u.global_position)
+		if d < nearest_dist:
+			nearest_dist = d
+			nearest = u
+	return nearest
 
 
 --------------------------------------------------
@@ -41696,7 +42513,9 @@ func _clear_all_buildings() -> void:
 		SettlementManager.current_settlement.placed_buildings.clear()
 		SettlementManager.current_settlement.pending_construction_buildings.clear()
 		SettlementManager.current_settlement.warbands.clear()
-		SettlementManager._refresh_grid_state()
+		NavigationManager.register_map(
+			NavigationManager.active_tilemap_layer,
+			NavigationManager.active_astar_grid.region)
 	
 	great_hall_instance = null
 	game_is_over = false
@@ -43561,6 +44380,8 @@ var _stuck_timer: float = 0.0
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
 @onready var separation_area: Area2D = $SeparationArea
+@onready var nav_agent: NavigationAgent2D = $NavAgent
+@onready var unit_visualizer: UnitVisualizer = $UnitVisualizer
 
 @export_group("AI")
 @export var separation_enabled: bool = true
@@ -43902,6 +44723,10 @@ func _tween_color(to_color: Color, duration: float = 0.2) -> void:
 	_color_tween = create_tween()
 	_color_tween.tween_property(sprite, "modulate", to_color, duration).set_trans(Tween.TRANS_SINE)
 
+func set_movement_target(target_pos: Vector2) -> void:
+	if RaidNavigationManager.is_raid_active:
+		nav_agent.target_position = target_pos
+
 func take_damage(amount: int, attacker: Node2D = null) -> void:
 	if _is_dying: return
 	current_health = max(0, current_health - amount)
@@ -43922,6 +44747,18 @@ func command_move_to(target_pos: Vector2) -> void:
 
 func command_attack(target: Node2D) -> void:
 	if fsm: fsm.command_attack(target)
+
+func get_fsm() -> Node:
+	return fsm
+
+func _set_initial_state(state: UnitAIConstants.State) -> void:
+	var fsm_ref = get_fsm()
+	if fsm_ref:
+		fsm_ref.change_state(state)
+
+func emit_alarm() -> void:
+	Loggie.msg("Alarm raised by: %s" % name).domain("RAID").info()
+	EventBus.alarm_raised.emit(self)
 
 var is_selected: bool = false
 func set_selected(selected: bool) -> void:
@@ -44070,6 +44907,11 @@ func command_interact(target: Node2D) -> void:
 		if fsm and fsm.has_method("command_interact_move"):
 			fsm.command_interact_move(target)
 
+func _deferred_setup(damage_mult: float = 1.0) -> void:
+	super._deferred_setup(damage_mult)
+	if fsm:
+		fsm.change_state(UnitAIConstants.State.FLEEING)
+
 
 --------------------------------------------------
 FILE: res:///scripts/units/EnemyVikingRaider.gd
@@ -44107,6 +44949,11 @@ func set_attack_target(target: BaseBuilding) -> void:
 	fsm.change_state(UnitAIConstants.State.MOVING)
 	# --- END FIX ---
 	Loggie.msg("Viking Raider initialized and moving to target: %s" % target.data.display_name).domain("RTS").info()
+
+func _deferred_setup(damage_mult: float = 1.0) -> void:
+	super._deferred_setup(damage_mult)
+	if fsm:
+		fsm.change_state(UnitAIConstants.State.UNAWARE)
 
 
 --------------------------------------------------
@@ -44168,6 +45015,8 @@ FILE: res:///scripts/units/SquadLeader.gd
 class_name SquadLeader
 extends BaseUnit
 
+@export var leader_test_data: UnitData
+
 # --- Squad Management ---
 var squad_soldiers: Array[SquadSoldier] = []
 ## Helper class that handles the geometry math (Line, Wedge, Circle)
@@ -44212,6 +45061,18 @@ func _ready() -> void:
 func _initialize_squad() -> void:
 	if not warband_ref or not data: return
 	
+	# --- NEW: Visual Override for Squad Leaders ---
+	var override_data = leader_test_data
+	if not override_data and data.display_name == "Test Raider":
+		override_data = load("res://data/units/Test_SquadLeader.tres")
+		
+	if override_data:
+		data = override_data
+		if is_instance_valid(unit_visualizer):
+			unit_visualizer.unit_data = data
+			unit_visualizer.refresh()
+	# ----------------------------------------------
+	
 	if squad_soldiers.is_empty():
 		_recruit_fresh_squad()
 	
@@ -44221,9 +45082,10 @@ func _recruit_fresh_squad() -> void:
 	var soldiers_needed = max(0, warband_ref.current_manpower - 1)
 	if soldiers_needed == 0: return
 	
-	var base_scene = data.load_scene()
+	var soldier_data = warband_ref.unit_type
+	var base_scene = soldier_data.load_scene()
 	if not base_scene: 
-		base_scene = data.scene_to_spawn
+		base_scene = soldier_data.scene_to_spawn
 	
 	if not base_scene: 
 		printerr("SquadLeader: Could not load scene for soldier spawn!")
@@ -44238,7 +45100,7 @@ func _recruit_fresh_squad() -> void:
 		var soldier_script = load("res://scripts/units/SquadSoldier.gd")
 		soldier_instance.set_script(soldier_script)
 		
-		soldier_instance.data = data
+		soldier_instance.data = soldier_data
 		soldier_instance.warband_ref = warband_ref
 		soldier_instance.leader = self
 		soldier_instance.position = position 
@@ -44309,6 +45171,11 @@ func _refresh_formation_registry() -> void:
 		formation.add_unit(s)
 	# Force update ensures formation object has correct unit count
 	if _should_update_formation() or squad_soldiers.size() > 0:
+		force_formation_update()
+
+func set_formation_type(type: int) -> void:
+	if formation:
+		formation.formation_type = type as SquadFormation.FormationType
 		force_formation_update()
 
 # --- Gameplay Logic (Restored) ---
@@ -45310,6 +46177,9 @@ func spawn_enemy_garrison(warbands: Array[WarbandData], buildings: Array) -> voi
 
 	for i in range(warbands.size()):
 		var warband = warbands[i]
+		
+		Loggie.msg("Warband unit_type: %s" % str(warband.unit_type.display_name if warband.unit_type else "NULL")).domain("RAID").info()
+		
 		var guard_pos = Vector2.ZERO
 		if not buildings.is_empty():
 			var b = buildings[i % buildings.size()]
@@ -45335,12 +46205,14 @@ func _spawn_unit_core(warband: WarbandData, target_pos: Vector2, is_player: bool
 	# 1. Coordinate Safety Check
 	var final_pos = target_pos
 	
-	# REFACTOR FIX: Use NavigationManager directly
-	if NavigationManager:
+	if RaidNavigationManager.is_raid_active:
+		final_pos = RaidNavigationManager.request_valid_spawn_point(target_pos, 4)
+	elif NavigationManager:
 		final_pos = NavigationManager.request_valid_spawn_point(target_pos, 4)
-		if final_pos == Vector2.INF:
-			Loggie.msg("Spawn blocked at %s for %s" % [target_pos, unit_data.display_name]).domain(LogDomains.NAVIGATION).warn()
-			return null
+		
+	if final_pos == Vector2.INF:
+		Loggie.msg("Spawn blocked at %s for %s" % [target_pos, unit_data.display_name]).domain(LogDomains.NAVIGATION).warn()
+		return null
 	
 	# 2. Instantiate
 	var unit = scene_ref.instantiate() as BaseUnit
@@ -45365,6 +46237,7 @@ func _spawn_unit_core(warband: WarbandData, target_pos: Vector2, is_player: bool
 		unit.add_to_group("enemy_units")
 	
 	# 4. Position & Parent
+	Loggie.msg("DEBUG SPAWN: %s final_pos=%s target_pos=%s" % [unit.name, str(final_pos), str(target_pos)]).domain("NAVIGATION").info()
 	unit.global_position = final_pos
 	unit_container.add_child(unit)
 	
@@ -45445,22 +46318,25 @@ func _spawn_civilians(count: int, origin: Vector2, is_enemy: bool) -> void:
 		var final_pos = tentative_pos
 		
 		# 3. --- SAFETY CHECK (REFACTORED) ---
-		if NavigationManager:
-			# Debug: What is the random spot?
+		if RaidNavigationManager.is_raid_active:
+			var closest = RaidNavigationManager.request_valid_spawn_point(tentative_pos, 5)
+			if closest != Vector2.INF:
+				final_pos = closest
+			else:
+				final_pos = origin
+		elif NavigationManager:
 			var grid_check = NavigationManager._world_to_grid(tentative_pos)
 			var is_water = NavigationManager.is_point_solid(grid_check)
 			
 			if is_water:
-				# It landed in water. Request nearest land (Radius 5 tiles).
 				var safe_pos = NavigationManager.request_valid_spawn_point(tentative_pos, 5)
-				
 				if safe_pos != Vector2.INF:
 					final_pos = safe_pos
 				else:
-					# Deep water / No land found. Fallback to Origin.
 					final_pos = origin 
 		# -----------------------
 		
+		Loggie.msg("DEBUG SPAWN CIV: final_pos=%s tentative=%s" % [str(final_pos), str(tentative_pos)]).domain("NAVIGATION").info()
 		civ.global_position = final_pos
 		unit_container.add_child(civ)
 		
@@ -45499,9 +46375,14 @@ extends Node2D
 ## Sets up mock Jarl, Raid Force, and Target before initializing RaidMission.
 
 @onready var raid_mission = $RaidMission
+@export var player_test_data: UnitData
 var debug_label: Label
 
 func _ready() -> void:
+	# Load default if not assigned in inspector
+	if not player_test_data:
+		player_test_data = load("res://data/units/Test_PlayerRaider.tres")
+	
 	Loggie.msg("=== Raid Sandbox: Starting Setup ===").domain(LogDomains.RAID).info()
 	
 	_setup_mock_jarl()
@@ -45580,19 +46461,20 @@ func _setup_mock_jarl() -> void:
 func _setup_mock_raid_force() -> void:
 	RaidManager.reset_raid_state()
 	
-	var warrior_data = load("res://data/units/PlayerVikingRaider_Data.tres")
-	if not warrior_data:
-		# Fallback if specific file missing, try generic
-		warrior_data = load("res://data/units/VikingRaider_Data.tres")
-		
+	var warrior_data = player_test_data
 	if warrior_data:
 		var warband = WarbandData.new(warrior_data)
 		warband.custom_name = "Sandbox Veterans"
 		warband.current_manpower = 10
+			
+			# Encapsulation: Inject directly into mission to bypass global manager if desired
+		if is_instance_valid(raid_mission):
+				var force: Array[WarbandData] = [warband]
+				raid_mission.force_warbands = force		
 		RaidManager.prepare_raid_force([warband], 2) # Provision level 2
 		Loggie.msg("Mock Raid Force Prepared (10 Warriors).").domain(LogDomains.RAID).info()
 	else:
-		push_error("RaidSandbox: Could not find VikingRaider_Data.tres")
+		push_error("RaidSandbox: Could not find Unit_PlayerRaider.tres or fallback.")
 
 func _setup_mock_target() -> void:
 	# Try to find an existing settlement file or use procedural
@@ -45602,12 +46484,31 @@ func _setup_mock_target() -> void:
 	if ResourceLoader.exists(target_path):
 		target_data = load(target_path)
 		Loggie.msg("Loaded Target from disk: " + target_path).domain(LogDomains.RAID).info()
+		
+		# --- Override Warbands (Legacy Bypass) ---
+		var defender_type = load("res://data/units/Test_EnemyDefender.tres")
+		if defender_type:
+			var defender_warband = WarbandData.new()
+			defender_warband.unit_type = defender_type
+			defender_warband.current_manpower = 6
+			target_data.warbands = [defender_warband]
+			
+			Loggie.msg("Defender unit_type: %s shape=%s color=%s" % [
+				str(defender_warband.unit_type.display_name),
+				str(defender_warband.unit_type.debug_shape),
+				str(defender_warband.unit_type.debug_color)]
+			).domain("RAID").info()
+		# -----------------------------------------
 	else:
 		# Generate a procedural one
 		target_data = MapDataGenerator._generate_procedural_settlement("Monastery", 1.0)
 		target_data.map_seed = randi()
 		Loggie.msg("Generated Procedural Target.").domain(LogDomains.RAID).info()
 	
+	# Encapsulation: Inject directly into mission
+	if is_instance_valid(raid_mission):
+		raid_mission.force_enemy_settlement = target_data
+
 	RaidManager.set_current_raid_target(target_data)
 	RaidManager.current_raid_difficulty = 2
 
@@ -45623,13 +46524,13 @@ FILE: res:///test/RaidSandbox.tscn
 --------------------------------------------------
 [gd_scene load_steps=3 format=3 uid="uid://b7y8kak0l1m2n"]
 
-[ext_resource type="Script" path="res://test/RaidSandbox.gd" id="1_sandbox"]
-[ext_resource type="PackedScene" uid="uid://d3ifdm0rvd5kl" path="res://scenes/missions/RaidMission.tscn" id="2_raid_mission"]
+[ext_resource type="Script" uid="uid://diodjhqmrlj0o" path="res://test/RaidSandbox.gd" id="1_sandbox"]
+[ext_resource type="PackedScene" uid="uid://d3ifdm0rvd5kl" path="res://scenes/missions/RaidMission.tscn" id="2_cdrdn"]
 
 [node name="RaidSandbox" type="Node2D"]
 script = ExtResource("1_sandbox")
 
-[node name="RaidMission" parent="." instance=ExtResource("2_raid_mission")]
+[node name="RaidMission" parent="." instance=ExtResource("2_cdrdn")]
 
 
 --------------------------------------------------
@@ -46665,13 +47566,15 @@ func test_water_blocks_grid():
 		_manager_ref.active_tilemap_layer = _layer
 		
 	# 2. Refresh (This triggers the scan)
-	_manager_ref._refresh_grid_state()
+	NavigationManager.register_map(
+		NavigationManager.active_tilemap_layer,
+		NavigationManager.active_astar_grid.region)
 	
 	# --- ASSERTION ---
 	assert_not_null(_manager_ref.active_tilemap_layer, "Active TileMapLayer should be assigned.")
 	
 	# Check the Grid Logic
-	var is_solid = _manager_ref.active_astar_grid.is_point_solid(Vector2i(5, 5))
+	var is_solid = NavigationManager.active_astar_grid.is_point_solid(Vector2i(5, 5))
 	
 	if not is_solid:
 		# Debug info if it fails
@@ -46682,7 +47585,7 @@ func test_water_blocks_grid():
 	assert_true(is_solid, "Grid (5,5) should be SOLID because tile has 'is_unwalkable' = true.")
 	
 	# Control Check
-	var is_empty_solid = _manager_ref.active_astar_grid.is_point_solid(Vector2i(6, 6))
+	var is_empty_solid = NavigationManager.active_astar_grid.is_point_solid(Vector2i(6, 6))
 	assert_false(is_empty_solid, "Grid (6,6) should be WALKABLE.")
 
 func after_all():
@@ -47266,20 +48169,20 @@ func before_all():
 		add_child_autofree(_manager_ref)
 		
 	# 2. Force Initialize the AStarGrid
-	_manager_ref.active_astar_grid = AStarGrid2D.new()
-	_manager_ref.active_astar_grid.region = Rect2i(0, 0, _grid_width, _grid_height)
-	_manager_ref.active_astar_grid.cell_size = Vector2(64, 32)
-	_manager_ref.active_astar_grid.update()
+	NavigationManager.active_astar_grid = AStarGrid2D.new()
+	NavigationManager.active_astar_grid.region = Rect2i(0, 0, _grid_width, _grid_height)
+	NavigationManager.active_astar_grid.cell_size = Vector2(64, 32)
+	NavigationManager.active_astar_grid.update()
 	
 	# 3. FILL MAP WITH WATER (Make everything Solid)
 	# We simulate a map that is 100% water initially
 	for x in range(_grid_width):
 		for y in range(_grid_height):
-			_manager_ref.active_astar_grid.set_point_solid(Vector2i(x, y), true)
+			NavigationManager.active_astar_grid.set_point_solid(Vector2i(x, y), true)
 
 	# 4. Create a Tiny Island at (5,5)
 	# Only (5,5) is walkable.
-	_manager_ref.active_astar_grid.set_point_solid(Vector2i(5, 5), false)
+	NavigationManager.active_astar_grid.set_point_solid(Vector2i(5, 5), false)
 
 func test_spawn_safety_check():
 	# --- SCENARIO 1: Spawn in Deep Water (0,0) ---
