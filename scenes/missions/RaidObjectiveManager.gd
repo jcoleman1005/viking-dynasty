@@ -62,8 +62,8 @@ signal wave2_fyrd_arrived
 signal raid_failed
 
 @export_group("Fyrd Timing")
-@export var smoke_to_wave1_time: float = 5.0 # TEMP: was 90.0 — revert after Phase 4 testing
-@export var wave1_to_wave2_time: float = 5.0 # TEMP: was 60.0 — revert after Phase 4 testing
+@export var smoke_to_wave1_time: float = 90.0
+@export var wave1_to_wave2_time: float = 60.0
 
 # --- UI Theme ---
 const UI_THEME = preload("res://ui/themes/VikingDynastyTheme.tres")

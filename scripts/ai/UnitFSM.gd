@@ -398,13 +398,6 @@ func _interact_state(delta: float) -> void:
 	var distance_to_target = UnitAIConstants.get_surface_distance(unit, objective_target)
 	var interact_range = 25.0 # Close range for pillaging
 	
-	if Engine.get_process_frames() % 60 == 0:
-		Loggie.msg("INTERACT: dist=%0.1f range=%0.1f target=%s state=%s" % [
-			distance_to_target, interact_range,
-			str(objective_target.name) if is_instance_valid(objective_target) else "NULL",
-			str(current_state)]
-		).domain("RAID").warn()
-	
 	if distance_to_target > interact_range:
 		if RaidNavigationManager.is_raid_active:
 			unit.set_movement_target(objective_target.global_position)

@@ -55,19 +55,6 @@ func _ready() -> void:
 	
 	Loggie.msg("=== Raid Sandbox: Setup Complete ===").domain(LogDomains.RAID).info()
 
-	# Building collision diagnostic
-	for child in raid_mission.get_node("BuildingContainer").get_children():
-		if child is BaseBuilding:
-			var col_shape = child.get_node_or_null("CollisionShape2D")
-			var hitbox = child.get_node_or_null("Hitbox")
-			Loggie.msg("BLDG DIAG: name=%s pos=%s layer=%d shape=%s hitbox=%s" % [
-				child.name,
-				str(child.global_position),
-				child.collision_layer,
-				str(col_shape.shape if col_shape else "NONE"),
-				str(hitbox.global_position if hitbox else "NO HITBOX")]
-			).domain("RAID").warn()
-
 func _setup_debug_overlay() -> void:
 	var canvas = CanvasLayer.new()
 	add_child(canvas)
