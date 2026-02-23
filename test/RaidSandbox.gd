@@ -14,12 +14,17 @@ func _ready() -> void:
 	if not player_test_data:
 		player_test_data = load("res://data/units/Test_PlayerRaider.tres")
 	
+	
+	
 	Loggie.msg("=== Raid Sandbox: Starting Setup ===").domain(LogDomains.RAID).info()
 	
 	_setup_mock_jarl()
 	_setup_mock_raid_force()
 	_setup_mock_target()
 	_setup_debug_overlay()
+	
+	# Manually trigger mission initialization now that sandbox data is ready
+	raid_mission.call_deferred("initialize_mission")
 	
 	# Fyrd Timer UI
 	var canvas = get_node("CanvasLayer") if has_node("CanvasLayer") else null
@@ -39,12 +44,29 @@ func _ready() -> void:
 	if EventBus:
 		EventBus.scene_change_requested.connect(_on_mission_end_requested)
 	
-	var diag = Node.new()
-	diag.name = "RaidDiagnostics"
-	diag.set_script(load("res://test/RaidDiagnostics.gd"))
-	add_child(diag)
+	
+	
+	# Floating text fallback for sandbox
+	if not EventBus.floating_text_requested.get_connections().size():
+		EventBus.floating_text_requested.connect(
+			func(text, pos, color):
+				Loggie.msg("FLOAT: '%s' at %s" % [text, str(pos)]).domain("RAID").info()
+		)
 	
 	Loggie.msg("=== Raid Sandbox: Setup Complete ===").domain(LogDomains.RAID).info()
+
+	# Building collision diagnostic
+	for child in raid_mission.get_node("BuildingContainer").get_children():
+		if child is BaseBuilding:
+			var col_shape = child.get_node_or_null("CollisionShape2D")
+			var hitbox = child.get_node_or_null("Hitbox")
+			Loggie.msg("BLDG DIAG: name=%s pos=%s layer=%d shape=%s hitbox=%s" % [
+				child.name,
+				str(child.global_position),
+				child.collision_layer,
+				str(col_shape.shape if col_shape else "NONE"),
+				str(hitbox.global_position if hitbox else "NO HITBOX")]
+			).domain("RAID").warn()
 
 func _setup_debug_overlay() -> void:
 	var canvas = CanvasLayer.new()
@@ -146,7 +168,7 @@ func _setup_mock_raid_force() -> void:
 		RaidManager.prepare_raid_force([warband], 2) # Provision level 2
 		Loggie.msg("Mock Raid Force Prepared (10 Warriors).").domain(LogDomains.RAID).info()
 	else:
-		push_error("RaidSandbox: Could not find Unit_PlayerRaider.tres or fallback.")
+		Loggie.msg("RaidSandbox: Could not find Unit_PlayerRaider.tres or fallback.").domain("RAID").error()
 
 func _setup_mock_target() -> void:
 	# Try to find an existing settlement file or use procedural

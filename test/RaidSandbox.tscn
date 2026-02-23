@@ -7,3 +7,6 @@
 script = ExtResource("1_sandbox")
 
 [node name="RaidMission" parent="." instance=ExtResource("2_cdrdn")]
+suppress_auto_init = true
+
+[editable path="RaidMission"]

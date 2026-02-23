@@ -14,13 +14,13 @@ func _run():
 	# FIXED: Called directly from the EditorInterface type
 	var root = EditorInterface.get_edited_scene_root()
 	if not root:
-		print("Error: No scene open.")
+		Loggie.msg("Error: No scene open.").domain("SYSTEM").error()
 		return
 
 	# 2. Find the Container
 	var container = root.get_node_or_null(CONTAINER_NAME)
 	if not container:
-		print("Error: Could not find '%s' node. Ensure your scene has a node named exactly '%s'." % [CONTAINER_NAME, CONTAINER_NAME])
+		Loggie.msg("Error: Could not find '%s' node. Ensure your scene has a node named exactly '%s'." % [CONTAINER_NAME, CONTAINER_NAME]).domain("SYSTEM").error()
 		return
 
 	# 3. Create the Data Object
@@ -60,13 +60,13 @@ func _run():
 			settlement_data.placed_buildings.append(entry)
 			count += 1
 		else:
-			print("Warning: Found non-building node '%s' in container. Skipping." % node.name)
+			Loggie.msg("Warning: Found non-building node '%s' in container. Skipping." % node.name).domain("SYSTEM").warn()
 
 	# 5. Save to Disk
 	var error = ResourceSaver.save(settlement_data, TARGET_SAVE_PATH)
 	if error == OK:
-		print("✅ SUCCESS: Exported %d buildings to %s" % [count, TARGET_SAVE_PATH])
+		Loggie.msg("SUCCESS: Exported %d buildings to %s" % [count, TARGET_SAVE_PATH]).domain("SYSTEM").info()
 		# FIXED: Called directly from the EditorInterface type
 		EditorInterface.get_resource_filesystem().scan()
 	else:
-		print("❌ ERROR: Failed to save resource. Error Code: %s" % error)
+		Loggie.msg("ERROR: Failed to save resource. Error Code: %s" % error).domain("SYSTEM").error()

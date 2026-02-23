@@ -1,4 +1,4 @@
-[gd_scene load_steps=20 format=3 uid="uid://d3ifdm0rvd5kl"]
+[gd_scene load_steps=19 format=3 uid="uid://d3ifdm0rvd5kl"]
 
 [ext_resource type="Script" uid="uid://cuw68f180xbui" path="res://scenes/missions/RaidMission.gd" id="1_qt4qp"]
 [ext_resource type="PackedScene" uid="uid://cyp3t7gbdg0wx" path="res://player/RTSController.tscn" id="2_8icmc"]
@@ -17,7 +17,6 @@
 [ext_resource type="Resource" uid="uid://cqp5ethcro4wy" path="res://data/buildings/player_economy/Bld_Langhus.tres" id="15_4bly6"]
 [ext_resource type="Resource" uid="uid://bscr3flprg5ts" path="res://data/buildings/Monastery_Granary.tres" id="16_wr1q7"]
 [ext_resource type="Resource" uid="uid://b7p70u4vm3uem" path="res://data/buildings/Monastery_Chapel.tres" id="17_c5qgt"]
-[ext_resource type="Script" uid="uid://b3ly0gdcx57py" path="res://test/RaidDiagnostics.gd" id="18_chtw6"]
 
 [sub_resource type="RectangleShape2D" id="1"]
 size = Vector2(100, 100)
@@ -83,6 +82,3 @@ longhouse_data = ExtResource("15_4bly6")
 granary_data = ExtResource("16_wr1q7")
 storehouse_data = ExtResource("16_wr1q7")
 church_data = ExtResource("17_c5qgt")
-
-[node name="RaidDiagnostics" type="Node" parent="."]
-script = ExtResource("18_chtw6")

@@ -70,6 +70,10 @@ func _enter_state(state: UnitAIConstants.State) -> void:
 				attack_ai.stop_attacking()
 				attack_ai.set_process(false) # Brain off
 				attack_ai.set_physics_process(false)
+		UnitAIConstants.State.ALARMED:
+			# Raise alarm immediately
+			if unit.has_method("emit_alarm"):
+				unit.emit_alarm()
 
 func _exit_state(state: UnitAIConstants.State) -> void:
 	match state:
@@ -104,9 +108,17 @@ func _recalculate_path() -> void:
 	# Allow partial path if we have a solid target node (like a building)
 	var allow_partial = is_instance_valid(target_node)
 	
-	# --- FIX: Redirect to NavigationManager for Smoothing ---
-	path = NavigationManager.get_astar_path(start_pos, target_position, allow_partial)
-	# -------------------------------------------------------
+	if RaidNavigationManager.is_raid_active:
+		# During raids, use NavigationAgent2D
+		unit.set_movement_target(target_position)
+		# Build a simple path from nav_agent for external compatibility
+		if unit.nav_agent:
+			path = PackedVector2Array([unit.nav_agent.get_next_path_position()])
+		else:
+			path = PackedVector2Array([target_position])
+	else:
+		# Settlement mode: use AStarGrid2D
+		path = NavigationManager.get_astar_path(start_pos, target_position, allow_partial)
 	
 	if path.is_empty():
 		# FORCE move if very close (A* sometimes fails on short distances inside cell boundaries)
@@ -316,22 +328,24 @@ func _formation_move_state(_delta: float) -> void:
 
 func _move_state(delta: float) -> void:
 	if RaidNavigationManager.is_raid_active:
-		unit.set_movement_target(target_position)
-		var next_pos = unit.nav_agent.get_next_path_position()
-		var direction = (next_pos - unit.global_position).normalized()
-		
-		var speed_mult = unit.get_speed_multiplier()
-		unit.velocity = direction * unit.data.move_speed * speed_mult
-		
-		if unit.nav_agent.is_navigation_finished():
-			# If we were moving to a specific target (like a building), switch to Interact/Attack
-			if is_instance_valid(objective_target):
+		# Check arrival FIRST before updating nav target
+		if is_instance_valid(objective_target):
+			var dist = UnitAIConstants.get_surface_distance(unit, objective_target)
+			if dist < 30.0:
 				if objective_target is BaseBuilding:
 					change_state(UnitAIConstants.State.INTERACTING)
 				else:
 					change_state(UnitAIConstants.State.ATTACKING)
-			else:
-				change_state(UnitAIConstants.State.IDLE)
+				return
+		elif unit.nav_agent.is_navigation_finished():
+			change_state(UnitAIConstants.State.IDLE)
+			return
+		
+		unit.set_movement_target(target_position)
+		var next_pos = unit.nav_agent.get_next_path_position()
+		var direction = (next_pos - unit.global_position).normalized()
+		var speed_mult = unit.get_speed_multiplier()
+		unit.velocity = direction * unit.data.move_speed * speed_mult
 		return
 
 	if path.is_empty():
@@ -384,21 +398,28 @@ func _interact_state(delta: float) -> void:
 	var distance_to_target = UnitAIConstants.get_surface_distance(unit, objective_target)
 	var interact_range = 25.0 # Close range for pillaging
 	
+	if Engine.get_process_frames() % 60 == 0:
+		Loggie.msg("INTERACT: dist=%0.1f range=%0.1f target=%s state=%s" % [
+			distance_to_target, interact_range,
+			str(objective_target.name) if is_instance_valid(objective_target) else "NULL",
+			str(current_state)]
+		).domain("RAID").warn()
+	
 	if distance_to_target > interact_range:
-		# Use pathfinding if far
-		if not path.is_empty():
+		if RaidNavigationManager.is_raid_active:
+			unit.set_movement_target(objective_target.global_position)
+			var next_pos = unit.nav_agent.get_next_path_position()
+			var dir = (next_pos - unit.global_position).normalized()
+			unit.velocity = dir * unit.data.move_speed
+		elif not path.is_empty():
 			var next = path[0]
 			var dir = (next - unit.global_position).normalized()
 			unit.velocity = dir * unit.data.move_speed
-			unit.move_and_slide()
-			
 			if unit.global_position.distance_to(next) < 8.0:
-				path.remove_at(0) # FIXED: Compatible with PackedVector2Array
+				path.remove_at(0)
 		else:
-			# Direct approach for last mile
 			var dir = (objective_target.global_position - unit.global_position).normalized()
 			unit.velocity = dir * unit.data.move_speed
-			unit.move_and_slide()
 	else:
 		# 2. Arrived -> Perform Pillage
 		unit.velocity = Vector2.ZERO
@@ -627,9 +648,9 @@ func _alarmed_state(_delta: float) -> void:
 	var direction = (next_pos - unit.global_position).normalized()
 	unit.velocity = direction * unit.data.move_speed
 
-	if unit.nav_agent.is_navigation_finished():
-		if unit.has_method("emit_alarm"):
-			unit.emit_alarm()
+	# Check arrival at Hall using surface distance
+	var hall_pos = _get_hall_position()
+	if unit.global_position.distance_to(hall_pos) < 60.0:
 		change_state(UnitAIConstants.State.IDLE)
 
 func _fleeing_state(_delta: float) -> void:

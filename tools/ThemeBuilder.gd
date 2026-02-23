@@ -15,7 +15,7 @@ const COL_PARCHMENT = Color("#f5e6d3")
 const COL_GOLD = Color("#c5a54e")
 
 func _run() -> void:
-	print("--- Building Chronicler Theme ---")
+	Loggie.msg("--- Building Chronicler Theme ---").domain("SYSTEM").info()
 	
 	# 1. Create or Load Theme
 	var theme = Theme.new()
@@ -122,9 +122,9 @@ func _run() -> void:
 		
 	var error = ResourceSaver.save(theme, THEME_PATH)
 	if error == OK:
-		print("Theme saved to: ", THEME_PATH)
+		Loggie.msg("Theme saved to: %s" % THEME_PATH).domain("SYSTEM").info()
 	else:
-		print("Error saving theme: ", error)
+		Loggie.msg("Error saving theme: %s" % error).domain("SYSTEM").error()
 		
 	EditorInterface.get_resource_filesystem().scan()
 
@@ -132,5 +132,5 @@ func _try_load_font(filename: String) -> Font:
 	var path = FONT_PATH + filename
 	if ResourceLoader.exists(path):
 		return load(path)
-	print("Warning: Font not found at ", path, ". Using default.")
+	Loggie.msg("Warning: Font not found at %s. Using default." % path).domain("SYSTEM").warn()
 	return ThemeDB.get_fallback_font()

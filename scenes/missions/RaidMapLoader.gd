@@ -73,6 +73,14 @@ func setup(p_container: Node2D, enemy_data: SettlementData) -> void:
 			building.data = b_data
 			building.global_position = entry["position"]
 			building_container.add_child(building)
+			
+			building.collision_layer = 1 | 8
+			building.collision_mask = 0
+			
+			if building.has_node("Hitbox"):
+				var hitbox = building.get_node("Hitbox")
+				hitbox.collision_layer = 8
+				
 			buildings[i]["node"] = building
 			Loggie.msg("Spawned: %s at %s" % [str(entry.get("type")), str(entry.get("position"))]).domain("RAID").info()
 		# ------------------------------------

@@ -25,6 +25,11 @@ func _ready() -> void:
 	separation_enabled = true
 	super._ready()
 	add_to_group("civilians")
+	EventBus.alarm_raised.connect(_on_alarm_raised)
+
+func _exit_tree() -> void:
+	if EventBus.alarm_raised.is_connected(_on_alarm_raised):
+		EventBus.alarm_raised.disconnect(_on_alarm_raised)
 
 func _physics_process(delta: float) -> void:
 	if _is_surrendered:
@@ -37,7 +42,7 @@ func take_damage(amount: int, attacker: Node2D = null) -> void:
 	if _is_surrendered: return
 	
 	current_health -= amount
-	print("Civilian hit! HP: ", current_health) # Debug Logic
+	Loggie.msg("Civilian hit! HP: %d" % current_health).domain("RAID").debug()
 	
 	if current_health <= surrender_hp_threshold:
 		current_health = 1 # Keep alive for escort
@@ -47,7 +52,7 @@ func _trigger_surrender() -> void:
 	if _is_surrendered: return
 	_is_surrendered = true
 	
-	print("Civilian Surrendered!") # Debug Logic
+	Loggie.msg("Civilian Surrendered!").domain("RAID").info()
 	
 	# Visual Feedback
 	modulate = Color(0.5, 0.5, 0.5, 1.0) # Turn Grey
@@ -87,4 +92,11 @@ func command_interact(target: Node2D) -> void:
 func _deferred_setup(damage_mult: float = 1.0) -> void:
 	super._deferred_setup(damage_mult)
 	if fsm:
+		fsm.change_state(UnitAIConstants.State.IDLE)
+
+func _on_alarm_raised(_unit: Node) -> void:
+	if _is_surrendered: return
+	if fsm:
 		fsm.change_state(UnitAIConstants.State.FLEEING)
+	if EventBus.alarm_raised.is_connected(_on_alarm_raised):
+		EventBus.alarm_raised.disconnect(_on_alarm_raised)

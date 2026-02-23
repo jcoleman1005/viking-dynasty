@@ -1,70 +1,99 @@
 # res://test/RaidDiagnostics.gd
 extends Node
 
-## Standalone signal monitor for Fyrd wave debugging.
-## Attach as child of RaidSandbox. Connects directly 
-## to RaidObjectiveManager signals to verify they fire.
+## Standalone diagnostic script for RaidSandbox coordinate and visibility analysis.
+## Answers 5 key questions about the simulation environment.
 
-var obj_mgr: Node = null
+var raid_mission: Node2D = null
+var building_container: Node2D = null
+var tilemap: TileMapLayer = null
 
 func _ready() -> void:
-    # Wait one frame for scene tree to settle
-    await get_tree().process_frame
-    
-    # Find RaidObjectiveManager
-    obj_mgr = _find_node_recursive(get_tree().root, "RaidObjectiveManager")
-    
-    if not obj_mgr:
-        Loggie.msg("DIAG: Could not find RaidObjectiveManager!").domain("RAID").error()
-        return
-    
-    Loggie.msg("DIAG: Found RaidObjectiveManager: %s" % str(obj_mgr)).domain("RAID").info()
-    
-    # Connect to ALL relevant signals independently
-    if obj_mgr.has_signal("smoke_signal_triggered"):
-        obj_mgr.smoke_signal_triggered.connect(func(): 
-            Loggie.msg("DIAG: smoke_signal_triggered EMITTED").domain("RAID").warn())
-        Loggie.msg("DIAG: Connected to smoke_signal_triggered").domain("RAID").info()
-    
-    if obj_mgr.has_signal("wave1_fyrd_arrived"):
-        obj_mgr.wave1_fyrd_arrived.connect(func(): 
-            Loggie.msg("DIAG: wave1_fyrd_arrived EMITTED").domain("RAID").warn())
-        Loggie.msg("DIAG: Connected to wave1_fyrd_arrived").domain("RAID").info()
-    else:
-        Loggie.msg("DIAG: wave1_fyrd_arrived signal DOES NOT EXIST").domain("RAID").error()
-    
-    if obj_mgr.has_signal("wave2_fyrd_arrived"):
-        obj_mgr.wave2_fyrd_arrived.connect(func(): 
-            Loggie.msg("DIAG: wave2_fyrd_arrived EMITTED").domain("RAID").warn())
-        Loggie.msg("DIAG: Connected to wave2_fyrd_arrived").domain("RAID").info()
-    else:
-        Loggie.msg("DIAG: wave2_fyrd_arrived signal DOES NOT EXIST").domain("RAID").error()
-    
-    # Also check what connections RaidMission has made
-    var raid_mission = get_parent().get_node_or_null("RaidMission")
-    if raid_mission:
-        Loggie.msg("DIAG: RaidMission found").domain("RAID").info()
-        Loggie.msg("DIAG: RaidMission has _on_wave1_fyrd: %s" % str(raid_mission.has_method("_on_wave1_fyrd"))).domain("RAID").info()
-        Loggie.msg("DIAG: wave1 signal connections: %s" % str(obj_mgr.wave1_fyrd_arrived.get_connections())).domain("RAID").info()
-        Loggie.msg("DIAG: wave2 signal connections: %s" % str(obj_mgr.wave2_fyrd_arrived.get_connections())).domain("RAID").info()
+	# Wait for mission to initialize
+	await get_tree().process_frame
+	await get_tree().process_frame
+	
+	raid_mission = get_parent()
+	if not raid_mission or not raid_mission.name == "RaidSandbox":
+		# Try to find it if we were attached elsewhere
+		raid_mission = _find_node_recursive(get_tree().root, "RaidSandbox")
+	
+	if not raid_mission:
+		Loggie.msg("DIAG: Could not find RaidSandbox!").domain("RAID").error()
+		return
 
-func _process(_delta: float) -> void:
-    if not obj_mgr: return
-    
-    # Log state changes
-    if obj_mgr.smoke_active:
-        if int(obj_mgr.smoke_timer) % 30 == 0 and int(obj_mgr.smoke_timer) > 0:
-            var t = int(obj_mgr.smoke_timer)
-            if Engine.get_process_frames() % 60 == 0:
-                Loggie.msg("DIAG: smoke_timer=%ds wave1_spawned=%s wave2_spawned=%s" % [
-                    t, str(obj_mgr.wave1_spawned), str(obj_mgr.wave2_spawned)]
-                ).domain("RAID").info()
+	_run_diagnostics()
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		var mouse_pos = raid_mission.get_global_mouse_position()
+		Loggie.msg("DIAG: Mouse Click at Global Position: %s" % str(mouse_pos)).domain("RAID").warn()
+
+func _run_diagnostics() -> void:
+	Loggie.msg("--- RAID COORDINATE DIAGNOSTICS ---").domain("RAID").warn()
+	
+	# 1. TileMap Corners (Calculated)
+	# Grid is 60x60, TILE_HALF_SIZE is (32, 16)
+	# Formula: x = (grid_x - grid_y) * 32, y = (grid_x + grid_y) * 16
+	var corners = {
+		"TOP (0,0)": Vector2(0, 0),
+		"RIGHT (60,0)": Vector2(60 * 32, 60 * 16),
+		"BOTTOM (60,60)": Vector2(0, 120 * 16),
+		"LEFT (0,60)": Vector2(-60 * 32, 60 * 16)
+	}
+	Loggie.msg("1. CALCULATED TILEMAP CORNERS (Diamond Bounds):").domain("RAID").info()
+	for key in corners:
+		Loggie.msg("   %s: %s" % [key, str(corners[key])]).domain("RAID").info()
+
+	# 2. Hall Spawn Position
+	var hall_node = null
+	building_container = raid_mission.get_node_or_null("RaidMission/BuildingContainer")
+	if building_container:
+		for child in building_container.get_children():
+			if "Hall" in child.name or (child.get("data") and "Hall" in child.data.display_name):
+				hall_node = child
+				break
+	
+	if hall_node:
+		Loggie.msg("2. Hall spawned at: %s (Global: %s)" % [str(hall_node.position), str(hall_node.global_position)]).domain("RAID").info()
+	else:
+		Loggie.msg("2. Hall NOT FOUND in BuildingContainer!").domain("RAID").error()
+
+	# 3. Villager Spawn Positions
+	var villagers = get_tree().get_nodes_in_group("civilians")
+	Loggie.msg("3. Villager Spawn Positions (found %d):" % villagers.size()).domain("RAID").info()
+	for i in range(min(villagers.size(), 5)):
+		var v = villagers[i]
+		Loggie.msg("   Villager %d: %s" % [i, str(v.global_position)]).domain("RAID").info()
+
+	# 4. Visibility Check
+	var building_count = building_container.get_child_count() if building_container else 0
+	Loggie.msg("4. Map Visibility:").domain("RAID").info()
+	Loggie.msg("   Total Buildings in Container: %d" % building_count).domain("RAID").info()
+	if building_count > 0:
+		var first_b = building_container.get_child(0)
+		Loggie.msg("   Example Building (%s) visible: %s, position: %s" % [first_b.name, str(first_b.visible), str(first_b.global_position)]).domain("RAID").info()
+	else:
+		Loggie.msg("   MAP IS EMPTY (No buildings found in container)").domain("RAID").warn()
+
+	# 5. TileMapLayer Transform
+	tilemap = _find_node_recursive(raid_mission, "TileMapLayer")
+	if tilemap:
+		Loggie.msg("5. TileMapLayer Metadata:").domain("RAID").info()
+		Loggie.msg("   Position: %s" % str(tilemap.position)).domain("RAID").info()
+		Loggie.msg("   Global Position: %s" % str(tilemap.global_position)).domain("RAID").info()
+		Loggie.msg("   Scale: %s" % str(tilemap.scale)).domain("RAID").info()
+	else:
+		Loggie.msg("5. TileMapLayer NOT FOUND in scene tree!").domain("RAID").error()
+
+	Loggie.msg("--- DIAGNOSTICS COMPLETE ---").domain("RAID").warn()
+	Loggie.msg("TIP: Click anywhere on the map to log its coordinates.").domain("RAID").info()
 
 func _find_node_recursive(node: Node, target_name: String) -> Node:
-    if node.name == target_name:
-        return node
-    for child in node.get_children():
-        var result = _find_node_recursive(child, target_name)
-        if result:
-            return result
-    return null
+	if node.name == target_name:
+		return node
+	for child in node.get_children():
+		var result = _find_node_recursive(child, target_name)
+		if result:
+			return result
+	return null

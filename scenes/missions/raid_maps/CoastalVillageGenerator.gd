@@ -32,6 +32,14 @@ extends Node
 @export var storehouse_data: BuildingData
 @export var church_data: BuildingData
 
+func _to_isometric(normalized_pos: Vector2) -> Vector2:
+	var u = normalized_pos.x
+	var v = normalized_pos.y
+	return Vector2(
+		(u - v) * 1920.0,
+		(u + v) * 960.0
+	)
+
 func generate(seed_val: int = -1) -> Dictionary:
 	Loggie.msg("Generator: Starting. seed=%d" % seed_val).domain("RAID").info()
 	
@@ -40,14 +48,17 @@ func generate(seed_val: int = -1) -> Dictionary:
 	else:
 		seed(seed_val)
 	
-	var beach_zone = Rect2(0, map_height - beach_depth, map_width, beach_depth)
-	var village_zone = Rect2(0, 0, map_width, map_height - beach_depth)
-	# Extraction zone centered at bottom of beach
-	var extraction_zone = Rect2(map_width * 0.4, map_height - 150, map_width * 0.2, 150) 
+	# In normalized space, beach = v > 0.75
+	var village_center = _to_isometric(Vector2(0.5, 0.35))
 	
-	var village_center = village_zone.get_center()
+	# Extraction zone: bottom of diamond
+	var ext_center = _to_isometric(Vector2(0.5, 0.9))
+	var extraction_zone = Rect2(
+		ext_center - Vector2(200, 75),
+		Vector2(400, 150)
+	)
 	
-	var building_placements = _place_buildings(village_zone)
+	var building_placements = _place_buildings()
 	
 	var has_hall = false
 	var has_church = false
@@ -76,10 +87,7 @@ func generate(seed_val: int = -1) -> Dictionary:
 	
 	var num_defenders = randi_range(defender_count_min, defender_count_max)
 	for i in range(num_defenders):
-		var pos = _sample_village_zone_position(village_zone)
-		# Keep away from beach
-		while pos.y > village_zone.end.y - 100:
-			pos = _sample_village_zone_position(village_zone)
+		var pos = _sample_village_zone_position()
 		defender_spawns.append(pos)
 		
 	# Villager placement
@@ -87,20 +95,26 @@ func generate(seed_val: int = -1) -> Dictionary:
 	var all_defender_spawns = defender_spawns + hall_defender_spawns
 	for i in range(num_villagers):
 		var attempts = 0
-		var pos = _sample_village_zone_position(village_zone)
+		var pos = _sample_village_zone_position()
 		while not _is_position_clear(pos, all_defender_spawns, 80.0) and attempts < 20:
-			pos = _sample_village_zone_position(village_zone)
+			pos = _sample_village_zone_position()
 			attempts += 1
 		villager_spawns.append(pos)
 
 	var fyrd_boundary = []
-	# Top edge
+	# Top edge of diamond (low u+v values)
 	for i in range(10):
-		fyrd_boundary.append(Vector2(randf() * map_width, randf() * 200.0))
-	# Sides
+		var u = randf_range(0.05, 0.95)
+		var v = randf_range(0.0, 0.08)
+		fyrd_boundary.append(_to_isometric(Vector2(u, v)))
+	# Left edge
 	for i in range(5):
-		fyrd_boundary.append(Vector2(randf() * 200.0, randf() * map_height))
-		fyrd_boundary.append(Vector2(map_width - randf() * 200.0, randf() * map_height))
+		var v = randf_range(0.1, 0.8)
+		fyrd_boundary.append(_to_isometric(Vector2(0.02, v)))
+	# Right edge
+	for i in range(5):
+		var v = randf_range(0.1, 0.8)
+		fyrd_boundary.append(_to_isometric(Vector2(0.98, v)))
 
 	var result = {
 		"extraction_zone": extraction_zone,
@@ -109,26 +123,28 @@ func generate(seed_val: int = -1) -> Dictionary:
 		"hall_defender_spawns": hall_defender_spawns,
 		"villager_spawns": villager_spawns,
 		"fyrd_boundary": fyrd_boundary,
-		"navmesh_bounds": village_zone 
+		"navmesh_bounds": Rect2(-1920, 0, 3840, 1920)
 	}
 	
 	Loggie.msg("Generator: Complete. extraction_zone=%s" % str(result.has("extraction_zone"))).domain("RAID").info()
 	
 	return result
 
-func _place_buildings(village_zone: Rect2) -> Array:
+func _place_buildings() -> Array:
 	var placements = []
 	var centers = []
 	
 	# 1. Hall
-	var hall_pos = village_zone.get_center()
+	var hall_pos = _to_isometric(Vector2(0.5, 0.35))
 	placements.append({"type": "Hall", "position": hall_pos, "building_data": hall_data})
 	centers.append(hall_pos)
 	
 	# 2. Church
 	if randf() < church_spawn_chance:
-		var church_pos = hall_pos + Vector2(randf_range(-300, 300), randf_range(-300, 300))
-		if _is_position_clear(church_pos, centers, 150.0) and village_zone.has_point(church_pos):
+		var cu = 0.5 + randf_range(-0.1, 0.1)
+		var cv = 0.35 + randf_range(-0.1, 0.1)
+		var church_pos = _to_isometric(Vector2(cu, cv))
+		if _is_position_clear(church_pos, centers, 150.0):
 			placements.append({"type": "Church", "position": church_pos, "building_data": church_data})
 			centers.append(church_pos)
 
@@ -142,10 +158,10 @@ func _place_buildings(village_zone: Rect2) -> Array:
 	for t in types:
 		var count = randi_range(t.min, t.max)
 		for i in range(count):
-			var pos = _sample_village_zone_position(village_zone)
+			var pos = _sample_village_zone_position()
 			var attempts = 0
 			while not _is_position_clear(pos, centers, 120.0) and attempts < 20:
-				pos = _sample_village_zone_position(village_zone)
+				pos = _sample_village_zone_position()
 				attempts += 1
 			
 			if attempts < 20:
@@ -154,11 +170,11 @@ func _place_buildings(village_zone: Rect2) -> Array:
 				
 	return placements
 
-func _sample_village_zone_position(village_zone: Rect2) -> Vector2:
-	return Vector2(
-		randf_range(village_zone.position.x + 100, village_zone.end.x - 100),
-		randf_range(village_zone.position.y + 100, village_zone.end.y - 100)
-	)
+func _sample_village_zone_position(_unused_rect: Rect2 = Rect2()) -> Vector2:
+	# Sample in normalized space (0.05..0.95 for margin)
+	var u = randf_range(0.05, 0.95)
+	var v = randf_range(0.05, 0.7)  # Keep out of bottom 30% (beach)
+	return _to_isometric(Vector2(u, v))
 
 func _is_position_clear(pos: Vector2, existing_positions: Array, min_distance: float) -> bool:
 	for p in existing_positions:

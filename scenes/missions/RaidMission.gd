@@ -28,6 +28,7 @@ var extraction_zone: Area2D
 @export_group("Test Data")
 @export var enemy_test_data: UnitData
 @export var villager_test_data: UnitData
+@export var suppress_auto_init: bool = false
 
 # --- Internal ---
 @onready var map_loader: RaidMapLoader = $RaidMapLoader
@@ -97,7 +98,9 @@ func _ready() -> void:
 		objective_manager.is_defensive_mission = true
 		RaidManager.is_defensive_raid = false
 	
-	if SettlementManager.has_current_settlement() or force_enemy_settlement:
+	if suppress_auto_init:
+		pass
+	elif SettlementManager.has_current_settlement() or force_enemy_settlement:
 		call_deferred("initialize_mission")
 	else:
 		EventBus.settlement_loaded.connect(_on_settlement_ready_for_mission, CONNECT_ONE_SHOT)
@@ -202,8 +205,6 @@ func initialize_mission() -> void:
 			visual.size = rect.size
 			visual.position = -rect.size / 2.0
 	
-	# 3. Generate Map Visuals and refresh manager
-	objective_building = map_loader.load_base(enemy_base_data, false)
 	
 	Loggie.msg("Tactical Navigation Initializing (Raid)...").domain(LogDomains.RAID).info()
 	
@@ -398,6 +399,8 @@ func _spawn_fyrd_at_boundary(count: int) -> void:
 		for i in range(count):
 			boundary_points.append(Vector2(randf_range(200, 3600), 50))
 
+	Loggie.msg("FYRD BOUNDARY POINTS: %s" % str(boundary_points)).domain("RAID").warn()
+
 	for i in range(count):
 		var unit_inst = fyrd_unit_scene.instantiate()
 		unit_inst.collision_layer = 4
@@ -415,15 +418,31 @@ func _spawn_fyrd_at_boundary(count: int) -> void:
 		else:
 			unit_inst.global_position = spawn_pos
 
+		Loggie.msg("FYRD SPAWN: pos=%s valid=%s boundary=%s" % [
+			str(unit_inst.global_position), 
+			str(valid_pos), 
+			str(base_pos)]
+		).domain("RAID").warn()
+
+		if "skip_unaware" in unit_inst:
+			unit_inst.skip_unaware = true
+
 		unit_container.add_child(unit_inst)
 
-		# Give them a target — player spawn area
-		if unit_inst.has_method("set_attack_target") and is_instance_valid(objective_building):
-			unit_inst.call_deferred("set_attack_target", objective_building)
-		elif unit_inst.get("fsm"):
-			var target_pos = player_spawn_pos.global_position if player_spawn_pos else Vector2(100, 600)
-			unit_inst.fsm.call_deferred("change_state", UnitAIConstants.State.MOVING)
-			unit_inst.call_deferred("set_movement_target", target_pos)
+		Loggie.msg("FYRD POST-SPAWN: name=%s skip_unaware=%s fsm=%s state=%s" % [
+			unit_inst.name,
+			str(unit_inst.skip_unaware),
+			str(unit_inst.fsm),
+			str(unit_inst.fsm.current_state if unit_inst.fsm else "NO FSM")]
+		).domain("RAID").warn()
+
+		# Wait for FSM to be fully ready before assigning target
+		if is_instance_valid(objective_building):
+			var _building = objective_building
+			unit_inst.fsm_ready.connect(func(_u):
+				if _u.has_method("set_attack_target") and is_instance_valid(_building):
+					_u.set_attack_target(_building)
+			, CONNECT_ONE_SHOT)
 
 func _on_fyrd_arrived() -> void:
 	Loggie.msg("--- FYRD SPAWN START ---").domain(LogDomains.RAID).info()

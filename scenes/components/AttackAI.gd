@@ -73,10 +73,10 @@ func set_target_mask(mask: int) -> void:
 	if detection_area: detection_area.collision_mask = mask
 
 func force_target(target: Node2D) -> void:
-	print("DEBUG AI: force_target called for %s" % target.name)
+	Loggie.msg("force_target called for %s" % target.name).domain(LogDomains.AI).debug()
 	
 	if not is_instance_valid(target): 
-		print("DEBUG AI: force_target aborted (Invalid Target)")
+		Loggie.msg("force_target aborted (Invalid Target)").domain(LogDomains.AI).debug()
 		return
 	
 	var actual_target = target
@@ -251,21 +251,21 @@ func _get_target_radius(target: Node2D) -> float:
 	return 0.0
 
 func _start_attacking() -> void:
-	print("DEBUG AI: _start_attacking called.")
+	Loggie.msg("_start_attacking called.").domain(LogDomains.AI).debug()
 	
 	if not is_attacking:
 		is_attacking = true
 		attack_started.emit(current_target)
 	
 	# Manually fire the first shot immediately
-	print("DEBUG AI: Manually calling timeout (First Shot)...")
+	Loggie.msg("Manually calling timeout (First Shot)...").domain(LogDomains.AI).debug()
 	_on_attack_timer_timeout()
 	
 	if attack_timer.is_stopped():
-		print("DEBUG AI: Starting Timer.")
+		Loggie.msg("Starting Timer.").domain(LogDomains.AI).debug()
 		attack_timer.start()
 	else:
-		print("DEBUG AI: Timer already running.")
+		Loggie.msg("Timer already running.").domain(LogDomains.AI).debug()
 
 func _stop_attacking() -> void:
 	if is_attacking:
@@ -276,13 +276,13 @@ func _stop_attacking() -> void:
 func _on_attack_timer_timeout() -> void:
 	# 1. Processing Check
 	if not is_processing(): 
-		# print("DEBUG AI: Abort - Not processing.")
+		# Loggie.msg("Abort - Not processing.").domain(LogDomains.AI).debug()
 		_stop_attacking()
 		return
 		
 	# 2. Target Validity
 	if not is_instance_valid(current_target):
-		print("DEBUG AI: Abort - Invalid Target.")
+		Loggie.msg("Abort - Invalid Target.").domain(LogDomains.AI).debug()
 		_stop_attacking()
 		return
 		
@@ -298,7 +298,7 @@ func _on_attack_timer_timeout() -> void:
 	
 	# Tolerance buffer (10.0)
 	if surface_dist > limit + 10.0:
-		print("DEBUG AI: Abort - Out of Range! Current: %.1f > Limit: %.1f (Base: %.1f)" % [surface_dist, limit, attack_range])
+		Loggie.msg("Abort - Out of Range! Current: %.1f > Limit: %.1f (Base: %.1f)" % [surface_dist, limit, attack_range]).domain(LogDomains.AI).debug()
 		_stop_attacking()
 		return
 
@@ -311,10 +311,10 @@ func _on_attack_timer_timeout() -> void:
 		var t = current_target
 		if t.name == "Hitbox": t = t.get_parent()
 		if t.has_method("take_damage"): 
-			print("DEBUG AI: HIT! Dealt %d damage to %s" % [attack_damage, t.name])
+			Loggie.msg("HIT! Dealt %d damage to %s" % [attack_damage, t.name]).domain(LogDomains.AI).debug()
 			t.take_damage(attack_damage, parent_node)
 		else:
-			print("DEBUG AI: Abort - Target %s has no take_damage method!" % t.name)
+			Loggie.msg("Abort - Target %s has no take_damage method!" % t.name).domain(LogDomains.AI).debug()
 			
 func _spawn_projectile(target_pos: Vector2) -> void:
 	if not projectile_scene: return

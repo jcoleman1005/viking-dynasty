@@ -174,13 +174,13 @@ func sync_civilians(target_count: int, spawn_origin: Vector2, is_enemy: bool = f
 
 func _spawn_civilians(count: int, origin: Vector2, is_enemy: bool) -> void:
 	if not civilian_data: 
-		printerr("UnitSpawner: No civilian_data assigned!")
+		Loggie.msg("UnitSpawner: No civilian_data assigned!").domain("RAID").error()
 		return
 		
 	var scene_ref = civilian_data.load_scene()
 	if not scene_ref: return
 	
-	print("[UnitSpawner] Spawning %d civilians around %s" % [count, origin])
+	Loggie.msg("[UnitSpawner] Spawning %d civilians around %s" % [count, origin]).domain("RAID").info()
 	
 	for i in range(count):
 		var civ = scene_ref.instantiate()

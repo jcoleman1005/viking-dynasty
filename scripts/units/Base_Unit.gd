@@ -366,7 +366,26 @@ func set_movement_target(target_pos: Vector2) -> void:
 
 func take_damage(amount: int, attacker: Node2D = null) -> void:
 	if _is_dying: return
-	current_health = max(0, current_health - amount)
+	
+	var final_damage = amount
+	# Shield wall: stationary wedge formation reduces damage
+	if data and velocity.length() < 5.0:
+		var current_form = -1
+		var form_obj = self.get("formation")
+		if form_obj:
+			current_form = form_obj.formation_type
+		else:
+			var leader_obj = self.get("leader")
+			if leader_obj:
+				var leader_form = leader_obj.get("formation")
+				if leader_form:
+					current_form = leader_form.formation_type
+					
+		if current_form == SquadFormation.FormationType.WEDGE:
+			final_damage = int(amount * (1.0 - data.shield_wall_damage_reduction))
+	
+	current_health = max(0, current_health - final_damage)
+	
 	if fsm and is_instance_valid(attacker):
 		fsm.command_defensive_attack(attacker)
 	if current_health == 0:
@@ -376,8 +395,25 @@ func take_damage(amount: int, attacker: Node2D = null) -> void:
 func die() -> void:
 	if is_in_group("player_units"):
 		EventBus.player_unit_died.emit(self)
+	
+	# Drop loot if carrying any
+	if not inventory.is_empty():
+		_drop_loot_pickup()
+		
 	destroyed.emit()
 	queue_free()
+
+func _drop_loot_pickup() -> void:
+	var pickup = LootPickup.new()
+	pickup.loot_data = inventory.duplicate()
+	pickup.despawn_timer = 30.0
+	pickup.global_position = global_position
+	
+	# Add to parent container (UnitContainer)
+	var container = get_parent()
+	if is_instance_valid(container):
+		container.call_deferred("add_child", pickup)
+		Loggie.msg("Loot dropped at %s: %s" % [str(global_position), str(inventory)]).domain("RAID").info()
 
 func command_move_to(target_pos: Vector2) -> void:
 	if fsm: fsm.command_move_to(target_pos)
