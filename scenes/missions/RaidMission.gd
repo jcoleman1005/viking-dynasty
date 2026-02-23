@@ -42,17 +42,13 @@ func _enter_tree() -> void:
 	_setup_unit_container()
 
 func _initialize_navigation() -> void:
-	# Use standard map size (60x60) converted to world space
-	var width = SettlementManager.TILE_WIDTH * 60
-	var height = SettlementManager.TILE_HEIGHT * 60
-	
-	# Create a loose bounding box for the navmesh
+	# Isometric diamond bounds with padding
 	var nav_poly = NavigationPolygon.new()
 	var outline = PackedVector2Array([
-		Vector2(0, 0),
-		Vector2(width, 0),
-		Vector2(width, height),
-		Vector2(0, height)
+		Vector2(0, -50),           # Top + padding
+		Vector2(1970, 960),        # Right + padding
+		Vector2(0, 1970),          # Bottom + padding
+		Vector2(-1970, 960)        # Left + padding
 	])
 	nav_poly.add_outline(outline)
 	raid_nav_region.navigation_polygon = nav_poly
@@ -63,7 +59,7 @@ func _initialize_navigation() -> void:
 	# Poll until NavServer confirms geometry exists
 	var map_rid = raid_nav_region.get_navigation_map()
 	var attempts = 0
-	var test_point = Vector2(1920.0, 960.0)
+	var test_point = Vector2(0.0, 960.0) # Center of diamond
 	while attempts < 30:
 		var result = NavigationServer2D.map_get_closest_point(map_rid, test_point)
 		if result != Vector2.ZERO:
@@ -205,6 +201,8 @@ func initialize_mission() -> void:
 			visual.size = rect.size
 			visual.position = -rect.size / 2.0
 	
+	if objective_manager and extraction_zone:
+		objective_manager.setup_extraction(extraction_zone)
 	
 	Loggie.msg("Tactical Navigation Initializing (Raid)...").domain(LogDomains.RAID).info()
 	

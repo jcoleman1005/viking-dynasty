@@ -70,6 +70,8 @@ func _trigger_surrender() -> void:
 func attach_to_escort(soldier: Node2D) -> void:
 	escort_target = soldier
 	EventBus.floating_text_requested.emit("Captured", global_position, Color.CYAN)
+	if not is_in_group("thralls"):
+		add_to_group("thralls")
 
 func _process_surrender_behavior(_delta: float) -> void:
 	if is_instance_valid(escort_target):

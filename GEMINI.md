@@ -27,6 +27,7 @@
 ### 4. Technical Debt & Cleanup
 - **Legacy Pruning**: Removed the seasonal `Debugger` and obsolete worker-pool signals/UI.
 - **UI Modernization**: Updated `MainGameUI` with specific task buttons (e.g., `BtnFarming`) and cleaned up resource dependencies in seasonal ledger scenes.
+- **Loggie Context**: The `Loggie.msg().ctx()` method is deprecated due to runtime errors. All log context should be integrated directly into the message string using GDScript's string formatting (e.g., `Loggie.msg("Message: %s" % context_var)`).
 
 ### 5. Summer Turn-Based Day System - COMPLETE
 - **Daily Cycle**: Summer now consists of a fixed number of days (`SUMMER_DAYS = 12`).

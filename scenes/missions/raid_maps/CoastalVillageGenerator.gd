@@ -51,11 +51,11 @@ func generate(seed_val: int = -1) -> Dictionary:
 	# In normalized space, beach = v > 0.75
 	var village_center = _to_isometric(Vector2(0.5, 0.35))
 	
-	# Extraction zone: bottom of diamond
-	var ext_center = _to_isometric(Vector2(0.5, 0.9))
+	# Extraction zone at far left edge (beach/landing area)
+	var ext_center = _to_isometric(Vector2(0.01, 0.99))
 	var extraction_zone = Rect2(
-		ext_center - Vector2(200, 75),
-		Vector2(400, 150)
+		ext_center - Vector2(150, 200),
+		Vector2(300, 400)
 	)
 	
 	var building_placements = _place_buildings()

@@ -2,7 +2,7 @@ PROJECT SOURCE CODE LIBRARY
 ===========================
 CONTAINS: Full Implementation Logic, Scene Trees, and Resource Data.
 INSTRUCTION: This is the raw source code. Use this to answer specific implementation questions.
-GENERATED: 2026-02-20T11:21:29
+GENERATED: 2026-02-23T11:01:14
 ===========================
 
 
@@ -36232,10 +36232,10 @@ func set_target_mask(mask: int) -> void:
 	if detection_area: detection_area.collision_mask = mask
 
 func force_target(target: Node2D) -> void:
-	print("DEBUG AI: force_target called for %s" % target.name)
+	Loggie.msg("force_target called for %s" % target.name).domain(LogDomains.AI).debug()
 	
 	if not is_instance_valid(target): 
-		print("DEBUG AI: force_target aborted (Invalid Target)")
+		Loggie.msg("force_target aborted (Invalid Target)").domain(LogDomains.AI).debug()
 		return
 	
 	var actual_target = target
@@ -36410,21 +36410,21 @@ func _get_target_radius(target: Node2D) -> float:
 	return 0.0
 
 func _start_attacking() -> void:
-	print("DEBUG AI: _start_attacking called.")
+	Loggie.msg("_start_attacking called.").domain(LogDomains.AI).debug()
 	
 	if not is_attacking:
 		is_attacking = true
 		attack_started.emit(current_target)
 	
 	# Manually fire the first shot immediately
-	print("DEBUG AI: Manually calling timeout (First Shot)...")
+	Loggie.msg("Manually calling timeout (First Shot)...").domain(LogDomains.AI).debug()
 	_on_attack_timer_timeout()
 	
 	if attack_timer.is_stopped():
-		print("DEBUG AI: Starting Timer.")
+		Loggie.msg("Starting Timer.").domain(LogDomains.AI).debug()
 		attack_timer.start()
 	else:
-		print("DEBUG AI: Timer already running.")
+		Loggie.msg("Timer already running.").domain(LogDomains.AI).debug()
 
 func _stop_attacking() -> void:
 	if is_attacking:
@@ -36435,13 +36435,13 @@ func _stop_attacking() -> void:
 func _on_attack_timer_timeout() -> void:
 	# 1. Processing Check
 	if not is_processing(): 
-		# print("DEBUG AI: Abort - Not processing.")
+		# Loggie.msg("Abort - Not processing.").domain(LogDomains.AI).debug()
 		_stop_attacking()
 		return
 		
 	# 2. Target Validity
 	if not is_instance_valid(current_target):
-		print("DEBUG AI: Abort - Invalid Target.")
+		Loggie.msg("Abort - Invalid Target.").domain(LogDomains.AI).debug()
 		_stop_attacking()
 		return
 		
@@ -36457,7 +36457,7 @@ func _on_attack_timer_timeout() -> void:
 	
 	# Tolerance buffer (10.0)
 	if surface_dist > limit + 10.0:
-		print("DEBUG AI: Abort - Out of Range! Current: %.1f > Limit: %.1f (Base: %.1f)" % [surface_dist, limit, attack_range])
+		Loggie.msg("Abort - Out of Range! Current: %.1f > Limit: %.1f (Base: %.1f)" % [surface_dist, limit, attack_range]).domain(LogDomains.AI).debug()
 		_stop_attacking()
 		return
 
@@ -36470,10 +36470,10 @@ func _on_attack_timer_timeout() -> void:
 		var t = current_target
 		if t.name == "Hitbox": t = t.get_parent()
 		if t.has_method("take_damage"): 
-			print("DEBUG AI: HIT! Dealt %d damage to %s" % [attack_damage, t.name])
+			Loggie.msg("HIT! Dealt %d damage to %s" % [attack_damage, t.name]).domain(LogDomains.AI).debug()
 			t.take_damage(attack_damage, parent_node)
 		else:
-			print("DEBUG AI: Abort - Target %s has no take_damage method!" % t.name)
+			Loggie.msg("Abort - Target %s has no take_damage method!" % t.name).domain(LogDomains.AI).debug()
 			
 func _spawn_projectile(target_pos: Vector2) -> void:
 	if not projectile_scene: return
@@ -38201,6 +38201,14 @@ func setup(p_container: Node2D, enemy_data: SettlementData) -> void:
 			building.data = b_data
 			building.global_position = entry["position"]
 			building_container.add_child(building)
+			
+			building.collision_layer = 1 | 8
+			building.collision_mask = 0
+			
+			if building.has_node("Hitbox"):
+				var hitbox = building.get_node("Hitbox")
+				hitbox.collision_layer = 8
+				
 			buildings[i]["node"] = building
 			Loggie.msg("Spawned: %s at %s" % [str(entry.get("type")), str(entry.get("position"))]).domain("RAID").info()
 		# ------------------------------------
@@ -38301,6 +38309,7 @@ var extraction_zone: Area2D
 @export_group("Test Data")
 @export var enemy_test_data: UnitData
 @export var villager_test_data: UnitData
+@export var suppress_auto_init: bool = false
 
 # --- Internal ---
 @onready var map_loader: RaidMapLoader = $RaidMapLoader
@@ -38370,7 +38379,9 @@ func _ready() -> void:
 		objective_manager.is_defensive_mission = true
 		RaidManager.is_defensive_raid = false
 	
-	if SettlementManager.has_current_settlement() or force_enemy_settlement:
+	if suppress_auto_init:
+		pass
+	elif SettlementManager.has_current_settlement() or force_enemy_settlement:
 		call_deferred("initialize_mission")
 	else:
 		EventBus.settlement_loaded.connect(_on_settlement_ready_for_mission, CONNECT_ONE_SHOT)
@@ -38475,8 +38486,8 @@ func initialize_mission() -> void:
 			visual.size = rect.size
 			visual.position = -rect.size / 2.0
 	
-	# 3. Generate Map Visuals and refresh manager
-	objective_building = map_loader.load_base(enemy_base_data, false)
+	if objective_manager and extraction_zone:
+		objective_manager.setup_extraction(extraction_zone)
 	
 	Loggie.msg("Tactical Navigation Initializing (Raid)...").domain(LogDomains.RAID).info()
 	
@@ -38500,8 +38511,12 @@ func initialize_mission() -> void:
 			
 			Loggie.msg("Setup 6/6 — Mission live.").domain("RAID").info()
 			
-			if not objective_manager.fyrd_arrived.is_connected(_on_fyrd_arrived):
-				objective_manager.fyrd_arrived.connect(_on_fyrd_arrived)
+			if not objective_manager.wave1_fyrd_arrived.is_connected(_on_wave1_fyrd):
+				objective_manager.wave1_fyrd_arrived.connect(_on_wave1_fyrd)
+			if not objective_manager.wave2_fyrd_arrived.is_connected(_on_wave2_fyrd):
+				objective_manager.wave2_fyrd_arrived.connect(_on_wave2_fyrd)
+			
+			Loggie.msg("Fyrd wave signals connected to RaidMission").domain("RAID").info()
 	else:
 		Loggie.msg("Critical: No Objective Building found!").domain(LogDomains.RAID).error()
 
@@ -38563,13 +38578,6 @@ func _setup_defensive_mode() -> void:
 	_spawn_enemy_wave()
 
 func _setup_offensive_mode() -> void:
-	if not enemy_base_data:
-		if ResourceLoader.exists(default_enemy_base_path):
-			enemy_base_data = load(default_enemy_base_path)
-		else: return
-	
-	objective_building = map_loader.load_base(enemy_base_data, false)
-	
 	for child in building_container.get_children():
 		if child is BaseBuilding:
 			if not child.building_destroyed.is_connected(_on_building_destroyed_grid_update):
@@ -38651,6 +38659,73 @@ func _spawn_enemy_wave() -> void:
 			unit.fsm_ready.connect(func(u): 
 				if u.fsm: u.fsm.command_attack(objective_building)
 			)
+
+func _on_wave1_fyrd() -> void:
+	var count = randi_range(8, 10)
+	Loggie.msg("WAVE 1: Spawning %d Fyrd at boundary" % count).domain("RAID").warn()
+	_spawn_fyrd_at_boundary(count)
+
+func _on_wave2_fyrd() -> void:
+	var count = randi_range(5, 8)
+	Loggie.msg("WAVE 2: Spawning %d Fyrd targeting extraction" % count).domain("RAID").warn()
+	_spawn_fyrd_at_boundary(count)
+
+func _spawn_fyrd_at_boundary(count: int) -> void:
+	if not fyrd_unit_scene:
+		Loggie.msg("No fyrd_unit_scene assigned!").domain("RAID").error()
+		return
+
+	# Get boundary positions from map data
+	var boundary_points = map_loader.last_map_data.get("fyrd_boundary", [])
+	if boundary_points.is_empty():
+		# Fallback: top edge of map
+		for i in range(count):
+			boundary_points.append(Vector2(randf_range(200, 3600), 50))
+
+	Loggie.msg("FYRD BOUNDARY POINTS: %s" % str(boundary_points)).domain("RAID").warn()
+
+	for i in range(count):
+		var unit_inst = fyrd_unit_scene.instantiate()
+		unit_inst.collision_layer = 4
+		unit_inst.add_to_group("enemy_units")
+
+		# Pick a boundary point, add some randomness
+		var base_pos = boundary_points[i % boundary_points.size()]
+		var offset = Vector2(randf_range(-80, 80), randf_range(-80, 80))
+		var spawn_pos = base_pos + offset
+
+		# Validate against raid navmesh (NOT NavigationManager)
+		var valid_pos = RaidNavigationManager.request_valid_spawn_point(spawn_pos, 4)
+		if valid_pos != Vector2.INF:
+			unit_inst.global_position = valid_pos
+		else:
+			unit_inst.global_position = spawn_pos
+
+		Loggie.msg("FYRD SPAWN: pos=%s valid=%s boundary=%s" % [
+			str(unit_inst.global_position), 
+			str(valid_pos), 
+			str(base_pos)]
+		).domain("RAID").warn()
+
+		if "skip_unaware" in unit_inst:
+			unit_inst.skip_unaware = true
+
+		unit_container.add_child(unit_inst)
+
+		Loggie.msg("FYRD POST-SPAWN: name=%s skip_unaware=%s fsm=%s state=%s" % [
+			unit_inst.name,
+			str(unit_inst.skip_unaware),
+			str(unit_inst.fsm),
+			str(unit_inst.fsm.current_state if unit_inst.fsm else "NO FSM")]
+		).domain("RAID").warn()
+
+		# Wait for FSM to be fully ready before assigning target
+		if is_instance_valid(objective_building):
+			var _building = objective_building
+			unit_inst.fsm_ready.connect(func(_u):
+				if _u.has_method("set_attack_target") and is_instance_valid(_building):
+					_u.set_attack_target(_building)
+			, CONNECT_ONE_SHOT)
 
 func _on_fyrd_arrived() -> void:
 	Loggie.msg("--- FYRD SPAWN START ---").domain(LogDomains.RAID).info()
@@ -38836,7 +38911,7 @@ fyrd_unit_scene = ExtResource("4_k882g")
 tile_set = ExtResource("5_k882g")
 
 [node name="PlayerStartPosition" type="Marker2D" parent="."]
-position = Vector2(100, 600)
+position = Vector2(-1700, 960)
 
 [node name="EnemySpawnPosition" type="Marker2D" parent="."]
 position = Vector2(383, -21)
@@ -38922,6 +38997,9 @@ var building_container: Node2D
 var enemy_units: Array[BaseUnit] = [] 
 var is_initialized: bool = false
 var mission_over: bool = false
+var extraction_active: bool = false
+var extraction_zone: Area2D = null
+var units_in_extraction: Array = []
 
 var smoke_timer: float = 0.0
 var smoke_active: bool = false
@@ -38949,8 +39027,8 @@ signal wave2_fyrd_arrived
 signal raid_failed
 
 @export_group("Fyrd Timing")
-@export var smoke_to_wave1_time: float = 90.0
-@export var wave1_to_wave2_time: float = 60.0
+@export var smoke_to_wave1_time: float = 5.0 # TEMP: was 90.0 — revert after Phase 4 testing
+@export var wave1_to_wave2_time: float = 5.0 # TEMP: was 60.0 — revert after Phase 4 testing
 
 # --- UI Theme ---
 const UI_THEME = preload("res://ui/themes/VikingDynastyTheme.tres")
@@ -38961,6 +39039,7 @@ func _ready() -> void:
 	# Connect to global unit death signal to track casualties
 	EventBus.player_unit_died.connect(_on_player_unit_died)
 	EventBus.raid_loot_secured.connect(_on_raid_loot_secured)
+	EventBus.alarm_raised.connect(func(_unit): trigger_smoke_signal())
 
 func _process(delta: float) -> void:
 	if mission_over: return
@@ -39150,6 +39229,74 @@ func _end_mission_via_retreat() -> void:
 	
 	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
 
+func setup_extraction(zone: Area2D) -> void:
+	extraction_zone = zone
+	if extraction_zone:
+		extraction_zone.body_entered.connect(_on_extraction_body_entered)
+		extraction_zone.body_exited.connect(_on_extraction_body_exited)
+		Loggie.msg("Extraction zone connected").domain("RAID").info()
+
+func _on_extraction_body_entered(body: Node2D) -> void:
+	if mission_over: return
+	if body.is_in_group("player_units") or body.is_in_group("thralls"):
+		if not units_in_extraction.has(body):
+			units_in_extraction.append(body)
+			Loggie.msg("Unit entered extraction: %s (total: %d)" % [
+				body.name, units_in_extraction.size()]
+			).domain("RAID").info()
+		_check_extraction_complete()
+
+func _on_extraction_body_exited(body: Node2D) -> void:
+	units_in_extraction.erase(body)
+
+func _check_extraction_complete() -> void:
+	var all_player_units = get_tree().get_nodes_in_group("player_units")
+	# Filter dead/freed units
+	var living = all_player_units.filter(func(u): 
+		return is_instance_valid(u) and not u.is_queued_for_deletion())
+	
+	if living.is_empty(): return
+	
+	var all_in_zone = true
+	for unit in living:
+		if not units_in_extraction.has(unit):
+			all_in_zone = false
+			break
+	
+	if all_in_zone:
+		Loggie.msg("ALL UNITS EXTRACTED — Raid complete!").domain("RAID").warn()
+		_end_raid_via_extraction()
+
+func _end_raid_via_extraction() -> void:
+	if mission_over: return
+	mission_over = true
+	
+	var duration_sec = (Time.get_ticks_msec() - battle_start_time) / 1000.0
+	var mission_result = RaidResultData.new()
+	mission_result.outcome = "victory"
+	mission_result.loot = raid_loot.collected_loot.duplicate() if raid_loot else {}
+	mission_result.casualties = dead_units_log.duplicate()
+	
+	# Grade based on casualties
+	var lost_count = dead_units_log.size()
+	if lost_count == 0:
+		mission_result.victory_grade = "Decisive"
+	elif lost_count > casualty_limit:
+		mission_result.victory_grade = "Pyrrhic"
+	else:
+		mission_result.victory_grade = "Standard"
+	
+	mission_result.renown_earned = base_renown
+	
+	RaidManager.pending_raid_result = mission_result
+	RaidManager.last_raid_outcome = "victory"
+	
+	Loggie.msg("Raid Victory via Extraction!").domain("RAID").ctx("Grade", mission_result.victory_grade).info()
+	_show_victory_message("Raid Complete!", "Your warriors return with plunder.")
+	
+	await get_tree().create_timer(3.0).timeout
+	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
+
 func _connect_to_building_signals() -> void:
 	if not building_container: return
 	
@@ -39166,6 +39313,8 @@ func _connect_to_building_signals() -> void:
 func _on_loot_stolen(type: String, amount: int) -> void:
 	if mission_over: return
 	
+	trigger_smoke_signal()
+	
 	# Add to the temporary raid stash
 	raid_loot.add_loot(type, amount)
 	
@@ -39173,6 +39322,9 @@ func _on_loot_stolen(type: String, amount: int) -> void:
 
 func _on_enemy_building_destroyed_for_loot(building: BaseBuilding) -> void:
 	if mission_over: return
+	
+	trigger_smoke_signal()
+	
 	var building_data = building.data as BuildingData
 	if raid_loot and building_data:
 		raid_loot.add_loot_from_building(building_data)
@@ -39291,6 +39443,21 @@ func _trigger_fyrd() -> void:
 	if is_instance_valid(timer_label):
 		timer_label.text = "THE FYRD IS HERE!"
 	fyrd_arrived.emit()
+
+func trigger_smoke_signal() -> void:
+	if smoke_active: return
+	smoke_active = true
+	smoke_timer = 0.0
+	smoke_signal_triggered.emit()
+	Loggie.msg("SMOKE SIGNAL! Fyrd Wave 1 in %d seconds." % int(smoke_to_wave1_time)).domain("RAID").warn()
+
+func _spawn_fyrd_wave1() -> void:
+	Loggie.msg("STUB: Wave 1 would spawn here").domain("RAID").warn()
+	wave1_fyrd_arrived.emit()
+
+func _spawn_fyrd_wave2() -> void:
+	Loggie.msg("STUB: Wave 2 would spawn here").domain("RAID").warn()
+	wave2_fyrd_arrived.emit()
 
 # --- HELPERS ---
 func _show_failure_message(reason: String) -> void:
@@ -39478,6 +39645,14 @@ extends Node
 @export var storehouse_data: BuildingData
 @export var church_data: BuildingData
 
+func _to_isometric(normalized_pos: Vector2) -> Vector2:
+	var u = normalized_pos.x
+	var v = normalized_pos.y
+	return Vector2(
+		(u - v) * 1920.0,
+		(u + v) * 960.0
+	)
+
 func generate(seed_val: int = -1) -> Dictionary:
 	Loggie.msg("Generator: Starting. seed=%d" % seed_val).domain("RAID").info()
 	
@@ -39486,14 +39661,17 @@ func generate(seed_val: int = -1) -> Dictionary:
 	else:
 		seed(seed_val)
 	
-	var beach_zone = Rect2(0, map_height - beach_depth, map_width, beach_depth)
-	var village_zone = Rect2(0, 0, map_width, map_height - beach_depth)
-	# Extraction zone centered at bottom of beach
-	var extraction_zone = Rect2(map_width * 0.4, map_height - 150, map_width * 0.2, 150) 
+	# In normalized space, beach = v > 0.75
+	var village_center = _to_isometric(Vector2(0.5, 0.35))
 	
-	var village_center = village_zone.get_center()
+	# Extraction zone at left edge (beach/landing area)
+	var ext_center = _to_isometric(Vector2(0.03, 0.5))
+	var extraction_zone = Rect2(
+		ext_center - Vector2(150, 200),
+		Vector2(300, 400)
+	)
 	
-	var building_placements = _place_buildings(village_zone)
+	var building_placements = _place_buildings()
 	
 	var has_hall = false
 	var has_church = false
@@ -39522,10 +39700,7 @@ func generate(seed_val: int = -1) -> Dictionary:
 	
 	var num_defenders = randi_range(defender_count_min, defender_count_max)
 	for i in range(num_defenders):
-		var pos = _sample_village_zone_position(village_zone)
-		# Keep away from beach
-		while pos.y > village_zone.end.y - 100:
-			pos = _sample_village_zone_position(village_zone)
+		var pos = _sample_village_zone_position()
 		defender_spawns.append(pos)
 		
 	# Villager placement
@@ -39533,20 +39708,26 @@ func generate(seed_val: int = -1) -> Dictionary:
 	var all_defender_spawns = defender_spawns + hall_defender_spawns
 	for i in range(num_villagers):
 		var attempts = 0
-		var pos = _sample_village_zone_position(village_zone)
+		var pos = _sample_village_zone_position()
 		while not _is_position_clear(pos, all_defender_spawns, 80.0) and attempts < 20:
-			pos = _sample_village_zone_position(village_zone)
+			pos = _sample_village_zone_position()
 			attempts += 1
 		villager_spawns.append(pos)
 
 	var fyrd_boundary = []
-	# Top edge
+	# Top edge of diamond (low u+v values)
 	for i in range(10):
-		fyrd_boundary.append(Vector2(randf() * map_width, randf() * 200.0))
-	# Sides
+		var u = randf_range(0.05, 0.95)
+		var v = randf_range(0.0, 0.08)
+		fyrd_boundary.append(_to_isometric(Vector2(u, v)))
+	# Left edge
 	for i in range(5):
-		fyrd_boundary.append(Vector2(randf() * 200.0, randf() * map_height))
-		fyrd_boundary.append(Vector2(map_width - randf() * 200.0, randf() * map_height))
+		var v = randf_range(0.1, 0.8)
+		fyrd_boundary.append(_to_isometric(Vector2(0.02, v)))
+	# Right edge
+	for i in range(5):
+		var v = randf_range(0.1, 0.8)
+		fyrd_boundary.append(_to_isometric(Vector2(0.98, v)))
 
 	var result = {
 		"extraction_zone": extraction_zone,
@@ -39555,26 +39736,28 @@ func generate(seed_val: int = -1) -> Dictionary:
 		"hall_defender_spawns": hall_defender_spawns,
 		"villager_spawns": villager_spawns,
 		"fyrd_boundary": fyrd_boundary,
-		"navmesh_bounds": village_zone 
+		"navmesh_bounds": Rect2(-1920, 0, 3840, 1920)
 	}
 	
 	Loggie.msg("Generator: Complete. extraction_zone=%s" % str(result.has("extraction_zone"))).domain("RAID").info()
 	
 	return result
 
-func _place_buildings(village_zone: Rect2) -> Array:
+func _place_buildings() -> Array:
 	var placements = []
 	var centers = []
 	
 	# 1. Hall
-	var hall_pos = village_zone.get_center()
+	var hall_pos = _to_isometric(Vector2(0.5, 0.35))
 	placements.append({"type": "Hall", "position": hall_pos, "building_data": hall_data})
 	centers.append(hall_pos)
 	
 	# 2. Church
 	if randf() < church_spawn_chance:
-		var church_pos = hall_pos + Vector2(randf_range(-300, 300), randf_range(-300, 300))
-		if _is_position_clear(church_pos, centers, 150.0) and village_zone.has_point(church_pos):
+		var cu = 0.5 + randf_range(-0.1, 0.1)
+		var cv = 0.35 + randf_range(-0.1, 0.1)
+		var church_pos = _to_isometric(Vector2(cu, cv))
+		if _is_position_clear(church_pos, centers, 150.0):
 			placements.append({"type": "Church", "position": church_pos, "building_data": church_data})
 			centers.append(church_pos)
 
@@ -39588,10 +39771,10 @@ func _place_buildings(village_zone: Rect2) -> Array:
 	for t in types:
 		var count = randi_range(t.min, t.max)
 		for i in range(count):
-			var pos = _sample_village_zone_position(village_zone)
+			var pos = _sample_village_zone_position()
 			var attempts = 0
 			while not _is_position_clear(pos, centers, 120.0) and attempts < 20:
-				pos = _sample_village_zone_position(village_zone)
+				pos = _sample_village_zone_position()
 				attempts += 1
 			
 			if attempts < 20:
@@ -39600,11 +39783,11 @@ func _place_buildings(village_zone: Rect2) -> Array:
 				
 	return placements
 
-func _sample_village_zone_position(village_zone: Rect2) -> Vector2:
-	return Vector2(
-		randf_range(village_zone.position.x + 100, village_zone.end.x - 100),
-		randf_range(village_zone.position.y + 100, village_zone.end.y - 100)
-	)
+func _sample_village_zone_position(_unused_rect: Rect2 = Rect2()) -> Vector2:
+	# Sample in normalized space (0.05..0.95 for margin)
+	var u = randf_range(0.05, 0.95)
+	var v = randf_range(0.05, 0.7)  # Keep out of bottom 30% (beach)
+	return _to_isometric(Vector2(u, v))
 
 func _is_position_clear(pos: Vector2, existing_positions: Array, min_distance: float) -> bool:
 	for p in existing_positions:
@@ -41174,11 +41357,11 @@ var is_allied: bool = false # Is this region allied via marriage?
 
 func _ready() -> void:
 	if not data:
-		push_error("Region node '%s' has no WorldRegionData!" % name)
+		Loggie.msg("Region node '%s' has no WorldRegionData!" % name).domain("MAP").error()
 		return
 	
 	if not highlight_poly:
-		push_error("Region '%s' missing 'HighlightPoly'." % name)
+		Loggie.msg("Region '%s' missing 'HighlightPoly'." % name).domain("MAP").error()
 		return
 		
 	if not collision_poly:
@@ -41578,6 +41761,10 @@ func _enter_state(state: UnitAIConstants.State) -> void:
 				attack_ai.stop_attacking()
 				attack_ai.set_process(false) # Brain off
 				attack_ai.set_physics_process(false)
+		UnitAIConstants.State.ALARMED:
+			# Raise alarm immediately
+			if unit.has_method("emit_alarm"):
+				unit.emit_alarm()
 
 func _exit_state(state: UnitAIConstants.State) -> void:
 	match state:
@@ -41612,9 +41799,17 @@ func _recalculate_path() -> void:
 	# Allow partial path if we have a solid target node (like a building)
 	var allow_partial = is_instance_valid(target_node)
 	
-	# --- FIX: Redirect to NavigationManager for Smoothing ---
-	path = NavigationManager.get_astar_path(start_pos, target_position, allow_partial)
-	# -------------------------------------------------------
+	if RaidNavigationManager.is_raid_active:
+		# During raids, use NavigationAgent2D
+		unit.set_movement_target(target_position)
+		# Build a simple path from nav_agent for external compatibility
+		if unit.nav_agent:
+			path = PackedVector2Array([unit.nav_agent.get_next_path_position()])
+		else:
+			path = PackedVector2Array([target_position])
+	else:
+		# Settlement mode: use AStarGrid2D
+		path = NavigationManager.get_astar_path(start_pos, target_position, allow_partial)
 	
 	if path.is_empty():
 		# FORCE move if very close (A* sometimes fails on short distances inside cell boundaries)
@@ -41824,22 +42019,24 @@ func _formation_move_state(_delta: float) -> void:
 
 func _move_state(delta: float) -> void:
 	if RaidNavigationManager.is_raid_active:
-		unit.set_movement_target(target_position)
-		var next_pos = unit.nav_agent.get_next_path_position()
-		var direction = (next_pos - unit.global_position).normalized()
-		
-		var speed_mult = unit.get_speed_multiplier()
-		unit.velocity = direction * unit.data.move_speed * speed_mult
-		
-		if unit.nav_agent.is_navigation_finished():
-			# If we were moving to a specific target (like a building), switch to Interact/Attack
-			if is_instance_valid(objective_target):
+		# Check arrival FIRST before updating nav target
+		if is_instance_valid(objective_target):
+			var dist = UnitAIConstants.get_surface_distance(unit, objective_target)
+			if dist < 30.0:
 				if objective_target is BaseBuilding:
 					change_state(UnitAIConstants.State.INTERACTING)
 				else:
 					change_state(UnitAIConstants.State.ATTACKING)
-			else:
-				change_state(UnitAIConstants.State.IDLE)
+				return
+		elif unit.nav_agent.is_navigation_finished():
+			change_state(UnitAIConstants.State.IDLE)
+			return
+		
+		unit.set_movement_target(target_position)
+		var next_pos = unit.nav_agent.get_next_path_position()
+		var direction = (next_pos - unit.global_position).normalized()
+		var speed_mult = unit.get_speed_multiplier()
+		unit.velocity = direction * unit.data.move_speed * speed_mult
 		return
 
 	if path.is_empty():
@@ -41892,21 +42089,28 @@ func _interact_state(delta: float) -> void:
 	var distance_to_target = UnitAIConstants.get_surface_distance(unit, objective_target)
 	var interact_range = 25.0 # Close range for pillaging
 	
+	if Engine.get_process_frames() % 60 == 0:
+		Loggie.msg("INTERACT: dist=%0.1f range=%0.1f target=%s state=%s" % [
+			distance_to_target, interact_range,
+			str(objective_target.name) if is_instance_valid(objective_target) else "NULL",
+			str(current_state)]
+		).domain("RAID").warn()
+	
 	if distance_to_target > interact_range:
-		# Use pathfinding if far
-		if not path.is_empty():
+		if RaidNavigationManager.is_raid_active:
+			unit.set_movement_target(objective_target.global_position)
+			var next_pos = unit.nav_agent.get_next_path_position()
+			var dir = (next_pos - unit.global_position).normalized()
+			unit.velocity = dir * unit.data.move_speed
+		elif not path.is_empty():
 			var next = path[0]
 			var dir = (next - unit.global_position).normalized()
 			unit.velocity = dir * unit.data.move_speed
-			unit.move_and_slide()
-			
 			if unit.global_position.distance_to(next) < 8.0:
-				path.remove_at(0) # FIXED: Compatible with PackedVector2Array
+				path.remove_at(0)
 		else:
-			# Direct approach for last mile
 			var dir = (objective_target.global_position - unit.global_position).normalized()
 			unit.velocity = dir * unit.data.move_speed
-			unit.move_and_slide()
 	else:
 		# 2. Arrived -> Perform Pillage
 		unit.velocity = Vector2.ZERO
@@ -42135,9 +42339,9 @@ func _alarmed_state(_delta: float) -> void:
 	var direction = (next_pos - unit.global_position).normalized()
 	unit.velocity = direction * unit.data.move_speed
 
-	if unit.nav_agent.is_navigation_finished():
-		if unit.has_method("emit_alarm"):
-			unit.emit_alarm()
+	# Check arrival at Hall using surface distance
+	var hall_pos = _get_hall_position()
+	if unit.global_position.distance_to(hall_pos) < 60.0:
 		change_state(UnitAIConstants.State.IDLE)
 
 func _fleeing_state(_delta: float) -> void:
@@ -43637,6 +43841,79 @@ static func _add_coastline_around(terrain_map: Dictionary, water_pos: Vector2i) 
 
 
 --------------------------------------------------
+FILE: res:///scripts/objects/LootPickup.gd
+--------------------------------------------------
+# res://scripts/objects/LootPickup.gd
+class_name LootPickup
+extends Area2D
+
+var loot_data: Dictionary = {}
+var despawn_timer: float = 30.0
+var _age: float = 0.0
+
+const PICKUP_RADIUS: float = 30.0
+const COLOR_GOLD = Color(1.0, 0.85, 0.0, 0.9)
+const COLOR_FOOD = Color(0.4, 0.9, 0.3, 0.9)
+
+func _ready() -> void:
+    # Collision setup — detect player units only
+    collision_layer = 0
+    collision_mask = 2  # LAYER_PLAYER
+    monitoring = true
+    monitorable = false
+    
+    # Create collision shape
+    var shape = CollisionShape2D.new()
+    var circle = CircleShape2D.new()
+    circle.radius = PICKUP_RADIUS
+    shape.shape = circle
+    add_child(shape)
+    
+    # Connect
+    body_entered.connect(_on_body_entered)
+    
+    queue_redraw()
+
+func _process(delta: float) -> void:
+    _age += delta
+    if _age >= despawn_timer:
+        queue_free()
+    # Pulse effect
+    modulate.a = 0.6 + 0.4 * sin(_age * 3.0)
+
+func _draw() -> void:
+    var color = COLOR_GOLD
+    if loot_data.has("food") and not loot_data.has("gold"):
+        color = COLOR_FOOD
+    draw_circle(Vector2.ZERO, 8.0, color)
+    draw_circle(Vector2.ZERO, 10.0, color * 0.7, false, 2.0)
+
+func _on_body_entered(body: Node2D) -> void:
+    if not body.is_in_group("player_units"): return
+    if not body.has_method("add_loot"): return
+    
+    var picked_up_any = false
+    for type in loot_data.keys():
+        var amount = loot_data[type]
+        if amount <= 0: continue
+        var taken = body.add_loot(type, amount)
+        if taken > 0:
+            loot_data[type] -= taken
+            picked_up_any = true
+            Loggie.msg("Loot picked up: %s +%d by %s" % [
+                type, taken, body.name]
+            ).domain("RAID").info()
+    
+    # Remove empty entries
+    for type in loot_data.keys():
+        if loot_data.has(type) and loot_data[type] <= 0:
+            loot_data.erase(type)
+    
+    if loot_data.is_empty():
+        queue_free()
+
+
+--------------------------------------------------
 FILE: res:///scripts/ui/BuildingPreviewCursor.gd
 --------------------------------------------------
 #res://scripts/ui/BuildingPreviewCursor.gd
@@ -44685,10 +44962,7 @@ func _calculate_obstacle_avoidance() -> Vector2:
 		_debug_log_timer += get_process_delta_time()
 		if _debug_log_timer > 0.5:
 			_debug_log_timer = 0.0
-			print("\n[AVOIDANCE DEBUG] Unit: %s" % name)
-			print(" -> Velocity: %s" % velocity)
-			print(" -> Hits: %d | Final Steer: %s" % [hit_count, final_steer])
-			print("------------------------------------------------")
+			
 			
 	return final_steer
 
@@ -44729,7 +45003,26 @@ func set_movement_target(target_pos: Vector2) -> void:
 
 func take_damage(amount: int, attacker: Node2D = null) -> void:
 	if _is_dying: return
-	current_health = max(0, current_health - amount)
+	
+	var final_damage = amount
+	# Shield wall: stationary wedge formation reduces damage
+	if data and velocity.length() < 5.0:
+		var current_form = -1
+		var form_obj = self.get("formation")
+		if form_obj:
+			current_form = form_obj.formation_type
+		else:
+			var leader_obj = self.get("leader")
+			if leader_obj:
+				var leader_form = leader_obj.get("formation")
+				if leader_form:
+					current_form = leader_form.formation_type
+					
+		if current_form == SquadFormation.FormationType.WEDGE:
+			final_damage = int(amount * (1.0 - data.shield_wall_damage_reduction))
+	
+	current_health = max(0, current_health - final_damage)
+	
 	if fsm and is_instance_valid(attacker):
 		fsm.command_defensive_attack(attacker)
 	if current_health == 0:
@@ -44739,8 +45032,25 @@ func take_damage(amount: int, attacker: Node2D = null) -> void:
 func die() -> void:
 	if is_in_group("player_units"):
 		EventBus.player_unit_died.emit(self)
+	
+	# Drop loot if carrying any
+	if not inventory.is_empty():
+		_drop_loot_pickup()
+		
 	destroyed.emit()
 	queue_free()
+
+func _drop_loot_pickup() -> void:
+	var pickup = LootPickup.new()
+	pickup.loot_data = inventory.duplicate()
+	pickup.despawn_timer = 30.0
+	pickup.global_position = global_position
+	
+	# Add to parent container (UnitContainer)
+	var container = get_parent()
+	if is_instance_valid(container):
+		container.call_deferred("add_child", pickup)
+		Loggie.msg("Loot dropped at %s: %s" % [str(global_position), str(inventory)]).domain("RAID").info()
 
 func command_move_to(target_pos: Vector2) -> void:
 	if fsm: fsm.command_move_to(target_pos)
@@ -44848,6 +45158,11 @@ func _ready() -> void:
 	separation_enabled = true
 	super._ready()
 	add_to_group("civilians")
+	EventBus.alarm_raised.connect(_on_alarm_raised)
+
+func _exit_tree() -> void:
+	if EventBus.alarm_raised.is_connected(_on_alarm_raised):
+		EventBus.alarm_raised.disconnect(_on_alarm_raised)
 
 func _physics_process(delta: float) -> void:
 	if _is_surrendered:
@@ -44860,7 +45175,7 @@ func take_damage(amount: int, attacker: Node2D = null) -> void:
 	if _is_surrendered: return
 	
 	current_health -= amount
-	print("Civilian hit! HP: ", current_health) # Debug Logic
+	Loggie.msg("Civilian hit! HP: %d" % current_health).domain("RAID").debug()
 	
 	if current_health <= surrender_hp_threshold:
 		current_health = 1 # Keep alive for escort
@@ -44870,7 +45185,7 @@ func _trigger_surrender() -> void:
 	if _is_surrendered: return
 	_is_surrendered = true
 	
-	print("Civilian Surrendered!") # Debug Logic
+	Loggie.msg("Civilian Surrendered!").domain("RAID").info()
 	
 	# Visual Feedback
 	modulate = Color(0.5, 0.5, 0.5, 1.0) # Turn Grey
@@ -44910,7 +45225,14 @@ func command_interact(target: Node2D) -> void:
 func _deferred_setup(damage_mult: float = 1.0) -> void:
 	super._deferred_setup(damage_mult)
 	if fsm:
+		fsm.change_state(UnitAIConstants.State.IDLE)
+
+func _on_alarm_raised(_unit: Node) -> void:
+	if _is_surrendered: return
+	if fsm:
 		fsm.change_state(UnitAIConstants.State.FLEEING)
+	if EventBus.alarm_raised.is_connected(_on_alarm_raised):
+		EventBus.alarm_raised.disconnect(_on_alarm_raised)
 
 
 --------------------------------------------------
@@ -44925,6 +45247,8 @@ FILE: res:///scripts/units/EnemyVikingRaider.gd
 
 extends BaseUnit
 
+var skip_unaware: bool = false
+
 # This function is called by the 'SettlementBridge' spawner
 func set_attack_target(target: BaseBuilding) -> void:
 	"""
@@ -44935,7 +45259,7 @@ func set_attack_target(target: BaseBuilding) -> void:
 		return
 
 	# Set the node (for attacking)
-	fsm.target_unit = target
+	fsm.objective_target = target
 	
 	# --- THIS IS THE FIX ---
 	# Target the building's actual center.
@@ -44952,7 +45276,14 @@ func set_attack_target(target: BaseBuilding) -> void:
 
 func _deferred_setup(damage_mult: float = 1.0) -> void:
 	super._deferred_setup(damage_mult)
-	if fsm:
+	
+	Loggie.msg("DEFERRED_SETUP: %s skip_unaware=%s setting_state=%s" % [
+		name,
+		str(skip_unaware),
+		"SKIPPED" if skip_unaware else "UNAWARE"]
+	).domain("RAID").warn()
+	
+	if fsm and not skip_unaware:
 		fsm.change_state(UnitAIConstants.State.UNAWARE)
 
 
@@ -45760,7 +46091,7 @@ func _ready() -> void:
 			if path_drawer:
 				add_child(path_drawer)
 		else:
-			printerr("GridVisualizer: Could not find UnitPathDrawer.gd!")
+			Loggie.msg("GridVisualizer: Could not find UnitPathDrawer.gd!").domain("NAVIGATION").error()
 			
 	queue_redraw()
 
@@ -46290,13 +46621,13 @@ func sync_civilians(target_count: int, spawn_origin: Vector2, is_enemy: bool = f
 
 func _spawn_civilians(count: int, origin: Vector2, is_enemy: bool) -> void:
 	if not civilian_data: 
-		printerr("UnitSpawner: No civilian_data assigned!")
+		Loggie.msg("UnitSpawner: No civilian_data assigned!").domain("RAID").error()
 		return
 		
 	var scene_ref = civilian_data.load_scene()
 	if not scene_ref: return
 	
-	print("[UnitSpawner] Spawning %d civilians around %s" % [count, origin])
+	Loggie.msg("[UnitSpawner] Spawning %d civilians around %s" % [count, origin]).domain("RAID").info()
 	
 	for i in range(count):
 		var civ = scene_ref.instantiate()
@@ -46366,6 +46697,110 @@ func spawn_worker_at(location: Vector2) -> void:
 
 
 --------------------------------------------------
+FILE: res:///test/RaidDiagnostics.gd
+--------------------------------------------------
+# res://test/RaidDiagnostics.gd
+extends Node
+
+## Standalone diagnostic script for RaidSandbox coordinate and visibility analysis.
+## Answers 5 key questions about the simulation environment.
+
+var raid_mission: Node2D = null
+var building_container: Node2D = null
+var tilemap: TileMapLayer = null
+
+func _ready() -> void:
+	# Wait for mission to initialize
+	await get_tree().process_frame
+	await get_tree().process_frame
+	
+	raid_mission = get_parent()
+	if not raid_mission or not raid_mission.name == "RaidSandbox":
+		# Try to find it if we were attached elsewhere
+		raid_mission = _find_node_recursive(get_tree().root, "RaidSandbox")
+	
+	if not raid_mission:
+		Loggie.msg("DIAG: Could not find RaidSandbox!").domain("RAID").error()
+		return
+
+	_run_diagnostics()
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		var mouse_pos = raid_mission.get_global_mouse_position()
+		Loggie.msg("DIAG: Mouse Click at Global Position: %s" % str(mouse_pos)).domain("RAID").warn()
+
+func _run_diagnostics() -> void:
+	Loggie.msg("--- RAID COORDINATE DIAGNOSTICS ---").domain("RAID").warn()
+	
+	# 1. TileMap Corners (Calculated)
+	# Grid is 60x60, TILE_HALF_SIZE is (32, 16)
+	# Formula: x = (grid_x - grid_y) * 32, y = (grid_x + grid_y) * 16
+	var corners = {
+		"TOP (0,0)": Vector2(0, 0),
+		"RIGHT (60,0)": Vector2(60 * 32, 60 * 16),
+		"BOTTOM (60,60)": Vector2(0, 120 * 16),
+		"LEFT (0,60)": Vector2(-60 * 32, 60 * 16)
+	}
+	Loggie.msg("1. CALCULATED TILEMAP CORNERS (Diamond Bounds):").domain("RAID").info()
+	for key in corners:
+		Loggie.msg("   %s: %s" % [key, str(corners[key])]).domain("RAID").info()
+
+	# 2. Hall Spawn Position
+	var hall_node = null
+	building_container = raid_mission.get_node_or_null("RaidMission/BuildingContainer")
+	if building_container:
+		for child in building_container.get_children():
+			if "Hall" in child.name or (child.get("data") and "Hall" in child.data.display_name):
+				hall_node = child
+				break
+	
+	if hall_node:
+		Loggie.msg("2. Hall spawned at: %s (Global: %s)" % [str(hall_node.position), str(hall_node.global_position)]).domain("RAID").info()
+	else:
+		Loggie.msg("2. Hall NOT FOUND in BuildingContainer!").domain("RAID").error()
+
+	# 3. Villager Spawn Positions
+	var villagers = get_tree().get_nodes_in_group("civilians")
+	Loggie.msg("3. Villager Spawn Positions (found %d):" % villagers.size()).domain("RAID").info()
+	for i in range(min(villagers.size(), 5)):
+		var v = villagers[i]
+		Loggie.msg("   Villager %d: %s" % [i, str(v.global_position)]).domain("RAID").info()
+
+	# 4. Visibility Check
+	var building_count = building_container.get_child_count() if building_container else 0
+	Loggie.msg("4. Map Visibility:").domain("RAID").info()
+	Loggie.msg("   Total Buildings in Container: %d" % building_count).domain("RAID").info()
+	if building_count > 0:
+		var first_b = building_container.get_child(0)
+		Loggie.msg("   Example Building (%s) visible: %s, position: %s" % [first_b.name, str(first_b.visible), str(first_b.global_position)]).domain("RAID").info()
+	else:
+		Loggie.msg("   MAP IS EMPTY (No buildings found in container)").domain("RAID").warn()
+
+	# 5. TileMapLayer Transform
+	tilemap = _find_node_recursive(raid_mission, "TileMapLayer")
+	if tilemap:
+		Loggie.msg("5. TileMapLayer Metadata:").domain("RAID").info()
+		Loggie.msg("   Position: %s" % str(tilemap.position)).domain("RAID").info()
+		Loggie.msg("   Global Position: %s" % str(tilemap.global_position)).domain("RAID").info()
+		Loggie.msg("   Scale: %s" % str(tilemap.scale)).domain("RAID").info()
+	else:
+		Loggie.msg("5. TileMapLayer NOT FOUND in scene tree!").domain("RAID").error()
+
+	Loggie.msg("--- DIAGNOSTICS COMPLETE ---").domain("RAID").warn()
+	Loggie.msg("TIP: Click anywhere on the map to log its coordinates.").domain("RAID").info()
+
+func _find_node_recursive(node: Node, target_name: String) -> Node:
+	if node.name == target_name:
+		return node
+	for child in node.get_children():
+		var result = _find_node_recursive(child, target_name)
+		if result:
+			return result
+	return null
+
+
+--------------------------------------------------
 FILE: res:///test/RaidSandbox.gd
 --------------------------------------------------
 extends Node2D
@@ -46377,11 +46812,14 @@ extends Node2D
 @onready var raid_mission = $RaidMission
 @export var player_test_data: UnitData
 var debug_label: Label
+var fyrd_timer_label: Label
 
 func _ready() -> void:
 	# Load default if not assigned in inspector
 	if not player_test_data:
 		player_test_data = load("res://data/units/Test_PlayerRaider.tres")
+	
+	
 	
 	Loggie.msg("=== Raid Sandbox: Starting Setup ===").domain(LogDomains.RAID).info()
 	
@@ -46390,10 +46828,50 @@ func _ready() -> void:
 	_setup_mock_target()
 	_setup_debug_overlay()
 	
+	# Manually trigger mission initialization now that sandbox data is ready
+	raid_mission.call_deferred("initialize_mission")
+	
+	# Fyrd Timer UI
+	var canvas = get_node("CanvasLayer") if has_node("CanvasLayer") else null
+	if not canvas:
+		canvas = CanvasLayer.new()
+		add_child(canvas)
+		
+	fyrd_timer_label = Label.new()
+	fyrd_timer_label.add_theme_font_size_override("font_size", 32)
+	fyrd_timer_label.add_theme_color_override("font_color", Color.ORANGE)
+	fyrd_timer_label.add_theme_constant_override("outline_size", 6)
+	fyrd_timer_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	fyrd_timer_label.position = Vector2(20, 150) # Below debug label
+	canvas.add_child(fyrd_timer_label)
+	fyrd_timer_label.hide()
+	
 	if EventBus:
 		EventBus.scene_change_requested.connect(_on_mission_end_requested)
 	
+	
+	
+	# Floating text fallback for sandbox
+	if not EventBus.floating_text_requested.get_connections().size():
+		EventBus.floating_text_requested.connect(
+			func(text, pos, color):
+				Loggie.msg("FLOAT: '%s' at %s" % [text, str(pos)]).domain("RAID").info()
+		)
+	
 	Loggie.msg("=== Raid Sandbox: Setup Complete ===").domain(LogDomains.RAID).info()
+
+	# Building collision diagnostic
+	for child in raid_mission.get_node("BuildingContainer").get_children():
+		if child is BaseBuilding:
+			var col_shape = child.get_node_or_null("CollisionShape2D")
+			var hitbox = child.get_node_or_null("Hitbox")
+			Loggie.msg("BLDG DIAG: name=%s pos=%s layer=%d shape=%s hitbox=%s" % [
+				child.name,
+				str(child.global_position),
+				child.collision_layer,
+				str(col_shape.shape if col_shape else "NONE"),
+				str(hitbox.global_position if hitbox else "NO HITBOX")]
+			).domain("RAID").warn()
 
 func _setup_debug_overlay() -> void:
 	var canvas = CanvasLayer.new()
@@ -46435,6 +46913,27 @@ func _process(_delta: float) -> void:
 				text += "Fyrd Timer: %.1fs\n" % obj_mgr.time_remaining
 		
 		debug_label.text = text
+		
+	# Update Fyrd Timer Label
+	if is_instance_valid(raid_mission) and is_instance_valid(fyrd_timer_label):
+		var obj_mgr = raid_mission.get_node_or_null("RaidObjectiveManager")
+		if obj_mgr and obj_mgr.smoke_active and not obj_mgr.mission_over:
+			fyrd_timer_label.show()
+			
+			var time_to_wave1 = max(0, obj_mgr.smoke_to_wave1_time - obj_mgr.smoke_timer)
+			var time_to_wave2 = max(0, (obj_mgr.smoke_to_wave1_time + obj_mgr.wave1_to_wave2_time) - obj_mgr.smoke_timer)
+			
+			if not obj_mgr.wave1_spawned:
+				fyrd_timer_label.text = "FYRD WAVE 1: %.1fs" % time_to_wave1
+				fyrd_timer_label.modulate = Color.YELLOW if time_to_wave1 > 15 else Color.RED
+			elif not obj_mgr.wave2_spawned:
+				fyrd_timer_label.text = "FYRD WAVE 2: %.1fs" % time_to_wave2
+				fyrd_timer_label.modulate = Color.ORANGE if time_to_wave2 > 10 else Color.RED
+			else:
+				fyrd_timer_label.text = "THE FYRD IS HERE!"
+				fyrd_timer_label.modulate = Color.RED
+		else:
+			fyrd_timer_label.hide()
 
 func _on_mission_end_requested(scene_path: String) -> void:
 	Loggie.msg("Raid Sandbox: Mission End Requested -> " + scene_path).domain(LogDomains.RAID).info()
@@ -46474,7 +46973,7 @@ func _setup_mock_raid_force() -> void:
 		RaidManager.prepare_raid_force([warband], 2) # Provision level 2
 		Loggie.msg("Mock Raid Force Prepared (10 Warriors).").domain(LogDomains.RAID).info()
 	else:
-		push_error("RaidSandbox: Could not find Unit_PlayerRaider.tres or fallback.")
+		Loggie.msg("RaidSandbox: Could not find Unit_PlayerRaider.tres or fallback.").domain("RAID").error()
 
 func _setup_mock_target() -> void:
 	# Try to find an existing settlement file or use procedural
@@ -46491,7 +46990,8 @@ func _setup_mock_target() -> void:
 			var defender_warband = WarbandData.new()
 			defender_warband.unit_type = defender_type
 			defender_warband.current_manpower = 6
-			target_data.warbands = [defender_warband]
+			target_data.warbands.clear()
+			target_data.warbands.append(defender_warband)
 			
 			Loggie.msg("Defender unit_type: %s shape=%s color=%s" % [
 				str(defender_warband.unit_type.display_name),
@@ -46531,6 +47031,9 @@ FILE: res:///test/RaidSandbox.tscn
 script = ExtResource("1_sandbox")
 
 [node name="RaidMission" parent="." instance=ExtResource("2_cdrdn")]
+suppress_auto_init = true
+
+[editable path="RaidMission"]
 
 
 --------------------------------------------------
@@ -46694,7 +47197,7 @@ var unit_container: Node2D
 var rts_controller: RTSController
 
 func _ready() -> void:
-	print("\n🛡️ --- STARTING SQUAD SYSTEM SMOKE TEST --- 🛡️")
+	Loggie.msg("--- STARTING SQUAD SYSTEM SMOKE TEST ---").domain("SYSTEM").info()
 	
 	# 1. SETUP ENVIRONMENT
 	_setup_scene_tree()
@@ -46703,7 +47206,7 @@ func _ready() -> void:
 	var warbands = _create_mock_warbands()
 	
 	# 3. EXECUTE SPAWN
-	print("🔹 Requesting Spawn of %d Warbands..." % warbands.size())
+	Loggie.msg("Requesting Spawn of %d Warbands..." % warbands.size()).domain("SYSTEM").info()
 	spawner.spawn_garrison(warbands, Vector2(500, 300))
 	
 	# 4. VERIFY
@@ -46714,7 +47217,7 @@ func _ready() -> void:
 	
 	_verify_spawn_results()
 	
-	print("\n✅ TEST COMPLETE.")
+	Loggie.msg("TEST COMPLETE.").domain("SYSTEM").info()
 
 func _setup_scene_tree() -> void:
 	# Create Container
@@ -46738,7 +47241,7 @@ func _create_mock_warbands() -> Array[WarbandData]:
 	var list: Array[WarbandData] = []
 	
 	if not ResourceLoader.exists(PLAYER_UNIT_DATA_PATH):
-		printerr("❌ CRITICAL: Could not find Unit Data at ", PLAYER_UNIT_DATA_PATH)
+		Loggie.msg("CRITICAL: Could not find Unit Data at %s" % PLAYER_UNIT_DATA_PATH).domain("SYSTEM").error()
 		return []
 		
 	var u_data = load(PLAYER_UNIT_DATA_PATH)
@@ -46753,7 +47256,7 @@ func _create_mock_warbands() -> Array[WarbandData]:
 	return list
 
 func _verify_spawn_results() -> void:
-	print("\n📊 --- VERIFICATION ---")
+	Loggie.msg("--- VERIFICATION ---").domain("SYSTEM").info()
 	
 	# 1. Check for Squad Leaders
 	var leaders = []
@@ -46762,9 +47265,9 @@ func _verify_spawn_results() -> void:
 			leaders.append(child)
 			
 	if leaders.size() == 1:
-		print("✅ PASS: 1 Squad Leader found.")
+		Loggie.msg("PASS: 1 Squad Leader found.").domain("SYSTEM").info()
 	else:
-		printerr("❌ FAIL: Found %d Leaders (Expected 1)." % leaders.size())
+		Loggie.msg("FAIL: Found %d Leaders (Expected 1)." % leaders.size()).domain("SYSTEM").error()
 		return
 
 	# 2. Check for Minions
@@ -46778,15 +47281,15 @@ func _verify_spawn_results() -> void:
 			
 	# Expected: 4 Minions (5 Manpower - 1 Leader)
 	if minions.size() == 4:
-		print("✅ PASS: 4 Minions found (Manpower 5 - Leader).")
+		Loggie.msg("PASS: 4 Minions found (Manpower 5 - Leader).").domain("SYSTEM").info()
 	else:
-		printerr("❌ FAIL: Found %d Minions (Expected 4)." % minions.size())
+		Loggie.msg("FAIL: Found %d Minions (Expected 4)." % minions.size()).domain("SYSTEM").error()
 		
 	# 3. Check Formation Link
 	if leader.squad_soldiers.size() == minions.size():
-		print("✅ PASS: Leader knows about all %d minions." % leader.squad_soldiers.size())
+		Loggie.msg("PASS: Leader knows about all %d minions." % leader.squad_soldiers.size()).domain("SYSTEM").info()
 	else:
-		printerr("❌ FAIL: Leader only tracks %d/%d minions." % [leader.squad_soldiers.size(), minions.size()])
+		Loggie.msg("FAIL: Leader only tracks %d/%d minions." % [leader.squad_soldiers.size(), minions.size()]).domain("SYSTEM").error()
 
 
 --------------------------------------------------
@@ -49493,13 +49996,13 @@ func _run():
 	# FIXED: Called directly from the EditorInterface type
 	var root = EditorInterface.get_edited_scene_root()
 	if not root:
-		print("Error: No scene open.")
+		Loggie.msg("Error: No scene open.").domain("SYSTEM").error()
 		return
 
 	# 2. Find the Container
 	var container = root.get_node_or_null(CONTAINER_NAME)
 	if not container:
-		print("Error: Could not find '%s' node. Ensure your scene has a node named exactly '%s'." % [CONTAINER_NAME, CONTAINER_NAME])
+		Loggie.msg("Error: Could not find '%s' node. Ensure your scene has a node named exactly '%s'." % [CONTAINER_NAME, CONTAINER_NAME]).domain("SYSTEM").error()
 		return
 
 	# 3. Create the Data Object
@@ -49539,16 +50042,16 @@ func _run():
 			settlement_data.placed_buildings.append(entry)
 			count += 1
 		else:
-			print("Warning: Found non-building node '%s' in container. Skipping." % node.name)
+			Loggie.msg("Warning: Found non-building node '%s' in container. Skipping." % node.name).domain("SYSTEM").warn()
 
 	# 5. Save to Disk
 	var error = ResourceSaver.save(settlement_data, TARGET_SAVE_PATH)
 	if error == OK:
-		print("✅ SUCCESS: Exported %d buildings to %s" % [count, TARGET_SAVE_PATH])
+		Loggie.msg("SUCCESS: Exported %d buildings to %s" % [count, TARGET_SAVE_PATH]).domain("SYSTEM").info()
 		# FIXED: Called directly from the EditorInterface type
 		EditorInterface.get_resource_filesystem().scan()
 	else:
-		print("❌ ERROR: Failed to save resource. Error Code: %s" % error)
+		Loggie.msg("ERROR: Failed to save resource. Error Code: %s" % error).domain("SYSTEM").error()
 
 
 --------------------------------------------------
@@ -50067,7 +50570,7 @@ const COL_PARCHMENT = Color("#f5e6d3")
 const COL_GOLD = Color("#c5a54e")
 
 func _run() -> void:
-	print("--- Building Chronicler Theme ---")
+	Loggie.msg("--- Building Chronicler Theme ---").domain("SYSTEM").info()
 	
 	# 1. Create or Load Theme
 	var theme = Theme.new()
@@ -50174,9 +50677,9 @@ func _run() -> void:
 		
 	var error = ResourceSaver.save(theme, THEME_PATH)
 	if error == OK:
-		print("Theme saved to: ", THEME_PATH)
+		Loggie.msg("Theme saved to: %s" % THEME_PATH).domain("SYSTEM").info()
 	else:
-		print("Error saving theme: ", error)
+		Loggie.msg("Error saving theme: %s" % error).domain("SYSTEM").error()
 		
 	EditorInterface.get_resource_filesystem().scan()
 
@@ -50184,7 +50687,7 @@ func _try_load_font(filename: String) -> Font:
 	var path = FONT_PATH + filename
 	if ResourceLoader.exists(path):
 		return load(path)
-	print("Warning: Font not found at ", path, ". Using default.")
+	Loggie.msg("Warning: Font not found at %s. Using default." % path).domain("SYSTEM").warn()
 	return ThemeDB.get_fallback_font()
 
 
@@ -50987,7 +51490,7 @@ func display_event(event_data: EventData) -> void:
 	Configures and displays the event window based on an EventData resource.
 	"""
 	if not event_data:
-		push_error("EventUI: Cannot display a null EventData resource.")
+		Loggie.msg("EventUI: Cannot display a null EventData resource.").domain("UI").error()
 		return
 		
 	current_event = event_data
@@ -53924,7 +54427,7 @@ extends Button
 
 func _make_custom_tooltip(for_text: String) -> Object:
 	# DEBUG: Check the Output console to see if this runs when you hover
-	print("RichTooltipButton: Generating tooltip for ", name)
+	Loggie.msg("RichTooltipButton: Generating tooltip for %s" % name).domain("UI").debug()
 	
 	# 1. Create the container
 	var panel = PanelContainer.new()

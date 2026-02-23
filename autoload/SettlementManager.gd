@@ -135,7 +135,7 @@ func get_nearest_valid_spawn_point(target_coords: Vector2i) -> Vector2i:
 				queue.append(next_cell)
 	
 	# Fallback if map is totally water or error
-	Loggie.msg("No valid spawn point found within radius").ctx({"radius": MAX_SEARCH_RADIUS}).domain(LogDomains.GAMEPLAY).warn()
+	Loggie.msg("No valid spawn point found within radius. Radius: %d" % MAX_SEARCH_RADIUS).domain(LogDomains.GAMEPLAY).warn()
 	return target_coords
 
 # --- COORDINATE & SPATIAL DELEGATION ---

@@ -34,7 +34,7 @@ fyrd_unit_scene = ExtResource("4_k882g")
 tile_set = ExtResource("5_k882g")
 
 [node name="PlayerStartPosition" type="Marker2D" parent="."]
-position = Vector2(100, 600)
+position = Vector2(-1600, 960)
 
 [node name="EnemySpawnPosition" type="Marker2D" parent="."]
 position = Vector2(383, -21)
@@ -63,6 +63,7 @@ script = ExtResource("6_olj83")
 [node name="UnitSpawner" parent="." instance=ExtResource("11_eoj4n")]
 
 [node name="ExtractionZone" type="Area2D" parent="."]
+collision_mask = 2
 
 [node name="ExtractionShape" type="CollisionShape2D" parent="ExtractionZone"]
 shape = SubResource("1")

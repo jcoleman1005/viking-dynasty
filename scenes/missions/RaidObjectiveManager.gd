@@ -31,6 +31,10 @@ var building_container: Node2D
 var enemy_units: Array[BaseUnit] = [] 
 var is_initialized: bool = false
 var mission_over: bool = false
+var extraction_active: bool = false
+var extraction_zone: Area2D = null
+var units_in_extraction: Array = []
+var extraction_zone_activated: bool = false
 
 var smoke_timer: float = 0.0
 var smoke_active: bool = false
@@ -260,6 +264,104 @@ func _end_mission_via_retreat() -> void:
 	
 	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
 
+func setup_extraction(zone: Area2D) -> void:
+	extraction_zone = zone
+	if extraction_zone:
+		extraction_zone.body_entered.connect(_on_extraction_body_entered)
+		extraction_zone.body_exited.connect(_on_extraction_body_exited)
+		Loggie.msg("Extraction zone connected").domain("RAID").info()
+
+func _on_extraction_body_entered(body: Node2D) -> void:
+	if mission_over: return
+	
+	if not units_in_extraction.has(body):
+		if body.is_in_group("player_units") or body.is_in_group("thralls"):
+			units_in_extraction.append(body)
+
+	if extraction_zone_activated:
+		Loggie.msg("Unit RE-ENTERED extraction: %s (total: %d)" % [
+			body.name, units_in_extraction.size()]
+		).domain("RAID").info()
+		_check_extraction_complete()
+
+func _on_extraction_body_exited(body: Node2D) -> void:
+	if units_in_extraction.has(body):
+		units_in_extraction.erase(body)
+	
+	if not extraction_zone_activated and units_in_extraction.is_empty():
+		var player_units = get_tree().get_nodes_in_group("player_units")
+		if not player_units.is_empty(): # Make sure we're not empty due to death
+			extraction_zone_activated = true
+			Loggie.msg("Extraction Zone is now active!").domain("RAID").warn()
+
+func _check_extraction_complete() -> void:
+	if not extraction_zone_activated: return
+	var all_player_units = get_tree().get_nodes_in_group("player_units")
+	# Filter dead/freed units
+	var living = all_player_units.filter(func(u): 
+		return is_instance_valid(u) and not u.is_queued_for_deletion())
+	
+	if living.is_empty(): return
+	
+	var all_in_zone = true
+	for unit in living:
+		if not units_in_extraction.has(unit):
+			all_in_zone = false
+			break
+	
+	if all_in_zone:
+		# Also check any captured thralls (escorted civilians)
+		var all_thralls = get_tree().get_nodes_in_group("thralls")
+		for thrall in all_thralls:
+			if is_instance_valid(thrall) and not thrall.is_queued_for_deletion():
+				if not units_in_extraction.has(thrall):
+					all_in_zone = false
+					break
+	
+	if all_in_zone:
+		Loggie.msg("ALL UNITS EXTRACTED — Raid complete!").domain("RAID").warn()
+		_end_raid_via_extraction()
+
+func _end_raid_via_extraction() -> void:
+	if mission_over: return
+	mission_over = true
+	
+	# Final tally of thralls in extraction
+	var captured_thralls = 0
+	for body in units_in_extraction:
+		if is_instance_valid(body) and body.is_in_group("thralls"):
+			captured_thralls += 1
+	
+	if captured_thralls > 0 and raid_loot:
+		raid_loot.add_loot("thrall", captured_thralls)
+		Loggie.msg("Secured %d thralls during extraction." % captured_thralls).domain("RAID").info()
+	
+	var duration_sec = (Time.get_ticks_msec() - battle_start_time) / 1000.0
+	var mission_result = RaidResultData.new()
+	mission_result.outcome = "victory"
+	mission_result.loot = raid_loot.collected_loot.duplicate() if raid_loot else {}
+	mission_result.casualties = dead_units_log.duplicate()
+	
+	# Grade based on casualties
+	var lost_count = dead_units_log.size()
+	if lost_count == 0:
+		mission_result.victory_grade = "Decisive"
+	elif lost_count > casualty_limit:
+		mission_result.victory_grade = "Pyrrhic"
+	else:
+		mission_result.victory_grade = "Standard"
+	
+	mission_result.renown_earned = base_renown
+	
+	RaidManager.pending_raid_result = mission_result
+	RaidManager.last_raid_outcome = "victory"
+	
+	Loggie.msg("Raid Victory via Extraction! Grade: %s" % mission_result.victory_grade).domain("RAID").info()
+	_show_victory_message("Raid Complete!", "Your warriors return with plunder.")
+	
+	await get_tree().create_timer(3.0).timeout
+	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
+
 func _connect_to_building_signals() -> void:
 	if not building_container: return
 	
@@ -397,7 +499,7 @@ func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	RaidManager.pending_raid_result = mission_result
 	RaidManager.last_raid_outcome = "victory"
 	
-	Loggie.msg("Raid Victory!").domain(LogDomains.RAID).ctx("Grade", grade).info()
+	Loggie.msg("Raid Victory! Grade: %s" % grade).domain("RAID").info()
 	_show_victory_message("Victory!", "The settlement lies in ruins.")
 
 func _trigger_fyrd() -> void:

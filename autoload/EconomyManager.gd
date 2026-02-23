@@ -81,7 +81,7 @@ func _recalculate_total_heating() -> void:
 				if build_data:
 					total_heating += build_data.heating_cost
 			else:
-				Loggie.msg("Building resource missing at path").ctx(path).domain(LogDomains.ECONOMY).error()
+				Loggie.msg("Building resource missing at path: %s" % path).domain(LogDomains.ECONOMY).error()
 	
 	_cached_total_heating = total_heating
 	
