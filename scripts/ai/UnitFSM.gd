@@ -70,6 +70,10 @@ func _enter_state(state: UnitAIConstants.State) -> void:
 				attack_ai.stop_attacking()
 				attack_ai.set_process(false) # Brain off
 				attack_ai.set_physics_process(false)
+		UnitAIConstants.State.ALARMED:
+			# Raise alarm immediately
+			if unit.has_method("emit_alarm"):
+				unit.emit_alarm()
 
 func _exit_state(state: UnitAIConstants.State) -> void:
 	match state:
@@ -104,9 +108,17 @@ func _recalculate_path() -> void:
 	# Allow partial path if we have a solid target node (like a building)
 	var allow_partial = is_instance_valid(target_node)
 	
-	# --- FIX: Redirect to NavigationManager for Smoothing ---
-	path = NavigationManager.get_astar_path(start_pos, target_position, allow_partial)
-	# -------------------------------------------------------
+	if RaidNavigationManager.is_raid_active:
+		# During raids, use NavigationAgent2D
+		unit.set_movement_target(target_position)
+		# Build a simple path from nav_agent for external compatibility
+		if unit.nav_agent:
+			path = PackedVector2Array([unit.nav_agent.get_next_path_position()])
+		else:
+			path = PackedVector2Array([target_position])
+	else:
+		# Settlement mode: use AStarGrid2D
+		path = NavigationManager.get_astar_path(start_pos, target_position, allow_partial)
 	
 	if path.is_empty():
 		# FORCE move if very close (A* sometimes fails on short distances inside cell boundaries)
@@ -229,6 +241,12 @@ func update(delta: float) -> void:
 			_escort_state(delta)
 		UnitAIConstants.State.REGROUPING:
 			_regroup_state(delta)
+		UnitAIConstants.State.UNAWARE:
+			_unaware_state(delta)
+		UnitAIConstants.State.ALARMED:
+			_alarmed_state(delta)
+		UnitAIConstants.State.FLEEING:
+			_fleeing_state(delta)
 
 # --- STATE LOGIC ---
 
@@ -283,6 +301,16 @@ func _idle_state(_delta: float) -> void:
 	unit.velocity = Vector2.ZERO
 
 func _formation_move_state(_delta: float) -> void:
+	if RaidNavigationManager.is_raid_active:
+		unit.set_movement_target(target_position)
+		var next_pos = unit.nav_agent.get_next_path_position()
+		var direction = (next_pos - unit.global_position).normalized()
+		unit.velocity = direction * unit.data.move_speed
+		
+		if unit.nav_agent.is_navigation_finished():
+			change_state(UnitAIConstants.State.IDLE)
+		return
+
 	if path.is_empty():
 		change_state(UnitAIConstants.State.IDLE)
 		return
@@ -299,6 +327,27 @@ func _formation_move_state(_delta: float) -> void:
 			change_state(UnitAIConstants.State.IDLE)
 
 func _move_state(delta: float) -> void:
+	if RaidNavigationManager.is_raid_active:
+		# Check arrival FIRST before updating nav target
+		if is_instance_valid(objective_target):
+			var dist = UnitAIConstants.get_surface_distance(unit, objective_target)
+			if dist < 30.0:
+				if objective_target is BaseBuilding:
+					change_state(UnitAIConstants.State.INTERACTING)
+				else:
+					change_state(UnitAIConstants.State.ATTACKING)
+				return
+		elif unit.nav_agent.is_navigation_finished():
+			change_state(UnitAIConstants.State.IDLE)
+			return
+		
+		unit.set_movement_target(target_position)
+		var next_pos = unit.nav_agent.get_next_path_position()
+		var direction = (next_pos - unit.global_position).normalized()
+		var speed_mult = unit.get_speed_multiplier()
+		unit.velocity = direction * unit.data.move_speed * speed_mult
+		return
+
 	if path.is_empty():
 		change_state(UnitAIConstants.State.IDLE)
 		return
@@ -349,21 +398,28 @@ func _interact_state(delta: float) -> void:
 	var distance_to_target = UnitAIConstants.get_surface_distance(unit, objective_target)
 	var interact_range = 25.0 # Close range for pillaging
 	
+	if Engine.get_process_frames() % 60 == 0:
+		Loggie.msg("INTERACT: dist=%0.1f range=%0.1f target=%s state=%s" % [
+			distance_to_target, interact_range,
+			str(objective_target.name) if is_instance_valid(objective_target) else "NULL",
+			str(current_state)]
+		).domain("RAID").warn()
+	
 	if distance_to_target > interact_range:
-		# Use pathfinding if far
-		if not path.is_empty():
+		if RaidNavigationManager.is_raid_active:
+			unit.set_movement_target(objective_target.global_position)
+			var next_pos = unit.nav_agent.get_next_path_position()
+			var dir = (next_pos - unit.global_position).normalized()
+			unit.velocity = dir * unit.data.move_speed
+		elif not path.is_empty():
 			var next = path[0]
 			var dir = (next - unit.global_position).normalized()
 			unit.velocity = dir * unit.data.move_speed
-			unit.move_and_slide()
-			
 			if unit.global_position.distance_to(next) < 8.0:
-				path.remove_at(0) # FIXED: Compatible with PackedVector2Array
+				path.remove_at(0)
 		else:
-			# Direct approach for last mile
 			var dir = (objective_target.global_position - unit.global_position).normalized()
 			unit.velocity = dir * unit.data.move_speed
-			unit.move_and_slide()
 	else:
 		# 2. Arrived -> Perform Pillage
 		unit.velocity = Vector2.ZERO
@@ -552,3 +608,102 @@ func _simple_move_to(target: Vector2, _delta: float) -> void:
 	
 	unit.velocity = dir * final_speed
 	# Note: BaseUnit._physics_process is responsible for calling move_and_slide()
+
+func _unaware_state(_delta: float) -> void:
+	unit.velocity = Vector2.ZERO
+	if not RaidNavigationManager.is_raid_active:
+		return
+	var player_units = unit.get_tree().get_nodes_in_group("player_units")
+	for player_unit in player_units:
+		if not is_instance_valid(player_unit):
+			continue
+		var distance = unit.global_position.distance_to(player_unit.global_position)
+		if distance < unit.data.detection_range:
+			var space = unit.get_world_2d().direct_space_state
+			var query = PhysicsRayQueryParameters2D.create(
+				unit.global_position,
+				player_unit.global_position)
+			var result = space.intersect_ray(query)
+			if result and result.collider == player_unit:
+				change_state(UnitAIConstants.State.ALARMED)
+				return
+
+func _alarmed_state(_delta: float) -> void:
+	if not RaidNavigationManager.is_raid_active:
+		return
+	if not unit.has_meta("alarm_spread_done"):
+		unit.set_meta("alarm_spread_done", true)
+		var nearby = unit.get_tree().get_nodes_in_group("enemy_units")
+		for enemy in nearby:
+			if not is_instance_valid(enemy): continue
+			if enemy == unit: continue
+			var dist = unit.global_position.distance_to(enemy.global_position)
+			if dist < 200.0 and enemy.has_method("get_fsm"):
+				var fsm_ref = enemy.get_fsm()
+				if fsm_ref and fsm_ref.current_state == UnitAIConstants.State.UNAWARE:
+					fsm_ref.change_state(UnitAIConstants.State.ALARMED)
+		unit.set_movement_target(_get_hall_position())
+
+	var next_pos = unit.nav_agent.get_next_path_position()
+	var direction = (next_pos - unit.global_position).normalized()
+	unit.velocity = direction * unit.data.move_speed
+
+	# Check arrival at Hall using surface distance
+	var hall_pos = _get_hall_position()
+	if unit.global_position.distance_to(hall_pos) < 60.0:
+		change_state(UnitAIConstants.State.IDLE)
+
+func _fleeing_state(_delta: float) -> void:
+	if not RaidNavigationManager.is_raid_active:
+		unit.velocity = Vector2.ZERO
+		return
+		
+	# Update flee target periodically (every 60 frames approx)
+	var update_flee = false
+	if not unit.has_meta("flee_target_set"):
+		unit.set_meta("flee_target_set", true)
+		unit.set_meta("flee_update_timer", 0)
+		update_flee = true
+	else:
+		var timer = unit.get_meta("flee_update_timer") + 1
+		if timer >= 60:
+			update_flee = true
+			unit.set_meta("flee_update_timer", 0)
+		else:
+			unit.set_meta("flee_update_timer", timer)
+			
+	if update_flee:
+		var nearest = _get_nearest_player_unit()
+		if nearest:
+			var flee_dir = (unit.global_position - nearest.global_position).normalized()
+			var flee_target_pos = unit.global_position + flee_dir * 800.0
+			unit.set_movement_target(flee_target_pos)
+	
+	var next_pos = unit.nav_agent.get_next_path_position()
+	var direction = (next_pos - unit.global_position).normalized()
+	unit.velocity = direction * unit.data.move_speed
+
+	if unit.nav_agent.is_navigation_finished() and unit.global_position != Vector2.ZERO:
+		if unit.has_method("emit_alarm"):
+			unit.emit_alarm()
+		change_state(UnitAIConstants.State.IDLE)
+func _get_hall_position() -> Vector2:
+	var buildings = unit.get_tree().get_nodes_in_group("buildings")
+	for building in buildings:
+		if is_instance_valid(building) and building.data and building.data.is_territory_hub:
+			return building.global_position
+	# Fallback to map center if Hall not found
+	var bounds = RaidNavigationManager.map_bounds
+	return bounds.get_center()
+
+func _get_nearest_player_unit() -> Node:
+	var player_units = unit.get_tree().get_nodes_in_group("player_units")
+	var nearest = null
+	var nearest_dist = INF
+	for u in player_units:
+		if not is_instance_valid(u): continue
+		var d = unit.global_position.distance_to(u.global_position)
+		if d < nearest_dist:
+			nearest_dist = d
+			nearest = u
+	return nearest

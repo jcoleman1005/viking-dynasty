@@ -13,7 +13,7 @@ signal choice_made(event: EventData, choice: EventChoice)
 
 # Node References
 @onready var title_label: Label = $PanelContainer/Margin/VBox/TitleLabel
-@onready var description_label: Label = $PanelContainer/Margin/VBox/HBox/DescriptionLabel
+@onready var description_label: RichTextLabel = $PanelContainer/Margin/VBox/HBox/ScrollContainer/DescriptionLabel
 @onready var portrait: TextureRect = %Portrait
 @onready var choice_buttons_container: VBoxContainer = $PanelContainer/Margin/VBox/ChoiceButtonsContainer
 
@@ -32,7 +32,7 @@ func display_event(event_data: EventData) -> void:
 	Configures and displays the event window based on an EventData resource.
 	"""
 	if not event_data:
-		push_error("EventUI: Cannot display a null EventData resource.")
+		Loggie.msg("EventUI: Cannot display a null EventData resource.").domain("UI").error()
 		return
 		
 	current_event = event_data

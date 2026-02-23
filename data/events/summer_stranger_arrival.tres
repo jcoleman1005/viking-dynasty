@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="EventData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="Resource_trial"]
+script = ExtResource("2_event_choice")
+choice_text = "Offer him a trial. Put him with the warband for the season."
+tooltip_text = "+1 temporary champion unit. Sets stranger_accepted flag. May trigger follow-up event."
+effect_key = "trial_stranger"
+
+[sub_resource type="Resource" id="Resource_refuse"]
+script = ExtResource("2_event_choice")
+choice_text = "Refuse him entry. Your hall has enough mouths."
+tooltip_text = "No effect. Stranger leaves. May reappear in a rival's service."
+effect_key = "refuse_stranger"
+
+[sub_resource type="Resource" id="Resource_interrogate"]
+script = ExtResource("2_event_choice")
+choice_text = "Question him hard before deciding."
+tooltip_text = "Requires Stewardship 13. Learn his true name and origin. Opens unique dialogue branch."
+effect_key = "interrogate_stranger"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "A Stranger at the Gate"
+description = "An armed man arrives alone at your settlement gate. He gives no clan name. His equipment is fine — too fine for a wanderer — and he has a scar across his jaw that speaks of surviving things most men don't. He says only that he is looking for work worth doing."
+event_id = "summer_stranger_arrival"
+is_unique = true
+base_chance = 0.35
+prerequisites = Array[String]([])
+trigger_season = "Summer"
+trigger_day = 9
+min_stewardship = -1
+min_command = -1
+min_prowess = -1
+min_renown = -1
+must_have_trait = ""
+must_not_have_trait = ""
+min_available_heirs = -1
+min_conquered_regions = -1
+choices = Array[ExtResource("2_event_choice")]([SubResource("Resource_trial"), SubResource("Resource_refuse"), SubResource("Resource_interrogate")])

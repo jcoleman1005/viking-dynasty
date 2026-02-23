@@ -11,7 +11,7 @@ var unit_container: Node2D
 var rts_controller: RTSController
 
 func _ready() -> void:
-	print("\n🛡️ --- STARTING SQUAD SYSTEM SMOKE TEST --- 🛡️")
+	Loggie.msg("--- STARTING SQUAD SYSTEM SMOKE TEST ---").domain("SYSTEM").info()
 	
 	# 1. SETUP ENVIRONMENT
 	_setup_scene_tree()
@@ -20,7 +20,7 @@ func _ready() -> void:
 	var warbands = _create_mock_warbands()
 	
 	# 3. EXECUTE SPAWN
-	print("🔹 Requesting Spawn of %d Warbands..." % warbands.size())
+	Loggie.msg("Requesting Spawn of %d Warbands..." % warbands.size()).domain("SYSTEM").info()
 	spawner.spawn_garrison(warbands, Vector2(500, 300))
 	
 	# 4. VERIFY
@@ -31,7 +31,7 @@ func _ready() -> void:
 	
 	_verify_spawn_results()
 	
-	print("\n✅ TEST COMPLETE.")
+	Loggie.msg("TEST COMPLETE.").domain("SYSTEM").info()
 
 func _setup_scene_tree() -> void:
 	# Create Container
@@ -55,7 +55,7 @@ func _create_mock_warbands() -> Array[WarbandData]:
 	var list: Array[WarbandData] = []
 	
 	if not ResourceLoader.exists(PLAYER_UNIT_DATA_PATH):
-		printerr("❌ CRITICAL: Could not find Unit Data at ", PLAYER_UNIT_DATA_PATH)
+		Loggie.msg("CRITICAL: Could not find Unit Data at %s" % PLAYER_UNIT_DATA_PATH).domain("SYSTEM").error()
 		return []
 		
 	var u_data = load(PLAYER_UNIT_DATA_PATH)
@@ -70,7 +70,7 @@ func _create_mock_warbands() -> Array[WarbandData]:
 	return list
 
 func _verify_spawn_results() -> void:
-	print("\n📊 --- VERIFICATION ---")
+	Loggie.msg("--- VERIFICATION ---").domain("SYSTEM").info()
 	
 	# 1. Check for Squad Leaders
 	var leaders = []
@@ -79,9 +79,9 @@ func _verify_spawn_results() -> void:
 			leaders.append(child)
 			
 	if leaders.size() == 1:
-		print("✅ PASS: 1 Squad Leader found.")
+		Loggie.msg("PASS: 1 Squad Leader found.").domain("SYSTEM").info()
 	else:
-		printerr("❌ FAIL: Found %d Leaders (Expected 1)." % leaders.size())
+		Loggie.msg("FAIL: Found %d Leaders (Expected 1)." % leaders.size()).domain("SYSTEM").error()
 		return
 
 	# 2. Check for Minions
@@ -95,12 +95,12 @@ func _verify_spawn_results() -> void:
 			
 	# Expected: 4 Minions (5 Manpower - 1 Leader)
 	if minions.size() == 4:
-		print("✅ PASS: 4 Minions found (Manpower 5 - Leader).")
+		Loggie.msg("PASS: 4 Minions found (Manpower 5 - Leader).").domain("SYSTEM").info()
 	else:
-		printerr("❌ FAIL: Found %d Minions (Expected 4)." % minions.size())
+		Loggie.msg("FAIL: Found %d Minions (Expected 4)." % minions.size()).domain("SYSTEM").error()
 		
 	# 3. Check Formation Link
 	if leader.squad_soldiers.size() == minions.size():
-		print("✅ PASS: Leader knows about all %d minions." % leader.squad_soldiers.size())
+		Loggie.msg("PASS: Leader knows about all %d minions." % leader.squad_soldiers.size()).domain("SYSTEM").info()
 	else:
-		printerr("❌ FAIL: Leader only tracks %d/%d minions." % [leader.squad_soldiers.size(), minions.size()])
+		Loggie.msg("FAIL: Leader only tracks %d/%d minions." % [leader.squad_soldiers.size(), minions.size()]).domain("SYSTEM").error()

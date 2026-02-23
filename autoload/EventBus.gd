@@ -8,6 +8,15 @@ signal building_ready_for_placement(building_data: BuildingData)
 signal building_placement_cancelled(building_data: BuildingData)
 signal building_placed(building_data: BuildingData)
 signal building_construction_completed(building_entry: Dictionary)
+signal building_destroyed(building_data: BuildingData)
+
+# --- Construction Decree Signals ---
+signal decree_selection_mode_started(building_data: BuildingData)
+signal construction_decree_issued(decree: ConstructionDecree)
+signal decree_authorized(decree: ConstructionDecree)
+signal decree_sealed(grid_pos: Vector2i)
+signal decree_cancelled(grid_pos: Vector2i)
+signal decree_interaction_finished()
 
 # --- Inspector Signals ---
 signal building_selected(building: BaseBuilding)
@@ -25,7 +34,7 @@ signal purchase_successful(item_name: String)
 signal purchase_failed(reason: String)
 signal raid_loot_secured(type: String, amount: int)
 signal population_changed()
-
+signal rationing_policy_changed(new_policy)
 # --- Navigation Signals ---
 signal scene_change_requested(scene_key: String)
 signal world_map_opened()
@@ -37,7 +46,7 @@ signal settlement_loaded(settlement_data: SettlementData)
 # --- Unit Management Signals ---
 signal player_unit_died(unit: Node2D)
 signal player_unit_spawned(unit: Node2D)
-signal worker_management_toggled()
+signal alarm_raised(unit: Node)
 signal dynasty_view_requested()
 
 # --- RTS Command Signals ---
@@ -66,6 +75,7 @@ signal advance_season_requested() # NEW: The primary time driver
 
 ## UPDATED: Now includes context_data (Dictionary) for the season transition payload.
 signal season_changed(season_name: String, context_data: Dictionary) 
+signal summer_day_changed(current_day: int, max_days: int)
 
 # --- NEW: Seasonal UI System Signals ---
 signal hall_action_updated

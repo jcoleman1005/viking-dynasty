@@ -1,0 +1,48 @@
+[gd_resource type="Resource" script_class="EventData" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="Resource_name"]
+script = ExtResource("2_event_choice")
+choice_text = "Name your heir publicly, before the fire and witnesses."
+tooltip_text = "-1 Authority. Heir legitimacy +20. Succession crisis chance -30% if you die this year."
+effect_key = "name_heir_public"
+
+[sub_resource type="Resource" id="Resource_deflect"]
+script = ExtResource("2_event_choice")
+choice_text = "Deflect. You do not plan to die."
+tooltip_text = "No cost. Hall tension rises. Succession crisis chance unchanged."
+effect_key = "deflect_succession"
+
+[sub_resource type="Resource" id="Resource_marriage"]
+script = ExtResource("2_event_choice")
+choice_text = "Announce a marriage negotiation for your heir."
+tooltip_text = "Begins alliance negotiation chain. Costs AP next spring."
+effect_key = "announce_marriage"
+
+[sub_resource type="Resource" id="Resource_oaths"]
+script = ExtResource("2_event_choice")
+choice_text = "Use the moment to test loyalty. Ask each head to swear anew."
+tooltip_text = "Requires Command 13. Renown +5. 1 household may refuse — revealing hidden disloyalty."
+effect_key = "demand_oaths"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "The Long Night Council"
+description = "In the deep of winter, when there is nothing to do but survive, the household heads gather unbidden in your hall. The fire is low. Someone speaks the question that has been unspoken for weeks: what happens to all of this if you do not return from next summer's campaign? Eyes move to your heirs."
+event_id = "winter_long_night_council"
+is_unique = false
+base_chance = 0.65
+prerequisites = Array[String]([])
+trigger_season = "Winter"
+trigger_day = 6
+min_stewardship = -1
+min_command = -1
+min_prowess = -1
+min_renown = -1
+must_have_trait = ""
+must_not_have_trait = ""
+min_available_heirs = 1
+min_conquered_regions = -1
+choices = Array[ExtResource("2_event_choice")]([SubResource("Resource_name"), SubResource("Resource_deflect"), SubResource("Resource_marriage"), SubResource("Resource_oaths")])

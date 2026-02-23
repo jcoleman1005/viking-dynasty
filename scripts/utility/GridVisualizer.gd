@@ -49,7 +49,7 @@ func _ready() -> void:
 			if path_drawer:
 				add_child(path_drawer)
 		else:
-			printerr("GridVisualizer: Could not find UnitPathDrawer.gd!")
+			Loggie.msg("GridVisualizer: Could not find UnitPathDrawer.gd!").domain("NAVIGATION").error()
 			
 	queue_redraw()
 

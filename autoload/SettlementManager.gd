@@ -17,6 +17,7 @@ const GREAT_HALL_BUFFER: int = 4 # Tiles from water required for Great Hall
 # --- Data State ---
 var current_settlement: SettlementData 
 var active_map_data: SettlementData      
+var pending_succession_news: Array[String] = [] # Task 3.4
 
 # --- Scene Refs ---
 var _active_building_container_ref: WeakRef = weakref(null)
@@ -48,7 +49,15 @@ var active_tilemap_layer: Node:
 func _ready() -> void:
 	EventBus.player_unit_died.connect(_on_player_unit_died)
 	EventBus.building_placement_cancelled.connect(_on_building_placement_cancelled)
+	
+	if EventBus.has_signal("season_changed"):
+		EventBus.season_changed.connect(_on_season_changed)
+		
 	Loggie.msg("SettlementManager Initialized").domain(LogDomains.GAMEPLAY).info()
+
+func _on_season_changed(_season_name: String, _context: Dictionary) -> void:
+	# Store news for the EventManager to pick up
+	pending_succession_news = check_and_trigger_successions()
 	
 # --- TERRAIN & COORDINATE VALIDATION (NEW) ---
 
@@ -93,7 +102,7 @@ func get_nearest_valid_spawn_point(target_coords: Vector2i) -> Vector2i:
 	if is_tile_valid_for_placement(target_coords):
 		return target_coords
 		
-	Loggie.msg("Target invalid %s, searching for nearest land" % target_coords).domain(LogDomains.GAMEPLAY).debug()
+	Loggie.msg("Target invalid %s, searching for nearest land" % target_coords).domain(LogDomains.GAMEPLAY).warn()
 	
 	# BFS Flood Fill to find nearest valid tile
 	var visited: Dictionary[Vector2i, bool] = {} # Typed dictionary for 4.4
@@ -126,7 +135,7 @@ func get_nearest_valid_spawn_point(target_coords: Vector2i) -> Vector2i:
 				queue.append(next_cell)
 	
 	# Fallback if map is totally water or error
-	Loggie.msg("No valid spawn point found within radius").ctx({"radius": MAX_SEARCH_RADIUS}).domain(LogDomains.GAMEPLAY).warn()
+	Loggie.msg("No valid spawn point found within radius. Radius: %d" % MAX_SEARCH_RADIUS).domain(LogDomains.GAMEPLAY).warn()
 	return target_coords
 
 # --- COORDINATE & SPATIAL DELEGATION ---
@@ -388,13 +397,35 @@ func unregister_active_scene_nodes() -> void:
 	_active_tilemap_layer_ref = weakref(null)
 # --- PERSISTENCE ---
 
-func load_settlement(data: SettlementData) -> void:
+func load_settlement(data: SettlementData = null) -> void:
 	if ResourceLoader.exists(USER_SAVE_PATH):
 		current_settlement = load(USER_SAVE_PATH)
+		
+		# --- Phase 1.1: Legacy Save Sanitization ---
+		# Check for missing Winter properties in older save files to prevent crashes.
+		if current_settlement:
+			# 1. Sanitize Rationing Policy
+			# "get" returns null if the property doesn't exist in the loaded resource
+			if current_settlement.get("rationing_policy") == null:
+				Loggie.msg("Legacy Save detected: Injecting default Rationing Policy (NORMAL).").domain(LogDomains.SYSTEM).info()
+				current_settlement.set("rationing_policy", 0) # 0 = NORMAL
+			
+			# 2. Sanitize Sick Population
+			if current_settlement.get("sick_population") == null:
+				Loggie.msg("Legacy Save detected: Initializing Sick Population to 0.").domain(LogDomains.SYSTEM).info()
+				current_settlement.set("sick_population", 0)
+
 	else:
 		_load_fallback_data(data)
+	
 	active_map_data = current_settlement
-	if active_building_container: reconstruct_buildings_from_data()
+	
+	if active_building_container: 
+		reconstruct_buildings_from_data()
+
+	# Task 1.2.2: Reconcile households after load
+	reconcile_households()
+	
 	EventBus.settlement_loaded.emit(current_settlement)
 	
 func _load_fallback_data(data: SettlementData) -> void:
@@ -433,6 +464,9 @@ func reset_manager_state() -> void:
 
 func has_current_settlement() -> bool:
 	return current_settlement != null
+
+func has_save_file() -> bool:
+	return FileAccess.file_exists(USER_SAVE_PATH)
 
 # --- ECONOMY & WORKERS ---
 
@@ -758,6 +792,31 @@ func get_building_index(building_instance: Node2D) -> int:
 		if Vector2i(pos.x, pos.y) == grid_pos: return i
 	return -1
 
+
+# --- DATA & STATE ACCESSORS (NEW from NBLM Audit) ---
+
+## NEW: Safe iterator for all placed buildings' data.
+func get_all_buildings_data() -> Array[BuildingData]:
+	var buildings_data_list: Array[BuildingData] = []
+	if not current_settlement:
+		return buildings_data_list
+
+	# Iterate both placed and pending buildings
+	var all_building_entries = current_settlement.placed_buildings + current_settlement.pending_construction_buildings
+
+	for building_entry in all_building_entries:
+		var path = building_entry.get("resource_path")
+		if path and ResourceLoader.exists(path):
+			var building_res = load(path)
+			if building_res is BuildingData:
+				buildings_data_list.append(building_res)
+			else:
+				Loggie.msg("Loaded resource is not BuildingData. Path: %s" % path).domain(LogDomains.SETTLEMENT).warn()
+		else:
+			Loggie.msg("Invalid building resource path in settlement data. Path: %s" % path).domain(LogDomains.SETTLEMENT).error()
+			
+	return buildings_data_list
+
 func queue_seasonal_recruit(unit_data: UnitData, count: int) -> void:
 	for i in range(count): pending_seasonal_recruits.append(unit_data)
 
@@ -818,7 +877,7 @@ func _get_closest_walkable_point_exclusive(origin: Vector2i, max_radius: int, ex
 func batch_update_labor(assignments: Dictionary) -> void:
 	if not current_settlement: return
 	
-	# 1. Handle Builders (Same as before)
+	# 1. Handle Builders (Strict BUILD oath only)
 	if assignments.has("construction"):
 		var builder_pool = assignments["construction"]
 		for entry in current_settlement.pending_construction_buildings:
@@ -829,7 +888,6 @@ func batch_update_labor(assignments: Dictionary) -> void:
 			builder_pool -= to_assign
 
 	# 2. Handle Specific Resource Workers (Split Logic)
-	# We iterate placed buildings ONCE for efficiency
 	var food_pool = assignments.get("food", 0)
 	var wood_pool = assignments.get("wood", 0)
 	
@@ -853,7 +911,175 @@ func batch_update_labor(assignments: Dictionary) -> void:
 			wood_pool -= to_assign
 
 	# 3. Save & Emit
-	# Update the assignments dictionary for persistence
 	current_settlement.worker_assignments = assignments
 	save_settlement()
 	EventBus.settlement_loaded.emit(current_settlement)
+
+
+# --- HOUSEHOLD RECONCILIATION (Task 1.2) ---
+
+## Auto-generates households for legacy saves and keeps totals in sync.
+func reconcile_households() -> void:
+	if not current_settlement:
+		return
+
+	# Phase 2.5 extension - generate founder heads for headless households
+	# This MUST happen before any early returns to ensure all data is valid.
+	_reconcile_household_heads()
+
+	var total_pop = current_settlement.population_peasants
+
+	# Generate households for legacy saves (if array is empty)
+	if current_settlement.households.is_empty() and total_pop > 0:
+		_generate_default_households(total_pop)
+		return
+
+	# Sync existing household totals to current population
+	var current_total = 0
+	for house in current_settlement.households:
+		current_total += house.member_count
+
+	if current_total == total_pop:
+		return
+
+	# Adjust for deaths or growth (proportionally)
+	var delta = total_pop - current_total
+	_distribute_population_delta(delta)
+
+	# Remove empty households (safety cleanup)
+	current_settlement.households = current_settlement.households.filter(
+		func(h): return h.member_count > 0
+	)
+
+func _reconcile_household_heads() -> void:
+	if not current_settlement:
+		return
+	for house in current_settlement.households:
+		if house.head_of_household == null:
+			house.head_of_household = PatronymicGenerator.create_founder_head()
+
+## NEW: Succession Logic (Task 2.5.3)
+func trigger_succession(household: HouseholdData) -> String:
+	if not household.head_of_household:
+		household.head_of_household = PatronymicGenerator.create_founder_head()
+		return "A new leader has emerged for %s." % household.household_name
+
+	var old_head = household.head_of_household
+	var new_head = PatronymicGenerator.create_successor_head(old_head)
+	
+	# Task 4.3: Loyalty Inheritance
+	# Inherit 70% of previous loyalty + 15 baseline points (representing 30% of neutral 50)
+	var inherited_loyalty = int(household.loyalty * 0.7) + 15
+	household.loyalty = inherited_loyalty
+	
+	household.head_of_household = new_head
+	
+	var news = "%s %s has taken over the %s household." % [new_head.given_name, new_head.patronymic, household.household_name]
+	Loggie.msg("Succession: " + news).domain(LogDomains.SETTLEMENT).info()
+	return news
+
+func check_and_trigger_successions() -> Array[String]:
+	var news_list: Array[String] = []
+	if not current_settlement:
+		return news_list
+		
+	for house in current_settlement.households:
+		if house.head_of_household and not house.head_of_household.alive:
+			var report = trigger_succession(house)
+			news_list.append(report)
+			
+	return news_list
+
+func _generate_default_households(total_pop: int) -> void:
+	var household_size = 10
+	var count = max(1, total_pop / household_size)
+	var names = ["The Red-Shields", "The Ironbark Clan", "The Frost-Born", 
+				 "The Grey-Wolves", "The Stone-Hands"]
+
+	for i in range(count):
+		var house = HouseholdData.new()
+		house.household_name = names[i % names.size()]
+		house.member_count = household_size
+		house.current_oath = HouseholdData.SeasonalOath.IDLE
+		current_settlement.households.append(house)
+	
+	Loggie.msg("Generated %d default households for legacy save." % count).domain(LogDomains.SETTLEMENT).info()
+
+func _distribute_population_delta(delta: int) -> void:
+	if current_settlement.households.is_empty():
+		return
+		
+	var house_count = current_settlement.households.size()
+	
+	# --- CASE 1: GROWTH (Proportional/Equal) ---
+	if delta > 0:
+		var per_house = delta / house_count
+		var remainder = delta % house_count
+		
+		for i in range(house_count):
+			var house = current_settlement.households[i]
+			var adjustment = per_house
+			if i < abs(remainder):
+				adjustment += 1
+			house.member_count += adjustment
+			
+	# --- CASE 2: DEATHS (Political/Proportional) ---
+	elif delta < 0:
+		var total_deaths = abs(delta)
+		
+		# Sort households by loyalty (ascending: least loyal first)
+		var sorted_houses = current_settlement.households.duplicate()
+		sorted_houses.sort_custom(func(a, b): return a.loyalty < b.loyalty)
+		
+		# Apply deaths until none remain
+		while total_deaths > 0:
+			var deaths_applied_this_pass = 0
+			
+			for house in sorted_houses:
+				if total_deaths <= 0: break
+				if house.member_count <= 0: continue
+				
+				# Weighted chance: Less loyal households are more likely to lose people
+				# In Phase 3.3, we simply iterate the sorted list and take 1 person at a time
+				# until the delta is satisfied.
+				house.member_count -= 1
+				total_deaths -= 1
+				deaths_applied_this_pass += 1
+				
+			# Safety break if no one is left to die
+			if deaths_applied_this_pass == 0: break
+		
+		Loggie.msg("Crisis mortality applied based on household loyalty.").domain(LogDomains.SETTLEMENT).info()
+
+## NEW: Handles social impact of raid results (Phase 3.5)
+func apply_raid_social_results(net_gold: int) -> void:
+	if not current_settlement: return
+	
+	if net_gold > 0:
+		Loggie.msg("Raid Success: Applying social consequences (Jealousy/Compensation)").domain(LogDomains.SETTLEMENT).info()
+		
+		for house in current_settlement.households:
+			if house.current_oath == HouseholdData.SeasonalOath.RAID:
+				# Risk Compensation: Remove the initial -10 penalty
+				house.loyalty += 10
+			else:
+				# Jealousy: Non-raiders feel left out of the loot/glory
+				house.loyalty -= 5
+	else:
+		Loggie.msg("Raid Failure: No social shifts (Shared hardship)").domain(LogDomains.SETTLEMENT).info()
+
+func get_lowest_loyalty() -> int:
+	var lowest = 999
+	if not current_settlement: return lowest
+	for household in current_settlement.households:
+		if household.loyalty < lowest:
+			lowest = household.loyalty
+	return lowest
+
+func get_average_loyalty() -> float:
+	if not current_settlement or current_settlement.households.is_empty():
+		return 0.0
+	var total = 0
+	for household in current_settlement.households:
+		total += household.loyalty
+	return float(total) / current_settlement.households.size()

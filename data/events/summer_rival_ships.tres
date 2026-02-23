@@ -1,0 +1,48 @@
+[gd_resource type="Resource" script_class="EventData" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="Resource_defend"]
+script = ExtResource("2_event_choice")
+choice_text = "Sound the horn. Pull warriors from the fields to defend the shore."
+tooltip_text = "Harvest households interrupted: -15% food yield. Threat deterred."
+effect_key = "defend_shore"
+
+[sub_resource type="Resource" id="Resource_parley"]
+script = ExtResource("2_event_choice")
+choice_text = "Send a small delegation — perhaps they seek trade."
+tooltip_text = "+15% chance of trade offer next turn. 25% chance of ambush if hostile."
+effect_key = "parley_ships"
+
+[sub_resource type="Resource" id="Resource_ignore"]
+script = ExtResource("2_event_choice")
+choice_text = "Ignore them. Your walls are strong."
+tooltip_text = "25% chance of raid on outlying fields: -Food, -1 random building durability."
+effect_key = "ignore_ships"
+
+[sub_resource type="Resource" id="Resource_intercept"]
+script = ExtResource("2_event_choice")
+choice_text = "Launch your own longships and intercept at sea."
+tooltip_text = "Requires Command 15. Naval skirmish. Win: +Renown +Loot. Lose: -Warriors."
+effect_key = "intercept_ships"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "Longships on the Horizon"
+description = "A boy from the coastal watch sprints to your hall, breathless: foreign longships have been spotted rounding the headland. They fly no colours you recognise. They have not attacked — but they are watching your shore."
+event_id = "summer_rival_ships"
+is_unique = false
+base_chance = 0.45
+prerequisites = Array[String]([])
+trigger_season = "Summer"
+trigger_day = 4
+min_stewardship = -1
+min_command = -1
+min_prowess = -1
+min_renown = -1
+must_have_trait = ""
+must_not_have_trait = ""
+min_available_heirs = -1
+min_conquered_regions = -1
+choices = Array[ExtResource("2_event_choice")]([SubResource("Resource_defend"), SubResource("Resource_parley"), SubResource("Resource_ignore"), SubResource("Resource_intercept")])

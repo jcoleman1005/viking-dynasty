@@ -8,6 +8,21 @@ class_name RaidObjectiveManager
 @export var settlement_bridge_scene_path: String = "res://scenes/levels/SettlementBridge.tscn"
 @export var is_defensive_mission: bool = false
 
+@export_group("Timers")
+@export var fyrd_arrival_time: float = 120.0
+@export var decisive_victory_time: float = 300.0
+@export var defensive_delay: float = 3.0
+@export var failure_delay: float = 6.0
+
+@export_group("Grading")
+@export var casualty_limit: int = 2
+
+@export_group("Loot")
+@export var base_victory_gold: int = 200
+@export var base_renown: int = 200
+@export var renown_per_difficulty: int = 50
+@export var non_eco_building_loot: int = 50
+
 # --- Internal State ---
 var raid_loot: RaidLootData
 var rts_controller: RTSController
@@ -16,6 +31,16 @@ var building_container: Node2D
 var enemy_units: Array[BaseUnit] = [] 
 var is_initialized: bool = false
 var mission_over: bool = false
+var extraction_active: bool = false
+var extraction_zone: Area2D = null
+var units_in_extraction: Array = []
+var extraction_zone_activated: bool = false
+
+var smoke_timer: float = 0.0
+var smoke_active: bool = false
+var wave1_spawned: bool = false
+var wave2_spawned: bool = false
+var buildings_looted: int = 0
 
 # --- NEW: Performance Tracking ---
 var battle_start_time: int = 0
@@ -26,37 +51,65 @@ var dead_units_log: Array[UnitData] = []
 var escaped_unit_count: int = 0
 
 # --- FYRD TIMER STATE ---
-const FYRD_ARRIVAL_TIME: float = 120.0 # 2 Minutes
-var time_remaining: float = FYRD_ARRIVAL_TIME
+var time_remaining: float = 120.0 # Initialized to default, updated in initialize
 var fyrd_timer_active: bool = false
 var timer_label: Label
 
 signal fyrd_arrived()
+signal smoke_signal_triggered
+signal wave1_fyrd_arrived
+signal wave2_fyrd_arrived
+signal raid_failed
+
+@export_group("Fyrd Timing")
+@export var smoke_to_wave1_time: float = 5.0 # TEMP: was 90.0 — revert after Phase 4 testing
+@export var wave1_to_wave2_time: float = 5.0 # TEMP: was 60.0 — revert after Phase 4 testing
 
 # --- UI Theme ---
 const UI_THEME = preload("res://ui/themes/VikingDynastyTheme.tres")
 
 func _ready() -> void:
 	raid_loot = RaidLootData.new()
+	time_remaining = fyrd_arrival_time
 	# Connect to global unit death signal to track casualties
 	EventBus.player_unit_died.connect(_on_player_unit_died)
 	EventBus.raid_loot_secured.connect(_on_raid_loot_secured)
+	EventBus.alarm_raised.connect(func(_unit): trigger_smoke_signal())
 
 func _process(delta: float) -> void:
-	if fyrd_timer_active and not mission_over:
-		time_remaining -= delta
+	if mission_over: return
+	
+	if smoke_active:
+		smoke_timer += delta
 		
 		# Update UI
 		if is_instance_valid(timer_label):
-			var minutes = int(time_remaining / 60)
-			var seconds = int(time_remaining) % 60
-			timer_label.text = "FYRD ARRIVAL: %02d:%02d" % [minutes, seconds]
+			var time_to_wave1 = max(0, smoke_to_wave1_time - smoke_timer)
+			var time_to_wave2 = max(0, (smoke_to_wave1_time + wave1_to_wave2_time) - smoke_timer)
 			
-			if time_remaining < 30:
-				timer_label.modulate = Color.RED # Panic color
-		
-		if time_remaining <= 0:
-			_trigger_fyrd()
+			if not wave1_spawned:
+				var minutes = int(time_to_wave1 / 60)
+				var seconds = int(time_to_wave1) % 60
+				timer_label.text = "FYRD WAVE 1: %02d:%02d" % [minutes, seconds]
+				if time_to_wave1 < 15: timer_label.modulate = Color.RED
+			elif not wave2_spawned:
+				var minutes = int(time_to_wave2 / 60)
+				var seconds = int(time_to_wave2) % 60
+				timer_label.text = "FYRD WAVE 2: %02d:%02d" % [minutes, seconds]
+				if time_to_wave2 < 15: timer_label.modulate = Color.ORANGE
+			else:
+				timer_label.text = "FYRD IS HERE!"
+				timer_label.modulate = Color.RED
+
+		# Wave 1 Spawn
+		if not wave1_spawned and smoke_timer >= smoke_to_wave1_time:
+			_spawn_fyrd_wave1()
+			wave1_spawned = true
+			
+		# Wave 2 Spawn
+		if wave1_spawned and not wave2_spawned and smoke_timer >= (smoke_to_wave1_time + wave1_to_wave2_time):
+			_spawn_fyrd_wave2()
+			wave2_spawned = true
 
 func initialize(
 	p_rts_controller: RTSController, 
@@ -211,6 +264,104 @@ func _end_mission_via_retreat() -> void:
 	
 	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
 
+func setup_extraction(zone: Area2D) -> void:
+	extraction_zone = zone
+	if extraction_zone:
+		extraction_zone.body_entered.connect(_on_extraction_body_entered)
+		extraction_zone.body_exited.connect(_on_extraction_body_exited)
+		Loggie.msg("Extraction zone connected").domain("RAID").info()
+
+func _on_extraction_body_entered(body: Node2D) -> void:
+	if mission_over: return
+	
+	if not units_in_extraction.has(body):
+		if body.is_in_group("player_units") or body.is_in_group("thralls"):
+			units_in_extraction.append(body)
+
+	if extraction_zone_activated:
+		Loggie.msg("Unit RE-ENTERED extraction: %s (total: %d)" % [
+			body.name, units_in_extraction.size()]
+		).domain("RAID").info()
+		_check_extraction_complete()
+
+func _on_extraction_body_exited(body: Node2D) -> void:
+	if units_in_extraction.has(body):
+		units_in_extraction.erase(body)
+	
+	if not extraction_zone_activated and units_in_extraction.is_empty():
+		var player_units = get_tree().get_nodes_in_group("player_units")
+		if not player_units.is_empty(): # Make sure we're not empty due to death
+			extraction_zone_activated = true
+			Loggie.msg("Extraction Zone is now active!").domain("RAID").warn()
+
+func _check_extraction_complete() -> void:
+	if not extraction_zone_activated: return
+	var all_player_units = get_tree().get_nodes_in_group("player_units")
+	# Filter dead/freed units
+	var living = all_player_units.filter(func(u): 
+		return is_instance_valid(u) and not u.is_queued_for_deletion())
+	
+	if living.is_empty(): return
+	
+	var all_in_zone = true
+	for unit in living:
+		if not units_in_extraction.has(unit):
+			all_in_zone = false
+			break
+	
+	if all_in_zone:
+		# Also check any captured thralls (escorted civilians)
+		var all_thralls = get_tree().get_nodes_in_group("thralls")
+		for thrall in all_thralls:
+			if is_instance_valid(thrall) and not thrall.is_queued_for_deletion():
+				if not units_in_extraction.has(thrall):
+					all_in_zone = false
+					break
+	
+	if all_in_zone:
+		Loggie.msg("ALL UNITS EXTRACTED — Raid complete!").domain("RAID").warn()
+		_end_raid_via_extraction()
+
+func _end_raid_via_extraction() -> void:
+	if mission_over: return
+	mission_over = true
+	
+	# Final tally of thralls in extraction
+	var captured_thralls = 0
+	for body in units_in_extraction:
+		if is_instance_valid(body) and body.is_in_group("thralls"):
+			captured_thralls += 1
+	
+	if captured_thralls > 0 and raid_loot:
+		raid_loot.add_loot("thrall", captured_thralls)
+		Loggie.msg("Secured %d thralls during extraction." % captured_thralls).domain("RAID").info()
+	
+	var duration_sec = (Time.get_ticks_msec() - battle_start_time) / 1000.0
+	var mission_result = RaidResultData.new()
+	mission_result.outcome = "victory"
+	mission_result.loot = raid_loot.collected_loot.duplicate() if raid_loot else {}
+	mission_result.casualties = dead_units_log.duplicate()
+	
+	# Grade based on casualties
+	var lost_count = dead_units_log.size()
+	if lost_count == 0:
+		mission_result.victory_grade = "Decisive"
+	elif lost_count > casualty_limit:
+		mission_result.victory_grade = "Pyrrhic"
+	else:
+		mission_result.victory_grade = "Standard"
+	
+	mission_result.renown_earned = base_renown
+	
+	RaidManager.pending_raid_result = mission_result
+	RaidManager.last_raid_outcome = "victory"
+	
+	Loggie.msg("Raid Victory via Extraction! Grade: %s" % mission_result.victory_grade).domain("RAID").info()
+	_show_victory_message("Raid Complete!", "Your warriors return with plunder.")
+	
+	await get_tree().create_timer(3.0).timeout
+	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
+
 func _connect_to_building_signals() -> void:
 	if not building_container: return
 	
@@ -227,6 +378,8 @@ func _connect_to_building_signals() -> void:
 func _on_loot_stolen(type: String, amount: int) -> void:
 	if mission_over: return
 	
+	trigger_smoke_signal()
+	
 	# Add to the temporary raid stash
 	raid_loot.add_loot(type, amount)
 	
@@ -234,6 +387,9 @@ func _on_loot_stolen(type: String, amount: int) -> void:
 
 func _on_enemy_building_destroyed_for_loot(building: BaseBuilding) -> void:
 	if mission_over: return
+	
+	trigger_smoke_signal()
+	
 	var building_data = building.data as BuildingData
 	if raid_loot and building_data:
 		raid_loot.add_loot_from_building(building_data)
@@ -280,7 +436,7 @@ func _on_defensive_mission_won() -> void:
 	if mission_over: return
 	mission_over = true
 	_show_victory_message("VICTORY!", "All attackers have been defeated.")
-	await get_tree().create_timer(3.0).timeout
+	await get_tree().create_timer(defensive_delay).timeout
 	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
 
 func _on_mission_failed(reason: String) -> void:
@@ -295,7 +451,7 @@ func _on_mission_failed(reason: String) -> void:
 	else:
 		_show_failure_message(reason + "\n\nYour raid failed. No loot was secured.")
 	
-	await get_tree().create_timer(6.0).timeout
+	await get_tree().create_timer(failure_delay).timeout
 	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
 
 # --- VICTORY GRADING LOGIC ---
@@ -305,11 +461,14 @@ func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	
 	var duration_sec = (Time.get_ticks_msec() - battle_start_time) / 1000.0
 	var grade = "Standard"
-	var casualty_limit = 2
 	var lost_count = dead_units_log.size()
 	
+	# Logic fix: Use target's par time or default
+	var target = RaidManager.current_raid_target
+	var par = target.par_time_seconds if target else decisive_victory_time
+	
 	# Simple Grading Logic
-	if lost_count == 0 and duration_sec < 300:
+	if lost_count == 0 and duration_sec < par:
 		grade = "Decisive"
 	elif lost_count > casualty_limit:
 		grade = "Pyrrhic"
@@ -333,14 +492,14 @@ func _on_enemy_hall_destroyed(_building: BaseBuilding = null) -> void:
 	# Calculate Renown
 	var difficulty = RaidManager.current_raid_difficulty
 	# Base 200 + 50 per star
-	mission_result.renown_earned = 200 + (difficulty * 50)
+	mission_result.renown_earned = base_renown + (difficulty * renown_per_difficulty)
 	
 	mission_result.casualties = dead_units_log.duplicate()
 	
 	RaidManager.pending_raid_result = mission_result
 	RaidManager.last_raid_outcome = "victory"
 	
-	Loggie.msg("Raid Victory!").domain(LogDomains.RAID).ctx("Grade", grade).info()
+	Loggie.msg("Raid Victory! Grade: %s" % grade).domain("RAID").info()
 	_show_victory_message("Victory!", "The settlement lies in ruins.")
 
 func _trigger_fyrd() -> void:
@@ -349,6 +508,21 @@ func _trigger_fyrd() -> void:
 	if is_instance_valid(timer_label):
 		timer_label.text = "THE FYRD IS HERE!"
 	fyrd_arrived.emit()
+
+func trigger_smoke_signal() -> void:
+	if smoke_active: return
+	smoke_active = true
+	smoke_timer = 0.0
+	smoke_signal_triggered.emit()
+	Loggie.msg("SMOKE SIGNAL! Fyrd Wave 1 in %d seconds." % int(smoke_to_wave1_time)).domain("RAID").warn()
+
+func _spawn_fyrd_wave1() -> void:
+	Loggie.msg("STUB: Wave 1 would spawn here").domain("RAID").warn()
+	wave1_fyrd_arrived.emit()
+
+func _spawn_fyrd_wave2() -> void:
+	Loggie.msg("STUB: Wave 2 would spawn here").domain("RAID").warn()
+	wave2_fyrd_arrived.emit()
 
 # --- HELPERS ---
 func _show_failure_message(reason: String) -> void:

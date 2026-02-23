@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="EventData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="Resource_buy_all"]
+script = ExtResource("2_event_choice")
+choice_text = "Buy as much grain as your gold allows."
+tooltip_text = "Up to -100 Gold. +Food proportional to spend. Affects survival verdict."
+effect_key = "buy_grain_all"
+
+[sub_resource type="Resource" id="Resource_buy_modest"]
+script = ExtResource("2_event_choice")
+choice_text = "Buy a modest amount. Preserve gold for winter."
+tooltip_text = "-40 Gold. +Food moderate. Balanced choice."
+effect_key = "buy_grain_modest"
+
+[sub_resource type="Resource" id="Resource_decline"]
+script = ExtResource("2_event_choice")
+choice_text = "Let them sail. Trust your stores."
+tooltip_text = "No cost. Survival verdict unchanged."
+effect_key = "decline_merchant"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "Before the Ledger Closes"
+description = "A merchant vessel is making its final run before the sea-lanes close for winter. Your steward brings word: they are selling grain at fair prices, but only today. The Autumn Ledger has not yet been settled — this is your last chance to shore up the stores."
+event_id = "autumn_last_trade"
+is_unique = false
+base_chance = 0.6
+prerequisites = Array[String]([])
+trigger_season = "Autumn"
+trigger_day = -1
+min_stewardship = -1
+min_command = -1
+min_prowess = -1
+min_renown = -1
+must_have_trait = ""
+must_not_have_trait = ""
+min_available_heirs = -1
+min_conquered_regions = -1
+choices = Array[ExtResource("2_event_choice")]([SubResource("Resource_buy_all"), SubResource("Resource_buy_modest"), SubResource("Resource_decline")])

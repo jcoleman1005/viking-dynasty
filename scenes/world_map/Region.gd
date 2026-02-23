@@ -32,11 +32,11 @@ var is_allied: bool = false # Is this region allied via marriage?
 
 func _ready() -> void:
 	if not data:
-		push_error("Region node '%s' has no WorldRegionData!" % name)
+		Loggie.msg("Region node '%s' has no WorldRegionData!" % name).domain("MAP").error()
 		return
 	
 	if not highlight_poly:
-		push_error("Region '%s' missing 'HighlightPoly'." % name)
+		Loggie.msg("Region '%s' missing 'HighlightPoly'." % name).domain("MAP").error()
 		return
 		
 	if not collision_poly:

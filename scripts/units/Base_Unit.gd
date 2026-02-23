@@ -20,6 +20,8 @@ var _stuck_timer: float = 0.0
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
 @onready var separation_area: Area2D = $SeparationArea
+@onready var nav_agent: NavigationAgent2D = $NavAgent
+@onready var unit_visualizer: UnitVisualizer = $UnitVisualizer
 
 @export_group("AI")
 @export var separation_enabled: bool = true
@@ -89,8 +91,11 @@ func _ready() -> void:
 		if warband_ref.assigned_heir_name != "":
 			var heir = DynastyManager.find_heir_by_name(warband_ref.assigned_heir_name)
 			if heir:
-				if heir.prowess > 5:
-					var p_bonus = 1.0 + ((heir.prowess - 5) * 0.10)
+				# Use the Jarl's Might Score logic for heirs as well
+				# Base Might Score for units = Command + Prowess
+				var might = heir.command + heir.prowess
+				if might > 10:
+					var p_bonus = 1.0 + ((might - 10) * 0.10)
 					dmg_mult *= p_bonus
 				modulate = Color(1.2, 1.2, 0.8) 
 				
@@ -176,6 +181,11 @@ func _on_grid_updated(_grid_pos: Vector2i) -> void:
 
 func _physics_process(delta: float) -> void:
 	if not data: return
+	
+	# TODO: Implement task-specific animations based on current assignments:
+	# - Harvesting: Walk back and forth from the Great Hall to the resource building.
+	# - Construction: Walk around the building perimeter and stop for a few seconds.
+	# - Raiding: March in formation towards targets.
 
 	var desired_velocity = Vector2.ZERO
 	
@@ -315,10 +325,7 @@ func _calculate_obstacle_avoidance() -> Vector2:
 		_debug_log_timer += get_process_delta_time()
 		if _debug_log_timer > 0.5:
 			_debug_log_timer = 0.0
-			print("\n[AVOIDANCE DEBUG] Unit: %s" % name)
-			print(" -> Velocity: %s" % velocity)
-			print(" -> Hits: %d | Final Steer: %s" % [hit_count, final_steer])
-			print("------------------------------------------------")
+			
 			
 	return final_steer
 
@@ -353,9 +360,32 @@ func _tween_color(to_color: Color, duration: float = 0.2) -> void:
 	_color_tween = create_tween()
 	_color_tween.tween_property(sprite, "modulate", to_color, duration).set_trans(Tween.TRANS_SINE)
 
+func set_movement_target(target_pos: Vector2) -> void:
+	if RaidNavigationManager.is_raid_active:
+		nav_agent.target_position = target_pos
+
 func take_damage(amount: int, attacker: Node2D = null) -> void:
 	if _is_dying: return
-	current_health = max(0, current_health - amount)
+	
+	var final_damage = amount
+	# Shield wall: stationary wedge formation reduces damage
+	if data and velocity.length() < 5.0:
+		var current_form = -1
+		var form_obj = self.get("formation")
+		if form_obj:
+			current_form = form_obj.formation_type
+		else:
+			var leader_obj = self.get("leader")
+			if leader_obj:
+				var leader_form = leader_obj.get("formation")
+				if leader_form:
+					current_form = leader_form.formation_type
+					
+		if current_form == SquadFormation.FormationType.WEDGE:
+			final_damage = int(amount * (1.0 - data.shield_wall_damage_reduction))
+	
+	current_health = max(0, current_health - final_damage)
+	
 	if fsm and is_instance_valid(attacker):
 		fsm.command_defensive_attack(attacker)
 	if current_health == 0:
@@ -365,14 +395,43 @@ func take_damage(amount: int, attacker: Node2D = null) -> void:
 func die() -> void:
 	if is_in_group("player_units"):
 		EventBus.player_unit_died.emit(self)
+	
+	# Drop loot if carrying any
+	if not inventory.is_empty():
+		_drop_loot_pickup()
+		
 	destroyed.emit()
 	queue_free()
+
+func _drop_loot_pickup() -> void:
+	var pickup = LootPickup.new()
+	pickup.loot_data = inventory.duplicate()
+	pickup.despawn_timer = 30.0
+	pickup.global_position = global_position
+	
+	# Add to parent container (UnitContainer)
+	var container = get_parent()
+	if is_instance_valid(container):
+		container.call_deferred("add_child", pickup)
+		Loggie.msg("Loot dropped at %s: %s" % [str(global_position), str(inventory)]).domain("RAID").info()
 
 func command_move_to(target_pos: Vector2) -> void:
 	if fsm: fsm.command_move_to(target_pos)
 
 func command_attack(target: Node2D) -> void:
 	if fsm: fsm.command_attack(target)
+
+func get_fsm() -> Node:
+	return fsm
+
+func _set_initial_state(state: UnitAIConstants.State) -> void:
+	var fsm_ref = get_fsm()
+	if fsm_ref:
+		fsm_ref.change_state(state)
+
+func emit_alarm() -> void:
+	Loggie.msg("Alarm raised by: %s" % name).domain("RAID").info()
+	EventBus.alarm_raised.emit(self)
 
 var is_selected: bool = false
 func set_selected(selected: bool) -> void:

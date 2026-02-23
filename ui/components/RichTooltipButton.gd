@@ -5,7 +5,7 @@ extends Button
 
 func _make_custom_tooltip(for_text: String) -> Object:
 	# DEBUG: Check the Output console to see if this runs when you hover
-	print("RichTooltipButton: Generating tooltip for ", name)
+	Loggie.msg("RichTooltipButton: Generating tooltip for %s" % name).domain("UI").debug()
 	
 	# 1. Create the container
 	var panel = PanelContainer.new()

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="UnitData" load_steps=2 format=3 uid="uid://test_villager"]
+
+[ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+display_name = "Test Villager"
+scene_path = "uid://c7powse34uuxc"
+max_health = 20
+move_speed = 120.0
+acceleration = 10.0
+linear_damping = 5.0
+initial_state = 11
+debug_color = Color(0.2, 0.9, 0.2, 1)
+debug_shape = "circle"
+visual_radius = 12.0

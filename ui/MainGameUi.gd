@@ -23,19 +23,17 @@ const BUILDING_PATHS = [
 @export var dynasty_ui_scene: PackedScene
 
 @export_group("Seasonal Panels")
-@export var spring_panel_scene: PackedScene
+@export var council_panel_scene: PackedScene # Unified scene for Spring & Winter
+@export var summer_panel_scene: PackedScene  # New: Clan Allocation Menu
 @export var autumn_panel_scene: PackedScene
-@export var winter_panel_scene: PackedScene
 
-# ------------------------------------------------------------------------------
-# NODE REFERENCES
-# ------------------------------------------------------------------------------
+@export var decree_popup_scene: PackedScene
 
-@onready var center_view: Control = %CenterView
-
-# Sidebar References
+@export_group("Sidebar Configuration")
 @export var sidebar_panel: Control
 @export var sidebar_content: Control
+
+@onready var center_view: Control = %CenterView
 
 # ------------------------------------------------------------------------------
 # STATE
@@ -50,6 +48,7 @@ var idle_worker_warning: ConfirmationDialog # NEW: Runtime generated dialog
 # ------------------------------------------------------------------------------
 
 func _ready() -> void:
+	Loggie.msg("MainGameUI: decree_popup_scene state: " + str(decree_popup_scene)).domain(LogDomains.UI).info()
 	var available_buildings = _scan_for_buildings()
 	
 	if bottom_bar and bottom_bar.has_method("setup"):
@@ -83,6 +82,9 @@ func _connect_signals() -> void:
 			Loggie.msg("EventBus missing 'sidebar_close_requested' signal").domain(LogDomains.UI).error()
 		else:
 			EventBus.sidebar_close_requested.connect(_close_sidebar)
+		
+		EventBus.construction_decree_issued.connect(_on_construction_decree_issued)
+		EventBus.summer_day_changed.connect(_update_advance_button)
 		
 		if bottom_bar:
 			bottom_bar.scene_navigation_requested.connect(func(path):
@@ -134,7 +136,7 @@ func _open_sidebar(scene: PackedScene, module_name: String) -> void:
 	
 	# 2. Instance new module
 	if scene:
-		Loggie.msg("Instantiating Module: " + module_name).info()
+		Loggie.msg("Instantiating Module: " + module_name).domain(LogDomains.UI).info()
 		
 		var instance = scene.instantiate()
 		instance.name = module_name
@@ -151,7 +153,7 @@ func _open_sidebar(scene: PackedScene, module_name: String) -> void:
 			instance.setup()
 			
 	else:
-		Loggie.msg("Sidebar scene is null for: " + module_name).error()
+		Loggie.msg("Sidebar scene is null for: " + module_name).domain(LogDomains.UI).error()
 		return
 
 	# 3. Animate Open
@@ -171,6 +173,16 @@ func _close_sidebar() -> void:
 	sidebar_tween.tween_property(sidebar_panel, "position:x", target_x, 0.3)
 	
 	is_sidebar_open = false
+
+func _on_construction_decree_issued(decree: ConstructionDecree) -> void:
+	if decree_popup_scene:
+		var popup = decree_popup_scene.instantiate()
+		add_child(popup)
+		if popup.has_method("setup"):
+			popup.setup(decree)
+		Loggie.msg("Decree Popup Opened via MainGameUI").domain(LogDomains.UI).info()
+	else:
+		Loggie.msg("decree_popup_scene not assigned in MainGameUI").domain(LogDomains.UI).error()
 
 # ------------------------------------------------------------------------------
 # DATA LOADING
@@ -208,6 +220,9 @@ func _update_season_state(context: Dictionary = {}) -> void:
 	if bottom_bar: bottom_bar.set_agency_state(is_summer)
 	
 	if season_advance_btn:
+		# HIDE in Spring: The player MUST pick a council card to advance.
+		season_advance_btn.visible = (current_season != DynastyManager.Season.SPRING)
+		
 		match current_season:
 			DynastyManager.Season.SPRING: season_advance_btn.text = "Start Summer"
 			DynastyManager.Season.SUMMER: season_advance_btn.text = "End Summer"
@@ -215,11 +230,22 @@ func _update_season_state(context: Dictionary = {}) -> void:
 			DynastyManager.Season.WINTER: season_advance_btn.text = "End Year"
 
 	_update_center_view(current_season, context)
-	Loggie.msg("UI Season State Updated: " + str(current_season)).info()
+	Loggie.msg("UI Season State Updated: " + str(current_season)).domain(LogDomains.UI).info()
+
+func _update_advance_button(current_day: int, max_days: int) -> void:
+	if DynastyManager.current_season == DynastyManager.Season.SUMMER:
+		season_advance_btn.text = "Next Day (%d/%d)" % [current_day, max_days]
+	else:
+		season_advance_btn.text = "End Season"
 
 # MODIFIED: Intercepts the click to check for idle workers in Summer
 func _on_advance_season_clicked() -> void:
 	if not DynastyManager: return
+	
+	if DynastyManager.current_season == DynastyManager.Season.SUMMER \
+	and DynastyManager.current_day < DynastyManager.SUMMER_DAYS:
+		DynastyManager.advance_day()
+		return
 
 	# 1. Harvest Safety Check (Only in Summer)
 	if DynastyManager.current_season == DynastyManager.Season.SUMMER:
@@ -249,15 +275,15 @@ func _update_center_view(season_enum: int, context: Dictionary) -> void:
 	var season_string_name = ""
 	
 	match season_enum:
-		DynastyManager.Season.SPRING: 
-			scene_to_load = spring_panel_scene
-			season_string_name = "Spring"
+		DynastyManager.Season.SPRING, DynastyManager.Season.WINTER:
+			scene_to_load = council_panel_scene
+			season_string_name = "Spring" if season_enum == DynastyManager.Season.SPRING else "Winter"
+		DynastyManager.Season.SUMMER:
+			# Summer uses the RTS view + Overlay menus. No center panel needed.
+			return
 		DynastyManager.Season.AUTUMN: 
 			scene_to_load = autumn_panel_scene
 			season_string_name = "Autumn"
-		DynastyManager.Season.WINTER: 
-			scene_to_load = winter_panel_scene
-			season_string_name = "Winter"
 			
 	if scene_to_load:
 		var instance = scene_to_load.instantiate()

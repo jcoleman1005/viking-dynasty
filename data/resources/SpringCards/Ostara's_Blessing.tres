@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="SeasonalCardResource" load_steps=2 format=3 uid="uid://dt38bx8jkvrno"]
+
+[ext_resource type="Script" uid="uid://cni5gdnpbb1v2" path="res://data/resources/SeasonalCardResource.gd" id="1_57kbv"]
+
+[resource]
+script = ExtResource("1_57kbv")
+display_name = "Ostara's Blessing"
+description = "\"A season of new life. Through ritual and feast, we ensure our hearths are crowded and our spirits are high.\""
+condensed_effects = "↑ Birth Chance: +15% | ↑ Authority: +10 | ↓ Gold: -30"
+cost_ap = 0
+cost_gold = 30
+grant_authority = 10
+mod_birth_chance = 0.1499999999999999
+metadata/_custom_type_script = "uid://cni5gdnpbb1v2"

@@ -1,0 +1,48 @@
+[gd_resource type="Resource" script_class="EventData" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="Resource_grant"]
+script = ExtResource("2_event_choice")
+choice_text = "Grant them a parcel of land from your expansion."
+tooltip_text = "-1 building plot from new region. Bondi become loyal freemen: +Population, +Renown."
+effect_key = "grant_land"
+
+[sub_resource type="Resource" id="Resource_pay"]
+script = ExtResource("2_event_choice")
+choice_text = "Pay them off with gold and send them away."
+tooltip_text = "-50 Gold. Tension resolved. No loyalty gained."
+effect_key = "pay_bondi"
+
+[sub_resource type="Resource" id="Resource_assert"]
+script = ExtResource("2_event_choice")
+choice_text = "Remind them who holds authority here."
+tooltip_text = "Requires Command 14. Bondi permanently disgruntled — may trigger future event."
+effect_key = "assert_authority"
+
+[sub_resource type="Resource" id="Resource_elevate"]
+script = ExtResource("2_event_choice")
+choice_text = "Offer them Household status in your clan."
+tooltip_text = "-1 Authority. New household created with low loyalty. Significant long-term upside."
+effect_key = "elevate_bondi"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "The Bondi's Grievance"
+description = "A free farmer — a bondi, not sworn to any household — comes to your hall with a grievance. Your expansion has enclosed land his family farmed for three generations. He is not alone; six others stand behind him. They are not warriors, but they are angry, and they talk to your thralls."
+event_id = "summer_bondi_grievance"
+is_unique = false
+base_chance = 0.5
+prerequisites = Array[String]([])
+trigger_season = "Summer"
+trigger_day = 5
+min_stewardship = -1
+min_command = -1
+min_prowess = -1
+min_renown = -1
+must_have_trait = ""
+must_not_have_trait = ""
+min_available_heirs = -1
+min_conquered_regions = 1
+choices = Array[ExtResource("2_event_choice")]([SubResource("Resource_grant"), SubResource("Resource_pay"), SubResource("Resource_assert"), SubResource("Resource_elevate")])

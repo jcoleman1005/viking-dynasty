@@ -47,6 +47,8 @@ func _ready() -> void:
 	if not data: return
 	current_health = data.max_health
 	
+	add_to_group("buildings")
+	
 	# 1. Setup Physics/Collision
 	if not collision_shape:
 		collision_shape = CollisionShape2D.new()
@@ -241,6 +243,7 @@ func take_damage(amount: int, _attacker: Node2D = null) -> void:
 
 func die() -> void:
 	building_destroyed.emit(self)
+	EventBus.building_destroyed.emit(self)
 	queue_free()
 
 func _input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:

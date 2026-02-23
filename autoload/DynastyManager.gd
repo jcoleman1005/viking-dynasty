@@ -8,15 +8,18 @@ var minimum_inherited_legitimacy: int = 0
 var loaded_legacy_upgrades: Array[LegacyUpgradeData] = []
 
 var active_year_modifiers: Dictionary[String, float] = {
-	"damage_mult": 0.0,
-	"xp_mult": 0.0,
-	"birth_chance": 0.0,
-	"harvest_mult": 0.0
+	"mod_unit_damage": 0.0,
+	"mod_raid_xp": 0.0,
+	"mod_pop_growth": 0.0,
+	"mod_heir_birth_chance": 0.0,
+	"mod_harvest_yield": 0.0
 }
 var current_year: int = 867 
 # --- SEASON STATE ---
 enum Season { SPRING, SUMMER, AUTUMN, WINTER }
 var current_season: Season = Season.SPRING
+const SUMMER_DAYS: int = 12
+var current_day: int = 0
 
 # --- CONSTANTS ---
 const USER_DYNASTY_PATH = "user://savegame_dynasty.tres"
@@ -29,15 +32,24 @@ func _ready() -> void:
 
 # --- SEASON LOGIC ---
 
+func advance_day() -> void:
+	current_day += 1
+	EventBus.summer_day_changed.emit(current_day, SUMMER_DAYS)
+	EventManager.check_daily_events(current_day)
+	if current_day >= SUMMER_DAYS:
+		advance_season()
+
 func advance_season() -> void:
 	match current_season:
 		Season.SPRING:
 			_transition_to_season(Season.SUMMER)
+			current_day = 1
+			EventBus.summer_day_changed.emit(current_day, SUMMER_DAYS)
+			EventManager.check_daily_events(current_day)
 		Season.SUMMER:
 			_transition_to_season(Season.AUTUMN)
 		Season.AUTUMN:
 			_transition_to_season(Season.WINTER)
-			start_winter_cycle() 
 		Season.WINTER:
 			end_winter_cycle_complete()
 
@@ -48,24 +60,28 @@ func _transition_to_season(new_season: Season) -> void:
 	var names = ["Spring", "Summer", "Autumn", "Winter"]
 	var s_name = names[current_season]
 	
-	# FIX: Removed .data() call, using string formatting instead
 	Loggie.msg("Season Advancing to: %s..." % s_name).domain(LogDomains.DYNASTY).info()
 	
 	# --- ORCHESTRATION: The Game Loop ---
 	
 	# 1. Labor (Construction)
-	# Processed first so buildings complete before resources are calculated/consumed.
 	if SettlementManager.has_method("process_construction_labor"):
 		SettlementManager.process_construction_labor()
 	
+	# --- Task 1.4 FIX: Roll Severity Early ---
+	# We must roll the severity for the *upcoming* Winter when we enter Autumn.
+	# This ensures the Autumn Ledger UI can display the correct forecast.
+	if s_name == "Autumn":
+		WinterManager.roll_upcoming_severity()
+	
 	# 2. Economy & Payout (THE SOURCE OF TRUTH)
-	# We calculate and APPLY the payout first. This ensures SettlementManager's treasury
-	# reflects the new state (e.g., Harvest added) before we snapshot it.
 	var payout_report = EconomyManager.calculate_seasonal_payout(s_name)
 	
 	# 3. Winter Specifics (Hunger Check)
-	# We process this now so any starvation warnings are included in the context.
 	if s_name == "Winter":
+		# TODO: Implement a turn-based day system for Winter (e.g., WINTER_DAYS = 6)
+		# to allow for daily events and incremental survival pressure.
+		start_winter_cycle() # Recalculate Hall Actions BEFORE signal
 		if SettlementManager.has_method("process_warband_hunger"):
 			var warnings = SettlementManager.process_warband_hunger()
 			if not warnings.is_empty():
@@ -77,30 +93,28 @@ func _transition_to_season(new_season: Season) -> void:
 		SettlementManager.save_settlement()
 		
 	# 5. ASSEMBLE CONTEXT PAYLOAD (The Fix)
-	# This dictionary provides the "Immutable Context" for UI reports.
 	var context_data: Dictionary = {}
-	
-	# A. Payout Data (What just happened)
 	context_data["payout"] = payout_report
 	
-	# B. Treasury Snapshot (Current State)
 	if SettlementManager.current_settlement and "treasury" in SettlementManager.current_settlement:
 		context_data["treasury"] = SettlementManager.current_settlement.treasury.duplicate()
 	else:
 		context_data["treasury"] = {}
 		
-	# C. Forecast Data (Projected Future)
-	# Crucial for the Autumn Report to show "Winter Demand".
 	if EconomyManager.has_method("get_winter_forecast"):
 		context_data["forecast"] = EconomyManager.get_winter_forecast()
+		# Inject the rolled severity into the context for UI convenience,
+		# though the UI can also access WinterManager directly.
+		context_data["upcoming_severity"] = WinterManager.upcoming_severity
 	
-	# 6. EMIT SIGNAL (Now carries the payload)
-	# The AutumnLedgerUI listens to this. It will grab 'payout' and 'forecast' 
-	# to build the AutumnReport resource.
+	# 6. EMIT SIGNAL
 	EventBus.season_changed.emit(s_name, context_data)
 	
-	# 7. Legacy Feedback (Floating Text)
+	# 7. Legacy Feedback
 	_display_seasonal_feedback(s_name, payout_report)
+	
+	# 8. Check for seasonal events (Day -1)
+	EventManager.check_daily_events(-1)
 
 func _display_seasonal_feedback(season_name: String, payout: Dictionary) -> void:
 	var center_screen = Vector2(960, 500)
@@ -147,8 +161,10 @@ func aggregate_card_effects(card: SeasonalCardResource) -> void:
 		active_year_modifiers["mod_unit_damage"] = active_year_modifiers.get("mod_unit_damage", 0.0) + card.mod_unit_damage
 	if "mod_raid_xp" in card:
 		active_year_modifiers["mod_raid_xp"] = active_year_modifiers.get("mod_raid_xp", 0.0) + card.mod_raid_xp
-	if "mod_birth_chance" in card:
-		active_year_modifiers["mod_birth_chance"] = active_year_modifiers.get("mod_birth_chance", 0.0) + card.mod_birth_chance
+	if "mod_pop_growth" in card:
+		active_year_modifiers["mod_pop_growth"] = active_year_modifiers.get("mod_pop_growth", 0.0) + card.mod_pop_growth
+	if "mod_heir_birth_chance" in card:
+		active_year_modifiers["mod_heir_birth_chance"] = active_year_modifiers.get("mod_heir_birth_chance", 0.0) + card.mod_heir_birth_chance
 	if "mod_harvest_yield" in card:
 		active_year_modifiers["mod_harvest_yield"] = active_year_modifiers.get("mod_harvest_yield", 0.0) + card.mod_harvest_yield
 		
@@ -166,7 +182,8 @@ func reset_year_stats() -> void:
 	active_year_modifiers.clear()
 	active_year_modifiers["mod_unit_damage"] = 0.0
 	active_year_modifiers["mod_raid_xp"] = 0.0
-	active_year_modifiers["mod_birth_chance"] = 0.0
+	active_year_modifiers["mod_pop_growth"] = 0.0
+	active_year_modifiers["mod_heir_birth_chance"] = 0.0
 	active_year_modifiers["mod_harvest_yield"] = 0.0
 	
 	Loggie.msg("DynastyManager: Year stats reset for new cycle.").domain(LogDomains.DYNASTY).info()
@@ -420,6 +437,9 @@ func _resolve_expedition(heir: JarlHeirData) -> void:
 func _try_birth_event() -> void:
 	if current_jarl.heirs.size() >= 6: return
 	var base_chance = 0.30
+	
+	# Apply card-based birth modifiers (Heirs Only)
+	base_chance += active_year_modifiers.get("mod_heir_birth_chance", 0.0)
 	
 	if active_year_modifiers.has("BLOT_FREYR"):
 		base_chance += 0.50 

@@ -7,6 +7,8 @@
 
 extends BaseUnit
 
+var skip_unaware: bool = false
+
 # This function is called by the 'SettlementBridge' spawner
 func set_attack_target(target: BaseBuilding) -> void:
 	"""
@@ -17,7 +19,7 @@ func set_attack_target(target: BaseBuilding) -> void:
 		return
 
 	# Set the node (for attacking)
-	fsm.target_unit = target
+	fsm.objective_target = target
 	
 	# --- THIS IS THE FIX ---
 	# Target the building's actual center.
@@ -31,3 +33,15 @@ func set_attack_target(target: BaseBuilding) -> void:
 	fsm.change_state(UnitAIConstants.State.MOVING)
 	# --- END FIX ---
 	Loggie.msg("Viking Raider initialized and moving to target: %s" % target.data.display_name).domain("RTS").info()
+
+func _deferred_setup(damage_mult: float = 1.0) -> void:
+	super._deferred_setup(damage_mult)
+	
+	Loggie.msg("DEFERRED_SETUP: %s skip_unaware=%s setting_state=%s" % [
+		name,
+		str(skip_unaware),
+		"SKIPPED" if skip_unaware else "UNAWARE"]
+	).domain("RAID").warn()
+	
+	if fsm and not skip_unaware:
+		fsm.change_state(UnitAIConstants.State.UNAWARE)

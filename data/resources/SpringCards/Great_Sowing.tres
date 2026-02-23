@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="SeasonalCardResource" load_steps=2 format=3 uid="uid://ck0fp0wxqyxgw"]
+
+[ext_resource type="Script" uid="uid://cni5gdnpbb1v2" path="res://data/resources/SeasonalCardResource.gd" id="1_1c8io"]
+
+[resource]
+script = ExtResource("1_1c8io")
+display_name = "Great Sowing"
+description = "\"The earth is hungry. Feed it your finest grain and strongest backs, and the Autumn tables will groan under the weight of the harvest.\""
+condensed_effects = "↓ Food: -50 | ↓ AP: -2 | ↑↑ Harvest Yield: +40%"
+cost_ap = 2
+cost_food = 50
+mod_harvest_yield = 0.3999999999999999
+metadata/_custom_type_script = "uid://cni5gdnpbb1v2"

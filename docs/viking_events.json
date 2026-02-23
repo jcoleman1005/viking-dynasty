@@ -1,0 +1,680 @@
+{
+  "meta": {
+    "description": "Viking Strategy Game — Event Batch. Three implementation passes based on dependency complexity.",
+    "passes": {
+      "pass_1": "Simple events. No new flags or unimplemented conditions. Implement first.",
+      "pass_2": "Require new game flags: sickness_seed (bool), seer_present (bool). Implement flags first, then these events.",
+      "pass_3": "Chain events. Depend on pass_2 flags and prerequisite events existing. Implement last."
+    },
+    "field_defaults": {
+      "min_stewardship": -1,
+      "min_command": -1,
+      "min_prowess": -1,
+      "min_renown": -1,
+      "must_have_trait": "",
+      "must_not_have_trait": "",
+      "min_available_heirs": -1,
+      "min_conquered_regions": -1,
+      "trigger_day": -1,
+      "trigger_season": "",
+      "prerequisites": [],
+      "is_unique": false
+    },
+    "choice_fields": ["choice_text", "tooltip_text", "effect_key"],
+    "notes": {
+      "trigger_season": "Must match DynastyManager.get_current_season_name() exactly. Values: Summer, Spring, Autumn, Winter",
+      "trigger_day": "-1 means any day. Summer has 12 days. Winter will also use days when implemented.",
+      "effect_key": "These keys must be implemented in EventManager._apply_event_consequences(). See implementation_notes section."
+    }
+  },
+
+  "pass_1": [
+    {
+      "event_id": "spring_thrall_dispute",
+      "title": "A Disputed Thrall",
+      "trigger_season": "Spring",
+      "trigger_day": -1,
+      "is_unique": false,
+      "base_chance": 0.5,
+      "prerequisites": [],
+      "min_stewardship": -1,
+      "min_command": -1,
+      "min_prowess": -1,
+      "min_renown": -1,
+      "must_have_trait": "",
+      "must_not_have_trait": "",
+      "min_available_heirs": -1,
+      "min_conquered_regions": -1,
+      "description": "Two households both claim ownership of a thrall captured in last year's raid. The argument has grown loud enough to reach your hall. Blood has not been spilled — yet.",
+      "design_note": "Low-stakes political event. Introduces household loyalty system to players in a legible way.",
+      "choices": [
+        {
+          "choice_text": "Rule in favour of the stronger household.",
+          "tooltip_text": "Winning household loyalty +2. Losing household loyalty -2. Fast resolution.",
+          "effect_key": "favour_strong"
+        },
+        {
+          "choice_text": "Split the thrall's labour between both households.",
+          "tooltip_text": "Both households loyalty +0. Neither satisfied. Avoid conflict.",
+          "effect_key": "split_labour"
+        },
+        {
+          "choice_text": "Declare the thrall belongs to your hall directly.",
+          "tooltip_text": "+1 Thrall assigned to Great Hall output. Both households loyalty -1.",
+          "effect_key": "claim_thrall"
+        },
+        {
+          "choice_text": "Hold a trial by ordeal.",
+          "tooltip_text": "Requires Command 12. Winner gains thrall + Renown +5. Loser loyalty -3.",
+          "effect_key": "ordeal_thrall",
+          "condition_note": "min_command: 12 — grey out in UI if not met"
+        }
+      ]
+    },
+    {
+      "event_id": "summer_rival_ships",
+      "title": "Longships on the Horizon",
+      "trigger_season": "Summer",
+      "trigger_day": 4,
+      "is_unique": false,
+      "base_chance": 0.45,
+      "prerequisites": [],
+      "min_stewardship": -1,
+      "min_command": -1,
+      "min_prowess": -1,
+      "min_renown": -1,
+      "must_have_trait": "",
+      "must_not_have_trait": "",
+      "min_available_heirs": -1,
+      "min_conquered_regions": -1,
+      "description": "A boy from the coastal watch sprints to your hall, breathless: foreign longships have been spotted rounding the headland. They fly no colours you recognise. They have not attacked — but they are watching your shore.",
+      "design_note": "Core summer interruption. Forces a defensive decision mid-season while households are already allocated.",
+      "choices": [
+        {
+          "choice_text": "Sound the horn. Pull warriors from the fields to defend the shore.",
+          "tooltip_text": "Harvest households interrupted: -15% food yield. Threat deterred.",
+          "effect_key": "defend_shore"
+        },
+        {
+          "choice_text": "Send a small delegation — perhaps they seek trade.",
+          "tooltip_text": "+15% chance of trade offer next turn. 25% chance of ambush if hostile.",
+          "effect_key": "parley_ships"
+        },
+        {
+          "choice_text": "Ignore them. Your walls are strong.",
+          "tooltip_text": "25% chance of raid on outlying fields: -Food, -1 random building durability.",
+          "effect_key": "ignore_ships"
+        },
+        {
+          "choice_text": "Launch your own longships and intercept at sea.",
+          "tooltip_text": "Requires Command 15. Naval skirmish. Win: +Renown +Loot. Lose: -Warriors.",
+          "effect_key": "intercept_ships",
+          "condition_note": "min_command: 15 — grey out in UI if not met"
+        }
+      ]
+    },
+    {
+      "event_id": "summer_raid_complication",
+      "title": "The Raid Goes Wrong",
+      "trigger_season": "Summer",
+      "trigger_day": 8,
+      "is_unique": false,
+      "base_chance": 0.55,
+      "prerequisites": [],
+      "min_stewardship": -1,
+      "min_command": -1,
+      "min_prowess": -1,
+      "min_renown": -1,
+      "must_have_trait": "",
+      "must_not_have_trait": "",
+      "min_available_heirs": -1,
+      "min_conquered_regions": -1,
+      "description": "A rider reaches you mid-summer with grim news from the raid: your warband has taken the target's goods, but the Fyrd arrived faster than expected. Your squad leader is wounded and the retreat was costly. Three warriors did not come back.",
+      "design_note": "Fires after a raid resolves with partial success. Adds narrative texture to a mechanical outcome. Affects next year's raid recruitment.",
+      "choices": [
+        {
+          "choice_text": "Hold a proper burial rite. Honour the fallen.",
+          "tooltip_text": "-20 Food (feast). +10 Renown. Surviving warriors morale +1.",
+          "effect_key": "burial_rite"
+        },
+        {
+          "choice_text": "Pay wergild to their families.",
+          "tooltip_text": "-60 Gold. Household loyalty maintained. No Renown.",
+          "effect_key": "pay_wergild"
+        },
+        {
+          "choice_text": "Say nothing. Focus on next season.",
+          "tooltip_text": "No cost now. Renown -5 over time. Household loyalty -2.",
+          "effect_key": "ignore_fallen"
+        }
+      ]
+    },
+    {
+      "event_id": "autumn_last_trade",
+      "title": "Before the Ledger Closes",
+      "trigger_season": "Autumn",
+      "trigger_day": -1,
+      "is_unique": false,
+      "base_chance": 0.6,
+      "prerequisites": [],
+      "min_stewardship": -1,
+      "min_command": -1,
+      "min_prowess": -1,
+      "min_renown": -1,
+      "must_have_trait": "",
+      "must_not_have_trait": "",
+      "min_available_heirs": -1,
+      "min_conquered_regions": -1,
+      "description": "A merchant vessel is making its final run before the sea-lanes close for winter. Your steward brings word: they are selling grain at fair prices, but only today. The Autumn Ledger has not yet been settled — this is your last chance to shore up the stores.",
+      "design_note": "Fires before the Autumn Ledger finalises. One last adjustment opportunity. Safety valve, not a free pass.",
+      "choices": [
+        {
+          "choice_text": "Buy as much grain as your gold allows.",
+          "tooltip_text": "Up to -100 Gold. +Food proportional to spend. Affects survival verdict.",
+          "effect_key": "buy_grain_all"
+        },
+        {
+          "choice_text": "Buy a modest amount. Preserve gold for winter.",
+          "tooltip_text": "-40 Gold. +Food moderate. Balanced choice.",
+          "effect_key": "buy_grain_modest"
+        },
+        {
+          "choice_text": "Let them sail. Trust your stores.",
+          "tooltip_text": "No cost. Survival verdict unchanged.",
+          "effect_key": "decline_merchant"
+        }
+      ]
+    },
+    {
+      "event_id": "autumn_feast_decision",
+      "title": "The Jarl's Table",
+      "trigger_season": "Autumn",
+      "trigger_day": -1,
+      "is_unique": false,
+      "base_chance": 0.7,
+      "prerequisites": [],
+      "min_stewardship": -1,
+      "min_command": -1,
+      "min_prowess": -1,
+      "min_renown": -1,
+      "must_have_trait": "",
+      "must_not_have_trait": "",
+      "min_available_heirs": -1,
+      "min_conquered_regions": -1,
+      "description": "Autumn demands a feast — it is tradition, and your people expect it. But the ledger is close. Your steward stands at the door with two expressions ready: anticipation or disappointment. You must decide what kind of ruler you are this year.",
+      "design_note": "Recurring choice forcing the player to weigh short-term morale against survival. Should feel different each year.",
+      "choices": [
+        {
+          "choice_text": "Hold a great feast. Spare nothing.",
+          "tooltip_text": "-60 Food, -30 Gold. All household morale +3. Renown +8.",
+          "effect_key": "great_feast"
+        },
+        {
+          "choice_text": "Hold a modest feast. Enough to honour the season.",
+          "tooltip_text": "-25 Food, -10 Gold. All household morale +1. No Renown.",
+          "effect_key": "modest_feast"
+        },
+        {
+          "choice_text": "Cancel the feast. Survival comes first.",
+          "tooltip_text": "No cost. All household morale -2. Renown -5. May trigger resentment event in winter.",
+          "effect_key": "cancel_feast"
+        }
+      ]
+    },
+    {
+      "event_id": "winter_first_death",
+      "title": "The First Death",
+      "trigger_season": "Winter",
+      "trigger_day": 2,
+      "is_unique": false,
+      "base_chance": 0.5,
+      "prerequisites": [],
+      "min_stewardship": -1,
+      "min_command": -1,
+      "min_prowess": -1,
+      "min_renown": -1,
+      "must_have_trait": "",
+      "must_not_have_trait": "",
+      "min_available_heirs": -1,
+      "min_conquered_regions": -1,
+      "description": "The coldest week of winter takes its first life — an elder from one of your households, found in the morning cold. It was not unexpected, but it is a bad omen, and the hall feels it. How you respond will be remembered.",
+      "design_note": "Establishes winter's human stakes early. Low mechanical impact, high narrative weight. Sets tone before harder events.",
+      "choices": [
+        {
+          "choice_text": "Hold a proper burning. Give the elder a warrior's send-off.",
+          "tooltip_text": "-15 Wood (pyre). Household loyalty +1. Morale stabilised.",
+          "effect_key": "funeral_pyre"
+        },
+        {
+          "choice_text": "A quiet burial. Preserve the wood for warmth.",
+          "tooltip_text": "No Wood cost. Household loyalty +0. Slight unease in hall.",
+          "effect_key": "quiet_burial"
+        },
+        {
+          "choice_text": "Speak words over the grave yourself.",
+          "tooltip_text": "Requires Renown 20. Free. Household loyalty +2. Your presence means something.",
+          "effect_key": "jarl_speaks",
+          "condition_note": "min_renown: 20 — grey out in UI if not met"
+        }
+      ]
+    },
+    {
+      "event_id": "winter_long_night_council",
+      "title": "The Long Night Council",
+      "trigger_season": "Winter",
+      "trigger_day": 6,
+      "is_unique": false,
+      "base_chance": 0.65,
+      "prerequisites": [],
+      "min_stewardship": -1,
+      "min_command": -1,
+      "min_prowess": -1,
+      "min_renown": -1,
+      "must_have_trait": "",
+      "must_not_have_trait": "",
+      "min_available_heirs": 1,
+      "min_conquered_regions": -1,
+      "description": "In the deep of winter, when there is nothing to do but survive, the household heads gather unbidden in your hall. The fire is low. Someone speaks the question that has been unspoken for weeks: what happens to all of this if you do not return from next summer's campaign? Eyes move to your heirs.",
+      "design_note": "Raises succession stakes mid-winter without requiring the Jarl to die. Forces engagement with the heir/dynasty system.",
+      "choices": [
+        {
+          "choice_text": "Name your heir publicly, before the fire and witnesses.",
+          "tooltip_text": "-1 Authority. Heir legitimacy +20. Succession crisis chance -30% if you die this year.",
+          "effect_key": "name_heir_public"
+        },
+        {
+          "choice_text": "Deflect. You do not plan to die.",
+          "tooltip_text": "No cost. Hall tension rises. Succession crisis chance unchanged.",
+          "effect_key": "deflect_succession"
+        },
+        {
+          "choice_text": "Announce a marriage negotiation for your heir.",
+          "tooltip_text": "Begins alliance negotiation chain. Costs AP next spring.",
+          "effect_key": "announce_marriage"
+        },
+        {
+          "choice_text": "Use the moment to test loyalty. Ask each head to swear anew.",
+          "tooltip_text": "Requires Command 13. Renown +5. 1 household may refuse — revealing hidden disloyalty.",
+          "effect_key": "demand_oaths",
+          "condition_note": "min_command: 13 — grey out in UI if not met"
+        }
+      ]
+    }
+  ],
+
+  "pass_2": {
+    "required_flags": {
+      "sickness_seed": {
+        "type": "bool",
+        "default": false,
+        "set_by": "summer_early_fever (effect_key: ignore_fever or partial_response RNG fail)",
+        "consumed_by": "winter_sickness_outbreak (raises base_chance from 0.6 to 0.85)",
+        "cleared_by": "End of Winter"
+      },
+      "seer_present": {
+        "type": "bool",
+        "default": false,
+        "set_by": "spring_seer_warning (effect_key: hire_seer)",
+        "consumed_by": "winter_sickness_outbreak (unlocks consult_volva choice)",
+        "cleared_by": "End of Winter"
+      }
+    },
+    "events": [
+      {
+        "event_id": "spring_seer_warning",
+        "title": "The Seer's Warning",
+        "trigger_season": "Spring",
+        "trigger_day": -1,
+        "is_unique": false,
+        "base_chance": 0.4,
+        "prerequisites": [],
+        "min_renown": 15,
+        "min_stewardship": -1,
+        "min_command": -1,
+        "min_prowess": -1,
+        "must_have_trait": "",
+        "must_not_have_trait": "",
+        "min_available_heirs": -1,
+        "min_conquered_regions": -1,
+        "description": "A wandering volva arrives at your hall before the thaw. She reads the bones and the omens are dark: she speaks of a hand without a ring causing ruin before the leaves fall. She offers to remain through summer — for a price.",
+        "design_note": "Soft difficulty flag. Paying sets seer_present = true, unlocking a free resolution in winter_sickness_outbreak.",
+        "choices": [
+          {
+            "choice_text": "Pay her to stay. Her counsel may be worth it.",
+            "tooltip_text": "-30 Gold. Sets seer_present flag. Summer crisis events gain an extra choice.",
+            "effect_key": "hire_seer"
+          },
+          {
+            "choice_text": "Thank her and send her on her way.",
+            "tooltip_text": "No cost. Summer events proceed normally.",
+            "effect_key": "dismiss_seer"
+          },
+          {
+            "choice_text": "Ask her to name the traitor.",
+            "tooltip_text": "-10 Renown (she is offended). No extra information.",
+            "effect_key": "demand_seer"
+          }
+        ]
+      },
+      {
+        "event_id": "summer_early_fever",
+        "title": "The Fever in the Longhouse",
+        "trigger_season": "Summer",
+        "trigger_day": 6,
+        "is_unique": false,
+        "base_chance": 0.3,
+        "prerequisites": [],
+        "min_stewardship": -1,
+        "min_command": -1,
+        "min_prowess": -1,
+        "min_renown": -1,
+        "must_have_trait": "",
+        "must_not_have_trait": "",
+        "min_available_heirs": -1,
+        "min_conquered_regions": -1,
+        "description": "A household has fallen sick — not the bone-cold illness of winter, but a summer fever that spreads fast through close quarters. The healer says it can be contained, but only if you act now. Waiting will cost more than the remedy.",
+        "design_note": "Foreshadows winter sickness system. Ignoring sets sickness_seed flag, raising winter outbreak chance to 0.85.",
+        "choices": [
+          {
+            "choice_text": "Send the healer immediately. Quarantine the longhouse.",
+            "tooltip_text": "-20 Food, -10 Gold. Sickness contained. No winter penalty.",
+            "effect_key": "contain_fever"
+          },
+          {
+            "choice_text": "Give them rest but keep working the fields.",
+            "tooltip_text": "-10 Food. 50% containment. 50% chance: sickness_seed flag set.",
+            "effect_key": "partial_response"
+          },
+          {
+            "choice_text": "Cannot afford to stop. Push through it.",
+            "tooltip_text": "No cost now. sickness_seed flag set. Winter outbreak chance +25%.",
+            "effect_key": "ignore_fever"
+          }
+        ]
+      },
+      {
+        "event_id": "winter_sickness_outbreak",
+        "title": "Sickness in the Night",
+        "trigger_season": "Winter",
+        "trigger_day": 4,
+        "is_unique": false,
+        "base_chance": 0.6,
+        "base_chance_with_sickness_seed": 0.85,
+        "prerequisites": [],
+        "min_stewardship": -1,
+        "min_command": -1,
+        "min_prowess": -1,
+        "min_renown": -1,
+        "must_have_trait": "",
+        "must_not_have_trait": "",
+        "min_available_heirs": -1,
+        "min_conquered_regions": -1,
+        "description": "It starts with one longhouse. By the third night, two households are afflicted. Your healer says it will spread further unless quarantine is enforced — but the quarantine will mean those households cannot work the winter tasks you need them for.",
+        "design_note": "Core winter crisis. sickness_seed flag raises base_chance to 0.85. consult_volva choice requires seer_present flag — grey out if not set.",
+        "choices": [
+          {
+            "choice_text": "Full quarantine. Seal the longhouse and post guards.",
+            "tooltip_text": "-1 household winter labor. 80% containment chance. -10 Food extra rations.",
+            "effect_key": "full_quarantine"
+          },
+          {
+            "choice_text": "Quarantine but allow supervised work outside.",
+            "tooltip_text": "Partial labor retained. 50% containment. 50%: sickness spreads to adjacent household.",
+            "effect_key": "partial_quarantine"
+          },
+          {
+            "choice_text": "Call on the volva.",
+            "tooltip_text": "Requires seer_present flag. Sickness resolved without quarantine cost.",
+            "effect_key": "consult_volva",
+            "condition_note": "flag: seer_present — grey out in UI if not set"
+          },
+          {
+            "choice_text": "Force them to work through it.",
+            "tooltip_text": "Labor retained. Sickness spreads to 1 additional household. -5 population over winter.",
+            "effect_key": "ignore_sickness"
+          }
+        ]
+      }
+    ]
+  },
+
+  "pass_3": {
+    "note": "These events depend on pass_2 flags and prerequisite event IDs existing in fired_unique_events. Implement after pass_2 is stable.",
+    "events": [
+      {
+        "event_id": "spring_oath_remembered",
+        "title": "The Oath Remembered",
+        "trigger_season": "Spring",
+        "trigger_day": -1,
+        "is_unique": false,
+        "base_chance": 0.6,
+        "prerequisites": ["spring_card_early_raid"],
+        "min_stewardship": -1,
+        "min_command": -1,
+        "min_prowess": -1,
+        "min_renown": -1,
+        "must_have_trait": "",
+        "must_not_have_trait": "",
+        "min_available_heirs": -1,
+        "min_conquered_regions": -1,
+        "description": "As you prepare your Spring Council, an elder of the Red-Shields approaches with fire in her eyes. Last summer, you swore their household would be given first pick of raid spoils. That oath was never kept. The hall grows quiet as she speaks.",
+        "design_note": "Echoes the Spring card system. Picking Early Raid in Year 1 fires this in Year 2 Spring. World remembers your choices.",
+        "choices": [
+          {
+            "choice_text": "Honour the oath. Grant them first choice of spoils.",
+            "tooltip_text": "-20 Gold. +10 Renown. Red-Shields loyalty +2.",
+            "effect_key": "honour_oath"
+          },
+          {
+            "choice_text": "Make excuses. Promise it will be different this season.",
+            "tooltip_text": "No cost. Red-Shields loyalty -1. May trigger summer resentment.",
+            "effect_key": "deflect_oath"
+          },
+          {
+            "choice_text": "Offer coin instead of honour.",
+            "tooltip_text": "-40 Gold. Red-Shields loyalty +1 (unsatisfied).",
+            "effect_key": "pay_off_oath"
+          }
+        ]
+      },
+      {
+        "event_id": "summer_bondi_grievance",
+        "title": "The Bondi's Grievance",
+        "trigger_season": "Summer",
+        "trigger_day": 5,
+        "is_unique": false,
+        "base_chance": 0.5,
+        "prerequisites": [],
+        "min_stewardship": -1,
+        "min_command": -1,
+        "min_prowess": -1,
+        "min_renown": -1,
+        "must_have_trait": "",
+        "must_not_have_trait": "",
+        "min_available_heirs": -1,
+        "min_conquered_regions": 1,
+        "description": "A free farmer — a bondi, not sworn to any household — comes to your hall with a grievance. Your expansion has enclosed land his family farmed for three generations. He is not alone; six others stand behind him. They are not warriors, but they are angry, and they talk to your thralls.",
+        "design_note": "Tests Stewardship vs Authority. No purely correct answer — trade-offs reflect your Jarl's character.",
+        "choices": [
+          {
+            "choice_text": "Grant them a parcel of land from your expansion.",
+            "tooltip_text": "-1 building plot from new region. Bondi become loyal freemen: +Population, +Renown.",
+            "effect_key": "grant_land"
+          },
+          {
+            "choice_text": "Pay them off with gold and send them away.",
+            "tooltip_text": "-50 Gold. Tension resolved. No loyalty gained.",
+            "effect_key": "pay_bondi"
+          },
+          {
+            "choice_text": "Remind them who holds authority here.",
+            "tooltip_text": "Requires Command 14. Bondi permanently disgruntled — may trigger future event.",
+            "effect_key": "assert_authority",
+            "condition_note": "min_command: 14 — grey out in UI if not met"
+          },
+          {
+            "choice_text": "Offer them Household status in your clan.",
+            "tooltip_text": "-1 Authority. New household created with low loyalty. Significant long-term upside.",
+            "effect_key": "elevate_bondi"
+          }
+        ]
+      },
+      {
+        "event_id": "summer_oath_break",
+        "title": "The Harvest Oath Breaks",
+        "trigger_season": "Summer",
+        "trigger_day": 7,
+        "is_unique": false,
+        "base_chance": 0.4,
+        "prerequisites": [],
+        "min_stewardship": -1,
+        "min_command": -1,
+        "min_prowess": -1,
+        "min_renown": -1,
+        "must_have_trait": "",
+        "must_not_have_trait": "",
+        "min_available_heirs": -1,
+        "min_conquered_regions": -1,
+        "description": "Word reaches you from the fields: the household sworn to Harvest has downed their tools. Their leader — old Sigrid — says her family cannot work beside a rival household that wronged them last spring. The grain stands uncut.",
+        "design_note": "Consequence event for neglecting household loyalty. Connects loyalty system directly to economic loop. Should feel like a crisis.",
+        "choices": [
+          {
+            "choice_text": "Go to the fields yourself. Hear Sigrid out.",
+            "tooltip_text": "Requires Stewardship 11. Costs 1 AP. Loyalty restored. Harvest proceeds at -10%.",
+            "effect_key": "mediate_oath",
+            "condition_note": "min_stewardship: 11 — grey out in UI if not met"
+          },
+          {
+            "choice_text": "Send a representative with gifts.",
+            "tooltip_text": "-30 Gold. 70% chance loyalty restored. 30% chance it makes things worse.",
+            "effect_key": "gift_mediate"
+          },
+          {
+            "choice_text": "Reassign the rival household to Timber duty.",
+            "tooltip_text": "Harvest resumes. Timber output -20% for the season. Costs 1 AP.",
+            "effect_key": "reassign_rival"
+          },
+          {
+            "choice_text": "Force them back to work under threat.",
+            "tooltip_text": "Requires Command 16. Harvest proceeds. Sigrid's household loyalty drops to 1 permanently.",
+            "effect_key": "coerce_harvest",
+            "condition_note": "min_command: 16 — grey out in UI if not met"
+          }
+        ]
+      },
+      {
+        "event_id": "summer_stranger_arrival",
+        "title": "A Stranger at the Gate",
+        "trigger_season": "Summer",
+        "trigger_day": 9,
+        "is_unique": true,
+        "base_chance": 0.35,
+        "prerequisites": [],
+        "min_stewardship": -1,
+        "min_command": -1,
+        "min_prowess": -1,
+        "min_renown": -1,
+        "must_have_trait": "",
+        "must_not_have_trait": "",
+        "min_available_heirs": -1,
+        "min_conquered_regions": -1,
+        "description": "An armed man arrives alone at your settlement gate. He gives no clan name. His equipment is fine — too fine for a wanderer — and he has a scar across his jaw that speaks of surviving things most men don't. He says only that he is looking for work worth doing.",
+        "design_note": "is_unique: true. Introduces a potential champion figure who reappears in future events. Identity revealed gradually. Sets stranger_accepted flag.",
+        "choices": [
+          {
+            "choice_text": "Offer him a trial. Put him with the warband for the season.",
+            "tooltip_text": "+1 temporary champion unit. Sets stranger_accepted flag. May trigger follow-up event.",
+            "effect_key": "trial_stranger"
+          },
+          {
+            "choice_text": "Refuse him entry. Your hall has enough mouths.",
+            "tooltip_text": "No effect. Stranger leaves. May reappear in a rival's service.",
+            "effect_key": "refuse_stranger"
+          },
+          {
+            "choice_text": "Question him hard before deciding.",
+            "tooltip_text": "Requires Stewardship 13. Learn his true name and origin. Opens unique dialogue branch.",
+            "effect_key": "interrogate_stranger",
+            "condition_note": "min_stewardship: 13 — grey out in UI if not met"
+          }
+        ]
+      },
+      {
+        "event_id": "autumn_wounded_harvest",
+        "title": "The Wounded Harvest",
+        "trigger_season": "Autumn",
+        "trigger_day": -1,
+        "is_unique": false,
+        "base_chance": 0.45,
+        "prerequisites": [],
+        "min_stewardship": -1,
+        "min_command": -1,
+        "min_prowess": -1,
+        "min_renown": -1,
+        "must_have_trait": "",
+        "must_not_have_trait": "",
+        "min_available_heirs": -1,
+        "min_conquered_regions": -1,
+        "description": "The harvest is in — but it is short. Blight took the eastern field and your steward's face tells the story before he speaks a word. The Autumn Ledger will not be kind. The question is what you sacrifice now to survive the winter.",
+        "design_note": "Only fires when harvest yield is below 70%. Requires a custom condition check not currently in _check_conditions. Flag for future implementation.",
+        "custom_condition": "harvest_yield_percent < 0.7",
+        "choices": [
+          {
+            "choice_text": "Slaughter half the livestock for immediate food.",
+            "tooltip_text": "-50% livestock. +Food significant. Next year's Harvest capacity reduced.",
+            "effect_key": "slaughter_livestock"
+          },
+          {
+            "choice_text": "Send out emergency hunting parties.",
+            "tooltip_text": "Reassigns 1 household to Hunting for winter. Moderate food gain. Reduces winter labor.",
+            "effect_key": "emergency_hunt"
+          },
+          {
+            "choice_text": "Tighten belts and hope. Winter will be hard.",
+            "tooltip_text": "No asset loss. Winter food consumption triggers Harsh verdict threshold. Sickness risk up.",
+            "effect_key": "weather_shortage"
+          }
+        ]
+      }
+    ]
+  },
+
+  "implementation_notes": {
+    "new_effect_keys_needed": {
+      "honour_oath": "Modify named household loyalty +2",
+      "deflect_oath": "Household loyalty -1, set deflected_oath flag for summer resentment event",
+      "pay_off_oath": "Spend 40 Gold, household loyalty +1",
+      "hire_seer": "Spend 30 Gold, set seer_present = true on DynastyManager or GameFlagsManager",
+      "dismiss_seer": "No effect",
+      "demand_seer": "Renown -10",
+      "contain_fever": "Spend 20 Food + 10 Gold, no flag set",
+      "partial_response": "Spend 10 Food, RNG: 50% no flag, 50% set sickness_seed = true",
+      "ignore_fever": "Set sickness_seed = true",
+      "full_quarantine": "Remove 1 household from winter labor pool, 80% chance sickness clears",
+      "partial_quarantine": "50% clear, 50% spreads to adjacent household",
+      "consult_volva": "Check seer_present flag. If true: clear sickness free. Should be greyed out in UI if flag not set.",
+      "ignore_sickness": "Sickness spreads, population -5 over winter",
+      "trial_stranger": "Spawn champion unit, set stranger_accepted = true",
+      "refuse_stranger": "No effect",
+      "interrogate_stranger": "Reveal stranger data, open unique follow-up event",
+      "name_heir_public": "Spend 1 Authority, set heir legitimacy +20, reduce succession_crisis_chance modifier",
+      "deflect_succession": "No cost, internal tension flag",
+      "announce_marriage": "Begin alliance chain, costs AP next spring",
+      "demand_oaths": "Renown +5, RNG: one household may refuse revealing disloyalty",
+      "slaughter_livestock": "Reduce livestock count, add next_year_harvest_penalty modifier",
+      "emergency_hunt": "Reassign household oath to Hunting",
+      "weather_shortage": "Set harsh_winter_threshold flag"
+    },
+    "new_flags_needed": [
+      "seer_present (bool) — spring to winter, clear on winter end",
+      "sickness_seed (bool) — summer to winter, clear on winter end",
+      "stranger_accepted (bool) — persists across years",
+      "deflected_oath (bool) — spring to summer",
+      "next_year_harvest_penalty (float) — persists to next autumn"
+    ],
+    "custom_conditions_needed": [
+      "harvest_yield_percent — needed for autumn_wounded_harvest, not currently in _check_conditions",
+      "household_loyalty_below threshold — needed for summer_oath_break"
+    ]
+  }
+}

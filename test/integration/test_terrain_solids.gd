@@ -61,13 +61,15 @@ func test_water_blocks_grid():
 		_manager_ref.active_tilemap_layer = _layer
 		
 	# 2. Refresh (This triggers the scan)
-	_manager_ref._refresh_grid_state()
+	NavigationManager.register_map(
+		NavigationManager.active_tilemap_layer,
+		NavigationManager.active_astar_grid.region)
 	
 	# --- ASSERTION ---
 	assert_not_null(_manager_ref.active_tilemap_layer, "Active TileMapLayer should be assigned.")
 	
 	# Check the Grid Logic
-	var is_solid = _manager_ref.active_astar_grid.is_point_solid(Vector2i(5, 5))
+	var is_solid = NavigationManager.active_astar_grid.is_point_solid(Vector2i(5, 5))
 	
 	if not is_solid:
 		# Debug info if it fails
@@ -78,7 +80,7 @@ func test_water_blocks_grid():
 	assert_true(is_solid, "Grid (5,5) should be SOLID because tile has 'is_unwalkable' = true.")
 	
 	# Control Check
-	var is_empty_solid = _manager_ref.active_astar_grid.is_point_solid(Vector2i(6, 6))
+	var is_empty_solid = NavigationManager.active_astar_grid.is_point_solid(Vector2i(6, 6))
 	assert_false(is_empty_solid, "Grid (6,6) should be WALKABLE.")
 
 func after_all():

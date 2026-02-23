@@ -2,15 +2,15 @@
 
 [ext_resource type="Script" uid="uid://c6dx4ttc1ufe3" path="res://ui/MainGameUi.gd" id="1_uuvct"]
 [ext_resource type="PackedScene" uid="uid://gyu45fs0qg5m" path="res://ui/TopBarUIComponent.tscn" id="2_3ebjf"]
-[ext_resource type="PackedScene" uid="uid://whql45nph2u8" path="res://ui/seasonal/SpringCouncilUI.tscn" id="2_8g7jf"]
 [ext_resource type="PackedScene" uid="uid://c5qg2j1qa4g0b" path="res://ui/Dynasty_UI.tscn" id="2_amvws"]
 [ext_resource type="PackedScene" uid="uid://c6b0qegdltxvw" path="res://ui/seasonal/AutumnLedger_UI.tscn" id="3_0u8js"]
 [ext_resource type="PackedScene" uid="uid://c8k2j1m5oax4" path="res://ui/BottomBar.tscn" id="3_3ebjf"]
-[ext_resource type="PackedScene" uid="uid://dnndecgdkcffm" path="res://ui/seasonal/WinterCourt_UI.tscn" id="4_egtxq"]
+[ext_resource type="PackedScene" uid="uid://dqxvcgqjx2s8o" path="res://ui/seasonal/SeasonalCouncilUI.tscn" id="3_h5nvc"]
 [ext_resource type="PackedScene" uid="uid://ciue5kdakyr78" path="res://ui/RaidPrepWindow.tscn" id="7_xkt7x"]
-[ext_resource type="PackedScene" uid="uid://djup50xtuylo4" path="res://ui/components/AllocationMenu.tscn" id="8_h5nvc"]
+[ext_resource type="PackedScene" uid="uid://b8w7hgtu4g7j" path="res://ui/settlement/ClanAllocationMenu.tscn" id="8_amvws"]
 [ext_resource type="PackedScene" uid="uid://dsa4vufqdwp0" path="res://ui/components/BuildMenu.tscn" id="9_amvws"]
 [ext_resource type="PackedScene" uid="uid://b808q4y205n3" path="res://ui/components/RaidMenu.tscn" id="9_h5nvc"]
+[ext_resource type="PackedScene" uid="uid://dg8k5m2j6l1p" path="res://ui/construction/DecreeAuthorizationPopup.tscn" id="10_decree"]
 
 [node name="MainGameUI" type="Control" node_paths=PackedStringArray("top_bar", "bottom_bar", "season_advance_btn", "sidebar_panel", "sidebar_content")]
 layout_mode = 3
@@ -25,9 +25,10 @@ top_bar = NodePath("MainLayout/TopBar")
 bottom_bar = NodePath("MainLayout/BottomBar")
 season_advance_btn = NodePath("EndYearOverlay/SeasonAdvanceBtn")
 dynasty_ui_scene = ExtResource("2_amvws")
-spring_panel_scene = ExtResource("2_8g7jf")
+council_panel_scene = ExtResource("3_h5nvc")
+summer_panel_scene = ExtResource("8_amvws")
 autumn_panel_scene = ExtResource("3_0u8js")
-winter_panel_scene = ExtResource("4_egtxq")
+decree_popup_scene = ExtResource("10_decree")
 sidebar_panel = NodePath("SidebarLayer/SidebarPanel")
 sidebar_content = NodePath("SidebarLayer/SidebarPanel/SidebarContent")
 
@@ -52,8 +53,11 @@ mouse_filter = 2
 [node name="BottomBar" parent="MainLayout" instance=ExtResource("3_3ebjf")]
 layout_mode = 2
 build_menu_scene = ExtResource("9_amvws")
-allocation_menu_scene = ExtResource("8_h5nvc")
+allocation_menu_scene = ExtResource("8_amvws")
 raid_menu_scene = ExtResource("9_h5nvc")
+
+[node name="BtnFarming" parent="MainLayout/BottomBar/TabsContainer" index="2"]
+text = "Households"
 
 [node name="PlaceholderLabel" parent="MainLayout/BottomBar/SeasonalActionsPanel" index="0"]
 visible = false
@@ -62,11 +66,7 @@ visible = false
 visible = false
 layout_mode = 2
 
-[node name="AllocationMenu" parent="MainLayout/BottomBar/SeasonalActionsPanel" index="2" instance=ExtResource("8_h5nvc")]
-visible = false
-layout_mode = 2
-
-[node name="BuildMenu" parent="MainLayout/BottomBar/SeasonalActionsPanel" index="3" instance=ExtResource("9_amvws")]
+[node name="BuildMenu" parent="MainLayout/BottomBar/SeasonalActionsPanel" index="2" instance=ExtResource("9_amvws")]
 visible = false
 layout_mode = 2
 

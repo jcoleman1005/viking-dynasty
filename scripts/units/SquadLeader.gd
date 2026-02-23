@@ -2,6 +2,8 @@
 class_name SquadLeader
 extends BaseUnit
 
+@export var leader_test_data: UnitData
+
 # --- Squad Management ---
 var squad_soldiers: Array[SquadSoldier] = []
 ## Helper class that handles the geometry math (Line, Wedge, Circle)
@@ -46,6 +48,18 @@ func _ready() -> void:
 func _initialize_squad() -> void:
 	if not warband_ref or not data: return
 	
+	# --- NEW: Visual Override for Squad Leaders ---
+	var override_data = leader_test_data
+	if not override_data and data.display_name == "Test Raider":
+		override_data = load("res://data/units/Test_SquadLeader.tres")
+		
+	if override_data:
+		data = override_data
+		if is_instance_valid(unit_visualizer):
+			unit_visualizer.unit_data = data
+			unit_visualizer.refresh()
+	# ----------------------------------------------
+	
 	if squad_soldiers.is_empty():
 		_recruit_fresh_squad()
 	
@@ -55,9 +69,10 @@ func _recruit_fresh_squad() -> void:
 	var soldiers_needed = max(0, warband_ref.current_manpower - 1)
 	if soldiers_needed == 0: return
 	
-	var base_scene = data.load_scene()
+	var soldier_data = warband_ref.unit_type
+	var base_scene = soldier_data.load_scene()
 	if not base_scene: 
-		base_scene = data.scene_to_spawn
+		base_scene = soldier_data.scene_to_spawn
 	
 	if not base_scene: 
 		printerr("SquadLeader: Could not load scene for soldier spawn!")
@@ -72,7 +87,7 @@ func _recruit_fresh_squad() -> void:
 		var soldier_script = load("res://scripts/units/SquadSoldier.gd")
 		soldier_instance.set_script(soldier_script)
 		
-		soldier_instance.data = data
+		soldier_instance.data = soldier_data
 		soldier_instance.warband_ref = warband_ref
 		soldier_instance.leader = self
 		soldier_instance.position = position 
@@ -143,6 +158,11 @@ func _refresh_formation_registry() -> void:
 		formation.add_unit(s)
 	# Force update ensures formation object has correct unit count
 	if _should_update_formation() or squad_soldiers.size() > 0:
+		force_formation_update()
+
+func set_formation_type(type: int) -> void:
+	if formation:
+		formation.formation_type = type as SquadFormation.FormationType
 		force_formation_update()
 
 # --- Gameplay Logic (Restored) ---

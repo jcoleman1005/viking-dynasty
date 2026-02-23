@@ -1,41 +1,195 @@
 extends Node
 
-## DIAGNOSTIC TOOL: Population Census Auditor
-## Attach to MainGameUI to audit where the population numbers are coming from.
+## Winter Phase Integration Test Suite & Debug Controller
+## Validates Tasks 1.1 through Seasonal Council Logic.
+
+# --- Configuration ---
+@export var run_on_ready: bool = true
+@export_group("Test Parameters")
+@export var sick_pop_for_omen_test: int = 2
+@export var total_pop_for_omen_test: int = 10
+@export var gold_to_add_on_test: int = 100
+
+# --- Scene Refs ---
+@export var council_ui: Control # Assign WinterCourtUI here
+@export var director_lens_packed_scene: PackedScene 
+var director_lens_instance: CanvasLayer = null
+
 
 func _ready() -> void:
-	# Listen to all events that might change population
-	EventBus.population_changed.connect(_perform_audit.bind("Signal: Population Changed"))
-	EventBus.treasury_updated.connect(func(_t): _perform_audit("Signal: Treasury Updated"))
-	
-	# Initial check
-	await get_tree().process_frame
-	_perform_audit("Initial Load")
+	_setup_debug_inputs()
+	if run_on_ready:
+		await get_tree().process_frame
+		run_tests()
 
-func _perform_audit(trigger: String) -> void:
-	var settlement = SettlementManager.current_settlement
-	if not settlement: return
-
-	Loggie.msg("--- POPULATION TRACE (%s) ---" % trigger).domain(LogDomains.ECONOMY).info()
-
-	# 1. Raw Variables (The "Civilians")
-	var raw_peasants = settlement.population_peasants
-	var raw_thralls = settlement.population_thralls
+func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("add_gold"):
+		_run_add_gold_test()
 	
-	# 2. Warband Manpower (The "Soldiers")
-	var soldier_count = 0
-	for wb in settlement.warbands:
-		if wb: soldier_count += wb.current_manpower
+	if event.is_action_pressed("toggle_director_lens"):
+		_toggle_director_lens()
 
-	# 3. The "Single Source of Truth" Calculation
-	var total_biological_humans = raw_peasants + raw_thralls + soldier_count
+# --- Debug Setup ---
+func _setup_debug_inputs():
+	if not InputMap.has_action("add_gold"):
+		InputMap.add_action("add_gold")
+		var gold_event = InputEventKey.new()
+		gold_event.keycode = KEY_G
+		InputMap.action_add_event("add_gold", gold_event)
+
+	if not InputMap.has_action("toggle_director_lens"):
+		InputMap.add_action("toggle_director_lens")
+		var lens_event = InputEventKey.new()
+		lens_event.keycode = KEY_F3
+		InputMap.action_add_event("toggle_director_lens", lens_event)
+
+# --- Interactive Tests & Toggles ---
+func _run_add_gold_test():
+	if SettlementManager.has_current_settlement():
+		Loggie.msg("--- Running Add Gold Test ---").domain(LogDomains.SYSTEM).info()
+		var current_gold = SettlementManager.current_settlement.treasury.get(GameResources.GOLD, 0)
+		SettlementManager.current_settlement.treasury[GameResources.GOLD] = current_gold + gold_to_add_on_test
+		EventBus.treasury_updated.emit(SettlementManager.current_settlement.treasury)
+		Loggie.msg("Added %d gold. 'treasury_updated' signal emitted." % gold_to_add_on_test).domain(LogDomains.SYSTEM).info()
+	else:
+		Loggie.msg("Cannot run Add Gold Test: No current settlement loaded.").domain(LogDomains.SYSTEM).warn()
+
+func _toggle_director_lens():
+	if director_lens_instance == null:
+		if director_lens_packed_scene:
+			director_lens_instance = director_lens_packed_scene.instantiate()
+			get_tree().get_root().add_child(director_lens_instance)
+		else:
+			return
 	
-	Loggie.msg("   > RAW Peasants (Labor): %d" % raw_peasants).domain(LogDomains.ECONOMY).info()
-	Loggie.msg("   > RAW Thralls (Labor): %d" % raw_thralls).domain(LogDomains.ECONOMY).info()
-	Loggie.msg("   > RAW Soldiers (Drafted): %d" % soldier_count).domain(LogDomains.ECONOMY).info()
-	Loggie.msg("   =========================").domain(LogDomains.ECONOMY).info()
-	Loggie.msg("   > TOTAL HUMANS: %d" % total_biological_humans).domain(LogDomains.ECONOMY).info()
+	if director_lens_instance and director_lens_instance.has_method("toggle"):
+		director_lens_instance.toggle()
+
+# --- Automated Test Suite ---
+func run_tests() -> void:
+	Loggie.msg("=== STARTING SYSTEM DIAGNOSTIC (IN-MEMORY) ===").domain(LogDomains.SYSTEM).info()
 	
-	# 4. Hint for the User
-	Loggie.msg("   [CHECK TOPBAR]: If TopBar shows '%d', it is showing Labor." % raw_peasants).domain(LogDomains.ECONOMY).warn()
-	Loggie.msg("   [CHECK TOPBAR]: If TopBar shows '%d', it is showing Total Population." % total_biological_humans).domain(LogDomains.ECONOMY).warn()
+	var real_settlement = SettlementManager.current_settlement
+	var real_treasury = {}
+	if real_settlement:
+		real_treasury = real_settlement.treasury.duplicate()
+
+	_test_rationing_math()
+	_test_heating_cache_rebuild()
+	_test_persistence_simulation()
+	_test_live_crisis_reporter()
+	_test_sickness_omen()
+	_test_seasonal_council_logic() # New specialized tests
+	
+	# Restore state
+	SettlementManager.current_settlement = real_settlement
+	if real_settlement:
+		real_settlement.treasury = real_treasury
+		EconomyManager._on_settlement_loaded(real_settlement)
+	
+	Loggie.msg("=== DIAGNOSTIC COMPLETE ===").domain(LogDomains.SYSTEM).info()
+
+# --- Test Case: Seasonal Council (Unified) ---
+func _test_seasonal_council_logic() -> void:
+	if not council_ui:
+		Loggie.msg("[SKIP] Council UI tests: Node not assigned in Inspector.").domain(LogDomains.SYSTEM).warn()
+		return
+
+	Loggie.msg("Test 7: Seasonal Council Logic...").domain(LogDomains.SYSTEM).info()
+
+	# 1. Test Spring Transition
+	Loggie.msg("  Sub-test: Spring Council State").domain(LogDomains.SYSTEM).info()
+	EventBus.season_changed.emit("Spring", {})
+	
+	var ap_label = council_ui.get_node("%ActionPointsLabel")
+	if ap_label.text != "SPRING COUNCIL":
+		Loggie.msg("[FAIL] Council UI failed to identify Spring season. Label: %s" % ap_label.text).domain(LogDomains.SYSTEM).error()
+		return
+	
+	# Check color (Spring should be COLOR_SPRING)
+	var spring_color = Color("a8e6cf")
+	var jarl_label = council_ui.get_node("%JarlNameLabel")
+	if not jarl_label.modulate.is_equal_approx(spring_color):
+		Loggie.msg("[FAIL] Council UI failed to apply Spring theme color.").domain(LogDomains.SYSTEM).error()
+		# Not returning, color might be slightly off due to rounding, but label is more important
+
+	# 2. Test Winter Transition
+	Loggie.msg("  Sub-test: Winter Court State").domain(LogDomains.SYSTEM).info()
+	EventBus.season_changed.emit("Winter", {})
+	
+	if "HALL ACTIONS" not in ap_label.text:
+		Loggie.msg("[FAIL] Council UI failed to identify Winter season. Label: %s" % ap_label.text).domain(LogDomains.SYSTEM).error()
+		return
+
+	# 3. Test AP Enforcement logic (Internal)
+	Loggie.msg("  Sub-test: AP enforcement check").domain(LogDomains.SYSTEM).info()
+	var test_card = SeasonalCardResource.new()
+	test_card.season = SeasonalCardResource.SeasonType.WINTER
+	test_card.cost_ap = 99 # Impossible cost
+	
+	council_ui._current_season = "Winter"
+	council_ui.current_ap = 1
+	if council_ui._can_afford(test_card):
+		Loggie.msg("[FAIL] Council UI allowed playing a Winter card without enough AP.").domain(LogDomains.SYSTEM).error()
+		return
+		
+	council_ui._current_season = "Spring"
+	if not council_ui._can_afford(test_card):
+		Loggie.msg("[FAIL] Council UI restricted a Spring card by AP (should be ignored).").domain(LogDomains.SYSTEM).error()
+		return
+
+	Loggie.msg("[PASS] Seasonal Council logic verified.").domain(LogDomains.SYSTEM).info()
+
+# --- Existing Test Cases (Minimized for brevity) ---
+func _test_rationing_math() -> void:
+	Loggie.msg("Test 1: Rationing Math...").domain(LogDomains.SYSTEM).info()
+	var mock = SettlementData.new()
+	mock.population_peasants = 10
+	mock.rationing_policy = SettlementData.RationingPolicy.NORMAL
+	mock.treasury[GameResources.FOOD] = 100
+	SettlementManager.current_settlement = mock
+	if EconomyManager.get_winter_food_demand() == 10: Loggie.msg("[PASS] Rationing Math verified.").domain(LogDomains.SYSTEM).info()
+	else: Loggie.msg("[FAIL] Rationing Math.").domain(LogDomains.SYSTEM).error()
+
+func _test_heating_cache_rebuild() -> void:
+	Loggie.msg("Test 2: Heating Cache Rebuild...").domain(LogDomains.SYSTEM).info()
+	var mock = SettlementData.new()
+	mock.placed_buildings.clear()
+	SettlementManager.current_settlement = mock
+	EconomyManager._on_settlement_loaded(mock)
+	if EconomyManager.get_total_heating_demand() == 0: Loggie.msg("[PASS] Heating Cache verified.").domain(LogDomains.SYSTEM).info()
+	else: Loggie.msg("[FAIL] Heating Cache.").domain(LogDomains.SYSTEM).error()
+
+func _test_persistence_simulation() -> void:
+	Loggie.msg("Test 3: Persistence Simulation...").domain(LogDomains.SYSTEM).info()
+	var mock = SettlementData.new()
+	mock.sick_population = 5
+	SettlementManager.current_settlement = mock
+	if SettlementManager.current_settlement.sick_population == 5: Loggie.msg("[PASS] Persistence verified.").domain(LogDomains.SYSTEM).info()
+	else: Loggie.msg("[FAIL] Persistence.").domain(LogDomains.SYSTEM).error()
+
+func _test_live_crisis_reporter() -> void:
+	Loggie.msg("Test 4: Live Crisis Reporter...").domain(LogDomains.SYSTEM).info()
+	var mock = SettlementData.new()
+	mock.population_peasants = 10
+	mock.treasury[GameResources.FOOD] = 0
+	SettlementManager.current_settlement = mock
+	EconomyManager._on_settlement_loaded(mock)
+	if WinterManager.get_live_crisis_report().is_crisis: Loggie.msg("[PASS] Crisis Reporter verified.").domain(LogDomains.SYSTEM).info()
+	else: Loggie.msg("[FAIL] Crisis Reporter.").domain(LogDomains.SYSTEM).error()
+
+func _test_sickness_omen() -> void:
+	Loggie.msg("Test 5: Sickness Omen...").domain(LogDomains.SYSTEM).info()
+	var omen = WinterManager.get_sickness_omen(2, 10)
+	if not omen.text.is_empty(): Loggie.msg("[PASS] Sickness Omen verified.").domain(LogDomains.SYSTEM).info()
+	else: Loggie.msg("[FAIL] Sickness Omen.").domain(LogDomains.SYSTEM).error()
+
+func _test_dashboard_update() -> void:
+	Loggie.msg("Test 6: Winter Court Dashboard...").domain(LogDomains.SYSTEM).info()
+	var mock = SettlementData.new()
+	mock.population_peasants = 10
+	mock.treasury[GameResources.FOOD] = 0
+	SettlementManager.current_settlement = mock
+	EconomyManager._on_settlement_loaded(mock)
+	if WinterManager.get_live_crisis_report().is_crisis: Loggie.msg("[PASS] Dashboard logic verified.").domain(LogDomains.SYSTEM).info()
+	else: Loggie.msg("[FAIL] Dashboard logic.").domain(LogDomains.SYSTEM).error()

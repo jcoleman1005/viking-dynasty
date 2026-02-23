@@ -1,0 +1,48 @@
+[gd_resource type="Resource" script_class="EventData" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="Resource_favour"]
+script = ExtResource("2_event_choice")
+choice_text = "Rule in favour of the stronger household."
+tooltip_text = "Winning household loyalty +2. Losing household loyalty -2. Fast resolution."
+effect_key = "favour_strong"
+
+[sub_resource type="Resource" id="Resource_split"]
+script = ExtResource("2_event_choice")
+choice_text = "Split the thrall's labour between both households."
+tooltip_text = "Both households loyalty +0. Neither satisfied. Avoid conflict."
+effect_key = "split_labour"
+
+[sub_resource type="Resource" id="Resource_claim"]
+script = ExtResource("2_event_choice")
+choice_text = "Declare the thrall belongs to your hall directly."
+tooltip_text = "+1 Thrall assigned to Great Hall output. Both households loyalty -1."
+effect_key = "claim_thrall"
+
+[sub_resource type="Resource" id="Resource_ordeal"]
+script = ExtResource("2_event_choice")
+choice_text = "Hold a trial by ordeal."
+tooltip_text = "Requires Command 12. Winner gains thrall + Renown +5. Loser loyalty -3."
+effect_key = "ordeal_thrall"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "A Disputed Thrall"
+description = "Two households both claim ownership of a thrall captured in last year's raid. The argument has grown loud enough to reach your hall. Blood has not been spilled — yet."
+event_id = "spring_thrall_dispute"
+is_unique = false
+base_chance = 0.5
+prerequisites = Array[String]([])
+trigger_season = "Spring"
+trigger_day = -1
+min_stewardship = -1
+min_command = -1
+min_prowess = -1
+min_renown = -1
+must_have_trait = ""
+must_not_have_trait = ""
+min_available_heirs = -1
+min_conquered_regions = -1
+choices = Array[ExtResource("2_event_choice")]([SubResource("Resource_favour"), SubResource("Resource_split"), SubResource("Resource_claim"), SubResource("Resource_ordeal")])

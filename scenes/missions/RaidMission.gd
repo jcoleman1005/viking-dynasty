@@ -18,12 +18,60 @@ extends Node2D
 @onready var building_container: Node2D = $BuildingContainer
 @onready var objective_manager: RaidObjectiveManager = $RaidObjectiveManager
 @onready var unit_spawner: UnitSpawner = $UnitSpawner
+@onready var raid_nav_region: NavigationRegion2D = $RaidNavRegion
+var extraction_zone: Area2D
 @export var fyrd_unit_scene: PackedScene
 
+@export_group("Fyrd")
+@export var fyrd_spawn_count: int = 5
+
+@export_group("Test Data")
+@export var enemy_test_data: UnitData
+@export var villager_test_data: UnitData
+@export var suppress_auto_init: bool = false
+
 # --- Internal ---
-var map_loader: RaidMapLoader
+@onready var map_loader: RaidMapLoader = $RaidMapLoader
 var objective_building: BaseBuilding = null
 var unit_container: Node2D
+var _mission_initialized: bool = false
+@export var force_warbands: Array[WarbandData] = []
+@export var force_enemy_settlement: SettlementData = null
+
+func _enter_tree() -> void:
+	_setup_unit_container()
+
+func _initialize_navigation() -> void:
+	# Isometric diamond bounds with padding
+	var nav_poly = NavigationPolygon.new()
+	var outline = PackedVector2Array([
+		Vector2(0, -50),           # Top + padding
+		Vector2(1970, 960),        # Right + padding
+		Vector2(0, 1970),          # Bottom + padding
+		Vector2(-1970, 960)        # Left + padding
+	])
+	nav_poly.add_outline(outline)
+	raid_nav_region.navigation_polygon = nav_poly
+	
+	raid_nav_region.bake_navigation_polygon()
+	await raid_nav_region.bake_finished
+	
+	# Poll until NavServer confirms geometry exists
+	var map_rid = raid_nav_region.get_navigation_map()
+	var attempts = 0
+	var test_point = Vector2(0.0, 960.0) # Center of diamond
+	while attempts < 30:
+		var result = NavigationServer2D.map_get_closest_point(map_rid, test_point)
+		if result != Vector2.ZERO:
+			Loggie.msg("NavMesh ready after %d frames" % attempts).domain("NAVIGATION").info()
+			break
+		await get_tree().physics_frame
+		attempts += 1
+	
+	if attempts >= 30:
+		Loggie.msg("WARNING: NavMesh not ready after 30 frames").domain("NAVIGATION").warn()
+		
+	RaidNavigationManager.initialize_raid_map(raid_nav_region)
 
 func _ready() -> void:
 	Loggie.set_domain_enabled("UI", true)
@@ -31,7 +79,9 @@ func _ready() -> void:
 	Loggie.set_domain_enabled("RAID", true)
 	Loggie.set_domain_enabled("MAP", true)
 	
-	_setup_unit_container()
+	extraction_zone = get_node_or_null("ExtractionZone")
+	if not extraction_zone:
+		Loggie.msg("ExtractionZone not found in scene tree.").domain("RAID").warn()
 	
 	if unit_spawner:
 		unit_spawner.unit_container = unit_container
@@ -39,21 +89,18 @@ func _ready() -> void:
 	else:
 		printerr("CRITICAL: UnitSpawner node is missing in RaidMission!")
 	
-	map_loader = RaidMapLoader.new()
-	add_child(map_loader)
-	
 	if RaidManager.is_defensive_raid:
 		self.is_defensive_mission = true
 		objective_manager.is_defensive_mission = true
 		RaidManager.is_defensive_raid = false
 	
-	EventBus.settlement_loaded.connect(_on_settlement_ready_for_mission)
-	
-	if not SettlementManager.has_current_settlement():
-		_load_test_settlement()
+	if suppress_auto_init:
+		pass
+	elif SettlementManager.has_current_settlement() or force_enemy_settlement:
 		call_deferred("initialize_mission")
 	else:
-		call_deferred("initialize_mission")
+		EventBus.settlement_loaded.connect(_on_settlement_ready_for_mission, CONNECT_ONE_SHOT)
+		_load_test_settlement()
 		
 	get_tree().node_added.connect(_on_node_added)
 
@@ -66,13 +113,29 @@ func _setup_unit_container() -> void:
 		add_child(unit_container)
 
 func initialize_mission() -> void:
+	if _mission_initialized:
+		Loggie.msg("initialize_mission called twice — ignoring.").domain("RAID").warn()
+		return
+	_mission_initialized = true
+	
 	Loggie.msg("RaidMission: Initializing...").domain(LogDomains.RAID).info()
+	
+	# Load default test data if missing
+	if not enemy_test_data:
+		enemy_test_data = load("res://data/units/Test_EnemyDefender.tres")
+	if not villager_test_data:
+		villager_test_data = load("res://data/units/Test_Villager.tres")
 	
 	enemy_base_data = null
 	
+	# 0. PRIORITY 0: INJECTED DATA (Encapsulation)
+	if force_enemy_settlement:
+		enemy_base_data = force_enemy_settlement
+		Loggie.msg("Using Injected SettlementData. Seed: %d" % enemy_base_data.map_seed).domain(LogDomains.RAID).info()
+
 	# 1. PRIORITY 1: CAMPAIGN FLOW
 	# We check if RaidManager has a target.
-	if RaidManager.current_raid_target:
+	elif RaidManager.current_raid_target:
 		# [FIX] Unwrap the data! 
 		# RaidManager.current_raid_target is usually 'RaidTargetData' (The Wrapper).
 		# We need the 'SettlementData' inside it.
@@ -104,55 +167,123 @@ func initialize_mission() -> void:
 		Loggie.msg("Critical: No enemy_base_data assigned!").domain(LogDomains.RAID).error()
 		return
 
+	Loggie.msg("Setup 1/6 — Data resolved. seed=%d warbands=%d peasants=%d" % [
+		enemy_base_data.map_seed,
+		enemy_base_data.warbands.size(),
+		enemy_base_data.population_peasants]
+	).domain("RAID").info()
+
 	if not _validate_nodes(): return
 	
 	# 4. Register & Setup
 	SettlementManager.register_active_scene_nodes(unit_container)
 	
-	if not map_loader:
-		map_loader = RaidMapLoader.new()
-		add_child(map_loader)
-	
 	# [DIAGNOSTIC] Final check before generation
 	if enemy_base_data.map_seed == 0:
 		Loggie.msg("WARNING: Map Seed is 0. RaidMapLoader will randomize terrain!").domain(LogDomains.RAID).warn()
 		
-	map_loader.setup(unit_container, enemy_base_data) 
+	map_loader.setup(building_container, enemy_base_data) 
 	
-	# 3. Generate Map Visuals and refresh manager
-	objective_building = map_loader.load_base(enemy_base_data, false)
-	Loggie.msg("Force Refreshing Grid (Raid)...").domain(LogDomains.RAID).info()
-	SettlementManager._refresh_grid_state()
+	Loggie.msg("Setup 2/6 — Map generated. buildings=%d has_extraction=%s" % [
+		map_loader.last_map_data.get("buildings", []).size(),
+		str(map_loader.last_map_data.has("extraction_zone"))]
+	).domain("RAID").info()
+	
+	# Setup Extraction Zone
+	if extraction_zone and map_loader.last_map_data.has("extraction_zone"):
+		var rect = map_loader.last_map_data["extraction_zone"]
+		extraction_zone.global_position = rect.position + rect.size / 2.0
+		var shape = extraction_zone.get_node("ExtractionShape")
+		if shape and shape.shape is RectangleShape2D:
+			shape.shape.size = rect.size
+		var visual = extraction_zone.get_node("ExtractionVisual")
+		if visual is ColorRect:
+			visual.size = rect.size
+			visual.position = -rect.size / 2.0
+	
+	if objective_manager and extraction_zone:
+		objective_manager.setup_extraction(extraction_zone)
+	
+	Loggie.msg("Tactical Navigation Initializing (Raid)...").domain(LogDomains.RAID).info()
+	
+	# Initialize Tactical Navigation
+	await _initialize_navigation()
+	
+	Loggie.msg("Setup 4/6 — Navigation ready. is_raid_active=%s bounds=%s" % [
+		str(RaidNavigationManager.is_raid_active),
+		str(RaidNavigationManager.map_bounds)]
+	).domain("RAID").info()
+	
+	if RaidNavigationManager.is_raid_active:
+		_spawn_all_units()
+	else:
+		RaidNavigationManager.navigation_ready.connect(_spawn_all_units, CONNECT_ONE_SHOT)
+	
+	# 6. Finalize Objective
+	if is_instance_valid(objective_building):
+		if objective_manager:
+			objective_manager.initialize(rts_controller, objective_building, unit_container)
+			
+			Loggie.msg("Setup 6/6 — Mission live.").domain("RAID").info()
+			
+			if not objective_manager.wave1_fyrd_arrived.is_connected(_on_wave1_fyrd):
+				objective_manager.wave1_fyrd_arrived.connect(_on_wave1_fyrd)
+			if not objective_manager.wave2_fyrd_arrived.is_connected(_on_wave2_fyrd):
+				objective_manager.wave2_fyrd_arrived.connect(_on_wave2_fyrd)
+			
+			Loggie.msg("Fyrd wave signals connected to RaidMission").domain("RAID").info()
+	else:
+		Loggie.msg("Critical: No Objective Building found!").domain(LogDomains.RAID).error()
+
+func _spawn_all_units() -> void:
+	# Find objective building if not already set
+	if not is_instance_valid(objective_building):
+		for entry in map_loader.last_map_data.get("buildings", []):
+			Loggie.msg("Checking: type='%s' node=%s" % [
+				str(entry.get("type", "MISSING")),
+				str(entry.get("node", null))]
+			).domain("RAID").info()
+			
+			if entry.get("type", "") == "Hall" and entry.get("node", null) != null:
+				objective_building = entry["node"]
+				Loggie.msg("Objective building found: %s" % str(objective_building.name)).domain("RAID").info()
+				break
+	
+	Loggie.msg("Setup 3/6 — Objective building: %s" % str(is_instance_valid(objective_building))).domain("RAID").info()
+	
+	Loggie.msg("Setup 5/6 — Spawning units. warbands=%d peasants=%d" % [
+		enemy_base_data.warbands.size() if enemy_base_data else -1,
+		enemy_base_data.population_peasants if enemy_base_data else -1]
+	).domain("RAID").info()
 	
 	# 4. Spawn Civilians
 	if enemy_base_data and enemy_base_data.population_peasants > 0:
 		if unit_spawner:
 			unit_spawner.unit_container = unit_container
 			
-			# Find a safe spot near the main building, or default to offset
+			# Find a safe spot from procedural data or fallback
+			var villager_spawns = map_loader.last_map_data.get("villager_spawns", [])
 			var spawn_origin = Vector2(200, 300)
-			if is_instance_valid(objective_building):
+			if villager_spawns.size() > 0:
+				spawn_origin = villager_spawns[0]
+			elif is_instance_valid(objective_building):
 				spawn_origin = objective_building.global_position + Vector2(0, 100)
 			
 			# Ensure it's valid
-			spawn_origin = SettlementManager.request_valid_spawn_point(spawn_origin, 5)
+			spawn_origin = RaidNavigationManager.request_valid_spawn_point(spawn_origin, 5)
 			
 			unit_spawner.sync_civilians(enemy_base_data.population_peasants, spawn_origin, true)
+			
+			Loggie.msg("Civilians spawned around: %s" % str(spawn_origin)).domain("RAID").info()
 			
 	# 5. Spawn Units
 	if is_defensive_mission:
 		_setup_defensive_mode()
 	else:
 		_setup_offensive_mode()
-	
-	# 6. Finalize Objective
-	if is_instance_valid(objective_building):
-		if objective_manager:
-			objective_manager.initialize(rts_controller, objective_building, unit_container)
-			if not objective_manager.fyrd_arrived.is_connected(_on_fyrd_arrived):
-				objective_manager.fyrd_arrived.connect(_on_fyrd_arrived)
-	else:
-		Loggie.msg("Critical: No Objective Building found!").domain(LogDomains.RAID).error()
+		
+	if enemy_base_data:
+		Loggie.msg("Enemy warbands spawned: %d" % enemy_base_data.warbands.size()).domain("RAID").info()
 
 func _setup_defensive_mode() -> void:
 	var settlement = SettlementManager.current_settlement
@@ -162,16 +293,10 @@ func _setup_defensive_mode() -> void:
 	_spawn_enemy_wave()
 
 func _setup_offensive_mode() -> void:
-	if not enemy_base_data:
-		if ResourceLoader.exists(default_enemy_base_path):
-			enemy_base_data = load(default_enemy_base_path)
-		else: return
-	
-	objective_building = map_loader.load_base(enemy_base_data, false)
-	
 	for child in building_container.get_children():
 		if child is BaseBuilding:
-			child.building_destroyed.connect(_on_building_destroyed_grid_update)
+			if not child.building_destroyed.is_connected(_on_building_destroyed_grid_update):
+				child.building_destroyed.connect(_on_building_destroyed_grid_update)
 			
 	_spawn_player_garrison()
 	_spawn_retreat_zone()
@@ -183,7 +308,9 @@ func _on_building_destroyed_grid_update(building: BaseBuilding) -> void:
 func _spawn_player_garrison() -> void:
 	var warbands_to_spawn: Array[WarbandData] = []
 	
-	if is_defensive_mission:
+	if not force_warbands.is_empty():
+		warbands_to_spawn = force_warbands
+	elif is_defensive_mission:
 		if SettlementManager.current_settlement:
 			warbands_to_spawn = SettlementManager.current_settlement.warbands
 	else:
@@ -209,7 +336,7 @@ func _spawn_player_garrison() -> void:
 		spawn_origin += landing_direction * 200.0
 		
 	# Safety Check for Player Spawn
-	spawn_origin = SettlementManager.request_valid_spawn_point(spawn_origin, 4)
+	spawn_origin = NavigationManager.request_valid_spawn_point(spawn_origin, 4)
 	
 	if unit_spawner:
 		unit_spawner.spawn_garrison(warbands_to_spawn, spawn_origin)
@@ -236,7 +363,7 @@ func _spawn_enemy_wave() -> void:
 		var target_pos = origin + offset
 		
 		# Validate against Grid
-		unit.global_position = SettlementManager.request_valid_spawn_point(target_pos, 3)
+		unit.global_position = NavigationManager.request_valid_spawn_point(target_pos, 3)
 		if unit.global_position == Vector2.INF:
 			unit.global_position = target_pos # Fallback if grid is totally full
 		# --------------------------
@@ -247,6 +374,73 @@ func _spawn_enemy_wave() -> void:
 			unit.fsm_ready.connect(func(u): 
 				if u.fsm: u.fsm.command_attack(objective_building)
 			)
+
+func _on_wave1_fyrd() -> void:
+	var count = randi_range(8, 10)
+	Loggie.msg("WAVE 1: Spawning %d Fyrd at boundary" % count).domain("RAID").warn()
+	_spawn_fyrd_at_boundary(count)
+
+func _on_wave2_fyrd() -> void:
+	var count = randi_range(5, 8)
+	Loggie.msg("WAVE 2: Spawning %d Fyrd targeting extraction" % count).domain("RAID").warn()
+	_spawn_fyrd_at_boundary(count)
+
+func _spawn_fyrd_at_boundary(count: int) -> void:
+	if not fyrd_unit_scene:
+		Loggie.msg("No fyrd_unit_scene assigned!").domain("RAID").error()
+		return
+
+	# Get boundary positions from map data
+	var boundary_points = map_loader.last_map_data.get("fyrd_boundary", [])
+	if boundary_points.is_empty():
+		# Fallback: top edge of map
+		for i in range(count):
+			boundary_points.append(Vector2(randf_range(200, 3600), 50))
+
+	Loggie.msg("FYRD BOUNDARY POINTS: %s" % str(boundary_points)).domain("RAID").warn()
+
+	for i in range(count):
+		var unit_inst = fyrd_unit_scene.instantiate()
+		unit_inst.collision_layer = 4
+		unit_inst.add_to_group("enemy_units")
+
+		# Pick a boundary point, add some randomness
+		var base_pos = boundary_points[i % boundary_points.size()]
+		var offset = Vector2(randf_range(-80, 80), randf_range(-80, 80))
+		var spawn_pos = base_pos + offset
+
+		# Validate against raid navmesh (NOT NavigationManager)
+		var valid_pos = RaidNavigationManager.request_valid_spawn_point(spawn_pos, 4)
+		if valid_pos != Vector2.INF:
+			unit_inst.global_position = valid_pos
+		else:
+			unit_inst.global_position = spawn_pos
+
+		Loggie.msg("FYRD SPAWN: pos=%s valid=%s boundary=%s" % [
+			str(unit_inst.global_position), 
+			str(valid_pos), 
+			str(base_pos)]
+		).domain("RAID").warn()
+
+		if "skip_unaware" in unit_inst:
+			unit_inst.skip_unaware = true
+
+		unit_container.add_child(unit_inst)
+
+		Loggie.msg("FYRD POST-SPAWN: name=%s skip_unaware=%s fsm=%s state=%s" % [
+			unit_inst.name,
+			str(unit_inst.skip_unaware),
+			str(unit_inst.fsm),
+			str(unit_inst.fsm.current_state if unit_inst.fsm else "NO FSM")]
+		).domain("RAID").warn()
+
+		# Wait for FSM to be fully ready before assigning target
+		if is_instance_valid(objective_building):
+			var _building = objective_building
+			unit_inst.fsm_ready.connect(func(_u):
+				if _u.has_method("set_attack_target") and is_instance_valid(_building):
+					_u.set_attack_target(_building)
+			, CONNECT_ONE_SHOT)
 
 func _on_fyrd_arrived() -> void:
 	Loggie.msg("--- FYRD SPAWN START ---").domain(LogDomains.RAID).info()
@@ -260,13 +454,13 @@ func _on_fyrd_arrived() -> void:
 	var spawner = get_node_or_null(enemy_spawn_position)
 	var origin = spawner.global_position if spawner else Vector2(1000, 0)
 	
-	for i in range(5):
+	for i in range(fyrd_spawn_count):
 		var unit = fyrd_unit_scene.instantiate()
 		
 		# --- FIX: Randomized but Validated ---
 		var random_offset = Vector2(randf_range(-100, 100), randf_range(-100, 100))
 		var try_pos = origin + random_offset
-		var valid_pos = SettlementManager.request_valid_spawn_point(try_pos, 3)
+		var valid_pos = NavigationManager.request_valid_spawn_point(try_pos, 3)
 		
 		if valid_pos != Vector2.INF:
 			unit.global_position = valid_pos
@@ -303,8 +497,7 @@ func _load_test_settlement() -> void:
 		if data: SettlementManager.load_settlement(data)
 
 func _on_settlement_ready_for_mission(_d):
-	if not is_instance_valid(objective_manager.rts_controller):
-		initialize_mission()
+	initialize_mission()
 
 func _validate_nodes() -> bool:
 	if not rts_controller: return false
@@ -320,7 +513,7 @@ func _spawn_test_units() -> void:
 		var pos = player_spawn_pos.global_position + offset
 		
 		# Safe Spawn
-		var safe_pos = SettlementManager.request_valid_spawn_point(pos, 2)
+		var safe_pos = NavigationManager.request_valid_spawn_point(pos, 2)
 		if safe_pos != Vector2.INF: u.global_position = safe_pos
 		else: u.global_position = pos
 		
@@ -390,3 +583,5 @@ func _exit_tree() -> void:
 	# Even with WeakRefs, this prevents logical state errors.
 	if SettlementManager.active_building_container == $BuildingContainer:
 		SettlementManager.unregister_active_scene_nodes()
+	
+	RaidNavigationManager.cleanup_raid_map()

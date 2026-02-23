@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="UnitData" load_steps=3 format=3 uid="uid://test_enemy_defender"]
+
+[ext_resource type="Script" uid="uid://cq155t20ujb2j" path="res://data/units/UnitData.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://de3nko6b1rqyg" path="res://scenes/components/AttackAI.tscn" id="2_ai"]
+
+[resource]
+script = ExtResource("1_script")
+display_name = "Test Defender"
+scene_path = "uid://btlcifwc6ckux"
+max_health = 45
+move_speed = 90.0
+attack_damage = 10
+attack_range = 100.0
+acceleration = 10.0
+linear_damping = 5.0
+ai_component_scene = ExtResource("2_ai")
+initial_state = 9
+debug_color = Color(1, 0.2, 0.2, 1)
+debug_shape = "triangle"
+visual_radius = 16.0
+detection_range = 300.0

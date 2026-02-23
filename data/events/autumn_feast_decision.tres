@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="EventData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="Resource_great"]
+script = ExtResource("2_event_choice")
+choice_text = "Hold a great feast. Spare nothing."
+tooltip_text = "-60 Food, -30 Gold. All household morale +3. Renown +8."
+effect_key = "great_feast"
+
+[sub_resource type="Resource" id="Resource_modest"]
+script = ExtResource("2_event_choice")
+choice_text = "Hold a modest feast. Enough to honour the season."
+tooltip_text = "-25 Food, -10 Gold. All household morale +1. No Renown."
+effect_key = "modest_feast"
+
+[sub_resource type="Resource" id="Resource_cancel"]
+script = ExtResource("2_event_choice")
+choice_text = "Cancel the feast. Survival comes first."
+tooltip_text = "No cost. All household morale -2. Renown -5. May trigger resentment event in winter."
+effect_key = "cancel_feast"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "The Jarl's Table"
+description = "Autumn demands a feast — it is tradition, and your people expect it. But the ledger is close. Your steward stands at the door with two expressions ready: anticipation or disappointment. You must decide what kind of ruler you are this year."
+event_id = "autumn_feast_decision"
+is_unique = false
+base_chance = 0.7
+prerequisites = Array[String]([])
+trigger_season = "Autumn"
+trigger_day = -1
+min_stewardship = -1
+min_command = -1
+min_prowess = -1
+min_renown = -1
+must_have_trait = ""
+must_not_have_trait = ""
+min_available_heirs = -1
+min_conquered_regions = -1
+choices = Array[ExtResource("2_event_choice")]([SubResource("Resource_great"), SubResource("Resource_modest"), SubResource("Resource_cancel")])

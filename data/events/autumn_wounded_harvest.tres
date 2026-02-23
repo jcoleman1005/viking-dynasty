@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="EventData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="Resource_slaughter"]
+script = ExtResource("2_event_choice")
+choice_text = "Slaughter half the livestock for immediate food."
+tooltip_text = "-50% livestock. +Food significant. Next year's Harvest capacity reduced."
+effect_key = "slaughter_livestock"
+
+[sub_resource type="Resource" id="Resource_emergency"]
+script = ExtResource("2_event_choice")
+choice_text = "Send out emergency hunting parties."
+tooltip_text = "Reassigns 1 household to Hunting for winter. Moderate food gain. Reduces winter labor."
+effect_key = "emergency_hunt"
+
+[sub_resource type="Resource" id="Resource_tighten"]
+script = ExtResource("2_event_choice")
+choice_text = "Tighten belts and hope. Winter will be hard."
+tooltip_text = "No asset loss. Winter food consumption triggers Harsh verdict threshold. Sickness risk up."
+effect_key = "weather_shortage"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "The Wounded Harvest"
+description = "The harvest is in — but it is short. Blight took the eastern field and your steward's face tells the story before he speaks a word. The Autumn Ledger will not be kind. The question is what you sacrifice now to survive the winter."
+event_id = "autumn_wounded_harvest"
+is_unique = false
+base_chance = 0.45
+prerequisites = Array[String]([])
+trigger_season = "Autumn"
+trigger_day = -1
+min_stewardship = -1
+min_command = -1
+min_prowess = -1
+min_renown = -1
+must_have_trait = ""
+must_not_have_trait = ""
+min_available_heirs = -1
+min_conquered_regions = -1
+choices = Array[ExtResource("2_event_choice")]([SubResource("Resource_slaughter"), SubResource("Resource_emergency"), SubResource("Resource_tighten")])

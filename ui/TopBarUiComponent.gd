@@ -28,8 +28,6 @@ signal dynasty_view_requested
 @onready var stone_label: Label = %StoneLabel
 
 # Population Section (New Text-Based HUD)
-# Note: Paths derived from new .tscn structure. 
-# Recommend setting 'Access as Unique Name' in Scene dock for robustness if structure changes.
 @onready var villager_label: Label = %VillagerLabel
 @onready var thrall_label: Label = %ThrallLabel
 @onready var soldier_label: Label = %SoldierLabel
@@ -140,6 +138,11 @@ func _update_population_display() -> void:
 	var total_pop = peasants_total + thralls_total + soldiers_total
 	var total_idle = peasants_idle + thralls_idle
 	
+	# --- Task 3.1: Sickness Visualization ---
+	var sick_count: int = 0
+	if SettlementManager.current_settlement:
+		sick_count = SettlementManager.current_settlement.sick_population
+	
 	# Update Category Labels
 	_update_count_label(villager_label, peasants_total)
 	_update_count_label(thrall_label, thralls_total)
@@ -147,7 +150,16 @@ func _update_population_display() -> void:
 	
 	# Update Total Population Label
 	if total_pop_label:
-		total_pop_label.text = "Total Population: %d" % total_pop
+		var pop_text = "Total Population: %d" % total_pop
+		
+		# If sick people exist, show count and tint red
+		if sick_count > 0:
+			pop_text += " (%d Sick)" % sick_count
+			total_pop_label.modulate = Color(1.0, 0.4, 0.4) # Light Red tint
+		else:
+			total_pop_label.modulate = Color.WHITE
+			
+		total_pop_label.text = pop_text
 		
 	# Update Idle Population Label
 	if total_idle_pop_label:
@@ -155,8 +167,7 @@ func _update_population_display() -> void:
 		# Optional: Visual cue if idle pop is high or zero
 		total_idle_pop_label.modulate = Color.WHITE if total_idle > 0 else Color(1, 1, 1, 0.5)
 
-	Loggie.msg("TopBar updated: Total %d | Idle %d" % [total_pop, total_idle]).domain(LogDomains.UI).debug()
-
+	Loggie.msg("TopBar updated: Total %d | Sick %d | Idle %d" % [total_pop, sick_count, total_idle]).domain(LogDomains.UI).debug()
 ## Helper to format and dim labels based on value
 func _update_count_label(lbl: Label, count: int) -> void:
 	if not lbl: return

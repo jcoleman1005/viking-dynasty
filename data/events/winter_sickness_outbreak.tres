@@ -1,0 +1,48 @@
+[gd_resource type="Resource" script_class="EventData" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="Resource_full"]
+script = ExtResource("2_event_choice")
+choice_text = "Full quarantine. Seal the longhouse and post guards."
+tooltip_text = "-1 household winter labor. 80% containment chance. -10 Food extra rations."
+effect_key = "full_quarantine"
+
+[sub_resource type="Resource" id="Resource_partial_q"]
+script = ExtResource("2_event_choice")
+choice_text = "Quarantine but allow supervised work outside."
+tooltip_text = "Partial labor retained. 50% containment. 50%: sickness spreads to adjacent household."
+effect_key = "partial_quarantine"
+
+[sub_resource type="Resource" id="Resource_volva"]
+script = ExtResource("2_event_choice")
+choice_text = "Call on the volva."
+tooltip_text = "Requires seer_present flag. Sickness resolved without quarantine cost."
+effect_key = "consult_volva"
+
+[sub_resource type="Resource" id="Resource_ignore_s"]
+script = ExtResource("2_event_choice")
+choice_text = "Force them to work through it."
+tooltip_text = "Labor retained. Sickness spreads to 1 additional household. -5 population over winter."
+effect_key = "ignore_sickness"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "Sickness in the Night"
+description = "It starts with one longhouse. By the third night, two households are afflicted. Your healer says it will spread further unless quarantine is enforced — but the quarantine will mean those households cannot work the winter tasks you need them for."
+event_id = "winter_sickness_outbreak"
+is_unique = false
+base_chance = 0.6
+prerequisites = Array[String]([])
+trigger_season = "Winter"
+trigger_day = 4
+min_stewardship = -1
+min_command = -1
+min_prowess = -1
+min_renown = -1
+must_have_trait = ""
+must_not_have_trait = ""
+min_available_heirs = -1
+min_conquered_regions = -1
+choices = Array[ExtResource("2_event_choice")]([SubResource("Resource_full"), SubResource("Resource_partial_q"), SubResource("Resource_volva"), SubResource("Resource_ignore_s")])

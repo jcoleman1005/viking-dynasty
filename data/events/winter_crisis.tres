@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="EventData" load_steps=6 format=3 uid="uid://df8sk2j1m5n2p"]
+
+[ext_resource type="Script" path="res://data/events/EventData.gd" id="1_event_data"]
+[ext_resource type="Script" path="res://data/events/EventChoice.gd" id="2_event_choice"]
+
+[sub_resource type="Resource" id="EventChoice_buy"]
+script = ExtResource("2_event_choice")
+choice_text = "Purchase Emergency Rations"
+tooltip_text = "Spend Gold to import grain and fuel. Resolves the crisis immediately."
+effect_key = "winter_crisis_buy_gold"
+
+[sub_resource type="Resource" id="EventChoice_starve"]
+script = ExtResource("2_event_choice")
+choice_text = "Let the Weak Perish"
+tooltip_text = "Let some peasants starve to save the remaining resources."
+effect_key = "winter_crisis_starve_peasants"
+
+[sub_resource type="Resource" id="EventChoice_family"]
+script = ExtResource("2_event_choice")
+choice_text = "Noble Fasting"
+tooltip_text = "Lose 200 Renown. Every heir has a 30% chance to fall ill."
+effect_key = "winter_crisis_family_rations"
+
+[resource]
+script = ExtResource("1_event_data")
+title = "WINTER CRISIS!"
+description = "The winter is harsher than predicted, and our stores are failing. The people look to you, Jarl. We must make a choice, or the entire settlement may freeze and starve."
+event_id = "winter_crisis"
+is_unique = false
+base_chance = 0.0
+choices = Array[ExtResource("2_event_choice")]([SubResource("EventChoice_buy"), SubResource("EventChoice_starve"), SubResource("EventChoice_family")])
