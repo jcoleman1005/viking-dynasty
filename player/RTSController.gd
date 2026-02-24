@@ -14,7 +14,7 @@ var control_groups: Dictionary = {
 }
 
 func _ready() -> void:
-	print("DEBUG: RTSController Initialized.")
+	Loggie.msg("RTSController Initialized.").domain("RTS").debug()
 	
 	# Mouse Commands
 	EventBus.select_command.connect(_on_select_command)
@@ -173,7 +173,7 @@ func _on_select_command(select_rect: Rect2, is_box_select: bool) -> void:
 			selected_units.append(closest_leader)
 			closest_leader.set_selected(true)
 			
-	print("DEBUG: Selection Updated. Count: ", selected_units.size())
+	Loggie.msg("Selection Updated. Count: %d" % selected_units.size()).domain("RTS").debug()
 	_emit_selection_update() # BROADCAST THE RESULT
 
 func _is_squad_in_rect(unit: BaseUnit, rect: Rect2) -> bool:

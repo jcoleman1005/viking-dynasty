@@ -1,12 +1,16 @@
-[gd_scene load_steps=3 format=3 uid="uid://b7y8kak0l1m2n"]
+[gd_scene load_steps=4 format=3 uid="uid://b7y8kak0l1m2n"]
 
 [ext_resource type="Script" uid="uid://diodjhqmrlj0o" path="res://test/RaidSandbox.gd" id="1_sandbox"]
 [ext_resource type="PackedScene" uid="uid://d3ifdm0rvd5kl" path="res://scenes/missions/RaidMission.tscn" id="2_cdrdn"]
+[ext_resource type="Resource" uid="uid://0mdwv54f2ass" path="res://data/buildings/Eco_Storehouse.tres" id="3_1j7l0"]
 
 [node name="RaidSandbox" type="Node2D"]
 script = ExtResource("1_sandbox")
 
 [node name="RaidMission" parent="." instance=ExtResource("2_cdrdn")]
 suppress_auto_init = true
+
+[node name="RaidMapLoader" parent="RaidMission" index="13"]
+storehouse_data = ExtResource("3_1j7l0")
 
 [editable path="RaidMission"]

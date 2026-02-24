@@ -38,6 +38,8 @@ var _mission_initialized: bool = false
 @export var force_warbands: Array[WarbandData] = []
 @export var force_enemy_settlement: SettlementData = null
 
+@export var floating_text_scene: PackedScene
+
 func _enter_tree() -> void:
 	_setup_unit_container()
 
@@ -103,6 +105,7 @@ func _ready() -> void:
 		_load_test_settlement()
 		
 	get_tree().node_added.connect(_on_node_added)
+	EventBus.floating_text_requested.connect(_on_floating_text_requested)
 
 func _setup_unit_container() -> void:
 	if has_node("UnitContainer"):
@@ -178,12 +181,11 @@ func initialize_mission() -> void:
 	# 4. Register & Setup
 	SettlementManager.register_active_scene_nodes(unit_container)
 	
-	# [DIAGNOSTIC] Final check before generation
 	if enemy_base_data.map_seed == 0:
 		Loggie.msg("WARNING: Map Seed is 0. RaidMapLoader will randomize terrain!").domain(LogDomains.RAID).warn()
 		
 	map_loader.setup(building_container, enemy_base_data) 
-	
+	objective_manager._connect_to_building_signals()
 	Loggie.msg("Setup 2/6 — Map generated. buildings=%d has_extraction=%s" % [
 		map_loader.last_map_data.get("buildings", []).size(),
 		str(map_loader.last_map_data.has("extraction_zone"))]
@@ -200,6 +202,10 @@ func initialize_mission() -> void:
 		if visual is ColorRect:
 			visual.size = rect.size
 			visual.position = -rect.size / 2.0
+			var tween = create_tween().set_loops()
+			tween.set_trans(Tween.TRANS_SINE)
+			tween.tween_property(visual, "modulate:a", 0.45, 1.0)
+			tween.tween_property(visual, "modulate:a", 0.15, 1.0)
 	
 	if objective_manager and extraction_zone:
 		objective_manager.setup_extraction(extraction_zone)
@@ -222,7 +228,7 @@ func initialize_mission() -> void:
 	# 6. Finalize Objective
 	if is_instance_valid(objective_building):
 		if objective_manager:
-			objective_manager.initialize(rts_controller, objective_building, unit_container)
+			objective_manager.initialize(rts_controller, objective_building, building_container)
 			
 			Loggie.msg("Setup 6/6 — Mission live.").domain("RAID").info()
 			
@@ -378,73 +384,71 @@ func _spawn_enemy_wave() -> void:
 func _on_wave1_fyrd() -> void:
 	var count = randi_range(8, 10)
 	Loggie.msg("WAVE 1: Spawning %d Fyrd at boundary" % count).domain("RAID").warn()
+	# Wave 1 Fyrd use no explicit target — they engage via UNAWARE->ALARMED->ATTACKING FSM flow.
+	# TODO: [AI Phase 6] Replace with priority-based defend/intercept/hold behaviour tree.
 	_spawn_fyrd_at_boundary(count)
 
 func _on_wave2_fyrd() -> void:
 	var count = randi_range(5, 8)
 	Loggie.msg("WAVE 2: Spawning %d Fyrd targeting extraction" % count).domain("RAID").warn()
-	_spawn_fyrd_at_boundary(count)
+	_spawn_fyrd_at_boundary(count, extraction_zone)
 
-func _spawn_fyrd_at_boundary(count: int) -> void:
+func _spawn_fyrd_at_boundary(count: int, target_override: Node = null) -> void:
 	if not fyrd_unit_scene:
 		Loggie.msg("No fyrd_unit_scene assigned!").domain("RAID").error()
 		return
-
 	# Get boundary positions from map data
 	var boundary_points = map_loader.last_map_data.get("fyrd_boundary", [])
 	if boundary_points.is_empty():
 		# Fallback: top edge of map
 		for i in range(count):
 			boundary_points.append(Vector2(randf_range(200, 3600), 50))
-
-	Loggie.msg("FYRD BOUNDARY POINTS: %s" % str(boundary_points)).domain("RAID").warn()
-
 	for i in range(count):
 		var unit_inst = fyrd_unit_scene.instantiate()
 		unit_inst.collision_layer = 4
 		unit_inst.add_to_group("enemy_units")
-
 		# Pick a boundary point, add some randomness
 		var base_pos = boundary_points[i % boundary_points.size()]
 		var offset = Vector2(randf_range(-80, 80), randf_range(-80, 80))
 		var spawn_pos = base_pos + offset
-
 		# Validate against raid navmesh (NOT NavigationManager)
 		var valid_pos = RaidNavigationManager.request_valid_spawn_point(spawn_pos, 4)
 		if valid_pos != Vector2.INF:
 			unit_inst.global_position = valid_pos
 		else:
 			unit_inst.global_position = spawn_pos
-
-		Loggie.msg("FYRD SPAWN: pos=%s valid=%s boundary=%s" % [
-			str(unit_inst.global_position), 
-			str(valid_pos), 
-			str(base_pos)]
-		).domain("RAID").warn()
-
 		if "skip_unaware" in unit_inst:
 			unit_inst.skip_unaware = true
-
 		unit_container.add_child(unit_inst)
-
-		Loggie.msg("FYRD POST-SPAWN: name=%s skip_unaware=%s fsm=%s state=%s" % [
-			unit_inst.name,
-			str(unit_inst.skip_unaware),
-			str(unit_inst.fsm),
-			str(unit_inst.fsm.current_state if unit_inst.fsm else "NO FSM")]
-		).domain("RAID").warn()
-
+		var flash = ColorRect.new()
+		flash.size = Vector2(32, 32)
+		flash.color = Color(1.0, 0.6, 0.0, 0.8)
+		flash.global_position = valid_pos - flash.size / 2
+		unit_container.add_child(flash)
+		var tween = create_tween()
+		tween.tween_property(flash, "modulate:a", 0.0, 0.4)
+		tween.finished.connect(flash.queue_free)
 		# Wait for FSM to be fully ready before assigning target
-		if is_instance_valid(objective_building):
-			var _building = objective_building
-			unit_inst.fsm_ready.connect(func(_u):
-				if _u.has_method("set_attack_target") and is_instance_valid(_building):
-					_u.set_attack_target(_building)
-			, CONNECT_ONE_SHOT)
+		# Wave 1 Fyrd use no explicit target — they engage via UNAWARE->ALARMED->ATTACKING FSM flow.
+		# TODO: [AI Phase 6] Replace with priority-based defend/intercept/hold behaviour tree.
+		var _building = objective_building
+		unit_inst.fsm_ready.connect(func(_u):
+			var target_node = target_override if (target_override != null and is_instance_valid(target_override)) else _building
+			if target_node is Area2D:
+				if _u.has_method("command_move_to"):
+					_u.command_move_to(target_node.global_position)
+					# TODO: [AI Phase 6] Replace with priority-based intercept behaviour:
+					# Priority 1: Attack on sight if player units within radius of Hall or Church
+					# Priority 2: Actively pursue player units carrying loot toward extraction
+					# Priority 3: Hold defensive position between player centroid and Hall
+			else:
+				if _u.has_method("set_attack_target") and is_instance_valid(target_node):
+					_u.set_attack_target(target_node)
+					# TODO: [AI Phase 6] Add faction check before set_attack_target to prevent
+					# friendly fire and enable multi-faction/defensive mission scenarios
+		, CONNECT_ONE_SHOT)
 
 func _on_fyrd_arrived() -> void:
-	Loggie.msg("--- FYRD SPAWN START ---").domain(LogDomains.RAID).info()
-	
 	if fyrd_unit_scene == null:
 		var fallback = "res://scenes/units/EnemyUnit_Template.tscn" 
 		if ResourceLoader.exists(fallback): fyrd_unit_scene = load(fallback)
@@ -585,3 +589,9 @@ func _exit_tree() -> void:
 		SettlementManager.unregister_active_scene_nodes()
 	
 	RaidNavigationManager.cleanup_raid_map()
+
+func _on_floating_text_requested(text, pos, color):
+	var ft = floating_text_scene.instantiate()
+	ft.global_position = pos
+	ft.setup(text, color)
+	unit_container.add_child(ft)

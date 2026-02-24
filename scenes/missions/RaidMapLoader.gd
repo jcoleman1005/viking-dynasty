@@ -16,7 +16,6 @@ var last_map_data: Dictionary = {}
 @export var church_data: BuildingData
 
 func setup(p_container: Node2D, enemy_data: SettlementData) -> void:
-	Loggie.msg("[DIAGNOSTIC] RaidMapLoader: Beginning Setup Sequence.").domain("RAID").info()
 	building_container = p_container
 	
 	# 1. Register Nodes (So Manager knows WHO to scan, but doesn't scan yet)
@@ -31,7 +30,6 @@ func setup(p_container: Node2D, enemy_data: SettlementData) -> void:
 		if enemy_data.map_seed == 0:
 			enemy_data.map_seed = randi()
 			
-		Loggie.msg("[DIAGNOSTIC] RaidMapLoader: Generating Terrain with Seed: %d" % enemy_data.map_seed).domain("RAID").info()
 		TerrainGenerator.generate_base_terrain(
 			tile_map,
 			GRID_WIDTH, 
@@ -90,8 +88,6 @@ func setup(p_container: Node2D, enemy_data: SettlementData) -> void:
 			NavigationManager.register_map(tile_map, Rect2i(0, 0, GRID_WIDTH, GRID_HEIGHT))
 	else:
 		Loggie.msg("RaidMapLoader: Could not find TileMapLayer!").domain("RAID").error()
-
-	Loggie.msg("[DIAGNOSTIC] RaidMapLoader: Setup Complete.").domain("RAID").info()
 
 func load_base(data: SettlementData, is_player_owner: bool) -> BaseBuilding:
 	var objective_ref: BaseBuilding = null

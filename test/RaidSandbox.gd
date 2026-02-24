@@ -46,13 +46,6 @@ func _ready() -> void:
 	
 	
 	
-	# Floating text fallback for sandbox
-	if not EventBus.floating_text_requested.get_connections().size():
-		EventBus.floating_text_requested.connect(
-			func(text, pos, color):
-				Loggie.msg("FLOAT: '%s' at %s" % [text, str(pos)]).domain("RAID").info()
-		)
-	
 	Loggie.msg("=== Raid Sandbox: Setup Complete ===").domain(LogDomains.RAID).info()
 
 func _setup_debug_overlay() -> void:

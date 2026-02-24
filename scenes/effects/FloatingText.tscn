@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://b1v2w3x4y5s6a"]
+
+[ext_resource type="Script" path="res://scenes/effects/FloatingText.gd" id="1_abcde"]
+
+[node name="FloatingText" type="Label"]
+horizontal_alignment = 1
+theme_override_constants/outline_size = 2
+script = ExtResource("1_abcde")

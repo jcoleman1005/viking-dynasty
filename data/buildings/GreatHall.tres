@@ -1,18 +1,20 @@
-[gd_resource type="Resource" script_class="BuildingData" load_steps=3 format=3 uid="uid://bs1e1mgqnldwq"]
+[gd_resource type="Resource" script_class="EconomicBuildingData" load_steps=3 format=3 uid="uid://bs1e1mgqnldwq"]
 
-[ext_resource type="Script" uid="uid://js4bbqgeyd6c" path="res://data/buildings/BuildingData.gd" id="1_i2pmy"]
+[ext_resource type="Script" uid="uid://d33smw07vm6y4" path="res://data/buildings/EconomicBuildingData.gd" id="1_i2pmy"]
 [ext_resource type="PackedScene" uid="uid://cws6xle5x52g4" path="res://scenes/buildings/Base_Building.tscn" id="2_hptna"]
 
 [resource]
 script = ExtResource("1_i2pmy")
+resource_type = "gold"
+base_passive_output = 27
 display_name = "Great Hall"
 scene_to_spawn = ExtResource("2_hptna")
 build_cost = {
 "gold": 100,
 "wood": 250
 }
-grid_size = Vector2i(4, 4)
 is_player_buildable = true
+grid_size = Vector2i(4, 4)
 is_territory_hub = true
 territory_radius = 8
 arable_land_capacity = 5

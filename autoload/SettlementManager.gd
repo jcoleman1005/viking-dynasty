@@ -471,8 +471,34 @@ func has_save_file() -> bool:
 # --- ECONOMY & WORKERS ---
 
 # FIX: Add Backward Compatibility for SettlementBridge.gd (Prevents crash, prevents double-refund)
-func deposit_resources(_resources: Dictionary) -> void:
-	Loggie.msg("SettlementBridge tried to refund via deprecated 'deposit_resources'. Ignored to prevent double-refund (StorefrontUI handles this now).").domain(LogDomains.ECONOMY).warn()
+func deposit_resources(resources_to_deposit: Dictionary) -> void:
+	if not current_settlement: return
+	
+	for res in resources_to_deposit:
+		var amount = resources_to_deposit[res]
+		var key = res.to_lower()
+		
+		# Handle population/thralls directly, not as treasury resources
+		if key == "population" or key == GameResources.POP_THRALL: 
+			current_settlement.population_thralls += amount
+			Loggie.msg("Deposited %d thralls." % amount).domain(LogDomains.ECONOMY).info()
+			continue # Move to next resource
+
+		var cap = EconomyManager.get_resource_cap(key)
+		var current = current_settlement.treasury.get(key, 0)
+		var space_left = cap - current
+		var amount_to_add = clampi(amount, 0, max(0, space_left)) # Ensure not to add negative or more than space allows
+		
+		if current_settlement.treasury.has(key):
+			current_settlement.treasury[key] += amount_to_add
+		else:
+			current_settlement.treasury[key] = amount_to_add
+		
+		if amount_to_add < amount:
+			Loggie.msg("Storage cap reached for %s. Wasted %d." % [key, amount - amount_to_add]).domain(LogDomains.ECONOMY).warn()
+		
+	Loggie.msg("Resources deposited: %s" % resources_to_deposit).domain(LogDomains.ECONOMY).info()
+	EventBus.treasury_updated.emit(current_settlement.treasury)
 
 # FIX: Proxy for WinterManager and other legacy systems.
 # Forwards the purchase request to the new EconomyManager.

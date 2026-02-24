@@ -74,8 +74,14 @@ func _ready() -> void:
 	_create_hitbox()
 	_setup_defensive_ai()
 	_initialize_loot()
+	
+	loot_depleted.connect(_on_loot_depleted)
 		
 	_update_visual_state()
+
+func _on_loot_depleted(_building):
+	modulate = Color(0.3, 0.3, 0.3, 1.0)
+
 
 func _setup_visual_style() -> void:
 	# Clear existing to be safe

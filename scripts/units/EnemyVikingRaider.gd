@@ -37,11 +37,5 @@ func set_attack_target(target: BaseBuilding) -> void:
 func _deferred_setup(damage_mult: float = 1.0) -> void:
 	super._deferred_setup(damage_mult)
 	
-	Loggie.msg("DEFERRED_SETUP: %s skip_unaware=%s setting_state=%s" % [
-		name,
-		str(skip_unaware),
-		"SKIPPED" if skip_unaware else "UNAWARE"]
-	).domain("RAID").warn()
-	
 	if fsm and not skip_unaware:
 		fsm.change_state(UnitAIConstants.State.UNAWARE)

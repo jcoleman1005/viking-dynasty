@@ -331,6 +331,7 @@ func _move_state(delta: float) -> void:
 		# Check arrival FIRST before updating nav target
 		if is_instance_valid(objective_target):
 			var dist = UnitAIConstants.get_surface_distance(unit, objective_target)
+			# TODO: Large building alignment — the get_surface_distance() < 30.0 threshold may need tuning upward for larger buildings, or a per-building override
 			if dist < 30.0:
 				if objective_target is BaseBuilding:
 					change_state(UnitAIConstants.State.INTERACTING)
@@ -455,6 +456,17 @@ func _process_pillage_tick(delta: float) -> void:
 			change_state(UnitAIConstants.State.IDLE)
 
 func _retreat_state(delta: float) -> void:
+	if RaidNavigationManager.is_raid_active:
+		if unit.nav_agent.is_navigation_finished():
+			unit.velocity = Vector2.ZERO
+			return
+		else:
+			var next_pos = unit.nav_agent.get_next_path_position()
+			var direction = (next_pos - unit.global_position).normalized()
+			unit.velocity = direction * unit.data.move_speed
+			unit.move_and_slide()
+			return
+			
 	if not path.is_empty():
 		var next_waypoint: Vector2 = path[0]
 		var direction: Vector2 = (next_waypoint - unit.global_position).normalized()
@@ -669,8 +681,14 @@ func _fleeing_state(_delta: float) -> void:
 		var nearest = _get_nearest_player_unit()
 		if nearest:
 			var flee_dir = (unit.global_position - nearest.global_position).normalized()
-			var flee_target_pos = unit.global_position + flee_dir * 800.0
+			var base_angle = flee_dir.angle()
+			var panic_offset = randf_range(-PI / 2, PI / 2)  # Random ±90 degrees for panic arc
+			var panic_dir = Vector2.from_angle(base_angle + panic_offset)
+			var flee_target_pos = unit.global_position + panic_dir * 800.0
 			unit.set_movement_target(flee_target_pos)
+			# TODO: [AI Phase 6] Add LOS check before fleeing — civilian should only react to player
+			# units they can see. Use PhysicsDirectSpaceState2D raycast against Environment layer.
+			# This creates realistic "information gap" — a civilian around a corner shouldn't panic.
 	
 	var next_pos = unit.nav_agent.get_next_path_position()
 	var direction = (next_pos - unit.global_position).normalized()

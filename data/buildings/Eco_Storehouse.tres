@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="EconomicBuildingData" load_steps=2 format=3 uid="uid://0mdwv54f2ass"]
+
+[ext_resource type="Script" uid="uid://d33smw07vm6y4" path="res://data/buildings/EconomicBuildingData.gd" id="1_jta43"]
+
+[resource]
+script = ExtResource("1_jta43")
+resource_type = "food"
+base_passive_output = 17
+display_name = "Storehouse"
+description = ""
+loot_type = "food"
+loot_yield_min = -10
+metadata/_custom_type_script = "uid://d33smw07vm6y4"

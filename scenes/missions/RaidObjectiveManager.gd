@@ -41,6 +41,7 @@ var smoke_active: bool = false
 var wave1_spawned: bool = false
 var wave2_spawned: bool = false
 var buildings_looted: int = 0
+var starting_warband_size: int = 0
 
 # --- NEW: Performance Tracking ---
 var battle_start_time: int = 0
@@ -158,6 +159,10 @@ func initialize(
 
 	is_initialized = true
 
+	for warband in RaidManager.outbound_raid_force:
+		starting_warband_size += warband.current_manpower
+	Loggie.msg("Starting warband size: %d" % starting_warband_size).domain("RAID").info()
+
 # --- CASUALTY TRACKING ---
 func _on_player_unit_died(unit: Node2D) -> void:
 	if not mission_over:
@@ -250,11 +255,12 @@ func _end_mission_via_retreat() -> void:
 	var mission_result = RaidResultData.new()
 	mission_result.outcome = "retreat"
 	mission_result.victory_grade = "Tactical Withdrawal"
-	mission_result.renown_earned = 0 
+	mission_result.renown_earned = _calculate_renown_for_retreat()
 	
 	# Populate Loot & Casualties (Cleaned up)
 	mission_result.loot = raid_loot.collected_loot.duplicate() if raid_loot else {}
 	mission_result.casualties = dead_units_log.duplicate()
+	mission_result.potential_loot = _calculate_potential_loot()
 
 	RaidManager.pending_raid_result = mission_result
 	
@@ -346,12 +352,13 @@ func _end_raid_via_extraction() -> void:
 	var lost_count = dead_units_log.size()
 	if lost_count == 0:
 		mission_result.victory_grade = "Decisive"
-	elif lost_count > casualty_limit:
+	elif lost_count > floor(starting_warband_size * 0.5):
 		mission_result.victory_grade = "Pyrrhic"
 	else:
 		mission_result.victory_grade = "Standard"
 	
-	mission_result.renown_earned = base_renown
+	mission_result.renown_earned = _calculate_renown_for_victory(mission_result.victory_grade)
+	mission_result.potential_loot = _calculate_potential_loot()
 	
 	RaidManager.pending_raid_result = mission_result
 	RaidManager.last_raid_outcome = "victory"
@@ -363,12 +370,18 @@ func _end_raid_via_extraction() -> void:
 	EventBus.scene_change_requested.emit(GameScenes.SETTLEMENT)
 
 func _connect_to_building_signals() -> void:
-	if not building_container: return
+	if not building_container: 
+		Loggie.msg("_connect_to_building_signals: building_container is null").domain("RAID").debug()
+		return
+	
+	Loggie.msg("_connect_to_building_signals: found %d children" % building_container.get_children().size()).domain("RAID").warn()
 	
 	for child in building_container.get_children():
+		Loggie.msg("Checking child: %s has loot_stolen: %s" % [child.name, str(child.has_signal("loot_stolen"))]).domain("RAID").warn()
 		if child.has_signal("loot_stolen"):
 			if not child.loot_stolen.is_connected(_on_loot_stolen):
 				child.loot_stolen.connect(_on_loot_stolen)
+				Loggie.msg("Connected loot_stolen on %s" % child.name).domain("RAID").warn()
 				
 		if child.has_signal("building_destroyed"):
 			if not child.building_destroyed.is_connected(_on_enemy_building_destroyed_for_loot):
@@ -376,12 +389,18 @@ func _connect_to_building_signals() -> void:
 
 # --- NEW: Callback for Pillage ---
 func _on_loot_stolen(type: String, amount: int) -> void:
+	Loggie.msg("_on_loot_stolen called").domain("RAID").warn()
 	if mission_over: return
 	
 	trigger_smoke_signal()
 	
 	# Add to the temporary raid stash
 	raid_loot.add_loot(type, amount)
+	# TODO: [AI Phase 6] Implement "Alert Ripple" detection bridge:
+	# 1. Any defender within ~400px of the pillaged building should enter an INVESTIGATING state
+	# 2. If an investigating defender sees a player unit, trigger audible alarm via emit_alarm()
+	# 3. This creates a realistic "information gap" — smoke alerts the region, commotion alerts nearby defenders
+	# Historical basis: defenders without line-of-sight wouldn't know the west barn was burning
 	
 	# Note: raid_loot.add_loot already has a Loggie print, so we don't need another one here.
 
@@ -449,6 +468,17 @@ func _on_mission_failed(reason: String) -> void:
 		var full_reason = reason + "\n\n" + report.get("summary_text", "")
 		_show_failure_message(full_reason)
 	else:
+		var mission_result = RaidResultData.new()
+		mission_result.outcome = "defeat"
+		mission_result.victory_grade = "Defeat"
+		mission_result.loot = raid_loot.collected_loot.duplicate() if raid_loot else {}
+		mission_result.potential_loot = _calculate_potential_loot()
+		mission_result.casualties = dead_units_log.duplicate()
+		var difficulty = RaidManager.current_raid_difficulty
+		mission_result.renown_earned = -(base_renown + (difficulty * renown_per_difficulty))
+		
+		RaidManager.pending_raid_result = mission_result
+		RaidManager.last_raid_outcome = "defeat"
 		_show_failure_message(reason + "\n\nYour raid failed. No loot was secured.")
 	
 	await get_tree().create_timer(failure_delay).timeout
@@ -516,6 +546,24 @@ func trigger_smoke_signal() -> void:
 	smoke_signal_triggered.emit()
 	Loggie.msg("SMOKE SIGNAL! Fyrd Wave 1 in %d seconds." % int(smoke_to_wave1_time)).domain("RAID").warn()
 
+	var smoke_visual = ColorRect.new()
+	smoke_visual.size = Vector2(20, 20)
+	smoke_visual.color = Color(0.2, 0.2, 0.2, 0.8)
+	
+	var smoke_origin = get_parent().get_node("BuildingContainer").global_position
+	if is_instance_valid(objective_building):
+		smoke_origin = objective_building.global_position
+	
+	smoke_visual.global_position = smoke_origin
+	get_parent().add_child(smoke_visual)
+
+	var tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(smoke_visual, "scale", Vector2(6, 6), 3.0)
+	tween.tween_property(smoke_visual, "modulate:a", 0.0, 3.0)
+	tween.finished.connect(smoke_visual.queue_free)
+
+
 func _spawn_fyrd_wave1() -> void:
 	Loggie.msg("STUB: Wave 1 would spawn here").domain("RAID").warn()
 	wave1_fyrd_arrived.emit()
@@ -577,3 +625,64 @@ func _on_raid_loot_secured(type: String, amount: int) -> void:
 	
 	# Trigger UI update if you have a Loot HUD
 	# EventBus.ui_update_loot.emit(raid_loot.collected_loot)
+
+func _calculate_potential_loot() -> Dictionary:
+	var total_loot = {}
+	var buildings = get_tree().get_nodes_in_group("buildings")
+
+	if buildings.is_empty():
+		Loggie.msg("No buildings found to calculate potential loot.").domain("RAID").warn()
+		return {}
+
+	for building in buildings:
+		if not is_instance_valid(building):
+			continue
+
+		if "available_loot" in building:
+			var loot_dict = building.get("available_loot")
+			if loot_dict is Dictionary:
+				for resource_type in loot_dict:
+					var amount = loot_dict[resource_type]
+					if not total_loot.has(resource_type):
+						total_loot[resource_type] = 0
+					total_loot[resource_type] += amount
+		else:
+			Loggie.msg("Building %s is missing 'available_loot' property." % building.name).domain("RAID").warn()
+
+	return total_loot
+
+func _calculate_renown_for_victory(grade: String) -> int:
+	var difficulty = RaidManager.current_raid_difficulty
+	var base_value = base_renown + (difficulty * renown_per_difficulty)
+
+	match grade:
+		"Decisive":
+			return floor(base_value * 1.5)
+		"Standard":
+			return base_value
+		"Pyrrhic":
+			return -base_value
+	
+	return base_value
+
+func _calculate_renown_for_retreat() -> int:
+	var difficulty = RaidManager.current_raid_difficulty
+	var renown_penalty = 0
+
+	# (1) Saga Factor high
+	if difficulty >= 4:
+		return 0
+
+	# (2) Loot Weight
+	if raid_loot and raid_loot.collected_loot.get("gold", 0) >= 60:
+		return 0
+
+	# (3) Blood Debt
+	if not dead_units_log.is_empty():
+		renown_penalty += floor(base_renown * 0.75)
+
+	# (4) Saga Factor low
+	if difficulty <= 2:
+		renown_penalty += floor(base_renown * 0.5)
+
+	return -renown_penalty
