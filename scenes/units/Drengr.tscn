@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3 uid="uid://dwmjo52snfdsl"]
 
-[ext_resource type="Script" uid="uid://btumxrbbibjx8" path="res://scripts/units/PlayerVikingRaider.gd" id="1_jw7fk"]
+[ext_resource type="Script" uid="uid://byb1sr3vedyb7" path="res://scripts/units/SquadLeader.gd" id="1_jw7fk"]
 [ext_resource type="Shape2D" uid="uid://bda7xb0judu2h" path="res://resources/separation_circle_shape.tres" id="2_2vnw6"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_n6s0a"]

@@ -62,6 +62,7 @@ func _connect_signals() -> void:
 	# 3. Dynasty/Time Signals
 	if DynastyManager:
 		DynastyManager.year_ended.connect(refresh_all)
+		DynastyManager.jarl_stats_updated.connect(refresh_identity)
 
 func _connect_local_input() -> void:
 	if dynasty_button:

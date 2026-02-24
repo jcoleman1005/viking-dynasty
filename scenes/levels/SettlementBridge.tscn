@@ -168,6 +168,9 @@ end_of_year_popup_scene = ExtResource("2_5el12")
 show_ui_logs = true
 show_settlement_logs = true
 show_building_logs = true
+start_gold = 50
+start_wood = 5
+start_food = 10
 metadata/_edit_horizontal_guides_ = [2658.0, 93.0]
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]

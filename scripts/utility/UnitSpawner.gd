@@ -109,20 +109,15 @@ func _spawn_unit_core(warband: WarbandData, target_pos: Vector2, is_player: bool
 		unit.collision_layer = LAYER_PLAYER
 		unit.add_to_group("player_units")
 		
-		# Always apply Squad Leader Script
-		var leader_script = load("res://scripts/units/SquadLeader.gd")
-		if unit.get_script() != leader_script:
-			unit.set_script(leader_script)
-			# Re-inject dependencies
-			unit.warband_ref = warband
-			unit.data = unit_data
+		
 	else:
 		unit.collision_layer = LAYER_ENEMY
 		unit.add_to_group("enemy_units")
 	
 	# 4. Position & Parent
-	Loggie.msg("DEBUG SPAWN: %s final_pos=%s target_pos=%s" % [unit.name, str(final_pos), str(target_pos)]).domain("NAVIGATION").info()
 	unit.global_position = final_pos
+	
+	
 	unit_container.add_child(unit)
 	
 	# 5. Global Event

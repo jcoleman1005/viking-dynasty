@@ -1,5 +1,4 @@
 #res://scripts/units/Base_Unit.gd
-# res://scripts/units/Base_Unit.gd
 class_name BaseUnit
 extends CharacterBody2D
 
@@ -69,6 +68,7 @@ var inventory: Dictionary = {}
 var current_loot_weight: int = 0
 
 func _ready() -> void:
+	Loggie.msg("BaseUnit._ready: data=%s nav_agent=%s" % [str(data), str(nav_agent)]).domain("SYSTEM").warn()
 	if not data:
 		push_warning("BaseUnit: Node '%s' is missing 'UnitData'." % name)
 		return

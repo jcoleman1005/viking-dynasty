@@ -86,3 +86,10 @@ func on_game_unpaused() -> void:
 		Loggie.warn("Game reported as unpaused but SceneTree.paused is still true", "PauseManager")
 	else:
 		Loggie.debug("Game successfully unpaused - SceneTree.paused = false", "PauseManager")
+
+
+func toggle_pause() -> void:
+	if is_game_paused():
+		on_game_unpaused()
+	else:
+		request_pause()

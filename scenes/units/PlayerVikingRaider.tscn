@@ -1,10 +1,11 @@
 [gd_scene load_steps=3 format=3 uid="uid://cfanwutbtfcp2"]
 
 [ext_resource type="PackedScene" uid="uid://bky4c6y8fkk8g" path="res://scenes/units/Base_Unit.tscn" id="1_base"]
-[ext_resource type="Script" uid="uid://btumxrbbibjx8" path="res://scripts/units/PlayerVikingRaider.gd" id="2_script"]
+[ext_resource type="Script" uid="uid://byb1sr3vedyb7" path="res://scripts/units/SquadLeader.gd" id="2_d6lwb"]
 
 [node name="PlayerVikingRaider" instance=ExtResource("1_base")]
-script = ExtResource("2_script")
+script = ExtResource("2_d6lwb")
+leader_test_data = null
 
 [node name="Sprite2D" parent="." index="0"]
 texture = null
