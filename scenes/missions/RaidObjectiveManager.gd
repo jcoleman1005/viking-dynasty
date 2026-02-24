@@ -18,7 +18,7 @@ class_name RaidObjectiveManager
 @export var casualty_limit: int = 2
 
 @export_group("Loot")
-@export var base_victory_gold: int = 200
+@export var base_victory_gold: int = 0
 @export var base_renown: int = 200
 @export var renown_per_difficulty: int = 50
 @export var non_eco_building_loot: int = 50
@@ -371,7 +371,7 @@ func _end_raid_via_extraction() -> void:
 
 func _connect_to_building_signals() -> void:
 	if not building_container: 
-		Loggie.msg("_connect_to_building_signals: building_container is null").domain("RAID").debug()
+		Loggie.msg("_connect_to_building_signals: building_container is null").domain("RAID").info()
 		return
 	
 	Loggie.msg("_connect_to_building_signals: found %d children" % building_container.get_children().size()).domain("RAID").warn()

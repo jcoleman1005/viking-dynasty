@@ -6,7 +6,7 @@
 [resource]
 script = ExtResource("1_abcde")
 resource_type = "food"
-base_passive_output = 10
+base_passive_output = 17
 display_name = "Monastery Granary"
 scene_to_spawn = ExtResource("2_fghij")
 build_cost = {

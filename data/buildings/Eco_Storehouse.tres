@@ -5,7 +5,7 @@
 [resource]
 script = ExtResource("1_jta43")
 resource_type = "food"
-base_passive_output = 17
+base_passive_output = 10
 display_name = "Storehouse"
 description = ""
 loot_type = "food"

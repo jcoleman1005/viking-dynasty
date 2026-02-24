@@ -171,6 +171,7 @@ show_building_logs = true
 start_gold = 50
 start_wood = 5
 start_food = 10
+start_stone = 0
 metadata/_edit_horizontal_guides_ = [2658.0, 93.0]
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]
