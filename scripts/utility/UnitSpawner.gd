@@ -7,6 +7,11 @@ extends Node
 @export var unit_container: Node2D
 @export var rts_controller: RTSController
 
+@export_group("Mission References")
+@export var building_container: Node2D
+@export var map_loader: RaidMapLoader
+@export var objective_manager: RaidObjectiveManager
+
 @export_group("Defaults")
 @export var civilian_data: UnitData
 @export var spawn_radius_min: float = 100.0
@@ -29,6 +34,196 @@ func clear_units() -> void:
 	for child in unit_container.get_children():
 		child.queue_free()
 
+# --- MISSION SPAWN API ---
+
+## High-level entry point for setting up all units in a Raid Mission. Returns the resolved objective building.
+func spawn_for_mission(enemy_data: SettlementData, map_data: Dictionary) -> BaseBuilding:
+	if not _validate_spawn_setup(): return null
+	
+	# 1. Resolve Objective Building (needed for fallback spawn points)
+	var obj_building: BaseBuilding = null
+	var buildings_list = map_data.get("buildings", [])
+	for entry in buildings_list:
+		if entry.get("type", "") == "Hall" and entry.get("node", null) != null:
+			obj_building = entry["node"]
+			break
+	
+	Loggie.msg("Setup 3/6 — Objective building resolved: %s" % str(is_instance_valid(obj_building))).domain("RAID").info()
+	
+	Loggie.msg("Setup 5/6 — Spawning units. warbands=%d peasants=%d" % [
+		enemy_data.warbands.size() if enemy_data else -1,
+		enemy_data.population_peasants if enemy_data else -1]
+	).domain("RAID").info()
+
+	# 2. Spawn Civilians
+	if enemy_data and enemy_data.population_peasants > 0:
+		# Resolve Origin: map_data -> objective -> fallback
+		var villager_spawns = map_data.get("villager_spawns", [])
+		var spawn_origin = Vector2(200, 300)
+		if villager_spawns.size() > 0:
+			spawn_origin = villager_spawns[0]
+		elif is_instance_valid(obj_building):
+			spawn_origin = obj_building.global_position + Vector2(0, 100)
+		
+		# Validate against RaidNavigationManager
+		var valid_origin = RaidNavigationManager.request_valid_spawn_point(spawn_origin, 5)
+		
+		sync_civilians(enemy_data.population_peasants, valid_origin, true)
+		Loggie.msg("Civilians spawned around: %s" % str(valid_origin)).domain("RAID").info()
+
+	# 3. Mission-Specific Spawning (Player & Enemy Force)
+	var mission = get_parent()
+	var is_defensive = mission.get("is_defensive_mission") if mission else false
+	
+	if is_defensive:
+		_setup_defensive_mode(mission, obj_building)
+	else:
+		_setup_offensive_mode(mission, buildings_list, enemy_data, obj_building)
+
+	if enemy_data:
+		Loggie.msg("Enemy warbands spawned: %d" % enemy_data.warbands.size()).domain("RAID").info()
+		
+	return obj_building
+
+func _setup_defensive_mode(mission: Node, obj_building: BaseBuilding) -> void:
+	var settlement = SettlementManager.current_settlement
+	if settlement and map_loader:
+		# This updates the objective_building if load_base finds the hub
+		var hub = map_loader.load_base(settlement, true)
+		if hub: 
+			obj_building = hub
+			if "objective_building" in mission:
+				mission.objective_building = hub
+			
+	_spawn_player_garrison(mission, obj_building)
+	_spawn_enemy_wave(mission, obj_building)
+
+func _setup_offensive_mode(mission: Node, buildings_data: Array, enemy_data: SettlementData, obj_building: BaseBuilding) -> void:
+	_spawn_player_garrison(mission)
+	_spawn_retreat_zone(mission)
+	
+	# Spawn Enemy Garrison
+	if enemy_data:
+		# Fail-Safe Generation
+		if enemy_data.warbands.is_empty():
+			MapDataGenerator._scale_garrison(enemy_data, 1.0)
+			
+		var guard_buildings = []
+		for entry in buildings_data:
+			if entry.get("node") is BaseBuilding:
+				guard_buildings.append(entry["node"])
+		
+		spawn_enemy_garrison(enemy_data.warbands, guard_buildings)
+
+func _spawn_player_garrison(mission: Node, obj_building: BaseBuilding = null) -> void:
+	var warbands_to_spawn: Array[WarbandData] = []
+	var force_warbands = mission.get("force_warbands") if mission else []
+	var is_defensive = mission.get("is_defensive_mission") if mission else false
+	var player_spawn_pos = mission.get("player_spawn_pos") if mission else null
+	var landing_direction = mission.get("landing_direction") if mission else Vector2.RIGHT
+	
+	if force_warbands and not force_warbands.is_empty():
+		warbands_to_spawn = force_warbands
+	elif is_defensive:
+		if SettlementManager.current_settlement:
+			warbands_to_spawn = SettlementManager.current_settlement.warbands
+	else:
+		if not RaidManager.outbound_raid_force.is_empty():
+			warbands_to_spawn = RaidManager.outbound_raid_force
+		else:
+			if SettlementManager.current_settlement:
+				warbands_to_spawn = SettlementManager.current_settlement.warbands
+			else:
+				_spawn_test_units(player_spawn_pos)
+				return
+
+	if warbands_to_spawn.is_empty():
+		if not is_defensive and objective_manager:
+			objective_manager.call_deferred("_check_loss_condition")
+		return
+	
+	var spawn_origin = player_spawn_pos.global_position if player_spawn_pos else Vector2.ZERO
+	
+	if is_defensive and is_instance_valid(obj_building):
+		spawn_origin = obj_building.global_position + Vector2(100, 100)
+	elif not is_defensive:
+		spawn_origin += landing_direction * 200.0
+		
+	# Safety Check for Player Spawn
+	spawn_origin = NavigationManager.request_valid_spawn_point(spawn_origin, 4)
+	
+	spawn_garrison(warbands_to_spawn, spawn_origin)
+
+func _spawn_enemy_wave(mission: Node, obj_building: BaseBuilding) -> void:
+	var enemy_spawn_path = mission.get("enemy_spawn_position") if mission else null
+	var enemy_wave_units = mission.get("enemy_wave_units") if mission else []
+	var enemy_wave_count = mission.get("enemy_wave_count") if mission else 0
+	
+	if not enemy_spawn_path: return
+	var spawner = mission.get_node_or_null(enemy_spawn_path)
+	if not spawner: return
+	if enemy_wave_units.is_empty(): return
+	
+	var origin = spawner.global_position
+		
+	for i in range(enemy_wave_count):
+		var random_data = enemy_wave_units.pick_random()
+		var scene_ref = random_data.load_scene()
+		if not scene_ref: continue
+		
+		var unit = scene_ref.instantiate()
+		unit.data = random_data 
+		unit.collision_layer = LAYER_ENEMY
+		unit.add_to_group("enemy_units")
+		
+		var offset = Vector2(i * 40, 0)
+		var target_pos = origin + offset
+		
+		unit.global_position = NavigationManager.request_valid_spawn_point(target_pos, 3)
+		if unit.global_position == Vector2.INF:
+			unit.global_position = target_pos
+		
+		unit_container.add_child(unit)
+		
+		if obj_building:
+			unit.fsm_ready.connect(func(u): 
+				if u.fsm: u.fsm.command_attack(obj_building)
+			)
+
+func _spawn_retreat_zone(mission: Node) -> void:
+	var zone_script_path = "res://scenes/missions/RetreatZone.gd"
+	if not ResourceLoader.exists(zone_script_path): return
+	var player_spawn_pos = mission.get("player_spawn_pos") if mission else null
+	if not player_spawn_pos: return
+	
+	var zone = Area2D.new()
+	zone.set_script(load(zone_script_path))
+	var poly = CollisionPolygon2D.new()
+	poly.polygon = PackedVector2Array([
+		Vector2(-100,-100), Vector2(100,-100), Vector2(100,100), Vector2(-100,100)
+	])
+	zone.add_child(poly)
+	zone.global_position = player_spawn_pos.global_position
+	zone.add_to_group("retreat_zone")
+	mission.add_child(zone)
+	
+	if objective_manager:
+		zone.unit_evacuated.connect(objective_manager.on_unit_evacuated)
+
+func _spawn_test_units(player_spawn_pos: Marker2D) -> void:
+	var unit_scene = load("res://scenes/units/Bondi.tscn")
+	if not unit_scene or not player_spawn_pos: return
+	for i in range(5):
+		var u = unit_scene.instantiate()
+		var offset = Vector2(i*30, 0)
+		var pos = player_spawn_pos.global_position + offset
+		
+		var safe_pos = NavigationManager.request_valid_spawn_point(pos, 2)
+		if safe_pos != Vector2.INF: u.global_position = safe_pos
+		else: u.global_position = pos
+		
+		unit_container.add_child(u)
+
 # --- PUBLIC SPAWN API ---
 
 func spawn_garrison(warbands: Array[WarbandData], spawn_origin: Vector2) -> void:
@@ -45,7 +240,6 @@ func spawn_garrison(warbands: Array[WarbandData], spawn_origin: Vector2) -> void
 			
 		var ideal_pos = _calculate_formation_pos(spawn_origin, current_index)
 		
-		# Spawn the Squad Leader
 		var unit_instance = _spawn_unit_core(warband, ideal_pos, true)
 		if unit_instance:
 			if rts_controller:
@@ -61,8 +255,6 @@ func spawn_enemy_garrison(warbands: Array[WarbandData], buildings: Array) -> voi
 
 	for i in range(warbands.size()):
 		var warband = warbands[i]
-		
-		Loggie.msg("Warband unit_type: %s" % str(warband.unit_type.display_name if warband.unit_type else "NULL")).domain("RAID").info()
 		
 		var guard_pos = Vector2.ZERO
 		if not buildings.is_empty():
@@ -86,7 +278,6 @@ func _spawn_unit_core(warband: WarbandData, target_pos: Vector2, is_player: bool
 		Loggie.msg("Failed to load scene for %s" % unit_data.display_name).domain(LogDomains.SYSTEM).error()
 		return null
 	
-	# 1. Coordinate Safety Check
 	var final_pos = target_pos
 	
 	if RaidNavigationManager.is_raid_active:
@@ -98,29 +289,20 @@ func _spawn_unit_core(warband: WarbandData, target_pos: Vector2, is_player: bool
 		Loggie.msg("Spawn blocked at %s for %s" % [target_pos, unit_data.display_name]).domain(LogDomains.NAVIGATION).warn()
 		return null
 	
-	# 2. Instantiate
 	var unit = scene_ref.instantiate() as BaseUnit
-	
-	# 3. Inject Dependencies
 	unit.warband_ref = warband
 	unit.data = unit_data
 	
 	if is_player:
 		unit.collision_layer = LAYER_PLAYER
 		unit.add_to_group("player_units")
-		
-		
 	else:
 		unit.collision_layer = LAYER_ENEMY
 		unit.add_to_group("enemy_units")
 	
-	# 4. Position & Parent
 	unit.global_position = final_pos
-	
-	
 	unit_container.add_child(unit)
 	
-	# 5. Global Event
 	if is_player:
 		EventBus.player_unit_spawned.emit(unit)
 		
@@ -180,7 +362,6 @@ func _spawn_civilians(count: int, origin: Vector2, is_enemy: bool) -> void:
 	for i in range(count):
 		var civ = scene_ref.instantiate()
 		
-		# 1. Set Groups/Layers
 		if is_enemy:
 			civ.collision_layer = LAYER_ENEMY
 			civ.add_to_group("enemy_units")
@@ -189,14 +370,12 @@ func _spawn_civilians(count: int, origin: Vector2, is_enemy: bool) -> void:
 			civ.collision_layer = LAYER_PLAYER
 			civ.add_to_group("player_units")
 			
-		# 2. Generate Random Position
 		var angle = randf() * TAU
 		var distance = randf_range(spawn_radius_min, spawn_radius_max)
 		var tentative_pos = origin + (Vector2(cos(angle), sin(angle)) * distance)
 		
 		var final_pos = tentative_pos
 		
-		# 3. --- SAFETY CHECK (REFACTORED) ---
 		if RaidNavigationManager.is_raid_active:
 			var closest = RaidNavigationManager.request_valid_spawn_point(tentative_pos, 5)
 			if closest != Vector2.INF:
@@ -213,9 +392,7 @@ func _spawn_civilians(count: int, origin: Vector2, is_enemy: bool) -> void:
 					final_pos = safe_pos
 				else:
 					final_pos = origin 
-		# -----------------------
 		
-		Loggie.msg("DEBUG SPAWN CIV: final_pos=%s tentative=%s" % [str(final_pos), str(tentative_pos)]).domain("NAVIGATION").info()
 		civ.global_position = final_pos
 		unit_container.add_child(civ)
 		

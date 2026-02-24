@@ -2,7 +2,7 @@ PROJECT SOURCE CODE LIBRARY
 ===========================
 CONTAINS: Full Implementation Logic, Scene Trees, and Resource Data.
 INSTRUCTION: This is the raw source code. Use this to answer specific implementation questions.
-GENERATED: 2026-02-24T09:48:49
+GENERATED: 2026-02-24T11:45:24
 ===========================
 
 
@@ -29303,6 +29303,13 @@ func on_game_unpaused() -> void:
 		Loggie.debug("Game successfully unpaused - SceneTree.paused = false", "PauseManager")
 
 
+func toggle_pause() -> void:
+	if is_game_paused():
+		on_game_unpaused()
+	else:
+		request_pause()
+
+
 --------------------------------------------------
 FILE: res:///autoload/PauseManager.tscn
 --------------------------------------------------
@@ -31673,7 +31680,7 @@ FILE: res:///data/buildings/Eco_Storehouse.tres
 [resource]
 script = ExtResource("1_jta43")
 resource_type = "food"
-base_passive_output = 17
+base_passive_output = 10
 display_name = "Storehouse"
 description = ""
 loot_type = "food"
@@ -31792,7 +31799,7 @@ FILE: res:///data/buildings/Monastery_Granary.tres
 [resource]
 script = ExtResource("1_abcde")
 resource_type = "food"
-base_passive_output = 10
+base_passive_output = 17
 display_name = "Monastery Granary"
 scene_to_spawn = ExtResource("2_fghij")
 build_cost = {
@@ -38111,6 +38118,10 @@ end_of_year_popup_scene = ExtResource("2_5el12")
 show_ui_logs = true
 show_settlement_logs = true
 show_building_logs = true
+start_gold = 50
+start_wood = 5
+start_food = 10
+start_stone = 0
 metadata/_edit_horizontal_guides_ = [2658.0, 93.0]
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]
@@ -39079,7 +39090,7 @@ class_name RaidObjectiveManager
 @export var casualty_limit: int = 2
 
 @export_group("Loot")
-@export var base_victory_gold: int = 200
+@export var base_victory_gold: int = 0
 @export var base_renown: int = 200
 @export var renown_per_difficulty: int = 50
 @export var non_eco_building_loot: int = 50
@@ -39432,7 +39443,7 @@ func _end_raid_via_extraction() -> void:
 
 func _connect_to_building_signals() -> void:
 	if not building_container: 
-		Loggie.msg("_connect_to_building_signals: building_container is null").domain("RAID").debug()
+		Loggie.msg("_connect_to_building_signals: building_container is null").domain("RAID").info()
 		return
 	
 	Loggie.msg("_connect_to_building_signals: found %d children" % building_container.get_children().size()).domain("RAID").warn()
@@ -40083,32 +40094,14 @@ FILE: res:///scenes/units/Bondi.tscn
 --------------------------------------------------
 [gd_scene load_steps=4 format=3 uid="uid://b23ynenrrakpo"]
 
-[ext_resource type="Script" uid="uid://btumxrbbibjx8" path="res://scripts/units/PlayerVikingRaider.gd" id="1_uy07r"]
-[ext_resource type="Shape2D" uid="uid://bda7xb0judu2h" path="res://resources/separation_circle_shape.tres" id="2_hbse2"]
+[ext_resource type="PackedScene" uid="uid://bky4c6y8fkk8g" path="res://scenes/units/Base_Unit.tscn" id="1_0x3vs"]
+[ext_resource type="Script" uid="uid://byb1sr3vedyb7" path="res://scripts/units/SquadLeader.gd" id="1_uy07r"]
+[ext_resource type="Resource" uid="uid://dpe2acwvvxthl" path="res://data/units/Unit_Bondi.tres" id="3_hbse2"]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_n6s0a"]
-size = Vector2(72, 72)
-
-[node name="PlayerVikingRaider" type="CharacterBody2D"]
-modulate = Color(0.6, 0.7, 0.5, 1)
-collision_layer = 2
+[node name="Base_Unit" instance=ExtResource("1_0x3vs")]
 script = ExtResource("1_uy07r")
-
-[node name="Sprite2D" type="Sprite2D" parent="."]
-region_rect = Rect2(509.90704, 170.3761, 21.10736, 26.607208)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-shape = SubResource("RectangleShape2D_n6s0a")
-
-[node name="AttackTimer" type="Timer" parent="."]
-
-[node name="SeparationArea" type="Area2D" parent="."]
-collision_layer = 0
-collision_mask = 2
-monitorable = false
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="SeparationArea"]
-shape = ExtResource("2_hbse2")
+leader_test_data = null
+data = ExtResource("3_hbse2")
 
 
 --------------------------------------------------
@@ -40145,7 +40138,7 @@ FILE: res:///scenes/units/Drengr.tscn
 --------------------------------------------------
 [gd_scene load_steps=4 format=3 uid="uid://dwmjo52snfdsl"]
 
-[ext_resource type="Script" uid="uid://btumxrbbibjx8" path="res://scripts/units/PlayerVikingRaider.gd" id="1_jw7fk"]
+[ext_resource type="Script" uid="uid://byb1sr3vedyb7" path="res://scripts/units/SquadLeader.gd" id="1_jw7fk"]
 [ext_resource type="Shape2D" uid="uid://bda7xb0judu2h" path="res://resources/separation_circle_shape.tres" id="2_2vnw6"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_n6s0a"]
@@ -40199,10 +40192,11 @@ FILE: res:///scenes/units/PlayerVikingRaider.tscn
 [gd_scene load_steps=3 format=3 uid="uid://cfanwutbtfcp2"]
 
 [ext_resource type="PackedScene" uid="uid://bky4c6y8fkk8g" path="res://scenes/units/Base_Unit.tscn" id="1_base"]
-[ext_resource type="Script" uid="uid://btumxrbbibjx8" path="res://scripts/units/PlayerVikingRaider.gd" id="2_script"]
+[ext_resource type="Script" uid="uid://byb1sr3vedyb7" path="res://scripts/units/SquadLeader.gd" id="2_d6lwb"]
 
 [node name="PlayerVikingRaider" instance=ExtResource("1_base")]
-script = ExtResource("2_script")
+script = ExtResource("2_d6lwb")
+leader_test_data = null
 
 [node name="Sprite2D" parent="." index="0"]
 texture = null
@@ -44882,7 +44876,6 @@ text = "Back"
 FILE: res:///scripts/units/Base_Unit.gd
 --------------------------------------------------
 #res://scripts/units/Base_Unit.gd
-# res://scripts/units/Base_Unit.gd
 class_name BaseUnit
 extends CharacterBody2D
 
@@ -45527,58 +45520,6 @@ func _deferred_setup(damage_mult: float = 1.0) -> void:
 	
 	if fsm and not skip_unaware:
 		fsm.change_state(UnitAIConstants.State.UNAWARE)
-
-
---------------------------------------------------
-FILE: res:///scripts/units/PlayerVikingRaider.gd
---------------------------------------------------
-#res://scripts/units/PlayerVikingRaider.gd
-# res://scripts/units/PlayerVikingRaider.gd
-#
-# Player-controlled Viking Raider unit.
-# This script is now much simpler. It just inherits all the
-# complex logic from BaseUnit and the FSM.
-
-extends BaseUnit
-class_name PlayerVikingRaider
-
-func _ready() -> void:
-	# --- FIX: Add to group BEFORE super._ready() ---
-	# BaseUnit._ready() checks this group to apply the Thor damage buff.
-	add_to_group("player_units")
-	# -----------------------------------------------
-	
-	# Call parent _ready to initialize base unit systems (Health, AI, FSM)
-	super._ready()
-	
-	Loggie.msg("PlayerVikingRaider '%s' initialized and ready for RTS control" % name).domain("RTS").info()
-
-# We override the command_attack function just to add a print statement,
-# then we call super.command_attack(target) to let the Base_Unit and FSM
-# handle the *actual* logic correctly.
-func command_attack(target: Node2D) -> void:
-	if not fsm or not is_instance_valid(target):
-		push_warning("Player Raider FSM or target is not valid.")
-		return
-
-	Loggie.msg("Player Viking Raider '%s' attacking %s" % [name, target.name]).domain("RTS").info()
-
-	# Pass the command to the base class, which will pass it to the FSM
-	super.command_attack(target)
-
-# Override die method to handle player unit death
-func die() -> void:
-	"""Handle player unit death with proper cleanup"""
-	# Remove from player units group
-	remove_from_group("player_units")
-	
-	# Notify other systems about unit death
-	EventBus.emit_signal("player_unit_died", self)
-	
-	Loggie.msg("Player Viking Raider '%s' has fallen in battle!" % name).domain("RTS").info()
-	
-	# Call parent die method
-	super.die()
 
 
 --------------------------------------------------
@@ -46798,20 +46739,15 @@ func _spawn_unit_core(warband: WarbandData, target_pos: Vector2, is_player: bool
 		unit.collision_layer = LAYER_PLAYER
 		unit.add_to_group("player_units")
 		
-		# Always apply Squad Leader Script
-		var leader_script = load("res://scripts/units/SquadLeader.gd")
-		if unit.get_script() != leader_script:
-			unit.set_script(leader_script)
-			# Re-inject dependencies
-			unit.warband_ref = warband
-			unit.data = unit_data
+		
 	else:
 		unit.collision_layer = LAYER_ENEMY
 		unit.add_to_group("enemy_units")
 	
 	# 4. Position & Parent
-	Loggie.msg("DEBUG SPAWN: %s final_pos=%s target_pos=%s" % [unit.name, str(final_pos), str(target_pos)]).domain("NAVIGATION").info()
 	unit.global_position = final_pos
+	
+	
 	unit_container.add_child(unit)
 	
 	# 5. Global Event
@@ -48219,6 +48155,76 @@ func after_all():
 
 
 --------------------------------------------------
+FILE: res:///test/integration/test_unit_spawning.gd
+--------------------------------------------------
+# test/integration/test_unit_spawning.gd
+extends "res://test/base/GutTestBase.gd"
+
+var unit_container: Node2D
+var rts_controller: Node
+var unit_spawner: UnitSpawner
+var _spawned_units: Array = []
+
+func before_each() -> void:
+	super.before_each()
+	NavigationManager.unregister_grid()
+	_spawned_units.clear()
+	unit_container = Node2D.new()
+	add_child_autoqfree(unit_container)
+	rts_controller = load("res://player/RTSController.gd").new()
+	add_child_autoqfree(rts_controller)
+	unit_spawner = UnitSpawner.new()
+	unit_spawner.unit_container = unit_container
+	unit_spawner.rts_controller = rts_controller
+	add_child_autoqfree(unit_spawner)
+
+func after_each() -> void:
+	for unit in _spawned_units:
+		if is_instance_valid(unit):
+			unit.queue_free()
+	_spawned_units.clear()
+
+func _spawn_and_wait(is_player: bool) -> BaseUnit:
+	var warband = create_mock_warband()
+	var unit = unit_spawner._spawn_unit_core(warband, Vector2(0, 0), is_player)
+	await wait_seconds(0.5)
+	if is_instance_valid(unit):
+		_spawned_units.append(unit)
+	return unit
+
+func test_spawned_player_unit_has_nav_agent() -> void:
+	var unit = await _spawn_and_wait(true)
+	assert_not_null(unit, "Unit should spawn successfully")
+	if not is_instance_valid(unit): return
+	assert_true(unit.has_node("NavAgent"), "Spawned player unit must have NavAgent")
+
+func test_spawned_player_unit_has_unit_visualizer() -> void:
+	var unit = await _spawn_and_wait(true)
+	assert_not_null(unit, "Unit should spawn successfully")
+	if not is_instance_valid(unit): return
+	assert_true(unit.has_node("UnitVisualizer"), "Spawned player unit must have UnitVisualizer")
+
+func test_spawned_player_unit_has_correct_script() -> void:
+	var unit = await _spawn_and_wait(true)
+	assert_not_null(unit, "Unit should spawn successfully")
+	if not is_instance_valid(unit): return
+	var expected_script = load("res://scripts/units/SquadLeader.gd")
+	assert_eq(unit.get_script(), expected_script, "Player unit must use SquadLeader.gd")
+
+func test_spawned_player_unit_is_in_player_units_group() -> void:
+	var unit = await _spawn_and_wait(true)
+	assert_not_null(unit, "Unit should spawn successfully")
+	if not is_instance_valid(unit): return
+	assert_true(unit.is_in_group("player_units"), "Player unit must be in player_units group")
+
+func test_spawned_enemy_unit_has_nav_agent() -> void:
+	var unit = await _spawn_and_wait(false)
+	assert_not_null(unit, "Enemy unit should spawn successfully")
+	if not is_instance_valid(unit): return
+	assert_true(unit.has_node("NavAgent"), "Spawned enemy unit must have NavAgent")
+
+
+--------------------------------------------------
 FILE: res:///test/integration/test_winter_systems.gd
 --------------------------------------------------
 #res://test/integration/test_winter_systems.gd
@@ -48773,6 +48779,171 @@ func test_encumbrance_math():
 	# Logic: 100% load * 50% max_penalty = 50% total penalty -> 0.5 speed
 	unit.add_loot("gold", 50)
 	assert_eq(unit.get_speed_multiplier(), 0.5, "Full load should apply max penalty")
+
+
+--------------------------------------------------
+FILE: res:///test/unit/test_raid_data.gd
+--------------------------------------------------
+# test/unit/test_raid_data.gd
+extends "res://test/base/GutTestBase.gd"
+
+# --- RaidResultData Fields ---
+
+func test_raid_result_data_has_loot_field() -> void:
+	var result = RaidResultData.new()
+	assert_true("loot" in result, "RaidResultData must have loot field")
+
+func test_raid_result_data_has_potential_loot_field() -> void:
+	var result = RaidResultData.new()
+	assert_true("potential_loot" in result, "RaidResultData must have potential_loot field")
+
+func test_raid_result_data_has_casualties_field() -> void:
+	var result = RaidResultData.new()
+	assert_true("casualties" in result, "RaidResultData must have casualties field")
+
+func test_raid_result_data_has_outcome_field() -> void:
+	var result = RaidResultData.new()
+	assert_true("outcome" in result, "RaidResultData must have outcome field")
+
+func test_raid_result_data_has_renown_earned_field() -> void:
+	var result = RaidResultData.new()
+	assert_true("renown_earned" in result, "RaidResultData must have renown_earned field")
+
+func test_raid_result_data_has_victory_grade_field() -> void:
+	var result = RaidResultData.new()
+	assert_true("victory_grade" in result, "RaidResultData must have victory_grade field")
+
+# --- Building Loot Values ---
+
+func test_hall_loot_value() -> void:
+	var hall_data = load("res://data/buildings/GreatHall.tres")
+	assert_not_null(hall_data, "Hall .tres must exist")
+	assert_eq(hall_data.base_passive_output, 27, "Hall base_passive_output should be 27")
+	assert_eq(hall_data.resource_type, "gold", "Hall resource_type should be gold")
+
+func test_church_loot_value() -> void:
+	var church_data = load("res://data/buildings/Monastery_Chapel.tres")
+	assert_not_null(church_data, "Church .tres must exist")
+	assert_eq(church_data.base_passive_output, 20, "Church base_passive_output should be 20")
+	assert_eq(church_data.resource_type, "gold", "Church resource_type should be gold")
+
+func test_longhouse_loot_value() -> void:
+	var longhouse_data = load("res://data/buildings/player_economy/Bld_Langhus.tres")
+	assert_not_null(longhouse_data, "Longhouse .tres must exist")
+	assert_eq(longhouse_data.base_passive_output, 7, "Longhouse base_passive_output should be 7")
+	assert_eq(longhouse_data.resource_type, "gold", "Longhouse resource_type should be gold")
+
+func test_granary_loot_value() -> void:
+	var granary_data = load("res://data/buildings/Monastery_Granary.tres")
+	assert_not_null(granary_data, "Granary .tres must exist")
+	assert_eq(granary_data.base_passive_output, 17, "Granary base_passive_output should be 17")
+	assert_eq(granary_data.resource_type, "food", "Granary resource_type should be food")
+
+func test_storehouse_loot_value() -> void:
+	var storehouse_data = load("res://data/buildings/Eco_Storehouse.tres")
+	assert_not_null(storehouse_data, "Storehouse .tres must exist")
+	assert_eq(storehouse_data.base_passive_output, 10, "Storehouse base_passive_output should be 10")
+	assert_eq(storehouse_data.resource_type, "food", "Storehouse resource_type should be food")
+
+func test_granary_and_storehouse_are_separate_resources() -> void:
+	var granary_path = "res://data/buildings/Monastery_Granary.tres"
+	var storehouse_path = "res://data/buildings/Eco_Storehouse.tres"
+	assert_ne(granary_path, storehouse_path, "Granary and Storehouse must be separate .tres files")
+	var granary_data = load(granary_path)
+	var storehouse_data = load(storehouse_path)
+	assert_eq(granary_data.base_passive_output, 17, "Granary should have output 17")
+	assert_eq(storehouse_data.base_passive_output, 10, "Storehouse should have output 10")
+
+
+--------------------------------------------------
+FILE: res:///test/unit/test_raid_logic.gd
+--------------------------------------------------
+# test/unit/test_raid_logic.gd
+extends "res://test/base/GutTestBase.gd"
+
+var obj_manager: Node
+
+func before_each() -> void:
+	super.before_each()
+	obj_manager = load("res://scenes/missions/RaidObjectiveManager.gd").new()
+	obj_manager.base_renown = 200
+	obj_manager.renown_per_difficulty = 50
+	RaidManager.current_raid_difficulty = 1
+	add_child_autoqfree(obj_manager)
+
+func after_each() -> void:
+	RaidManager.current_raid_difficulty = 1
+
+# --- Renown: Victory ---
+
+func test_decisive_victory_renown_is_150_percent_of_base() -> void:
+	var base = 200 + (1 * 50)
+	var result = obj_manager._calculate_renown_for_victory("Decisive")
+	assert_eq(result, floor(base * 1.5), "Decisive renown should be 1.5x base")
+
+func test_standard_victory_renown_equals_base() -> void:
+	var base = 200 + (1 * 50)
+	var result = obj_manager._calculate_renown_for_victory("Standard")
+	assert_eq(result, base, "Standard renown should equal base")
+
+func test_pyrrhic_victory_renown_is_negative() -> void:
+	var result = obj_manager._calculate_renown_for_victory("Pyrrhic")
+	assert_lt(result, 0, "Pyrrhic renown should be negative")
+
+# --- Renown: Retreat ---
+
+func test_retreat_renown_zero_when_gold_exceeds_threshold() -> void:
+	RaidManager.current_raid_difficulty = 2
+	var loot = RaidLootData.new()
+	loot.add_loot("gold", 80)
+	obj_manager.raid_loot = loot
+	obj_manager.dead_units_log.clear()
+	var result = obj_manager._calculate_renown_for_retreat()
+	assert_eq(result, 0, "Wise Greed: heavy loot retreat should cost no renown")
+
+func test_retreat_renown_zero_when_difficulty_high() -> void:
+	RaidManager.current_raid_difficulty = 4
+	var loot = RaidLootData.new()
+	obj_manager.raid_loot = loot
+	obj_manager.dead_units_log.clear()
+	var result = obj_manager._calculate_renown_for_retreat()
+	assert_eq(result, 0, "Saga Factor: retreating from strong enemy costs no renown")
+
+func test_retreat_renown_negative_when_dead_units_left() -> void:
+	RaidManager.current_raid_difficulty = 2
+	var loot = RaidLootData.new()
+	loot.add_loot("gold", 10)
+	obj_manager.raid_loot = loot
+	obj_manager.dead_units_log.clear()
+	obj_manager.dead_units_log.append(UnitData.new())
+	var result = obj_manager._calculate_renown_for_retreat()
+	assert_lt(result, 0, "Blood Debt: leaving dead behind costs renown")
+
+func test_retreat_renown_negative_when_difficulty_low() -> void:
+	RaidManager.current_raid_difficulty = 1
+	var loot = RaidLootData.new()
+	loot.add_loot("gold", 10)
+	obj_manager.raid_loot = loot
+	obj_manager.dead_units_log.clear()
+	var result = obj_manager._calculate_renown_for_retreat()
+	assert_lt(result, 0, "Saga Factor low: retreating from weak enemy costs renown")
+
+# --- Pyrrhic Threshold ---
+
+func test_pyrrhic_triggers_above_50_percent_casualties() -> void:
+	var casualties = 6
+	var starting_size = 10
+	assert_true(casualties > floor(starting_size * 0.5), "6/10 casualties should trigger Pyrrhic")
+
+func test_pyrrhic_does_not_trigger_at_exactly_50_percent() -> void:
+	var casualties = 5
+	var starting_size = 10
+	assert_false(casualties > floor(starting_size * 0.5), "5/10 casualties should not trigger Pyrrhic")
+
+func test_pyrrhic_does_not_trigger_at_low_casualties() -> void:
+	var casualties = 2
+	var starting_size = 10
+	assert_false(casualties > floor(starting_size * 0.5), "2/10 casualties should not trigger Pyrrhic")
 
 
 --------------------------------------------------
@@ -53694,6 +53865,7 @@ func _connect_signals() -> void:
 	# 3. Dynasty/Time Signals
 	if DynastyManager:
 		DynastyManager.year_ended.connect(refresh_all)
+		DynastyManager.jarl_stats_updated.connect(refresh_identity)
 
 func _connect_local_input() -> void:
 	if dynasty_button:

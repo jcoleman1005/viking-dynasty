@@ -89,6 +89,27 @@ func setup(p_container: Node2D, enemy_data: SettlementData) -> void:
 	else:
 		Loggie.msg("RaidMapLoader: Could not find TileMapLayer!").domain("RAID").error()
 
+func configure_extraction_zone(zone: Area2D) -> void:
+	if not zone or not last_map_data.has("extraction_zone"):
+		return
+		
+	var rect = last_map_data["extraction_zone"]
+	zone.global_position = rect.position + rect.size / 2.0
+	
+	var shape = zone.get_node_or_null("ExtractionShape")
+	if shape and "shape" in shape and shape.shape is RectangleShape2D:
+		shape.shape.size = rect.size
+		
+	var visual = zone.get_node_or_null("ExtractionVisual")
+	if visual is ColorRect:
+		visual.size = rect.size
+		visual.position = -rect.size / 2.0
+		
+		var tween = zone.create_tween().set_loops()
+		tween.set_trans(Tween.TRANS_SINE)
+		tween.tween_property(visual, "modulate:a", 0.45, 1.0)
+		tween.tween_property(visual, "modulate:a", 0.15, 1.0)
+
 func load_base(data: SettlementData, is_player_owner: bool) -> BaseBuilding:
 	var objective_ref: BaseBuilding = null
 	

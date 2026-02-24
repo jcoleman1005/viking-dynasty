@@ -58,12 +58,18 @@ func _render_grid() -> void:
 		
 		# Tooltip
 		var cost_str = "Unknown"
-		if "build_cost" in b_data:
+		var has_cost = "build_cost" in b_data
+		if has_cost:
 			cost_str = _format_cost(b_data.build_cost)
 		btn.tooltip_text = "%s\nCost: %s" % [b_data.display_name, cost_str]
 		
 		# Interaction
 		btn.pressed.connect(_on_building_clicked.bind(b_data))
+		
+		# Affordability Visualization
+		if has_cost and not EconomyManager.can_afford(b_data.build_cost):
+			btn.modulate = Color(1, 1, 1, 0.5)
+			btn.tooltip_text += "\n[CANNOT AFFORD]"
 		
 		grid_container.add_child(btn)
 
@@ -79,8 +85,16 @@ func _on_building_clicked(b_data: Resource) -> void:
 		Loggie.msg("Building Purchased" + (b_data.display_name) ).info()
 		EventBus.building_ready_for_placement.emit(b_data)
 	else:
+		# Provide visual feedback for failed purchase
+		var msg = "Cannot afford %s!" % b_data.display_name
+		feedback_label.text = msg
 		Loggie.msg("Insufficient Funds" + (b_data.display_name)).warn()
-		# Optional: Visual shake or audio cue
+		
+		# Clear message after a delay if it hasn't been changed by another action
+		get_tree().create_timer(3.0).timeout.connect(func():
+			if feedback_label.text == msg:
+				feedback_label.text = ""
+		)
 
 func _format_cost(cost: Dictionary) -> String:
 	var s: PackedStringArray = []
