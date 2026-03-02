@@ -1,0 +1,74 @@
+[gd_scene load_steps=2 format=3 uid="uid://debt_offer_001"]
+
+[ext_resource type="Script" path="res://scenes/autumn/DebtOfferScreen.gd" id="1_debt"]
+
+[node name="DebtOfferScreen" type="CanvasLayer"]
+layer = 20
+process_mode = 3
+script = ExtResource("1_debt")
+
+[node name="Panel" type="PanelContainer" parent="."]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -350.0
+offset_top = -280.0
+offset_right = 350.0
+offset_bottom = 280.0
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="TitleLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "A Debt Offered"
+
+[node name="HSeparator" type="HSeparator" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="CreditorLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+horizontal_alignment = 1
+text = ""
+
+[node name="TermsLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+horizontal_alignment = 1
+text = ""
+
+[node name="HSeparator2" type="HSeparator" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ExplanationLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+bbcode_enabled = true
+fit_content = true
+size_flags_vertical = 3
+text = ""
+
+[node name="HSeparator3" type="HSeparator" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ButtonRow" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 20
+
+[node name="AcceptButton" type="Button" parent="Panel/MarginContainer/VBoxContainer/ButtonRow"]
+layout_mode = 2
+text = "Accept Offer"
+
+[node name="RefuseButton" type="Button" parent="Panel/MarginContainer/VBoxContainer/ButtonRow"]
+layout_mode = 2
+text = "Refuse"

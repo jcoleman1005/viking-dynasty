@@ -1,0 +1,119 @@
+[gd_scene load_steps=3 format=3 uid="uid://dhdjghwk5a0h0"]
+
+[ext_resource type="Script" path="res://ui/seasonal/WinterSeverityBeat.gd" id="1_wsev"]
+[ext_resource type="Theme" uid="uid://baix08bh3hbui" path="res://ui/themes/DarkSagaTheme.tres" id="2_wtheme"]
+
+[node name="WinterSeverityBeat" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_wtheme")
+script = ExtResource("1_wsev")
+
+[node name="BG" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.05, 0.05, 0.1, 0.9)
+
+[node name="MainPanel" type="PanelContainer" parent="."]
+custom_minimum_size = Vector2(600, 0)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -200.0
+offset_right = 300.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"PanelContainerDark"
+
+[node name="Margin" type="MarginContainer" parent="MainPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 30
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 30
+
+[node name="VBox" type="VBoxContainer" parent="MainPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Title" type="Label" parent="MainPanel/Margin/VBox"]
+layout_mode = 2
+theme_type_variation = &"HouseholdNameLabel"
+theme_override_font_sizes/font_size = 24
+text = "Winter's Toll"
+horizontal_alignment = 1
+
+[node name="VerdictLabel" type="Label" parent="MainPanel/Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Analyzing stores..."
+horizontal_alignment = 1
+
+[node name="BillTable" type="GridContainer" parent="MainPanel/Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/h_separation = 20
+theme_override_constants/v_separation = 10
+columns = 4
+
+[node name="HeaderResource" type="Label" parent="MainPanel/Margin/VBox/BillTable"]
+layout_mode = 2
+theme_type_variation = &"SectionHeader"
+text = "RESOURCE"
+
+[node name="HeaderStored" type="Label" parent="MainPanel/Margin/VBox/BillTable"]
+layout_mode = 2
+theme_type_variation = &"SectionHeader"
+text = "STORED"
+
+[node name="HeaderDemand" type="Label" parent="MainPanel/Margin/VBox/BillTable"]
+layout_mode = 2
+theme_type_variation = &"SectionHeader"
+text = "DEMAND"
+
+[node name="HeaderNet" type="Label" parent="MainPanel/Margin/VBox/BillTable"]
+layout_mode = 2
+theme_type_variation = &"SectionHeader"
+text = "REMAINING"
+
+[node name="CrisisOptions" type="VBoxContainer" parent="MainPanel/Margin/VBox"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="EmergencyPurchaseBtn" type="Button" parent="MainPanel/Margin/VBox/CrisisOptions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Emergency Purchase"
+
+[node name="RationHardBtn" type="Button" parent="MainPanel/Margin/VBox/CrisisOptions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Ration Hard (-15 Loyalty)"
+
+[node name="FamilySharesBtn" type="Button" parent="MainPanel/Margin/VBox/CrisisOptions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Jarl's Family Shares"
+
+[node name="ConfirmBtn" type="Button" parent="MainPanel/Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+theme_type_variation = &"AdvanceButton"
+text = "Accept Winter's Toll"

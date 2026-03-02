@@ -30,6 +30,7 @@ var construction_progress: int = 0
 
 # --- Visual Components ---
 var sprite: Sprite2D
+var blueprint_sprite: Sprite2D
 var iso_placeholder: Node2D # Reference to the procedural shape
 var hud: BuildingInfoHUD
 const HUD_SCENE = preload("res://ui/components/BuildingInfoHUD.tscn")
@@ -45,9 +46,14 @@ var total_loot_value: int = 0
 
 func _ready() -> void:
 	if not data: return
+	
+	Loggie.msg("BaseBuilding: Initializing %s at %s" % [data.display_name, grid_coordinate]).domain(LogDomains.SETTLEMENT).debug()
+	
 	current_health = data.max_health
 	
 	add_to_group("buildings")
+	# Ensure buildings draw above the floor
+	z_index = 1
 	
 	# 1. Setup Physics/Collision
 	if not collision_shape:
@@ -59,10 +65,7 @@ func _ready() -> void:
 	_setup_visual_style()
 	
 	# 3. Setup HUD (Visuals)
-	if not hud:
-		if HUD_SCENE:
-			hud = HUD_SCENE.instantiate()
-			add_child(hud)
+	_ensure_hud()
 	
 	_apply_data_and_scale()
 	
@@ -79,6 +82,14 @@ func _ready() -> void:
 		
 	_update_visual_state()
 
+func _ensure_hud() -> void:
+	if not hud:
+		if has_node("BuildingInfoHUD"):
+			hud = get_node("BuildingInfoHUD")
+		elif HUD_SCENE:
+			hud = HUD_SCENE.instantiate()
+			add_child(hud)
+
 func _on_loot_depleted(_building):
 	modulate = Color(0.3, 0.3, 0.3, 1.0)
 
@@ -88,31 +99,44 @@ func _setup_visual_style() -> void:
 	if sprite: 
 		sprite.queue_free()
 		sprite = null
+	if blueprint_sprite:
+		blueprint_sprite.queue_free()
+		blueprint_sprite = null
 	if iso_placeholder: 
 		iso_placeholder.queue_free()
 		iso_placeholder = null
 
-	# Decision: Texture vs Placeholder
-	if data.building_texture != null:
-		# Use Sprite
+	# 1. Main Sprite
+	var main_tex = data.building_texture
+	if main_tex == null and data.icon != null:
+		main_tex = data.icon
+		
+	if main_tex != null:
 		sprite = Sprite2D.new()
-		sprite.texture = data.building_texture
-		# Y-Sort Offset: Center bottom of sprite should be at node origin
+		sprite.texture = main_tex
 		sprite.centered = true 
-		sprite.offset.y = -data.building_texture.get_height() / 2.0
+		sprite.offset.y = -main_tex.get_height() / 2.0
 		add_child(sprite)
-	else:
-		# Use Procedural Iso Placeholder
-		# We attach a Node2D and add the script we wrote previously
+	
+	# 2. Blueprint Sprite (Optional)
+	if data.blueprint_texture != null:
+		blueprint_sprite = Sprite2D.new()
+		blueprint_sprite.texture = data.blueprint_texture
+		blueprint_sprite.centered = true
+		blueprint_sprite.offset.y = -data.blueprint_texture.get_height() / 2.0
+		add_child(blueprint_sprite)
+
+	# 3. Placeholder (Fallback)
+	if not sprite and not blueprint_sprite:
 		iso_placeholder = Node2D.new()
 		iso_placeholder.name = "IsoPlaceholder"
-		
-		# Attach the script dynamically if not a scene
 		var script = load("res://scripts/utility/IsoPlaceholder.gd")
 		if script:
 			iso_placeholder.set_script(script)
-			iso_placeholder.set("data", data) # Pass data to it
-			
+			iso_placeholder.position = Vector2.ZERO
+			iso_placeholder.set("data", data)
+			if data and data.dev_color:
+				iso_placeholder.set("color", data.dev_color)
 		add_child(iso_placeholder)
 
 func _initialize_loot() -> void:
@@ -194,22 +218,53 @@ func set_state(new_state: BuildingState) -> void:
 		if SettlementManager and SettlementManager.has_method("complete_building_construction"):
 			SettlementManager.complete_building_construction(self)
 
+func _draw() -> void:
+	if Engine.is_editor_hint() or OS.is_debug_build():
+		# Draw a simple crosshair at (0,0) to verify origin
+		draw_line(Vector2(-20, 0), Vector2(20, 0), Color.YELLOW, 2.0)
+		draw_line(Vector2(0, -20), Vector2(0, 20), Color.YELLOW, 2.0)
+
 func _update_visual_state() -> void:
+	_ensure_hud()
 	if not hud: return
+
+	# Reset visibilities
+	if sprite: sprite.visible = false
+	if blueprint_sprite: blueprint_sprite.visible = false
+	if iso_placeholder: iso_placeholder.visible = false
 
 	match current_state:
 		BuildingState.BLUEPRINT:
 			hud.set_blueprint_mode()
-			modulate = Color(0.4, 0.6, 1.0, 0.8)
+			modulate = Color(0.6, 0.8, 1.0, 0.9) # Clearer blue ghost
+			
+			if blueprint_sprite:
+				blueprint_sprite.visible = true
+			elif sprite:
+				sprite.visible = true # Show ghostly main sprite if no blueprint texture
+			elif iso_placeholder:
+				iso_placeholder.visible = true
 			
 		BuildingState.UNDER_CONSTRUCTION:
 			hud.update_construction(construction_progress, data.construction_effort_required)
 			modulate = Color(0.8, 0.8, 0.8, 1.0)
 			
+			if blueprint_sprite:
+				blueprint_sprite.visible = true
+			elif sprite:
+				sprite.visible = true
+			elif iso_placeholder:
+				iso_placeholder.visible = true
+			
 		BuildingState.ACTIVE:
 			hud.set_active_mode(data.display_name)
 			hud.update_health(current_health, data.max_health)
 			modulate = Color.WHITE
+			
+			if sprite:
+				sprite.visible = true
+			elif iso_placeholder:
+				iso_placeholder.visible = true
 
 func _update_logic_state() -> void:
 	match current_state:

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"/mnt/c/Users/jcole/Desktop/Godot_v4.5.1-stable_win64.exe\":*)",
+      "Bash(\"/mnt/c/Users/jcole/Desktop/Godot_v4.5.1-stable_win64.exe/Godot_v4.5.1-stable_win64_console.exe\":*)",
+      "Bash(\"/mnt/c/Users/jcole/Desktop/Godot_v4.5.1-stable.exe\":*)",
+      "Bash(grep oath_metric_key:*)"
+    ]
+  }
+}

@@ -4,26 +4,36 @@ extends GutTest
 var winter_manager
 var mock_settlement
 var mock_jarl
+var mock_ui  # EventUI double — prevents push_error in headless tests
 
 func before_each():
 	winter_manager = WinterManager
-	
+
 	# Mock Settlement Data
 	mock_settlement = SettlementData.new()
 	mock_settlement.population_peasants = 10
 	mock_settlement.treasury = {"food": 100, "wood": 100, "gold": 1000}
-	
+
 	# Inject into Singleton
 	SettlementManager.current_settlement = mock_settlement
-	
+
 	# Mock Jarl for Actions
 	mock_jarl = JarlData.new()
 	mock_jarl.current_hall_actions = 5
 	DynastyManager.current_jarl = mock_jarl
 
+	# Force season to WINTER for tests
+	DynastyManager.current_season = DynastyManager.Season.WINTER
+
+	# Stub EventUI to prevent push_error when winter crisis fires trigger_event_by_id
+	mock_ui = double(EventUI).new()
+	add_child_autofree(mock_ui)
+	EventManager.event_ui = mock_ui
+
 func after_each():
 	SettlementManager.current_settlement = null
 	DynastyManager.current_jarl = null
+	EventManager.event_ui = null
 	winter_manager.winter_crisis_active = false
 	winter_manager.winter_consumption_report.clear()
 
@@ -64,9 +74,9 @@ func test_resolve_crisis_with_gold():
 	winter_manager._calculate_winter_needs()
 	
 	# Resolve
-	var success = winter_manager.resolve_crisis_with_gold()
-	
-	assert_true(success)
+	var result = winter_manager.resolve_crisis_with_gold()
+
+	assert_true(result["success"])
 	assert_false(winter_manager.winter_crisis_active)
 	# Gold should be reduced (Cost is Deficit * 5)
 	assert_lt(mock_settlement.treasury["gold"], 1000)
@@ -78,8 +88,8 @@ func test_resolve_sacrifice_burn_ships():
 	winter_manager._calculate_winter_needs()
 	
 	# Resolve
-	var success = winter_manager.resolve_crisis_with_sacrifice("burn_ships")
-	
-	assert_true(success)
+	var result = winter_manager.resolve_crisis_with_sacrifice("burn_ships")
+
+	assert_true(result["success"])
 	assert_eq(mock_settlement.fleet_readiness, 0.0)
 	assert_eq(mock_jarl.current_hall_actions, 4, "Should spend 1 action")

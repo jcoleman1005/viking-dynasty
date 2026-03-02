@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="SpringCardData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/spring/SpringCardData.gd" id="1_b7p5x"]
+
+[resource]
+script = ExtResource("1_b7p5x")
+card_id = "card_build_oath"
+stat_gate = "learning"
+stat_threshold = 8
+oath_phrasings = Array[String](["By Autumn a new hall will stand where there was only mud.", "Before winter I will have something to show for this year.", "We will build something that outlasts us."])
+condition_template = "{jarl_name} must complete one construction project before Autumn."
+threshold_base = 1
+threshold_stat_multiplier = 0.0
+reward_mechanical = "loyalty_plus_10_construction_speed_bonus_next_summer"
+reward_narrative_template = "oath_kept"
+consequence_mechanical = "construction_efficiency_minus_10_next_summer"
+oath_metric_key = "buildings_completed"
+consequence_narrative_template = "oath_broken"
+is_founding_echo = false
+founding_echo_exile = ""
+is_intersection = false
+secondary_stat_gate = ""
+secondary_stat_threshold = 0

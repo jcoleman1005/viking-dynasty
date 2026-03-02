@@ -11,8 +11,7 @@ extends Node
 @export var gold_to_add_on_test: int = 100
 
 # --- Scene Refs ---
-@export var council_ui: Control # Assign WinterCourtUI here
-@export var director_lens_packed_scene: PackedScene 
+@export var director_lens_packed_scene: PackedScene
 var director_lens_instance: CanvasLayer = null
 
 
@@ -79,7 +78,6 @@ func run_tests() -> void:
 	_test_persistence_simulation()
 	_test_live_crisis_reporter()
 	_test_sickness_omen()
-	_test_seasonal_council_logic() # New specialized tests
 	
 	# Restore state
 	SettlementManager.current_settlement = real_settlement
@@ -88,57 +86,6 @@ func run_tests() -> void:
 		EconomyManager._on_settlement_loaded(real_settlement)
 	
 	Loggie.msg("=== DIAGNOSTIC COMPLETE ===").domain(LogDomains.SYSTEM).info()
-
-# --- Test Case: Seasonal Council (Unified) ---
-func _test_seasonal_council_logic() -> void:
-	if not council_ui:
-		Loggie.msg("[SKIP] Council UI tests: Node not assigned in Inspector.").domain(LogDomains.SYSTEM).warn()
-		return
-
-	Loggie.msg("Test 7: Seasonal Council Logic...").domain(LogDomains.SYSTEM).info()
-
-	# 1. Test Spring Transition
-	Loggie.msg("  Sub-test: Spring Council State").domain(LogDomains.SYSTEM).info()
-	EventBus.season_changed.emit("Spring", {})
-	
-	var ap_label = council_ui.get_node("%ActionPointsLabel")
-	if ap_label.text != "SPRING COUNCIL":
-		Loggie.msg("[FAIL] Council UI failed to identify Spring season. Label: %s" % ap_label.text).domain(LogDomains.SYSTEM).error()
-		return
-	
-	# Check color (Spring should be COLOR_SPRING)
-	var spring_color = Color("a8e6cf")
-	var jarl_label = council_ui.get_node("%JarlNameLabel")
-	if not jarl_label.modulate.is_equal_approx(spring_color):
-		Loggie.msg("[FAIL] Council UI failed to apply Spring theme color.").domain(LogDomains.SYSTEM).error()
-		# Not returning, color might be slightly off due to rounding, but label is more important
-
-	# 2. Test Winter Transition
-	Loggie.msg("  Sub-test: Winter Court State").domain(LogDomains.SYSTEM).info()
-	EventBus.season_changed.emit("Winter", {})
-	
-	if "HALL ACTIONS" not in ap_label.text:
-		Loggie.msg("[FAIL] Council UI failed to identify Winter season. Label: %s" % ap_label.text).domain(LogDomains.SYSTEM).error()
-		return
-
-	# 3. Test AP Enforcement logic (Internal)
-	Loggie.msg("  Sub-test: AP enforcement check").domain(LogDomains.SYSTEM).info()
-	var test_card = SeasonalCardResource.new()
-	test_card.season = SeasonalCardResource.SeasonType.WINTER
-	test_card.cost_ap = 99 # Impossible cost
-	
-	council_ui._current_season = "Winter"
-	council_ui.current_ap = 1
-	if council_ui._can_afford(test_card):
-		Loggie.msg("[FAIL] Council UI allowed playing a Winter card without enough AP.").domain(LogDomains.SYSTEM).error()
-		return
-		
-	council_ui._current_season = "Spring"
-	if not council_ui._can_afford(test_card):
-		Loggie.msg("[FAIL] Council UI restricted a Spring card by AP (should be ignored).").domain(LogDomains.SYSTEM).error()
-		return
-
-	Loggie.msg("[PASS] Seasonal Council logic verified.").domain(LogDomains.SYSTEM).info()
 
 # --- Existing Test Cases (Minimized for brevity) ---
 func _test_rationing_math() -> void:

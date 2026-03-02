@@ -217,6 +217,7 @@ func _on_decree_authorized(decree: ConstructionDecree) -> void:
 	
 	# Position the outline
 	footprint_container.add_child(footprint)
+	footprint.global_position = SettlementManager.get_footprint_center(decree.resolved_grid_pos, decree.building_data.grid_size)
 	_decree_footprints[decree.resolved_grid_pos] = footprint
 	
 	# Ensure the cursor node itself is visible so children are rendered
@@ -378,6 +379,10 @@ func _find_nearest_resource_node(world_pos: Vector2) -> void:
 				nearest_node = node
 
 func _draw() -> void:
+	# DEBUG CROSSHAIR
+	draw_line(Vector2(-30, 0), Vector2(30, 0), Color.GREEN, 2.0)
+	draw_line(Vector2(0, -30), Vector2(0, 30), Color.GREEN, 2.0)
+	
 	if is_active and nearest_node:
 		var start = Vector2.ZERO 
 		var end = to_local(nearest_node.global_position)

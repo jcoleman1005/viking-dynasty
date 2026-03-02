@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="SpringCardData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/spring/SpringCardData.gd" id="1_d7p6y"]
+
+[resource]
+script = ExtResource("1_d7p6y")
+card_id = "card_diplomacy_oath"
+stat_gate = "diplomacy"
+stat_threshold = 10
+oath_phrasings = Array[String](["I will settle the disputes that fester in my hall before Winter.", "No blood feud will survive this year under my roof.", "By Winter the grievances will be heard and answered."])
+condition_template = "{jarl_name} must resolve {threshold} loyalty conflicts before Winter."
+threshold_base = 1
+threshold_stat_multiplier = 0.2
+reward_mechanical = "legitimacy_plus_10_recruitment_cost_reduced"
+reward_narrative_template = "oath_kept"
+consequence_mechanical = "one_household_loyalty_minus_15_envoy_costs_increased"
+oath_metric_key = "loyalty_conflicts_resolved"
+consequence_narrative_template = "oath_broken"
+is_founding_echo = false
+founding_echo_exile = ""
+is_intersection = false
+secondary_stat_gate = ""
+secondary_stat_threshold = 0

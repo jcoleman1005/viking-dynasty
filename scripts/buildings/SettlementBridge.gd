@@ -326,8 +326,11 @@ func _initialize_settlement() -> void:
 	
 	if not SettlementManager.has_save_file():
 		Loggie.msg("No save file found. Initializing default settlement.").domain(LogDomains.SETTLEMENT).info()
-		home_base_data = _create_default_settlement() 
-		SettlementManager.load_settlement(home_base_data) 
+		home_base_data = _create_default_settlement()
+		SettlementManager.load_settlement(home_base_data)
+		if DynastyManager.current_year == 880 and not FoundingSequenceManager.sequence_completed:
+			FoundingSequenceManager.begin_sequence()
+			await FoundingSequenceManager.founding_complete
 	else:
 		Loggie.msg("Save file found. Loading existing settlement.").domain(LogDomains.SETTLEMENT).info()
 		SettlementManager.load_settlement()
@@ -404,16 +407,8 @@ func _spawn_single_building(entry: Dictionary, is_new: bool) -> BaseBuilding:
 	new_building.grid_coordinate = grid_pos
 	
 	# --- FIX: ISOMETRIC POSITIONING ---
-	# 1. Calculate the logical center of the building on the grid
-	var center_grid_x = float(grid_pos.x) + (float(building_data.grid_size.x) / 2.0)
-	var center_grid_y = float(grid_pos.y) + (float(building_data.grid_size.y) / 2.0)
-	
-	# 2. Convert Grid Center -> World Pixels (Isometric Formula)
-	#    Formula matches SettlementManager.place_building logic
-	var final_x = (center_grid_x - center_grid_y) * SettlementManager.TILE_HALF_SIZE.x
-	var final_y = (center_grid_x + center_grid_y) * SettlementManager.TILE_HALF_SIZE.y
-	
-	new_building.global_position = Vector2(final_x, final_y)
+	# Use the authoritative center calculation from the Manager
+	new_building.global_position = SettlementManager.get_footprint_center(grid_pos, building_data.grid_size)
 	# ----------------------------------
 	
 	building_container.add_child(new_building)

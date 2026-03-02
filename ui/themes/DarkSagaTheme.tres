@@ -1,0 +1,141 @@
+[gd_resource type="Theme" load_steps=11 format=3 uid="uid://baix08bh3hbui"]
+
+[ext_resource type="FontFile" uid="uid://b32srse7cc2qj" path="res://assets/fonts/CrimsonText-Regular.ttf" id="1_crimson"]
+[ext_resource type="FontFile" uid="uid://qe1q0yrd2a4b" path="res://ui/fonts/Cinzel-Regular.ttf" id="2_cinzel"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_advance_hover"]
+content_margin_left = 20.0
+content_margin_top = 10.0
+content_margin_right = 20.0
+content_margin_bottom = 10.0
+bg_color = Color(0.478, 0.392, 0.188, 0.1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.831, 0.659, 0.263, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_advance"]
+content_margin_left = 20.0
+content_margin_top = 10.0
+content_margin_right = 20.0
+content_margin_bottom = 10.0
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.478, 0.392, 0.188, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_normal"]
+content_margin_left = 12.0
+content_margin_top = 6.0
+content_margin_right = 12.0
+content_margin_bottom = 6.0
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.478, 0.392, 0.188, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_hover"]
+content_margin_left = 12.0
+content_margin_top = 6.0
+content_margin_right = 12.0
+content_margin_bottom = 6.0
+bg_color = Color(0.478, 0.392, 0.188, 0.15)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.831, 0.659, 0.263, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_pressed"]
+content_margin_left = 12.0
+content_margin_top = 6.0
+content_margin_right = 12.0
+content_margin_bottom = 6.0
+bg_color = Color(0.478, 0.392, 0.188, 0.3)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.831, 0.659, 0.263, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+content_margin_left = 8.0
+content_margin_top = 6.0
+content_margin_right = 8.0
+content_margin_bottom = 6.0
+bg_color = Color(0.129, 0.118, 0.09, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.239, 0.22, 0.157, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel_card"]
+content_margin_left = 10.0
+content_margin_top = 10.0
+content_margin_right = 10.0
+content_margin_bottom = 10.0
+bg_color = Color(0.086, 0.078, 0.059, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.239, 0.22, 0.157, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel_dark"]
+content_margin_left = 8.0
+content_margin_top = 8.0
+content_margin_right = 8.0
+content_margin_bottom = 8.0
+bg_color = Color(0.129, 0.118, 0.09, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.239, 0.22, 0.157, 1)
+
+[resource]
+default_font = ExtResource("1_crimson")
+default_font_size = 16
+AdvanceButton/base_type = &"Button"
+AdvanceButton/colors/font_color = Color(0.831, 0.659, 0.263, 1)
+AdvanceButton/styles/hover = SubResource("StyleBoxFlat_btn_advance_hover")
+AdvanceButton/styles/normal = SubResource("StyleBoxFlat_btn_advance")
+Button/colors/font_color = Color(0.831, 0.659, 0.263, 1)
+Button/colors/font_disabled_color = Color(0.353, 0.333, 0.267, 1)
+Button/colors/font_hover_color = Color(0.98, 0.847, 0.529, 1)
+Button/colors/font_pressed_color = Color(0.98, 0.847, 0.529, 1)
+Button/font_sizes/font_size = 14
+Button/fonts/font = ExtResource("2_cinzel")
+Button/styles/disabled = SubResource("StyleBoxFlat_btn_normal")
+Button/styles/hover = SubResource("StyleBoxFlat_btn_hover")
+Button/styles/normal = SubResource("StyleBoxFlat_btn_normal")
+Button/styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+DangerLabel/colors/font_color = Color(0.784, 0.251, 0.251, 1)
+DangerLabel/font_sizes/font_size = 13
+DangerLabel/fonts/font = ExtResource("2_cinzel")
+HouseholdNameLabel/colors/font_color = Color(0.91, 0.875, 0.753, 1)
+HouseholdNameLabel/font_sizes/font_size = 13
+HouseholdNameLabel/fonts/font = ExtResource("2_cinzel")
+Label/colors/font_color = Color(0.91, 0.875, 0.753, 1)
+Label/font_sizes/font_size = 24
+Label/fonts/font = ExtResource("1_crimson")
+PanelContainer/styles/panel = SubResource("StyleBoxFlat_panel")
+PanelContainerCard/base_type = &"PanelContainer"
+PanelContainerCard/styles/panel = SubResource("StyleBoxFlat_panel_card")
+PanelContainerDark/base_type = &"PanelContainer"
+PanelContainerDark/styles/panel = SubResource("StyleBoxFlat_panel_dark")
+SeasonDayLabel/colors/font_color = Color(0.533, 0.667, 0.875, 1)
+SeasonDayLabel/font_sizes/font_size = 11
+SeasonDayLabel/fonts/font = ExtResource("2_cinzel")
+SeasonLabel/colors/font_color = Color(0.604, 0.565, 0.502, 1)
+SeasonLabel/font_sizes/font_size = 11
+SeasonLabel/fonts/font = ExtResource("2_cinzel")
+SectionHeader/colors/font_color = Color(0.353, 0.333, 0.267, 1)
+SectionHeader/font_sizes/font_size = 9
+SectionHeader/fonts/font = ExtResource("2_cinzel")

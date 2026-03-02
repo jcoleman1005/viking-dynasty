@@ -1,0 +1,111 @@
+[gd_scene load_steps=3 format=3 uid="uid://founding_epithet_001"]
+
+[ext_resource type="Script" path="res://scenes/founding/FoundingEpithetScreen.gd" id="1_epithet"]
+[ext_resource type="Theme" uid="uid://dark_saga_theme_01" path="res://ui/themes/DarkSagaTheme.tres" id="2_dktheme"]
+
+[node name="FoundingEpithetScreen" type="CanvasLayer"]
+process_mode = 3
+layer = 100
+script = ExtResource("1_epithet")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.102, 0.086, 0.063, 1.0)
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_dktheme")
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_bottom = 40
+
+[node name="CenterContainer" type="CenterContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="ContentBox" type="VBoxContainer" parent="MarginContainer/CenterContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(700, 0)
+theme_override_constants/separation = 12
+
+[node name="PreambleLabel" type="Label" parent="MarginContainer/CenterContainer/ContentBox"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "Year 880. This is what they said of your father."
+theme_override_colors/font_color = Color(0.353, 0.333, 0.267, 1.0)
+theme_override_font_sizes/font_size = 14
+
+[node name="EpithetName" type="Label" parent="MarginContainer/CenterContainer/ContentBox"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "Jarl, Son of the Unknown"
+theme_override_colors/font_color = Color(0.831, 0.659, 0.263, 1.0)
+theme_override_font_sizes/font_size = 32
+
+[node name="AccentLine1" type="ColorRect" parent="MarginContainer/CenterContainer/ContentBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 1)
+size_flags_horizontal = 3
+modulate = Color(0.478, 0.392, 0.188, 0.4)
+color = Color(0.478, 0.392, 0.188, 1.0)
+
+[node name="SentenceLabel" type="RichTextLabel" parent="MarginContainer/CenterContainer/ContentBox"]
+layout_mode = 2
+bbcode_enabled = true
+fit_content = true
+horizontal_alignment = 1
+text = "[i]He ..., but ...[/i]"
+theme_override_font_sizes/normal_font_size = 20
+
+[node name="ContextBlock" type="VBoxContainer" parent="MarginContainer/CenterContainer/ContentBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="ExileLine" type="Label" parent="MarginContainer/CenterContainer/ContentBox/ContextBlock"]
+layout_mode = 2
+horizontal_alignment = 1
+text = ""
+theme_override_colors/font_color = Color(0.604, 0.565, 0.502, 1.0)
+theme_override_font_sizes/font_size = 15
+
+[node name="FirstActLine" type="Label" parent="MarginContainer/CenterContainer/ContentBox/ContextBlock"]
+layout_mode = 2
+horizontal_alignment = 1
+text = ""
+theme_override_colors/font_color = Color(0.604, 0.565, 0.502, 1.0)
+theme_override_font_sizes/font_size = 15
+
+[node name="PillarLine" type="Label" parent="MarginContainer/CenterContainer/ContentBox"]
+layout_mode = 2
+horizontal_alignment = 1
+text = ""
+theme_override_colors/font_color = Color(0.910, 0.875, 0.753, 1.0)
+theme_override_font_sizes/font_size = 16
+
+[node name="AccentLine2" type="ColorRect" parent="MarginContainer/CenterContainer/ContentBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 1)
+size_flags_horizontal = 3
+modulate = Color(0.478, 0.392, 0.188, 0.4)
+color = Color(0.478, 0.392, 0.188, 1.0)
+
+[node name="NameEntry" type="LineEdit" parent="MarginContainer/CenterContainer/ContentBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+custom_minimum_size = Vector2(300, 0)
+placeholder_text = "Your name"
+theme_override_colors/font_color = Color(0.910, 0.875, 0.753, 1.0)
+theme_override_colors/font_placeholder_color = Color(0.604, 0.565, 0.502, 0.6)
+
+[node name="BeginButton" type="Button" parent="MarginContainer/CenterContainer/ContentBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Begin — Year 880"

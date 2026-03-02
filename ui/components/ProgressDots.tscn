@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://progress_dots_comp"]
+
+[ext_resource type="Script" path="res://ui/components/ProgressDots.gd" id="1_pdots"]
+
+[node name="ProgressDots" type="HBoxContainer"]
+alignment = 1
+custom_minimum_size = Vector2(0, 10)
+script = ExtResource("1_pdots")

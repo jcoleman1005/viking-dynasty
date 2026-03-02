@@ -82,6 +82,7 @@ func setup(buildings: Array[Resource], _units: Array[Resource] = []) -> void:
 
 ## Enables or disables interaction based on the Season (Summer = Active)
 func set_agency_state(active: bool) -> void:
+	Loggie.msg("BottomBar: set_agency_state(%s)" % str(active)).domain(LogDomains.UI).info()
 	is_agency_active = active
 	
 	# Visual Feedback

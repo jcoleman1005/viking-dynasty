@@ -1,0 +1,476 @@
+{
+  "project": "Viking Dynasty",
+  "task": "Implement event effect handlers and EventBalanceData resource",
+  "context": "You have full access to the project codebase. The primary file to modify is res://autoload/EventManager.gd, specifically the _apply_event_consequences() function. You will also create two new files. For each task, provide both a plain-English explanation of what was changed and why, and the complete file contents ready to save.",
+  "background": {
+    "event_system": "Events fire via EventManager._apply_event_consequences(event, choice). Each choice has an effect_key string that routes to a handler. The existing pattern is a long elif chain. New handlers must follow this same pattern.",
+    "existing_apis": {
+      "resources": "EconomyManager.add_resource(key: String, amount: int) — use negative values to spend. Keys: 'gold', 'food', 'wood', 'stone'.",
+      "affordability_check": "EconomyManager.attempt_purchase(cost: Dictionary) — spends and returns bool. For a check-only without spending, read SettlementManager.current_settlement.treasury directly.",
+      "renown": "DynastyManager.current_jarl.renown += amount",
+      "authority": "DynastyManager.current_jarl.current_authority -= amount",
+      "loyalty": "Household loyalty lives on HouseholdData.loyalty (int, 0-100). Iterate via SettlementManager.current_settlement.households.",
+      "warband_loyalty": "WarbandData has no loyalty property currently. Use warband.morale if it exists, otherwise add a comment placeholder and skip the mechanical application for now.",
+      "population": "SettlementManager.current_settlement.population_peasants for total count. SettlementManager.current_settlement.sick_population for sick count.",
+      "summer_day": "DynastyManager.current_day (int, 1-12). DynastyManager.SUMMER_DAYS = 12.",
+      "follow_up_event": "To show a follow-up EventUI, construct a new EventData, populate its title, description, and choices array with EventChoice objects, then call EventManager.event_ui.display_event(new_event_data). See show_crisis_result() in EventManager for the pattern.",
+      "treasury_refresh": "After any resource change, emit EventBus.treasury_updated.emit(SettlementManager.current_settlement.treasury) to refresh the TopBar UI.",
+      "save": "Call SettlementManager.save_settlement() after modifying settlement data."
+    }
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Create EventBalanceData resource",
+      "new_file": "res://data/balance/EventBalanceData.gd",
+      "description": "Create a new Resource subclass called EventBalanceData that holds all tunable values for event effect handlers as exported variables. This keeps EventManager free of magic numbers and allows balancing from the Godot Inspector.",
+      "exported_vars": {
+        "quarantine": {
+          "full_quarantine_initial_reduction": "float = 0.6 — starting labor reduction (60%)",
+          "full_quarantine_floor_reduction": "float = 0.2 — minimum reduction that holds for final 3 days (20%)",
+          "full_quarantine_hold_days_from_end": "int = 3 — how many days before end of Summer the floor kicks in"
+        },
+        "partial_quarantine": {
+          "partial_quarantine_max_reduction": "float = 0.75 — maximum sick population reduction at final day (75%)",
+          "partial_quarantine_exponent": "float = 2.0 — controls curve steepness. Higher = slower early, faster late.",
+          "partial_quarantine_random_variance": "float = 0.15 — random +/- variance applied to the rolled severity"
+        },
+        "great_feast_provider": {
+          "provider_food_cost": "int = 50",
+          "provider_renown_reward": "int = 5",
+          "provider_loyalty_reward": "int = 10",
+          "provider_loyalty_scaled_divisor": "int = 20 — divides population to get scaled loyalty bonus (20 / pop)"
+        },
+        "great_feast_ring_giver": {
+          "ring_giver_food_cost": "int = 20",
+          "ring_giver_gold_cost": "int = 60",
+          "ring_giver_renown_reward": "int = 25",
+          "ring_giver_warband_morale_reward": "int = 15"
+        },
+        "great_feast_saga_worthy": {
+          "saga_food_cost": "int = 100",
+          "saga_gold_cost": "int = 100",
+          "saga_renown_reward": "int = 75",
+          "saga_loyalty_reward": "int = 30"
+        },
+        "great_feast_saturation": {
+          "feast_saturation_cooldown_days": "int = 30 — minimum days between feasts for full effect",
+          "feast_saturation_penalty_multiplier": "float = 0.5 — reward multiplier if cooldown not met"
+        },
+        "burial_rite": {
+          "burial_rite_gold_cost": "int = 100",
+          "burial_rite_penalty_reduction": "float = 0.75 — reduces incoming jarl death loyalty penalty by 75%"
+        },
+        "buy_grain": {
+          "buy_grain_cost_per_villager": "int = 4 — base food cost per villager rescued",
+          "buy_grain_cost_multiplier": "int = 4 — multiplier applied on top of base cost (exported for tuning)",
+          "buy_grain_renown_loss_on_failure": "int = 20 — renown lost per villager not saved"
+        }
+      },
+      "also_create": "res://data/balance/EventBalanceData.tres — an instance of the resource with the default values above, saved as a .tres file so it can be assigned in the Inspector."
+    },
+    {
+      "id": 2,
+      "title": "Wire EventBalanceData into EventManager",
+      "file": "res://autoload/EventManager.gd",
+      "description": "Add an @export var balance_data: EventBalanceData at the top of EventManager. This will be assigned in the Godot Inspector by dragging in the EventBalanceData.tres created in Task 1. Add a safety check in _ready() that logs a warning if balance_data is null, so the developer knows immediately if it was not assigned.",
+      "constraints": [
+        "Do not change any existing handler logic — only add the export var and the null check.",
+        "Add a comment above the export var explaining what it is and that it must be assigned in the Inspector."
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Implement full_quarantine handler",
+      "file": "res://autoload/EventManager.gd",
+      "description": "Replace the print() placeholder for 'full_quarantine' in _apply_event_consequences() with a real implementation. Also add a helper function _get_quarantine_reduction() that calculates the current reduction percentage based on the current Summer day.",
+      "logic": {
+        "helper_function": "_get_quarantine_reduction() -> float. Uses DynastyManager.current_day and DynastyManager.SUMMER_DAYS. If (SUMMER_DAYS - current_day) <= balance_data.full_quarantine_hold_days_from_end, return the floor value. Otherwise, interpolate linearly from full_quarantine_initial_reduction down to full_quarantine_floor_reduction across the remaining days.",
+        "handler": "Calculate the reduction float using _get_quarantine_reduction(). Apply it to each household in SettlementManager.current_settlement.households by reducing household.member_count by the reduction percentage (round down, minimum 1 member remains per household). Store the original member counts so they can be restored — add a Dictionary called _quarantine_snapshot to EventManager state to hold {household_name: original_count} pairs. Emit EventBus.treasury_updated to refresh UI. Call SettlementManager.save_settlement().",
+        "restoration": "Add a new function _restore_quarantine_populations() that reads _quarantine_snapshot and restores household.member_count values. Connect this to EventBus.season_changed so it fires automatically when Summer ends. Clear the snapshot after restoring.",
+        "note": "Do not remove the snapshot on restoration if we are still in Summer — only restore when the season leaving is Summer."
+      },
+      "constraints": [
+        "Never reduce a household below 1 member.",
+        "If balance_data is null, log an error and return early without applying any effect."
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Implement partial_quarantine handler",
+      "file": "res://autoload/EventManager.gd",
+      "description": "Replace the partial_quarantine placeholder with a real implementation that rolls severity immediately, applies it to sick_population, then shows a follow-up EventUI with flavor text describing the outcome.",
+      "logic": {
+        "severity_roll": "Calculate a base severity using an exponential curve: base = pow(current_day / float(SUMMER_DAYS), balance_data.partial_quarantine_exponent) * balance_data.partial_quarantine_max_reduction. Then apply random variance: final_severity = base + randf_range(-balance_data.partial_quarantine_random_variance, balance_data.partial_quarantine_random_variance). Clamp result between 0.0 and balance_data.partial_quarantine_max_reduction.",
+        "application": "Calculate sick_increase = int(SettlementManager.current_settlement.population_peasants * final_severity). Add to SettlementManager.current_settlement.sick_population. Clamp sick_population so it cannot exceed population_peasants. Save settlement.",
+        "flavor_text": "Generate flavor text based on the final_severity value: below 0.2 = 'The sickness spread slowly. Your caution may have been enough.', 0.2-0.5 = 'The disease crept through several households. You will feel this in the fields.', above 0.5 = 'The quarantine failed to contain it. The sickness runs through your settlement like wildfire.'",
+        "follow_up_event": "Construct a new EventData with title 'The Sickness Spreads' and the flavor text as description. Add a single dismiss choice with text 'Odin's will.' Call EventManager.event_ui.display_event() to show it.",
+        "resets_at_season_end": "sick_population changes persist into Winter as normal settlement data — no special reset needed. The TODO note about spread ending after Summer refers to the quarantine *mechanic* ending, not the sick count being wiped."
+      },
+      "constraints": [
+        "If balance_data is null, log an error and return early.",
+        "sick_population must never exceed population_peasants."
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Implement great_feast handler — entry point",
+      "file": "res://autoload/EventManager.gd",
+      "description": "The effect_key 'great_feast' fires when a player selects a feast option. This handler does not apply effects directly — it presents a follow-up EventUI with three feast type choices, each being a distinct EventChoice with its own effect_key.",
+      "follow_up_choices": [
+        {
+          "choice_text": "The Provider's Feast — 50 Food",
+          "tooltip_text": "Feed your people. Strengthen their loyalty to you as their source of life.",
+          "effect_key": "great_feast_provider"
+        },
+        {
+          "choice_text": "The Ring-Giver's Feast — 20 Food, 60 Gold",
+          "tooltip_text": "Spend treasure to buy glory. Your name will travel far as a generous lord.",
+          "effect_key": "great_feast_ring_giver"
+        },
+        {
+          "choice_text": "The Saga-Worthy Feast — 100 Food, 100 Gold",
+          "tooltip_text": "Empty your stores for legend. This will be remembered in oral tradition.",
+          "effect_key": "great_feast_saga_worthy"
+        }
+      ],
+      "saturation_check": "Before constructing the follow-up EventUI, check DynastyManager for a 'days_since_last_feast' value. If it does not exist yet, add it as a tracked variable on DynastyManager (int, default 999 so the first feast is never penalised). If days_since_last_feast < balance_data.feast_saturation_cooldown_days, append a warning line to the EventData description: '[color=yellow]Your people have feasted recently. The impact will be diminished.[/color]'",
+      "constraints": [
+        "Do not apply any rewards here — only show the follow-up UI.",
+        "Add 'great_feast_provider', 'great_feast_ring_giver', and 'great_feast_saga_worthy' as new effect_key handlers in the elif chain for Tasks 6, 7, and 8."
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Implement great_feast_provider handler",
+      "file": "res://autoload/EventManager.gd",
+      "description": "Handles the Provider feast choice. Spends food, awards loyalty and minimal renown.",
+      "logic": {
+        "affordability": "Check treasury for food >= balance_data.provider_food_cost. If not affordable, show a follow-up EventUI with title 'The Larder Is Bare' and description 'You cannot host a feast your stores cannot support. Your people notice.' Add a dismiss choice. Return without applying rewards.",
+        "saturation": "Calculate saturation_multiplier: if DynastyManager.days_since_last_feast < balance_data.feast_saturation_cooldown_days use balance_data.feast_saturation_penalty_multiplier, else 1.0.",
+        "apply": "Spend food via EconomyManager.add_resource('food', -balance_data.provider_food_cost). Award renown: DynastyManager.current_jarl.renown += int(balance_data.provider_renown_reward * saturation_multiplier). Award loyalty to all households: loyalty_gain = int(balance_data.provider_loyalty_reward * saturation_multiplier). Apply to each household, clamped to max 100. Emit EventBus.treasury_updated. Save settlement.",
+        "update_saturation": "Set DynastyManager.days_since_last_feast = 0.",
+        "follow_up": "Show a result EventUI with title 'The People Are Fed' and a description reflecting the outcome. Single dismiss choice: 'As it should be.'"
+      }
+    },
+    {
+      "id": 7,
+      "title": "Implement great_feast_ring_giver handler",
+      "file": "res://autoload/EventManager.gd",
+      "description": "Handles the Ring-Giver feast. Spends food and gold, awards renown and warband morale.",
+      "logic": {
+        "affordability": "Check both food >= balance_data.ring_giver_food_cost AND gold >= balance_data.ring_giver_gold_cost. If either fails, show an affordability failure EventUI and return.",
+        "saturation": "Same saturation_multiplier calculation as Task 6.",
+        "apply": "Spend resources. Award renown. For warband morale: iterate SettlementManager.current_settlement.warbands. If WarbandData has a morale property, add int(balance_data.ring_giver_warband_morale_reward * saturation_multiplier) clamped to 100. If morale does not exist on WarbandData, add a comment: '# TODO: [Ring-Giver Feast] Apply morale reward to warbands when WarbandData.morale is implemented. Intended reward: ring_giver_warband_morale_reward. Future consideration: target only elite/named warbands rather than all units.' Then skip mechanical application. Emit EventBus.treasury_updated. Save.",
+        "update_saturation": "Set DynastyManager.days_since_last_feast = 0.",
+        "follow_up": "Show result EventUI with title 'Gold Well Spent' and thematic description. Dismiss choice: 'Let the skalds sing of it.'"
+      }
+    },
+    {
+      "id": 8,
+      "title": "Implement great_feast_saga_worthy handler",
+      "file": "res://autoload/EventManager.gd",
+      "description": "Handles the Saga-Worthy feast. Most expensive, most impactful.",
+      "logic": {
+        "affordability": "Check food >= balance_data.saga_food_cost AND gold >= balance_data.saga_gold_cost. Failure EventUI if insufficient.",
+        "saturation": "Same saturation_multiplier. Note: even with saturation, this feast is always impactful at reduced rate.",
+        "apply": "Spend both resources. Award renown. Apply loyalty to ALL households (flat restoration: set each household.loyalty to min(100, household.loyalty + int(balance_data.saga_loyalty_reward * saturation_multiplier))). Emit EventBus.treasury_updated. Save. Add a comment: '# TODO: [Saga-Worthy Feast] In future, emit a campaign flag or trigger a follow-up event chain (e.g. diplomatic visit from a neighbouring Jarl, or a Blood Feud resolution option).'",
+        "update_saturation": "Set DynastyManager.days_since_last_feast = 0.",
+        "follow_up": "Show result EventUI with title 'A Night For The Ages' and appropriately epic description. Dismiss choice: 'This will outlive us all.'"
+      }
+    },
+    {
+      "id": 9,
+      "title": "Implement burial_rite handler",
+      "file": "res://autoload/EventManager.gd",
+      "description": "Fires when the current Jarl dies. Presents a follow-up EventUI offering the player a choice to pay for the rite or accept the full loyalty penalty.",
+      "context": "When a Jarl dies, a loyalty penalty is applied to households during succession (currently in SettlementManager.trigger_succession — households inherit 70% loyalty + 15 baseline). The burial rite reduces the incoming penalty rather than adding a bonus.",
+      "logic": {
+        "entry_point": "The 'burial_rite' effect_key handler constructs a follow-up EventUI with two choices.",
+        "choice_1": {
+          "choice_text": "Honour the rite. (%d Gold)" ,
+          "note": "Populate the gold cost dynamically from balance_data.burial_rite_gold_cost in the choice_text string before constructing the EventData.",
+          "effect_key": "burial_rite_pay"
+        },
+        "choice_2": {
+          "choice_text": "The settlement cannot afford it. Accept the loss.",
+          "effect_key": "burial_rite_decline"
+        },
+        "burial_rite_pay_handler": "Check gold >= balance_data.burial_rite_gold_cost. If not affordable, show failure EventUI ('Your treasury is empty. The rite goes unperformed.') and apply full penalty. If affordable: spend gold. Set a flag on DynastyManager: DynastyManager.burial_rite_performed = true (add this bool to DynastyManager, default false). When SettlementManager.trigger_succession() runs, check this flag — if true, apply the 75% reduction to the loyalty penalty calculation (i.e. the inherited loyalty floor rises from 15 to int(15 + (50 * balance_data.burial_rite_penalty_reduction))). Reset the flag to false after succession completes. Show result EventUI: 'The Rite Is Honoured' with a thematic description.",
+        "burial_rite_decline_handler": "No resource cost. No loyalty modification. Show result EventUI: 'The Dead Are Left Unmourned' with a description noting the household loyalty consequences that will follow."
+      },
+      "constraints": [
+        "If DynastyManager.burial_rite_performed does not exist, add it as a var burial_rite_performed: bool = false to DynastyManager.gd.",
+        "The flag must be reset to false inside trigger_succession() after it is consumed, regardless of whether it was true or false."
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Implement buy_grain_all handler — preset options",
+      "file": "res://autoload/EventManager.gd",
+      "description": "Emergency food purchase. Player chooses from preset spending options. Each option saves as many villagers as the gold allows, with population and renown losses on the remainder.",
+      "logic": {
+        "cost_calculation": "cost_per_head = balance_data.buy_grain_cost_per_villager * balance_data.buy_grain_cost_multiplier. total_cost = SettlementManager.current_settlement.population_peasants * cost_per_head.",
+        "entry_point": "The 'buy_grain_all' handler constructs a follow-up EventUI with three preset choices. Calculate affordable_villagers for each tier dynamically from current treasury gold before constructing the EventData, so the player sees real numbers.",
+        "choices": [
+          {
+            "label": "Spend All Gold",
+            "effect_key": "buy_grain_all_gold",
+            "description": "Spend your entire treasury. Save as many as your gold allows.",
+            "note": "Show how many villagers this saves in the choice_text: e.g. 'Spend All Gold — saves ~X villagers'"
+          },
+          {
+            "label": "Spend Half Gold",
+            "effect_key": "buy_grain_half_gold",
+            "description": "A compromise. Lose some people, keep some reserves.",
+            "note": "Show count in choice_text"
+          },
+          {
+            "label": "Accept the Losses",
+            "effect_key": "buy_grain_none",
+            "description": "Spend nothing. Your people will die, and your name will suffer.",
+            "note": "Show full population loss in choice_text"
+          }
+        ],
+        "shared_resolution_logic": "Create a helper function _resolve_grain_purchase(gold_spent: int) -> void. Calculate villagers_saved = gold_spent / cost_per_head (integer division). villagers_lost = population_peasants - villagers_saved. Clamp villagers_lost to >= 0. Apply: EconomyManager.add_resource('gold', -gold_spent). SettlementManager.current_settlement.population_peasants -= villagers_lost. DynastyManager.current_jarl.renown -= villagers_lost * balance_data.buy_grain_renown_loss_on_failure. Emit EventBus.treasury_updated. Save settlement.",
+        "buy_grain_all_gold_handler": "gold_spent = min(treasury.gold, total_cost). Call _resolve_grain_purchase(gold_spent). Show result EventUI.",
+        "buy_grain_half_gold_handler": "gold_spent = min(int(treasury.gold * 0.5), total_cost). Call _resolve_grain_purchase(gold_spent). Show result EventUI.",
+        "buy_grain_none_handler": "Call _resolve_grain_purchase(0). Show result EventUI with appropriately grim description.",
+        "result_flavor": "All three outcomes should show a result EventUI. Title: 'The Grain Ships Come' for paid options, 'The Hungry Season' for none. Include the actual numbers (saved/lost) in the description. Single dismiss choice."
+      },
+      "constraints": [
+        "population_peasants must never go below 0.",
+        "renown must never go below 0.",
+        "If balance_data is null, log an error and return early."
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Update DynastyManager to track feast saturation",
+      "file": "res://autoload/DynastyManager.gd",
+      "description": "Add two new variables to DynastyManager to support feast saturation and burial rite state.",
+      "changes": [
+        "Add: var days_since_last_feast: int = 999 — initialised high so first feast is never penalised.",
+        "Add: var burial_rite_performed: bool = false",
+        "In advance_day(), increment days_since_last_feast by 1 each day.",
+        "In advance_season(), also increment days_since_last_feast by an appropriate amount (suggest 30 per non-Summer season as a proxy for time passing). Add a comment explaining this is a rough approximation until a full calendar system exists.",
+        "In trigger_succession() in SettlementManager.gd, add a check for DynastyManager.burial_rite_performed at the point where inherited_loyalty is calculated. If true, apply the penalty reduction as described in Task 9. Reset DynastyManager.burial_rite_performed = false after consuming it."
+      ]
+    }
+  ],
+    {
+      "id": 12,
+      "title": "Write GUT test suite for all event effect handlers",
+      "new_file": "res://test/unit/test_EventEffectHandlers.gd",
+      "description": "Create a GUT test file covering happy path and key failure states for every handler implemented in Tasks 3–10. Follow the existing project conventions: extend GutTest, use before_each/after_each for setup/teardown, inject mocks directly into autoload singletons, and construct SettlementData/JarlData objects inline. Do not instantiate UI scenes — test only the data layer side effects (resource changes, stat changes, population changes, flag states). EventManager.event_ui calls will fire during handler execution; stub event_ui out in before_each by assigning a mock object that has a display_event() method which does nothing, to prevent UI errors in headless test runs.",
+      "setup_pattern": {
+        "before_each": [
+          "Create a fresh SettlementData with population_peasants = 20, treasury = {food: 200, wood: 100, gold: 500}. Assign to SettlementManager.current_settlement.",
+          "Create a JarlData with renown = 100, current_authority = 5. Assign to DynastyManager.current_jarl.",
+          "Create and assign a default EventBalanceData instance to EventManager.balance_data.",
+          "Set DynastyManager.current_day = 6 (mid-Summer) and DynastyManager.current_season = DynastyManager.Season.SUMMER.",
+          "Set DynastyManager.days_since_last_feast = 999.",
+          "Set DynastyManager.burial_rite_performed = false.",
+          "Stub EventManager.event_ui: assign a RefCounted subclass with a no-op display_event() method to prevent UI errors.",
+          "Add 2 default HouseholdData objects (10 members each, loyalty = 50) to the settlement's households array.",
+          "Add 1 default WarbandData to the settlement's warbands array."
+        ],
+        "after_each": [
+          "SettlementManager.current_settlement = null",
+          "DynastyManager.current_jarl = null",
+          "EventManager.balance_data = null",
+          "Clear EventManager._quarantine_snapshot if it exists."
+        ]
+      },
+      "tests": [
+        {
+          "group": "full_quarantine",
+          "cases": [
+            {
+              "name": "test_full_quarantine_reduces_household_members_at_day_1",
+              "setup": "Set DynastyManager.current_day = 1.",
+              "action": "Call EventManager._apply_event_consequences() with a mock EventChoice where effect_key = 'full_quarantine'.",
+              "assert": "Each household's member_count should be reduced by approximately 60%. Assert member_count > 0 for all households."
+            },
+            {
+              "name": "test_full_quarantine_holds_at_floor_in_final_3_days",
+              "setup": "Set DynastyManager.current_day = 10.",
+              "action": "Trigger full_quarantine handler.",
+              "assert": "Reduction applied should equal balance_data.full_quarantine_floor_reduction (20%). Assert _quarantine_snapshot is populated."
+            },
+            {
+              "name": "test_full_quarantine_restores_population_on_season_change",
+              "setup": "Trigger full_quarantine to populate _quarantine_snapshot.",
+              "action": "Emit EventBus.season_changed with 'Autumn'.",
+              "assert": "household.member_count should be restored to original values. _quarantine_snapshot should be empty."
+            },
+            {
+              "name": "test_full_quarantine_never_reduces_household_below_1",
+              "setup": "Set one household member_count = 1.",
+              "action": "Trigger full_quarantine.",
+              "assert": "That household's member_count should still be 1."
+            },
+            {
+              "name": "test_full_quarantine_fails_gracefully_with_null_balance_data",
+              "setup": "Set EventManager.balance_data = null.",
+              "action": "Trigger full_quarantine.",
+              "assert": "No crash. household member_counts unchanged."
+            }
+          ]
+        },
+        {
+          "group": "partial_quarantine",
+          "cases": [
+            {
+              "name": "test_partial_quarantine_increases_sick_population",
+              "setup": "Set sick_population = 0, current_day = 6.",
+              "action": "Trigger partial_quarantine handler.",
+              "assert": "sick_population > 0."
+            },
+            {
+              "name": "test_partial_quarantine_sick_cannot_exceed_total_population",
+              "setup": "Set sick_population = 18 (nearly full), population_peasants = 20.",
+              "action": "Trigger partial_quarantine.",
+              "assert": "sick_population <= population_peasants."
+            },
+            {
+              "name": "test_partial_quarantine_severity_higher_at_late_summer",
+              "setup": "Run handler twice: once at current_day = 2 (record sick increase), once at current_day = 11 (record sick increase). Reset sick_population between runs.",
+              "assert": "Late summer sick increase >= early summer sick increase on average. Note: due to random variance, run this assertion with a tolerance or seed the RNG."
+            }
+          ]
+        },
+        {
+          "group": "great_feast_provider",
+          "cases": [
+            {
+              "name": "test_provider_feast_spends_food_and_awards_loyalty",
+              "setup": "Default setup.",
+              "action": "Trigger great_feast_provider handler.",
+              "assert": "treasury food reduced by provider_food_cost. Each household loyalty increased. jarl.renown increased by provider_renown_reward."
+            },
+            {
+              "name": "test_provider_feast_fails_when_food_insufficient",
+              "setup": "Set treasury food = 0.",
+              "action": "Trigger great_feast_provider.",
+              "assert": "treasury food unchanged. household loyalty unchanged. jarl.renown unchanged."
+            },
+            {
+              "name": "test_provider_feast_applies_saturation_penalty",
+              "setup": "Set DynastyManager.days_since_last_feast = 5 (below cooldown).",
+              "action": "Trigger great_feast_provider.",
+              "assert": "loyalty gain is approximately half the normal amount (saturation_penalty_multiplier applied)."
+            },
+            {
+              "name": "test_provider_feast_resets_days_since_last_feast",
+              "action": "Trigger great_feast_provider.",
+              "assert": "DynastyManager.days_since_last_feast == 0."
+            }
+          ]
+        },
+        {
+          "group": "great_feast_ring_giver",
+          "cases": [
+            {
+              "name": "test_ring_giver_feast_spends_food_and_gold",
+              "action": "Trigger great_feast_ring_giver.",
+              "assert": "treasury food reduced by ring_giver_food_cost. treasury gold reduced by ring_giver_gold_cost. jarl.renown increased by ring_giver_renown_reward."
+            },
+            {
+              "name": "test_ring_giver_feast_fails_when_gold_insufficient",
+              "setup": "Set treasury gold = 0.",
+              "action": "Trigger great_feast_ring_giver.",
+              "assert": "treasury unchanged. renown unchanged."
+            }
+          ]
+        },
+        {
+          "group": "great_feast_saga_worthy",
+          "cases": [
+            {
+              "name": "test_saga_feast_spends_both_resources_and_awards_all_bonuses",
+              "setup": "Set treasury food = 200, gold = 500.",
+              "action": "Trigger great_feast_saga_worthy.",
+              "assert": "food reduced by saga_food_cost. gold reduced by saga_gold_cost. jarl.renown increased. All household loyalty increased."
+            },
+            {
+              "name": "test_saga_feast_fails_when_either_resource_insufficient",
+              "setup": "Set treasury gold = 10.",
+              "action": "Trigger great_feast_saga_worthy.",
+              "assert": "Resources and stats unchanged."
+            }
+          ]
+        },
+        {
+          "group": "burial_rite",
+          "cases": [
+            {
+              "name": "test_burial_rite_pay_sets_flag_and_spends_gold",
+              "action": "Trigger burial_rite_pay handler.",
+              "assert": "DynastyManager.burial_rite_performed == true. treasury gold reduced by burial_rite_gold_cost."
+            },
+            {
+              "name": "test_burial_rite_pay_fails_when_gold_insufficient",
+              "setup": "Set treasury gold = 0.",
+              "action": "Trigger burial_rite_pay.",
+              "assert": "DynastyManager.burial_rite_performed == false. treasury gold unchanged."
+            },
+            {
+              "name": "test_burial_rite_flag_consumed_after_succession",
+              "setup": "Set DynastyManager.burial_rite_performed = true.",
+              "action": "Call SettlementManager.trigger_succession() on a household.",
+              "assert": "DynastyManager.burial_rite_performed == false after succession. The household's resulting loyalty should be higher than it would be without the rite — calculate the expected unmitigated floor (15) vs mitigated floor and assert the result is >= mitigated value."
+            },
+            {
+              "name": "test_burial_rite_decline_does_not_set_flag",
+              "action": "Trigger burial_rite_decline handler.",
+              "assert": "DynastyManager.burial_rite_performed == false. treasury unchanged."
+            }
+          ]
+        },
+        {
+          "group": "buy_grain_all",
+          "cases": [
+            {
+              "name": "test_buy_grain_all_gold_saves_maximum_villagers",
+              "setup": "Set population_peasants = 20, treasury gold = 500.",
+              "action": "Trigger buy_grain_all_gold handler.",
+              "assert": "treasury gold == 0 or reduced by total_cost (whichever is less). population_peasants reflects how many were saved."
+            },
+            {
+              "name": "test_buy_grain_half_gold_saves_partial_population",
+              "setup": "Set population_peasants = 20, treasury gold = 500.",
+              "action": "Trigger buy_grain_half_gold handler.",
+              "assert": "treasury gold reduced by approximately half. population_peasants between 0 and 20."
+            },
+            {
+              "name": "test_buy_grain_none_loses_all_population_and_renown",
+              "setup": "Set population_peasants = 20, jarl.renown = 200.",
+              "action": "Trigger buy_grain_none handler.",
+              "assert": "population_peasants == 0. jarl.renown < 200."
+            },
+            {
+              "name": "test_buy_grain_population_never_goes_below_zero",
+              "setup": "Set population_peasants = 1.",
+              "action": "Trigger buy_grain_none.",
+              "assert": "population_peasants >= 0."
+            },
+            {
+              "name": "test_buy_grain_renown_never_goes_below_zero",
+              "setup": "Set jarl.renown = 0, population_peasants = 50.",
+              "action": "Trigger buy_grain_none.",
+              "assert": "jarl.renown >= 0."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "output_format": {
+    "per_task": [
+      "Plain-English explanation of what was changed and why",
+      "Complete file contents for every file touched — not diffs, full files ready to save"
+    ],
+    "order": "Complete tasks in order 1 through 11. Do not begin a task until the previous one is complete, as later tasks depend on variables and functions established in earlier ones."
+  }
+}

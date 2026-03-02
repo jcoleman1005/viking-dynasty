@@ -1,12 +1,14 @@
 class_name HouseholdData
 extends Resource
 
-enum SeasonalOath { IDLE, HARVEST, TIMBER, BUILD, RAID }
+enum SeasonalOath { IDLE, HARVEST, TIMBER, BUILD, RAID, SCOUT }
 
 @export var household_name: String = "The Red-Shields"
 @export var head_of_household: HouseholdHead = null # New: Lineage system
 @export var member_count: int = 10
 @export var current_oath: SeasonalOath = SeasonalOath.IDLE
+@export var is_founding_household: bool = false
+@export var obligation_flag: String = "" # e.g. "sworn_protection"
 
 # Phase 3 & 5 systems
 @export var loyalty: int = 100:

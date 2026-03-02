@@ -15,9 +15,17 @@ const UNWALKABLE_LAYER_NAME: String = "is_unwalkable"
 const GREAT_HALL_BUFFER: int = 4 # Tiles from water required for Great Hall
 
 # --- Data State ---
-var current_settlement: SettlementData 
-var active_map_data: SettlementData      
+var current_settlement: SettlementData
+var active_map_data: SettlementData
 var pending_succession_news: Array[String] = [] # Task 3.4
+
+# --- Founding Sequence Flags ---
+# Set by FoundingSequenceManager on new game; checked by EventManager for situational events.
+var wildfire_risk_enabled: bool = false
+var coastal_storm_risk_enabled: bool = false
+var raid_target_visibility_multiplier: float = 1.0
+var foreign_threat_visibility_enabled: bool = false
+var founding_warband_active: bool = false
 
 # --- Scene Refs ---
 var _active_building_container_ref: WeakRef = weakref(null)
@@ -138,6 +146,46 @@ func get_nearest_valid_spawn_point(target_coords: Vector2i) -> Vector2i:
 	Loggie.msg("No valid spawn point found within radius. Radius: %d" % MAX_SEARCH_RADIUS).domain(LogDomains.GAMEPLAY).warn()
 	return target_coords
 
+## Checks whether a world-space position maps to a walkable AStarGrid tile.
+## BFS outward up to `radius` tiles (Manhattan distance) to find the nearest
+## non-solid tile. Returns the valid world position, or Vector2.INF if none is
+## found within the radius. Used for spawn-safety checks against the live grid.
+func request_valid_spawn_point(world_pos: Vector2, radius: int) -> Vector2:
+	var grid = NavigationManager.active_astar_grid
+	if not grid:
+		return Vector2.INF
+
+	var start_cell: Vector2i = world_to_grid(world_pos)
+	var region: Rect2i = grid.region
+
+	# Optimistic: already on walkable land
+	if region.has_point(start_cell) and not grid.is_point_solid(start_cell):
+		return grid_to_world(start_cell)
+
+	# BFS outward, bounded by Manhattan radius
+	var visited: Dictionary = {}
+	var queue: Array[Vector2i] = [start_cell]
+	visited[start_cell] = true
+	var offsets = [Vector2i(0, 1), Vector2i(0, -1), Vector2i(1, 0), Vector2i(-1, 0)]
+
+	while queue.size() > 0:
+		var current: Vector2i = queue.pop_front()
+
+		if region.has_point(current) and not grid.is_point_solid(current):
+			return grid_to_world(current)
+
+		for offset in offsets:
+			var next_cell: Vector2i = current + offset
+			if visited.has(next_cell):
+				continue
+			var dist: int = abs(next_cell.x - start_cell.x) + abs(next_cell.y - start_cell.y)
+			if dist > radius:
+				continue
+			visited[next_cell] = true
+			queue.append(next_cell)
+
+	return Vector2.INF
+
 # --- COORDINATE & SPATIAL DELEGATION ---
 
 func grid_to_world(grid_pos: Vector2i) -> Vector2:
@@ -158,18 +206,22 @@ func get_tile_center(grid_pos: Vector2i) -> Vector2:
 ## NEW: Calculates the VISUAL CENTER of a multi-tile footprint.
 ## Fixes the "Heel vs Foot" issue where buildings were visually offset from their logic.
 func get_footprint_center(grid_pos: Vector2i, grid_size: Vector2i) -> Vector2:
-	# Convert grid coordinate + half size to world space
-	# This aligns with SettlementBridge logic: Center = Pos + Size/2
+	# Start with the authoritative center of the first tile
+	var base_pos = grid_to_world(grid_pos)
 	
-	var center_x = float(grid_pos.x) + (float(grid_size.x) / 2.0)
-	var center_y = float(grid_pos.y) + (float(grid_size.y) / 2.0)
+	var m = float(grid_size.x)
+	var n = float(grid_size.y)
 	
-	# Manual Isometric Conversion (matches grid_to_world but for floats)
-	# Assuming Tile Width 64, Height 32 (Half 32, 16)
-	var iso_x = (center_x - center_y) * 32.0
-	var iso_y = (center_x + center_y) * 16.0
+	var dx = ((m - 1.0) * 0.5 - (n - 1.0) * 0.5) * TILE_HALF_SIZE.x
+	var dy = ((m - 1.0) * 0.5 + (n - 1.0) * 0.5) * TILE_HALF_SIZE.y
 	
-	return Vector2(iso_x, iso_y)
+	var final_pos = base_pos + Vector2(dx, dy)
+	
+	Loggie.msg("get_footprint_center: Grid%s Size%s -> Base%s Offset(%f,%f) -> Final%s" % [
+		grid_pos, grid_size, base_pos, dx, dy, final_pos
+	]).domain(LogDomains.SETTLEMENT).debug()
+	
+	return final_pos
 
 func world_to_grid(pos: Vector2) -> Vector2i:
 	return NavigationManager._world_to_grid(pos)
@@ -186,18 +238,25 @@ func get_active_grid_cell_size() -> Vector2:
 # --- BUILDING PLACEMENT ---
 
 func _spawn_building_node(building_data: BuildingData, grid_pos: Vector2i) -> BaseBuilding:
-	if not is_instance_valid(active_building_container): return null
+	if not is_instance_valid(active_building_container): 
+		Loggie.msg("SettlementManager: Cannot spawn building, container is invalid").domain(LogDomains.SETTLEMENT).error()
+		return null
 
 	var new_building = building_data.scene_to_spawn.instantiate()
 	new_building.data = building_data
 	new_building.grid_coordinate = grid_pos
 	
 	# CRITICAL FIX: Use Footprint Center instead of Tile Center
-	# This ensures the sprite is centered over the entire MxN grid area.
 	var center_pos = get_footprint_center(grid_pos, building_data.grid_size)
 	new_building.global_position = center_pos 
 	
 	active_building_container.add_child(new_building)
+	
+	Loggie.msg("SettlementManager: Spawned %s at world pos %s. Container: %s (Vis:%s, Pos:%s)" % [
+		building_data.display_name, center_pos, active_building_container.name, 
+		active_building_container.visible, active_building_container.global_position
+	]).domain(LogDomains.SETTLEMENT).debug()
+	
 	return new_building
 	
 func place_building(building_data: BuildingData, grid_position: Vector2i, is_new_construction: bool = false) -> BaseBuilding:
@@ -369,7 +428,17 @@ func _is_within_district_range(grid_pos: Vector2i, size: Vector2i, data: Economi
 # --- SCENE MANAGEMENT ---
 
 func register_active_scene_nodes(container: Node2D) -> void:
+	if not is_instance_valid(container):
+		Loggie.msg("register_active_scene_nodes: container is null, skipping.").domain(LogDomains.SETTLEMENT).warn()
+		return
 	Loggie.msg("SettlementManager: Registering container: %s" % container.name).domain(LogDomains.SETTLEMENT).info()
+	
+	# Ensure Y-Sorting is on for the container to handle isometric depth
+	container.y_sort_enabled = true
+	
+	# NEW: Ensure the container is at the same global space as the TileMap
+	# (Usually children of the same parent at (0,0))
+	container.position = Vector2.ZERO
 	
 	# Store as WeakRef
 	_active_building_container_ref = weakref(container)
@@ -632,14 +701,29 @@ func process_construction_labor() -> void:
 	if not current_settlement: return
 	
 	# 1. Delegate Math to EconomyManager
-	var finished_buildings = EconomyManager.advance_construction_progress()
+	# Note: advance_construction_progress() now also handles node-level updates.
+	var completed_entries = EconomyManager.advance_construction_progress()
 	
 	# 2. Handle Completion (Scene/Gameplay Logic)
-	for entry in finished_buildings:
+	for entry in completed_entries:
+		var node = find_building_by_grid_pos(entry["grid_position"], false)
+		if node:
+			node.set_state(BaseBuilding.BuildingState.ACTIVE)
 		_finalize_construction(entry)
 		
 	# Save state if any progress happened
 	save_settlement()
+
+func find_building_by_grid_pos(grid_pos: Vector2i, search_placed: bool = true) -> BaseBuilding:
+	if not active_building_container: return null
+	
+	for child in active_building_container.get_children():
+		if child is BaseBuilding:
+			if child.grid_coordinate == grid_pos:
+				var is_active = (child.current_state == BaseBuilding.BuildingState.ACTIVE)
+				if is_active == search_placed:
+					return child
+	return null
 	
 func _finalize_construction(entry: Dictionary) -> void:
 	# Add to authoritative "Placed" list
@@ -988,18 +1072,33 @@ func _reconcile_household_heads() -> void:
 func trigger_succession(household: HouseholdData) -> String:
 	if not household.head_of_household:
 		household.head_of_household = PatronymicGenerator.create_founder_head()
+		# Consume burial rite flag even for headless households (safety reset)
+		DynastyManager.burial_rite_performed = false
 		return "A new leader has emerged for %s." % household.household_name
 
 	var old_head = household.head_of_household
 	var new_head = PatronymicGenerator.create_successor_head(old_head)
-	
+
 	# Task 4.3: Loyalty Inheritance
-	# Inherit 70% of previous loyalty + 15 baseline points (representing 30% of neutral 50)
-	var inherited_loyalty = int(household.loyalty * 0.7) + 15
-	household.loyalty = inherited_loyalty
-	
+	# Base: inherit 70% of previous loyalty + 15 baseline points.
+	# If the burial rite was performed, the loyalty floor rises by 75% of the
+	# gap between the base floor (15) and the neutral max (50):
+	#   mitigated_floor = int(15 + (50 * burial_rite_penalty_reduction)) = int(15 + 37.5) = 52
+	var loyalty_floor: int = 15
+	if DynastyManager.burial_rite_performed:
+		if EventManager.balance_data:
+			loyalty_floor = int(15 + (50 * EventManager.balance_data.burial_rite_penalty_reduction))
+		else:
+			loyalty_floor = 52  # Fallback: 15 + (50 * 0.75) = 52
+
+	var inherited_loyalty: int = int(household.loyalty * 0.7) + loyalty_floor
+	household.loyalty = mini(100, inherited_loyalty)
+
+	# Consume and reset the flag regardless of whether it was used
+	DynastyManager.burial_rite_performed = false
+
 	household.head_of_household = new_head
-	
+
 	var news = "%s %s has taken over the %s household." % [new_head.given_name, new_head.patronymic, household.household_name]
 	Loggie.msg("Succession: " + news).domain(LogDomains.SETTLEMENT).info()
 	return news
@@ -1016,20 +1115,20 @@ func check_and_trigger_successions() -> Array[String]:
 			
 	return news_list
 
-func _generate_default_households(total_pop: int) -> void:
-	var household_size = 10
-	var count = max(1, total_pop / household_size)
-	var names = ["The Red-Shields", "The Ironbark Clan", "The Frost-Born", 
-				 "The Grey-Wolves", "The Stone-Hands"]
-
-	for i in range(count):
-		var house = HouseholdData.new()
+func _generate_default_households(_total_pop: int) -> void:
+	var names := ["The Red-Shields", "The Ironbark Clan", "The Frost-Born",
+				  "The Grey-Wolves", "The Stone-Hands"]
+	# Always generate exactly 3 founding households with 3-4 members each.
+	# FoundingSequenceManager may reduce to 2 afterwards (rival_jarl exile reason).
+	for i in range(3):
+		var house := HouseholdData.new()
 		house.household_name = names[i % names.size()]
-		house.member_count = household_size
+		house.member_count = randi_range(3, 4)
 		house.current_oath = HouseholdData.SeasonalOath.IDLE
+		house.is_founding_household = true
 		current_settlement.households.append(house)
-	
-	Loggie.msg("Generated %d default households for legacy save." % count).domain(LogDomains.SETTLEMENT).info()
+
+	Loggie.msg("Generated 3 default founding households.").domain(LogDomains.SETTLEMENT).info()
 
 func _distribute_population_delta(delta: int) -> void:
 	if current_settlement.households.is_empty():

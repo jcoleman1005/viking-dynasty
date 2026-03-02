@@ -79,12 +79,6 @@ signal summer_day_changed(current_day: int, max_days: int)
 
 # --- NEW: Seasonal UI System Signals ---
 signal hall_action_updated
-## Emitted when the UI selects a card but hasn't committed (for tooltips/previews).
-signal seasonal_card_hovered(card: SeasonalCardResource)
-
-## Emitted when the Player clicks a card in Spring/Winter UI.
-## The System listening (SpringCouncil or WinterManager) will decide if it's valid.
-signal seasonal_card_selected(card: SeasonalCardResource)
 
 ## Emitted when the UI requests to end the current phase (e.g. "Lock Autumn Accounts").
 ## Payload contains any data needed for the transition.
@@ -106,5 +100,9 @@ signal winter_crisis_triggered()
 
 ## Emitted when Winter ends and the year rolls over.
 signal winter_ended()
+
+## Placeholder for Scout oath progress. Emitted daily per scouting household.
+## tiles_revealed is always 0 until a fog-of-war system is implemented.
+signal scout_progress_updated(tiles_revealed_this_day: int)
 signal raid_committed(count: int)
 signal sidebar_close_requested

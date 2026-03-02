@@ -1,19 +1,19 @@
-#res://test/integration/test_terrain_solids.gd
+# res://test/integration/test_terrain_solids.gd
 extends GutTest
 
-var _manager_ref
+var _settlement_manager: Node
 var _layer: TileMapLayer
 var _container: Node2D
 var _scene_root: Node2D
 
 func before_all():
-	# 1. Setup Manager
+	# 1. Setup SettlementManager
 	if has_node("/root/SettlementManager"):
-		_manager_ref = get_node("/root/SettlementManager")
+		_settlement_manager = get_node("/root/SettlementManager")
 	else:
-		_manager_ref = load("res://autoload/SettlementManager.gd").new()
-		add_child_autofree(_manager_ref)
-		_manager_ref._ready()
+		_settlement_manager = load("res://autoload/SettlementManager.gd").new()
+		add_child_autofree(_settlement_manager)
+		_settlement_manager._ready()
 	
 	# 2. Setup Scene Hierarchy
 	_scene_root = Node2D.new()
@@ -44,6 +44,7 @@ func before_all():
 	tile_data.set_custom_data("is_unwalkable", true)
 	
 	# [CRITICAL] Capture the Source ID!
+	# We use a fixed ID or capture it correctly.
 	var source_id = ts.add_source(source)
 	_layer.tile_set = ts
 	
@@ -52,21 +53,16 @@ func before_all():
 
 func test_water_blocks_grid():
 	# --- ACTION ---
-	# 1. Register
-	_manager_ref.register_active_scene_nodes(_container)
+	# 1. Register with SettlementManager
+	_settlement_manager.register_active_scene_nodes(_container)
 	
-	# [FIX] Manual Injection Fallback
-	# If the automatic sibling detection failed (common in tests), force it.
-	if not _manager_ref.active_tilemap_layer:
-		_manager_ref.active_tilemap_layer = _layer
-		
-	# 2. Refresh (This triggers the scan)
-	NavigationManager.register_map(
-		NavigationManager.active_tilemap_layer,
-		NavigationManager.active_astar_grid.region)
+	# 2. Manually register the map with NavigationManager for the test
+	# This ensures the AStarGrid is initialized with the correct region.
+	var test_region = Rect2i(0, 0, 10, 10)
+	NavigationManager.register_map(_layer, test_region)
 	
 	# --- ASSERTION ---
-	assert_not_null(_manager_ref.active_tilemap_layer, "Active TileMapLayer should be assigned.")
+	assert_not_null(NavigationManager.active_astar_grid, "AStarGrid should be initialized.")
 	
 	# Check the Grid Logic
 	var is_solid = NavigationManager.active_astar_grid.is_point_solid(Vector2i(5, 5))
@@ -84,5 +80,6 @@ func test_water_blocks_grid():
 	assert_false(is_empty_solid, "Grid (6,6) should be WALKABLE.")
 
 func after_all():
-	if is_instance_valid(_manager_ref):
-		_manager_ref.unregister_active_scene_nodes()
+	if is_instance_valid(_settlement_manager):
+		_settlement_manager.unregister_active_scene_nodes()
+	NavigationManager.unregister_grid()

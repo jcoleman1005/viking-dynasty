@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="SpringCardData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/spring/SpringCardData.gd" id="1_r7p4w"]
+
+[resource]
+script = ExtResource("1_r7p4w")
+card_id = "card_raid_oath"
+stat_gate = "command"
+stat_threshold = 8
+oath_phrasings = Array[String](["Before the leaves turn I will return with Frankish silver.", "My warband will not winter empty-handed.", "I will bring back enough gold that men remember this raid."])
+condition_template = "{jarl_name} must return from raid with {threshold} gold."
+threshold_base = 30
+threshold_stat_multiplier = 2.0
+reward_mechanical = "renown_plus_25_warband_morale_plus_15"
+reward_narrative_template = "oath_kept"
+consequence_mechanical = "authority_minus_1_next_year"
+oath_metric_key = "gold_raided"
+consequence_narrative_template = "oath_broken"
+is_founding_echo = false
+founding_echo_exile = ""
+is_intersection = false
+secondary_stat_gate = ""
+secondary_stat_threshold = 0

@@ -31,3 +31,6 @@ enum HeirStatus {
 @export var traits: Array[JarlTraitData] = []
 ## The innate genetic trait (e.g., Strong, Frail) separate from learned traits
 @export var genetic_trait: JarlTraitData
+
+@export_group("History")
+@export var training_history: Array[String] = []

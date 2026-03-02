@@ -15,6 +15,7 @@ func after_each():
 	WinterManager.harsh_chance = _default_harsh
 	WinterManager.mild_chance = _default_mild
 	WinterManager.current_severity = WinterManager.WinterSeverity.NORMAL
+	WinterManager.upcoming_severity = WinterManager.WinterSeverity.NORMAL
 
 func test_demand_calculation_normal():
 	# 1. Setup
@@ -38,13 +39,13 @@ func test_demand_calculation_harsh():
 	var settlement = SettlementData.new()
 	settlement.population_peasants = 100
 	settlement.warbands.clear()
-	
-	# 2. FORCE HARSH WINTER (100% chance)
-	WinterManager.harsh_chance = 1.0
-	WinterManager.mild_chance = 0.0
-	
+
+	# 2. FORCE HARSH WINTER directly via upcoming_severity.
+	# calculate_winter_demand() reads upcoming_severity (the forecast), not harsh_chance.
+	WinterManager.upcoming_severity = WinterManager.WinterSeverity.HARSH
+
 	# 3. Execute
 	var report = WinterManager.calculate_winter_demand(settlement)
-	
+
 	# 4. Assert (100 * 1.5 = 150)
 	assert_eq(report["food_demand"], 150, "Harsh winter should increase cost by 50%.")

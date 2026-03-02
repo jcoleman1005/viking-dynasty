@@ -243,6 +243,13 @@ func remove_trait(trait_name: String) -> bool:
 			return true
 	return false
 
+@export_group("Founding")
+@export var founding_epithet: String = ""
+@export var founding_archetype: String = ""
+@export var exile_reason: String = ""
+@export var first_act: String = ""
+@export var living_epithet: String = ""
+
 @export_group("Game State")
 @export var campaign_flags: Dictionary = {}
 @export var event_history: Array[String] = []

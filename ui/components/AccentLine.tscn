@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://accent_line_comp"]
+
+[node name="AccentLine" type="ColorRect"]
+custom_minimum_size = Vector2(0, 1)
+size_flags_horizontal = 3
+modulate = Color(0.478, 0.392, 0.188, 0.4)
+color = Color(0.478, 0.392, 0.188, 1.0)

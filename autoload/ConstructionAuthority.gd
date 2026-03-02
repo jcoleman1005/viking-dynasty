@@ -72,6 +72,9 @@ func authorize_decree(decree: ConstructionDecree, household: HouseholdData) -> b
 	# 6. Transition decree.state to AUTHORIZED
 	decree.state = ConstructionDecree.DecreeState.AUTHORIZED
 	
+	# NEW: Immediately seal the decree to place the blueprint on the map
+	seal_all_authorized_decrees()
+	
 	return true
 
 func cancel_decree(decree: ConstructionDecree) -> void:
@@ -105,6 +108,12 @@ func seal_all_authorized_decrees() -> void:
 	for decree in to_seal:
 		# 3. call SettlementManager.place_building(decree.building_data, decree.resolved_grid_pos, true)
 		var building_node = SettlementManager.place_building(decree.building_data, decree.resolved_grid_pos, true)
+		
+		if not building_node:
+			Loggie.msg("ConstructionAuthority: Failed to place building at %s for decree %s" % [decree.resolved_grid_pos, decree.decree_id]).domain(LogDomains.SETTLEMENT).error()
+			continue
+			
+		Loggie.msg("ConstructionAuthority: Successfully placed blueprint for %s at %s" % [decree.building_data.display_name, decree.resolved_grid_pos]).domain(LogDomains.SETTLEMENT).info()
 		
 		# 4. Immediately after placement, find the newly created entry in pending_construction_buildings
 		if SettlementManager.current_settlement:

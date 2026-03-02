@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="SpringCardData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/spring/SpringCardData.gd" id="1_c7p8a"]
+
+[resource]
+script = ExtResource("1_c7p8a")
+card_id = "card_charisma_oath"
+stat_gate = "charisma"
+stat_threshold = 8
+oath_phrasings = Array[String](["My hall will be known for its welcome before the year is out.", "Before Winter every household will have eaten at my table.", "I will be a Jarl worth following, not just obeying."] )
+condition_template = "{jarl_name} must hold a feast before Winter."
+threshold_base = 1
+threshold_stat_multiplier = 0.0
+reward_mechanical = "loyalty_all_plus_15_renown_plus_10"
+reward_narrative_template = "oath_kept"
+consequence_mechanical = "loyalty_all_minus_8"
+oath_metric_key = "feast_held"
+consequence_narrative_template = "oath_broken"
+is_founding_echo = false
+founding_echo_exile = ""
+is_intersection = false
+secondary_stat_gate = ""
+secondary_stat_threshold = 0

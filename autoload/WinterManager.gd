@@ -65,7 +65,7 @@ func start_winter_phase() -> void:
 			var total_sick = settlement.sick_population + new_sick_count
 			settlement.sick_population = min(settlement.population_peasants, total_sick)
 			
-			Loggie.msg("Outbreak! %d new peasants have fallen ill." % new_sick_count).domain(LogDomains.GAMEPLAY).warn()
+			Loggie.msg("Outbreak! %d new peasants have fallen ill." % new_sick_count).domain(LogDomains.GAMEPLAY).info()
 		else:
 			Loggie.msg("Winter started with clean bill of health.").domain(LogDomains.GAMEPLAY).info()
 	
@@ -200,7 +200,7 @@ func _calculate_winter_needs() -> void:
 	# Determine Crisis State
 	if food_deficit > 0 or wood_deficit > 0:
 		winter_crisis_active = true
-		Loggie.msg("Winter Crisis Active! Deficits: Food %d, Wood %d" % [food_deficit, wood_deficit]).domain(LogDomains.SYSTEM).warn()
+		Loggie.msg("Winter Crisis Active! Deficits: Food %d, Wood %d" % [food_deficit, wood_deficit]).domain(LogDomains.SYSTEM).info()
 		
 		# Trigger modal crisis event
 		EventManager.trigger_event_by_id("winter_crisis")
@@ -259,43 +259,6 @@ func resolve_crisis_with_gold() -> Dictionary:
 		
 	return result
 
-func play_seasonal_card(card: SeasonalCardResource) -> bool:
-	var jarl = DynastyManager.get_current_jarl()
-	
-	# 1. Validate AP (ONLY for Winter cards)
-	var is_winter_card = (card.season == SeasonalCardResource.SeasonType.WINTER)
-	if is_winter_card:
-		if not jarl or jarl.current_hall_actions < card.cost_ap:
-			return false
-
-	# 2. Validate Resources (Always required)
-	var cost_dict = {}
-	if card.cost_gold > 0: cost_dict[GameResources.GOLD] = card.cost_gold
-	if card.cost_food > 0: cost_dict[GameResources.FOOD] = card.cost_food
-	
-	if not EconomyManager.attempt_purchase(cost_dict):
-		return false
-
-	# 3. Deduct AP (ONLY for Winter cards)
-	if is_winter_card:
-		DynastyManager.perform_hall_action(card.cost_ap)
-
-	# 4. Apply Rewards
-	if card.grant_gold > 0:
-		EconomyManager.deposit_resources({"gold": card.grant_gold})
-	if card.grant_renown > 0:
-		DynastyManager.award_renown(card.grant_renown)
-	if card.grant_authority > 0:
-		if jarl:
-			jarl.current_authority += card.grant_authority
-			Loggie.msg("Granted %d Authority via card" % card.grant_authority).domain(LogDomains.DYNASTY).info()
-			DynastyManager.jarl_stats_updated.emit(jarl)
-
-	# 5. Apply Modifiers
-	DynastyManager.aggregate_card_effects(card)
-		
-	return true
-
 func resolve_crisis_with_sacrifice(sacrifice_type: String) -> Dictionary:
 	if not DynastyManager.perform_hall_action(1): 
 		return {"success": false, "narrative": "Insufficient Hall Actions", "consequences": []}
@@ -307,7 +270,7 @@ func resolve_crisis_with_sacrifice(sacrifice_type: String) -> Dictionary:
 		"starve_peasants":
 			var deaths = max(1, int(winter_consumption_report["food_deficit"] / 5))
 			settlement.population_peasants = max(0, settlement.population_peasants - deaths)
-			Loggie.msg("%d Peasants starved." % deaths).domain(LogDomains.SYSTEM).warn()
+			Loggie.msg("%d Peasants starved." % deaths).domain(LogDomains.SYSTEM).info()
 			EconomyManager.clamp_demographics(settlement)
 			result["narrative"] = "You leave the villagers to fend for themselves. The strong survive, but many of the weak did not make it through the bitter nights. The hall is quiet, save for the weeping of those left behind."
 			result["consequences"].append("Peasants lost: %d" % deaths)
@@ -315,13 +278,13 @@ func resolve_crisis_with_sacrifice(sacrifice_type: String) -> Dictionary:
 		"disband_warband":
 			if not settlement.warbands.is_empty(): 
 				var wb = settlement.warbands.pop_back()
-				Loggie.msg("Warband disbanded.").domain(LogDomains.SYSTEM).warn()
+				Loggie.msg("Warband disbanded.").domain(LogDomains.SYSTEM).info()
 				result["narrative"] = "To save on bread, you cast out your sworn men. They leave into the snow, their loyalty shattered, but the grain stays in the bellies of the tillers."
 				result["consequences"].append("Warband lost: %s" % wb.custom_name)
 				
 		"burn_ships":
 			settlement.fleet_readiness = 0.0
-			Loggie.msg("Ships burned for wood.").domain(LogDomains.SYSTEM).warn()
+			Loggie.msg("Ships burned for wood.").domain(LogDomains.SYSTEM).info()
 			result["narrative"] = "The dragon-ships, pride of the fjord, are chopped for kindling. The village stays warm, but you are now a Jarl without a fleet."
 			result["consequences"].append("Fleet Readiness reduced to 0%")
 			
@@ -351,7 +314,7 @@ func resolve_crisis_with_family_sacrifice() -> Dictionary:
 				if randf() < family_illness_chance: # 30% Risk
 					heir.status = JarlHeirData.HeirStatus.Maimed
 					sick_heirs += 1
-					Loggie.msg("%s has fallen ill due to starvation rations!" % heir.display_name).domain(LogDomains.SYSTEM).warn()
+					Loggie.msg("%s has fallen ill due to starvation rations!" % heir.display_name).domain(LogDomains.SYSTEM).info()
 	
 	if sick_heirs > 0:
 		result["consequences"].append("Heirs fallen ill: %d" % sick_heirs)

@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="SpringCardData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/spring/SpringCardData.gd" id="1_p7p7z"]
+
+[resource]
+script = ExtResource("1_p7p7z")
+card_id = "card_prowess_oath"
+stat_gate = "prowess"
+stat_threshold = 10
+oath_phrasings = Array[String](["I will lead the warband myself and prove my arm has not grown weak.", "This Summer I fight at the front, not behind my men.", "Let them see what kind of Jarl stands before them."])
+condition_template = "{jarl_name} must personally lead a raid this Summer."
+threshold_base = 1
+threshold_stat_multiplier = 0.0
+reward_mechanical = "renown_plus_20_heir_training_boost_if_witnessed"
+reward_narrative_template = "oath_kept"
+consequence_mechanical = "renown_frozen_warband_morale_minus_10"
+oath_metric_key = "personally_led_raid"
+consequence_narrative_template = "oath_broken"
+is_founding_echo = false
+founding_echo_exile = ""
+is_intersection = false
+secondary_stat_gate = ""
+secondary_stat_threshold = 0

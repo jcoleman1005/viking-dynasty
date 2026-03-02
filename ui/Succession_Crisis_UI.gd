@@ -50,6 +50,12 @@ func _ready() -> void:
 	confirm_btn.pressed.connect(_on_confirm)
 
 func display_crisis(jarl: JarlData, settlement: SettlementData) -> void:
+	if jarl.ancestors.size() > 0:
+		var old_jarl_name = jarl.ancestors.back().get("name", "The Jarl")
+		desc_label.text = "%s is dead. The hall is quiet." % old_jarl_name
+	else:
+		desc_label.text = "The Jarl is dead. The hall is quiet."
+		
 	var legitimacy = jarl.legitimacy
 	legit_label.text = "New Legitimacy: %d/100" % legitimacy
 	

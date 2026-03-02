@@ -1,0 +1,49 @@
+[gd_scene load_steps=3 format=3 uid="uid://spring_oath_card_001"]
+
+[ext_resource type="Script" path="res://ui/components/SpringOathCard.gd" id="1_socard"]
+[ext_resource type="Theme" uid="uid://dark_saga_theme_01" path="res://ui/themes/DarkSagaTheme.tres" id="2_dktheme"]
+
+[node name="SpringOathCard" type="PanelContainer"]
+theme = ExtResource("2_dktheme")
+custom_minimum_size = Vector2(0, 320)
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1_socard")
+
+[node name="Inner" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="OathLabel" type="RichTextLabel" parent="Inner"]
+layout_mode = 2
+bbcode_enabled = true
+fit_content = true
+text = "[i]Oath phrasing...[/i]"
+theme_override_font_sizes/normal_font_size = 16
+theme_override_colors/default_color = Color(0.910, 0.875, 0.753, 1.0)
+
+[node name="ConditionLabel" type="Label" parent="Inner"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Condition..."
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.604, 0.565, 0.502, 1.0)
+
+[node name="RewardLabel" type="Label" parent="Inner"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Reward..."
+theme_override_colors/font_color = Color(0.604, 0.565, 0.502, 1.0)
+theme_override_font_sizes/font_size = 13
+
+[node name="ConsequenceLabel" type="Label" parent="Inner"]
+layout_mode = 2
+autowrap_mode = 3
+text = "If broken: ..."
+theme_override_colors/font_color = Color(0.784, 0.251, 0.251, 1.0)
+theme_override_font_sizes/font_size = 13
+
+[node name="ConfirmBtn" type="Button" parent="Inner"]
+layout_mode = 2
+visible = false
+text = "Swear This Oath"

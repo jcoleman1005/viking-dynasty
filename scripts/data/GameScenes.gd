@@ -10,4 +10,3 @@ const WORLD_MAP := "world_map"
 # Missions
 const RAID_MISSION := "raid_mission"
 
-const WINTER_COURT := "winter_court"

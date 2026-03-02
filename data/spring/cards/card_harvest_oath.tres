@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="SpringCardData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/spring/SpringCardData.gd" id="1_h7p3v"]
+
+[resource]
+script = ExtResource("1_h7p3v")
+card_id = "card_harvest_oath"
+stat_gate = "stewardship"
+stat_threshold = 8
+oath_phrasings = Array[String](["I swear my people will not go hungry this Winter.", "Before the first frost, the stores will be full.", "My hall will not want for bread when the snow falls."])
+condition_template = "{jarl_name} must harvest {threshold} food before Winter."
+threshold_base = 40
+threshold_stat_multiplier = 1.5
+reward_mechanical = "loyalty_all_plus_15_renown_plus_5"
+reward_narrative_template = "oath_kept"
+consequence_mechanical = "loyalty_obligation_minus_40_renown_frozen"
+oath_metric_key = "food_harvested"
+consequence_narrative_template = "oath_broken"
+is_founding_echo = false
+founding_echo_exile = ""
+is_intersection = false
+secondary_stat_gate = ""
+secondary_stat_threshold = 0

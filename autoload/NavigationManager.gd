@@ -139,7 +139,9 @@ func _world_to_grid(pos: Vector2) -> Vector2i:
 	# Prefer TileMap Logic if available (Source of Truth)
 	if is_instance_valid(active_tilemap_layer):
 		var local = active_tilemap_layer.to_local(pos)
-		return active_tilemap_layer.local_to_map(local)
+		var grid = active_tilemap_layer.local_to_map(local)
+		Loggie.msg("_world_to_grid: World%s -> Local%s -> Grid%s" % [pos, local, grid]).domain(LogDomains.SYSTEM).debug()
+		return grid
 
 	# Fallback Math (Standard Isometric Down)
 	var x_part = pos.x / TILE_HALF_SIZE.x
@@ -155,11 +157,14 @@ func _grid_to_world(grid: Vector2i) -> Vector2:
 	# Prefer TileMap Logic
 	if is_instance_valid(active_tilemap_layer):
 		var local = active_tilemap_layer.map_to_local(grid)
-		return active_tilemap_layer.to_global(local)
+		var global = active_tilemap_layer.to_global(local)
+		Loggie.msg("_grid_to_world: Grid%s -> Local%s -> Global%s" % [grid, local, global]).domain(LogDomains.SYSTEM).debug()
+		return global
 
-	# Fallback Math
+	# Fallback Math - FIXED: Return Center, not Top Vertex
+	# Center = Vertex + (0, 16)
 	var x = (grid.x - grid.y) * TILE_HALF_SIZE.x
-	var y = (grid.x + grid.y) * TILE_HALF_SIZE.y
+	var y = (grid.x + grid.y) * TILE_HALF_SIZE.y + TILE_HALF_SIZE.y
 	return Vector2(x, y)
 
 # --- SPATIAL QUERY ---

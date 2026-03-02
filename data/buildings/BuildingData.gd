@@ -16,6 +16,8 @@ extends Resource
 @export var icon: Texture2D
 ## World-space texture used for previews or UI icons.
 @export var building_texture: Texture2D
+## Optional texture used during the blueprint/construction phase.
+@export var blueprint_texture: Texture2D
 ## Debug color used for editor-only gizmos or placeholders.
 @export var dev_color: Color = Color.GRAY
 

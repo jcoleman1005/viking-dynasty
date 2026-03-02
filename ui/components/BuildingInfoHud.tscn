@@ -29,15 +29,14 @@ corner_detail = 6
 [node name="BuildingInfoHUD" type="Control"]
 custom_minimum_size = Vector2(128, 128)
 layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+anchors_preset = 0
+offset_right = 128.0
+offset_bottom = 128.0
 mouse_filter = 1
 script = ExtResource("1_ht0l1")
 
 [node name="Background" type="PanelContainer" parent="."]
+unique_name_in_owner = true
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 40.0
@@ -46,11 +45,13 @@ offset_bottom = 40.0
 layout_mode = 2
 
 [node name="NameLabel" type="Label" parent="Background/MarginContainer"]
+unique_name_in_owner = true
 layout_mode = 2
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="HealthBar" type="ProgressBar" parent="."]
+unique_name_in_owner = true
 layout_mode = 0
 offset_right = 4.0
 offset_bottom = 31.0
@@ -59,6 +60,7 @@ theme_override_styles/fill = SubResource("StyleBoxFlat_ht0l1")
 show_percentage = false
 
 [node name="StatusIcon" type="TextureRect" parent="."]
+unique_name_in_owner = true
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 40.0

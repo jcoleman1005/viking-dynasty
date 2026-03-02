@@ -1,0 +1,12 @@
+Place the following font files in this directory (res://ui/fonts/), then open
+the Godot editor to trigger import. DarkSagaTheme.tres references them by path.
+
+Required files:
+  Cinzel-Regular.ttf
+  CinzelDecorative-Regular.ttf
+
+Download from Google Fonts:
+  https://fonts.google.com/specimen/Cinzel
+  https://fonts.google.com/specimen/Cinzel+Decorative
+
+CrimsonText is already imported at res://assets/fonts/Crimson_Text/ — no action needed.

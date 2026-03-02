@@ -3,10 +3,10 @@
 extends Control
 class_name BuildingInfoHUD
 
-@onready var name_label: Label = $Background/MarginContainer/NameLabel
-@onready var health_bar: ProgressBar = $HealthBar
-@onready var background: PanelContainer = $Background
-@onready var status_icon: TextureRect = $StatusIcon
+@onready var name_label: Label = %NameLabel
+@onready var health_bar: ProgressBar = %HealthBar
+@onready var background: PanelContainer = %Background
+@onready var status_icon: TextureRect = %StatusIcon
 
 # Store the styleboxes so we can tween colors
 var style_fill: StyleBoxFlat
@@ -70,7 +70,7 @@ func update_construction(current: int, required: int) -> void:
 	name_label.text = "Constructing\n%d%%" % percent
 
 func set_blueprint_mode() -> void:
-	modulate = Color(1, 1, 1, 0.6) # Ghostly
+	modulate = Color(1, 1, 1, 1.0) # Reset internal HUD alpha so text is readable
 	name_label.text = "(Blueprint)"
 	health_bar.hide()
 

@@ -1,0 +1,118 @@
+[gd_scene load_steps=3 format=3 uid="uid://c1choice1"]
+
+[ext_resource type="Script" path="res://ui/founding/FoundingChoice1.gd" id="1_c1gd"]
+[ext_resource type="Theme" uid="uid://baix08bh3hbui" path="res://ui/themes/DarkSagaTheme.tres" id="2_c1theme"]
+
+[node name="FoundingChoice1" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_c1theme")
+script = ExtResource("1_c1gd")
+
+[node name="BG" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.102, 0.086, 0.063, 1)
+
+[node name="MainLayout" type="VBoxContainer" parent="."]
+custom_minimum_size = Vector2(900, 0)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -450.0
+offset_top = -250.0
+offset_right = 450.0
+offset_bottom = 250.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="ScreenTitle" type="Label" parent="MainLayout"]
+layout_mode = 2
+theme_type_variation = &"HouseholdNameLabel"
+theme_override_font_sizes/font_size = 22
+text = "Your Father's Nature"
+horizontal_alignment = 1
+
+[node name="SentenceFrame" type="HBoxContainer" parent="MainLayout"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="Prefix" type="Label" parent="MainLayout/SentenceFrame"]
+layout_mode = 2
+text = "He"
+
+[node name="StrengthSlot" type="PanelContainer" parent="MainLayout/SentenceFrame"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(250, 40)
+layout_mode = 2
+theme_type_variation = &"PanelContainerCard"
+
+[node name="Label" type="Label" parent="MainLayout/SentenceFrame/StrengthSlot"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
+
+[node name="Conjunction" type="Label" parent="MainLayout/SentenceFrame"]
+layout_mode = 2
+text = ", but"
+
+[node name="FlawSlot" type="PanelContainer" parent="MainLayout/SentenceFrame"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(250, 40)
+layout_mode = 2
+theme_type_variation = &"PanelContainerCard"
+
+[node name="Label" type="Label" parent="MainLayout/SentenceFrame/FlawSlot"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
+
+[node name="ArchetypeRow" type="HBoxContainer" parent="MainLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="Warrior" type="Button" parent="MainLayout/ArchetypeRow"]
+custom_minimum_size = Vector2(200, 100)
+layout_mode = 2
+text = "The Warrior"
+
+[node name="Builder" type="Button" parent="MainLayout/ArchetypeRow"]
+custom_minimum_size = Vector2(200, 100)
+layout_mode = 2
+text = "The Builder"
+
+[node name="Diplomat" type="Button" parent="MainLayout/ArchetypeRow"]
+custom_minimum_size = Vector2(200, 100)
+layout_mode = 2
+text = "The Diplomat"
+
+[node name="ClausePanel" type="VBoxContainer" parent="MainLayout"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="CommitBtn" type="Button" parent="MainLayout"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_horizontal = 4
+theme_type_variation = &"AdvanceButton"
+text = "Commit"

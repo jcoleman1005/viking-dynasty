@@ -1,62 +1,59 @@
-#res://ui/components/HeirCard.gd
 extends PanelContainer
 class_name HeirCard
 
 signal card_clicked(heir_data: JarlHeirData, global_pos: Vector2)
 
-# Ensure these paths match your Scene Tree names exactly
 @onready var portrait_rect: TextureRect = $VBox/PortraitContainer/Portrait
-@onready var status_icon: TextureRect = $VBox/PortraitContainer/StatusIcon
-@onready var heir_crown_icon: TextureRect = $VBox/PortraitContainer/HeirCrown
+@onready var heir_crown_icon: ColorRect = $VBox/PortraitContainer/HeirCrown
 @onready var name_label: Label = $VBox/NameLabel
-@onready var stats_label: Label = $VBox/StatsLabel
+@onready var age_label: Label = $VBox/AgeLabel
+@onready var status_badge: Label = $VBox/StatusBadge
+@onready var training_label: Label = $VBox/TrainingLabel
 
 var heir_data: JarlHeirData
 
 func setup(data: JarlHeirData) -> void:
 	heir_data = data
 	
-	# 1. Basic Info
-	name_label.text = "%s (%d)" % [data.display_name, data.age]
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.text = data.display_name
+	age_label.text = "Age: %d" % data.age
 	
-	# 2. Portrait
 	if data.portrait:
 		portrait_rect.texture = data.portrait
 	else:
-		portrait_rect.modulate = Color.GRAY 
+		portrait_rect.modulate = Color.GRAY
 	
-	# 3. Crown Overlay (Active Heir)
 	heir_crown_icon.visible = data.is_designated_heir
 	
-	# 4. Status Overlay
 	_update_status_visuals()
 	
-	# 5. Stats
-	var trait_text = "None"
-	if data.genetic_trait:
-		trait_text = data.genetic_trait.display_name
-		
-	stats_label.text = "Prowess: %d\nSteward: %d\nTrait: %s" % [data.prowess, data.stewardship, trait_text]
-	stats_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if data.training_history and data.training_history.size() > 0:
+		training_label.text = data.training_history.back()
+	else:
+		training_label.text = "No formal training."
 
 func _update_status_visuals() -> void:
-	# Reset visuals
 	modulate = Color.WHITE
-	status_icon.texture = null
-	status_icon.visible = false
+	status_badge.visible = true
 	
 	match heir_data.status:
+		JarlHeirData.HeirStatus.Available:
+			status_badge.text = "Available"
+			status_badge.modulate = Color(0.6, 0.8, 0.6)
 		JarlHeirData.HeirStatus.OnExpedition:
-			modulate = Color(0.7, 0.7, 0.7) # Dim the card
-			status_icon.visible = true
-			
+			status_badge.text = "On Expedition"
+			modulate = Color(0.7, 0.7, 0.7)
+			status_badge.modulate = Color(0.8, 0.8, 0.6)
 		JarlHeirData.HeirStatus.MarriedOff:
-			modulate = Color(0.5, 0.5, 0.5) # Darker
-			status_icon.visible = true
-			
+			status_badge.text = "Married Off"
+			modulate = Color(0.5, 0.5, 0.5)
+			status_badge.modulate = Color(0.8, 0.6, 0.8)
 		JarlHeirData.HeirStatus.Maimed:
-			status_icon.visible = true
+			status_badge.text = "Maimed"
+			status_badge.modulate = Color(0.8, 0.4, 0.4)
+		_:
+			status_badge.text = "Unavailable"
+			modulate = Color(0.5, 0.5, 0.5)
 
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:

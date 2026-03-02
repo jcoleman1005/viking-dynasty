@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="EventBalanceData" load_steps=2 format=3 uid="uid://eventbalancedata01"]
+
+[ext_resource type="Script" path="res://data/balance/EventBalanceData.gd" id="1_ebd01"]
+
+[resource]
+script = ExtResource("1_ebd01")
+full_quarantine_initial_reduction = 0.6
+full_quarantine_floor_reduction = 0.2
+full_quarantine_hold_days_from_end = 3
+partial_quarantine_max_reduction = 0.75
+partial_quarantine_exponent = 2.0
+partial_quarantine_random_variance = 0.15
+provider_food_cost = 50
+provider_renown_reward = 5
+provider_loyalty_reward = 10
+provider_loyalty_scaled_divisor = 20
+ring_giver_food_cost = 20
+ring_giver_gold_cost = 60
+ring_giver_renown_reward = 25
+ring_giver_warband_morale_reward = 15
+saga_food_cost = 100
+saga_gold_cost = 100
+saga_renown_reward = 75
+saga_loyalty_reward = 30
+feast_saturation_cooldown_days = 30
+feast_saturation_penalty_multiplier = 0.5
+burial_rite_gold_cost = 100
+burial_rite_penalty_reduction = 0.75
+buy_grain_cost_per_villager = 4
+buy_grain_cost_multiplier = 4
+buy_grain_renown_loss_on_failure = 20

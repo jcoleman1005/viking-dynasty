@@ -1,19 +1,31 @@
-#res://ui/DynastyUI.gd
-# res://ui/DynastyUI.gd
-class_name DynastyUI
 extends PanelContainer
+class_name DynastyUI
 
-# References
-@onready var ancestors_container: HBoxContainer = $Margin/MainLayout/AncestorsScroll/AncestorsHBox
-@onready var current_jarl_name: Label = $Margin/MainLayout/CurrentJarlPanel/Stats/NameLabel
-@onready var current_jarl_stats: Label = $Margin/MainLayout/CurrentJarlPanel/Stats/StatsLabel
-@onready var current_jarl_portrait: TextureRect = $Margin/MainLayout/CurrentJarlPanel/Portrait
-@onready var heirs_container: HBoxContainer = $Margin/MainLayout/HeirsScroll/HeirsHBox
-@onready var close_button: Button = $Margin/MainLayout/CloseButton
+@onready var close_button: Button = $Margin/VBox/Header/CloseButton
+@onready var tab_container: TabContainer = $Margin/VBox/TabContainer
 @onready var context_menu: PopupMenu = $ContextMenu
 
+# The Jarl Tab
+@onready var portrait_rect: TextureRect = $"Margin/VBox/TabContainer/The Jarl/HeroBlock/Portrait"
+@onready var name_label: Label = $"Margin/VBox/TabContainer/The Jarl/HeroBlock/HeroInfo/NameLabel"
+@onready var epithet_label: Label = $"Margin/VBox/TabContainer/The Jarl/HeroBlock/HeroInfo/EpithetLabel"
+@onready var age_reign_label: Label = $"Margin/VBox/TabContainer/The Jarl/HeroBlock/HeroInfo/AgeReignLabel"
+@onready var renown_label: Label = $"Margin/VBox/TabContainer/The Jarl/HeroBlock/HeroInfo/RenownLabel"
+@onready var might_pillar: RichTextLabel = $"Margin/VBox/TabContainer/The Jarl/PillarsBlock/MightPillar"
+@onready var prosperity_pillar: RichTextLabel = $"Margin/VBox/TabContainer/The Jarl/PillarsBlock/ProsperityPillar"
+@onready var authority_pillar: RichTextLabel = $"Margin/VBox/TabContainer/The Jarl/PillarsBlock/AuthorityPillar"
+@onready var authority_pips: HBoxContainer = $"Margin/VBox/TabContainer/The Jarl/AuthorityBlock/PipsHBox"
+@onready var heirs_container: HBoxContainer = $"Margin/VBox/TabContainer/The Jarl/HeirsScroll/HeirsHBox"
+
+# Lineage Tab
+@onready var ancestors_container: HBoxContainer = $"Margin/VBox/TabContainer/Lineage/AncestorsScroll/AncestorsHBox"
+@onready var father_epithet_label: Label = $"Margin/VBox/TabContainer/Lineage/FoundingBlock/FatherEpithet"
+@onready var founding_sentence_label: Label = $"Margin/VBox/TabContainer/Lineage/FoundingBlock/FoundingSentence"
+@onready var founding_tags: HBoxContainer = $"Margin/VBox/TabContainer/Lineage/FoundingBlock/Tags"
+@onready var echo_text: Label = $"Margin/VBox/TabContainer/Lineage/EchoCard/Margin/EchoText"
+
 signal close_requested
-# Resources
+
 const HEIR_CARD_SCENE = preload("res://ui/components/HeirCard.tscn")
 const PLACEHOLDER_ICON = preload("res://textures/placeholders/unit_placeholder.png")
 
@@ -24,11 +36,6 @@ func _ready() -> void:
 	DynastyManager.jarl_stats_updated.connect(_on_jarl_stats_updated)
 	
 	visibility_changed.connect(_on_visibility_changed)
-	
-	if current_jarl_portrait:
-		current_jarl_portrait.custom_minimum_size = Vector2(128, 128)
-		current_jarl_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		current_jarl_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	
 	# Setup Context Menu
 	context_menu.add_item("Designate Heir (Cost: 1 Authority)", 0)
@@ -47,18 +54,36 @@ func _on_visibility_changed() -> void:
 		_on_jarl_stats_updated(DynastyManager.get_current_jarl())
 		Loggie.msg("Dynasty UI: Auto-refreshed data on visible.").domain("UI").info()
 	
-	# --- NEW: Lock/Unlock Camera Input ---
-	# This tells the RTSCamera to ignore zoom/pan inputs while this UI is visible.
+	# Lock/Unlock Camera Input
 	EventBus.camera_input_lock_requested.emit(visible)
-	# -------------------------------------
 
 func _on_jarl_stats_updated(jarl: JarlData) -> void:
 	if not jarl: return
 	
-	# 1. Update Current Jarl Name
-	current_jarl_name.text = jarl.display_name
+	_update_jarl_hero(jarl)
+	_update_pillars(jarl)
+	_update_authority(jarl)
+	_update_heirs(jarl)
+	_update_lineage(jarl)
+
+func _update_jarl_hero(jarl: JarlData) -> void:
+	name_label.text = jarl.display_name
 	
-	# 2. Update Full Stats & Pillars
+	if jarl.living_epithet != "":
+		epithet_label.text = jarl.living_epithet
+		epithet_label.show()
+	else:
+		epithet_label.hide()
+		
+	age_reign_label.text = "Age: %d" % jarl.age
+	renown_label.text = "Renown: %d (Tier %d)" % [jarl.renown, jarl.renown_tier]
+	
+	if jarl.portrait:
+		portrait_rect.texture = jarl.portrait
+	else:
+		portrait_rect.texture = PLACEHOLDER_ICON
+
+func _update_pillars(jarl: JarlData) -> void:
 	var prowess = jarl.get_effective_skill("prowess")
 	var command = jarl.get_effective_skill("command")
 	var stewardship = jarl.get_effective_skill("stewardship")
@@ -66,51 +91,46 @@ func _on_jarl_stats_updated(jarl: JarlData) -> void:
 	var diplomacy = jarl.get_effective_skill("diplomacy")
 	var charisma = jarl.get_effective_skill("charisma")
 	
-	# Calculate derived bonuses for display
-	var damage_bonus = (jarl.might_score - 10) * 10 if jarl.might_score > 10 else 0
-	var income_bonus = (jarl.prosperity_score - 10) * 5 if jarl.prosperity_score > 10 else 0
-	
-	var stats_text = "Age: %d  |  Renown: %d  |  Authority: %d/%d\n" % [jarl.age, jarl.renown, jarl.current_authority, jarl.max_authority]
-	stats_text += "------------------------------------------------\n"
-	
-	# MIGHT PILLAR
 	var war_base = prowess + command
 	var war_penalty = int((diplomacy + charisma) * 0.5)
-	stats_text += "[color=salmon]⚔️ MIGHT: %d[/color] (+%d%% Damage)\n" % [jarl.might_score, damage_bonus]
-	stats_text += "   [color=gray](Base: %d | Shadow: -%d from Word)[/color]\n" % [war_base, war_penalty]
-	stats_text += "   Prowess: %d | Command: %d\n\n" % [prowess, command]
+	might_pillar.text = "[color=#c47a50]⚔️ MIGHT: %d[/color]\nBase: %d | Shadow: -%d from Word\n(Prowess: %d | Command: %d)" % [jarl.might_score, war_base, war_penalty, prowess, command]
 	
-	# PROSPERITY PILLAR
 	var wealth_base = stewardship + learning
 	var wealth_penalty = int((prowess + command) * 0.5)
-	stats_text += "[color=gold]💰 PROSPERITY: %d[/color] (+%d%% Income)\n" % [jarl.prosperity_score, income_bonus]
-	stats_text += "   [color=gray](Base: %d | Shadow: -%d from War)[/color]\n" % [wealth_base, wealth_penalty]
-	stats_text += "   Steward: %d | Learning: %d\n\n" % [stewardship, learning]
+	prosperity_pillar.text = "[color=#7ab648]💰 PROSPERITY: %d[/color]\nBase: %d | Shadow: -%d from War\n(Steward: %d | Learning: %d)" % [jarl.prosperity_score, wealth_base, wealth_penalty, stewardship, learning]
 	
-	# AUTHORITY PILLAR
 	var word_base = diplomacy + charisma
 	var word_penalty = int((stewardship + learning) * 0.5)
-	stats_text += "[color=skyblue]👑 AUTHORITY: %d[/color] (%d Hall Actions)\n" % [jarl.authority_score, jarl.max_hall_actions]
-	stats_text += "   [color=gray](Base: %d | Shadow: -%d from Wealth)[/color]\n" % [word_base, word_penalty]
-	stats_text += "   Diplomacy: %d | Charisma: %d" % [diplomacy, charisma]
-	
-	current_jarl_stats.text = stats_text
+	authority_pillar.text = "[color=#88aadf]👑 AUTHORITY: %d[/color]\nBase: %d | Shadow: -%d from Wealth\n(Diplomacy: %d | Charisma: %d)" % [jarl.authority_score, word_base, word_penalty, diplomacy, charisma]
 
-	# 3. Update Portrait
-	if jarl.portrait:
-		current_jarl_portrait.texture = jarl.portrait
-	else:
-		current_jarl_portrait.texture = PLACEHOLDER_ICON
+func _update_authority(jarl: JarlData) -> void:
+	for child in authority_pips.get_children():
+		child.queue_free()
+		
+	for i in range(jarl.max_authority):
+		var pip = ColorRect.new()
+		pip.custom_minimum_size = Vector2(16, 16)
+		if i < jarl.current_authority:
+			pip.color = Color(0.831, 0.659, 0.263, 1) # Gold (filled)
+		else:
+			pip.color = Color(0.2, 0.2, 0.2, 1) # Dark gray (empty)
+		authority_pips.add_child(pip)
 
-	# 4. Update Lists
-	_populate_ancestors(jarl.ancestors)
-	_populate_heirs(jarl.heirs)
+func _update_heirs(jarl: JarlData) -> void:
+	for child in heirs_container.get_children():
+		child.queue_free()
+		
+	for heir in jarl.heirs:
+		var card = HEIR_CARD_SCENE.instantiate()
+		heirs_container.add_child(card)
+		card.setup(heir)
+		card.card_clicked.connect(_on_heir_card_clicked)
 
-func _populate_ancestors(ancestors_data: Array) -> void:
+func _update_lineage(jarl: JarlData) -> void:
 	for child in ancestors_container.get_children():
 		child.queue_free()
 		
-	for data in ancestors_data:
+	for data in jarl.ancestors:
 		var texture = TextureRect.new()
 		texture.custom_minimum_size = Vector2(64, 64)
 		texture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -131,15 +151,18 @@ func _populate_ancestors(ancestors_data: Array) -> void:
 		texture.modulate = Color(0.5, 0.5, 0.5, 0.8) 
 		ancestors_container.add_child(texture)
 
-func _populate_heirs(heirs_data: Array[JarlHeirData]) -> void:
-	for child in heirs_container.get_children():
-		child.queue_free()
+	if jarl.founding_epithet != "":
+		father_epithet_label.text = jarl.founding_epithet
+		father_epithet_label.show()
+	else:
+		father_epithet_label.hide()
 		
-	for heir in heirs_data:
-		var card = HEIR_CARD_SCENE.instantiate()
-		heirs_container.add_child(card)
-		card.setup(heir)
-		card.card_clicked.connect(_on_heir_card_clicked)
+	founding_sentence_label.text = "Archetype: %s | First Act: %s" % [jarl.founding_archetype, jarl.first_act]
+	
+	if jarl.exile_reason != "":
+		echo_text.text = "Exile Reason: %s\nThe legacy of this decision remains." % jarl.exile_reason
+	else:
+		echo_text.text = "No recorded exile."
 
 func _on_heir_card_clicked(heir: JarlHeirData, mouse_pos: Vector2) -> void:
 	selected_heir = heir
@@ -180,12 +203,12 @@ func _on_context_menu_item_pressed(id: int) -> void:
 				Loggie.msg("Heir married off for Renown.").domain("UI").info()
 		3: # Assign Captain
 			_open_warband_assignment_dialog()
-			
+
 func _on_close_button_pressed() -> void:
 	if EventBus:
 		EventBus.sidebar_close_requested.emit()
 	else:
-		hide() # Fallback
+		hide()
 
 func _input(event: InputEvent) -> void:
 	if visible and event is InputEventKey and event.pressed:

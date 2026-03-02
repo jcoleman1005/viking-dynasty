@@ -23,9 +23,11 @@ const BUILDING_PATHS = [
 @export var dynasty_ui_scene: PackedScene
 
 @export_group("Seasonal Panels")
-@export var council_panel_scene: PackedScene # Unified scene for Spring & Winter
-@export var summer_panel_scene: PackedScene  # New: Clan Allocation Menu
+@export var spring_screen_scene: PackedScene
+@export var summer_panel_scene: PackedScene
 @export var autumn_panel_scene: PackedScene
+@export var winter_severity_scene: PackedScene
+@export var winter_screen_scene: PackedScene
 
 @export var decree_popup_scene: PackedScene
 
@@ -68,11 +70,13 @@ func _setup_warning_dialog() -> void:
 	idle_worker_warning.size = Vector2(400, 150)
 	
 	# Connect the "OK" button to the actual advancement
-	idle_worker_warning.confirmed.connect(func(): 
-		if DynastyManager: DynastyManager.advance_season()
-	)
+	idle_worker_warning.confirmed.connect(_on_idle_warning_confirmed)
 	
 	add_child(idle_worker_warning)
+
+func _on_idle_warning_confirmed() -> void:
+	if DynastyManager:
+		DynastyManager.advance_season()
 
 func _connect_signals() -> void:
 	if EventBus:
@@ -209,22 +213,26 @@ func _scan_for_buildings() -> Array[Resource]:
 # EVENT HANDLERS (Season)
 # ------------------------------------------------------------------------------
 
-func _on_season_changed_signal(_season_name: String, context: Dictionary) -> void:
+func _on_season_changed_signal(season_name: String, context: Dictionary) -> void:
+	Loggie.msg("MainGameUI: _on_season_changed_signal(%s)" % season_name).domain(LogDomains.UI).info()
 	_update_season_state(context)
 
 func _update_season_state(context: Dictionary = {}) -> void:
-	if not DynastyManager: return
+	if not DynastyManager: 
+		Loggie.msg("MainGameUI: DynastyManager missing in _update_season_state").error()
+		return
 	var current_season = DynastyManager.current_season
 	var is_summer = (current_season == DynastyManager.Season.SUMMER)
+	
+	Loggie.msg("MainGameUI: Updating Season State. Season: %d IsSummer: %s" % [current_season, str(is_summer)]).domain(LogDomains.UI).info()
 	
 	if bottom_bar: bottom_bar.set_agency_state(is_summer)
 	
 	if season_advance_btn:
-		# HIDE in Spring: The player MUST pick a council card to advance.
+		# Spring advances via oath card confirm only — hide the button
 		season_advance_btn.visible = (current_season != DynastyManager.Season.SPRING)
-		
+
 		match current_season:
-			DynastyManager.Season.SPRING: season_advance_btn.text = "Start Summer"
 			DynastyManager.Season.SUMMER: season_advance_btn.text = "End Summer"
 			DynastyManager.Season.AUTUMN: season_advance_btn.text = "Sign and Seal Ledger"
 			DynastyManager.Season.WINTER: season_advance_btn.text = "End Year"
@@ -243,16 +251,15 @@ func _on_advance_season_clicked() -> void:
 	if not DynastyManager: return
 	
 	if DynastyManager.current_season == DynastyManager.Season.SUMMER \
-	and DynastyManager.current_day < DynastyManager.SUMMER_DAYS:
+	and DynastyManager.current_day <= DynastyManager.SUMMER_DAYS:
+		# If we are on the LAST day, advance_day() will internally call advance_season()
 		DynastyManager.advance_day()
 		return
 
-	# 1. Harvest Safety Check (Only in Summer)
+	# 1. Harvest Safety Check (Only when transition to Autumn is about to happen)
 	if DynastyManager.current_season == DynastyManager.Season.SUMMER:
-		var census = EconomyManager.get_population_census()
-		
-		var idle_peasants = census["peasants"]["idle"]
-		var idle_thralls = census["thralls"]["idle"]
+		var idle_peasants = SettlementManager.get_idle_peasants()
+		var idle_thralls = SettlementManager.get_idle_thralls()
 		var total_idle = idle_peasants + idle_thralls
 		
 		if total_idle > 0:
@@ -275,23 +282,38 @@ func _update_center_view(season_enum: int, context: Dictionary) -> void:
 	var season_string_name = ""
 	
 	match season_enum:
-		DynastyManager.Season.SPRING, DynastyManager.Season.WINTER:
-			scene_to_load = council_panel_scene
-			season_string_name = "Spring" if season_enum == DynastyManager.Season.SPRING else "Winter"
+		DynastyManager.Season.SPRING:
+			scene_to_load = spring_screen_scene
+			season_string_name = "Spring"
 		DynastyManager.Season.SUMMER:
-			# Summer uses the RTS view + Overlay menus. No center panel needed.
 			return
 		DynastyManager.Season.AUTUMN: 
 			scene_to_load = autumn_panel_scene
 			season_string_name = "Autumn"
+		DynastyManager.Season.WINTER:
+			scene_to_load = winter_severity_scene
+			season_string_name = "Winter"
 			
 	if scene_to_load:
 		var instance = scene_to_load.instantiate()
 		center_view.add_child(instance)
 		if instance is Control: instance.set_anchors_preset(Control.PRESET_FULL_RECT)
 		
-		# MANUAL HANDSHAKE:
-		# Since the instance was just created, it missed the signal emission.
-		# We manually force-feed it the context so it can initialize.
+		# If it's WinterSeverityBeat, connect its signal to load WinterScreen
+		if season_enum == DynastyManager.Season.WINTER and instance.has_signal("severity_resolved"):
+			instance.severity_resolved.connect(_on_winter_severity_resolved.bind(context))
+		
 		if instance.has_method("_on_season_changed"):
 			instance._on_season_changed(season_string_name, context)
+
+func _on_winter_severity_resolved(choice: String, context: Dictionary) -> void:
+	# Now load the WinterHallUI (WinterScreen)
+	if winter_screen_scene:
+		for child in center_view.get_children(): child.queue_free()
+		var instance = winter_screen_scene.instantiate()
+		center_view.add_child(instance)
+		if instance is Control: instance.set_anchors_preset(Control.PRESET_FULL_RECT)
+		if instance.has_method("_on_season_changed"):
+			instance._on_season_changed("Winter", context)
+
+

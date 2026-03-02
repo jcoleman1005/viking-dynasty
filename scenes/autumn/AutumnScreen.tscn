@@ -1,0 +1,187 @@
+[gd_scene load_steps=3 format=3 uid="uid://autumn_screen_ui_001"]
+
+[ext_resource type="Script" path="res://scenes/autumn/AutumnScreen.gd" id="1_ascr"]
+[ext_resource type="Theme" uid="uid://dark_saga_theme_01" path="res://ui/themes/DarkSagaTheme.tres" id="2_dktheme"]
+
+[node name="AutumnScreen" type="Control"]
+process_mode = 3
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_dktheme")
+script = ExtResource("1_ascr")
+
+[node name="BG" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.102, 0.086, 0.063, 0.97)
+
+[node name="MainLayout" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="TopContent" type="HBoxContainer" parent="MainLayout"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="LeftPanel" type="PanelContainer" parent="MainLayout/TopContent"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.1
+
+[node name="LeftInner" type="MarginContainer" parent="MainLayout/TopContent/LeftPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 28
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="LeftVBox" type="VBoxContainer" parent="MainLayout/TopContent/LeftPanel/LeftInner"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="LedgerHeader" type="Label" parent="MainLayout/TopContent/LeftPanel/LeftInner/LeftVBox"]
+layout_mode = 2
+text = "THE LEDGER"
+theme_override_font_sizes/font_size = 9
+theme_override_colors/font_color = Color(0.353, 0.333, 0.267, 1.0)
+
+[node name="AccentLine1" type="ColorRect" parent="MainLayout/TopContent/LeftPanel/LeftInner/LeftVBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 1)
+size_flags_horizontal = 3
+modulate = Color(0.478, 0.392, 0.188, 0.4)
+color = Color(0.478, 0.392, 0.188, 1.0)
+
+[node name="LedgerVBox" type="VBoxContainer" parent="MainLayout/TopContent/LeftPanel/LeftInner/LeftVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="SkipBtn" type="Button" parent="MainLayout/TopContent/LeftPanel/LeftInner/LeftVBox"]
+layout_mode = 2
+size_flags_horizontal = 0
+text = "Skip Animation"
+
+[node name="RightPanel" type="PanelContainer" parent="MainLayout/TopContent"]
+layout_mode = 2
+custom_minimum_size = Vector2(380, 0)
+size_flags_horizontal = 0
+
+[node name="RightInner" type="MarginContainer" parent="MainLayout/TopContent/RightPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 28
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="RightVBox" type="VBoxContainer" parent="MainLayout/TopContent/RightPanel/RightInner"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="OathHeader" type="Label" parent="MainLayout/TopContent/RightPanel/RightInner/RightVBox"]
+layout_mode = 2
+text = "OATH RESOLUTION"
+theme_override_font_sizes/font_size = 9
+theme_override_colors/font_color = Color(0.353, 0.333, 0.267, 1.0)
+
+[node name="AccentLine2" type="ColorRect" parent="MainLayout/TopContent/RightPanel/RightInner/RightVBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 1)
+size_flags_horizontal = 3
+modulate = Color(0.478, 0.392, 0.188, 0.4)
+color = Color(0.478, 0.392, 0.188, 1.0)
+
+[node name="OathNameLabel" type="Label" parent="MainLayout/TopContent/RightPanel/RightInner/RightVBox"]
+layout_mode = 2
+autowrap_mode = 3
+text = "—"
+theme_override_font_sizes/font_size = 15
+theme_override_colors/font_color = Color(0.831, 0.659, 0.263, 1.0)
+
+[node name="OutcomeBadge" type="Label" parent="MainLayout/TopContent/RightPanel/RightInner/RightVBox"]
+layout_mode = 2
+text = "—"
+theme_override_font_sizes/font_size = 20
+
+[node name="OathNotesLabel" type="Label" parent="MainLayout/TopContent/RightPanel/RightInner/RightVBox"]
+layout_mode = 2
+autowrap_mode = 3
+text = "—"
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.604, 0.565, 0.502, 1.0)
+
+[node name="RenownDeltaLabel" type="Label" parent="MainLayout/TopContent/RightPanel/RightInner/RightVBox"]
+layout_mode = 2
+text = "Renown  ±0"
+theme_override_font_sizes/font_size = 13
+
+[node name="HSep" type="HSeparator" parent="MainLayout/TopContent/RightPanel/RightInner/RightVBox"]
+layout_mode = 2
+
+[node name="HouseholdsHeader" type="Label" parent="MainLayout/TopContent/RightPanel/RightInner/RightVBox"]
+layout_mode = 2
+text = "HOUSEHOLDS"
+theme_override_font_sizes/font_size = 9
+theme_override_colors/font_color = Color(0.353, 0.333, 0.267, 1.0)
+
+[node name="HouseholdList" type="VBoxContainer" parent="MainLayout/TopContent/RightPanel/RightInner/RightVBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="SkaldSection" type="PanelContainer" parent="MainLayout"]
+layout_mode = 2
+visible = false
+custom_minimum_size = Vector2(0, 120)
+
+[node name="SkaldMargin" type="MarginContainer" parent="MainLayout/SkaldSection"]
+layout_mode = 2
+theme_override_constants/margin_left = 48
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 48
+theme_override_constants/margin_bottom = 20
+
+[node name="SkaldVBox" type="VBoxContainer" parent="MainLayout/SkaldSection/SkaldMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="SkaldHeader" type="Label" parent="MainLayout/SkaldSection/SkaldMargin/SkaldVBox"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "THE SKALD REMEMBERS"
+theme_override_font_sizes/font_size = 9
+theme_override_colors/font_color = Color(0.353, 0.333, 0.267, 1.0)
+
+[node name="SkaldText" type="RichTextLabel" parent="MainLayout/SkaldSection/SkaldMargin/SkaldVBox"]
+layout_mode = 2
+bbcode_enabled = true
+fit_content = true
+text = ""
+theme_override_font_sizes/normal_font_size = 14
+theme_override_colors/default_color = Color(0.910, 0.875, 0.753, 1.0)
+
+[node name="Footer" type="HBoxContainer" parent="MainLayout"]
+layout_mode = 2
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="Spacer" type="Control" parent="MainLayout/Footer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="EnterWinterBtn" type="Button" parent="MainLayout/Footer"]
+layout_mode = 2
+text = "Enter Winter →"

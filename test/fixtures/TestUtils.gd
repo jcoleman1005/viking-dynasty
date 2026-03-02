@@ -104,5 +104,9 @@ static func create_mock_bridge() -> Node:
 	var ui_node = CanvasLayer.new()
 	ui_node.name = "UI"
 	bridge.add_child(ui_node)
-	
+
+	var building_cont = Node2D.new()
+	building_cont.name = "BuildingContainer"
+	bridge.add_child(building_cont)
+
 	return bridge

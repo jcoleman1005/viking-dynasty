@@ -56,6 +56,7 @@ var allocation_instance: Control
 # --- State ---
 var is_raid_panel_open: bool = true
 var _has_activated: bool = false
+var _label_days_left: Label = null
 
 func _ready() -> void:
 	visible = false
@@ -64,7 +65,8 @@ func _ready() -> void:
 	_setup_signals()
 	_connect_buttons()
 	_create_restore_button()
-	
+	_create_countdown_label()
+
 	if DynastyManager.current_season == DynastyManager.Season.SUMMER:
 		_activate_summer_ui()
 	
@@ -97,8 +99,12 @@ func _connect_buttons() -> void:
 
 func _activate_summer_ui() -> void:
 	visible = true
-	_initial_refresh() 
+	_initial_refresh()
 	_has_activated = true
+	if _label_days_left:
+		var days_left := DynastyManager.SUMMER_DAYS - DynastyManager.current_day
+		_label_days_left.text = 'Winter in %d days' % days_left
+		_label_days_left.visible = true
 	Loggie.msg(\"Summer UI Activated\").domain(LogDomains.UI).info()
 
 func _setup_mouse_filters() -> void:
@@ -115,6 +121,7 @@ func _setup_signals() -> void:
 	EventBus.treasury_updated.connect(_on_treasury_updated)
 	EventBus.population_changed.connect(_on_population_changed)
 	EventBus.season_changed.connect(_on_season_changed)
+	EventBus.summer_day_changed.connect(_on_summer_day_changed)
 
 # --- Visibility Toggles ---
 
@@ -295,8 +302,11 @@ func _on_population_changed() -> void:
 	if visible: _initial_refresh()
 
 func _on_season_changed(new_season: String, _context: Dictionary) -> void:
-	if new_season == \"Summer\": _activate_summer_ui()
-	else: visible = false
+	if new_season == \"Summer\":
+		_activate_summer_ui()
+	else:
+		visible = false
+		if _label_days_left: _label_days_left.visible = false
 
 func _toggle_raid_panel() -> void:
 	is_raid_panel_open = !is_raid_panel_open
@@ -316,6 +326,33 @@ func _set_project_view(show_construction: bool) -> void:
 	if grid_completed_buildings: grid_completed_buildings.visible = !show_construction
 	if btn_tab_construction: btn_tab_construction.set_pressed_no_signal(show_construction)
 	if btn_tab_completed: btn_tab_completed.set_pressed_no_signal(!show_construction)
+
+# --- Summer Countdown ---
+
+func _create_countdown_label() -> void:
+	var hbox := get_node_or_null('LayoutRoot/HUD_TopBar/MarginContainer/HBoxContainer')
+	if not hbox:
+		return
+	_label_days_left = Label.new()
+	_label_days_left.name = 'DaysLeftLabel'
+	_label_days_left.text = 'Winter in — days'
+	_label_days_left.visible = false
+	hbox.add_child(_label_days_left)
+	# Place before CloseButton so it sits in the top-bar resource strip.
+	hbox.move_child(_label_days_left, hbox.get_child_count() - 2)
+
+func _on_summer_day_changed(current_day: int, max_days: int) -> void:
+	if not _label_days_left:
+		return
+	var days_left := max_days - current_day
+	# Singular/plural phrasing
+	_label_days_left.text = 'Winter in %d day%s' % [days_left, '' if days_left == 1 else 's']
+	# Urgency: red when 2 or fewer days remain (warband return overlap risk).
+	# TODO: Also check RaidManager for active raid return timing when fog/raid system matures.
+	if days_left <= 2:
+		_label_days_left.add_theme_color_override('font_color', Color.RED)
+	else:
+		_label_days_left.remove_theme_color_override('font_color')
 "
 
 [sub_resource type="Resource" id="Resource_vwey1"]

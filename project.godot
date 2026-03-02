@@ -30,6 +30,10 @@ EconomyManager="*res://autoload/EconomyManager.gd"
 RaidManager="*res://autoload/RaidManager.gd"
 ConstructionAuthority="*res://autoload/ConstructionAuthority.gd"
 RaidNavigationManager="*res://autoload/RaidNavigationManager.gd"
+FoundingSequenceManager="*res://autoload/FoundingSequenceManager.gd"
+SpringCardSelector="*res://autoload/SpringCardSelector.gd"
+SkaldReportGenerator="*res://autoload/SkaldReportGenerator.gd"
+FoundingGenerator="*res://autoload/FoundingGenerator.gd"
 
 [display]
 

@@ -423,7 +423,7 @@ func apply_winter_consumption(costs: Dictionary) -> void:
 	# State-Aware Idempotency
 	var current_year = DynastyManager.get_current_year()
 	if current_year == _last_paid_winter_year:
-		Loggie.msg("EconomyManager: Winter consumption already applied for Year %d." % current_year).domain(LogDomains.ECONOMY).warn()
+		Loggie.msg("EconomyManager: Winter consumption already applied for Year %d." % current_year).domain(LogDomains.ECONOMY).info()
 		return
 	
 	var settlement = SettlementManager.current_settlement
@@ -459,17 +459,17 @@ func resolve_winter_crisis_sacrifice(sacrifice_type: String, deficit_data: Dicti
 		"starve_peasants":
 			var deaths = max(1, int(deficit_data.get("food_deficit", 0) / 5))
 			settlement.population_peasants = max(0, settlement.population_peasants - deaths)
-			Loggie.msg("EconomyManager: Sacrificed %d Peasants" % deaths).domain(LogDomains.ECONOMY).warn()
+			Loggie.msg("EconomyManager: Sacrificed %d Peasants" % deaths).domain(LogDomains.ECONOMY).info()
 			clamp_demographics(settlement)
-			
+
 		"disband_warband":
-			if not settlement.warbands.is_empty(): 
+			if not settlement.warbands.is_empty():
 				settlement.warbands.pop_back()
-				Loggie.msg("EconomyManager: Disbanded Warband").domain(LogDomains.ECONOMY).warn()
-				
+				Loggie.msg("EconomyManager: Disbanded Warband").domain(LogDomains.ECONOMY).info()
+
 		"burn_ships":
 			settlement.fleet_readiness = 0.0
-			Loggie.msg("EconomyManager: Burned Ships").domain(LogDomains.ECONOMY).warn()
+			Loggie.msg("EconomyManager: Burned Ships").domain(LogDomains.ECONOMY).info()
 	
 	EventBus.treasury_updated.emit(settlement.treasury)
 
@@ -529,6 +529,18 @@ func calculate_seasonal_payout(season_name: String, external_context: Dictionary
 		if res == "food":
 			if season_name == SEASON_AUTUMN:
 				seasonal_amount = yearly_amount
+				# SCOUT households are away during harvest — subtract their share of
+				# food yield proportionally so scouting has a real labour cost.
+				var scout_members := 0
+				for house in settlement.households:
+					if house.current_oath == HouseholdData.SeasonalOath.SCOUT:
+						scout_members += house.member_count
+				if scout_members > 0 and settlement.population_peasants > 0:
+					var scout_penalty := int(float(seasonal_amount) * float(scout_members) / float(settlement.population_peasants))
+					seasonal_amount = max(0, seasonal_amount - scout_penalty)
+					if scout_penalty > 0:
+						var pm: Array = total_payout["_messages"]
+						pm.append("Scouting: -%d Food (%d members on patrol)" % [scout_penalty, scout_members])
 				var msg_list: Array = total_payout["_messages"]
 				msg_list.append("[color=green]Harvest Complete: +%d Food[/color]" % seasonal_amount)
 			else:
@@ -572,7 +584,7 @@ func _apply_payout_to_treasury(settlement: SettlementData, payout: Dictionary) -
 		var amount_to_add = clampi(amount, 0, max(0, space_left))
 		
 		if amount_to_add < amount:
-			Loggie.msg("Storage Cap Reached! Wasted %d %s." % [amount - amount_to_add, key]).domain(LogDomains.ECONOMY).warn()
+			Loggie.msg("Storage Cap Reached! Wasted %d %s." % [amount - amount_to_add, key]).domain(LogDomains.ECONOMY).info()
 		
 		if settlement.treasury.has(key):
 			settlement.treasury[key] += amount_to_add
@@ -606,7 +618,7 @@ func _calculate_demographics(settlement: SettlementData, payout_report: Dictiona
 	var event_msg = ""
 	
 	var rationing = settlement.rationing_policy
-	var is_starving = total_food_available <= 0
+	var is_starving = total_food_available < 0
 	
 	# Rationing Override Logic
 	if rationing == SettlementData.RationingPolicy.NONE:
@@ -741,12 +753,16 @@ func deposit_resources(loot: Dictionary) -> void:
 		
 		if key == "population" or key == "thralls":
 			settlement.population_thralls += amount
+		elif amount < 0:
+			# Deduction path: apply the negative amount but floor the result at 0
+			var current_val = settlement.treasury.get(key, 0)
+			settlement.treasury[key] = max(0, current_val + amount)
 		else:
 			var cap = get_resource_cap(key)
 			var current = settlement.treasury.get(key, 0)
 			var space = cap - current
 			var to_add = min(amount, max(0, space))
-			
+
 			if settlement.treasury.has(key):
 				settlement.treasury[key] += to_add
 			else:
@@ -806,7 +822,7 @@ func apply_raid_damages() -> Dictionary:
 	
 	settlement.has_stability_debuff = true
 	
-	Loggie.msg("Raid damages applied: %s" % report).domain(LogDomains.ECONOMY).warn()
+	Loggie.msg("Raid damages applied: %s" % report).domain(LogDomains.ECONOMY).info()
 	EventBus.treasury_updated.emit(settlement.treasury)
 	return report
 
@@ -818,7 +834,34 @@ func add_resource(type: String, amount: int) -> void:
 
 func get_harvest_yield_modifier() -> float:
 	return DynastyManager.active_year_modifiers.get("mod_harvest_yield", 0.0)
-	
+
+
+## Convenience property used by debt trigger check and forecast UI.
+var projected_winter_consumption: int:
+	get:
+		return get_winter_food_demand()
+
+
+## Returns a single human-readable forecast string for the Summer workspace UI.
+## Example: "At current labour, you will enter Winter short by 12 food."
+func get_winter_food_forecast_text() -> String:
+	var settlement = SettlementManager.current_settlement
+	if not settlement:
+		return ""
+
+	var current_food: int = settlement.treasury.get("food", 0)
+	var income_report := get_projected_income()
+	var projected_food_income: int = income_report.get("food", 0)
+	var demand: int = get_winter_food_demand()
+	var projected_at_winter: int = current_food + projected_food_income
+	var delta: int = projected_at_winter - demand
+
+	if delta >= 0:
+		return "At current labour, you will enter Winter with %d food surplus." % delta
+	else:
+		return "At current labour, you will enter Winter short by %d food." % abs(delta)
+
+
 # --- ALLOCATION & PROJECTION API ---
 
 func draft_peasants_to_raiders(count: int, template: UnitData) -> void:
@@ -830,7 +873,7 @@ func draft_peasants_to_raiders(count: int, template: UnitData) -> void:
 	var actual_draft = min(available, count)
 	
 	if actual_draft < count:
-		Loggie.msg("EconomyManager: Draft request reduced (Req: %d, Avail: %d)" % [count, available]).domain(LogDomains.ECONOMY).warn()
+		Loggie.msg("EconomyManager: Draft request reduced (Req: %d, Avail: %d)" % [count, available]).domain(LogDomains.ECONOMY).info()
 	
 	settlement.population_peasants -= actual_draft
 	clamp_demographics(settlement)
@@ -985,8 +1028,6 @@ func _update_jarl_stats(grade: String) -> void:
 # --- CONSTRUCTION API ---
 
 func advance_construction_progress() -> Array[Dictionary]:
-	# TODO: Add incremental progress bar updates here to reflect daily progress in the UI 
-	# during the new Summer turn-based day system.
 	var settlement = SettlementManager.current_settlement
 	if not settlement: return []
 	
@@ -1014,6 +1055,12 @@ func advance_construction_progress() -> Array[Dictionary]:
 		var new_progress = current_progress + progress_gain
 		
 		entry["progress"] = new_progress
+		
+		# Sync visual node if it exists
+		if SettlementManager.has_method("find_building_by_grid_pos"):
+			var node = SettlementManager.find_building_by_grid_pos(entry["grid_position"], false)
+			if node and node.has_method("add_construction_progress"):
+				node.add_construction_progress(progress_gain)
 		
 		if new_progress >= effort_required:
 			completed_buildings.append(entry)

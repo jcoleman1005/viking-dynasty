@@ -8,7 +8,7 @@ func test_population_growth_with_surplus():
 	create_mock_jarl()
 	
 	# 2. Execute Year End
-	var payout = EconomyManager.calculate_payout()
+	var payout = EconomyManager.calculate_seasonal_payout("Winter")
 	
 	# 3. Assert
 	# 10 people * 10 food = 100 demand. 500 available. Surplus!
@@ -35,7 +35,7 @@ func test_construction_labor_deduction():
 	s.pending_construction_buildings.append(blueprint)
 	
 	# 2. Execute
-	EconomyManager.calculate_payout()
+	EconomyManager.calculate_seasonal_payout("Winter")
 	
 	# 3. Assert
 	# 2 Peasants * 25 Efficiency = 50 Progress
